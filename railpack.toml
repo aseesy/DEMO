@@ -1,17 +1,18 @@
 # Railway Railpack Configuration
 # Railway Metal uses Railpack for building
+# Note: Railway root directory should be set to 'chat-server' in Railway dashboard
 
 [build]
 # Node.js version
 node = "18"
 
-# Install dependencies in chat-server directory
+# Install dependencies
 # Using --legacy-peer-deps for bcrypt compatibility
-install = "cd chat-server && npm install --legacy-peer-deps"
+install = "npm install --legacy-peer-deps"
 
 # Build phase - verify dependencies were installed
-build = "test -d chat-server/node_modules && echo '✅ Dependencies installed' || (echo '❌ Dependencies not found' && exit 1)"
+build = "test -d node_modules && echo '✅ Dependencies installed' || (echo '❌ Dependencies not found' && exit 1)"
 
 # Start command
-start = "cd chat-server && node server.js"
+start = "node server.js"
 

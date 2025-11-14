@@ -73,6 +73,30 @@ if (!allowedOrigins.includes(serverOrigin)) {
   allowedOrigins.push(serverOrigin);
 }
 
+// Helper function to check if origin is allowed (supports regex patterns)
+function isOriginAllowed(origin, allowedList) {
+  if (!origin) return true; // Allow requests with no origin
+  
+  // Check exact matches
+  if (allowedList.includes(origin) || allowedList.includes('*')) {
+    return true;
+  }
+  
+  // Check regex patterns (for Vercel preview domains: *.vercel.app)
+  for (const allowed of allowedList) {
+    if (allowed.includes('*')) {
+      // Convert wildcard pattern to regex
+      const pattern = allowed.replace(/\*/g, '.*');
+      const regex = new RegExp(`^${pattern}$`);
+      if (regex.test(origin)) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)
@@ -84,10 +108,17 @@ app.use(cors({
       return callback(null, true);
     }
 
-    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+    // Check if origin is allowed (supports wildcard patterns for Vercel)
+    if (isOriginAllowed(origin, allowedOrigins)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // For development, allow localhost from any port
+      if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+        callback(null, true);
+      } else {
+        console.warn(`CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
     }
   },
   credentials: true
@@ -112,14 +143,15 @@ const io = new Server(server, {
         return callback(null, true);
       }
       
-      // Allow requests from allowed origins
-      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      // Check if origin is allowed (supports wildcard patterns for Vercel)
+      if (isOriginAllowed(origin, allowedOrigins)) {
         callback(null, true);
       } else {
         // For development, allow localhost from any port
         if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
           callback(null, true);
         } else {
+          console.warn(`Socket.io CORS blocked origin: ${origin}`);
           callback(new Error('Not allowed by CORS'));
         }
       }
@@ -1669,52 +1701,21 @@ app.get('/api/debug/pending-connections', async (req, res) => {
   }
 });
 
-// Serve static files from chat-client directory
-// Try multiple paths to handle different deployment scenarios
-let clientPath;
-const possiblePaths = [
-  path.join(__dirname, '..', 'chat-client'),  // Local development / Railway with root at project root
-  path.join(__dirname, 'chat-client'),          // If chat-client is copied into chat-server
-  path.join(process.cwd(), 'chat-client'),      // Railway with root at chat-server
-  path.join(process.cwd(), '..', 'chat-client') // Alternative Railway path
-];
-
-for (const testPath of possiblePaths) {
-  try {
-    const indexPath = path.join(testPath, 'index.html');
-    if (require('fs').existsSync(indexPath)) {
-      clientPath = testPath;
-      console.log(`✅ Found frontend at: ${clientPath}`);
-      break;
+// Frontend is served by Vercel - backend only serves API
+// Root endpoint provides API information
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Multi-User Chat Server',
+    version: '1.0.0',
+    activeUsers: activeUsers.size,
+    message: 'API server running. Frontend is served by Vercel.',
+    endpoints: {
+      api: '/api',
+      health: '/health',
+      admin: '/admin'
     }
-  } catch (e) {
-    // Continue to next path
-  }
-}
-
-if (clientPath) {
-  app.use(express.static(clientPath));
-  
-  // Serve frontend HTML files
-  app.get('/', (req, res) => {
-    res.sendFile(path.join(clientPath, 'index.html'));
   });
-
-  app.get('/join', (req, res) => {
-    res.sendFile(path.join(clientPath, 'join.html'));
-  });
-} else {
-  console.warn('⚠️ Frontend files not found. Serving API only.');
-  // Fallback: serve basic info at root
-  app.get('/', (req, res) => {
-    res.json({
-      name: 'Multi-User Chat Server',
-      version: '1.0.0',
-      activeUsers: activeUsers.size,
-      message: 'Frontend files not found. Please ensure chat-client directory is accessible.'
-    });
-  });
-}
+});
 
 // API info endpoint (moved to /api/info)
 app.get('/api/info', (req, res) => {
