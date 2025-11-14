@@ -8,9 +8,9 @@
   // Get current hostname
   const hostname = window.location.hostname;
   
-  // Railway backend domain - update this after Railway deployment
-  // Format: https://your-app.up.railway.app
-  const RAILWAY_DOMAIN = 'RAILWAY_DOMAIN_PLACEHOLDER';
+  // Railway backend domain
+  // Public Railway domain for backend API
+  const RAILWAY_DOMAIN = 'https://demo-production-6dcd.up.railway.app';
   
   // Determine API URL based on hostname
   let API_URL;
