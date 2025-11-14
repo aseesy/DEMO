@@ -1,5 +1,16 @@
 {
   "version": 2,
+  "public": true,
+  "rewrites": [
+    {
+      "source": "/join",
+      "destination": "/join.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
