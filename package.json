@@ -7,12 +7,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "install": "cd chat-server && npm install --legacy-peer-deps",
     "start": "cd chat-server && node server.js"
-  },
-  "workspaces": [
-    "chat-server",
-    "chat-client"
-  ]
+  }
 }
 
