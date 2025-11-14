@@ -110,16 +110,25 @@ JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 
 ## 🎯 Custom Domain Setup (Later)
 
+### Important: Domain Setup
+- **Domain (`coparentliaizen.com`) goes to Vercel** (frontend)
+- **Railway uses its default domain** (backend) - no custom domain needed
+- **Frontend connects to Railway domain** via `config.js`
+
 ### Vercel Domain
 1. Vercel Dashboard → Project → Settings → Domains
 2. Add `coparentliaizen.com` and `www.coparentliaizen.com`
 3. Vercel will provide DNS records
+4. **Remove domain from Railway** (if added) - Railway should use its default domain
 
 ### Hostinger DNS
 1. Go to Hostinger DNS Zone Editor
-2. Add DNS records from Vercel:
-   - A record for root domain
-   - CNAME for www subdomain
+2. **Remove any DNS records pointing to Railway** (if any)
+3. Add DNS records from Vercel:
+   - A record for root domain (@) → Vercel IP
+   - CNAME for www subdomain → Vercel CNAME
+
+See `docs/DOMAIN_SETUP.md` for detailed domain configuration guide.
 
 ## ✅ Verification Checklist
 
