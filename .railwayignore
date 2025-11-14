@@ -1,0 +1,9 @@
+chat-client/
+node_modules/
+*.md
+!RAILWAY_DEPLOYMENT.md
+!RAILWAY_FIX.md
+setup.sh
+setup.bat
+start-chat.sh
+
