@@ -1670,17 +1670,51 @@ app.get('/api/debug/pending-connections', async (req, res) => {
 });
 
 // Serve static files from chat-client directory
-const clientPath = path.join(__dirname, '..', 'chat-client');
-app.use(express.static(clientPath));
+// Try multiple paths to handle different deployment scenarios
+let clientPath;
+const possiblePaths = [
+  path.join(__dirname, '..', 'chat-client'),  // Local development / Railway with root at project root
+  path.join(__dirname, 'chat-client'),          // If chat-client is copied into chat-server
+  path.join(process.cwd(), 'chat-client'),      // Railway with root at chat-server
+  path.join(process.cwd(), '..', 'chat-client') // Alternative Railway path
+];
 
-// Serve frontend HTML files
-app.get('/', (req, res) => {
-  res.sendFile(path.join(clientPath, 'index.html'));
-});
+for (const testPath of possiblePaths) {
+  try {
+    const indexPath = path.join(testPath, 'index.html');
+    if (require('fs').existsSync(indexPath)) {
+      clientPath = testPath;
+      console.log(`✅ Found frontend at: ${clientPath}`);
+      break;
+    }
+  } catch (e) {
+    // Continue to next path
+  }
+}
 
-app.get('/join', (req, res) => {
-  res.sendFile(path.join(clientPath, 'join.html'));
-});
+if (clientPath) {
+  app.use(express.static(clientPath));
+  
+  // Serve frontend HTML files
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(clientPath, 'index.html'));
+  });
+
+  app.get('/join', (req, res) => {
+    res.sendFile(path.join(clientPath, 'join.html'));
+  });
+} else {
+  console.warn('⚠️ Frontend files not found. Serving API only.');
+  // Fallback: serve basic info at root
+  app.get('/', (req, res) => {
+    res.json({
+      name: 'Multi-User Chat Server',
+      version: '1.0.0',
+      activeUsers: activeUsers.size,
+      message: 'Frontend files not found. Please ensure chat-client directory is accessible.'
+    });
+  });
+}
 
 // API info endpoint (moved to /api/info)
 app.get('/api/info', (req, res) => {
