@@ -3,7 +3,8 @@ nixPkgs = ["nodejs-18_x", "python3"]
 
 [phases.install]
 cmds = [
-  "npm install --legacy-peer-deps"
+  "npm install --legacy-peer-deps",
+  "if [ -d ../chat-client ]; then cp -r ../chat-client ./chat-client; echo '✅ Copied frontend files'; fi"
 ]
 
 [phases.build]
