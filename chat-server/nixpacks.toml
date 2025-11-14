@@ -14,3 +14,6 @@ cmds = [
 [start]
 cmd = "node server.js"
 
+[variables]
+NODE_VERSION = "18"
+
