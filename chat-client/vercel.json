@@ -1,13 +1,12 @@
 {
   "version": 2,
-  "public": true,
   "rewrites": [
     {
       "source": "/join",
       "destination": "/join.html"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\\.).*)$",
       "destination": "/index.html"
     }
   ],
