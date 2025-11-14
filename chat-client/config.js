@@ -1,6 +1,6 @@
 // API Configuration for LiaiZen
 // Frontend on Vercel, Backend on Railway
-// Replace RAILWAY_DOMAIN with your actual Railway domain after deployment
+// Railway backend: https://demo-production-6dcd.up.railway.app
 
 (function() {
   'use strict';
@@ -18,26 +18,14 @@
   
   // Production domain - Vercel frontend, Railway backend
   if (hostname === 'coparentliaizen.com' || hostname === 'www.coparentliaizen.com') {
-    // Use Railway backend domain (will be updated after deployment)
-    if (RAILWAY_DOMAIN !== 'RAILWAY_DOMAIN_PLACEHOLDER') {
-      API_URL = RAILWAY_DOMAIN;
-      SOCKET_URL = RAILWAY_DOMAIN;
-    } else {
-      // Fallback: will need to update this with actual Railway domain
-      console.warn('⚠️ Railway domain not configured. Please update config.js with your Railway domain.');
-      API_URL = 'https://your-railway-app.up.railway.app';
-      SOCKET_URL = 'https://your-railway-app.up.railway.app';
-    }
+    // Use Railway backend domain
+    API_URL = RAILWAY_DOMAIN;
+    SOCKET_URL = RAILWAY_DOMAIN;
   } 
   // Vercel preview deployments - use Railway backend
   else if (hostname.includes('vercel.app')) {
-    if (RAILWAY_DOMAIN !== 'RAILWAY_DOMAIN_PLACEHOLDER') {
-      API_URL = RAILWAY_DOMAIN;
-      SOCKET_URL = RAILWAY_DOMAIN;
-    } else {
-      API_URL = 'https://your-railway-app.up.railway.app';
-      SOCKET_URL = 'https://your-railway-app.up.railway.app';
-    }
+    API_URL = RAILWAY_DOMAIN;
+    SOCKET_URL = RAILWAY_DOMAIN;
   }
   // Local development - use localhost
   else if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
@@ -46,13 +34,8 @@
   } 
   // Fallback - use Railway backend
   else {
-    if (RAILWAY_DOMAIN !== 'RAILWAY_DOMAIN_PLACEHOLDER') {
-      API_URL = RAILWAY_DOMAIN;
-      SOCKET_URL = RAILWAY_DOMAIN;
-    } else {
-      API_URL = 'https://your-railway-app.up.railway.app';
-      SOCKET_URL = 'https://your-railway-app.up.railway.app';
-    }
+    API_URL = RAILWAY_DOMAIN;
+    SOCKET_URL = RAILWAY_DOMAIN;
   }
   
   // Make API_URL and SOCKET_URL available globally
