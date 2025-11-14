@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - User Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
+      <p class="text-gray-600">Manage users and view database information</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white rounded-lg shadow-lg mb-6">
+      <div class="border-b border-gray-200">
+        <nav class="flex -mb-px">
+          <button onclick="showTab('users')" id="tab-users" class="tab-button py-4 px-6 border-b-2 border-indigo-500 text-indigo-600 font-semibold">
+            Users
+          </button>
+          <button onclick="showTab('connections')" id="tab-connections" class="tab-button py-4 px-6 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            Pending Connections
+          </button>
+          <button onclick="showTab('rooms')" id="tab-rooms" class="tab-button py-4 px-6 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            Rooms
+          </button>
+          <button onclick="showTab('stats')" id="tab-stats" class="tab-button py-4 px-6 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            Statistics
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Users Tab -->
+    <div id="panel-users" class="tab-panel">
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold text-gray-800">Users</h2>
+          <div class="flex gap-2">
+            <button onclick="cleanupOrphanedData()" class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 text-sm">
+              Cleanup Orphaned Data
+            </button>
+            <button onclick="loadUsers()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+              Refresh
+            </button>
+          </div>
+        </div>
+        <div id="users-loading" class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <p class="mt-2 text-gray-600">Loading users...</p>
+        </div>
+        <div id="users-table" class="hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody" class="bg-white divide-y divide-gray-200">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div id="users-error" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        </div>
+      </div>
+    </div>
+
+    <!-- Connections Tab -->
+    <div id="panel-connections" class="tab-panel hidden">
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold text-gray-800">Pending Connections</h2>
+          <button onclick="loadConnections()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+            Refresh
+          </button>
+        </div>
+        <div id="connections-loading" class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <p class="mt-2 text-gray-600">Loading connections...</p>
+        </div>
+        <div id="connections-content" class="hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inviter</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invitee Email</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
+                </tr>
+              </thead>
+              <tbody id="connections-tbody" class="bg-white divide-y divide-gray-200">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rooms Tab -->
+    <div id="panel-rooms" class="tab-panel hidden">
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold text-gray-800">Rooms</h2>
+          <button onclick="loadRooms()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+            Refresh
+          </button>
+        </div>
+        <div id="rooms-loading" class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <p class="mt-2 text-gray-600">Loading rooms...</p>
+        </div>
+        <div id="rooms-content" class="hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Private</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Members</th>
+                </tr>
+              </thead>
+              <tbody id="rooms-tbody" class="bg-white divide-y divide-gray-200">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Tab -->
+    <div id="panel-stats" class="tab-panel hidden">
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Statistics</h2>
+        <div id="stats-content" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Stats will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">Confirm Delete</h3>
+        <p class="text-gray-600 mb-6">Are you sure you want to delete user <span id="delete-username" class="font-semibold"></span>? This action cannot be undone.</p>
+        <div class="flex gap-3">
+          <button onclick="confirmDelete()" class="flex-1 bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700">
+            Delete
+          </button>
+          <button onclick="cancelDelete()" class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="message" class="hidden fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+      <span id="message-text"></span>
+    </div>
+  </div>
+
+  <script>
+    // Use relative URLs since admin.html is served from the same server
+    const API_URL = window.location.origin;
+    let deleteUserId = null;
+    let deleteUsername = null;
+
+    function showTab(tabName) {
+      // Hide all panels
+      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+      // Remove active class from all tabs
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('border-indigo-500', 'text-indigo-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+      });
+      
+      // Show selected panel
+      document.getElementById(`panel-${tabName}`).classList.remove('hidden');
+      // Add active class to selected tab
+      const activeTab = document.getElementById(`tab-${tabName}`);
+      activeTab.classList.remove('border-transparent', 'text-gray-500');
+      activeTab.classList.add('border-indigo-500', 'text-indigo-600');
+      
+      // Load data for the tab
+      if (tabName === 'users') loadUsers();
+      else if (tabName === 'connections') loadConnections();
+      else if (tabName === 'rooms') loadRooms();
+      else if (tabName === 'stats') loadStats();
+    }
+
+    async function loadUsers() {
+      const loading = document.getElementById('users-loading');
+      const table = document.getElementById('users-table');
+      const error = document.getElementById('users-error');
+      const tbody = document.getElementById('users-tbody');
+      
+      if (!loading || !table || !error || !tbody) {
+        console.error('Required DOM elements not found');
+        return;
+      }
+      
+      loading.classList.remove('hidden');
+      table.classList.add('hidden');
+      error.classList.add('hidden');
+      
+      try {
+        console.log('Fetching users from:', `${API_URL}/api/debug/users`);
+        const response = await fetch(`${API_URL}/api/debug/users`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Users data received:', data);
+        
+        if (!data || !data.users) {
+          throw new Error('Invalid response format');
+        }
+        
+        tbody.innerHTML = '';
+        
+        if (data.users && data.users.length > 0) {
+          data.users.forEach(user => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50';
+            // Escape username for onclick to prevent XSS
+            const safeUsername = user.username.replace(/'/g, "\\'");
+            row.innerHTML = `
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.id}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.username}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.email || '<span class="text-gray-400">N/A</span>'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(user.created_at)}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.last_login ? formatDate(user.last_login) : '<span class="text-gray-400">Never</span>'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <button onclick="promptDelete(${user.id}, '${safeUsername}')" class="text-red-600 hover:text-red-800 font-semibold">
+                  Delete
+                </button>
+              </td>
+            `;
+            tbody.appendChild(row);
+          });
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No users found</td></tr>';
+        }
+        
+        loading.classList.add('hidden');
+        table.classList.remove('hidden');
+      } catch (err) {
+        console.error('Error loading users:', err);
+        loading.classList.add('hidden');
+        error.classList.remove('hidden');
+        error.textContent = `Error: ${err.message}`;
+        showMessage(`Failed to load users: ${err.message}`, 'error');
+      }
+    }
+
+    async function loadConnections() {
+      const loading = document.getElementById('connections-loading');
+      const content = document.getElementById('connections-content');
+      const tbody = document.getElementById('connections-tbody');
+      
+      loading.classList.remove('hidden');
+      content.classList.add('hidden');
+      
+      try {
+        const response = await fetch(`${API_URL}/api/debug/pending-connections`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load connections');
+        }
+        
+        tbody.innerHTML = '';
+        
+        if (data.connections && data.connections.length > 0) {
+          data.connections.forEach(conn => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50';
+            row.innerHTML = `
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${conn.id}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${conn.inviter_username || 'N/A'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${conn.invitee_email}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${
+                  conn.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                  conn.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-gray-100 text-gray-800'
+                }">${conn.status}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(conn.created_at)}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${conn.expires_at ? formatDate(conn.expires_at) : 'N/A'}</td>
+            `;
+            tbody.appendChild(row);
+          });
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No pending connections</td></tr>';
+        }
+        
+        loading.classList.add('hidden');
+        content.classList.remove('hidden');
+      } catch (err) {
+        console.error('Error loading connections:', err);
+        loading.classList.add('hidden');
+        content.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">Error: ${err.message}</div>`;
+        content.classList.remove('hidden');
+      }
+    }
+
+    async function loadRooms() {
+      const loading = document.getElementById('rooms-loading');
+      const content = document.getElementById('rooms-content');
+      const tbody = document.getElementById('rooms-tbody');
+      
+      loading.classList.remove('hidden');
+      content.classList.add('hidden');
+      
+      try {
+        const response = await fetch(`${API_URL}/api/debug/rooms`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load rooms');
+        }
+        
+        tbody.innerHTML = '';
+        
+        if (data.rooms && data.rooms.length > 0) {
+          data.rooms.forEach(room => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50';
+            row.innerHTML = `
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">${room.id.substring(0, 20)}...</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${room.name}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${room.created_by_username || 'N/A'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${room.is_private ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">
+                  ${room.is_private ? 'Private' : 'Public'}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(room.created_at)}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${room.member_count || 0}</td>
+            `;
+            tbody.appendChild(row);
+          });
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No rooms found</td></tr>';
+        }
+        
+        loading.classList.add('hidden');
+        content.classList.remove('hidden');
+      } catch (err) {
+        console.error('Error loading rooms:', err);
+        loading.classList.add('hidden');
+        content.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">Error: ${err.message}</div>`;
+        content.classList.remove('hidden');
+      }
+    }
+
+    async function loadStats() {
+      const content = document.getElementById('stats-content');
+      
+      try {
+        const [usersRes, connectionsRes, roomsRes] = await Promise.all([
+          fetch(`${API_URL}/api/debug/users`),
+          fetch(`${API_URL}/api/debug/pending-connections`),
+          fetch(`${API_URL}/api/debug/rooms`)
+        ]);
+        
+        const usersData = await usersRes.json();
+        const connectionsData = await connectionsRes.json();
+        const roomsData = await roomsRes.json();
+        
+        const stats = {
+          totalUsers: usersData.count || 0,
+          totalConnections: connectionsData.count || 0,
+          pendingConnections: connectionsData.connections?.filter(c => c.status === 'pending').length || 0,
+          acceptedConnections: connectionsData.connections?.filter(c => c.status === 'accepted').length || 0,
+          totalRooms: roomsData.count || 0
+        };
+        
+        content.innerHTML = `
+          <div class="bg-indigo-50 rounded-lg p-6">
+            <div class="text-3xl font-bold text-indigo-600">${stats.totalUsers}</div>
+            <div class="text-gray-600 mt-2">Total Users</div>
+          </div>
+          <div class="bg-green-50 rounded-lg p-6">
+            <div class="text-3xl font-bold text-green-600">${stats.acceptedConnections}</div>
+            <div class="text-gray-600 mt-2">Accepted Connections</div>
+          </div>
+          <div class="bg-yellow-50 rounded-lg p-6">
+            <div class="text-3xl font-bold text-yellow-600">${stats.pendingConnections}</div>
+            <div class="text-gray-600 mt-2">Pending Connections</div>
+          </div>
+          <div class="bg-blue-50 rounded-lg p-6">
+            <div class="text-3xl font-bold text-blue-600">${stats.totalRooms}</div>
+            <div class="text-gray-600 mt-2">Total Rooms</div>
+          </div>
+        `;
+      } catch (err) {
+        console.error('Error loading stats:', err);
+        content.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">Error: ${err.message}</div>`;
+      }
+    }
+
+    function promptDelete(userId, username) {
+      deleteUserId = userId;
+      deleteUsername = username;
+      document.getElementById('delete-username').textContent = username;
+      document.getElementById('delete-modal').classList.remove('hidden');
+    }
+
+    function cancelDelete() {
+      deleteUserId = null;
+      deleteUsername = null;
+      document.getElementById('delete-modal').classList.add('hidden');
+    }
+
+    async function confirmDelete() {
+      if (!deleteUserId) return;
+      
+      try {
+        const response = await fetch(`${API_URL}/api/admin/users/${deleteUserId}`, {
+          method: 'DELETE'
+        });
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        let data;
+        
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          // If not JSON, read as text (might be HTML error page)
+          const text = await response.text();
+          console.error('Non-JSON response:', text.substring(0, 200));
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        
+        if (!response.ok) {
+          throw new Error(data.error || `Failed to delete user: ${response.status}`);
+        }
+        
+        showMessage(`User "${deleteUsername}" deleted successfully`, 'success');
+        cancelDelete();
+        loadUsers(); // Refresh the list
+      } catch (err) {
+        showMessage(`Error: ${err.message}`, 'error');
+        console.error('Error deleting user:', err);
+      }
+    }
+
+    function showMessage(text, type = 'success') {
+      const message = document.getElementById('message');
+      const messageText = document.getElementById('message-text');
+      messageText.textContent = text;
+      message.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500' : 'bg-red-500'
+      } text-white`;
+      message.classList.remove('hidden');
+      
+      setTimeout(() => {
+        message.classList.add('hidden');
+      }, 3000);
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleString();
+    }
+
+    async function cleanupOrphanedData() {
+      if (!window.confirm('This will clean up orphaned rooms, room members, and messages. Continue?')) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_URL}/api/admin/cleanup`, {
+          method: 'POST'
+        });
+        
+        const contentType = response.headers.get('content-type');
+        let data;
+        
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          const text = await response.text();
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        
+        if (!response.ok) {
+          throw new Error(data.error || `Cleanup failed: ${response.status}`);
+        }
+        
+        showMessage('Cleanup completed successfully!', 'success');
+        // Refresh all tabs
+        loadUsers();
+        loadConnections();
+        loadRooms();
+        loadStats();
+      } catch (err) {
+        showMessage(`Error: ${err.message}`, 'error');
+        console.error('Error during cleanup:', err);
+      }
+    }
+
+    // Load users on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('Admin page loaded, fetching users...');
+      loadUsers();
+    });
+    
+    // Also try on window load as fallback
+    window.addEventListener('load', () => {
+      if (document.getElementById('users-loading').classList.contains('hidden') === false) {
+        console.log('Still loading, retrying...');
+        loadUsers();
+      }
+    });
+  </script>
+</body>
+</html>
+
