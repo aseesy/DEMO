@@ -1,0 +1,16 @@
+# Railway Railpack Configuration
+# Railway Metal uses Railpack for building
+
+[build]
+# Node.js version
+node = "18"
+
+# Build command
+build = "cd chat-server && npm install --legacy-peer-deps"
+
+# Start command
+start = "cd chat-server && node server.js"
+
+# Working directory (optional)
+# workdir = "chat-server"
+
