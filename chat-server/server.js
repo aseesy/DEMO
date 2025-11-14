@@ -1669,8 +1669,21 @@ app.get('/api/debug/pending-connections', async (req, res) => {
   }
 });
 
-// Basic info endpoint
+// Serve static files from chat-client directory
+const clientPath = path.join(__dirname, '..', 'chat-client');
+app.use(express.static(clientPath));
+
+// Serve frontend HTML files
 app.get('/', (req, res) => {
+  res.sendFile(path.join(clientPath, 'index.html'));
+});
+
+app.get('/join', (req, res) => {
+  res.sendFile(path.join(clientPath, 'join.html'));
+});
+
+// API info endpoint (moved to /api/info)
+app.get('/api/info', (req, res) => {
   res.json({
     name: 'Multi-User Chat Server',
     version: '1.0.0',
