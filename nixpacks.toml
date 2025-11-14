@@ -1,0 +1,19 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "python3"]
+
+[phases.install]
+cmds = [
+  "cd chat-server && npm install --legacy-peer-deps"
+]
+
+[phases.build]
+cmds = [
+  "echo 'Build complete'"
+]
+
+[start]
+cmd = "cd chat-server && node server.js"
+
+[variables]
+NODE_VERSION = "18"
+
