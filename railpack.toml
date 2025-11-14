@@ -5,8 +5,12 @@
 # Node.js version
 node = "18"
 
-# Install dependencies - skip root, install only in chat-server
+# Install dependencies in chat-server directory
+# Using --legacy-peer-deps for bcrypt compatibility
 install = "cd chat-server && npm install --legacy-peer-deps"
+
+# Build phase - verify dependencies were installed
+build = "test -d chat-server/node_modules && echo '✅ Dependencies installed' || (echo '❌ Dependencies not found' && exit 1)"
 
 # Start command
 start = "cd chat-server && node server.js"
