@@ -9,6 +9,8 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 const path = require('path');
 const aiMediator = require('./aiMediator');
 const userContext = require('./userContext');
@@ -44,6 +46,9 @@ app.use(helmet({
 app.use(express.json({ limit: '10mb' })); // Allow up to 10MB for profile data
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Parse cookies (required for JWT session management)
+app.use(cookieParser());
+
 // Error handler for JSON payload too large (must be after body parsers)
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
@@ -62,7 +67,8 @@ app.use((err, req, res, next) => {
 });
 
 // Parse FRONTEND_URL - supports comma-separated list for multiple origins
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+// Default includes both legacy frontend (3000) and Vite dev server (5173)
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000,http://localhost:5173')
   .split(',')
   .map(url => url.trim());
 
@@ -117,7 +123,7 @@ app.use(cors({
         callback(null, true);
       } else {
         console.warn(`CORS blocked origin: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
+      callback(new Error('Not allowed by CORS'));
       }
     }
   },
@@ -193,6 +199,25 @@ const MAX_MESSAGE_HISTORY = 50;
 })();
 const MAX_USERNAME_LENGTH = 20;
 const MAX_MESSAGE_LENGTH = 500;
+
+// Middleware to verify JWT token
+async function verifyAuth(req, res, next) {
+  try {
+    // Check for token in cookie or Authorization header
+    const token = req.cookies.auth_token || 
+                  (req.headers.authorization && req.headers.authorization.replace('Bearer ', ''));
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    req.user = decoded; // Add user info to request
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
 
 // Utility functions
 function sanitizeInput(input) {
@@ -512,6 +537,65 @@ io.on('connection', (socket) => {
               const fullContacts = dbSafe.parseResult(contactsResult);
               existingContacts = fullContacts.map(c => c.contact_name);
               
+              // Get contacts for all participants to identify shared children
+              const allParticipantContacts = new Map(); // username -> contacts array
+              allParticipantContacts.set(user.username.toLowerCase(), fullContacts);
+              
+              // Get contacts for other participants in the room
+              for (const participantUsername of participantUsernames) {
+                if (participantUsername.toLowerCase() !== user.username.toLowerCase()) {
+                  try {
+                    const participantUserResult = await dbSafe.safeSelect('users', { username: participantUsername.toLowerCase() }, { limit: 1 });
+                    const participantUsers = dbSafe.parseResult(participantUserResult);
+                    if (participantUsers.length > 0) {
+                      const participantContactsResult = await dbSafe.safeSelect('contacts', { user_id: participantUsers[0].id });
+                      const participantContacts = dbSafe.parseResult(participantContactsResult);
+                      allParticipantContacts.set(participantUsername.toLowerCase(), participantContacts);
+                    }
+                  } catch (err) {
+                    console.error(`Error fetching contacts for ${participantUsername}:`, err);
+                  }
+                }
+              }
+              
+              // Identify shared children (children that appear in both co-parents' contacts)
+              const sharedChildren = [];
+              const senderContacts = allParticipantContacts.get(user.username.toLowerCase()) || [];
+              const senderChildren = senderContacts.filter(c => 
+                c.relationship && (
+                  c.relationship.toLowerCase().includes('child') ||
+                  c.relationship.toLowerCase().includes('son') ||
+                  c.relationship.toLowerCase().includes('daughter')
+                )
+              );
+              
+              for (const senderChild of senderChildren) {
+                const childName = senderChild.contact_name.toLowerCase();
+                // Check if this child appears in any other participant's contacts
+                for (const [participantUsername, participantContacts] of allParticipantContacts.entries()) {
+                  if (participantUsername !== user.username.toLowerCase()) {
+                    const hasChild = participantContacts.some(c => 
+                      c.contact_name.toLowerCase() === childName &&
+                      c.relationship && (
+                        c.relationship.toLowerCase().includes('child') ||
+                        c.relationship.toLowerCase().includes('son') ||
+                        c.relationship.toLowerCase().includes('daughter')
+                      )
+                    );
+                    if (hasChild) {
+                      // This is a shared child
+                      const coParentName = participantUsername;
+                      if (!sharedChildren.find(sc => sc.name.toLowerCase() === childName && sc.coParent === coParentName)) {
+                        sharedChildren.push({
+                          name: senderChild.contact_name,
+                          coParent: coParentName
+                        });
+                      }
+                    }
+                  }
+                }
+              }
+              
               // Format contacts with relationships and context for AI mediator
               if (fullContacts.length > 0) {
                 const contactInfo = fullContacts.map(contact => {
@@ -520,6 +604,24 @@ io.on('connection', (socket) => {
                   if (contact.relationship) {
                     parts.push(`(relationship: ${contact.relationship})`);
                   }
+                  
+                  // If this is a child contact, check if it's shared with co-parent
+                  const isChild = contact.relationship && (
+                    contact.relationship.toLowerCase().includes('child') ||
+                    contact.relationship.toLowerCase().includes('son') ||
+                    contact.relationship.toLowerCase().includes('daughter')
+                  );
+                  if (isChild) {
+                    const sharedChild = sharedChildren.find(sc => 
+                      sc.name.toLowerCase() === contact.contact_name.toLowerCase()
+                    );
+                    if (sharedChild) {
+                      parts.push(`[SHARED CHILD with co-parent: ${sharedChild.coParent}]`);
+                    } else if (contact.other_parent) {
+                      parts.push(`[Child of co-parent: ${contact.other_parent}]`);
+                    }
+                  }
+                  
                   if (contact.notes) {
                     parts.push(`- ${contact.notes}`);
                   }
@@ -551,14 +653,29 @@ io.on('connection', (socket) => {
                   return parts.join(' ');
                 }).join('\n');
                 
-                contactContextForAI = `Contacts and Relationships:\n${contactInfo}`;
+                // Add shared children summary at the top
+                let sharedChildrenInfo = '';
+                if (sharedChildren.length > 0) {
+                  const sharedChildrenList = sharedChildren.map(sc => 
+                    `${sc.name} (shared with co-parent: ${sc.coParent})`
+                  ).join(', ');
+                  sharedChildrenInfo = `\n\nIMPORTANT - SHARED CHILDREN (these children belong to both co-parents):\n${sharedChildrenList}\n\nWhen either co-parent mentions these children's names, they are referring to their shared child. Use this context to understand the relationship dynamic.\n`;
+                }
+                
+                contactContextForAI = `Contacts and Relationships:${sharedChildrenInfo}\n${contactInfo}`;
+              } else if (sharedChildren.length > 0) {
+                // Even if no contacts, show shared children if found
+                const sharedChildrenList = sharedChildren.map(sc => 
+                  `${sc.name} (shared with co-parent: ${sc.coParent})`
+                ).join(', ');
+                contactContextForAI = `IMPORTANT - SHARED CHILDREN (these children belong to both co-parents):\n${sharedChildrenList}\n\nWhen either co-parent mentions these children's names, they are referring to their shared child. Use this context to understand the relationship dynamic.`;
               }
             }
           } catch (contactErr) {
             console.error('Error fetching contacts for AI context:', contactErr);
           }
           
-          const intervention = await aiMediator.analyzeAndIntervene(message, context.recentMessages, participantUsernames, existingContacts, contactContextForAI);
+          const intervention = await aiMediator.analyzeAndIntervene(message, context.recentMessages, participantUsernames, existingContacts, contactContextForAI, user.roomId);
           
           // Check for names in message (only if message passed moderation)
           let contactSuggestion = null;
@@ -656,37 +773,85 @@ io.on('connection', (socket) => {
           }
           
           if (intervention) {
-            // Message needs intervention - only show to sender
-            console.log(`⚠️ Message from ${user.username} flagged - only showing to sender`);
-            
-            // Send original message only to sender (with flag that it was problematic)
-            // Do NOT add to public message history
-            socket.emit('new_message', {
-              ...message,
-              flagged: true,
-              private: true
-            });
+            // Handle different intervention types
+            if (intervention.type === 'ai_intervention') {
+              // INTERVENE: Block problematic message - only show to sender
+              console.log(`⚠️ Message from ${user.username} flagged - only showing to sender`);
+              
+              // Send original message only to sender (with flag that it was problematic)
+              // Do NOT add to public message history
+              socket.emit('new_message', {
+                ...message,
+                flagged: true,
+                private: true
+              });
 
-            const aiMessage = {
-              id: `ai-${Date.now()}`,
-              type: intervention.type === 'ai_intervention' ? 'ai_intervention' : 'ai_comment',
-              username: 'AI Moderator',
-              validation: intervention.validation,
-              tip1: intervention.tip1,
-              tip2: intervention.tip2,
-              rewrite: intervention.rewrite,
-              timestamp: new Date().toISOString(),
-              originalMessage: {
-                username: message.username,
-                text: message.text
-              },
-              private: true // Only show to sender
-            };
+              const aiMessage = {
+                id: `ai-${Date.now()}`,
+                type: 'ai_intervention',
+                username: 'AI Moderator',
+                validation: intervention.validation,
+                whyMediation: intervention.whyMediation, // For AI processing only, not shown to user
+                tip1: intervention.tip1,
+                tip2: intervention.tip2,
+                tip3: intervention.tip3,
+                rewrite1: intervention.rewrite1,
+                rewrite2: intervention.rewrite2,
+                timestamp: new Date().toISOString(),
+                originalMessage: {
+                  username: message.username,
+                  text: message.text
+                },
+                private: true // Only show to sender
+              };
 
-            // Do NOT add AI message to public history (it's private)
-            socket.emit('new_message', aiMessage);
-            
-            console.log(`✅ AI ${intervention.type === 'ai_intervention' ? 'intervened' : 'commented'} - private message to sender only`);
+              // Do NOT add AI message to public history (it's private)
+              socket.emit('new_message', aiMessage);
+              
+              console.log(`✅ AI intervened - private message to sender only`);
+            } else if (intervention.type === 'ai_comment') {
+              // COMMENT: Helpful observation - show to everyone in room
+              console.log(`💬 AI adding contextual comment - broadcasting to room`);
+              
+              // First, broadcast the original message normally
+              messageStore.saveMessage({
+                ...message,
+                roomId: user.roomId
+              }).catch(err => {
+                console.error('Error saving message to database:', err);
+              });
+
+              io.to(user.roomId).emit('new_message', message);
+
+              // Then add the AI comment (visible to everyone)
+              const aiComment = {
+                id: `ai-comment-${Date.now()}`,
+                type: 'ai_comment',
+                username: 'Alex',
+                text: intervention.text,
+                timestamp: new Date().toISOString(),
+                roomId: user.roomId
+              };
+
+              // Save and broadcast the comment to the room
+              messageStore.saveMessage(aiComment).catch(err => {
+                console.error('Error saving AI comment to database:', err);
+              });
+
+              io.to(user.roomId).emit('new_message', aiComment);
+              
+              console.log(`✅ AI commented - visible to all in room`);
+
+              // Extract relationship insights asynchronously (non-blocking)
+              setImmediate(async () => {
+                try {
+                  const recentMessages = aiMediator.getContext().recentMessages;
+                  await aiMediator.extractRelationshipInsights(recentMessages, user.roomId);
+                } catch (insightErr) {
+                  console.error('Error extracting relationship insights:', insightErr);
+                }
+              });
+            }
           } else {
             // Message is fine - broadcast to room only and save to database
             console.log(`✅ Message from ${user.username} approved - broadcasting to room ${user.roomId}`);
@@ -717,6 +882,22 @@ io.on('connection', (socket) => {
               // Send suggestion only to the user who mentioned the name
               socket.emit('new_message', suggestionMessage);
               console.log(`💡 Contact suggestion sent for: ${contactSuggestion.detectedName}`);
+            }
+
+            // Extract relationship insights asynchronously (non-blocking, every few messages)
+            // Only extract if we have enough messages (at least 3)
+            if (context.recentMessages.length >= 3) {
+              setImmediate(async () => {
+                try {
+                  // Only extract insights occasionally (every 5th message) to avoid excessive API calls
+                  const messageCount = context.recentMessages.length;
+                  if (messageCount % 5 === 0) {
+                    await aiMediator.extractRelationshipInsights(context.recentMessages, user.roomId);
+                  }
+                } catch (insightErr) {
+                  console.error('Error extracting relationship insights:', insightErr);
+                }
+              });
             }
           }
         } catch (aiError) {
@@ -1730,14 +1911,10 @@ app.get('/api/info', (req, res) => {
 // Sign up (create new account)
 app.post('/api/auth/signup', async (req, res) => {
   try {
-    const { username, password, email, context } = req.body;
+    const { email, password, context } = req.body;
     
-    if (!username || !password || !email) {
-      return res.status(400).json({ error: 'Username, email, and password are required' });
-    }
-
-    if (username.length < 2 || username.length > 20) {
-      return res.status(400).json({ error: 'Username must be 2-20 characters' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
     // Validate email format
@@ -1751,14 +1928,37 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 4 characters' });
     }
 
-    const user = await auth.createUser(username, password, context || {}, cleanEmail);
-    res.json({ success: true, user });
+    // Create user with email (username will be auto-generated from email)
+    const user = await auth.createUserWithEmail(cleanEmail, password, context || {});
+    
+    // Generate JWT token (same as login endpoint)
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        username: user.username,
+        email: user.email 
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    // Set httpOnly cookie (more secure than localStorage)
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax', // Allow cross-site requests from same domain
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    // Also return token in response for compatibility (frontend can use this if cookies don't work)
+    res.json({ 
+      success: true, 
+      user,
+      token // Include token in response for backward compatibility
+    });
   } catch (error) {
-    if (error.message === 'Username already exists') {
-      return res.status(409).json({ error: error.message });
-    }
     if (error.message === 'Email already exists') {
-      return res.status(409).json({ error: error.message });
+      return res.status(409).json({ error: 'An account with this email already exists' });
     }
     res.status(500).json({ error: error.message });
   }
@@ -1767,19 +1967,198 @@ app.post('/api/auth/signup', async (req, res) => {
 // Login
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
     
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = await auth.authenticateUser(username, password);
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    const user = await auth.authenticateUserByEmail(email, password);
     if (!user) {
-      return res.status(401).json({ error: 'Invalid username or password' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    res.json({ success: true, user });
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        username: user.username,
+        email: user.email 
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    // Set httpOnly cookie (more secure than localStorage)
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax', // Allow cross-site requests from same domain
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    // Also return token in response for compatibility (frontend can use this if cookies don't work)
+    res.json({ 
+      success: true, 
+      user,
+      token // Include token in response for backward compatibility
+    });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Logout
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('auth_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  });
+  res.json({ success: true, message: 'Logged out successfully' });
+});
+
+// Verify session (for frontend to check if user is authenticated)
+app.get('/api/auth/verify', verifyAuth, async (req, res) => {
+  try {
+    // Get user from database to ensure they still exist
+    const user = await auth.getUser(req.user.username);
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    res.json({ 
+      success: true, 
+      user,
+      authenticated: true 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Google OAuth: Initiate login
+app.get('/api/auth/google', (req, res) => {
+  // Support multiple variable names (OAUTH_CLIENT_ID, 0AUTH_CLIENT_ID typo, or GOOGLE_CLIENT_ID)
+  const GOOGLE_CLIENT_ID = process.env.OAUTH_CLIENT_ID || 
+                           process.env['0AUTH_CLIENT_ID'] || // Handle typo with zero
+                           process.env.GOOGLE_CLIENT_ID;
+  if (!GOOGLE_CLIENT_ID) {
+    return res.status(500).json({ error: 'Google OAuth not configured' });
+  }
+
+  // Use frontend URL for redirect (Google redirects to frontend, frontend sends code to backend)
+  const frontendUrl = process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000';
+  const redirectUri = `${frontendUrl}/auth/google/callback`;
+  const scope = 'openid email profile';
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `response_type=code&` +
+    `scope=${encodeURIComponent(scope)}&` +
+    `access_type=offline&` +
+    `prompt=consent`;
+
+  res.json({ authUrl });
+});
+
+// Google OAuth: Handle callback (frontend will redirect here, then send code to backend)
+app.post('/api/auth/google/callback', async (req, res) => {
+  try {
+    const { code } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ error: 'Authorization code is required' });
+    }
+
+    // Support multiple variable names (OAUTH_CLIENT_ID, 0AUTH_CLIENT_ID typo, or GOOGLE_CLIENT_ID)
+    const GOOGLE_CLIENT_ID = process.env.OAUTH_CLIENT_ID || 
+                             process.env['0AUTH_CLIENT_ID'] || // Handle typo with zero
+                             process.env.GOOGLE_CLIENT_ID;
+    const GOOGLE_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET || 
+                                 process.env['0AUTH_CLIENT_SECRET'] || // Handle typo with zero
+                                 process.env.GOOGLE_CLIENT_SECRET;
+    // Use same redirect URI as used in the auth URL
+    const frontendUrl = process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000';
+    const redirectUri = `${frontendUrl}/auth/google/callback`;
+
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return res.status(500).json({ error: 'Google OAuth not configured' });
+    }
+
+    // Exchange authorization code for tokens
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        code,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorData = await tokenResponse.json();
+      console.error('Token exchange error:', errorData);
+      return res.status(401).json({ error: 'Failed to exchange authorization code' });
+    }
+
+    const tokenData = await tokenResponse.json();
+    const { access_token } = tokenData;
+
+    // Get user info from Google
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
+
+    if (!userInfoResponse.ok) {
+      return res.status(401).json({ error: 'Failed to get user info from Google' });
+    }
+
+    const googleUser = await userInfoResponse.json();
+    const { id: googleId, email, name, picture } = googleUser;
+
+    // Get or create user
+    const user = await auth.getOrCreateGoogleUser(googleId, email, name, picture);
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    // Set httpOnly cookie
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.json({
+      success: true,
+      user,
+      token,
+    });
+  } catch (error) {
+    console.error('Google OAuth callback error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2869,7 +3248,82 @@ app.get('/api/room/:username', async (req, res) => {
   }
 });
 
-// Create invite for room
+// Get or create invite for room (optimized - returns existing active invite if available)
+app.get('/api/room/invite', verifyAuth, async (req, res) => {
+  try {
+    // Get username from authenticated session
+    const username = req.user?.username;
+    if (!username) {
+      console.error('Invite API: No username in JWT token', req.user);
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    console.log('Invite API: Looking up user:', username);
+    const user = await auth.getUser(username);
+    if (!user) {
+      console.error('Invite API: User not found in database:', username);
+      return res.status(404).json({ error: 'User not found. Please try logging out and back in.' });
+    }
+
+    if (!user.id) {
+      console.error('Invite API: User found but missing ID:', user);
+      return res.status(404).json({ error: 'User not found. Please try logging out and back in.' });
+    }
+
+    console.log('Invite API: User found, ID:', user.id);
+    let room = user.room;
+    if (!room) {
+      console.log('Invite API: No room in user object, checking getUserRoom...');
+      room = await roomManager.getUserRoom(user.id);
+    }
+    if (!room) {
+      console.log('Invite API: No room found, creating one for user:', user.id);
+      // Auto-create a room if one doesn't exist
+      try {
+        room = await roomManager.createPrivateRoom(user.id, user.username);
+        console.log('Invite API: Created new room:', room.roomId);
+      } catch (roomError) {
+        console.error('Invite API: Failed to create room:', roomError);
+        return res.status(500).json({ error: 'Failed to create room. Please try again.' });
+      }
+    }
+    console.log('Invite API: Room found:', room.roomId);
+
+    // Check for existing active invite first
+    const existingInvites = await roomManager.getRoomInvites(room.roomId);
+    const activeInvite = existingInvites.find(
+      (inv) => !inv.used_by && (!inv.expires_at || new Date(inv.expires_at) > new Date())
+    );
+
+    let invite;
+    if (activeInvite) {
+      // Reuse existing invite
+      invite = {
+        inviteCode: activeInvite.invite_code,
+        inviteId: activeInvite.id,
+        roomId: room.roomId,
+        expiresAt: activeInvite.expires_at,
+      };
+      console.log(`API: Returning existing invite code: ${invite.inviteCode}`);
+    } else {
+      // Create new invite
+      invite = await roomManager.createInvite(room.roomId, user.id);
+      console.log(`API: Created new invite code: ${invite.inviteCode} (length: ${invite.inviteCode.length})`);
+    }
+
+    res.json({
+      success: true,
+      inviteCode: invite.inviteCode,
+      inviteLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}?invite=${invite.inviteCode}`,
+      expiresAt: invite.expiresAt,
+    });
+  } catch (error) {
+    console.error('Error getting/creating invite:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create invite for room (POST - kept for backward compatibility)
 app.post('/api/room/invite', async (req, res) => {
   try {
     const { username } = req.body;
@@ -2964,6 +3418,40 @@ app.get('/api/room/:roomId/members', async (req, res) => {
     const members = await roomManager.getRoomMembers(roomId);
     res.json(members);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Check if current user's room has multiple members (for hiding invite button)
+app.get('/api/room/members/check', verifyAuth, async (req, res) => {
+  try {
+    const username = req.user?.username;
+    if (!username) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const user = await auth.getUser(username);
+    if (!user || !user.id) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    let room = user.room;
+    if (!room) {
+      room = await roomManager.getUserRoom(user.id);
+    }
+    if (!room) {
+      return res.json({ hasMultipleMembers: false, memberCount: 0 });
+    }
+
+    const members = await roomManager.getRoomMembers(room.roomId);
+    const hasMultipleMembers = members.length >= 2;
+
+    res.json({
+      hasMultipleMembers,
+      memberCount: members.length,
+    });
+  } catch (error) {
+    console.error('Error checking room members:', error);
     res.status(500).json({ error: error.message });
   }
 });

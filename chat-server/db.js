@@ -2,7 +2,17 @@ const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, 'chat.db');
+// Support environment variable for Railway volumes or custom paths
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'chat.db');
+
+// Ensure directory exists if using custom path
+if (process.env.DB_PATH) {
+  const dbDir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+    console.log(`✅ Created database directory: ${dbDir}`);
+  }
+}
 
 let db = null;
 
@@ -31,7 +41,9 @@ async function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE,
-      password_hash TEXT NOT NULL,
+      password_hash TEXT,
+      google_id TEXT UNIQUE,
+      oauth_provider TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       last_login TEXT
     )
@@ -51,6 +63,41 @@ async function initDatabase() {
     } catch (alterErr) {
       console.warn('Could not add email column (may already exist):', alterErr.message);
     }
+  }
+
+  // Add Google OAuth columns if they don't exist (migration for existing databases)
+  const oauthColumns = ['google_id', 'oauth_provider'];
+  for (const column of oauthColumns) {
+    try {
+      // Try to query the column to see if it exists
+      const testResult = db.exec(`SELECT ${column} FROM users LIMIT 1`);
+      // If we get here, column exists
+    } catch (err) {
+      // Column doesn't exist, try to add it
+      try {
+        if (column === 'google_id') {
+          db.run(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
+          // Create unique index for google_id
+          db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(${column}) WHERE ${column} IS NOT NULL`);
+          console.log(`✅ Added OAuth column: ${column}`);
+        } else {
+          db.run(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
+          console.log(`✅ Added OAuth column: ${column}`);
+        }
+      } catch (alterErr) {
+        console.warn(`Could not add ${column} column (may already exist):`, alterErr.message);
+      }
+    }
+  }
+  
+  // Update password_hash to be nullable (for OAuth users)
+  try {
+    // Try to insert a user with null password_hash - if it fails, column needs to be updated
+    const testResult = db.exec(`SELECT password_hash FROM users LIMIT 1`);
+    // Column exists - we'll handle nullable in the application logic
+  } catch (err) {
+    // Column doesn't exist (shouldn't happen, but handle it)
+    console.warn('password_hash column not found');
   }
 
   // Add profile columns if they don't exist (migration for existing databases)
@@ -307,13 +354,52 @@ async function initDatabase() {
   return db;
 }
 
-// Save database to file
+// Save database to file (batched to prevent race conditions)
+let writeTimer = null;
+let isSaving = false;
+
 function saveDatabase() {
-  if (db) {
+  // If database not initialized yet, queue the save
+  if (!dbPromise) {
+    console.warn('⚠️ Database not initialized, cannot save');
+    return;
+  }
+
+  // If already saving, skip (will be saved on next batch)
+  if (isSaving) {
+    return;
+  }
+
+  // Batch writes - wait for initialization, then save after a short delay
+  clearTimeout(writeTimer);
+  writeTimer = setTimeout(async () => {
+    try {
+      // Wait for database to be ready
+      await dbPromise;
+      
+      if (!db) {
+        console.error('❌ Database not available for saving');
+        return;
+      }
+
+      isSaving = true;
     const data = db.export();
     const buffer = Buffer.from(data);
+      
+      // Ensure directory exists
+      const dbDir = path.dirname(DB_PATH);
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+      }
+      
     fs.writeFileSync(DB_PATH, buffer);
+      isSaving = false;
+      console.log(`✅ Database saved to: ${DB_PATH}`);
+    } catch (err) {
+      isSaving = false;
+      console.error('❌ Error saving database:', err);
   }
+  }, 100); // Batch writes every 100ms
 }
 
 // Initialize and export

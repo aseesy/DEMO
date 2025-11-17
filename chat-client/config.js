@@ -27,7 +27,7 @@
     API_URL = RAILWAY_DOMAIN;
     SOCKET_URL = RAILWAY_DOMAIN;
   }
-  // Local development - use localhost
+    // Local development - use localhost
   else if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
     API_URL = 'http://localhost:3001';
     SOCKET_URL = 'http://localhost:3001';

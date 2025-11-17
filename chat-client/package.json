@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Multi-user chat room frontend",
   "scripts": {
-    "dev": "npx http-server -p 3000",
+    "dev": "live-server --port=3000 --open=/index.html --no-browser --no-css-inject",
     "start": "npx http-server -p 3000"
   },
   "keywords": ["chat", "react", "websocket"],
@@ -13,6 +13,7 @@
     "socket.io-client": "^4.6.1"
   },
   "devDependencies": {
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "live-server": "^1.2.2"
   }
 }

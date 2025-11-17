@@ -16,7 +16,8 @@ const url = require('url');
 const readline = require('readline');
 const https = require('https');
 
-const CLIENT_ID = '353294951381-ht7qj05o0v4t01nibls59bba36erl9f7.apps.googleusercontent.com';
+// Default Client ID (can be overridden by environment variable or prompt)
+const DEFAULT_CLIENT_ID = process.env.GMAIL_CLIENT_ID || 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
 const REDIRECT_URI = 'http://localhost:3000/oauth/callback';
 const PORT = 3000;
 const SCOPES = ['https://www.googleapis.com/auth/gmail.send'];
@@ -35,6 +36,29 @@ function question(prompt) {
 async function generateRefreshToken() {
   console.log('\n📧 Gmail OAuth2 Refresh Token Generator');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  
+  // Get Client ID (from env var, default, or prompt)
+  let clientId = DEFAULT_CLIENT_ID;
+  if (clientId === 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com') {
+    console.log('⚠️  No Client ID found. Please enter your OAuth 2.0 Client ID.');
+    console.log('   You can find it in Google Cloud Console:');
+    console.log('   https://console.cloud.google.com/apis/credentials\n');
+    clientId = await question('Enter your Gmail Client ID: ');
+    
+    if (!clientId || clientId.trim() === '' || clientId.includes('YOUR_CLIENT_ID_HERE')) {
+      console.error('\n❌ Client ID is required!');
+      console.log('\n📋 Steps to get your Client ID:');
+      console.log('   1. Go to: https://console.cloud.google.com/apis/credentials');
+      console.log('   2. Find or create your OAuth 2.0 Client ID');
+      console.log('   3. Copy the Client ID (ends with .apps.googleusercontent.com)');
+      console.log('   See docs/GMAIL_NEW_CLIENT_SETUP.md for detailed instructions.\n');
+      rl.close();
+      process.exit(1);
+    }
+    clientId = clientId.trim();
+  }
+  
+  console.log(`\n✅ Using Client ID: ${clientId}\n`);
   
   console.log('⚠️  IMPORTANT: Before continuing, make sure you have added');
   console.log('   this redirect URI to your Google Cloud Console:');
@@ -64,7 +88,7 @@ async function generateRefreshToken() {
 
   // Step 1: Generate authorization URL
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-    `client_id=${encodeURIComponent(CLIENT_ID)}&` +
+    `client_id=${encodeURIComponent(clientId)}&` +
     `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
     `response_type=code&` +
     `scope=${encodeURIComponent(SCOPES.join(' '))}&` +
@@ -137,7 +161,7 @@ async function generateRefreshToken() {
       console.log('\n📋 Step 2: Authorize the application');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('\n1. Opening authorization URL in your browser...');
-      console.log('2. Sign in with your Google account (info@liaizen.com)');
+      console.log('2. Sign in with your Google account (the one you want to use for sending emails)');
       console.log('3. Click "Allow" to grant permission');
       console.log('4. You will be redirected back to this script\n');
       console.log('If the browser doesn\'t open automatically, visit:');
@@ -185,7 +209,7 @@ async function generateRefreshToken() {
   console.log('⏳ Exchanging authorization code for tokens...\n');
 
   const postData = JSON.stringify({
-    client_id: CLIENT_ID,
+    client_id: clientId,
     client_secret: clientSecret.trim(),
     code: authCode,
     redirect_uri: REDIRECT_URI,
@@ -250,11 +274,11 @@ async function generateRefreshToken() {
           console.log('\n📋 Add these to your .env file:\n');
           console.log('EMAIL_SERVICE=gmail-oauth2');
           console.log('GMAIL_USER=info@liaizen.com');
-          console.log(`GMAIL_CLIENT_ID=${CLIENT_ID}`);
+          console.log(`GMAIL_CLIENT_ID=${clientId}`);
           console.log(`GMAIL_CLIENT_SECRET=${clientSecret.trim()}`);
           console.log(`GMAIL_REFRESH_TOKEN=${response.refresh_token}`);
           console.log('EMAIL_FROM=info@liaizen.com');
-          console.log('APP_NAME=Co-Parent Chat');
+          console.log('APP_NAME=LiaiZen');
           console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
           console.log('💡 Note: The access token will be automatically generated when needed.');
           console.log('   The refresh token is permanent and can be reused.\n');

@@ -37,9 +37,48 @@ async function getDb() {
 }
 
 /**
+ * Create a new user account with email (auto-generates username from email)
+ */
+async function createUserWithEmail(email, password, context = {}, googleId = null, oauthProvider = null) {
+  const emailLower = email.trim().toLowerCase();
+  
+  // Check if email already exists
+  const emailExists = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
+  if (dbSafe.parseResult(emailExists).length > 0) {
+    throw new Error('Email already exists');
+  }
+
+  // Generate username from email (part before @)
+  let baseUsername = emailLower.split('@')[0];
+  // Remove non-alphanumeric characters and limit length
+  baseUsername = baseUsername.replace(/[^a-z0-9]/g, '').substring(0, 15);
+  
+  // Ensure username is unique
+  let username = baseUsername;
+  let counter = 1;
+  while (true) {
+    const existing = await dbSafe.safeSelect('users', { username: username }, { limit: 1 });
+    if (dbSafe.parseResult(existing).length === 0) {
+      break;
+    }
+    // Append number if username exists
+    username = `${baseUsername}${counter}`.substring(0, 20);
+    counter++;
+    if (counter > 1000) {
+      // Fallback to timestamp if we can't find a unique username
+      username = `user${Date.now()}`.substring(0, 20);
+      break;
+    }
+  }
+  
+  // Create user with generated username
+  return await createUser(username, password, context, emailLower, googleId, oauthProvider);
+}
+
+/**
  * Create a new user account
  */
-async function createUser(username, password, context = {}, email = null) {
+async function createUser(username, password, context = {}, email = null, googleId = null, oauthProvider = null) {
   const usernameLower = username.toLowerCase();
   
   // Check if user exists using safe query
@@ -57,19 +96,38 @@ async function createUser(username, password, context = {}, email = null) {
     }
   }
 
-  // Hash password with bcrypt
-  const passwordHash = await hashPassword(password);
+  // If googleId provided, check if Google account already exists
+  if (googleId) {
+    const googleUserExists = await dbSafe.safeSelect('users', { google_id: googleId }, { limit: 1 });
+    if (dbSafe.parseResult(googleUserExists).length > 0) {
+      throw new Error('Google account already registered');
+    }
+  }
+
   const now = new Date().toISOString();
 
-  // Insert user with optional email using safe insert
+  // Insert user with optional email and OAuth info using safe insert
   const userData = {
     username: usernameLower,
-    password_hash: passwordHash,
     created_at: now
   };
   
+  // Hash password if provided (not required for OAuth users)
+  if (password) {
+    const passwordHash = await hashPassword(password);
+    userData.password_hash = passwordHash;
+  }
+  
   if (email) {
     userData.email = email.trim().toLowerCase();
+  }
+  
+  if (googleId) {
+    userData.google_id = googleId;
+  }
+  
+  if (oauthProvider) {
+    userData.oauth_provider = oauthProvider;
   }
   
   const userId = await dbSafe.safeInsert('users', userData);
@@ -222,7 +280,101 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
 }
 
 /**
- * Authenticate a user
+ * Authenticate a user by email
+ */
+async function authenticateUserByEmail(email, password) {
+  const emailLower = email.trim().toLowerCase();
+  
+  // Use safe select to get user by email
+  const result = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
+  const users = dbSafe.parseResult(result);
+  
+  if (users.length === 0) {
+    return null;
+  }
+
+  const user = users[0];
+  
+  // Check if user has a password (OAuth users might not)
+  if (!user.password_hash) {
+    return null;
+  }
+
+  // Compare password using bcrypt (or SHA-256 for legacy passwords)
+  let isValid = false;
+  
+  // Check if password hash is bcrypt (starts with $2a$, $2b$, or $2y$)
+  const isBcryptHash = /^\$2[ayb]\$/.test(user.password_hash);
+  
+  if (isBcryptHash) {
+    // Use bcrypt comparison
+    isValid = await comparePassword(password, user.password_hash);
+  } else {
+    // Legacy SHA-256 hash - verify and migrate to bcrypt
+    const crypto = require('crypto');
+    const sha256Hash = crypto.createHash('sha256').update(password).digest('hex');
+    if (sha256Hash === user.password_hash) {
+      isValid = true;
+      // Migrate to bcrypt by updating the password hash
+      const newBcryptHash = await hashPassword(password);
+      await dbSafe.safeUpdate('users', { password_hash: newBcryptHash }, { id: user.id });
+      console.log(`✅ Migrated password for user: ${user.username}`);
+    }
+  }
+  
+  if (!isValid) {
+    return null;
+  }
+
+  // Update last login using safe update
+  await dbSafe.safeUpdate('users', { last_login: new Date().toISOString() }, { id: user.id });
+
+  // Get context using safe select
+  const contextResult = await dbSafe.safeSelect('user_context', { user_id: user.id }, { limit: 1 });
+  const contextRows = dbSafe.parseResult(contextResult);
+  
+  let context = {
+    coParentName: '',
+    separationDate: '',
+    children: [],
+    concerns: [],
+    newPartner: { name: '', livesWith: false }
+  };
+
+  if (contextRows.length > 0) {
+    const contextData = contextRows[0];
+    try {
+      context = {
+        coParentName: contextData.co_parent_name || '',
+        separationDate: contextData.separation_date || '',
+        children: contextData.children ? JSON.parse(contextData.children) : [],
+        concerns: contextData.concerns ? JSON.parse(contextData.concerns) : [],
+        newPartner: contextData.new_partner ? JSON.parse(contextData.new_partner) : { name: '', livesWith: false }
+      };
+    } catch (err) {
+      console.error('Error parsing user context:', err);
+    }
+  }
+
+  // Get user's room
+  let room = null;
+  try {
+    room = await roomManager.getUserRoom(user.id);
+  } catch (error) {
+    console.error('Error getting user room:', error);
+  }
+
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email || null,
+    context,
+    room
+  };
+}
+
+/**
+ * Authenticate a user (legacy - by username, kept for backward compatibility)
  */
 async function authenticateUser(username, password) {
   const usernameLower = username.toLowerCase();
@@ -424,6 +576,78 @@ async function getUser(username) {
 }
 
 /**
+ * Get or create user from Google OAuth
+ */
+async function getOrCreateGoogleUser(googleId, email, name, picture = null) {
+  // First, try to find user by Google ID
+  const googleUserResult = await dbSafe.safeSelect('users', { google_id: googleId }, { limit: 1 });
+  const googleUsers = dbSafe.parseResult(googleUserResult);
+  
+  if (googleUsers.length > 0) {
+    // User exists with this Google ID - update last login and return
+    const user = googleUsers[0];
+    await dbSafe.safeUpdate('users', { last_login: new Date().toISOString() }, { id: user.id });
+    
+    // Get full user data including context and room
+    return await getUser(user.username);
+  }
+  
+  // Check if email already exists (user might have signed up with email/password)
+  if (email) {
+    const emailLower = email.trim().toLowerCase();
+    const emailUserResult = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
+    const emailUsers = dbSafe.parseResult(emailUserResult);
+    
+    if (emailUsers.length > 0) {
+      // User exists with this email - link Google account
+      const user = emailUsers[0];
+      await dbSafe.safeUpdate('users', { 
+        google_id: googleId,
+        oauth_provider: 'google',
+        last_login: new Date().toISOString()
+      }, { id: user.id });
+      
+      return await getUser(user.username);
+    }
+  }
+  
+  // Create new user from Google account
+  // Generate username from email or name
+  let username = name || email?.split('@')[0] || `user${Date.now()}`;
+  username = username.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 20);
+  
+  // Ensure username is unique
+  let uniqueUsername = username;
+  let counter = 1;
+  while (true) {
+    const existing = await dbSafe.safeSelect('users', { username: uniqueUsername }, { limit: 1 });
+    if (dbSafe.parseResult(existing).length === 0) {
+      break;
+    }
+    uniqueUsername = `${username}${counter}`.substring(0, 20);
+    counter++;
+  }
+  
+  // Create user with Google OAuth (no password)
+  return await createUser(uniqueUsername, null, {}, email, googleId, 'google');
+}
+
+/**
+ * Get user by Google ID
+ */
+async function getUserByGoogleId(googleId) {
+  const result = await dbSafe.safeSelect('users', { google_id: googleId }, { limit: 1 });
+  const users = dbSafe.parseResult(result);
+  
+  if (users.length === 0) {
+    return null;
+  }
+  
+  const user = users[0];
+  return await getUser(user.username);
+}
+
+/**
  * Check if username exists
  */
 async function userExists(username) {
@@ -434,10 +658,14 @@ async function userExists(username) {
 
 module.exports = {
   createUser,
+  createUserWithEmail,
   authenticateUser,
+  authenticateUserByEmail,
   updateUserContext,
   getUser,
   userExists,
+  getOrCreateGoogleUser,
+  getUserByGoogleId,
   hashPassword,
   comparePassword
 };

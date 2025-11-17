@@ -11,7 +11,9 @@ const conversationContext = {
   recentMessages: [],
   userSentiments: new Map(), // Track sentiment per user
   topicChanges: [],
-  lastIntervention: null
+  lastIntervention: null,
+  relationshipInsights: new Map(), // roomId -> insights about the relationship dynamic
+  lastCommentTime: new Map() // roomId -> timestamp of last comment to avoid spamming
 };
 
 /**
@@ -92,9 +94,10 @@ Return format (one name per line, or "NONE"):
  * @param {Array} recentMessages - Last 5 messages for context
  * @param {Array} participantUsernames - Usernames of active participants
  * @param {Array} existingContacts - Existing contacts for the user
+ * @param {string} roomId - Room ID for tracking insights and comment frequency
  * @returns {Promise<Object>} - Intervention decision and message
  */
-async function analyzeAndIntervene(message, recentMessages, participantUsernames = [], existingContacts = [], contactContextForAI = null) {
+async function analyzeAndIntervene(message, recentMessages, participantUsernames = [], existingContacts = [], contactContextForAI = null, roomId = null) {
   // If no API key, return null (no intervention) - allow all messages
   if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim() === '') {
     console.log('⚠️  AI Mediator: No OPENAI_API_KEY found in environment - allowing all messages through');
@@ -139,108 +142,134 @@ async function analyzeAndIntervene(message, recentMessages, participantUsernames
       ? `\n\n${contactContextForAI}`
       : '';
 
-    const prompt = `You are an AI mediator for a co-parenting communication chat room. Your role is to help parents communicate more effectively.
+    // Get relationship insights for this room
+    const insights = roomId ? conversationContext.relationshipInsights.get(roomId) : null;
+    const insightsString = insights 
+      ? `\n\nLEARNED RELATIONSHIP INSIGHTS (use these to be more contextually aware):\n- Communication style: ${insights.communicationStyle || 'Not yet learned'}\n- Common topics: ${insights.commonTopics.join(', ') || 'Not yet learned'}\n- Tension points: ${insights.tensionPoints.join(', ') || 'None identified yet'}\n- Positive patterns: ${insights.positivePatterns.join(', ') || 'Not yet identified'}\n- Questions to explore: ${insights.questionsToAsk?.slice(0, 2).join(', ') || 'None yet'}\n\nUse these insights to ask curious questions or make helpful observations.`
+      : '';
+
+    // Check if we should limit COMMENT frequency (don't comment too often)
+    const lastCommentTime = roomId ? conversationContext.lastCommentTime.get(roomId) : null;
+    const timeSinceLastComment = lastCommentTime ? Date.now() - lastCommentTime : Infinity;
+    const shouldLimitComments = timeSinceLastComment < 60000; // Don't comment more than once per minute
+    const commentFrequencyNote = shouldLimitComments 
+      ? '\n\nIMPORTANT: You recently commented in this conversation. Only use ACTION: COMMENT if it\'s truly valuable and different from your previous comment. Prefer STAY_SILENT if unsure.'
+      : '';
+
+    // Build relationship context summary
+    const relationshipContext = contactContextForAI 
+      ? `\n\nRELATIONSHIP CONTEXT:\n${contactContextForAI}\n\nKEY UNDERSTANDING: These two people share a child/children together but are no longer in a romantic relationship. They are co-parenting, which means they need to communicate about their shared children while navigating the complexities of their separated relationship. This dynamic often involves:\n- Emotional history and potential unresolved feelings\n- Different parenting styles or philosophies\n- Logistics around custody, schedules, and child care\n- Financial matters related to children\n- The challenge of maintaining boundaries while co-parenting effectively\n\nThe AI mediator should be aware that co-parenting conversations can be emotionally charged even when the words seem neutral, because of this underlying relationship dynamic.${insightsString}`
+      : `\n\nRELATIONSHIP CONTEXT:\nThese two people are co-parents - they share a child/children together but are no longer in a romantic relationship. This is a co-parenting mediation room designed to help them communicate effectively about their shared children.${insightsString}`;
+
+    const prompt = `You are a warm, empathetic AI mediator named Alex who helps co-parents communicate more effectively. You're not a robot - you're like a trusted friend who understands the unique challenges of co-parenting after separation.
+
+Your personality:
+- Warm, conversational, and genuinely caring
+- Contextually aware of the co-parenting relationship dynamic
+- Curious about their situation so you can help better over time
+- Non-judgmental and supportive
+- You remember what you learn about their relationship to provide better guidance
+
+${relationshipContext}
 
 Recent conversation:
-${messageHistory}${userContextString}${contactContextString}
+${messageHistory}${userContextString}
 
 Current message: ${message.username}: "${message.text}"
 
-IMPORTANT: Use the contact relationships and context information provided above to understand the dynamics between participants. Reference specific children's names, relationship types (e.g., "co-parent", "child"), and any concerns or difficult aspects mentioned in the contact information when providing validation and tips. This contextual information helps you provide more personalized and relevant mediation.
+IMPORTANT CONTEXTUAL AWARENESS:
+- These are co-parents who share children but are no longer together
+- Co-parenting conversations can be emotionally complex even when words seem neutral
+- Reference specific children's names, relationship dynamics, and concerns from the contact information
+- **CRITICAL: If a child's name appears in the contact information for BOTH co-parents, that child is their SHARED CHILD. When either co-parent mentions that child's name, they are referring to their shared child together. Use this understanding to provide contextually aware mediation.**
+- Be aware that underlying tensions may exist even in seemingly simple messages
+- Show curiosity about their dynamic when appropriate to learn and help better
 
-CRITICAL: The DEFAULT action is STAY_SILENT. Only intervene for truly problematic messages.
+You have THREE possible actions:
 
-REQUIRED: Use ACTION: STAY_SILENT for:
-- Normal greetings: "hi", "hello", "hey", "how are you"
-- Questions: "can we talk?", "what time is pickup?", "when is Vira coming?"
-- Polite requests: "can we discuss?", "could you let me know?"
-- Statements of concern: "I'm concerned about...", "I'd like to discuss..."
-- Neutral messages: "okay", "thanks", "sounds good"
-- Any respectful, normal communication
+1. ACTION: STAY_SILENT - For normal, respectful communication (MOST messages should use this)
+   - Normal greetings: "hi", "hello", "hey"
+   - Questions: "can we talk?", "what time is pickup?"
+   - Polite requests: "can we discuss?", "could you let me know?"
+   - Neutral messages: "okay", "thanks", "sounds good"
+   - Any respectful, normal communication
 
-ONLY use ACTION: INTERVENE for:
-- Clear insults: "you suck", "you're terrible", "you're stupid"
-- Personal attacks: "you're a bad parent", "you never do anything right"
-- Hostile comparisons: "I'm better than you", "you're worse at..."
-- Threats or extremely inappropriate content
+2. ACTION: INTERVENE - For messages that could escalate conflict or harm the co-parenting relationship
+   - Clear insults: "you suck", "you're terrible"
+   - Personal attacks: "you're a bad parent"
+   - Hostile comparisons: "I'm better than you"
+   - Threats or extremely inappropriate content
+   - **Accusatory language**: Messages that imply the other parent is doing something wrong (e.g., "it's just weird", "she is scared to tell you", "you always...", "you never...")
+   - **Triangulating the child**: Putting the child in the middle of parental conflict (e.g., "she told me you...", "he said you...", "the kids are afraid to...")
+   - **Comparison/competition**: Comparing how the child acts with each parent (e.g., "she's fine with me but...", "he never does that at my house")
+   - **Leading/defensive questions**: Questions that put the other parent on the defensive (e.g., "Any thought on why?", "Why would you...", "What did you do to...")
+   - **Blaming language**: Messages that assign blame or fault (e.g., "this is your fault", "because of you")
+   - **Emotional manipulation**: Using guilt, fear, or obligation to control (e.g., "if you cared about the kids...", "you're making this hard")
 
-Example decisions:
-- "hi" → ACTION: STAY_SILENT (normal greeting)
-- "hello" → ACTION: STAY_SILENT (normal greeting)
-- "can we talk?" → ACTION: STAY_SILENT (polite request)
-- "you suck" → ACTION: INTERVENE (insult)
-- "I'm a better parent" → ACTION: INTERVENE (hostile comparison)
+3. ACTION: COMMENT - For offering helpful, contextual observations or gentle guidance (use sparingly, maybe 1-2 times per conversation)
+   - When you notice a pattern that might be helpful to point out
+   - When you want to acknowledge something positive in their communication
+   - When you're curious about their dynamic and want to learn more (ask a gentle question)
+   - When you can offer a helpful perspective based on their relationship context
+   - Use this VERY sparingly - only when it genuinely adds value
 
-If the message needs intervention, respond EXACTLY in this format:
+If using ACTION: COMMENT, respond in this format:
+
+ACTION: COMMENT
+
+MESSAGE: [A warm, conversational message (2-3 sentences max). Write as if you're a caring friend who understands co-parenting. Be curious, supportive, and contextually aware. Reference their children's names, relationship dynamics, or concerns when relevant. You might ask a gentle question to learn more about their situation, acknowledge something positive, or offer a helpful perspective. Write naturally, not robotically.]
+
+If using ACTION: INTERVENE, respond EXACTLY in this format:
 
 ACTION: INTERVENE
 
-VALIDATION: [1-2 sentences validating their feelings, being specific about their context, children's names, and relevant relationship dynamics from their contacts]
+VALIDATION: [1-2 sentences validating their feelings and concerns, being specific about their context, children's names, and relevant relationship dynamics. Write warmly, like a caring friend who understands co-parenting challenges. Acknowledge that their concern about their child is valid, even if the way they're expressing it could be improved. Do NOT include the word "Validation" in your response - just write the validating message directly.]
 
-TIP1: [One specific, actionable communication tip related to the blocked message "${message.text}" - one sentence only, directly addressing the issue in that message]
+WHY_THIS_NEEDS_MEDIATION: [Identify the specific conflict triggers in this message. Be specific: "This message contains [accusatory language/triangulation/comparison/etc.] which could escalate tension because [explain the impact]. This could make your co-parent defensive rather than collaborative." Reference the actual phrases from the message. This is for AI processing only and will not be shown to the user.]
 
-TIP2: [One specific, actionable communication tip related to the blocked message "${message.text}" - one sentence only, directly addressing the issue in that message]
+TIP1: [One specific, actionable communication tip - one sentence only, directly addressing the conflict trigger. Focus on child-centered communication. Example: "Instead of asking why your co-parent did something, focus on what your child needs."]
 
-REWRITE: [Rewrite "${message.text}" using the tips. Make it respectful but keep the intent. No quotes in rewrite.]
+TIP2: [One specific, actionable communication tip - one sentence only, directly addressing the conflict trigger. Example: "Avoid putting your child in the middle by sharing what they said directly; instead, focus on collaborative problem-solving."]
+
+TIP3: [One specific, actionable communication tip - one sentence only, directly addressing the conflict trigger. Provide a third perspective or alternative approach.]
+
+REWRITE1: [First rewrite of "${message.text}" using the tips. Make it child-focused, collaborative, and respectful while keeping the core concern. Frame it as a shared problem to solve together, not something to blame. No quotes in rewrite. Example format: "I noticed [child's name] seemed [observation]. She might be having a hard time with [situation]. Could we talk about ways to make her feel [desired outcome]?"]
+
+REWRITE2: [Second rewrite of "${message.text}" with a different approach or tone. Provide an alternative way to express the same concern. Make it child-focused, collaborative, and respectful. No quotes in rewrite.]
 
 If the message is appropriate and respectful, respond with:
 ACTION: STAY_SILENT
 
-DECISION EXAMPLES (follow these exactly):
-"hi" → ACTION: STAY_SILENT
-"hello" → ACTION: STAY_SILENT
-"hey" → ACTION: STAY_SILENT
-"how are you" → ACTION: STAY_SILENT
-"can we talk?" → ACTION: STAY_SILENT
-"what time is pickup?" → ACTION: STAY_SILENT
-"thanks" → ACTION: STAY_SILENT
-"you suck" → ACTION: INTERVENE
-"you're terrible" → ACTION: INTERVENE
-"I'm better than you" → ACTION: INTERVENE
-
-Remember: When in doubt, use STAY_SILENT. Only intervene for clearly problematic messages.`;
+Remember:
+- MOST messages should be STAY_SILENT
+- Use COMMENT very sparingly (maybe 1-2 times per conversation) and only when it genuinely helps${commentFrequencyNote}
+- INTERVENE proactively for messages that could escalate conflict, including subtle triggers like accusatory language, triangulation, comparisons, leading questions, blaming, or emotional manipulation
+- Be warm, conversational, and contextually aware
+- Show curiosity about their relationship dynamic when appropriate
+- Use the learned relationship insights to ask thoughtful questions or make helpful observations
+- When intervening, always explain WHY the message needs mediation by identifying the specific conflict triggers`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         {
           role: 'system',
-          content: 'You are an AI communication coach for co-parenting. You MUST decide FIRST if a message needs intervention. MOST messages should use ACTION: STAY_SILENT. Only use ACTION: INTERVENE for truly problematic messages like insults, attacks, or hostile comparisons. Normal greetings like "hi", "hello", questions, polite requests, and neutral messages should ALWAYS use ACTION: STAY_SILENT. Use the provided user context, contact relationships, and relationship dynamics to provide highly personalized and contextual mediation. When intervening, reference specific children\'s names, relationship dynamics, and concerns from the contact information to make your guidance more relevant and helpful.'
+          content: 'You are Alex, a warm and empathetic AI mediator for co-parenting. You help co-parents communicate effectively. You understand they share children but are no longer together, and you\'re aware this creates unique emotional complexities. You\'re curious about their relationship dynamic so you can help better over time. MOST messages should use ACTION: STAY_SILENT. Use ACTION: COMMENT very sparingly (1-2 times per conversation) for helpful observations or gentle questions. Use ACTION: INTERVENE for messages that could escalate conflict, including: insults, personal attacks, accusatory language, triangulating children, comparisons between parents, leading/defensive questions, blaming language, or emotional manipulation. Be proactive about catching subtle conflict triggers that could harm the co-parenting relationship, even if the words seem neutral. Write conversationally and warmly, like a caring friend who understands co-parenting challenges.'
         },
         {
           role: 'user',
           content: prompt
         }
       ],
-      max_tokens: 500,
-      temperature: 0.7
+      max_tokens: 600,
+      temperature: 0.8
     });
 
     const response = completion.choices[0].message.content.trim();
     console.log('🤖 AI Mediator: Full response received:', response);
     
-    // Parse the response - handle both old and new formats
+    // Parse the response - handle STAY_SILENT, INTERVENE, and COMMENT actions
     const actionMatch = response.match(/ACTION:\s*(\w+)/i);
-    
-    // Try to parse new format first
-    let validationMatch = response.match(/VALIDATION:\s*(.+?)(?=\n\s*TIP1|$)/is);
-    let tip1Match = response.match(/TIP1:\s*(.+?)(?=\n\s*TIP2|$)/is);
-    let tip2Match = response.match(/TIP2:\s*(.+?)(?=\n\s*REWRITE|$)/is);
-    let rewriteMatch = response.match(/REWRITE:\s*(.+?)(?=\n|$)/is);
-    
-    // If new format not found, try alternate patterns
-    if (!validationMatch) {
-      validationMatch = response.match(/VALIDATION[:\s]+(.+?)(?=TIP1|REWRITE|$)/is);
-    }
-    if (!tip1Match) {
-      tip1Match = response.match(/TIP1[:\s]+(.+?)(?=TIP2|REWRITE|$)/is);
-    }
-    if (!tip2Match) {
-      tip2Match = response.match(/TIP2[:\s]+(.+?)(?=REWRITE|$)/is);
-    }
-    if (!rewriteMatch) {
-      rewriteMatch = response.match(/REWRITE[:\s]+(.+?)(?=$)/is);
-    }
     
     if (!actionMatch) {
       console.log('🤖 AI Mediator: Could not parse action from response');
@@ -254,43 +283,118 @@ Remember: When in doubt, use STAY_SILENT. Only intervene for clearly problematic
       return null;
     }
 
-    // Only proceed with intervention if action is explicitly "INTERVENE"
-    if (action !== 'INTERVENE') {
-      console.log(`🤖 AI Mediator: Unexpected action "${action}" - defaulting to STAY_SILENT`);
-      return null;
+    // Handle COMMENT action (contextual observations/questions)
+    if (action === 'COMMENT') {
+      // Check frequency limit
+      if (shouldLimitComments) {
+        console.log('💬 AI Mediator: Skipping comment due to frequency limit');
+        return null;
+      }
+
+      let messageMatch = response.match(/MESSAGE:\s*(.+?)(?=\n\s*ACTION:|$)/is);
+      if (!messageMatch) {
+        messageMatch = response.match(/MESSAGE[:\s]+(.+?)(?=$)/is);
+      }
+      
+      const commentMessage = messageMatch ? messageMatch[1].trim() : null;
+      
+      if (!commentMessage) {
+        console.error('❌ AI Mediator: COMMENT action but no MESSAGE found - defaulting to STAY_SILENT');
+        return null;
+      }
+
+      // Track when we commented
+      if (roomId) {
+        conversationContext.lastCommentTime.set(roomId, Date.now());
+      }
+
+      console.log('💬 AI Mediator: Adding contextual comment:', commentMessage.substring(0, 50) + '...');
+      
+      return {
+        type: 'ai_comment',
+        action: 'COMMENT',
+        text: commentMessage,
+        originalMessage: message
+      };
     }
 
-    const validation = validationMatch ? validationMatch[1].trim() : null;
-    const tip1 = tip1Match ? tip1Match[1].trim() : null;
-    const tip2 = tip2Match ? tip2Match[1].trim() : null;
-    const rewrite = rewriteMatch ? rewriteMatch[1].trim() : null;
+    // Handle INTERVENE action (blocking problematic messages)
+    if (action === 'INTERVENE') {
+      let validationMatch = response.match(/VALIDATION:\s*(.+?)(?=\n\s*WHY_THIS_NEEDS_MEDIATION|TIP1|$)/is);
+      let whyMediationMatch = response.match(/WHY_THIS_NEEDS_MEDIATION:\s*(.+?)(?=\n\s*TIP1|$)/is);
+      let tip1Match = response.match(/TIP1:\s*(.+?)(?=\n\s*TIP2|$)/is);
+      let tip2Match = response.match(/TIP2:\s*(.+?)(?=\n\s*TIP3|$)/is);
+      let tip3Match = response.match(/TIP3:\s*(.+?)(?=\n\s*REWRITE1|$)/is);
+      let rewrite1Match = response.match(/REWRITE1:\s*(.+?)(?=\n\s*REWRITE2|$)/is);
+      let rewrite2Match = response.match(/REWRITE2:\s*(.+?)(?=\n|$)/is);
+      
+      // If new format not found, try alternate patterns
+      if (!validationMatch) {
+        validationMatch = response.match(/VALIDATION[:\s]+(.+?)(?=WHY_THIS_NEEDS_MEDIATION|TIP1|REWRITE|$)/is);
+      }
+      if (!whyMediationMatch) {
+        whyMediationMatch = response.match(/WHY_THIS_NEEDS_MEDIATION[:\s]+(.+?)(?=TIP1|REWRITE|$)/is);
+      }
+      if (!tip1Match) {
+        tip1Match = response.match(/TIP1[:\s]+(.+?)(?=TIP2|REWRITE|$)/is);
+      }
+      if (!tip2Match) {
+        tip2Match = response.match(/TIP2[:\s]+(.+?)(?=TIP3|REWRITE|$)/is);
+      }
+      if (!tip3Match) {
+        tip3Match = response.match(/TIP3[:\s]+(.+?)(?=REWRITE|$)/is);
+      }
+      if (!rewrite1Match) {
+        rewrite1Match = response.match(/REWRITE1[:\s]+(.+?)(?=REWRITE2|$)/is);
+      }
+      if (!rewrite2Match) {
+        rewrite2Match = response.match(/REWRITE2[:\s]+(.+?)(?=$)/is);
+      }
 
-    console.log('🤖 AI Mediator: Parsed components:');
-    console.log('  Validation:', validation ? validation.substring(0, 50) + '...' : 'MISSING');
-    console.log('  Tip1:', tip1 ? tip1.substring(0, 50) + '...' : 'MISSING');
-    console.log('  Tip2:', tip2 ? tip2.substring(0, 50) + '...' : 'MISSING');
-    console.log('  Rewrite:', rewrite ? rewrite.substring(0, 50) + '...' : 'MISSING');
+      const validation = validationMatch ? validationMatch[1].trim() : null;
+      const whyMediation = whyMediationMatch ? whyMediationMatch[1].trim() : null;
+      const tip1 = tip1Match ? tip1Match[1].trim() : null;
+      const tip2 = tip2Match ? tip2Match[1].trim() : null;
+      const tip3 = tip3Match ? tip3Match[1].trim() : null;
+      const rewrite1 = rewrite1Match ? rewrite1Match[1].trim() : null;
+      const rewrite2 = rewrite2Match ? rewrite2Match[1].trim() : null;
 
-    // Validate that we have all required components
-    if (!validation || !tip1 || !tip2 || !rewrite) {
-      console.error('❌ AI Mediator: Missing required components in response - defaulting to STAY_SILENT');
-      console.error('Full response was:', response);
-      // Don't return intervention if format is wrong - allow message through
-      return null;
+      console.log('🤖 AI Mediator: Parsed intervention components:');
+      console.log('  Validation:', validation ? validation.substring(0, 50) + '...' : 'MISSING');
+      console.log('  Why Mediation:', whyMediation ? whyMediation.substring(0, 50) + '...' : 'MISSING');
+      console.log('  Tip1:', tip1 ? tip1.substring(0, 50) + '...' : 'MISSING');
+      console.log('  Tip2:', tip2 ? tip2.substring(0, 50) + '...' : 'MISSING');
+      console.log('  Tip3:', tip3 ? tip3.substring(0, 50) + '...' : 'MISSING');
+      console.log('  Rewrite1:', rewrite1 ? rewrite1.substring(0, 50) + '...' : 'MISSING');
+      console.log('  Rewrite2:', rewrite2 ? rewrite2.substring(0, 50) + '...' : 'MISSING');
+
+      // Validate that we have all required components (whyMediation is optional for backward compatibility)
+      if (!validation || !tip1 || !tip2 || !tip3 || !rewrite1 || !rewrite2) {
+        console.error('❌ AI Mediator: Missing required components in intervention - defaulting to STAY_SILENT');
+        console.error('Full response was:', response);
+        return null;
+      }
+
+      const intervention = {
+        type: 'ai_intervention',
+        action: 'INTERVENE',
+        validation,
+        whyMediation, // For AI processing only, not shown to user
+        tip1,
+        tip2,
+        tip3,
+        rewrite1,
+        rewrite2,
+        originalMessage: message
+      };
+      
+      console.log('✅ AI Mediator: Successfully parsed structured intervention');
+      return intervention;
     }
 
-    const intervention = {
-      type: action === 'INTERVENE' ? 'ai_intervention' : 'ai_comment',
-      action,
-      validation,
-      tip1,
-      tip2,
-      rewrite,
-      originalMessage: message
-    };
-    
-    console.log('✅ AI Mediator: Successfully parsed structured intervention');
-    return intervention;
+    // Unknown action
+    console.log(`🤖 AI Mediator: Unexpected action "${action}" - defaulting to STAY_SILENT`);
+    return null;
 
   } catch (error) {
     console.error('❌ Error in AI mediator:', error.message);
@@ -388,6 +492,94 @@ async function analyzeSentiment(text) {
 }
 
 /**
+ * Extract relationship insights from conversation
+ * @param {Array} recentMessages - Recent conversation messages
+ * @param {string} roomId - Room ID for storing insights
+ * @returns {Promise<void>}
+ */
+async function extractRelationshipInsights(recentMessages, roomId) {
+  if (!process.env.OPENAI_API_KEY || recentMessages.length < 3) {
+    return; // Need at least a few messages to extract insights
+  }
+
+  try {
+    const messageHistory = recentMessages
+      .slice(-10) // Last 10 messages for context
+      .map(msg => `${msg.username}: ${msg.text}`)
+      .join('\n');
+
+    const existingInsights = conversationContext.relationshipInsights.get(roomId) || {
+      communicationStyle: null,
+      commonTopics: [],
+      tensionPoints: [],
+      positivePatterns: [],
+      questionsToAsk: []
+    };
+
+    const prompt = `You are analyzing a co-parenting conversation to understand the relationship dynamic. These two people share children but are no longer together.
+
+Recent conversation:
+${messageHistory}
+
+Existing insights:
+${JSON.stringify(existingInsights, null, 2)}
+
+Extract insights about:
+1. Communication style (formal/casual, direct/indirect, collaborative/defensive)
+2. Common topics they discuss (pickup times, child activities, etc.)
+3. Tension points or recurring issues
+4. Positive patterns (what works well)
+5. Questions you should ask to learn more about their dynamic
+
+Respond with ONLY a JSON object in this format:
+{
+  "communicationStyle": "brief description",
+  "commonTopics": ["topic1", "topic2"],
+  "tensionPoints": ["point1", "point2"],
+  "positivePatterns": ["pattern1"],
+  "questionsToAsk": ["question1", "question2"]
+}
+
+Keep it concise. Only include new or updated insights.`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an analyst extracting insights about co-parenting relationship dynamics. Return only valid JSON.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 300,
+      temperature: 0.5
+    });
+
+    const response = completion.choices[0].message.content.trim();
+    const insights = JSON.parse(response);
+    
+    // Merge with existing insights
+    const merged = {
+      communicationStyle: insights.communicationStyle || existingInsights.communicationStyle,
+      commonTopics: [...new Set([...existingInsights.commonTopics, ...(insights.commonTopics || [])])],
+      tensionPoints: [...new Set([...existingInsights.tensionPoints, ...(insights.tensionPoints || [])])],
+      positivePatterns: [...new Set([...existingInsights.positivePatterns, ...(insights.positivePatterns || [])])],
+      questionsToAsk: insights.questionsToAsk || existingInsights.questionsToAsk,
+      lastUpdated: new Date().toISOString()
+    };
+
+    conversationContext.relationshipInsights.set(roomId, merged);
+    console.log('📚 Relationship insights updated for room:', roomId);
+  } catch (error) {
+    console.error('Error extracting relationship insights:', error.message);
+    // Don't fail the whole process if insight extraction fails
+  }
+}
+
+/**
  * Update conversation context with new message
  */
 function updateContext(message) {
@@ -419,6 +611,7 @@ module.exports = {
   updateContext,
   getContext,
   detectNamesInMessage,
-  generateContactSuggestion
+  generateContactSuggestion,
+  extractRelationshipInsights
 };
 
