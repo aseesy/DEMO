@@ -163,6 +163,30 @@ export function useAuth() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      // Call logout endpoint to clear server-side cookie
+      await apiPost('/api/auth/logout');
+    } catch (err) {
+      console.error('Logout error:', err);
+      // Continue with client-side cleanup even if server call fails
+    } finally {
+      // Clear all client-side auth data
+      localStorage.removeItem('username');
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('auth_token_backup');
+      localStorage.removeItem('chatUser');
+      localStorage.removeItem('userEmail');
+      
+      // Reset state
+      setIsAuthenticated(false);
+      setUsername('');
+      setEmail('');
+      setPassword('');
+      setError('');
+    }
+  };
+
   return {
     // state
     email,
@@ -181,6 +205,7 @@ export function useAuth() {
     // actions
     handleLogin,
     handleSignup,
+    handleLogout,
   };
 }
 

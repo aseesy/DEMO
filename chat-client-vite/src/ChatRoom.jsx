@@ -27,6 +27,7 @@ function ChatRoom() {
     setError,
     handleLogin,
     handleSignup,
+    handleLogout,
   } = useAuth();
 
   // Local UI state must be declared before passing into hooks that depend on it
@@ -346,7 +347,7 @@ function ChatRoom() {
         <Navigation currentView={currentView} setCurrentView={setCurrentView} />
 
         {/* Main Content Area */}
-        <div className="pt-16 md:pt-20 pb-20 md:pb-0 px-4 sm:px-6 lg:px-8">
+        <div className="pt-16 md:pt-32 pb-20 md:pb-0 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             {/* Dashboard View - Large Card Style */}
             {currentView === 'dashboard' && (
@@ -361,170 +362,170 @@ function ChatRoom() {
                   </p>
                 </div>
 
-          {/* Invite acceptance notification */}
-          {isAcceptingInvite && (
-            <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-              <div className="flex items-center gap-2">
-                <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-blue-300 border-t-blue-600" />
-                <span>Accepting invite and joining room…</span>
-              </div>
-            </div>
-          )}
+                {/* Invite acceptance notification */}
+                {isAcceptingInvite && (
+                  <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                    <div className="flex items-center gap-2">
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-blue-300 border-t-blue-600" />
+                      <span>Accepting invite and joining room…</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Tasks Card */}
                 <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-8">
                   <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">
                     Your Tasks
                   </h2>
-            {isLoadingTasks ? (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-[#275559]" />
-              </div>
-            ) : tasks.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500 text-sm sm:text-base">
-                  No tasks found. Create your first task to get started!
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {tasks.map((task) => {
-                  const titleLower = (task.title || '').toLowerCase().trim();
-                  const isCoparentTask =
-                    titleLower.includes('add your co-parent') ||
-                    titleLower.includes('add coparent');
-                  const isProfileTask =
-                    titleLower.includes('complete your profile') ||
-                    titleLower.includes('complete profile');
-                  const isChildrenTask =
-                    titleLower.includes('add your children') ||
-                    titleLower.includes('add children');
-                  const isSmartTask =
-                    task.status !== 'completed' &&
-                    (isCoparentTask || isProfileTask || isChildrenTask);
-
-                  return (
-                    <div
-                      key={task.id}
-                      onClick={() => {
-                        if (isSmartTask) {
-                          if (isCoparentTask) {
-                            localStorage.setItem('liaizen_smart_task', 'add_coparent');
-                            setCurrentView('contacts');
-                          } else if (isProfileTask) {
-                            setCurrentView('profile');
-                          } else if (isChildrenTask) {
-                            setCurrentView('contacts');
-                          }
-                          return;
-                        }
-
-                        // Regular task: open edit modal
-                        setEditingTask(task);
-                        setTaskFormData({
-                          title: task.title,
-                          description: task.description || '',
-                          status: task.status,
-                          priority: task.priority || 'medium',
-                          due_date: task.due_date || '',
-                        });
-                        setShowTaskForm(true);
-                      }}
-                      className={`flex items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl cursor-pointer transition-all shadow-sm ${
-                        task.status === 'completed'
-                          ? 'bg-slate-50 opacity-70'
-                          : 'bg-white hover:shadow-md active:scale-[0.98] border border-slate-100'
-                      }`}
-                    >
-                      {/* Task Icon/Status Circle */}
-                      <div className="flex-shrink-0">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleTaskStatus(task);
-                          }}
-                          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                            task.status === 'completed' ? 'bg-green-500' : 'bg-teal'
-                          }`}
-                        >
-                          {task.status === 'completed' ? (
-                            <svg
-                              className="w-6 h-6 text-white"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={3}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          ) : (
-                            <span className="text-white font-bold text-lg">
-                              {task.title?.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Task Content */}
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <h3
-                            className={`text-sm sm:text-base font-semibold text-gray-800 mb-1 truncate ${
-                              task.status === 'completed'
-                                ? 'line-through text-gray-400'
-                                : ''
-                            }`}
-                          >
-                            {isSmartTask
-                              ? isCoparentTask
-                                ? 'Add Co-parent'
-                                : isProfileTask
-                                ? 'Complete Profile'
-                                : isChildrenTask
-                                ? 'Add Children'
-                                : task.title
-                              : task.title}
-                          </h3>
-                          {isSmartTask && (
-                            <svg
-                              className="w-4 h-4 text-teal flex-shrink-0"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
-                          )}
-                        </div>
-                        {task.description && (
-                          <p
-                            className={`text-xs sm:text-sm text-gray-500 line-clamp-2 break-words ${
-                              task.status === 'completed'
-                                ? 'line-through text-gray-400'
-                                : ''
-                            }`}
-                          >
-                            {task.description}
-                          </p>
-                        )}
-                      </div>
+                  {isLoadingTasks ? (
+                    <div className="text-center py-8">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-[#275559]" />
                     </div>
-                  );
-                })}
+                  ) : tasks.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 text-sm sm:text-base">
+                        No tasks found. Create your first task to get started!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {tasks.map((task) => {
+                        const titleLower = (task.title || '').toLowerCase().trim();
+                        const isCoparentTask =
+                          titleLower.includes('add your co-parent') ||
+                          titleLower.includes('add coparent');
+                        const isProfileTask =
+                          titleLower.includes('complete your profile') ||
+                          titleLower.includes('complete profile');
+                        const isChildrenTask =
+                          titleLower.includes('add your children') ||
+                          titleLower.includes('add children');
+                        const isSmartTask =
+                          task.status !== 'completed' &&
+                          (isCoparentTask || isProfileTask || isChildrenTask);
+
+                        return (
+                          <div
+                            key={task.id}
+                            onClick={() => {
+                              if (isSmartTask) {
+                                if (isCoparentTask) {
+                                  localStorage.setItem('liaizen_smart_task', 'add_coparent');
+                                  setCurrentView('contacts');
+                                } else if (isProfileTask) {
+                                  setCurrentView('profile');
+                                } else if (isChildrenTask) {
+                                  setCurrentView('contacts');
+                                }
+                                return;
+                              }
+
+                              // Regular task: open edit modal
+                              setEditingTask(task);
+                              setTaskFormData({
+                                title: task.title,
+                                description: task.description || '',
+                                status: task.status,
+                                priority: task.priority || 'medium',
+                                due_date: task.due_date || '',
+                              });
+                              setShowTaskForm(true);
+                            }}
+                            className={`flex items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl cursor-pointer transition-all shadow-sm ${
+                              task.status === 'completed'
+                                ? 'bg-slate-50 opacity-70'
+                                : 'bg-white hover:shadow-md active:scale-[0.98] border border-slate-100'
+                            }`}
+                          >
+                            {/* Task Icon/Status Circle */}
+                            <div className="flex-shrink-0">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleTaskStatus(task);
+                                }}
+                                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                                  task.status === 'completed' ? 'bg-green-500' : 'bg-teal'
+                                }`}
+                              >
+                                {task.status === 'completed' ? (
+                                  <svg
+                                    className="w-6 h-6 text-white"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={3}
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                ) : (
+                                  <span className="text-white font-bold text-lg">
+                                    {task.title?.charAt(0).toUpperCase()}
+                                  </span>
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Task Content */}
+                            <div className="flex-1 min-w-0 overflow-hidden">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <h3
+                                  className={`text-sm sm:text-base font-semibold text-gray-800 mb-1 truncate ${
+                                    task.status === 'completed'
+                                      ? 'line-through text-gray-400'
+                                      : ''
+                                  }`}
+                                >
+                                  {isSmartTask
+                                    ? isCoparentTask
+                                      ? 'Add Co-parent'
+                                      : isProfileTask
+                                      ? 'Complete Profile'
+                                      : isChildrenTask
+                                      ? 'Add Children'
+                                      : task.title
+                                    : task.title}
+                                </h3>
+                                {isSmartTask && (
+                                  <svg
+                                    className="w-4 h-4 text-teal flex-shrink-0"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 5l7 7-7 7"
+                                    />
+                                  </svg>
+                                )}
+                              </div>
+                              {task.description && (
+                                <p
+                                  className={`text-xs sm:text-sm text-gray-500 line-clamp-2 break-words ${
+                                    task.status === 'completed'
+                                      ? 'line-through text-gray-400'
+                                      : ''
+                                  }`}
+                                >
+                                  {task.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
-              </div>
-            </>
-          )}
 
           {/* Full chat view */}
             {/* Chat View - Blue Header Style */}
@@ -940,7 +941,7 @@ function ChatRoom() {
                   <h2 className="text-xl sm:text-2xl font-bold">Profile</h2>
                 </div>
                 <div className="h-[480px] sm:h-[520px] overflow-y-auto">
-                  <ProfilePanel username={username} />
+                  <ProfilePanel username={username} onLogout={handleLogout} />
                 </div>
               </div>
             )}
@@ -1108,7 +1109,6 @@ function ChatRoom() {
               </div>
             </div>
           )}
-            </div>
           </div>
         </div>
       </div>
@@ -1119,8 +1119,18 @@ function ChatRoom() {
     <div className="min-h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white/95 rounded-3xl shadow-2xl p-6 sm:p-8">
         <div className="flex flex-col items-center gap-3 mb-6">
-          <img src="/assets/TransB.svg" alt="@TransB" className="h-8" />
-          <img src="/assets/LZlogo.svg" alt="LiaiZen" className="h-20" />
+          <img 
+            src="/assets/TransB.svg" 
+            alt="@TransB" 
+            className="logo-image"
+            style={{ height: '48px', width: 'auto' }}
+          />
+          <img 
+            src="/assets/LZlogo.svg" 
+            alt="LiaiZen" 
+            className="logo-image"
+            style={{ height: '96px', width: 'auto' }}
+          />
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-semibold text-center text-slate-900 mb-2">

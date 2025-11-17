@@ -13,11 +13,21 @@ export function Navigation({ currentView, setCurrentView }) {
       {/* Top Navigation - Desktop Only */}
       <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-28 py-2">
             {/* Logo */}
-            <div className="flex items-center gap-2">
-              <img src="/assets/TransB.svg" alt="@TransB" className="h-6" />
-              <img src="/assets/LZlogo.svg" alt="LiaiZen" className="h-8" />
+            <div className="flex items-center gap-4">
+              <img
+                src="/assets/TransB.png"
+                alt="@TransB"
+                className="logo-image"
+                style={{ height: '96px', width: 'auto' }}
+              />
+              <img
+                src="/assets/LZlogo.svg"
+                alt="LiaiZen"
+                className="logo-image"
+                style={{ height: '104px', width: 'auto' }}
+              />
             </div>
 
             {/* Navigation Items */}

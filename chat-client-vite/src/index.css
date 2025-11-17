@@ -19,3 +19,18 @@ body {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }
+
+/* Crisp image rendering for logos and SVGs */
+.logo-image {
+  display: block;
+  object-fit: contain;
+  /* High-quality rendering for modern browsers */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  /* Prevent subpixel blur on Safari */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  /* Smooth rendering on Retina displays */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
