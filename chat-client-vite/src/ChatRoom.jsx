@@ -347,8 +347,8 @@ function ChatRoom() {
         <Navigation currentView={currentView} setCurrentView={setCurrentView} />
 
         {/* Main Content Area */}
-        <div className="pt-16 md:pt-32 pb-20 md:pb-0 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
+        <div className="pt-20 md:pt-36 pb-24 md:pb-8 px-3 sm:px-4 md:px-6 lg:px-8 min-h-screen">
+          <div className="max-w-7xl mx-auto w-full">
             {/* Dashboard View - Large Card Style */}
             {currentView === 'dashboard' && (
               <div className="space-y-6">
@@ -630,8 +630,8 @@ function ChatRoom() {
                 </div>
               )}
 
-              <div className="h-[420px] sm:h-[480px] bg-white rounded-2xl flex flex-col overflow-hidden shadow-inner border border-slate-100">
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 bg-slate-50/50">
+              <div className="h-[50vh] sm:h-[55vh] md:h-[60vh] lg:h-[65vh] max-h-[600px] bg-white rounded-2xl flex flex-col overflow-hidden shadow-inner border border-slate-100">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 bg-slate-50/50">
                 {messages
                   .filter((msg) => msg.type !== 'contact_suggestion') // Hide contact suggestions from chat (they show in modal)
                   .map((msg) => {
@@ -927,7 +927,7 @@ function ChatRoom() {
                 <div className="bg-gradient-to-r from-[#275559] to-[#4DA8B0] text-white p-4 sm:p-6">
                   <h2 className="text-xl sm:text-2xl font-bold">Contacts</h2>
                 </div>
-                <div className="h-[480px] sm:h-[520px] overflow-y-auto">
+                <div className="h-[60vh] sm:h-[65vh] max-h-[700px] overflow-y-auto">
                   <ContactsPanel username={username} />
                 </div>
               </div>
@@ -940,7 +940,7 @@ function ChatRoom() {
                 <div className="bg-gradient-to-r from-[#275559] to-[#4DA8B0] text-white p-4 sm:p-6">
                   <h2 className="text-xl sm:text-2xl font-bold">Profile</h2>
                 </div>
-                <div className="h-[480px] sm:h-[520px] overflow-y-auto">
+                <div className="h-[60vh] sm:h-[65vh] max-h-[700px] overflow-y-auto">
                   <ProfilePanel username={username} onLogout={handleLogout} />
                 </div>
               </div>

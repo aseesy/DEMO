@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html,
 body,
 #root {
@@ -11,6 +21,7 @@ body,
 
 body {
   position: relative;
+  overscroll-behavior-y: none;
 }
 
 /* Safe area support for mobile devices */
@@ -36,4 +47,14 @@ body {
   /* Force GPU acceleration for smoother rendering */
   transform: translateZ(0);
   will-change: transform;
+}
+
+/* Touch-friendly inputs on mobile */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select,
+  button {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
 }
