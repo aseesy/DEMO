@@ -24,13 +24,16 @@ body {
 .logo-image {
   display: block;
   object-fit: contain;
-  /* High-quality rendering for modern browsers */
+  /* High-quality smooth rendering for Retina displays */
   image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
+  image-rendering: high-quality;
   /* Prevent subpixel blur on Safari */
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  /* Smooth rendering on Retina displays */
+  /* Smooth anti-aliasing */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Force GPU acceleration for smoother rendering */
+  transform: translateZ(0);
+  will-change: transform;
 }
