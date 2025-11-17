@@ -17,11 +17,10 @@ export function Navigation({ currentView, setCurrentView }) {
             {/* Logo */}
             <div className="flex items-center gap-4">
               <img
-                src="/assets/TransB.png"
-                srcSet="/assets/TransB.png 1x, /assets/TransB@2x.png 2x"
+                src="/assets/TransB.svg"
                 alt="@TransB"
                 className="logo-image"
-                style={{ height: '96px', width: '96px' }}
+                style={{ height: '96px', width: 'auto' }}
               />
               <img
                 src="/assets/LZlogo.svg"
