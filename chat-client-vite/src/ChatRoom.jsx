@@ -6,6 +6,7 @@ import { useChat } from './hooks/useChat.js';
 import { ContactsPanel } from './components/ContactsPanel.jsx';
 import { ProfilePanel } from './components/ProfilePanel.jsx';
 import { Navigation } from './components/Navigation.jsx';
+import { LandingPage } from './components/LandingPage.jsx';
 import { API_BASE_URL } from './config.js';
 
 // Vite-migrated shell for the main LiaiZen app.
@@ -13,6 +14,11 @@ import { API_BASE_URL } from './config.js';
 // will be brought over next.
 
 function ChatRoom() {
+  const [showLanding, setShowLanding] = React.useState(() => {
+    // Don't show landing if user is already authenticated
+    return !localStorage.getItem('token');
+  });
+
   const {
     email,
     password,
@@ -38,6 +44,13 @@ function ChatRoom() {
       ? stored
       : 'dashboard';
   });
+
+  // Hide landing page once authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      setShowLanding(false);
+    }
+  }, [isAuthenticated]);
 
   React.useEffect(() => {
     if (isAuthenticated) {
@@ -331,6 +344,11 @@ function ChatRoom() {
       await handleSignup(e);
     }
   };
+
+  // Show landing page for first-time visitors
+  if (!isAuthenticated && showLanding) {
+    return <LandingPage onGetStarted={() => setShowLanding(false)} />;
+  }
 
   if (isCheckingAuth) {
     return (
