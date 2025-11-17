@@ -96,6 +96,23 @@ export function useContacts(username) {
     loadContacts();
   }, [loadContacts]);
 
+  // Reload contacts when a co-parent joins the room
+  React.useEffect(() => {
+    const handleCoParentJoined = (event) => {
+      console.log('Co-parent joined event received, reloading contacts...', event.detail);
+      // Reload contacts after a short delay to ensure backend has created them
+      setTimeout(() => {
+        loadContacts();
+      }, 1000);
+    };
+
+    window.addEventListener('coparent-joined', handleCoParentJoined);
+
+    return () => {
+      window.removeEventListener('coparent-joined', handleCoParentJoined);
+    };
+  }, [loadContacts]);
+
   const resetForm = () => {
     setEditingContact(null);
     setContactFormData({

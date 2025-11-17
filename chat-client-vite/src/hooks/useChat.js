@@ -114,6 +114,13 @@ export function useChat({ username, isAuthenticated, currentView }) {
       });
     });
 
+    // Listen for when a user joins the room (e.g., co-parent accepts invite)
+    socket.on('user_joined', (data) => {
+      console.log('User joined room:', data);
+      // Trigger a custom event that can be listened to by other components
+      window.dispatchEvent(new CustomEvent('coparent-joined', { detail: data }));
+    });
+
     return () => {
       socket.disconnect();
     };
