@@ -263,19 +263,19 @@ export function LandingPage({ onGetStarted }) {
                   <ul className="space-y-3 text-slate-700">
                     <li className="flex items-start gap-3">
                       <span className="text-red-500 font-bold">✗</span>
-                      <span><strong>$250–$400/hr mediators</strong> aren't there when the message hits your phone</span>
+                      <span>Telling your lawyer what they did retrospectively</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-red-500 font-bold">✗</span>
-                      <span><strong>Therapy</strong> helps you cope—but doesn't rewrite your next text</span>
+                      <span>Telling your therapist your frustration a week or 2 later</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-red-500 font-bold">✗</span>
-                      <span><strong>Co-parenting apps</strong> track the conflict but don't prevent it</span>
+                      <span>Documenting all the ways you have been treated unfairly and then trying to present them in court</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-red-500 font-bold">✗</span>
-                      <span><strong>Court orders</strong> don't eliminate emotional triggers</span>
+                      <span>Court orders that can't be enforced in the heat of the moment</span>
                     </li>
                   </ul>
                 </div>
