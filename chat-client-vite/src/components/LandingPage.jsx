@@ -315,7 +315,8 @@ export function LandingPage({ onGetStarted }) {
           {/* Value Proposition Section */}
           <div className="mt-24 mb-24" data-section="value_proposition">
             <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-12 text-center">
-              Finally. A Tool That Actually Does Something.
+              Finally, you can look at messages from your co-parent<br />
+              <span className="text-[#4DA8B0]">without feeling sick to your stomach.</span>
             </h2>
             <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
               {/* Value Prop 1 */}
