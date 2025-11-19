@@ -9,7 +9,7 @@ export function useTasks(username) {
   const [tasks, setTasks] = React.useState([]);
   const [isLoadingTasks, setIsLoadingTasks] = React.useState(false);
   const [taskSearch, setTaskSearch] = React.useState('');
-  const [taskFilter, setTaskFilter] = React.useState('all');
+  const [taskFilter, setTaskFilter] = React.useState('open');
   const [showTaskForm, setShowTaskForm] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState(null);
   const [taskFormData, setTaskFormData] = React.useState({
@@ -18,6 +18,8 @@ export function useTasks(username) {
     status: 'open',
     priority: 'medium',
     due_date: '',
+    assigned_to: 'self',
+    related_people: [],
   });
 
   const loadTasks = React.useCallback(async () => {
@@ -26,21 +28,33 @@ export function useTasks(username) {
     try {
       const params = new URLSearchParams({
         username,
-        status: taskFilter !== 'all' ? taskFilter : '',
         search: taskSearch,
       });
+      
+      // Handle different filter types
+      if (taskFilter === 'open' || taskFilter === 'completed') {
+        params.append('status', taskFilter);
+      } else if (taskFilter === 'high') {
+        params.append('priority', 'high');
+      }
+      // 'all' filter doesn't need any params
 
       const response = await apiGet(`/api/tasks?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data)) {
-          // Reuse the existing behavior of limiting to 5 items after sorting.
+          // Sort by creation date (oldest first for dashboard)
           const sorted = [...data].sort((a, b) => {
             const dateA = new Date(a.created_at || 0);
             const dateB = new Date(b.created_at || 0);
             return dateA - dateB;
           });
+          // Only limit to 5 if no search/filter is active and showing all tasks
+          if (!taskSearch && taskFilter === 'all') {
           setTasks(sorted.slice(0, 5));
+          } else {
+            setTasks(sorted);
+          }
         }
       }
     } catch (err) {
@@ -89,6 +103,8 @@ export function useTasks(username) {
           status: 'open',
           priority: 'medium',
           due_date: '',
+          assigned_to: 'self',
+          related_people: [],
         });
         loadTasks();
         return data;

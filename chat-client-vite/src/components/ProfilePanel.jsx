@@ -1,7 +1,7 @@
 import React from 'react';
 import { useProfile } from '../hooks/useProfile.js';
 
-export function ProfilePanel({ username, onLogout }) {
+export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
   const {
     profileData,
     isLoadingProfile,
@@ -17,79 +17,42 @@ export function ProfilePanel({ username, onLogout }) {
     changePassword,
   } = useProfile(username);
 
+  // Google Places autocomplete disabled for now - will re-enable once API is fully configured
+  // const addressContainerRef = React.useRef(null);
+  // const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = React.useState(false);
+
   return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-200 h-full overflow-y-auto">
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Profile</h2>
-        <p className="text-gray-600">
-          Manage your personal information and profile details.
-        </p>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
-          {error}
-        </div>
-      )}
-
-      {isLoadingProfile ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-teal" />
-          <p className="mt-2 text-gray-600 text-sm">Loading profile...</p>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {/* Account Info */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-teal-dark mb-4">
-              Account Information
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  value={profileData.username || ''}
-                  onChange={(e) => {
-                    const newUsername = e.target.value.trim();
-                    if (newUsername.length <= 20) {
-                      setProfileData({ ...profileData, username: newUsername });
-                    }
-                  }}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
-                  placeholder="Username"
-                  maxLength={20}
-                />
-                <p className="text-xs text-gray-500 mt-1">2-20 characters</p>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={profileData.email}
-                  onChange={(e) =>
-                    setProfileData({ ...profileData, email: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
-                  placeholder="your@email.com"
-                />
-              </div>
-            </div>
+    <div className="bg-gradient-to-br from-[#E6F7F5] to-white h-full overflow-y-auto">
+      <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
+        {error && (
+          <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-6 text-sm">
+            {error}
           </div>
+        )}
 
+        {isLoadingProfile ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#E6F7F5] border-t-[#4DA8B0]" />
+            <p className="mt-4 text-[#275559] font-medium">Loading profile...</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
           {/* Personal Info */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-teal-dark mb-4">
-              Personal Information
-            </h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border-2 border-[#A8D9D3] shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#D4F0EC] to-[#A8D9D3] rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-[#275559]">
+                Personal Information
+              </h3>
+            </div>
+            <div className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5 sm:mb-2">
                     First Name
                   </label>
                   <input
@@ -101,12 +64,12 @@ export function ProfilePanel({ username, onLogout }) {
                         first_name: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[44px]"
                     placeholder="First name"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5 sm:mb-2">
                     Last Name
                   </label>
                   <input
@@ -118,13 +81,13 @@ export function ProfilePanel({ username, onLogout }) {
                         last_name: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[44px]"
                     placeholder="Last name"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5 sm:mb-2">
                   Address
                 </label>
                 <input
@@ -133,30 +96,18 @@ export function ProfilePanel({ username, onLogout }) {
                   onChange={(e) =>
                     setProfileData({ ...profileData, address: e.target.value })
                   }
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
-                  placeholder="Your address"
+                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[44px]"
+                  placeholder="Enter your full address..."
                 />
+                <p className="text-xs text-[#3d8a92] mt-2 flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  </svg>
+                  Enter your complete street address, city, state, and ZIP code
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Household Members{' '}
-                  <span className="text-xs text-gray-500">(Private to you)</span>
-                </label>
-                <textarea
-                  value={profileData.household_members}
-                  onChange={(e) =>
-                    setProfileData({
-                      ...profileData,
-                      household_members: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
-                  rows={3}
-                  placeholder="List household members..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5 sm:mb-2">
                   Occupation / Daily Responsibilities
                 </label>
                 <textarea
@@ -167,16 +118,16 @@ export function ProfilePanel({ username, onLogout }) {
                       occupation: e.target.value,
                     })
                   }
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
+                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[100px]"
                   rows={3}
                   placeholder="Describe your occupation and daily responsibilities..."
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-[#3d8a92] mt-2">
                   This helps understand your schedule demands.
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5 sm:mb-2">
                   What is your parenting philosophy?
                 </label>
                 <textarea
@@ -187,13 +138,13 @@ export function ProfilePanel({ username, onLogout }) {
                       parenting_philosophy: e.target.value,
                     })
                   }
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
+                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[120px]"
                   rows={4}
                   placeholder="Share your parenting philosophy and approach..."
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5 sm:mb-2">
                   What personal growth or changes would you like to work on during
                   this process?
                 </label>
@@ -205,7 +156,7 @@ export function ProfilePanel({ username, onLogout }) {
                       personal_growth: e.target.value,
                     })
                   }
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
+                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[120px]"
                   rows={4}
                   placeholder="Describe areas you'd like to improve or work on..."
                 />
@@ -214,20 +165,27 @@ export function ProfilePanel({ username, onLogout }) {
           </div>
 
           {/* Password section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-teal-dark">Password</h3>
+          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border-2 border-gray-200 shadow-sm hover:shadow-md transition-all">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-[#275559]">Password</h3>
+              </div>
               <button
                 onClick={() => setShowPasswordChange(!showPasswordChange)}
-                className="px-4 py-2 bg-teal text-white rounded-xl font-semibold text-sm"
+                className="px-3 py-2 sm:py-1.5 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] text-[#275559] border border-[#C5E8E4] hover:from-[#C5E8E4] hover:to-[#A8D9D3] rounded-lg font-semibold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md min-h-[36px] sm:min-h-[40px] touch-manipulation self-start sm:self-auto"
               >
                 {showPasswordChange ? 'Cancel' : 'Change Password'}
               </button>
             </div>
             {showPasswordChange && (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5 sm:mb-2">
                     Current Password
                   </label>
                   <input
@@ -239,11 +197,11 @@ export function ProfilePanel({ username, onLogout }) {
                         currentPassword: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[44px]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5 sm:mb-2">
                     New Password
                   </label>
                   <input
@@ -255,11 +213,11 @@ export function ProfilePanel({ username, onLogout }) {
                         newPassword: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[44px]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5 sm:mb-2">
                     Confirm New Password
                   </label>
                   <input
@@ -271,13 +229,13 @@ export function ProfilePanel({ username, onLogout }) {
                         confirmPassword: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[44px]"
                   />
                 </div>
                 <button
                   onClick={changePassword}
                   disabled={isChangingPassword}
-                  className="w-full bg-teal text-white py-3 rounded-xl font-semibold disabled:bg-gray-400 text-sm"
+                  className="w-full bg-[#275559] hover:bg-[#1f4447] text-white py-3 sm:py-2 px-4 rounded-lg font-semibold disabled:bg-gray-400 transition-all shadow-md hover:shadow-lg min-h-[44px] touch-manipulation text-sm"
                 >
                   {isChangingPassword ? 'Changing...' : 'Update Password'}
                 </button>
@@ -286,47 +244,31 @@ export function ProfilePanel({ username, onLogout }) {
           </div>
 
           {/* Save button */}
-          <div className="flex gap-3 pt-4">
+          <div className="bg-gradient-to-br from-[#4DA8B0] to-[#3d8a92] rounded-xl sm:rounded-2xl p-1 shadow-lg hover:shadow-xl transition-all">
             <button
               onClick={saveProfile}
               disabled={isSavingProfile}
-              className="flex-1 bg-teal text-white py-3 rounded-xl font-semibold disabled:bg-gray-400 text-sm flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-br from-[#4DA8B0] to-[#3d8a92] hover:from-[#3d8a92] hover:to-[#2d6d75] text-white py-3 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base disabled:from-gray-400 disabled:to-gray-500 transition-all flex items-center justify-center gap-2 min-h-[48px] touch-manipulation"
             >
               {isSavingProfile ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Saving...
+                  Saving Changes...
                 </>
               ) : (
-                'Save Profile'
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Save Profile
+                </>
               )}
             </button>
           </div>
 
-          {/* Logout button */}
-          <div className="pt-6 border-t border-gray-200 mt-6">
-            <button
-              onClick={onLogout}
-              className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-              Log Out
-            </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -122,11 +122,32 @@ export function useProfile(username) {
           localStorage.setItem('username', updatedUsername);
           setProfileData((prev) => ({ ...prev, username: updatedUsername }));
         }
+        
+        // Reload profile data to ensure UI is in sync
+        const reloadResponse = await apiGet(
+          `/api/user/profile?username=${encodeURIComponent(data.username || username)}`,
+        );
+        if (reloadResponse.ok) {
+          const reloadData = await reloadResponse.json();
+          setProfileData({
+            username: reloadData.username || data.username || username,
+            email: reloadData.email || '',
+            first_name: reloadData.first_name || '',
+            last_name: reloadData.last_name || '',
+            address: reloadData.address || '',
+            household_members: reloadData.household_members || '',
+            occupation: reloadData.occupation || '',
+            parenting_philosophy: reloadData.parenting_philosophy || '',
+            personal_growth: reloadData.personal_growth || '',
+          });
+        }
+        
         alert('Profile saved successfully!');
       } else {
         const errorMessage =
           data.error || data.message || `Failed to save profile (Status: ${response.status})`;
         setError(errorMessage);
+        alert(`Failed to save profile: ${errorMessage}`);
       }
     } catch (err) {
       console.error('Error saving profile (Vite):', err);

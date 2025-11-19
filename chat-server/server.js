@@ -201,6 +201,101 @@ const MAX_USERNAME_LENGTH = 20;
 const MAX_MESSAGE_LENGTH = 500;
 
 // Middleware to verify JWT token
+/**
+ * Auto-complete onboarding tasks when conditions are met
+ */
+async function autoCompleteOnboardingTasks(userId) {
+  try {
+    const db = await require('./db').getDb();
+    
+    // Get user profile to check if profile is complete
+    const userResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+    
+    if (users.length === 0) return;
+    
+    const user = users[0];
+    const now = new Date().toISOString();
+    
+    // Check if profile is complete (has filled out multiple profile fields)
+    // Count how many profile fields are filled out
+    const filledFields = [
+      user.first_name,
+      user.last_name,
+      user.address,
+      user.occupation,
+      user.parenting_philosophy,
+      user.personal_growth,
+      user.email
+    ].filter(field => field && field.trim().length > 0).length;
+    
+    // Profile is considered complete if at least 2 fields are filled out
+    const profileComplete = filledFields >= 2;
+    
+    // Check if co-parent exists
+    const coparentResult = await dbSafe.safeSelect('contacts', {
+      user_id: userId
+    }, {});
+    const allContacts = dbSafe.parseResult(coparentResult);
+    const hasCoparent = allContacts.some(c => 
+      c.relationship === 'My Co-Parent' || 
+      c.relationship === 'co-parent' || 
+      c.relationship === "My Partner's Co-Parent"
+    );
+    
+    // Check if children exist
+    const hasChildren = allContacts.some(c => 
+      c.relationship === 'My Child' || 
+      c.relationship === "My Partner's Child"
+    );
+    
+    // Get all onboarding tasks for this user
+    const onboardingTaskTitles = [
+      'Complete Your Profile',
+      'Add Your Co-parent',
+      'Add Your Children'
+    ];
+    
+    for (const taskTitle of onboardingTaskTitles) {
+      const taskResult = await dbSafe.safeSelect('tasks', {
+        user_id: userId,
+        title: taskTitle,
+        status: 'open'
+      }, { limit: 1 });
+      
+      const tasks = dbSafe.parseResult(taskResult);
+      
+      if (tasks.length > 0) {
+        const task = tasks[0];
+        let shouldComplete = false;
+        
+        if (taskTitle === 'Complete Your Profile' && profileComplete) {
+          shouldComplete = true;
+        } else if (taskTitle === 'Add Your Co-parent' && hasCoparent) {
+          shouldComplete = true;
+        } else if (taskTitle === 'Add Your Children' && hasChildren) {
+          shouldComplete = true;
+        }
+        
+        if (shouldComplete) {
+          await dbSafe.safeUpdate('tasks', {
+            status: 'completed',
+            completed_at: now,
+            updated_at: now
+          }, { id: task.id });
+          
+          console.log(`✅ Auto-completed onboarding task: ${taskTitle} for user ${userId}`);
+        }
+      }
+    }
+    
+    require('./db').saveDatabase();
+  } catch (error) {
+    console.error('Error in autoCompleteOnboardingTasks:', error);
+    throw error;
+  }
+}
+
 async function verifyAuth(req, res, next) {
   try {
     // Check for token in cookie or Authorization header
@@ -1907,6 +2002,53 @@ app.get('/api/info', (req, res) => {
   });
 });
 
+// Contact form endpoint (public - no authentication required)
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({
+        error: 'All fields are required (name, email, subject, message)'
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    // Validate message length
+    if (message.trim().length < 10) {
+      return res.status(400).json({ error: 'Message must be at least 10 characters' });
+    }
+
+    // Send email via email service
+    const result = await emailService.sendContactForm({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      subject: subject.trim(),
+      message: message.trim()
+    });
+
+    console.log(`📧 Contact form submitted by ${name} <${email}>: ${subject}`);
+
+    res.json({
+      success: true,
+      message: 'Your message has been sent successfully. We\'ll get back to you within 24-48 hours.'
+    });
+
+  } catch (error) {
+    console.error('Error processing contact form:', error);
+    res.status(500).json({
+      error: 'Failed to send message. Please try emailing us directly at info@liaizen.com',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Authentication API endpoints
 // Sign up (create new account)
 app.post('/api/auth/signup', async (req, res) => {
@@ -2277,26 +2419,56 @@ app.get('/api/tasks', async (req, res) => {
     // Get tasks with optional filtering
     const status = req.query.status || req.query.filter;
     const search = req.query.search;
+    const priority = req.query.priority;
     
     let tasksResult;
+    // Build filter conditions
+    const filterConditions = { user_id: userId };
+    
     if (status && status !== 'all') {
-      tasksResult = await dbSafe.safeSelect('tasks', {
-        user_id: userId,
-        status: status
-      }, { 
+      filterConditions.status = status;
+    }
+    
+    if (priority && priority !== 'all') {
+      filterConditions.priority = priority;
+    }
+    
+    tasksResult = await dbSafe.safeSelect('tasks', filterConditions, { 
         orderBy: 'created_at',
         orderDirection: 'DESC'
       });
-    } else {
-      tasksResult = await dbSafe.safeSelect('tasks', {
+    
+    let tasks = dbSafe.parseResult(tasksResult);
+    
+    // Auto-complete onboarding tasks if conditions are met (check on load)
+    try {
+      await autoCompleteOnboardingTasks(userId);
+      // Reload tasks after auto-completion to get updated status
+      const updatedTasksResult = await dbSafe.safeSelect('tasks', {
         user_id: userId
       }, { 
         orderBy: 'created_at',
         orderDirection: 'DESC'
       });
+      tasks = dbSafe.parseResult(updatedTasksResult);
+    } catch (error) {
+      console.error('Error auto-completing onboarding tasks on load:', error);
+      // Continue with original tasks if auto-complete fails
     }
     
-    let tasks = dbSafe.parseResult(tasksResult);
+    // Parse JSON fields for assigned_to and related_people
+    tasks = tasks.map(task => {
+      if (task.related_people) {
+        try {
+          task.related_people = JSON.parse(task.related_people);
+        } catch (e) {
+          task.related_people = [];
+        }
+      } else {
+        task.related_people = [];
+      }
+      return task;
+    });
     
     // Apply search filter if provided
     if (search && search.trim()) {
@@ -2317,7 +2489,7 @@ app.get('/api/tasks', async (req, res) => {
 // Create a new task
 app.post('/api/tasks', async (req, res) => {
   try {
-    const { username, title, description, status, priority, due_date } = req.body;
+    const { username, title, description, status, priority, due_date, assigned_to, related_people } = req.body;
     
     if (!username || !title || !title.trim()) {
       return res.status(400).json({ error: 'Username and title are required' });
@@ -2372,6 +2544,8 @@ app.post('/api/tasks', async (req, res) => {
       status: status || 'open',
       priority: priority || 'medium',
       due_date: due_date || null,
+      assigned_to: assigned_to || null,
+      related_people: related_people ? JSON.stringify(related_people) : null,
       created_at: now,
       updated_at: now,
       completed_at: null
@@ -2394,7 +2568,7 @@ app.post('/api/tasks', async (req, res) => {
 app.put('/api/tasks/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
-    const { username, title, description, status, priority, due_date } = req.body;
+    const { username, title, description, status, priority, due_date, assigned_to, related_people } = req.body;
     
     if (!username) {
       return res.status(400).json({ error: 'Username is required' });
@@ -2437,6 +2611,8 @@ app.put('/api/tasks/:taskId', async (req, res) => {
     }
     if (priority !== undefined) updateData.priority = priority;
     if (due_date !== undefined) updateData.due_date = due_date || null;
+    if (assigned_to !== undefined) updateData.assigned_to = assigned_to || null;
+    if (related_people !== undefined) updateData.related_people = related_people ? JSON.stringify(related_people) : null;
     
     await dbSafe.safeUpdate('tasks', updateData, { id: parseInt(taskId) });
     require('./db').saveDatabase();
@@ -2550,6 +2726,236 @@ app.post('/api/tasks/:taskId/duplicate', async (req, res) => {
   } catch (error) {
     console.error('Error duplicating task:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Get dashboard updates (recent activity from co-parent and children)
+app.get('/api/dashboard/updates', async (req, res) => {
+  try {
+    const username = req.query.username;
+    
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    const db = await require('./db').getDb();
+    
+    // Get user
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+    const updates = [];
+
+    // Get user's room to find co-parent
+    const userRoom = await roomManager.getUserRoom(userId);
+    if (userRoom) {
+      const roomMembers = await roomManager.getRoomMembers(userRoom.id);
+      const coparentMember = roomMembers.find(m => m.user_id !== userId);
+      
+      if (coparentMember) {
+        // Get co-parent user info
+        const coparentUserResult = await dbSafe.safeSelect('users', { id: coparentMember.user_id }, { limit: 1 });
+        const coparentUsers = dbSafe.parseResult(coparentUserResult);
+        
+        if (coparentUsers.length > 0) {
+          const coparentUsername = coparentUsers[0].username;
+          
+          // Get recent messages from co-parent (last 48 hours)
+          const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+          const messagesQuery = `
+            SELECT * FROM messages
+            WHERE room_id = ${dbSafe.escapeSQL(userRoom.id)}
+            AND username = ${dbSafe.escapeSQL(coparentUsername)}
+            AND timestamp > ${dbSafe.escapeSQL(twoDaysAgo)}
+            AND private = 0
+            AND flagged = 0
+            ORDER BY timestamp DESC
+            LIMIT 5
+          `;
+          const messagesResult = db.exec(messagesQuery);
+          const messages = dbSafe.parseResult(messagesResult);
+          
+          messages.forEach(msg => {
+            updates.push({
+              personName: coparentUsername,
+              type: 'message',
+              description: msg.text || 'Sent a message',
+              timestamp: msg.timestamp
+            });
+          });
+
+          // Get recent task completions by co-parent
+          const coparentTasksQuery = `
+            SELECT * FROM tasks
+            WHERE user_id = ${coparentMember.user_id}
+            AND status = 'completed'
+            AND completed_at > ${dbSafe.escapeSQL(twoDaysAgo)}
+            ORDER BY completed_at DESC
+            LIMIT 3
+          `;
+          const tasksResult = db.exec(coparentTasksQuery);
+          const completedTasks = dbSafe.parseResult(tasksResult);
+          
+          completedTasks.forEach(task => {
+            updates.push({
+              personName: coparentUsername,
+              type: 'task',
+              description: `Completed: ${task.title}`,
+              timestamp: task.completed_at || task.updated_at
+            });
+          });
+        }
+      }
+    }
+
+    // Get children contacts and their activity
+    const childrenContactsResult = await dbSafe.safeSelect('contacts', {
+      user_id: userId,
+      relationship: 'My Child'
+    }, {});
+    const childrenContacts = dbSafe.parseResult(childrenContactsResult);
+
+    // Also check for "My Partner's Child" relationship
+    const partnerChildrenResult = await dbSafe.safeSelect('contacts', {
+      user_id: userId
+    }, {});
+    const allChildren = dbSafe.parseResult(partnerChildrenResult).filter(
+      c => c.relationship === 'My Child' || c.relationship === "My Partner's Child"
+    );
+
+    // Get recent tasks related to children (could be enhanced with child-specific task tracking)
+    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const recentTasksQuery = `
+      SELECT * FROM tasks
+      WHERE user_id = ${userId}
+      AND created_at > ${dbSafe.escapeSQL(twoDaysAgo)}
+      AND (title LIKE '%child%' OR title LIKE '%children%' OR description LIKE '%child%' OR description LIKE '%children%')
+      ORDER BY created_at DESC
+      LIMIT 3
+    `;
+    const childTasksResult = db.exec(recentTasksQuery);
+    const childTasks = dbSafe.parseResult(childTasksResult);
+
+    childTasks.forEach(task => {
+      // Try to match to a child contact
+      const relatedChild = allChildren.find(c => 
+        task.title.toLowerCase().includes(c.contact_name?.toLowerCase() || '') ||
+        task.description?.toLowerCase().includes(c.contact_name?.toLowerCase() || '')
+      );
+      
+      updates.push({
+        personName: relatedChild?.contact_name || 'Your Child',
+        type: 'task',
+        description: `New task: ${task.title}`,
+        timestamp: task.created_at
+      });
+    });
+
+    // Sort updates by timestamp (most recent first) and limit to 10
+    updates.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const limitedUpdates = updates.slice(0, 10);
+
+    res.json({
+      success: true,
+      updates: limitedUpdates
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard updates:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate task using AI
+app.post('/api/tasks/generate', async (req, res) => {
+  try {
+    const { username, taskDetails } = req.body;
+    
+    if (!username || !taskDetails || !taskDetails.trim()) {
+      return res.status(400).json({ error: 'Username and task details are required' });
+    }
+
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim() === '') {
+      return res.status(503).json({ error: 'AI service is not configured' });
+    }
+
+    const OpenAI = require('openai');
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const prompt = `You are a helpful task management assistant for a co-parenting app. Based on the following task description, create a well-structured task with:
+- A clear, concise title (max 60 characters)
+- A detailed description that expands on the task
+- An appropriate priority level (low, medium, or high)
+- A suggested due date if applicable (format: YYYY-MM-DD, or null if not applicable)
+
+Task description from user: "${taskDetails}"
+
+Respond in JSON format only with this structure:
+{
+  "title": "Task title here",
+  "description": "Detailed description here",
+  "priority": "medium",
+  "due_date": "2024-12-31" or null
+}`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful task management assistant. Always respond with valid JSON only, no additional text.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 300,
+      temperature: 0.7
+    });
+
+    const response = completion.choices[0].message.content.trim();
+    
+    // Parse JSON response
+    let taskData;
+    try {
+      // Remove any markdown code blocks if present
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        taskData = JSON.parse(jsonMatch[0]);
+      } else {
+        taskData = JSON.parse(response);
+      }
+    } catch (parseError) {
+      console.error('Error parsing AI response:', parseError);
+      console.error('AI response was:', response);
+      return res.status(500).json({ error: 'Failed to parse AI response. Please try again.' });
+    }
+
+    // Validate and sanitize the response
+    const generatedTask = {
+      title: (taskData.title || taskDetails.substring(0, 60)).trim(),
+      description: (taskData.description || taskDetails).trim(),
+      priority: ['low', 'medium', 'high'].includes(taskData.priority?.toLowerCase()) 
+        ? taskData.priority.toLowerCase() 
+        : 'medium',
+      due_date: taskData.due_date || null,
+      status: 'open'
+    };
+
+    res.json({
+      success: true,
+      task: generatedTask
+    });
+  } catch (error) {
+    console.error('Error generating task with AI:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate task' });
   }
 });
 
@@ -2720,16 +3126,77 @@ app.put('/api/user/profile', async (req, res) => {
       updateData.username = newUsername.toLowerCase();
     }
     
-    if (email !== undefined) updateData.email = email ? email.trim().toLowerCase() : null;
-    if (first_name !== undefined) updateData.first_name = first_name != null ? String(first_name).trim() : null;
-    if (last_name !== undefined) updateData.last_name = last_name != null ? String(last_name).trim() : null;
-    if (address !== undefined) updateData.address = address != null ? String(address).trim() : null;
-    if (household_members !== undefined) updateData.household_members = household_members != null ? String(household_members).trim() : null;
-    if (occupation !== undefined) updateData.occupation = occupation != null ? String(occupation).trim() : null;
-    if (parenting_philosophy !== undefined) updateData.parenting_philosophy = parenting_philosophy != null ? String(parenting_philosophy).trim() : null;
+    if (email !== undefined) {
+      const trimmedEmail = email ? email.trim().toLowerCase() : null;
+      if (trimmedEmail) {
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmedEmail)) {
+          return res.status(400).json({ error: 'Invalid email format' });
+        }
+      }
+      updateData.email = trimmedEmail;
+    }
+    // Field length limits to prevent database issues (SQLite TEXT can be very large, but we'll set reasonable limits)
+    const MAX_FIELD_LENGTHS = {
+      first_name: 100,
+      last_name: 100,
+      address: 500,
+      household_members: 1000,
+      occupation: 200,
+      parenting_philosophy: 5000,
+      personal_growth: 10000
+    };
+
+    if (first_name !== undefined) {
+      const trimmed = first_name != null ? String(first_name).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.first_name) {
+        return res.status(400).json({ error: `First name must be ${MAX_FIELD_LENGTHS.first_name} characters or less` });
+      }
+      updateData.first_name = trimmed;
+    }
+    if (last_name !== undefined) {
+      const trimmed = last_name != null ? String(last_name).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.last_name) {
+        return res.status(400).json({ error: `Last name must be ${MAX_FIELD_LENGTHS.last_name} characters or less` });
+      }
+      updateData.last_name = trimmed;
+    }
+    if (address !== undefined) {
+      const trimmed = address != null ? String(address).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.address) {
+        return res.status(400).json({ error: `Address must be ${MAX_FIELD_LENGTHS.address} characters or less` });
+      }
+      updateData.address = trimmed;
+    }
+    if (household_members !== undefined) {
+      const trimmed = household_members != null ? String(household_members).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.household_members) {
+        return res.status(400).json({ error: `Household members must be ${MAX_FIELD_LENGTHS.household_members} characters or less` });
+      }
+      updateData.household_members = trimmed;
+    }
+    if (occupation !== undefined) {
+      const trimmed = occupation != null ? String(occupation).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.occupation) {
+        return res.status(400).json({ error: `Occupation must be ${MAX_FIELD_LENGTHS.occupation} characters or less` });
+      }
+      updateData.occupation = trimmed;
+    }
+    if (parenting_philosophy !== undefined) {
+      const trimmed = parenting_philosophy != null ? String(parenting_philosophy).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.parenting_philosophy) {
+        return res.status(400).json({ error: `Parenting philosophy must be ${MAX_FIELD_LENGTHS.parenting_philosophy} characters or less` });
+      }
+      updateData.parenting_philosophy = trimmed;
+    }
     if (personal_growth !== undefined) {
       // Handle personal_growth - preserve empty strings
-      updateData.personal_growth = personal_growth != null ? String(personal_growth).trim() : null;
+      const trimmed = personal_growth != null ? String(personal_growth).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.personal_growth) {
+        return res.status(400).json({ error: `Personal growth must be ${MAX_FIELD_LENGTHS.personal_growth} characters or less` });
+      }
+      updateData.personal_growth = trimmed;
       console.log('Updating personal_growth:', { 
         original: personal_growth, 
         processed: updateData.personal_growth,
@@ -2757,6 +3224,14 @@ app.put('/api/user/profile', async (req, res) => {
     require('./db').saveDatabase();
 
     console.log('Profile updated successfully for user:', userId);
+
+    // Auto-complete onboarding tasks if conditions are met
+    try {
+      await autoCompleteOnboardingTasks(userId);
+    } catch (error) {
+      console.error('Error auto-completing onboarding tasks:', error);
+      // Don't fail profile update if this fails
+    }
 
     // Return updated username if it was changed
     const updatedUsername = updateData.username || dbUsername;
@@ -2832,11 +3307,23 @@ app.get('/api/contacts', async (req, res) => {
     }
 
     const userId = users[0].id;
-    
+
     // Get contacts
     const contactsResult = await dbSafe.safeSelect('contacts', { user_id: userId }, { orderBy: 'created_at', orderDirection: 'DESC' });
-    const contacts = dbSafe.parseResult(contactsResult);
-    
+    let contacts = dbSafe.parseResult(contactsResult);
+
+    // Enrich contacts with linked contact information
+    for (let contact of contacts) {
+      if (contact.linked_contact_id) {
+        const linkedContactResult = await dbSafe.safeSelect('contacts', { id: contact.linked_contact_id }, { limit: 1 });
+        const linkedContacts = dbSafe.parseResult(linkedContactResult);
+        if (linkedContacts.length > 0) {
+          contact.linked_contact_name = linkedContacts[0].contact_name;
+          contact.linked_contact_relationship = linkedContacts[0].relationship;
+        }
+      }
+    }
+
     res.json({
       contacts,
       count: contacts.length
@@ -2857,7 +3344,9 @@ app.post('/api/contacts', async (req, res) => {
 
     const { username, contact_name, contact_email, relationship, notes, separation_date, address,
             difficult_aspects, friction_situations, legal_matters, safety_concerns,
-            substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent } = req.body;
+            substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent,
+            child_age, child_birthdate, school, phone, partner_duration, has_children,
+            custody_arrangement, linked_contact_id } = req.body;
     
     console.log('Creating contact:', {
       username,
@@ -2900,6 +3389,14 @@ app.post('/api/contacts', async (req, res) => {
       neglect_abuse_concerns: neglect_abuse_concerns || null,
       additional_thoughts: additional_thoughts || null,
       other_parent: other_parent || null,
+      child_age: child_age || null,
+      child_birthdate: child_birthdate || null,
+      school: school || null,
+      phone: phone || null,
+      partner_duration: partner_duration || null,
+      has_children: has_children || null,
+      custody_arrangement: custody_arrangement || null,
+      linked_contact_id: linked_contact_id || null,
       created_at: now,
       updated_at: now
     });
@@ -2911,6 +3408,14 @@ app.post('/api/contacts', async (req, res) => {
       userId,
       contact_name: contact_name.trim()
     });
+
+    // Auto-complete onboarding tasks if conditions are met
+    try {
+      await autoCompleteOnboardingTasks(userId);
+    } catch (error) {
+      console.error('Error auto-completing onboarding tasks:', error);
+      // Don't fail contact creation if this fails
+    }
 
     res.json({
       success: true,
@@ -2931,9 +3436,11 @@ app.post('/api/contacts', async (req, res) => {
 app.put('/api/contacts/:contactId', async (req, res) => {
   try {
     const contactId = parseInt(req.params.contactId);
-    const { username, contact_name, contact_email, relationship, notes, separation_date, address, 
-            difficult_aspects, friction_situations, legal_matters, safety_concerns, 
-            substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent } = req.body;
+    const { username, contact_name, contact_email, relationship, notes, separation_date, address,
+            difficult_aspects, friction_situations, legal_matters, safety_concerns,
+            substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent,
+            child_age, child_birthdate, school, phone, partner_duration, has_children,
+            custody_arrangement, linked_contact_id } = req.body;
     
     if (!contactId || isNaN(contactId)) {
       return res.status(400).json({ error: 'Invalid contact ID' });
@@ -2986,9 +3493,26 @@ app.put('/api/contacts/:contactId', async (req, res) => {
     if (neglect_abuse_concerns !== undefined) updateData.neglect_abuse_concerns = neglect_abuse_concerns || null;
     if (additional_thoughts !== undefined) updateData.additional_thoughts = additional_thoughts || null;
     if (other_parent !== undefined) updateData.other_parent = other_parent || null;
+    // New relationship-specific fields
+    if (child_age !== undefined) updateData.child_age = child_age || null;
+    if (child_birthdate !== undefined) updateData.child_birthdate = child_birthdate || null;
+    if (school !== undefined) updateData.school = school || null;
+    if (phone !== undefined) updateData.phone = phone || null;
+    if (partner_duration !== undefined) updateData.partner_duration = partner_duration || null;
+    if (has_children !== undefined) updateData.has_children = has_children || null;
+    if (custody_arrangement !== undefined) updateData.custody_arrangement = custody_arrangement || null;
+    if (linked_contact_id !== undefined) updateData.linked_contact_id = linked_contact_id || null;
     
     await dbSafe.safeUpdate('contacts', updateData, { id: contactId });
     require('./db').saveDatabase();
+
+    // Auto-complete onboarding tasks if conditions are met
+    try {
+      await autoCompleteOnboardingTasks(userId);
+    } catch (error) {
+      console.error('Error auto-completing onboarding tasks:', error);
+      // Don't fail contact update if this fails
+    }
 
     res.json({
       success: true,
@@ -3401,6 +3925,23 @@ app.post('/api/room/join', async (req, res) => {
     // Use invite
     const result = await roomManager.useInvite(inviteCode, user.id);
 
+    // Auto-complete onboarding tasks after using invite (contacts may have been created)
+    try {
+      await autoCompleteOnboardingTasks(user.id);
+      // Also complete tasks for other room members if contacts were created
+      if (result.roomId) {
+        const roomMembers = await roomManager.getRoomMembers(result.roomId);
+        for (const member of roomMembers) {
+          if (member.user_id !== user.id) {
+            await autoCompleteOnboardingTasks(member.user_id);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error auto-completing onboarding tasks after using invite:', error);
+      // Don't fail the request if this fails
+    }
+
     res.json({
       success: true,
       roomId: result.roomId
@@ -3603,6 +4144,19 @@ app.post('/api/join/accept', async (req, res) => {
 
     // Accept connection
     const result = await connectionManager.acceptPendingConnection(token, user.id);
+
+    // Auto-complete onboarding tasks for both users after accepting invite
+    try {
+      await autoCompleteOnboardingTasks(user.id);
+      // Also complete tasks for the inviter
+      const connection = await connectionManager.validateConnectionToken(token);
+      if (connection && connection.inviterId) {
+        await autoCompleteOnboardingTasks(connection.inviterId);
+      }
+    } catch (error) {
+      console.error('Error auto-completing onboarding tasks after invite acceptance:', error);
+      // Don't fail the request if this fails
+    }
 
     res.json({
       success: true,

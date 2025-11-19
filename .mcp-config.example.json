@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "node",
+      "args": ["path/to/filesystem-server"],
+      "description": "File system operations (usually pre-configured)"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "env:GITHUB_TOKEN"
+      },
+      "description": "GitHub repository management and issue tracking"
+    },
+    "sqlite": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite"],
+      "env": {
+        "DATABASE_PATH": "./chat-server/chat.db"
+      },
+      "description": "SQLite database operations and queries"
+    },
+    "browser": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-browser"],
+      "description": "Browser automation and testing (already available via Cursor)"
+    }
+  }
+}

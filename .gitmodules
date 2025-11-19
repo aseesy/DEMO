@@ -1,0 +1,3 @@
+[submodule "sdd-agentic-framework"]
+	path = sdd-agentic-framework
+	url = https://github.com/aseesy/sdd-agentic-framework.git

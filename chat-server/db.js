@@ -288,8 +288,8 @@ async function initDatabase() {
     )
   `);
 
-  // Add co-parent specific fields to contacts table (migration)
-  const coParentFields = [
+  // Add relationship-specific fields to contacts table (migration)
+  const relationshipFields = [
     'separation_date',
     'address',
     'difficult_aspects',
@@ -299,11 +299,19 @@ async function initDatabase() {
     'substance_mental_health',
     'neglect_abuse_concerns',
     'additional_thoughts',
-    'other_parent', // For children contacts - links to co-parent's contact
-    'triggering_reasons' // JSON array of triggering reasons from flagged messages
+    'other_parent', // For children contacts - links to co-parent's contact (name or ID)
+    'triggering_reasons', // JSON array of triggering reasons from flagged messages
+    'child_age', // For child contacts
+    'child_birthdate', // For child contacts
+    'school', // For child/teacher contacts
+    'phone', // For professional contacts
+    'partner_duration', // For partner contacts - how long together
+    'has_children', // For partner contacts - boolean (stored as TEXT "true"/"false")
+    'custody_arrangement', // For child contacts - custody details
+    'linked_contact_id' // For linking related contacts (e.g., child to other parent)
   ];
 
-  for (const field of coParentFields) {
+  for (const field of relationshipFields) {
     try {
       // Try to query the column to see if it exists
       const testResult = db.exec(`SELECT ${field} FROM contacts LIMIT 1`);
@@ -312,7 +320,7 @@ async function initDatabase() {
       // Column doesn't exist, try to add it
       try {
         db.run(`ALTER TABLE contacts ADD COLUMN ${field} TEXT`);
-        console.log(`✅ Added co-parent field to contacts: ${field}`);
+        console.log(`✅ Added relationship field to contacts: ${field}`);
       } catch (alterErr) {
         console.warn(`Could not add ${field} column (may already exist):`, alterErr.message);
       }
@@ -347,6 +355,24 @@ async function initDatabase() {
   db.run(`
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)
   `);
+
+  // Add task assignment and related people columns (migration)
+  const taskColumns = ['assigned_to', 'related_people'];
+  for (const column of taskColumns) {
+    try {
+      // Try to query the column to see if it exists
+      const testResult = db.exec(`SELECT ${column} FROM tasks LIMIT 1`);
+      // If we get here, column exists
+    } catch (err) {
+      // Column doesn't exist, try to add it
+      try {
+        db.run(`ALTER TABLE tasks ADD COLUMN ${column} TEXT`);
+        console.log(`✅ Added task column: ${column}`);
+      } catch (alterErr) {
+        console.warn(`Could not add ${column} column (may already exist):`, alterErr.message);
+      }
+    }
+  }
 
   // Save database to file
   saveDatabase();

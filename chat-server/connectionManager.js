@@ -315,6 +315,9 @@ async function acceptPendingConnection(token, userId) {
         
         // Save database after creating contacts
         require('./db').saveDatabase();
+        
+        // Note: Auto-complete onboarding tasks will be called from the server endpoint
+        // that calls this function, to avoid circular dependencies
       }
     } catch (contactError) {
       // Log error but don't fail the connection if contact creation fails

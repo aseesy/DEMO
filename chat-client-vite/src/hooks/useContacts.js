@@ -22,6 +22,14 @@ export function useContacts(username) {
     neglect_abuse_concerns: '',
     additional_thoughts: '',
     other_parent: '',
+    child_age: '',
+    child_birthdate: '',
+    school: '',
+    phone: '',
+    partner_duration: '',
+    has_children: '',
+    custody_arrangement: '',
+    linked_contact_id: '',
   });
   const [isSavingContact, setIsSavingContact] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -130,6 +138,14 @@ export function useContacts(username) {
       neglect_abuse_concerns: '',
       additional_thoughts: '',
       other_parent: '',
+      child_age: '',
+      child_birthdate: '',
+      school: '',
+      phone: '',
+      partner_duration: '',
+      has_children: '',
+      custody_arrangement: '',
+      linked_contact_id: '',
     });
   };
 
@@ -246,6 +262,14 @@ export function useContacts(username) {
       neglect_abuse_concerns: contact.neglect_abuse_concerns || '',
       additional_thoughts: contact.additional_thoughts || '',
       other_parent: contact.other_parent || '',
+      child_age: contact.child_age || '',
+      child_birthdate: contact.child_birthdate || '',
+      school: contact.school || '',
+      phone: contact.phone || '',
+      partner_duration: contact.partner_duration || '',
+      has_children: contact.has_children || '',
+      custody_arrangement: contact.custody_arrangement || '',
+      linked_contact_id: contact.linked_contact_id || '',
     });
     setShowContactForm(true);
   };

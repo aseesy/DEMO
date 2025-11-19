@@ -351,6 +351,9 @@ async function useInvite(inviteCode, userId) {
           // Save database after creating contacts
           require('./db').saveDatabase();
           
+          // Note: Auto-complete onboarding tasks will be called from the server endpoint
+          // that calls useInvite, to avoid circular dependencies
+          
           // Share contacts (names only) between users
           // This allows each user to see the other's contacts but add their own context
           try {

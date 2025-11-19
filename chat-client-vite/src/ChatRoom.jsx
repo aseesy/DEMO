@@ -3,15 +3,127 @@ import './index.css';
 import { useAuth } from './hooks/useAuth.js';
 import { useTasks } from './hooks/useTasks.js';
 import { useChat } from './hooks/useChat.js';
+import { useContacts } from './hooks/useContacts.js';
+import { useProfile } from './hooks/useProfile.js';
 import { ContactsPanel } from './components/ContactsPanel.jsx';
 import { ProfilePanel } from './components/ProfilePanel.jsx';
+import { UpdatesPanel } from './components/UpdatesPanel.jsx';
 import { Navigation } from './components/Navigation.jsx';
 import { LandingPage } from './components/LandingPage.jsx';
 import { API_BASE_URL } from './config.js';
+import { apiPost } from './apiClient.js';
 
 // Vite-migrated shell for the main LiaiZen app.
 // Currently focuses on login/signup; chat, tasks, contacts, and profile
 // will be brought over next.
+
+function AccountView({ username }) {
+  const {
+    profileData,
+    isLoadingProfile,
+    isSavingProfile,
+    error,
+    setProfileData,
+    saveProfile,
+  } = useProfile(username);
+
+  if (isLoadingProfile) {
+    return (
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="p-4 sm:p-6">
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#E6F7F5] border-t-[#4DA8B0]" />
+            <p className="mt-4 text-[#275559] font-medium">Loading account...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div className="p-4 sm:p-6 space-y-6">
+        {error && (
+          <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Account</h2>
+          <p className="text-slate-600 text-sm">
+            Manage billing, authentication, and household members connected to your space.
+          </p>
+        </div>
+
+        {/* Account Information */}
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-[#C5E8E4] shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-[#275559]">
+              Account Information
+            </h3>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-[#275559] mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={profileData.email}
+                onChange={(e) =>
+                  setProfileData({ ...profileData, email: e.target.value })
+                }
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                placeholder="your@email.com"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Other Account Sections */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="border border-slate-100 rounded-2xl p-4">
+            <h3 className="font-semibold text-slate-900 mb-2">Plan &amp; Billing</h3>
+            <p className="text-sm text-slate-600">Upgrade plans or download invoices.</p>
+          </div>
+          <div className="border border-slate-100 rounded-2xl p-4">
+            <h3 className="font-semibold text-slate-900 mb-2">Household Access</h3>
+            <p className="text-sm text-slate-600">Invite, remove, or update connected caregivers.</p>
+          </div>
+        </div>
+
+        {/* Save button */}
+        <div className="bg-gradient-to-br from-[#4DA8B0] to-[#3d8a92] rounded-2xl p-1 shadow-lg hover:shadow-xl transition-all">
+          <button
+            onClick={saveProfile}
+            disabled={isSavingProfile}
+            className="w-full bg-gradient-to-br from-[#4DA8B0] to-[#3d8a92] hover:from-[#3d8a92] hover:to-[#2d6d75] text-white py-3 px-6 rounded-xl font-semibold text-base disabled:from-gray-400 disabled:to-gray-500 transition-all flex items-center justify-center gap-2"
+          >
+            {isSavingProfile ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Saving Changes...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Save Account
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ChatRoom() {
   const [showLanding, setShowLanding] = React.useState(() => {
@@ -38,9 +150,10 @@ function ChatRoom() {
 
   // Local UI state must be declared before passing into hooks that depend on it
   const [isLoginMode, setIsLoginMode] = React.useState(true);
+  const availableViews = ['dashboard', 'chat', 'contacts', 'profile', 'settings', 'account'];
   const [currentView, setCurrentView] = React.useState(() => {
     const stored = localStorage.getItem('currentView');
-    return stored && ['dashboard', 'chat', 'contacts', 'profile'].includes(stored)
+    return stored && availableViews.includes(stored)
       ? stored
       : 'dashboard';
   });
@@ -62,16 +175,21 @@ function ChatRoom() {
   const {
     tasks,
     isLoadingTasks,
+    taskSearch,
+    taskFilter,
     showTaskForm,
     editingTask,
     taskFormData,
     setShowTaskForm,
     setEditingTask,
     setTaskFormData,
+    setTaskSearch,
+    setTaskFilter,
     toggleTaskStatus,
     saveTask,
   } = tasksState;
 
+  const { contacts } = useContacts(username);
   const chatState = useChat({ username, isAuthenticated, currentView });
   const {
     messages,
@@ -94,10 +212,23 @@ function ChatRoom() {
   const [pendingInviteCode, setPendingInviteCode] = React.useState(null);
   const [isAcceptingInvite, setIsAcceptingInvite] = React.useState(false);
   const [hasCoParentConnected, setHasCoParentConnected] = React.useState(false);
-  
+  const [showWelcomeModal, setShowWelcomeModal] = React.useState(false);
+  const [showProfileTaskModal, setShowProfileTaskModal] = React.useState(false);
+  const [taskFormMode, setTaskFormMode] = React.useState('manual'); // 'manual' or 'ai'
+  const [aiTaskDetails, setAiTaskDetails] = React.useState('');
+  const [isGeneratingTask, setIsGeneratingTask] = React.useState(false);
+
   // Contact suggestion modal state
   const [pendingContactSuggestion, setPendingContactSuggestion] = React.useState(null);
   const [dismissedSuggestions, setDismissedSuggestions] = React.useState(new Set());
+
+  // Handler to navigate to contacts when clicking household members in profile
+  const handleNavigateToContacts = (memberName) => {
+    setCurrentView('contacts');
+    // TODO: In future, can add search/filter functionality to ContactsPanel
+    // and pass memberName as a filter prop
+    console.log('Navigating to contacts for:', memberName);
+  };
 
   // Detect contact suggestions in messages and show modal
   React.useEffect(() => {
@@ -347,7 +478,10 @@ function ChatRoom() {
 
   // Show landing page for first-time visitors
   if (!isAuthenticated && showLanding) {
-    return <LandingPage onGetStarted={() => setShowLanding(false)} />;
+    return <LandingPage onGetStarted={() => {
+      setShowLanding(false);
+      setIsLoginMode(false);
+    }} />;
   }
 
   if (isCheckingAuth) {
@@ -360,53 +494,150 @@ function ChatRoom() {
 
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0]">
+      <div className="min-h-screen bg-white">
         {/* Navigation - Top for desktop, Bottom for mobile */}
-        <Navigation currentView={currentView} setCurrentView={setCurrentView} />
+        <Navigation
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          onLogout={handleLogout}
+        />
 
         {/* Main Content Area */}
-        <div className="pt-20 md:pt-36 pb-24 md:pb-8 px-3 sm:px-4 md:px-6 lg:px-8 min-h-screen">
+        <div className="pt-14 md:pt-16 pb-20 md:pb-8 px-2 sm:px-4 md:px-6 lg:px-8 relative z-10">
           <div className="max-w-7xl mx-auto w-full">
-            {/* Dashboard View - Large Card Style */}
+            {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
-              <div className="space-y-6">
-                {/* Welcome Card */}
-                <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-8">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
-                    Welcome back{username ? `, ${username}` : ''} 👋
-                  </h1>
-                  <p className="text-base text-slate-600">
-                    Here are your top onboarding tasks to get started with LiaiZen.
-                  </p>
-                </div>
-
+              <div className="space-y-0 md:space-y-4">
                 {/* Invite acceptance notification */}
                 {isAcceptingInvite && (
-                  <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                  <div className="rounded-lg border-2 border-[#C5E8E4] bg-[#E6F7F5] px-4 py-3 text-sm text-[#275559] mb-4">
                     <div className="flex items-center gap-2">
-                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-blue-300 border-t-blue-600" />
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-[#C5E8E4] border-t-[#275559]" />
                       <span>Accepting invite and joining room…</span>
                     </div>
                   </div>
                 )}
 
-                {/* Tasks Card */}
-                <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-8">
-                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">
+                {/* Dashboard Grid: Tasks and Updates */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
+                  {/* Tasks Section */}
+                  <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                      <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#275559]">
                     Your Tasks
                   </h2>
+                      <button
+                        onClick={() => {
+                          setEditingTask(null);
+                          setTaskFormMode('manual');
+                          setAiTaskDetails('');
+                          setIsGeneratingTask(false);
+                          setTaskFormData({
+                            title: '',
+                            description: '',
+                            status: 'open',
+                            priority: 'medium',
+                            due_date: '',
+                            assigned_to: 'self',
+                            related_people: [],
+                          });
+                          setShowTaskForm(true);
+                        }}
+                        className="px-3 py-1.5 sm:px-3 sm:py-2 bg-[#275559] text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#1f4447] transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 self-start sm:self-auto min-h-[36px] sm:min-h-[40px]"
+                      >
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Task
+                      </button>
+                    </div>
+                    
+                    {/* Search and Filter Controls */}
+                    <div className="mb-3 space-y-2">
+                      {/* Search Input */}
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={taskSearch}
+                          onChange={(e) => setTaskSearch(e.target.value)}
+                          placeholder="Search tasks..."
+                          className="w-full px-3 py-2 sm:px-3 sm:py-2.5 pl-9 sm:pl-10 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm bg-white min-h-[40px] sm:min-h-[44px]"
+                        />
+                        <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        {taskSearch && (
+                          <button
+                            onClick={() => setTaskSearch('')}
+                            className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#275559] p-1 touch-manipulation"
+                            aria-label="Clear search"
+                          >
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Filter Buttons */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={() => setTaskFilter('all')}
+                          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
+                            taskFilter === 'all'
+                              ? 'bg-[#275559] text-white'
+                              : 'bg-white border-2 border-[#C5E8E4] text-[#275559] hover:border-[#4DA8B0]'
+                          }`}
+                        >
+                          All
+                        </button>
+                        <button
+                          onClick={() => setTaskFilter('open')}
+                          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
+                            taskFilter === 'open'
+                              ? 'bg-[#275559] text-white'
+                              : 'bg-white border-2 border-[#C5E8E4] text-[#275559] hover:border-[#4DA8B0]'
+                          }`}
+                        >
+                          Open
+                        </button>
+                        <button
+                          onClick={() => setTaskFilter('completed')}
+                          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
+                            taskFilter === 'completed'
+                              ? 'bg-[#275559] text-white'
+                              : 'bg-white border-2 border-[#C5E8E4] text-[#275559] hover:border-[#4DA8B0]'
+                          }`}
+                        >
+                          Completed
+                        </button>
+                        <button
+                          onClick={() => setTaskFilter('high')}
+                          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
+                            taskFilter === 'high'
+                              ? 'bg-[#275559] text-white'
+                              : 'bg-white border-2 border-[#C5E8E4] text-[#275559] hover:border-[#4DA8B0]'
+                          }`}
+                        >
+                          <span className="hidden sm:inline">High Priority</span>
+                          <span className="sm:hidden">High</span>
+                        </button>
+                      </div>
+                    </div>
                   {isLoadingTasks ? (
-                    <div className="text-center py-8">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-[#275559]" />
+                    <div className="text-center py-6">
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-[#C5E8E4] border-t-[#275559]" />
                     </div>
                   ) : tasks.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500 text-sm sm:text-base">
-                        No tasks found. Create your first task to get started!
+                    <div className="text-center py-6">
+                      <p className="text-gray-600 text-sm">
+                        {taskSearch || taskFilter !== 'all' 
+                          ? 'No tasks match your search or filter criteria.'
+                          : 'No tasks found. Create your first task to get started!'}
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {tasks.map((task) => {
                         const titleLower = (task.title || '').toLowerCase().trim();
                         const isCoparentTask =
@@ -418,20 +649,72 @@ function ChatRoom() {
                         const isChildrenTask =
                           titleLower.includes('add your children') ||
                           titleLower.includes('add children');
+                        const isWelcomeTask = titleLower.includes('welcome');
                         const isSmartTask =
                           task.status !== 'completed' &&
                           (isCoparentTask || isProfileTask || isChildrenTask);
+
+                        // Get icon based on task content
+                        const getTaskIcon = () => {
+                          const iconSize = "w-full h-full";
+                          if (isWelcomeTask) {
+                            return (
+                              <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                            );
+                          }
+                          if (isProfileTask) {
+                            return (
+                              <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            );
+                          }
+                          if (isCoparentTask) {
+                            return (
+                              <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                            );
+                          }
+                          if (isChildrenTask) {
+                            return (
+                              <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                              </svg>
+                            );
+                          }
+                          // Default task icon
+                          return (
+                            <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                          );
+                        };
 
                         return (
                           <div
                             key={task.id}
                             onClick={() => {
+                              // Welcome task: show static info modal
+                              if (task.title === 'Welcome to LiaiZen') {
+                                setEditingTask(task);
+                                setShowWelcomeModal(true);
+                                return;
+                              }
+
+                              // Profile task: show profile task modal
+                              if (isProfileTask) {
+                                setEditingTask(task);
+                                setShowProfileTaskModal(true);
+                                return;
+                              }
+
                               if (isSmartTask) {
                                 if (isCoparentTask) {
                                   localStorage.setItem('liaizen_smart_task', 'add_coparent');
                                   setCurrentView('contacts');
-                                } else if (isProfileTask) {
-                                  setCurrentView('profile');
                                 } else if (isChildrenTask) {
                                   setCurrentView('contacts');
                                 }
@@ -446,13 +729,15 @@ function ChatRoom() {
                                 status: task.status,
                                 priority: task.priority || 'medium',
                                 due_date: task.due_date || '',
+                                assigned_to: task.assigned_to || 'self',
+                                related_people: Array.isArray(task.related_people) ? task.related_people : [],
                               });
                               setShowTaskForm(true);
                             }}
-                            className={`flex items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl cursor-pointer transition-all shadow-sm ${
+                            className={`flex items-start sm:items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all touch-manipulation ${
                               task.status === 'completed'
-                                ? 'bg-slate-50 opacity-70'
-                                : 'bg-white hover:shadow-md active:scale-[0.98] border border-slate-100'
+                                ? 'bg-gray-50 opacity-70 border border-gray-200'
+                                : 'bg-white hover:shadow-sm active:scale-[0.98] border-2 border-[#C5E8E4] hover:border-[#4DA8B0]'
                             }`}
                           >
                             {/* Task Icon/Status Circle */}
@@ -462,13 +747,13 @@ function ChatRoom() {
                                   e.stopPropagation();
                                   toggleTaskStatus(task);
                                 }}
-                                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                                  task.status === 'completed' ? 'bg-green-500' : 'bg-teal'
+                                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all touch-manipulation min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] ${
+                                  task.status === 'completed' ? 'bg-[#4DA8B0]' : 'bg-[#275559]'
                                 }`}
                               >
                                 {task.status === 'completed' ? (
                                   <svg
-                                    className="w-6 h-6 text-white"
+                                    className="w-4 h-4 sm:w-5 sm:h-5 text-white"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -481,18 +766,18 @@ function ChatRoom() {
                                     />
                                   </svg>
                                 ) : (
-                                  <span className="text-white font-bold text-lg">
-                                    {task.title?.charAt(0).toUpperCase()}
-                                  </span>
+                                  <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
+                                    {getTaskIcon()}
+                                  </div>
                                 )}
                               </button>
                             </div>
 
                             {/* Task Content */}
                             <div className="flex-1 min-w-0 overflow-hidden">
-                              <div className="flex items-center gap-2 min-w-0">
+                              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                                 <h3
-                                  className={`text-sm sm:text-base font-semibold text-gray-800 mb-1 truncate ${
+                                  className={`text-xs sm:text-sm font-semibold text-[#275559] mb-0.5 sm:mb-1 truncate ${
                                     task.status === 'completed'
                                       ? 'line-through text-gray-400'
                                       : ''
@@ -510,7 +795,7 @@ function ChatRoom() {
                                 </h3>
                                 {isSmartTask && (
                                   <svg
-                                    className="w-4 h-4 text-teal flex-shrink-0"
+                                    className="w-3 h-3 sm:w-4 sm:h-4 text-[#4DA8B0] flex-shrink-0"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -526,7 +811,7 @@ function ChatRoom() {
                               </div>
                               {task.description && (
                                 <p
-                                  className={`text-xs sm:text-sm text-gray-500 line-clamp-2 break-words ${
+                                  className={`text-xs text-gray-600 line-clamp-2 break-words ${
                                     task.status === 'completed'
                                       ? 'line-through text-gray-400'
                                       : ''
@@ -535,12 +820,59 @@ function ChatRoom() {
                                   {task.description}
                                 </p>
                               )}
+                              {/* Assigned and Related People */}
+                              {(task.assigned_to || (Array.isArray(task.related_people) && task.related_people.length > 0)) && (
+                                <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 flex-wrap">
+                                  {task.assigned_to && (() => {
+                                    if (task.assigned_to === 'self') {
+                                      return (
+                                        <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#275559] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
+                                          <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                          </svg>
+                                          <span className="hidden sm:inline">Assigned: </span>
+                                          Self (me)
+                                        </span>
+                                      );
+                                    }
+                                    const assignedContact = contacts.find(c => c.id.toString() === task.assigned_to.toString());
+                                    return assignedContact ? (
+                                      <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#275559] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
+                                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span className="hidden sm:inline">Assigned: </span>
+                                        {assignedContact.contact_name}
+                                      </span>
+                                    ) : null;
+                                  })()}
+                                  {Array.isArray(task.related_people) && task.related_people.length > 0 && (
+                                    <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#275559] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
+                                      <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                      </svg>
+                                      {task.related_people.length} {task.related_people.length === 1 ? 'person' : 'people'}
+                                      <span className="hidden sm:inline"> for context</span>
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
                       })}
                     </div>
                   )}
+                  </div>
+
+                  {/* Updates Section */}
+                  <UpdatesPanel 
+                    username={username} 
+                    onContactClick={(contactName) => {
+                      // Navigate to contacts view when clicking on a person
+                      setCurrentView('contacts');
+                    }}
+                  />
                 </div>
               </div>
             )}
@@ -938,60 +1270,187 @@ function ChatRoom() {
             </div>
           )}
 
-            {/* Contacts View - Blue Header Style */}
+            {/* Contacts View */}
             {currentView === 'contacts' && (
-              <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-                {/* Blue Header */}
-                <div className="bg-gradient-to-r from-[#275559] to-[#4DA8B0] text-white p-4 sm:p-6">
-                  <h2 className="text-xl sm:text-2xl font-bold">Contacts</h2>
-                </div>
-                <div className="h-[60vh] sm:h-[65vh] max-h-[700px] overflow-y-auto">
+              <div className="h-[calc(100vh-9rem)] sm:h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)]">
                   <ContactsPanel username={username} />
-                </div>
               </div>
             )}
 
-            {/* Profile View - Blue Header Style */}
+            {/* Profile View - Clean Style */}
             {currentView === 'profile' && (
-              <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-                {/* Blue Header */}
-                <div className="bg-gradient-to-r from-[#275559] to-[#4DA8B0] text-white p-4 sm:p-6">
-                  <h2 className="text-xl sm:text-2xl font-bold">Profile</h2>
-                </div>
-                <div className="h-[60vh] sm:h-[65vh] max-h-[700px] overflow-y-auto">
-                  <ProfilePanel username={username} onLogout={handleLogout} />
+              <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-xl overflow-hidden">
+                <div className="h-[calc(100vh-9rem)] sm:h-[calc(100vh-8rem)] md:h-[75vh] md:max-h-[800px] overflow-y-auto">
+                  <ProfilePanel
+                    username={username}
+                    onLogout={handleLogout}
+                    onNavigateToContacts={handleNavigateToContacts}
+                  />
                 </div>
               </div>
             )}
 
-          {/* Simple task form modal (reuses existing API behavior) */}
+            {/* Settings View - Placeholder */}
+            {currentView === 'settings' && (
+              <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+                <div className="p-6 sm:p-8 space-y-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
+                    <p className="text-slate-600">
+                      Customize notifications, privacy, and other preferences. Full controls are coming soon,
+                      but here you can preview the sections that will live here.
+                    </p>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="border border-slate-100 rounded-2xl p-4">
+                      <h3 className="font-semibold text-slate-900 mb-2">Notifications</h3>
+                      <p className="text-sm text-slate-600">Fine tune reminders for tasks and invitations.</p>
+                    </div>
+                    <div className="border border-slate-100 rounded-2xl p-4">
+                      <h3 className="font-semibold text-slate-900 mb-2">Privacy</h3>
+                      <p className="text-sm text-slate-600">Control who can see activity within your room.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Account View */}
+            {currentView === 'account' && <AccountView username={username} />}
+
+          {/* Enhanced task form modal with Manual/AI toggle */}
           {showTaskForm && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
-                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-2 sm:px-4 py-2 sm:py-4 overflow-y-auto">
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl my-auto flex flex-col max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)]">
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                  <h3 className="text-base sm:text-lg font-semibold">
                     {editingTask ? 'Edit Task' : 'Add Task'}
                   </h3>
                   <button
-                    className="text-2xl leading-none"
+                    className="text-2xl leading-none text-gray-500 hover:text-gray-700 p-1 touch-manipulation min-w-[36px] min-h-[36px] flex items-center justify-center"
                     onClick={() => {
                       setShowTaskForm(false);
                       setEditingTask(null);
+                      setTaskFormMode('manual');
+                      setAiTaskDetails('');
+                      setIsGeneratingTask(false);
                       setTaskFormData({
                         title: '',
                         description: '',
                         status: 'open',
                         priority: 'medium',
                         due_date: '',
+                        assigned_to: 'self',
+                        related_people: [],
                       });
                     }}
                   >
                     ×
                   </button>
                 </div>
-                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 min-h-0">
+                  {/* Mode Toggle - Only show when creating new task */}
+                  {!editingTask && (
+                    <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg">
+                      <button
+                        onClick={() => setTaskFormMode('manual')}
+                        className={`flex-1 px-3 py-2.5 sm:py-2 rounded-md text-sm font-semibold transition-all min-h-[40px] touch-manipulation ${
+                          taskFormMode === 'manual'
+                            ? 'bg-white text-[#275559] shadow-sm'
+                            : 'text-gray-600 hover:text-[#275559]'
+                        }`}
+                      >
+                        Manual
+                      </button>
+                      <button
+                        onClick={() => setTaskFormMode('ai')}
+                        className={`flex-1 px-3 py-2.5 sm:py-2 rounded-md text-sm font-semibold transition-all min-h-[40px] touch-manipulation ${
+                          taskFormMode === 'ai'
+                            ? 'bg-white text-[#275559] shadow-sm'
+                            : 'text-gray-600 hover:text-[#275559]'
+                        }`}
+                      >
+                        AI-Assisted
+                      </button>
+                    </div>
+                  )}
+
+                  {taskFormMode === 'ai' && !editingTask ? (
+                    /* AI Mode */
+                    <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                          Describe your task
+                        </label>
+                        <textarea
+                          value={aiTaskDetails}
+                          onChange={(e) => setAiTaskDetails(e.target.value)}
+                          placeholder="e.g., Schedule pediatrician appointment for Emma next week"
+                          className="w-full px-3 py-2.5 sm:px-3 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm min-h-[100px]"
+                          rows={4}
+                        />
+                        <p className="mt-1 text-[10px] sm:text-xs text-gray-500">
+                          AI will generate a structured task with title, description, priority, and due date.
+                        </p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!aiTaskDetails.trim() || !username) return;
+                          setIsGeneratingTask(true);
+                          try {
+                            const response = await apiPost('/api/tasks/generate', {
+                              username,
+                              taskDetails: aiTaskDetails,
+                            });
+                            if (response.ok) {
+                              const data = await response.json();
+                              if (data.task) {
+                                setTaskFormData({
+                                  title: data.task.title,
+                                  description: data.task.description,
+                                  status: data.task.status || 'open',
+                                  priority: data.task.priority || 'medium',
+                                  due_date: data.task.due_date || '',
+                                  assigned_to: 'self',
+                                  related_people: [],
+                                });
+                                // Switch to manual mode to show editable form
+                                setTaskFormMode('manual');
+                              }
+                            } else {
+                              const errorData = await response.json().catch(() => ({ error: 'Failed to generate task' }));
+                              alert(errorData.error || 'Failed to generate task');
+                            }
+                          } catch (err) {
+                            console.error('Error generating task:', err);
+                            alert('Failed to generate task. Please try again.');
+                          } finally {
+                            setIsGeneratingTask(false);
+                          }
+                        }}
+                        disabled={!aiTaskDetails.trim() || isGeneratingTask}
+                        className="w-full bg-[#4DA8B0] text-white py-3 sm:py-2.5 rounded-lg sm:rounded-xl font-semibold text-sm hover:bg-[#3d8a92] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px] touch-manipulation"
+                      >
+                        {isGeneratingTask ? (
+                          <>
+                            <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Generating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Generate Task</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    /* Manual Mode or Edit Mode */
+                    <div className="space-y-2.5 sm:space-y-3">
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Title *
                     </label>
                     <input
@@ -1003,12 +1462,12 @@ function ChatRoom() {
                           title: e.target.value,
                         }))
                       }
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559]"
+                          className="w-full px-3 py-2.5 sm:px-3 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm min-h-[44px]"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Description
                     </label>
                     <textarea
@@ -1019,34 +1478,228 @@ function ChatRoom() {
                           description: e.target.value,
                         }))
                       }
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559]"
+                          className="w-full px-3 py-2.5 sm:px-3 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm min-h-[80px]"
                       rows={3}
                     />
                   </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                            Priority
+                          </label>
+                          <select
+                            value={taskFormData.priority}
+                            onChange={(e) =>
+                              setTaskFormData((prev) => ({
+                                ...prev,
+                                priority: e.target.value,
+                              }))
+                            }
+                            className="w-full px-3 py-2.5 sm:px-3 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm min-h-[44px]"
+                          >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                          </select>
                 </div>
-                <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                            Due Date
+                          </label>
+                          <input
+                            type="date"
+                            value={taskFormData.due_date || ''}
+                            onChange={(e) =>
+                              setTaskFormData((prev) => ({
+                                ...prev,
+                                due_date: e.target.value,
+                              }))
+                            }
+                            className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                          Assign To
+                        </label>
+                        <select
+                          value={taskFormData.assigned_to || 'self'}
+                          onChange={(e) =>
+                            setTaskFormData((prev) => ({
+                              ...prev,
+                              assigned_to: e.target.value,
+                            }))
+                          }
+                            className="w-full px-3 py-2.5 sm:px-3 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm text-gray-900 min-h-[44px]"
+                        >
+                          <option value="self">Self (me)</option>
+                          <option value="">No one (unassigned)</option>
+                          {contacts.map((contact) => (
+                            <option key={contact.id} value={contact.id}>
+                              {contact.contact_name} ({contact.relationship || 'Contact'})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                          Add People for Context
+                        </label>
+                        <div className="space-y-1.5 sm:space-y-2 max-h-32 sm:max-h-40 overflow-y-auto">
+                          {contacts.map((contact) => {
+                            const isSelected = Array.isArray(taskFormData.related_people) && taskFormData.related_people.includes(contact.id.toString());
+                            return (
+                              <label key={contact.id} className="flex items-center gap-1.5 sm:gap-2 cursor-pointer py-0.5">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    const currentPeople = Array.isArray(taskFormData.related_people) ? taskFormData.related_people : [];
+                                    if (e.target.checked) {
+                                      setTaskFormData((prev) => ({
+                                        ...prev,
+                                        related_people: [...currentPeople, contact.id.toString()],
+                                      }));
+                                    } else {
+                                      setTaskFormData((prev) => ({
+                                        ...prev,
+                                        related_people: currentPeople.filter((id) => id !== contact.id.toString()),
+                                      }));
+                                    }
+                                  }}
+                                  className="w-4 h-4 sm:w-5 sm:h-5 text-[#275559] border-gray-300 rounded focus:ring-[#275559] flex-shrink-0 touch-manipulation"
+                                />
+                                <span className="text-xs sm:text-sm text-gray-700 truncate">
+                                  {contact.contact_name} ({contact.relationship || 'Contact'})
+                                </span>
+                              </label>
+                            );
+                          })}
+                          {contacts.length === 0 && (
+                            <p className="text-[10px] sm:text-xs text-gray-500">No contacts available. Add contacts to assign tasks.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {taskFormMode === 'manual' || editingTask ? (
+                  <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex gap-2 sm:gap-3 flex-shrink-0">
                   <button
                     onClick={saveTask}
                     disabled={!taskFormData.title.trim()}
-                    className="flex-1 bg-[#275559] text-white py-2.5 rounded-xl font-semibold hover:bg-[#1f4447] transition-colors disabled:bg-gray-400"
+                      className="flex-1 bg-[#275559] text-white py-3 sm:py-2.5 rounded-lg sm:rounded-xl font-semibold text-sm hover:bg-[#1f4447] transition-colors disabled:bg-gray-400 min-h-[44px] touch-manipulation"
                   >
-                    {editingTask ? 'Update' : 'Create'}
+                    {editingTask ? (taskFormData.title === 'Welcome to LiaiZen' ? 'OK' : 'Update') : 'Create'}
                   </button>
                   <button
                     onClick={() => {
                       setShowTaskForm(false);
                       setEditingTask(null);
+                        setTaskFormMode('manual');
+                        setAiTaskDetails('');
+                        setIsGeneratingTask(false);
                       setTaskFormData({
                         title: '',
                         description: '',
                         status: 'open',
                         priority: 'medium',
                         due_date: '',
+                          assigned_to: 'self',
+                          related_people: [],
                       });
                     }}
-                    className="px-4 py-2.5 rounded-xl border border-gray-300 text-sm font-medium text-gray-700"
+                      className="px-4 py-3 sm:px-4 sm:py-2.5 border-2 border-gray-300 rounded-lg sm:rounded-xl font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px] touch-manipulation"
                   >
                     Cancel
+                  </button>
+                </div>
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          {/* Welcome to LiaiZen Modal */}
+          {showWelcomeModal && editingTask && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-200">
+                <div className="border-b border-gray-100 px-6 py-5 flex items-center justify-between flex-shrink-0">
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {editingTask.title}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowWelcomeModal(false);
+                      setEditingTask(null);
+                    }}
+                    className="text-2xl font-bold text-gray-500 hover:text-gray-700"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-6 py-6">
+                  <div className="prose prose-slate max-w-none">
+                    <p className="text-base text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {editingTask.description || 'Welcome to LiaiZen! We\'re here to help make co-parenting easier.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 border-t border-gray-200 flex justify-end flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      toggleTaskStatus(editingTask);
+                      setShowWelcomeModal(false);
+                      setEditingTask(null);
+                    }}
+                    className="px-8 py-2.5 bg-[#275559] text-white rounded-xl font-semibold hover:bg-[#1f4447] transition-colors"
+                  >
+                    OK
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Complete Profile Task Modal */}
+          {showProfileTaskModal && editingTask && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-200">
+                <div className="border-b border-gray-100 px-6 py-5 flex items-center justify-between flex-shrink-0">
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {editingTask.title}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowProfileTaskModal(false);
+                      setEditingTask(null);
+                    }}
+                    className="text-2xl font-bold text-gray-500 hover:text-gray-700"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-6 py-6">
+                  <div className="prose prose-slate max-w-none">
+                    <p className="text-base text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {editingTask.description || 'Complete your profile to help us personalize your LiaiZen experience.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 border-t border-gray-200 flex justify-end flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      setShowProfileTaskModal(false);
+                      setEditingTask(null);
+                      setCurrentView('profile');
+                    }}
+                    className="px-8 py-2.5 bg-[#275559] text-white rounded-xl font-semibold hover:bg-[#1f4447] transition-colors"
+                  >
+                    Complete Profile
                   </button>
                 </div>
               </div>
@@ -1136,27 +1789,33 @@ function ChatRoom() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white/95 rounded-3xl shadow-2xl p-6 sm:p-8">
-        <div className="flex flex-col items-center gap-3 mb-6">
+        <div className="flex flex-col items-center mb-6">
           <img 
             src="/assets/TransB.svg" 
             alt="@TransB" 
             className="logo-image"
-            style={{ height: '48px', width: 'auto' }}
+            style={{ height: '64px', width: 'auto', marginBottom: '0', display: 'block' }}
           />
+          <div style={{ marginTop: '-32px', marginBottom: '-32px', lineHeight: 0, overflow: 'hidden' }}>
           <img 
             src="/assets/LZlogo.svg" 
             alt="LiaiZen" 
             className="logo-image"
-            style={{ height: '96px', width: 'auto' }}
+              style={{ 
+                height: '96px', 
+                width: 'auto', 
+                display: 'block',
+                lineHeight: 0,
+                verticalAlign: 'top',
+                margin: 0,
+                padding: 0
+              }}
           />
         </div>
-
-        <h1 className="text-2xl sm:text-3xl font-semibold text-center text-slate-900 mb-2">
-          {isLoginMode ? 'Log in to LiaiZen' : 'Create your LiaiZen account'}
-        </h1>
-        <p className="text-center text-slate-600 mb-4 text-sm">
-          Use your email and password to {isLoginMode ? 'sign in' : 'get started'}.
+          <p className="text-sm sm:text-base text-slate-600 font-medium mt-0.5">
+            Collaborative Parenting
         </p>
+        </div>
 
         {pendingInviteCode && (
           <div className="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
@@ -1256,6 +1915,3 @@ function ChatRoom() {
 }
 
 export default ChatRoom;
-
-
-
