@@ -708,7 +708,7 @@ export function LandingPage({ onGetStarted }) {
             </div>
 
             {/* Beta Benefits */}
-            <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-16">
+            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-16">
               <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] text-center shadow-sm">
                 <div className="text-4xl mb-3">🎯</div>
                 <div className="font-semibold text-[#275559] mb-2">Early Access</div>
@@ -718,11 +718,6 @@ export function LandingPage({ onGetStarted }) {
                 <div className="text-4xl mb-3">💡</div>
                 <div className="font-semibold text-[#275559] mb-2">Shape the Future</div>
                 <div className="text-sm text-gray-600">Your feedback directly influences how we build LiaiZen</div>
-              </div>
-              <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] text-center shadow-sm">
-                <div className="text-4xl mb-3">🎁</div>
-                <div className="font-semibold text-[#275559] mb-2">Free Forever Access</div>
-                <div className="text-sm text-gray-600">Beta testers get special lifetime benefits</div>
               </div>
             </div>
           </div>
