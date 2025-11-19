@@ -17,8 +17,6 @@ export function LandingPage({ onGetStarted }) {
   const [email, setEmail] = React.useState('');
   const [newsletterSubmitted, setNewsletterSubmitted] = React.useState(false);
   const [showSignInModal, setShowSignInModal] = React.useState(false);
-  const [showExitIntent, setShowExitIntent] = React.useState(false);
-  const [exitIntentEmail, setExitIntentEmail] = React.useState('');
   
   const {
     email: authEmail,
@@ -39,19 +37,6 @@ export function LandingPage({ onGetStarted }) {
       onGetStarted();
     }
   }, [isAuthenticated, onGetStarted]);
-
-  // Exit intent detection
-  React.useEffect(() => {
-    const handleMouseLeave = (e) => {
-      if (e.clientY <= 0 && !showExitIntent && !isAuthenticated) {
-        trackExitIntent();
-        setShowExitIntent(true);
-      }
-    };
-
-    document.addEventListener('mouseleave', handleMouseLeave);
-    return () => document.removeEventListener('mouseleave', handleMouseLeave);
-  }, [showExitIntent, isAuthenticated]);
 
   // Scroll tracking for sections
   React.useEffect(() => {
@@ -321,39 +306,81 @@ export function LandingPage({ onGetStarted }) {
 
               <div className="grid md:grid-cols-2 gap-4 sm:gap-6 mt-8 mb-8">
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
-                  <p className="text-lg italic text-white/95">
-                    "I wish someone could rewrite the message before I send it."
-                  </p>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </div>
+                    <p className="text-lg italic text-white/95 flex-1">
+                      "I wish someone could rewrite the message before I send it."
+                    </p>
+                  </div>
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
-                  <p className="text-lg italic text-white/95">
-                    "I want communication that doesn't escalate every week."
-                  </p>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    </div>
+                    <p className="text-lg italic text-white/95 flex-1">
+                      "I want communication that doesn't escalate every week."
+                    </p>
+                  </div>
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
-                  <p className="text-lg italic text-white/95">
-                    "I'm tired of paying thousands for things that don't actually change anything."
-                  </p>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-lg italic text-white/95 flex-1">
+                      "I'm tired of paying thousands for things that don't actually change anything."
+                    </p>
+                  </div>
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
-                  <p className="text-lg italic text-white/95">
-                    "I want a tool that protects my sanity AND my reputation."
-                  </p>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                    <p className="text-lg italic text-white/95 flex-1">
+                      "I want a tool that protects my sanity AND my reputation."
+                    </p>
+                  </div>
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
-                  <p className="text-lg italic text-white/95">
-                    "I need help staying calm when they trigger me."
-                  </p>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-lg italic text-white/95 flex-1">
+                      "I need help staying calm when they trigger me."
+                    </p>
+                  </div>
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
-                  <p className="text-lg italic text-white/95">
-                    "I want conversations that don't end up in court."
-                  </p>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                      </svg>
+                    </div>
+                    <p className="text-lg italic text-white/95 flex-1">
+                      "I want conversations that don't end up in court."
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -365,6 +392,95 @@ export function LandingPage({ onGetStarted }) {
                   LiaiZen takes care of this.
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Visual Separator */}
+          <div className="my-24 flex items-center justify-center">
+            <div className="flex items-center gap-3 max-w-md w-full">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#4DA8B0] to-transparent"></div>
+              <div className="w-3 h-3 rounded-full bg-[#4DA8B0]"></div>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#4DA8B0] to-transparent"></div>
+            </div>
+          </div>
+
+          {/* Product Screenshot/Mockup Section */}
+          <div className="mt-24 mb-24">
+            <div className="max-w-5xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4 text-center">
+                See How It Works
+              </h2>
+              <p className="text-xl text-gray-700 mb-12 text-center max-w-2xl mx-auto">
+                Real-time AI assistance before you hit send
+              </p>
+
+              {/* Product Mockup - Before/After Message Example */}
+              <div className="bg-gradient-to-br from-slate-50 to-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4] shadow-2xl">
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Before - Reactive Message */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </div>
+                      <h3 className="font-bold text-lg text-slate-900">Before LiaiZen</h3>
+                    </div>
+                    <div className="bg-white rounded-xl p-6 border-2 border-red-200 shadow-sm">
+                      <p className="text-gray-800 leading-relaxed italic">
+                        "You're ALWAYS changing plans last minute! This is exactly why I can't trust you with anything. Maybe if you actually cared about our son you'd stick to the schedule for once."
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 p-3 rounded-lg">
+                      <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <span><strong>High conflict risk:</strong> Accusatory tone, personal attacks, likely to escalate</span>
+                    </div>
+                  </div>
+
+                  {/* After - With LiaiZen */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-full bg-[#6dd4b0] flex items-center justify-center">
+                        <svg className="w-5 h-5 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <h3 className="font-bold text-lg text-[#275559]">With LiaiZen</h3>
+                    </div>
+                    <div className="bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 border-2 border-[#6dd4b0] shadow-sm">
+                      <p className="text-gray-800 leading-relaxed">
+                        "I noticed the schedule changed. For planning purposes, could we aim for 48-hour notice when possible? It helps me coordinate childcare. What works best for you?"
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2 text-sm text-[#275559] bg-[#E6F7F5] p-3 rounded-lg">
+                      <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span><strong>Child-focused:</strong> Neutral tone, focuses on problem-solving, invites collaboration</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Assistance Badge */}
+                <div className="mt-8 flex items-center justify-center gap-3 text-sm text-slate-600">
+                  <svg className="w-5 h-5 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span>AI rewrites your message in real-time—before emotions escalate</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Visual Separator */}
+          <div className="my-24 flex items-center justify-center">
+            <div className="flex items-center gap-3 max-w-md w-full">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#4DA8B0] to-transparent"></div>
+              <div className="w-3 h-3 rounded-full bg-[#4DA8B0]"></div>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#4DA8B0] to-transparent"></div>
             </div>
           </div>
 
@@ -1054,67 +1170,6 @@ export function LandingPage({ onGetStarted }) {
           </div>
         </div>
       </div>
-
-      {/* Exit Intent Modal */}
-      {showExitIntent && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-gray-200 animate-fadeIn">
-            <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center">
-                  <span className="text-xl">🎁</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Wait! Join Our Beta Program
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowExitIntent(false)}
-                className="text-2xl leading-none text-gray-500 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-            <div className="px-6 py-5">
-              <p className="text-sm text-gray-700 mb-4">
-                Get free beta access to LiaiZen—the AI-powered platform that helps co-parents communicate peacefully. No credit card required.
-              </p>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  // TODO: Integrate with beta waitlist service
-                  console.log('Beta waitlist signup:', exitIntentEmail);
-                  trackFormSubmit('exit_intent', 'beta_waitlist');
-                  trackConversion('exit_intent_modal', 'email');
-                  setExitIntentEmail('');
-                  setShowExitIntent(false);
-                  setNewsletterSubmitted(true);
-                  setTimeout(() => setNewsletterSubmitted(false), 3000);
-                }}
-                className="space-y-3"
-              >
-                <input
-                  type="email"
-                  value={exitIntentEmail}
-                  onChange={(e) => setExitIntentEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-sm"
-                />
-                <button
-                  type="submit"
-                  className="w-full bg-[#275559] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#1f4447] transition-colors shadow-sm"
-                >
-                  Join Beta Program
-                </button>
-              </form>
-              <p className="mt-3 text-xs text-gray-500 text-center">
-                We'll send you beta access details via email
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Sign In Modal */}
       {showSignInModal && (
