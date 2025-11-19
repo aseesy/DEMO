@@ -134,7 +134,8 @@ function AccountView({ username }) {
 function ChatRoom() {
   const [showLanding, setShowLanding] = React.useState(() => {
     // Don't show landing if user is already authenticated
-    return !localStorage.getItem('token');
+    // Check both token keys for compatibility
+    return !localStorage.getItem('auth_token_backup') && !localStorage.getItem('token') && !localStorage.getItem('isAuthenticated');
   });
 
   const {
@@ -564,12 +565,15 @@ function ChatRoom() {
     }
   };
 
+  // Callback for when user clicks Get Started on landing page
+  const handleGetStarted = React.useCallback(() => {
+    setShowLanding(false);
+    setIsLoginMode(false);
+  }, []);
+
   // Show landing page for first-time visitors
   if (!isAuthenticated && showLanding) {
-    return <LandingPage onGetStarted={() => {
-      setShowLanding(false);
-      setIsLoginMode(false);
-    }} />;
+    return <LandingPage onGetStarted={handleGetStarted} />;
   }
 
   if (isCheckingAuth) {

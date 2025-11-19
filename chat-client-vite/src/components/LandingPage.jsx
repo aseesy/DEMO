@@ -37,12 +37,13 @@ export function LandingPage({ onGetStarted }) {
   // If authenticated, hide landing page
   React.useEffect(() => {
     if (isAuthenticated) {
-      // Close modal if open
+      // Close modals if open
       setShowSignInModal(false);
+      setShowSignupModal(false);
       // Navigate to dashboard
       onGetStarted();
     }
-  }, [isAuthenticated]); // Removed onGetStarted from dependencies to avoid unnecessary re-runs
+  }, [isAuthenticated, onGetStarted]);
 
   // Scroll tracking for sections
   React.useEffect(() => {
