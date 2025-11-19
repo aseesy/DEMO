@@ -1043,9 +1043,20 @@ io.on('connection', (socket) => {
               roomId: user.roomId
             };
             
+            // Save message to database
+            await dbSafe.safeInsert('messages', {
+              id: messageObj.id,
+              type: messageObj.type,
+              username: messageObj.username,
+              text: messageObj.text,
+              timestamp: messageObj.timestamp,
+              socket_id: socket.id,
+              room_id: user.roomId,
+              private: 0
+            });
+
             // Broadcast message to room
             io.to(user.roomId).emit('new_message', messageObj);
-            roomManager.addMessage(user.roomId, messageObj);
             return;
           }
 
@@ -1067,7 +1078,7 @@ io.on('connection', (socket) => {
               roomId: user.roomId
             };
             io.to(user.roomId).emit('new_message', gentleMessage);
-            
+
             // Still allow original message through
             const messageObj = {
               id: message.id,
@@ -1077,8 +1088,20 @@ io.on('connection', (socket) => {
               timestamp: message.timestamp,
               roomId: user.roomId
             };
+
+            // Save message to database
+            await dbSafe.safeInsert('messages', {
+              id: messageObj.id,
+              type: messageObj.type,
+              username: messageObj.username,
+              text: messageObj.text,
+              timestamp: messageObj.timestamp,
+              socket_id: socket.id,
+              room_id: user.roomId,
+              private: 0
+            });
+
             io.to(user.roomId).emit('new_message', messageObj);
-            roomManager.addMessage(user.roomId, messageObj);
             return;
           }
           
@@ -1116,8 +1139,20 @@ io.on('connection', (socket) => {
                 timestamp: message.timestamp,
                 roomId: user.roomId
               };
+
+              // Save message to database
+              await dbSafe.safeInsert('messages', {
+                id: messageObj.id,
+                type: messageObj.type,
+                username: messageObj.username,
+                text: messageObj.text,
+                timestamp: messageObj.timestamp,
+                socket_id: socket.id,
+                room_id: user.roomId,
+                private: 0
+              });
+
               io.to(user.roomId).emit('new_message', messageObj);
-              roomManager.addMessage(user.roomId, messageObj);
               return;
             }
 
@@ -1826,9 +1861,9 @@ io.on('connection', (socket) => {
           overrideNote: 'User chose to send this message despite intervention'
         };
 
-        // Broadcast to room
+        // Message already exists in database from original send attempt
+        // Just broadcast to room
         io.to(user.roomId).emit('new_message', messageObj);
-        roomManager.addMessage(user.roomId, messageObj);
 
         socket.emit('override_success', { messageId: messageId });
         console.log(`✅ User ${user.username} overrode intervention for message ${messageId}`);
