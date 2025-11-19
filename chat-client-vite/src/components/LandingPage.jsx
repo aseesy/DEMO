@@ -288,19 +288,19 @@ export function LandingPage({ onGetStarted }) {
                   <ul className="space-y-3 text-slate-700">
                     <li className="flex items-start gap-3">
                       <span className="text-[#4DA8B0] font-bold">✓</span>
-                      <span><strong>Intercepts</strong> conflict before it escalates</span>
+                      <span><strong>Intercepting</strong> conflict before it escalates</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-[#4DA8B0] font-bold">✓</span>
-                      <span><strong>Rewrites</strong> reactive messages in real-time</span>
+                      <span><strong>Writing proactive messages</strong> that move things forward</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-[#4DA8B0] font-bold">✓</span>
-                      <span><strong>Neutralizes tone</strong> so you stay calm and defensible</span>
+                      <span><strong>Keeping a neutral tone</strong> so you stay calm and defensible</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-[#4DA8B0] font-bold">✓</span>
-                      <span><strong>Keeps it child-focused</strong> even when emotions run hot</span>
+                      <span><strong>Focusing on the child's best interest</strong> even when emotions run hot</span>
                     </li>
                   </ul>
                 </div>
