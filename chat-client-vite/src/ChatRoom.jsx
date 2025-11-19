@@ -1690,82 +1690,85 @@ function ChatRoom() {
             {/* Account View */}
             {currentView === 'account' && <AccountView username={username} />}
 
-            {/* Enhanced task form modal with Manual/AI toggle */}
-            <TaskFormModal
-              showTaskForm={showTaskForm}
-              editingTask={editingTask}
-              taskFormMode={taskFormMode}
-              setTaskFormMode={setTaskFormMode}
-              aiTaskDetails={aiTaskDetails}
-              setAiTaskDetails={setAiTaskDetails}
-              isGeneratingTask={isGeneratingTask}
-              setIsGeneratingTask={setIsGeneratingTask}
-              taskFormData={taskFormData}
-              setTaskFormData={setTaskFormData}
-              contacts={contacts}
-              username={username}
-              onClose={() => {
-                setShowTaskForm(false);
-                setEditingTask(null);
-              }}
-              onSave={saveTask}
-            />
-
-            {/* Welcome to LiaiZen Modal */}
-            {showWelcomeModal && (
-              <WelcomeModal
+            {/* Modals - wrapped in fragment to avoid adjacent JSX elements error */}
+            <React.Fragment>
+              {/* Enhanced task form modal with Manual/AI toggle */}
+              <TaskFormModal
+                showTaskForm={showTaskForm}
                 editingTask={editingTask}
+                taskFormMode={taskFormMode}
+                setTaskFormMode={setTaskFormMode}
+                aiTaskDetails={aiTaskDetails}
+                setAiTaskDetails={setAiTaskDetails}
+                isGeneratingTask={isGeneratingTask}
+                setIsGeneratingTask={setIsGeneratingTask}
+                taskFormData={taskFormData}
+                setTaskFormData={setTaskFormData}
+                contacts={contacts}
+                username={username}
                 onClose={() => {
-                  setShowWelcomeModal(false);
+                  setShowTaskForm(false);
                   setEditingTask(null);
                 }}
-                onComplete={() => {
-                  toggleTaskStatus(editingTask);
-                  setShowWelcomeModal(false);
-                  setEditingTask(null);
+                onSave={saveTask}
+              />
+
+              {/* Welcome to LiaiZen Modal */}
+              {showWelcomeModal && (
+                <WelcomeModal
+                  editingTask={editingTask}
+                  onClose={() => {
+                    setShowWelcomeModal(false);
+                    setEditingTask(null);
+                  }}
+                  onComplete={() => {
+                    toggleTaskStatus(editingTask);
+                    setShowWelcomeModal(false);
+                    setEditingTask(null);
+                  }}
+                />
+              )}
+
+              {/* Complete Profile Task Modal */}
+              {showProfileTaskModal && (
+                <ProfileTaskModal
+                  editingTask={editingTask}
+                  onClose={() => {
+                    setShowProfileTaskModal(false);
+                    setEditingTask(null);
+                  }}
+                  onNavigateToProfile={() => {
+                    setShowProfileTaskModal(false);
+                    setEditingTask(null);
+                    setCurrentView('profile');
+                  }}
+                />
+              )}
+
+              {/* Message Flagging Modal */}
+              <FlaggingModal
+                flaggingMessage={flaggingMessage}
+                flagReason={flagReason}
+                setFlagReason={setFlagReason}
+                onFlag={(reason) => {
+                  flagMessage(flaggingMessage.id || flaggingMessage.timestamp, reason);
+                  setFlaggingMessage(null);
+                  setFlagReason('');
+                }}
+                onClose={() => {
+                  setFlaggingMessage(null);
+                  setFlagReason('');
                 }}
               />
-            )}
 
-            {/* Complete Profile Task Modal */}
-            {showProfileTaskModal && (
-              <ProfileTaskModal
-                editingTask={editingTask}
-                onClose={() => {
-                  setShowProfileTaskModal(false);
-                  setEditingTask(null);
-                }}
-                onNavigateToProfile={() => {
-                  setShowProfileTaskModal(false);
-                  setEditingTask(null);
-                  setCurrentView('profile');
-                }}
+              {/* Contact Suggestion Modal */}
+              <ContactSuggestionModal
+                pendingContactSuggestion={pendingContactSuggestion}
+                onAddContact={handleAddContactFromSuggestion}
+                onDismiss={() => setPendingContactSuggestion(null)}
+                setDismissedSuggestions={setDismissedSuggestions}
               />
-            )}
-
-            {/* Message Flagging Modal */}
-            <FlaggingModal
-              flaggingMessage={flaggingMessage}
-              flagReason={flagReason}
-              setFlagReason={setFlagReason}
-              onFlag={(reason) => {
-                flagMessage(flaggingMessage.id || flaggingMessage.timestamp, reason);
-                setFlaggingMessage(null);
-                setFlagReason('');
-              }}
-              onClose={() => {
-                setFlaggingMessage(null);
-                setFlagReason('');
-              }}
-            />
-
-            {/* Contact Suggestion Modal */}
-            <ContactSuggestionModal
-              pendingContactSuggestion={pendingContactSuggestion}
-              onAddContact={handleAddContactFromSuggestion}
-              onDismiss={() => setPendingContactSuggestion(null)}
-              setDismissedSuggestions={setDismissedSuggestions}
-            />
+            </React.Fragment>
           </div>
         </div>
       </div>
