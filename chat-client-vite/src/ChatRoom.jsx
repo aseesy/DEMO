@@ -5,6 +5,7 @@ import { useTasks } from './hooks/useTasks.js';
 import { useChat } from './hooks/useChat.js';
 import { useContacts } from './hooks/useContacts.js';
 import { useProfile } from './hooks/useProfile.js';
+import { useNotifications } from './hooks/useNotifications.js';
 import { ContactsPanel } from './components/ContactsPanel.jsx';
 import { ProfilePanel } from './components/ProfilePanel.jsx';
 import { UpdatesPanel } from './components/UpdatesPanel.jsx';
@@ -195,7 +196,19 @@ function ChatRoom() {
   } = tasksState;
 
   const { contacts } = useContacts(username);
-  const chatState = useChat({ username, isAuthenticated, currentView });
+
+  // Notification system for new messages
+  const notifications = useNotifications({
+    username,
+    enabled: isAuthenticated
+  });
+
+  const chatState = useChat({
+    username,
+    isAuthenticated,
+    currentView,
+    onNewMessage: notifications.showNotification
+  });
   const {
     messages,
     inputMessage,
@@ -1675,13 +1688,70 @@ function ChatRoom() {
                     </p>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="border border-slate-100 rounded-2xl p-4">
-                      <h3 className="font-semibold text-slate-900 mb-2">Notifications</h3>
-                      <p className="text-sm text-slate-600">Fine tune reminders for tasks and invitations.</p>
+                    {/* Notifications Settings */}
+                    <div className="border-2 border-[#C5E8E4] rounded-2xl p-6 bg-gradient-to-br from-[#E6F7F5] to-white">
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-[#4DA8B0] flex items-center justify-center flex-shrink-0">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-[#275559] mb-2">Desktop Notifications</h3>
+                          <p className="text-sm text-slate-600 mb-4">
+                            Get notified when your co-parent sends you a message
+                          </p>
+
+                          {notifications.isSupported ? (
+                            <div className="space-y-3">
+                              {notifications.permission === 'granted' ? (
+                                <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
+                                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  <span className="font-medium">Notifications enabled</span>
+                                </div>
+                              ) : notifications.permission === 'denied' ? (
+                                <div className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg">
+                                  <p className="font-medium mb-1">Notifications blocked</p>
+                                  <p className="text-xs">Please enable notifications in your browser settings</p>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={notifications.requestPermission}
+                                  className="w-full px-4 py-2.5 bg-[#4DA8B0] text-white rounded-xl font-semibold hover:bg-[#3d8a92] transition-all shadow-sm"
+                                >
+                                  Enable Notifications
+                                </button>
+                              )}
+
+                              <p className="text-xs text-slate-500">
+                                You'll only be notified when the chat window is not visible
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="text-sm text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
+                              Notifications are not supported in this browser
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="border border-slate-100 rounded-2xl p-4">
-                      <h3 className="font-semibold text-slate-900 mb-2">Privacy</h3>
-                      <p className="text-sm text-slate-600">Control who can see activity within your room.</p>
+
+                    {/* Privacy Settings */}
+                    <div className="border border-slate-200 rounded-2xl p-6">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-slate-900 mb-2">Privacy</h3>
+                          <p className="text-sm text-slate-600">Control who can see activity within your room.</p>
+                          <p className="text-xs text-slate-500 mt-3">More privacy controls coming soon</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

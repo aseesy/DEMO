@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../config.js';
 // Minimal chat hook ported from the legacy ChatRoom logic.
 // Handles connecting, joining, receiving history, and sending messages.
 
-export function useChat({ username, isAuthenticated, currentView }) {
+export function useChat({ username, isAuthenticated, currentView, onNewMessage }) {
   const [messages, setMessages] = React.useState([]);
   const [inputMessage, setInputMessage] = React.useState('');
   const [isConnected, setIsConnected] = React.useState(false);
@@ -97,13 +97,20 @@ export function useChat({ username, isAuthenticated, currentView }) {
         if (lower.includes(' joined the chat')) return;
       }
 
+      const messageWithTimestamp = {
+        ...message,
+        timestamp: message.timestamp || new Date().toISOString(),
+      };
+
       setMessages((prev) => [
         ...prev,
-        {
-          ...message,
-          timestamp: message.timestamp || new Date().toISOString(),
-        },
+        messageWithTimestamp,
       ]);
+
+      // Trigger notification callback if provided
+      if (onNewMessage && typeof onNewMessage === 'function') {
+        onNewMessage(messageWithTimestamp);
+      }
     });
 
     socket.on('user_typing', ({ username: typingName, isTyping }) => {
