@@ -587,9 +587,15 @@ io.on('connection', (socket) => {
       const db = await require('./db').getDb();
       const dbSafe = require('./dbSafe');
 
-      // Get recent messages for context
-      const room = roomManager.getRoom(user.roomId);
-      const recentMessages = room ? room.recentMessages.slice(-10) : [];
+      // Get recent messages for context from database
+      const messagesQuery = `
+        SELECT * FROM messages
+        WHERE room_id = ${dbSafe.escapeSQL(user.roomId)}
+        ORDER BY timestamp DESC
+        LIMIT 10
+      `;
+      const messagesResult = db.exec(messagesQuery);
+      const recentMessages = messagesResult.length > 0 ? dbSafe.parseResult(messagesResult).reverse() : [];
 
       // Get user context
       const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
@@ -689,8 +695,20 @@ io.on('connection', (socket) => {
       // Assess escalation risk and emotional state before AI analysis
       const conflictPredictor = require('./conflictPredictor');
       const emotionalModel = require('./emotionalModel');
-      const room = roomManager.getRoom(user.roomId);
-      const recentMessages = room ? room.recentMessages.slice(-20) : [];
+
+      // Get recent messages from database instead of in-memory room
+      const dbModule = require('./db');
+      const db = await dbModule.getDb();
+      const dbSafe = require('./dbSafe');
+
+      const messagesQuery = `
+        SELECT * FROM messages
+        WHERE room_id = ${dbSafe.escapeSQL(user.roomId)}
+        ORDER BY timestamp DESC
+        LIMIT 20
+      `;
+      const messagesResult = db.exec(messagesQuery);
+      const recentMessages = messagesResult.length > 0 ? dbSafe.parseResult(messagesResult).reverse() : [];
       
       // Parallel analysis: escalation risk and emotional state
       const [escalationAssessment, emotionalState] = await Promise.all([
