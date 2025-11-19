@@ -2166,7 +2166,7 @@ function ChatRoom() {
                 </div>
                 <div className="px-6 py-5">
                   <p className="text-sm text-gray-700 mb-4">
-                    {pendingContactSuggestion.text || `Would you like to add ${pendingContactSuggestion.detectedName} to your contacts?`}
+                    {pendingContactSuggestion.text || `Would you like to add \${pendingContactSuggestion.detectedName} to your contacts?`}
                   </p>
                   <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4">
                     <p className="text-xs font-semibold text-teal-900 mb-1">
