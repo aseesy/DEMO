@@ -180,15 +180,14 @@ export function LandingPage({ onGetStarted }) {
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#275559] mb-6 leading-tight">
-              Stop the Conflict.
-              <br />
-              <span className="text-[#4DA8B0]">Start the Healing.</span>
+              Cringe-Worthy Co-Parenting Messages?{' '}
+              <span className="text-[#4DA8B0]">We Get It.</span>
             </h1>
             <p className="text-xl sm:text-2xl text-gray-700 mb-2 max-w-3xl mx-auto leading-relaxed font-medium">
-              AI-powered mediation that transforms tense co-parenting conversations into respectful dialogue
+              LiaiZen prevents conflict in real time—so every message moves the conversation forward, not backward.
             </p>
             <p className="text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
-              Unlike texting or email, LiaiZen helps you communicate without the drama—keeping conversations focused on what matters: your children.
+              Unlike texting or email, LiaiZen gives you real-time guidance to communicate without the drama—keeping conversations focused on what matters: your children.
             </p>
 
             {/* Trust Signals - Enhanced */}
