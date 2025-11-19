@@ -253,12 +253,9 @@ export function LandingPage({ onGetStarted }) {
           <div className="mt-24 mb-24 bg-gradient-to-br from-slate-50 to-white rounded-3xl p-8 sm:p-12 border border-slate-200">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-6 text-center">
-                You've Already Spent Thousands.<br />
-                <span className="text-[#4DA8B0]">And the Messages Still Explode.</span>
+                Finally, you can look at messages from your co-parent<br />
+                <span className="text-[#4DA8B0]">without feeling sick to your stomach.</span>
               </h2>
-              <p className="text-lg text-gray-700 mb-8 text-center max-w-2xl mx-auto">
-                Court orders, lawyers, mediators, therapy—none of it stops the cycle of conflict.
-              </p>
 
               <div className="grid md:grid-cols-2 gap-6 mb-8">
                 <div className="bg-white rounded-xl p-6 border-2 border-red-100">
