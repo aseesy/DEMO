@@ -17,6 +17,7 @@ export function LandingPage({ onGetStarted }) {
   const [email, setEmail] = React.useState('');
   const [newsletterSubmitted, setNewsletterSubmitted] = React.useState(false);
   const [showSignInModal, setShowSignInModal] = React.useState(false);
+  const [showSignupModal, setShowSignupModal] = React.useState(false);
   
   const {
     email: authEmail,
@@ -24,19 +25,24 @@ export function LandingPage({ onGetStarted }) {
     username,
     isAuthenticated,
     isLoggingIn,
+    isSigningUp,
     error: authError,
     setEmail: setAuthEmail,
     setPassword,
     setError: setAuthError,
     handleLogin,
+    handleSignup,
   } = useAuth();
 
   // If authenticated, hide landing page
   React.useEffect(() => {
     if (isAuthenticated) {
+      // Close modal if open
+      setShowSignInModal(false);
+      // Navigate to dashboard
       onGetStarted();
     }
-  }, [isAuthenticated, onGetStarted]);
+  }, [isAuthenticated]); // Removed onGetStarted from dependencies to avoid unnecessary re-runs
 
   // Scroll tracking for sections
   React.useEffect(() => {
@@ -94,8 +100,31 @@ export function LandingPage({ onGetStarted }) {
     e.preventDefault();
     setAuthError('');
     const result = await handleLogin(e);
-    if (result && isAuthenticated) {
+    // If login was successful (result exists and has user or success property)
+    if (result && (result.user || result.success !== false)) {
+      // Close modal on successful login
+      setShowSignInModal(false);
+      setAuthEmail('');
+      setPassword('');
+      setAuthError('');
       trackConversion('sign_in_modal', 'login');
+      // Note: Navigation will happen via useEffect when isAuthenticated becomes true
+    }
+  };
+
+  const handleSignupSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    const result = await handleSignup(e);
+    // If signup was successful
+    if (result && (result.user || result.success !== false)) {
+      // Close modal on successful signup
+      setShowSignupModal(false);
+      setAuthEmail('');
+      setPassword('');
+      setAuthError('');
+      trackConversion('signup_modal', 'signup');
+      // Note: Navigation will happen via useEffect when isAuthenticated becomes true
     }
   };
 
@@ -143,7 +172,7 @@ export function LandingPage({ onGetStarted }) {
             <button
                 onClick={() => {
                   trackCTAClick('navigation', 'Get Started', 'header');
-                  onGetStarted();
+                  setShowSignupModal(true);
                 }}
               className="px-4 sm:px-6 py-2 sm:py-3 bg-[#275559] text-white rounded-xl font-semibold text-sm sm:text-base hover:bg-[#1f4447] transition-all shadow-lg hover:shadow-xl"
             >
@@ -159,9 +188,9 @@ export function LandingPage({ onGetStarted }) {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             {/* Beta Badge with Urgency */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#E6F7F5] to-[#C5E8E4] rounded-full mb-6 border border-[#A8D9D3] animate-pulse">
+            <div className="inline-flex flex-wrap items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#E6F7F5] to-[#C5E8E4] rounded-full mb-6 border border-[#A8D9D3] animate-pulse">
               <span className="text-2xl">🎉</span>
-              <span className="text-sm font-semibold text-[#275559]">Join Our Beta Program • Limited Spots Available</span>
+              <span className="text-xs sm:text-sm font-semibold text-[#275559] text-center">Join Our Beta Program • Limited Spots Available</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#275559] mb-6 leading-tight">
@@ -177,7 +206,7 @@ export function LandingPage({ onGetStarted }) {
               <button
                 onClick={() => {
                   trackCTAClick('hero', 'Get Started', 'primary');
-                  onGetStarted();
+                  setShowSignupModal(true);
                 }}
                 className="px-10 py-5 bg-gradient-to-r from-[#4DA8B0] to-[#3d8a92] text-white rounded-2xl font-bold text-lg sm:text-xl hover:from-[#3d8a92] hover:to-[#2d6d75] transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform w-full sm:w-auto"
               >
@@ -198,48 +227,14 @@ export function LandingPage({ onGetStarted }) {
             <p className="text-base text-slate-600 font-medium mb-8">
               No lawyers, no $400/hr mediators. Just instant help before things escalate.
             </p>
-
-            {/* Hero Visual Element - Calm/Peace Illustration */}
-            <div className="mt-12 relative">
-              <div className="max-w-3xl mx-auto">
-                {/* Placeholder for hero image - Recommended: Calm co-parents communicating, parent with phone looking peaceful, or abstract calm/buffer visual */}
-                <div className="bg-gradient-to-br from-[#E6F7F5] via-white to-[#C5E8E4] rounded-3xl p-12 border-2 border-[#A8D9D3] relative overflow-hidden">
-                  {/* Decorative elements suggesting calm/protection */}
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-[#4DA8B0]/10 rounded-full blur-3xl"></div>
-                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#275559]/10 rounded-full blur-3xl"></div>
-
-                  <div className="relative z-10 text-center">
-                    <div className="inline-flex items-center justify-center w-32 h-32 bg-white rounded-full shadow-lg mb-6 border-4 border-[#C5E8E4]">
-                      {/* Shield with checkmark - represents protection */}
-                      <svg className="w-16 h-16 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
-                    </div>
-                    <p className="text-sm text-slate-600 italic">
-                      Your buffer between inbox chaos and inner peace
-                    </p>
-                  </div>
-                </div>
-
-                {/* Image suggestion comment for future */}
-                {/*
-                  RECOMMENDED IMAGES TO ADD HERE:
-                  - Diverse parent looking at phone with relieved/calm expression
-                  - Split screen: stressed parent → peaceful parent after using LiaiZen
-                  - Abstract illustration: storm cloud → calm sky
-                  - Parent and child together, parent looking at peace (not at phone)
-                  - Simple illustration of message bubbles with AI filter between them
-                */}
-              </div>
-            </div>
           </div>
 
           {/* The Real Problem Section - NEW */}
           <div className="mt-24 mb-24 bg-gradient-to-br from-slate-50 to-white rounded-3xl p-8 sm:p-12 border border-slate-200">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-6 text-center">
-                Finally, you can look at messages from your co-parent<br />
-                <span className="text-[#4DA8B0]">without feeling sick to your stomach.</span>
+                Finally, you can look at messages from your co-parent{' '}
+                <span className="block sm:inline text-[#4DA8B0]">without feeling sick to your stomach.</span>
               </h2>
 
               <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -487,8 +482,8 @@ export function LandingPage({ onGetStarted }) {
           {/* Value Proposition Section */}
           <div className="mt-24 mb-24" data-section="value_proposition">
             <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-12 text-center">
-              Finally, you can look at messages from your co-parent<br />
-              <span className="text-[#4DA8B0]">without feeling sick to your stomach.</span>
+              Finally, you can look at messages from your co-parent{' '}
+              <span className="block sm:inline text-[#4DA8B0]">without feeling sick to your stomach.</span>
             </h2>
             <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
               {/* Value Prop 1 */}
@@ -1246,10 +1241,10 @@ export function LandingPage({ onGetStarted }) {
                   type="button"
                   onClick={() => {
                     setShowSignInModal(false);
+                    setShowSignupModal(true);
                     setAuthError('');
                     setAuthEmail('');
                     setPassword('');
-                    onGetStarted();
                   }}
                   className="px-4 py-3 rounded-xl border-2 border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
@@ -1258,6 +1253,104 @@ export function LandingPage({ onGetStarted }) {
               </div>
               <p className="mt-4 text-xs text-gray-500 text-center">
                 Don't have an account? Click "New Account" to sign up.
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Sign Up Modal */}
+      {showSignupModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-gray-200">
+            <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Create Account
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowSignupModal(false);
+                  setAuthError('');
+                  setAuthEmail('');
+                  setPassword('');
+                }}
+                className="text-2xl leading-none text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleSignupSubmit} className="px-6 py-5">
+              {authError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800">{authError}</p>
+                </div>
+              )}
+              <div className="mb-4">
+                <label htmlFor="signup-email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  id="signup-email"
+                  type="email"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-sm"
+                />
+              </div>
+              <div className="mb-6">
+                <label htmlFor="signup-password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  id="signup-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter a password (min 4 characters)"
+                  required
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-sm"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  type="submit"
+                  disabled={isSigningUp}
+                  className="flex-1 bg-[#275559] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#1f4447] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSigningUp ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Creating account...
+                    </span>
+                  ) : (
+                    'Create Account'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSignupModal(false);
+                    setShowSignInModal(true);
+                    setAuthError('');
+                    setAuthEmail('');
+                    setPassword('');
+                  }}
+                  className="px-4 py-3 rounded-xl border-2 border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Sign In
+                </button>
+              </div>
+              <p className="mt-4 text-xs text-gray-500 text-center">
+                Already have an account? Click "Sign In" to log in.
               </p>
             </form>
           </div>
