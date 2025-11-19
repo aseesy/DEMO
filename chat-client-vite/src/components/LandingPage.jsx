@@ -248,10 +248,76 @@ export function LandingPage({ onGetStarted }) {
             </div>
           </div>
 
+          {/* The Real Problem Section - NEW */}
+          <div className="mt-24 mb-24 bg-gradient-to-br from-slate-50 to-white rounded-3xl p-8 sm:p-12 border border-slate-200">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-6 text-center">
+                You've Already Spent Thousands.<br />
+                <span className="text-[#4DA8B0]">And the Messages Still Explode.</span>
+              </h2>
+              <p className="text-lg text-gray-700 mb-8 text-center max-w-2xl mx-auto">
+                Court orders, lawyers, mediators, therapy—none of it stops that one text from ruining your whole day.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <div className="bg-white rounded-xl p-6 border-2 border-red-100">
+                  <h3 className="font-bold text-lg text-slate-900 mb-4">What Doesn't Work:</h3>
+                  <ul className="space-y-3 text-slate-700">
+                    <li className="flex items-start gap-3">
+                      <span className="text-red-500 font-bold">✗</span>
+                      <span><strong>$250–$400/hr mediators</strong> aren't there when the message hits your phone</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-red-500 font-bold">✗</span>
+                      <span><strong>Therapy</strong> helps you cope—but doesn't rewrite your next text</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-red-500 font-bold">✗</span>
+                      <span><strong>Co-parenting apps</strong> track the conflict but don't prevent it</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-red-500 font-bold">✗</span>
+                      <span><strong>Court orders</strong> don't eliminate emotional triggers</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 border-2 border-[#4DA8B0]">
+                  <h3 className="font-bold text-lg text-[#275559] mb-4">What Actually Works:</h3>
+                  <ul className="space-y-3 text-slate-700">
+                    <li className="flex items-start gap-3">
+                      <span className="text-[#4DA8B0] font-bold">✓</span>
+                      <span><strong>Intercepts</strong> conflict before it escalates</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-[#4DA8B0] font-bold">✓</span>
+                      <span><strong>Rewrites</strong> reactive messages in real-time</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-[#4DA8B0] font-bold">✓</span>
+                      <span><strong>Neutralizes tone</strong> so you stay calm and defensible</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-[#4DA8B0] font-bold">✓</span>
+                      <span><strong>Keeps it child-focused</strong> even when emotions run hot</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-6 rounded-r-xl">
+                <p className="text-slate-800 italic">
+                  "The conflict isn't happening in court—it's happening in the messages. And nothing we tried changed the way we talk to each other."
+                </p>
+                <p className="text-sm text-slate-600 mt-2">— High-conflict co-parent, Reddit</p>
+              </div>
+            </div>
+          </div>
+
           {/* Value Proposition Section */}
           <div className="mt-24 mb-24" data-section="value_proposition">
             <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-12 text-center">
-              Why LiaiZen?
+              Finally. A Tool That Actually Does Something.
             </h2>
             <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
               {/* Value Prop 1 */}
@@ -347,6 +413,71 @@ export function LandingPage({ onGetStarted }) {
               <p className="text-gray-600 leading-relaxed">
                 Keep track of teachers, doctors, and everyone important in your child's life
               </p>
+            </div>
+          </div>
+
+          {/* Parallel Parenting / Emotional Toll Section - NEW */}
+          <div className="mt-32 mb-24 bg-gradient-to-br from-[#275559] to-[#3d8a92] rounded-3xl p-8 sm:p-12 text-white">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-6 text-center">
+                Stuck in Parallel Parenting? You're Not Alone.
+              </h2>
+              <p className="text-xl text-white/90 mb-8 text-center max-w-2xl mx-auto">
+                You didn't want it this way. You wanted to co-parent as a team. But here you are—limiting contact just to protect your sanity.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                  <h3 className="font-bold text-lg mb-4">You Know This Feeling:</h3>
+                  <ul className="space-y-3 text-white/90">
+                    <li className="flex items-start gap-3">
+                      <span>•</span>
+                      <span>That split-second dread when you see their name on your phone</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span>•</span>
+                      <span>Walking on eggshells with every word, knowing anything can explode</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span>•</span>
+                      <span>Feeling triggered and hating yourself for reacting</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span>•</span>
+                      <span>Lying awake replaying conversations, crafting perfect responses you'll never send</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                  <h3 className="font-bold text-lg mb-4">What You Actually Need:</h3>
+                  <ul className="space-y-3 text-white/90">
+                    <li className="flex items-start gap-3">
+                      <span>✓</span>
+                      <span>A buffer between you and the chaos</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span>✓</span>
+                      <span>Help staying calm when they know exactly how to push your buttons</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span>✓</span>
+                      <span>Messages that say what you mean without handing them ammunition</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span>✓</span>
+                      <span>To stop feeling crazy, overwhelmed, and alone in this</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="text-center bg-white/20 backdrop-blur-sm rounded-xl p-6 border border-white/30">
+                <p className="text-lg font-semibold mb-2">
+                  "I don't need a perfect co-parent. I just need peace, consistency, and the strength to raise my child with love—even when the drama tries to step in."
+                </p>
+                <p className="text-sm text-white/80">— Co-parent, Facebook support group</p>
+              </div>
             </div>
           </div>
 
