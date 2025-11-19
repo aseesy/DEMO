@@ -187,13 +187,13 @@ export function Navigation({ currentView, setCurrentView, onLogout }) {
           <div className={`rounded flex items-center justify-center transition-transform duration-200 ${
             isMenuOpen ? 'rotate-90' : ''
           } ${isMobile ? 'w-6 h-6' : 'w-7 h-7'}`}>
-            <img
+              <img
               src="/assets/TransB.svg"
-              alt="LiaiZen menu"
+                alt="LiaiZen menu"
               className={`object-contain ${
                 isMobile ? 'w-4 h-4' : 'w-5 h-5'
               }`}
-            />
+              />
           </div>
         </button>
         {isMenuOpen && (
@@ -220,15 +220,15 @@ export function Navigation({ currentView, setCurrentView, onLogout }) {
               const isDanger = item.isDanger;
 
               return (
-                <button
-                  key={item.id}
+              <button
+                key={item.id}
                   ref={(node) => {
                     if (node && !item.isDivider) {
                       menuItemRefs.current[index] = node;
                     }
                   }}
-                  type="button"
-                  onClick={item.action}
+                type="button"
+                onClick={item.action}
                   className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 ${
                     isDanger
                       ? 'text-red-600 hover:bg-red-50 focus:bg-red-50'
@@ -236,7 +236,7 @@ export function Navigation({ currentView, setCurrentView, onLogout }) {
                           isActive ? 'bg-[#E6F7F5] font-semibold' : ''
                         }`
                   } focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-inset`}
-                  role="menuitem"
+                role="menuitem"
                   tabIndex={0}
                 >
                   <span className={`flex-shrink-0 ${
@@ -248,7 +248,7 @@ export function Navigation({ currentView, setCurrentView, onLogout }) {
                   {isActive && !isDanger && (
                     <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#4DA8B0]" />
                   )}
-                </button>
+              </button>
               );
             })}
           </div>
@@ -277,22 +277,22 @@ export function Navigation({ currentView, setCurrentView, onLogout }) {
               {navItems.map((item) => {
                 const isActive = currentView === item.id;
                 return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setCurrentView(item.id)}
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setCurrentView(item.id)}
                     className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
                       isActive
                         ? 'bg-[#275559] text-white shadow-md'
                         : 'text-[#275559] hover:bg-[#E6F7F5] hover:text-[#275559] hover:shadow-sm'
-                    }`}
+                  }`}
                     aria-current={isActive ? 'page' : undefined}
-                  >
+                >
                     <span className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-[#4DA8B0]'}`}>
                       {item.icon}
                     </span>
                     <span>{item.label}</span>
-                  </button>
+                </button>
                 );
               })}
               {renderMenuButton(0)}
@@ -306,7 +306,7 @@ export function Navigation({ currentView, setCurrentView, onLogout }) {
         <div className="flex items-center justify-around h-20 px-2 pb-safe">
           {navItems.map((item) => {
             const isActive = currentView === item.id;
-            
+
             return (
               <button
                 key={item.id}
@@ -446,7 +446,7 @@ export function Navigation({ currentView, setCurrentView, onLogout }) {
                   </button>
                 );
               })}
-            </div>
+          </div>
           )}
         </div>
       </nav>

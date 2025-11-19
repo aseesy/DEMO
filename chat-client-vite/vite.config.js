@@ -45,7 +45,7 @@ export default defineConfig(({ mode }) => {
         },
       },
     ],
-    server: {
+  server: {
       port: 5173,
       host: true,
       hmr: {
@@ -54,11 +54,11 @@ export default defineConfig(({ mode }) => {
       watch: {
         usePolling: true, // Better file watching on some systems
       },
-      proxy: {
-        '/api': {
-          target: 'http://localhost:3001',
-          changeOrigin: true,
-          secure: false,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
         },
         '/socket.io': {
           target: 'ws://localhost:3001',

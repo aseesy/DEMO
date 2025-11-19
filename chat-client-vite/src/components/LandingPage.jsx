@@ -155,15 +155,15 @@ export function LandingPage({ onGetStarted }) {
               >
                 Sign In
               </button>
-              <button
+            <button
                 onClick={() => {
                   trackCTAClick('navigation', 'Get Started', 'header');
                   onGetStarted();
                 }}
-                className="px-4 sm:px-6 py-2 sm:py-3 bg-[#275559] text-white rounded-xl font-semibold text-sm sm:text-base hover:bg-[#1f4447] transition-all shadow-lg hover:shadow-xl"
-              >
-                Get Started
-              </button>
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-[#275559] text-white rounded-xl font-semibold text-sm sm:text-base hover:bg-[#1f4447] transition-all shadow-lg hover:shadow-xl"
+            >
+              Get Started
+            </button>
             </div>
           </div>
         </div>
@@ -215,15 +215,15 @@ export function LandingPage({ onGetStarted }) {
 
             {/* Primary CTA with Trust Indicators */}
             <div className="flex flex-col items-center gap-4">
-              <button
+            <button
                 onClick={() => {
                   trackCTAClick('hero', 'Start Free Beta Access', 'primary');
                   onGetStarted();
                 }}
                 className="px-10 py-5 bg-gradient-to-r from-[#4DA8B0] to-[#3d8a92] text-white rounded-2xl font-bold text-lg sm:text-xl hover:from-[#3d8a92] hover:to-[#2d6d75] transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform"
-              >
+            >
                 Start Free Beta Access
-              </button>
+            </button>
               <div className="flex flex-col sm:flex-row items-center gap-3 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
                   <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -822,24 +822,24 @@ export function LandingPage({ onGetStarted }) {
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#4DA8B0] opacity-5 rounded-full -mr-32 -mt-32"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#275559] opacity-5 rounded-full -ml-32 -mb-32"></div>
             <div className="relative">
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4">
-                Ready to Transform Your Co-Parenting?
-              </h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4">
+              Ready to Transform Your Co-Parenting?
+            </h2>
               <p className="text-xl text-gray-700 mb-2 max-w-2xl mx-auto">
-                Join beta families who are finding peace and clarity through LiaiZen
-              </p>
+              Join beta families who are finding peace and clarity through LiaiZen
+            </p>
               <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
                 Limited beta spots available. Start your free account today—no credit card required.
               </p>
-              <button
+            <button
                 onClick={() => {
                   trackCTAClick('final_cta', 'Start Free Beta Access Now', 'bottom');
                   onGetStarted();
                 }}
                 className="px-12 py-6 bg-gradient-to-r from-[#4DA8B0] to-[#3d8a92] text-white rounded-2xl font-bold text-xl hover:from-[#3d8a92] hover:to-[#2d6d75] transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform mb-4"
-              >
+            >
                 Start Free Beta Access Now
-              </button>
+            </button>
               <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
                   <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
