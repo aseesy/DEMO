@@ -275,6 +275,20 @@ function ChatRoom() {
   const [flaggingMessage, setFlaggingMessage] = React.useState(null);
   const [flagReason, setFlagReason] = React.useState('');
 
+  // Handler for adding contact from suggestion modal
+  const handleAddContactFromSuggestion = () => {
+    if (!pendingContactSuggestion) return;
+    setCurrentView('contacts');
+    localStorage.setItem('liaizen_add_contact', JSON.stringify({
+      name: pendingContactSuggestion.detectedName,
+      context: pendingContactSuggestion.text
+    }));
+    if (pendingContactSuggestion.id) {
+      setDismissedSuggestions((prev) => new Set(prev).add(pendingContactSuggestion.id));
+    }
+    setPendingContactSuggestion(null);
+  };
+
   // Handler to navigate to contacts when clicking household members in profile
   const handleNavigateToContacts = (memberName) => {
     setCurrentView('contacts');
@@ -1748,17 +1762,7 @@ function ChatRoom() {
             {/* Contact Suggestion Modal */}
             <ContactSuggestionModal
               pendingContactSuggestion={pendingContactSuggestion}
-              onAddContact={() => {
-                setCurrentView('contacts');
-                localStorage.setItem('liaizen_add_contact', JSON.stringify({
-                  name: pendingContactSuggestion.detectedName,
-                  context: pendingContactSuggestion.text
-                }));
-                if (pendingContactSuggestion?.id) {
-                  setDismissedSuggestions((prev) => new Set(prev).add(pendingContactSuggestion.id));
-                }
-                setPendingContactSuggestion(null);
-              }}
+              onAddContact={handleAddContactFromSuggestion}
               onDismiss={() => setPendingContactSuggestion(null)}
               setDismissedSuggestions={setDismissedSuggestions}
             />
