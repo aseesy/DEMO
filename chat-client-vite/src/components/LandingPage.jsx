@@ -183,67 +183,68 @@ export function LandingPage({ onGetStarted }) {
               Cringe-Worthy Co-Parenting Messages?{' '}
               <span className="text-[#4DA8B0]">We Get It.</span>
             </h1>
-            <p className="text-xl sm:text-2xl text-gray-700 mb-2 max-w-3xl mx-auto leading-relaxed font-medium">
+            <p className="text-xl sm:text-2xl text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed font-medium">
               LiaiZen prevents conflict in real time—so every message moves the conversation forward, not backward.
             </p>
-            <p className="text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
-              Unlike texting or email, LiaiZen gives you real-time guidance to communicate without the drama—keeping conversations focused on what matters: your children.
-            </p>
 
-            {/* Trust Signals - Enhanced */}
-            <div className="flex flex-wrap items-center justify-center gap-4 mb-8 text-sm">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-[#C5E8E4] shadow-sm">
-                <svg className="w-4 h-4 text-[#4DA8B0]" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                </svg>
-                <span className="font-semibold text-gray-700">Bank-Level Encryption</span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-[#C5E8E4] shadow-sm">
-                <svg className="w-4 h-4 text-[#4DA8B0]" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span className="font-semibold text-gray-700">100% Private & Secure</span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-[#C5E8E4] shadow-sm">
-                <svg className="w-4 h-4 text-[#4DA8B0]" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span className="font-semibold text-gray-700">Free During Beta</span>
-              </div>
-            </div>
-
-            {/* Primary CTA with Trust Indicators */}
-            <div className="flex flex-col items-center gap-4">
-            <button
+            {/* Dual CTAs */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+              <button
                 onClick={() => {
-                  trackCTAClick('hero', 'Start Free Beta Access', 'primary');
+                  trackCTAClick('hero', 'Get Started', 'primary');
                   onGetStarted();
                 }}
-                className="px-10 py-5 bg-gradient-to-r from-[#4DA8B0] to-[#3d8a92] text-white rounded-2xl font-bold text-lg sm:text-xl hover:from-[#3d8a92] hover:to-[#2d6d75] transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform"
-            >
-                Start Free Beta Access
-            </button>
-              <div className="flex flex-col sm:flex-row items-center gap-3 text-sm text-gray-600">
-                <div className="flex items-center gap-1">
-                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>No credit card required</span>
+                className="px-10 py-5 bg-gradient-to-r from-[#4DA8B0] to-[#3d8a92] text-white rounded-2xl font-bold text-lg sm:text-xl hover:from-[#3d8a92] hover:to-[#2d6d75] transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform w-full sm:w-auto"
+              >
+                Get Started
+              </button>
+              <button
+                onClick={() => {
+                  trackCTAClick('hero', 'See How It Works', 'secondary');
+                  document.querySelector('[data-section="value_proposition"]')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-10 py-5 bg-white text-[#275559] rounded-2xl font-bold text-lg sm:text-xl border-2 border-[#4DA8B0] hover:bg-[#E6F7F5] transition-all shadow-lg hover:shadow-xl w-full sm:w-auto"
+              >
+                See How It Works
+              </button>
+            </div>
+
+            {/* Microcopy */}
+            <p className="text-base text-slate-600 font-medium mb-8">
+              No lawyers, no $400/hr mediators. Just instant help before things escalate.
+            </p>
+
+            {/* Hero Visual Element - Calm/Peace Illustration */}
+            <div className="mt-12 relative">
+              <div className="max-w-3xl mx-auto">
+                {/* Placeholder for hero image - Recommended: Calm co-parents communicating, parent with phone looking peaceful, or abstract calm/buffer visual */}
+                <div className="bg-gradient-to-br from-[#E6F7F5] via-white to-[#C5E8E4] rounded-3xl p-12 border-2 border-[#A8D9D3] relative overflow-hidden">
+                  {/* Decorative elements suggesting calm/protection */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-[#4DA8B0]/10 rounded-full blur-3xl"></div>
+                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#275559]/10 rounded-full blur-3xl"></div>
+
+                  <div className="relative z-10 text-center">
+                    <div className="inline-flex items-center justify-center w-32 h-32 bg-white rounded-full shadow-lg mb-6 border-4 border-[#C5E8E4]">
+                      {/* Shield with checkmark - represents protection */}
+                      <svg className="w-16 h-16 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm text-slate-600 italic">
+                      Your buffer between inbox chaos and inner peace
+                    </p>
+                  </div>
                 </div>
-                <span className="hidden sm:inline">•</span>
-                <div className="flex items-center gap-1">
-                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>Set up in under 2 minutes</span>
-                </div>
-                <span className="hidden sm:inline">•</span>
-                <div className="flex items-center gap-1">
-                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>Cancel anytime</span>
-                </div>
+
+                {/* Image suggestion comment for future */}
+                {/*
+                  RECOMMENDED IMAGES TO ADD HERE:
+                  - Diverse parent looking at phone with relieved/calm expression
+                  - Split screen: stressed parent → peaceful parent after using LiaiZen
+                  - Abstract illustration: storm cloud → calm sky
+                  - Parent and child together, parent looking at peace (not at phone)
+                  - Simple illustration of message bubbles with AI filter between them
+                */}
               </div>
             </div>
           </div>
