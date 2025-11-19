@@ -19,6 +19,7 @@ async function saveMessage(message) {
     timestamp: message.timestamp || new Date().toISOString(),
     socket_id: message.socketId || '',
     room_id: message.roomId || message.room_id || null, // Include room_id for persistence
+    thread_id: message.threadId || message.thread_id || null, // Include thread_id for threading
     private: message.private ? 1 : 0,
     flagged: message.flagged ? 1 : 0,
     validation: message.validation || '',
@@ -69,6 +70,7 @@ async function getRecentMessages(limit = 50) {
         text: message.text,
         timestamp: message.timestamp,
         socketId: message.socket_id,
+        threadId: message.thread_id || null,
         private: message.private === 1,
         flagged: message.flagged === 1
       };

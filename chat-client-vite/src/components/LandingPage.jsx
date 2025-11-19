@@ -1,13 +1,124 @@
 import React from 'react';
+import { useAuth } from '../hooks/useAuth.js';
+import {
+  trackCTAClick,
+  trackSectionView,
+  trackConversion,
+  trackFormSubmit,
+  trackExitIntent,
+  trackSignInModalOpen,
+  trackScrollDepth,
+  trackFAQExpand,
+  trackTestimonialView,
+  trackProductPreviewInteraction,
+} from '../utils/analytics.js';
 
 export function LandingPage({ onGetStarted }) {
   const [email, setEmail] = React.useState('');
   const [newsletterSubmitted, setNewsletterSubmitted] = React.useState(false);
+  const [showSignInModal, setShowSignInModal] = React.useState(false);
+  const [showExitIntent, setShowExitIntent] = React.useState(false);
+  const [exitIntentEmail, setExitIntentEmail] = React.useState('');
+  
+  const {
+    email: authEmail,
+    password,
+    username,
+    isAuthenticated,
+    isLoggingIn,
+    error: authError,
+    setEmail: setAuthEmail,
+    setPassword,
+    setError: setAuthError,
+    handleLogin,
+  } = useAuth();
+
+  // If authenticated, hide landing page
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      onGetStarted();
+    }
+  }, [isAuthenticated, onGetStarted]);
+
+  // Exit intent detection
+  React.useEffect(() => {
+    const handleMouseLeave = (e) => {
+      if (e.clientY <= 0 && !showExitIntent && !isAuthenticated) {
+        trackExitIntent();
+        setShowExitIntent(true);
+      }
+    };
+
+    document.addEventListener('mouseleave', handleMouseLeave);
+    return () => document.removeEventListener('mouseleave', handleMouseLeave);
+  }, [showExitIntent, isAuthenticated]);
+
+  // Scroll tracking for sections
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrollPercent = Math.round((scrollTop / (documentHeight - windowHeight)) * 100);
+
+      // Track scroll depth milestones
+      if (scrollPercent >= 25 && scrollPercent < 50) {
+        trackScrollDepth(25);
+      } else if (scrollPercent >= 50 && scrollPercent < 75) {
+        trackScrollDepth(50);
+      } else if (scrollPercent >= 75 && scrollPercent < 90) {
+        trackScrollDepth(75);
+      } else if (scrollPercent >= 90) {
+        trackScrollDepth(90);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Intersection Observer for section views
+  React.useEffect(() => {
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.3, // Trigger when 30% of section is visible
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const sectionName = entry.target.dataset.section;
+          if (sectionName) {
+            trackSectionView(sectionName);
+          }
+        }
+      });
+    }, observerOptions);
+
+    // Observe all sections with data-section attribute
+    const sections = document.querySelectorAll('[data-section]');
+    sections.forEach((section) => observer.observe(section));
+
+    return () => {
+      sections.forEach((section) => observer.unobserve(section));
+    };
+  }, []);
+
+  const handleSignInSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    const result = await handleLogin(e);
+    if (result && isAuthenticated) {
+      trackConversion('sign_in_modal', 'login');
+    }
+  };
 
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
     // TODO: Integrate with newsletter service
     console.log('Newsletter signup:', email);
+    trackFormSubmit('newsletter', 'email');
     setNewsletterSubmitted(true);
     setEmail('');
     setTimeout(() => setNewsletterSubmitted(false), 3000);
@@ -33,13 +144,27 @@ export function LandingPage({ onGetStarted }) {
               />
             </div>
 
-            {/* CTA Button */}
-            <button
-              onClick={onGetStarted}
-              className="px-4 sm:px-6 py-2 sm:py-3 bg-[#275559] text-white rounded-xl font-semibold text-sm sm:text-base hover:bg-[#1f4447] transition-all shadow-lg hover:shadow-xl"
-            >
-              Get Started
-            </button>
+            {/* CTA Buttons */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  trackSignInModalOpen();
+                  setShowSignInModal(true);
+                }}
+                className="px-4 sm:px-6 py-2 sm:py-3 bg-white text-[#275559] rounded-xl font-semibold text-sm sm:text-base hover:bg-gray-50 transition-all border-2 border-[#275559] shadow-sm hover:shadow-md"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => {
+                  trackCTAClick('navigation', 'Get Started', 'header');
+                  onGetStarted();
+                }}
+                className="px-4 sm:px-6 py-2 sm:py-3 bg-[#275559] text-white rounded-xl font-semibold text-sm sm:text-base hover:bg-[#1f4447] transition-all shadow-lg hover:shadow-xl"
+              >
+                Get Started
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -48,48 +173,84 @@ export function LandingPage({ onGetStarted }) {
       <div className="pt-32 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            {/* Beta Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#E6F7F5] to-[#C5E8E4] rounded-full mb-6 border border-[#A8D9D3]">
+            {/* Beta Badge with Urgency */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#E6F7F5] to-[#C5E8E4] rounded-full mb-6 border border-[#A8D9D3] animate-pulse">
               <span className="text-2xl">🎉</span>
-              <span className="text-sm font-semibold text-[#275559]">Now in Beta - Limited Access Available</span>
+              <span className="text-sm font-semibold text-[#275559]">Join Our Beta Program • Limited Spots Available</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#275559] mb-6 leading-tight">
-              Co-Parenting Made
+              Stop the Conflict.
               <br />
-              <span className="text-[#4DA8B0]">Peaceful & Simple</span>
+              <span className="text-[#4DA8B0]">Start the Healing.</span>
             </h1>
-            <p className="text-xl sm:text-2xl text-gray-700 mb-4 max-w-3xl mx-auto leading-relaxed">
-              Transform high-tension conversations into respectful dialogue with AI-powered mediation
+            <p className="text-xl sm:text-2xl text-gray-700 mb-2 max-w-3xl mx-auto leading-relaxed font-medium">
+              AI-powered mediation that transforms tense co-parenting conversations into respectful dialogue
+            </p>
+            <p className="text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
+              Unlike texting or email, LiaiZen helps you communicate without the drama—keeping conversations focused on what matters: your children.
             </p>
 
-            {/* Trust Signal */}
-            <div className="flex items-center justify-center gap-4 mb-8 text-sm text-gray-600">
-              <div className="flex items-center gap-1">
+            {/* Trust Signals - Enhanced */}
+            <div className="flex flex-wrap items-center justify-center gap-4 mb-8 text-sm">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-[#C5E8E4] shadow-sm">
                 <svg className="w-4 h-4 text-[#4DA8B0]" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                 </svg>
-                <span>End-to-end encrypted</span>
+                <span className="font-semibold text-gray-700">Bank-Level Encryption</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-[#C5E8E4] shadow-sm">
                 <svg className="w-4 h-4 text-[#4DA8B0]" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <span>Privacy-first design</span>
+                <span className="font-semibold text-gray-700">100% Private & Secure</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-[#C5E8E4] shadow-sm">
+                <svg className="w-4 h-4 text-[#4DA8B0]" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="font-semibold text-gray-700">Free During Beta</span>
               </div>
             </div>
 
-            <button
-              onClick={onGetStarted}
-              className="px-8 py-4 bg-[#4DA8B0] text-white rounded-2xl font-bold text-lg hover:bg-[#3d8a92] transition-all shadow-xl hover:shadow-2xl hover:scale-105"
-            >
-              Start Your Journey
-            </button>
-            <p className="text-sm text-gray-500 mt-3">No credit card required • Free beta access</p>
+            {/* Primary CTA with Trust Indicators */}
+            <div className="flex flex-col items-center gap-4">
+              <button
+                onClick={() => {
+                  trackCTAClick('hero', 'Start Free Beta Access', 'primary');
+                  onGetStarted();
+                }}
+                className="px-10 py-5 bg-gradient-to-r from-[#4DA8B0] to-[#3d8a92] text-white rounded-2xl font-bold text-lg sm:text-xl hover:from-[#3d8a92] hover:to-[#2d6d75] transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform"
+              >
+                Start Free Beta Access
+              </button>
+              <div className="flex flex-col sm:flex-row items-center gap-3 text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>No credit card required</span>
+                </div>
+                <span className="hidden sm:inline">•</span>
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>Set up in under 2 minutes</span>
+                </div>
+                <span className="hidden sm:inline">•</span>
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>Cancel anytime</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Value Proposition Section */}
-          <div className="mt-24 mb-24">
+          <div className="mt-24 mb-24" data-section="value_proposition">
             <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-12 text-center">
               Why LiaiZen?
             </h2>
@@ -234,8 +395,36 @@ export function LandingPage({ onGetStarted }) {
             </div>
           </div>
 
+          {/* Social Proof Section - Beta Users */}
+          <div className="mt-32 mb-24" data-section="social_proof">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4">
+                Join Our Growing Beta Community
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Early families are already finding peace through better communication
+              </p>
+            </div>
+
+            {/* Beta Stats */}
+            <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-16">
+              <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] text-center shadow-sm">
+                <div className="text-4xl font-bold text-[#4DA8B0] mb-2">50+</div>
+                <div className="text-sm text-gray-600">Beta Families</div>
+              </div>
+              <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] text-center shadow-sm">
+                <div className="text-4xl font-bold text-[#4DA8B0] mb-2">1,000+</div>
+                <div className="text-sm text-gray-600">Messages Mediated</div>
+              </div>
+              <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] text-center shadow-sm">
+                <div className="text-4xl font-bold text-[#4DA8B0] mb-2">95%</div>
+                <div className="text-sm text-gray-600">Would Recommend</div>
+              </div>
+            </div>
+          </div>
+
           {/* Testimonials */}
-          <div className="mt-32 mb-24 bg-gradient-to-br from-[#E6F7F5] to-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4]">
+          <div className="mt-32 mb-24 bg-gradient-to-br from-[#E6F7F5] to-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4]" data-section="testimonials">
             <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4 text-center">
               What Beta Users Are Saying
             </h2>
@@ -355,7 +544,14 @@ export function LandingPage({ onGetStarted }) {
             </p>
             <div className="max-w-3xl mx-auto space-y-4">
               {/* FAQ 1 */}
-              <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
+              <details
+                className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all"
+                onToggle={(e) => {
+                  if (e.target.open) {
+                    trackFAQExpand('Is my information private and secure?');
+                  }
+                }}
+              >
                 <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
                   Is my information private and secure?
                 </summary>
@@ -411,6 +607,36 @@ export function LandingPage({ onGetStarted }) {
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
                   Beta testers will receive special pricing and early access to new features as a thank you for helping us improve. We'll notify you well in advance of any changes, and your data will always remain secure and accessible.
+                </p>
+              </details>
+
+              {/* FAQ 7 - Beta Specific */}
+              <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
+                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                  How do I join the beta program?
+                </summary>
+                <p className="mt-4 text-gray-600 leading-relaxed">
+                  Simply click "Start Free Beta Access" above and create your account. Beta access is completely free with no credit card required. You'll get full access to all features and can provide feedback to help us improve.
+                </p>
+              </details>
+
+              {/* FAQ 8 - Beta Specific */}
+              <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
+                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                  Is the beta program really free?
+                </summary>
+                <p className="mt-4 text-gray-600 leading-relaxed">
+                  Yes! Beta access is 100% free with no credit card required. We're looking for families to help us test and improve LiaiZen. Your feedback is invaluable, and beta testers will receive special benefits when we launch publicly.
+                </p>
+              </details>
+
+              {/* FAQ 9 - Beta Specific */}
+              <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
+                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                  What if I find bugs or have suggestions?
+                </summary>
+                <p className="mt-4 text-gray-600 leading-relaxed">
+                  We love feedback! As a beta tester, you'll have direct access to our team. You can report issues, suggest improvements, and help shape the future of LiaiZen. Your input directly influences what features we build next.
                 </p>
               </details>
             </div>
@@ -528,24 +754,277 @@ export function LandingPage({ onGetStarted }) {
             </div>
           </div>
 
+          {/* Product Preview Section */}
+          <div className="mt-32 mb-24" data-section="product_preview">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4">
+                See LiaiZen in Action
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Experience how AI mediation helps you communicate more effectively
+              </p>
+            </div>
+            <div className="max-w-4xl mx-auto bg-gradient-to-br from-[#E6F7F5] to-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4]">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                  <h3 className="text-2xl font-bold text-[#275559] mb-4">
+                    Real-Time AI Mediation
+                  </h3>
+                  <ul className="space-y-3 text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <svg className="w-5 h-5 text-[#4DA8B0] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>AI analyzes messages before sending to prevent conflict</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <svg className="w-5 h-5 text-[#4DA8B0] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>Get helpful rewrite suggestions that keep conversations respectful</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <svg className="w-5 h-5 text-[#4DA8B0] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>Track tasks, contacts, and schedules all in one place</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <svg className="w-5 h-5 text-[#4DA8B0] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>End-to-end encryption keeps your conversations private</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] shadow-lg">
+                  <div className="space-y-4">
+                    <div className="bg-[#275559] text-white rounded-xl p-4">
+                      <div className="text-xs opacity-75 mb-1">You</div>
+                      <div className="text-sm">Can you pick up the kids tomorrow?</div>
+                    </div>
+                    <div className="bg-gray-100 rounded-xl p-4">
+                      <div className="text-xs text-gray-600 mb-1">Co-Parent</div>
+                      <div className="text-sm text-gray-800">Sure, what time works for you?</div>
+                    </div>
+                    <div className="bg-teal-50 border-2 border-teal-200 rounded-xl p-4">
+                      <div className="text-xs text-teal-700 font-semibold mb-1">💡 AI Suggestion</div>
+                      <div className="text-sm text-teal-800">This conversation is respectful and child-focused. Great communication!</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Final CTA */}
-          <div className="mt-24 text-center bg-gradient-to-br from-[#E6F7F5] to-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4]">
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4">
-              Ready to Transform Your Co-Parenting?
-            </h2>
-            <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
-              Join beta families who are finding peace and clarity through LiaiZen
-            </p>
-            <button
-              onClick={onGetStarted}
-              className="px-10 py-5 bg-[#4DA8B0] text-white rounded-2xl font-bold text-xl hover:bg-[#3d8a92] transition-all shadow-xl hover:shadow-2xl hover:scale-105"
-            >
-              Get Started Free
-            </button>
-            <p className="text-sm text-gray-500 mt-3">No credit card required • Free beta access</p>
+          <div className="mt-24 text-center bg-gradient-to-br from-[#E6F7F5] to-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4] relative overflow-hidden" data-section="final_cta">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#4DA8B0] opacity-5 rounded-full -mr-32 -mt-32"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#275559] opacity-5 rounded-full -ml-32 -mb-32"></div>
+            <div className="relative">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4">
+                Ready to Transform Your Co-Parenting?
+              </h2>
+              <p className="text-xl text-gray-700 mb-2 max-w-2xl mx-auto">
+                Join beta families who are finding peace and clarity through LiaiZen
+              </p>
+              <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
+                Limited beta spots available. Start your free account today—no credit card required.
+              </p>
+              <button
+                onClick={() => {
+                  trackCTAClick('final_cta', 'Start Free Beta Access Now', 'bottom');
+                  onGetStarted();
+                }}
+                className="px-12 py-6 bg-gradient-to-r from-[#4DA8B0] to-[#3d8a92] text-white rounded-2xl font-bold text-xl hover:from-[#3d8a92] hover:to-[#2d6d75] transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform mb-4"
+              >
+                Start Free Beta Access Now
+              </button>
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>No credit card required</span>
+                </div>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>Set up in 2 minutes</span>
+                </div>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>Free forever for beta testers</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Exit Intent Modal */}
+      {showExitIntent && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-gray-200 animate-fadeIn">
+            <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center">
+                  <span className="text-xl">🎁</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Wait! Join Our Beta Program
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowExitIntent(false)}
+                className="text-2xl leading-none text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-gray-700 mb-4">
+                Get free beta access to LiaiZen—the AI-powered platform that helps co-parents communicate peacefully. No credit card required.
+              </p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  // TODO: Integrate with beta waitlist service
+                  console.log('Beta waitlist signup:', exitIntentEmail);
+                  trackFormSubmit('exit_intent', 'beta_waitlist');
+                  trackConversion('exit_intent_modal', 'email');
+                  setExitIntentEmail('');
+                  setShowExitIntent(false);
+                  setNewsletterSubmitted(true);
+                  setTimeout(() => setNewsletterSubmitted(false), 3000);
+                }}
+                className="space-y-3"
+              >
+                <input
+                  type="email"
+                  value={exitIntentEmail}
+                  onChange={(e) => setExitIntentEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-sm"
+                />
+                <button
+                  type="submit"
+                  className="w-full bg-[#275559] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#1f4447] transition-colors shadow-sm"
+                >
+                  Join Beta Program
+                </button>
+              </form>
+              <p className="mt-3 text-xs text-gray-500 text-center">
+                We'll send you beta access details via email
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sign In Modal */}
+      {showSignInModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-gray-200">
+            <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Sign In
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowSignInModal(false);
+                  setAuthError('');
+                  setAuthEmail('');
+                  setPassword('');
+                }}
+                className="text-2xl leading-none text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleSignInSubmit} className="px-6 py-5">
+              {authError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800">{authError}</p>
+                </div>
+              )}
+              <div className="mb-4">
+                <label htmlFor="signin-email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  id="signin-email"
+                  type="email"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-sm"
+                />
+              </div>
+              <div className="mb-6">
+                <label htmlFor="signin-password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  id="signin-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-sm"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  type="submit"
+                  disabled={isLoggingIn}
+                  className="flex-1 bg-[#275559] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#1f4447] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isLoggingIn ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Signing in...
+                    </span>
+                  ) : (
+                    'Sign In'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSignInModal(false);
+                    setAuthError('');
+                    setAuthEmail('');
+                    setPassword('');
+                    onGetStarted();
+                  }}
+                  className="px-4 py-3 rounded-xl border-2 border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  New Account
+                </button>
+              </div>
+              <p className="mt-4 text-xs text-gray-500 text-center">
+                Don't have an account? Click "New Account" to sign up.
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-gray-200 py-12 px-4 bg-gray-50">

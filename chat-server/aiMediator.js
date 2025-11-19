@@ -91,13 +91,20 @@ Return format (one name per line, or "NONE"):
 /**
  * Analyze a message and decide if AI intervention is needed
  * @param {Object} message - The message object
- * @param {Array} recentMessages - Last 5 messages for context
+ * @param {Array} recentMessages - Last 15 messages for context
  * @param {Array} participantUsernames - Usernames of active participants
  * @param {Array} existingContacts - Existing contacts for the user
+ * @param {string} contactContextForAI - Formatted contact context string
  * @param {string} roomId - Room ID for tracking insights and comment frequency
+ * @param {string} taskContextForAI - Formatted task context string
+ * @param {string} flaggedMessagesContext - Context from previously flagged messages for learning
+ * @param {Object} escalationAssessment - Escalation risk assessment from conflict predictor
+ * @param {Object} emotionalState - Extended emotional state analysis
+ * @param {Object} interventionPolicy - Adaptive intervention policy decision
+ * @param {Object} adaptationRecommendations - User-specific adaptation recommendations
  * @returns {Promise<Object>} - Intervention decision and message
  */
-async function analyzeAndIntervene(message, recentMessages, participantUsernames = [], existingContacts = [], contactContextForAI = null, roomId = null) {
+async function analyzeAndIntervene(message, recentMessages, participantUsernames = [], existingContacts = [], contactContextForAI = null, roomId = null, taskContextForAI = null, flaggedMessagesContext = null, escalationAssessment = null, emotionalState = null, interventionPolicy = null, adaptationRecommendations = null) {
   // If no API key, return null (no intervention) - allow all messages
   if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim() === '') {
     console.log('⚠️  AI Mediator: No OPENAI_API_KEY found in environment - allowing all messages through');
@@ -117,12 +124,34 @@ async function analyzeAndIntervene(message, recentMessages, participantUsernames
   try {
     console.log('🤖 AI Mediator: Analyzing message from', message.username);
     
-    // Get user contexts for all participants
+    // Get user contexts for all participants (enhanced with profile data)
     const userContexts = [];
     const allParticipants = [...new Set([message.username, ...participantUsernames])];
     
+    // Fetch profile data for all participants
+    const participantProfiles = new Map();
+    try {
+      const db = await require('./db').getDb();
+      const dbSafe = require('./dbSafe');
+      
+      for (const username of allParticipants) {
+        try {
+          const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+          const users = dbSafe.parseResult(userResult);
+          if (users.length > 0) {
+            participantProfiles.set(username.toLowerCase(), users[0]);
+          }
+        } catch (err) {
+          console.error(`Error fetching profile for ${username}:`, err.message);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching participant profiles:', err.message);
+    }
+    
     for (const username of allParticipants) {
-      const context = userContext.formatContextForAI(username);
+      const profileData = participantProfiles.get(username.toLowerCase());
+      const context = await userContext.formatContextForAI(username, profileData);
       if (context && !context.includes('No context available')) {
         userContexts.push(context);
       }
@@ -130,7 +159,7 @@ async function analyzeAndIntervene(message, recentMessages, participantUsernames
     
     // Build context for AI
     const messageHistory = recentMessages
-      .slice(-5) // Last 5 messages for context
+      .slice(-15) // Last 15 messages for better context
       .map(msg => `${msg.username}: ${msg.text}`)
       .join('\n');
 
@@ -142,8 +171,55 @@ async function analyzeAndIntervene(message, recentMessages, participantUsernames
       ? `\n\n${contactContextForAI}`
       : '';
 
-    // Get relationship insights for this room
-    const insights = roomId ? conversationContext.relationshipInsights.get(roomId) : null;
+    const taskContextString = taskContextForAI
+      ? `\n\nACTIVE PARENTING TASKS AND RESPONSIBILITIES:\n${taskContextForAI}\n\nUse this task context to understand what parenting responsibilities are currently active. If a message references tasks, scheduling, or responsibilities, use this context to provide more relevant mediation.`
+      : '';
+
+    const flaggedContextString = flaggedMessagesContext || '';
+
+    // Add escalation risk context if available
+    const escalationContextString = escalationAssessment && escalationAssessment.riskLevel !== 'low'
+      ? `\n\nESCALATION RISK ALERT:\nRisk Level: ${escalationAssessment.riskLevel.toUpperCase()}\nConfidence: ${escalationAssessment.confidence}%\nReasons: ${escalationAssessment.reasons.join(', ')}\nUrgency: ${escalationAssessment.urgency}\n\nThis conversation shows signs of escalation. Be more proactive in intervention if needed.`
+      : '';
+
+    // Add extended emotional state context
+    const emotionalContextString = emotionalState && emotionalState.participant
+      ? `\n\nEXTENDED EMOTIONAL STATE:\nParticipant: ${emotionalState.participant.username}\nCurrent Emotion: ${emotionalState.participant.currentEmotion}\nStress Level: ${emotionalState.participant.stressLevel}/100\nStress Trajectory: ${emotionalState.participant.stressTrajectory}\nEmotional Momentum: ${emotionalState.participant.emotionalMomentum}/100\nRecent Triggers: ${emotionalState.participant.recentTriggers.join(', ') || 'none'}\nConversation Emotion: ${emotionalState.conversation.emotion}\nOverall Escalation Risk: ${emotionalState.conversation.escalationRisk}/100\n\nUse this emotional trajectory to understand the emotional momentum and stress points in this conversation.`
+      : '';
+
+    // Add intervention policy context
+    const policyContextString = interventionPolicy && interventionPolicy.shouldIntervene
+      ? `\n\nINTERVENTION POLICY:\nType: ${interventionPolicy.interventionType}\nStyle: ${interventionPolicy.interventionStyle}\nUrgency: ${interventionPolicy.urgency}\nReasoning: ${interventionPolicy.reasoning}\nConfidence: ${interventionPolicy.confidence}%\n\nFollow this policy when deciding how to intervene.`
+      : '';
+
+    // Add adaptation recommendations context
+    const adaptationContextString = adaptationRecommendations
+      ? `\n\nUSER ADAPTATION PREFERENCES:\nIntervention Frequency: ${adaptationRecommendations.interventionFrequency}\nIntervention Style: ${adaptationRecommendations.interventionStyle}\nPreferred Tone: ${adaptationRecommendations.preferredTone}\nAvoid Types: ${(adaptationRecommendations.avoidTypes || []).join(', ') || 'none'}\nReasoning: ${adaptationRecommendations.reasoning || 'Based on user feedback'}\n\nAdapt your approach based on these user preferences.`
+      : '';
+
+    // Get relationship insights for this room (load from database if available)
+    let insights = null;
+    if (roomId) {
+      // Try to load from database first
+      try {
+        const db = await require('./db').getDb();
+        const dbSafe = require('./dbSafe');
+        const insightsResult = await dbSafe.safeSelect('relationship_insights', { room_id: roomId }, { limit: 1 });
+        const insightsRows = dbSafe.parseResult(insightsResult);
+        if (insightsRows.length > 0) {
+          insights = JSON.parse(insightsRows[0].insights_json);
+          // Also cache in memory for faster access
+          conversationContext.relationshipInsights.set(roomId, insights);
+        } else {
+          // Fall back to memory cache
+          insights = conversationContext.relationshipInsights.get(roomId);
+        }
+      } catch (err) {
+        console.error('Error loading relationship insights from database:', err.message);
+        // Fall back to memory cache
+        insights = conversationContext.relationshipInsights.get(roomId);
+      }
+    }
     const insightsString = insights 
       ? `\n\nLEARNED RELATIONSHIP INSIGHTS (use these to be more contextually aware):\n- Communication style: ${insights.communicationStyle || 'Not yet learned'}\n- Common topics: ${insights.commonTopics.join(', ') || 'Not yet learned'}\n- Tension points: ${insights.tensionPoints.join(', ') || 'None identified yet'}\n- Positive patterns: ${insights.positivePatterns.join(', ') || 'Not yet identified'}\n- Questions to explore: ${insights.questionsToAsk?.slice(0, 2).join(', ') || 'None yet'}\n\nUse these insights to ask curious questions or make helpful observations.`
       : '';
@@ -158,8 +234,8 @@ async function analyzeAndIntervene(message, recentMessages, participantUsernames
 
     // Build relationship context summary
     const relationshipContext = contactContextForAI 
-      ? `\n\nRELATIONSHIP CONTEXT:\n${contactContextForAI}\n\nKEY UNDERSTANDING: These two people share a child/children together but are no longer in a romantic relationship. They are co-parenting, which means they need to communicate about their shared children while navigating the complexities of their separated relationship. This dynamic often involves:\n- Emotional history and potential unresolved feelings\n- Different parenting styles or philosophies\n- Logistics around custody, schedules, and child care\n- Financial matters related to children\n- The challenge of maintaining boundaries while co-parenting effectively\n\nThe AI mediator should be aware that co-parenting conversations can be emotionally charged even when the words seem neutral, because of this underlying relationship dynamic.${insightsString}`
-      : `\n\nRELATIONSHIP CONTEXT:\nThese two people are co-parents - they share a child/children together but are no longer in a romantic relationship. This is a co-parenting mediation room designed to help them communicate effectively about their shared children.${insightsString}`;
+      ? `\n\nRELATIONSHIP CONTEXT:\n${contactContextForAI}\n\nKEY UNDERSTANDING: These two people share a child/children together but are no longer in a romantic relationship. They are co-parenting, which means they need to communicate about their shared children while navigating the complexities of their separated relationship. This dynamic often involves:\n- Emotional history and potential unresolved feelings\n- Different parenting styles or philosophies\n- Logistics around custody, schedules, and child care\n- Financial matters related to children\n- The challenge of maintaining boundaries while co-parenting effectively\n\nThe AI mediator should be aware that co-parenting conversations can be emotionally charged even when the words seem neutral, because of this underlying relationship dynamic.${insightsString}${taskContextString}${flaggedContextString}${escalationContextString}${emotionalContextString}${policyContextString}${adaptationContextString}`
+      : `\n\nRELATIONSHIP CONTEXT:\nThese two people are co-parents - they share a child/children together but are no longer in a romantic relationship. This is a co-parenting mediation room designed to help them communicate effectively about their shared children.${insightsString}${taskContextString}${flaggedContextString}${escalationContextString}${emotionalContextString}${policyContextString}${adaptationContextString}`;
 
     const prompt = `You are a warm, empathetic AI mediator named Alex who helps co-parents communicate more effectively. You're not a robot - you're like a trusted friend who understands the unique challenges of co-parenting after separation.
 
@@ -172,8 +248,8 @@ Your personality:
 
 ${relationshipContext}
 
-Recent conversation:
-${messageHistory}${userContextString}
+Recent conversation (last 15 messages):
+${messageHistory}${userContextString}${taskContextString}
 
 Current message: ${message.username}: "${message.text}"
 
@@ -571,8 +647,44 @@ Keep it concise. Only include new or updated insights.`;
       lastUpdated: new Date().toISOString()
     };
 
+    // Store in memory cache
     conversationContext.relationshipInsights.set(roomId, merged);
-    console.log('📚 Relationship insights updated for room:', roomId);
+    
+    // Persist to database
+    try {
+      const db = await require('./db').getDb();
+      const dbSafe = require('./dbSafe');
+      const now = new Date().toISOString();
+      
+      // Check if insights already exist
+      const existingResult = await dbSafe.safeSelect('relationship_insights', { room_id: roomId }, { limit: 1 });
+      const existingRows = dbSafe.parseResult(existingResult);
+      
+      if (existingRows.length > 0) {
+        // Update existing
+        await dbSafe.safeUpdate('relationship_insights', 
+          { room_id: roomId },
+          { 
+            insights_json: JSON.stringify(merged),
+            updated_at: now
+          }
+        );
+      } else {
+        // Insert new
+        await dbSafe.safeInsert('relationship_insights', {
+          room_id: roomId,
+          insights_json: JSON.stringify(merged),
+          created_at: now,
+          updated_at: now
+        });
+      }
+      
+      require('./db').saveDatabase();
+      console.log('📚 Relationship insights saved to database for room:', roomId);
+    } catch (err) {
+      console.error('Error saving relationship insights to database:', err.message);
+      // Continue even if database save fails - memory cache still works
+    }
   } catch (error) {
     console.error('Error extracting relationship insights:', error.message);
     // Don't fail the whole process if insight extraction fails

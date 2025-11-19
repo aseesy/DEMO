@@ -2,6 +2,14 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+import { injectGoogleTag } from './utils/injectGoogleTag.js'
+import { initAnalytics } from './utils/analytics.js'
+
+// Inject Google Tag immediately (before React loads)
+injectGoogleTag();
+
+// Initialize analytics on app load (only if GOOGLE_TAG is not set, use VITE_GA_MEASUREMENT_ID)
+initAnalytics();
 
 // Unregister any existing service workers (from legacy app)
 // This fixes Safari issues with service workers intercepting navigation

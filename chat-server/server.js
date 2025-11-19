@@ -495,6 +495,7 @@ io.on('connection', (socket) => {
           username: msg.username,
           text: msg.text,
           timestamp: msg.timestamp, // Preserve full ISO timestamp
+          threadId: msg.thread_id || null,
           validation: msg.validation || null,
           tip1: msg.tip1 || null,
           tip2: msg.tip2 || null,
@@ -573,6 +574,83 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle proactive coaching request (before sending message)
+  socket.on('analyze_draft', async ({ draftText }) => {
+    try {
+      const user = activeUsers.get(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before analyzing drafts.' });
+        return;
+      }
+
+      const proactiveCoach = require('./proactiveCoach');
+      const db = await require('./db').getDb();
+      const dbSafe = require('./dbSafe');
+
+      // Get recent messages for context
+      const room = roomManager.getRoom(user.roomId);
+      const recentMessages = room ? room.recentMessages.slice(-10) : [];
+
+      // Get user context
+      const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
+      const users = dbSafe.parseResult(userResult);
+      const userContext = users.length > 0 ? users[0] : {};
+
+      // Get flagged messages for learning
+      const flagsResult = await dbSafe.safeSelect('message_flags', {
+        flagged_by_username: user.username
+      }, {
+        orderBy: 'created_at',
+        orderDirection: 'DESC',
+        limit: 5
+      });
+      const flags = dbSafe.parseResult(flagsResult);
+      
+      // Get the actual flagged messages
+      const flaggedMessages = [];
+      if (flags.length > 0) {
+        const messageIds = flags.map(f => f.message_id).filter(Boolean);
+        if (messageIds.length > 0) {
+          const messagesResult = await dbSafe.safeSelect('messages', {
+            id: messageIds
+          });
+          const flaggedMsgs = dbSafe.parseResult(messagesResult);
+          flaggedMsgs.forEach(msg => {
+            const flag = flags.find(f => f.message_id === msg.id);
+            if (flag && flag.reason) {
+              flaggedMessages.push({ text: msg.text, reason: flag.reason });
+            }
+          });
+        }
+      }
+
+      // Get contact context
+      let contactContext = null;
+      if (users.length > 0) {
+        const contactsResult = await dbSafe.safeSelect('contacts', { user_id: users[0].id });
+        const contacts = dbSafe.parseResult(contactsResult);
+        if (contacts.length > 0) {
+          contactContext = contacts.map(c => `${c.contact_name} (${c.relationship || 'contact'})`).join(', ');
+        }
+      }
+
+      const coaching = await proactiveCoach.analyzeDraftMessage(
+        draftText,
+        recentMessages,
+        userContext,
+        contactContext,
+        flaggedMessages
+      );
+
+      if (coaching) {
+        socket.emit('draft_analysis', coaching);
+      }
+    } catch (error) {
+      console.error('Error analyzing draft:', error);
+      socket.emit('error', { message: 'Failed to analyze draft message.' });
+    }
+  });
+
   // Handle new messages
   socket.on('send_message', async ({ text }) => {
     try {
@@ -608,10 +686,22 @@ io.on('connection', (socket) => {
       // We'll add it later if it's approved
       aiMediator.updateContext(message);
 
+      // Assess escalation risk and emotional state before AI analysis
+      const conflictPredictor = require('./conflictPredictor');
+      const emotionalModel = require('./emotionalModel');
+      const room = roomManager.getRoom(user.roomId);
+      const recentMessages = room ? room.recentMessages.slice(-20) : [];
+      
+      // Parallel analysis: escalation risk and emotional state
+      const [escalationAssessment, emotionalState] = await Promise.all([
+        conflictPredictor.assessEscalationRisk(message, recentMessages, user.roomId),
+        emotionalModel.analyzeEmotionalState(message, recentMessages, user.roomId)
+      ]);
+
       // Check if AI mediator should intervene (async, non-blocking)
       // We analyze BEFORE broadcasting to decide if message should be shown to others
       // IMPORTANT: Message is NOT broadcast yet - we wait for AI analysis
-      console.log(`⏳ Message from ${user.username} queued for AI analysis - NOT broadcasting yet`);
+      console.log(`⏳ Message from ${user.username} queued for AI analysis - Escalation risk: ${escalationAssessment.riskLevel} - NOT broadcasting yet`);
       
       setImmediate(async () => {
         console.log('🔍 AI Mediator: setImmediate callback triggered');
@@ -770,7 +860,253 @@ io.on('connection', (socket) => {
             console.error('Error fetching contacts for AI context:', contactErr);
           }
           
-          const intervention = await aiMediator.analyzeAndIntervene(message, context.recentMessages, participantUsernames, existingContacts, contactContextForAI, user.roomId);
+          // Get flagged message context for AI mediator (recent flags to learn from)
+          let flaggedMessagesContext = null;
+          try {
+            const db = await require('./db').getDb();
+            const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
+            const users = dbSafe.parseResult(userResult);
+            if (users.length > 0) {
+              const userId = users[0].id;
+              
+              // Get recent flags from this user (last 10 flags)
+              const flagsResult = await dbSafe.safeSelect('message_flags', {
+                flagged_by_username: user.username
+              }, {
+                orderBy: 'created_at',
+                orderDirection: 'DESC',
+                limit: 10
+              });
+              
+              const recentFlags = dbSafe.parseResult(flagsResult);
+              
+              if (recentFlags.length > 0) {
+                // Get the actual messages for these flags
+                const messageIds = recentFlags.map(f => f.message_id).filter(Boolean);
+                if (messageIds.length > 0) {
+                  const flaggedMessagesResult = await dbSafe.safeSelect('messages', {
+                    id: messageIds
+                  });
+                  
+                  const flaggedMessages = dbSafe.parseResult(flaggedMessagesResult);
+                  
+                  // Create a map of message_id -> flag reason
+                  const flagReasonsMap = new Map();
+                  recentFlags.forEach(flag => {
+                    if (flag.reason) {
+                      flagReasonsMap.set(flag.message_id, flag.reason);
+                    }
+                  });
+                  
+                  // Format flagged messages with reasons
+                  const flaggedContext = flaggedMessages
+                    .filter(msg => flagReasonsMap.has(msg.id))
+                    .slice(0, 5) // Limit to 5 most recent
+                    .map(msg => {
+                      const reason = flagReasonsMap.get(msg.id);
+                      return `Message: "${msg.text}" - Flagged because: ${reason}`;
+                    })
+                    .join('\n');
+                  
+                  if (flaggedContext) {
+                    flaggedMessagesContext = `\n\nLEARNING FROM PREVIOUS FLAGS (what this user finds problematic):\n${flaggedContext}\n\nUse this context to better understand what types of messages need intervention for this user.`;
+                  }
+                }
+              }
+            }
+          } catch (flagContextErr) {
+            console.error('Error fetching flagged messages context:', flagContextErr);
+          }
+
+          // Get task context for AI mediator
+          let taskContextForAI = null;
+          try {
+            const db = await require('./db').getDb();
+            const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
+            const users = dbSafe.parseResult(userResult);
+            if (users.length > 0) {
+              const userId = users[0].id;
+              
+              // Get active/open tasks (recent and relevant)
+              const activeTasksResult = await dbSafe.safeSelect('tasks', {
+                user_id: userId,
+                status: 'open'
+              }, {
+                orderBy: 'due_date',
+                orderDirection: 'ASC',
+                limit: 5
+              });
+              
+              const activeTasks = dbSafe.parseResult(activeTasksResult);
+              
+              // Also get recently completed tasks for context
+              const recentCompletedResult = await dbSafe.safeSelect('tasks', {
+                user_id: userId,
+                status: 'completed'
+              }, {
+                orderBy: 'completed_at',
+                orderDirection: 'DESC',
+                limit: 3
+              });
+              
+              const recentCompleted = dbSafe.parseResult(recentCompletedResult);
+              
+              if (activeTasks.length > 0 || recentCompleted.length > 0) {
+                const taskParts = [];
+                
+                if (activeTasks.length > 0) {
+                  const activeTaskList = activeTasks.map(task => {
+                    let taskInfo = task.title;
+                    if (task.due_date) {
+                      const dueDate = new Date(task.due_date);
+                      const today = new Date();
+                      const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+                      if (daysUntilDue < 0) {
+                        taskInfo += ` (overdue by ${Math.abs(daysUntilDue)} days)`;
+                      } else if (daysUntilDue === 0) {
+                        taskInfo += ' (due today)';
+                      } else if (daysUntilDue <= 3) {
+                        taskInfo += ` (due in ${daysUntilDue} days)`;
+                      }
+                    }
+                    if (task.priority && task.priority !== 'medium') {
+                      taskInfo += ` [${task.priority} priority]`;
+                    }
+                    if (task.description) {
+                      taskInfo += ` - ${task.description.substring(0, 50)}`;
+                    }
+                    return taskInfo;
+                  }).join('\n  - ');
+                  taskParts.push(`Active parenting tasks:\n  - ${activeTaskList}`);
+                }
+                
+                if (recentCompleted.length > 0) {
+                  const completedList = recentCompleted.map(task => task.title).join(', ');
+                  taskParts.push(`Recently completed: ${completedList}`);
+                }
+                
+                taskContextForAI = taskParts.join('\n\n');
+              }
+            }
+          } catch (taskErr) {
+            console.error('Error fetching tasks for AI context:', taskErr);
+          }
+
+          // Get user feedback for adaptation
+          const feedbackLearner = require('./feedbackLearner');
+          const feedbackSummary = await feedbackLearner.getFeedbackSummary(user.username);
+          const adaptationRecommendations = await feedbackLearner.generateAdaptationRecommendations(user.username);
+
+          // Generate adaptive intervention policy
+          const interventionPolicy = require('./interventionPolicy');
+          const recentInterventions = interventionPolicy.getPolicyState(user.roomId)?.interventionHistory || [];
+          
+          const policy = await interventionPolicy.generateInterventionPolicy(
+            emotionalState,
+            escalationAssessment,
+            recentInterventions,
+            feedbackSummary ? { negativeRatio: feedbackSummary.negativeRatio } : {},
+            user.roomId
+          );
+
+          // Safety validation before intervention
+          const safetyControls = require('./safetyControls');
+          
+          // If policy says don't intervene, respect that
+          if (!policy.shouldIntervene) {
+            console.log(`📋 Policy decision: No intervention needed (${policy.reasoning})`);
+            // Still allow message through, but track for learning
+            const messageObj = {
+              id: message.id,
+              type: 'user',
+              username: message.username,
+              text: message.text,
+              timestamp: message.timestamp,
+              roomId: user.roomId
+            };
+            
+            // Broadcast message to room
+            io.to(user.roomId).emit('new_message', messageObj);
+            roomManager.addMessage(user.roomId, messageObj);
+            return;
+          }
+
+          // Check confidence and degradation need
+          const degradation = safetyControls.assessDegradationNeed(
+            { type: policy.interventionType },
+            emotionalState,
+            policy.confidence
+          );
+
+          if (degradation.shouldDegrade) {
+            console.log(`⚠️ Degrading intervention: ${degradation.reason}`);
+            // Send gentle message instead of blocking
+            const gentleMessage = {
+              type: 'ai_comment',
+              username: 'Alex',
+              text: degradation.message,
+              timestamp: new Date().toISOString(),
+              roomId: user.roomId
+            };
+            io.to(user.roomId).emit('new_message', gentleMessage);
+            
+            // Still allow original message through
+            const messageObj = {
+              id: message.id,
+              type: 'user',
+              username: message.username,
+              text: message.text,
+              timestamp: message.timestamp,
+              roomId: user.roomId
+            };
+            io.to(user.roomId).emit('new_message', messageObj);
+            roomManager.addMessage(user.roomId, messageObj);
+            return;
+          }
+          
+          // Pass all context to AI mediator (captured from outer scope)
+          const intervention = await aiMediator.analyzeAndIntervene(
+            message, 
+            context.recentMessages, 
+            participantUsernames, 
+            existingContacts, 
+            contactContextForAI, 
+            user.roomId, 
+            taskContextForAI, 
+            flaggedMessagesContext,
+            escalationAssessment || { riskLevel: 'low', confidence: 0, reasons: [], urgency: 'none' },
+            emotionalState,
+            policy,
+            adaptationRecommendations
+          );
+
+          // Validate intervention safety
+          if (intervention) {
+            const safetyValidation = safetyControls.validateInterventionSafety(intervention, {
+              confidence: policy.confidence,
+              emotionalState: emotionalState
+            });
+
+            if (!safetyValidation.safe) {
+              console.error(`❌ Intervention blocked by safety controls: ${safetyValidation.errors.join(', ')}`);
+              // Allow message through if intervention is unsafe
+              const messageObj = {
+                id: message.id,
+                type: 'user',
+                username: message.username,
+                text: message.text,
+                timestamp: message.timestamp,
+                roomId: user.roomId
+              };
+              io.to(user.roomId).emit('new_message', messageObj);
+              roomManager.addMessage(user.roomId, messageObj);
+              return;
+            }
+
+            if (safetyValidation.warnings.length > 0) {
+              console.warn(`⚠️ Intervention warnings: ${safetyValidation.warnings.join(', ')}`);
+            }
+          }
           
           // Check for names in message (only if message passed moderation)
           let contactSuggestion = null;
@@ -873,6 +1209,15 @@ io.on('connection', (socket) => {
               // INTERVENE: Block problematic message - only show to sender
               console.log(`⚠️ Message from ${user.username} flagged - only showing to sender`);
               
+              // Generate explanation and override options
+              const safetyControls = require('./safetyControls');
+              const explanation = safetyControls.generateInterventionExplanation(
+                intervention,
+                emotionalState,
+                escalationAssessment
+              );
+              const overrideOptions = safetyControls.generateOverrideOptions(intervention);
+              
               // Send original message only to sender (with flag that it was problematic)
               // Do NOT add to public message history
               socket.emit('new_message', {
@@ -894,11 +1239,34 @@ io.on('connection', (socket) => {
                 rewrite2: intervention.rewrite2,
                 timestamp: new Date().toISOString(),
                 originalMessage: {
+                  id: message.id,
                   username: message.username,
-                  text: message.text
+                  text: message.text,
+                  timestamp: message.timestamp
                 },
-                private: true // Only show to sender
+                private: true, // Only show to sender
+                explanation: explanation,
+                overrideOptions: overrideOptions,
+                confidence: policy?.confidence || 0,
+                emotionalState: emotionalState ? {
+                  stressLevel: emotionalState.participant?.stressLevel || 0,
+                  trajectory: emotionalState.participant?.stressTrajectory || 'stable'
+                } : null
               };
+
+              // Record intervention for learning
+              const interventionPolicy = require('./interventionPolicy');
+              interventionPolicy.recordInterventionOutcome(
+                user.roomId,
+                {
+                  interventionType: 'ai_intervention',
+                  interventionStyle: policy?.interventionStyle || 'moderate',
+                  emotionalState: emotionalState,
+                  escalationRisk: escalationAssessment
+                },
+                'unknown', // Outcome will be updated when user provides feedback
+                null
+              );
 
               // Do NOT add AI message to public history (it's private)
               socket.emit('new_message', aiMessage);
@@ -1239,6 +1607,223 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle intervention feedback (explicit feedback on AI interventions)
+  socket.on('intervention_feedback', async ({ interventionId, helpful, reason }) => {
+    try {
+      const user = activeUsers.get(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before providing feedback.' });
+        return;
+      }
+
+      const feedbackLearner = require('./feedbackLearner');
+      const interventionPolicy = require('./interventionPolicy');
+
+      // Record explicit feedback
+      await feedbackLearner.recordExplicitFeedback(
+        user.username,
+        helpful ? 'helpful' : 'not_helpful',
+        { interventionId: interventionId },
+        reason || null
+      );
+
+      // Update intervention outcome
+      const policyState = interventionPolicy.getPolicyState(user.roomId);
+      if (policyState && policyState.interventionHistory.length > 0) {
+        const lastIntervention = policyState.interventionHistory[policyState.interventionHistory.length - 1];
+        interventionPolicy.recordInterventionOutcome(
+          user.roomId,
+          lastIntervention,
+          helpful ? 'helpful' : 'unhelpful',
+          reason
+        );
+      }
+
+      socket.emit('feedback_recorded', { success: true });
+      console.log(`📝 Intervention feedback recorded: ${helpful ? 'helpful' : 'not helpful'} from ${user.username}`);
+
+    } catch (error) {
+      console.error('Error recording intervention feedback:', error);
+      socket.emit('error', { message: 'Failed to record feedback.' });
+    }
+  });
+
+  // Handle thread creation
+  socket.on('create_thread', async ({ roomId, title, messageId }) => {
+    try {
+      const user = activeUsers.get(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before creating threads.' });
+        return;
+      }
+
+      const threadManager = require('./threadManager');
+      const threadId = await threadManager.createThread(roomId, title, user.username, messageId);
+
+      // If messageId provided, add it to the thread
+      if (messageId) {
+        await threadManager.addMessageToThread(messageId, threadId);
+      }
+
+      // Get updated thread list
+      const threads = await threadManager.getThreadsForRoom(roomId);
+      io.to(roomId).emit('threads_updated', threads);
+
+      socket.emit('thread_created', { threadId, title });
+      console.log(`✅ Thread created: ${title} by ${user.username}`);
+
+    } catch (error) {
+      console.error('Error creating thread:', error);
+      socket.emit('error', { message: 'Failed to create thread.' });
+    }
+  });
+
+  // Handle getting threads for a room
+  socket.on('get_threads', async ({ roomId }) => {
+    try {
+      const user = activeUsers.get(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before getting threads.' });
+        return;
+      }
+
+      const threadManager = require('./threadManager');
+      const threads = await threadManager.getThreadsForRoom(roomId);
+      socket.emit('threads_list', threads);
+
+    } catch (error) {
+      console.error('Error getting threads:', error);
+      socket.emit('error', { message: 'Failed to get threads.' });
+    }
+  });
+
+  // Handle getting messages for a thread
+  socket.on('get_thread_messages', async ({ threadId }) => {
+    try {
+      const user = activeUsers.get(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before getting thread messages.' });
+        return;
+      }
+
+      const threadManager = require('./threadManager');
+      const messages = await threadManager.getThreadMessages(threadId);
+      socket.emit('thread_messages', { threadId, messages });
+
+    } catch (error) {
+      console.error('Error getting thread messages:', error);
+      socket.emit('error', { message: 'Failed to get thread messages.' });
+    }
+  });
+
+  // Handle adding message to thread
+  socket.on('add_to_thread', async ({ messageId, threadId }) => {
+    try {
+      const user = activeUsers.get(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before adding to thread.' });
+        return;
+      }
+
+      const threadManager = require('./threadManager');
+      await threadManager.addMessageToThread(messageId, threadId);
+
+      // Update thread list
+      const userObj = activeUsers.get(socket.id);
+      if (userObj) {
+        const threads = await threadManager.getThreadsForRoom(userObj.roomId);
+        io.to(userObj.roomId).emit('threads_updated', threads);
+      }
+
+      socket.emit('message_added_to_thread', { messageId, threadId });
+      console.log(`✅ Message ${messageId} added to thread ${threadId}`);
+
+    } catch (error) {
+      console.error('Error adding to thread:', error);
+      socket.emit('error', { message: 'Failed to add message to thread.' });
+    }
+  });
+
+  // Handle removing message from thread
+  socket.on('remove_from_thread', async ({ messageId }) => {
+    try {
+      const user = activeUsers.get(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before removing from thread.' });
+        return;
+      }
+
+      const threadManager = require('./threadManager');
+      await threadManager.removeMessageFromThread(messageId);
+
+      // Update thread list
+      const userObj = activeUsers.get(socket.id);
+      if (userObj) {
+        const threads = await threadManager.getThreadsForRoom(userObj.roomId);
+        io.to(userObj.roomId).emit('threads_updated', threads);
+      }
+
+      socket.emit('message_removed_from_thread', { messageId });
+      console.log(`✅ Message ${messageId} removed from thread`);
+
+    } catch (error) {
+      console.error('Error removing from thread:', error);
+      socket.emit('error', { message: 'Failed to remove message from thread.' });
+    }
+  });
+
+  // Handle override request (user wants to send message anyway)
+  socket.on('override_intervention', async ({ messageId, overrideAction }) => {
+    try {
+      const user = activeUsers.get(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before overriding.' });
+        return;
+      }
+
+      const feedbackLearner = require('./feedbackLearner');
+
+      // Record implicit feedback (user overrode intervention)
+      await feedbackLearner.recordImplicitFeedback(
+        user.username,
+        'override_intervention',
+        { messageId: messageId, overrideAction: overrideAction }
+      );
+
+      // Get the original message and send it anyway
+      const db = await require('./db').getDb();
+      const dbSafe = require('./dbSafe');
+      const messageResult = await dbSafe.safeSelect('messages', { id: messageId }, { limit: 1 });
+      const messages = dbSafe.parseResult(messageResult);
+
+      if (messages.length > 0) {
+        const originalMessage = messages[0];
+        const messageObj = {
+          id: originalMessage.id || messageId,
+          type: 'user',
+          username: originalMessage.username || user.username,
+          text: originalMessage.text,
+          timestamp: originalMessage.timestamp || new Date().toISOString(),
+          roomId: user.roomId,
+          overrideNote: 'User chose to send this message despite intervention'
+        };
+
+        // Broadcast to room
+        io.to(user.roomId).emit('new_message', messageObj);
+        roomManager.addMessage(user.roomId, messageObj);
+
+        socket.emit('override_success', { messageId: messageId });
+        console.log(`✅ User ${user.username} overrode intervention for message ${messageId}`);
+      } else {
+        socket.emit('error', { message: 'Original message not found.' });
+      }
+
+    } catch (error) {
+      console.error('Error handling override:', error);
+      socket.emit('error', { message: 'Failed to override intervention.' });
+    }
+  });
+
   // Handle user flagging a message as triggering
   socket.on('flag_message', async ({ messageId, reason }) => {
     try {
@@ -1369,6 +1954,22 @@ io.on('connection', (socket) => {
       await dbSafe.safeUpdate('messages', {
         user_flagged_by: JSON.stringify(flaggedBy)
       }, { id: messageId });
+
+      // Save flag record for AI learning (only when flagging, not unflagging)
+      if (!isCurrentlyFlagged && reason && reason.trim()) {
+        try {
+          await dbSafe.safeInsert('message_flags', {
+            message_id: messageId,
+            flagged_by_username: user.username,
+            reason: reason.trim(),
+            created_at: new Date().toISOString()
+          });
+          console.log(`📝 Saved flag feedback for AI learning: message ${messageId} flagged by ${user.username}`);
+        } catch (flagError) {
+          console.error('Error saving flag record:', flagError);
+          // Don't fail the flag operation if saving flag record fails
+        }
+      }
 
       require('./db').saveDatabase();
 

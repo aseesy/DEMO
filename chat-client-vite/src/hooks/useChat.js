@@ -12,6 +12,10 @@ export function useChat({ username, isAuthenticated, currentView }) {
   const [isJoined, setIsJoined] = React.useState(false);
   const [error, setError] = React.useState('');
   const [typingUsers, setTypingUsers] = React.useState(new Set());
+  const [draftCoaching, setDraftCoaching] = React.useState(null);
+  const [threads, setThreads] = React.useState([]);
+  const [threadMessages, setThreadMessages] = React.useState({});
+  const [selectedThreadId, setSelectedThreadId] = React.useState(null);
 
   const socketRef = React.useRef(null);
   const messagesEndRef = React.useRef(null);
@@ -121,6 +125,44 @@ export function useChat({ username, isAuthenticated, currentView }) {
       window.dispatchEvent(new CustomEvent('coparent-joined', { detail: data }));
     });
 
+    socket.on('message_flagged', ({ messageId, flaggedBy }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId || (msg.timestamp && msg.id === undefined && msg.text)
+            ? { ...msg, user_flagged_by: flaggedBy }
+            : msg
+        )
+      );
+    });
+
+    socket.on('error', ({ message }) => {
+      console.error('Socket error:', message);
+      setError(message);
+    });
+
+    socket.on('draft_analysis', (coaching) => {
+      // Store coaching analysis for display
+      setDraftCoaching(coaching);
+    });
+
+    socket.on('threads_updated', (threads) => {
+      // Update threads list
+      setThreads(threads);
+    });
+
+    socket.on('threads_list', (threads) => {
+      // Update threads list
+      setThreads(threads);
+    });
+
+    socket.on('thread_messages', ({ threadId, messages }) => {
+      // Store thread messages
+      setThreadMessages(prev => ({
+        ...prev,
+        [threadId]: messages
+      }));
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -152,6 +194,8 @@ export function useChat({ username, isAuthenticated, currentView }) {
     socketRef.current.emit('typing', { isTyping: false });
   };
 
+  const draftAnalysisTimeoutRef = React.useRef(null);
+
   const handleInputChange = (e) => {
     const value = e.target.value;
     setInputMessage(value);
@@ -164,11 +208,75 @@ export function useChat({ username, isAuthenticated, currentView }) {
     typingTimeoutRef.current = setTimeout(() => {
       socketRef.current?.emit('typing', { isTyping: false });
     }, 1000);
+
+    // Request proactive coaching analysis (debounced)
+    if (draftAnalysisTimeoutRef.current) {
+      clearTimeout(draftAnalysisTimeoutRef.current);
+    }
+
+    // Only analyze if message is substantial (at least 10 chars)
+    if (value.trim().length >= 10 && socketRef.current?.connected) {
+      draftAnalysisTimeoutRef.current = setTimeout(() => {
+        socketRef.current?.emit('analyze_draft', { draftText: value.trim() });
+      }, 1000); // Wait 1 second after user stops typing
+    } else {
+      setDraftCoaching(null); // Clear coaching if message is too short
+    }
   };
 
   // Function to remove messages (e.g., when user selects a rewrite)
   const removeMessages = React.useCallback((predicate) => {
     setMessages((prev) => prev.filter((msg) => !predicate(msg)));
+  }, []);
+
+  // Function to flag a message
+  const flagMessage = React.useCallback((messageId, reason = null) => {
+    if (!socketRef.current || !socketRef.current.connected) {
+      setError('Not connected to chat server.');
+      return;
+    }
+    socketRef.current.emit('flag_message', { messageId, reason });
+  }, []);
+
+  // Thread management functions
+  const createThread = React.useCallback((roomId, title, messageId) => {
+    if (!socketRef.current || !socketRef.current.connected) {
+      setError('Not connected to chat server.');
+      return;
+    }
+    socketRef.current.emit('create_thread', { roomId, title, messageId });
+  }, []);
+
+  const getThreads = React.useCallback((roomId) => {
+    if (!socketRef.current || !socketRef.current.connected) {
+      setError('Not connected to chat server.');
+      return;
+    }
+    socketRef.current.emit('get_threads', { roomId });
+  }, []);
+
+  const getThreadMessages = React.useCallback((threadId) => {
+    if (!socketRef.current || !socketRef.current.connected) {
+      setError('Not connected to chat server.');
+      return;
+    }
+    socketRef.current.emit('get_thread_messages', { threadId });
+  }, []);
+
+  const addToThread = React.useCallback((messageId, threadId) => {
+    if (!socketRef.current || !socketRef.current.connected) {
+      setError('Not connected to chat server.');
+      return;
+    }
+    socketRef.current.emit('add_to_thread', { messageId, threadId });
+  }, []);
+
+  const removeFromThread = React.useCallback((messageId) => {
+    if (!socketRef.current || !socketRef.current.connected) {
+      setError('Not connected to chat server.');
+      return;
+    }
+    socketRef.current.emit('remove_from_thread', { messageId });
   }, []);
 
   return {
@@ -183,6 +291,19 @@ export function useChat({ username, isAuthenticated, currentView }) {
     sendMessage,
     handleInputChange,
     removeMessages,
+    flagMessage,
+    draftCoaching,
+    setDraftCoaching,
+    threads,
+    threadMessages,
+    selectedThreadId,
+    setSelectedThreadId,
+    createThread,
+    getThreads,
+    getThreadMessages,
+    addToThread,
+    removeFromThread,
+    socket: socketRef.current,
   };
 }
 

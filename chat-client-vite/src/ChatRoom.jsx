@@ -201,7 +201,51 @@ function ChatRoom() {
     typingUsers,
     setInputMessage,
     removeMessages,
+    flagMessage,
+    draftCoaching,
+    setDraftCoaching,
+    threads,
+    threadMessages,
+    selectedThreadId,
+    setSelectedThreadId,
+    createThread,
+    getThreads,
+    getThreadMessages,
+    addToThread,
+    removeFromThread,
   } = chatState;
+
+  // Thread UI state
+  const [showThreadsPanel, setShowThreadsPanel] = React.useState(false);
+  const [threadSuggestionModal, setThreadSuggestionModal] = React.useState(null);
+  const [creatingThread, setCreatingThread] = React.useState(false);
+  const [newThreadTitle, setNewThreadTitle] = React.useState('');
+
+  // Get room ID from chat state (need to extract from messages or use a ref)
+  const roomIdRef = React.useRef(null);
+  React.useEffect(() => {
+    if (messages.length > 0 && messages[0].roomId) {
+      roomIdRef.current = messages[0].roomId;
+      // Load threads when room is known
+      if (roomIdRef.current && isConnected) {
+        getThreads(roomIdRef.current);
+      }
+    }
+  }, [messages, isConnected, getThreads]);
+
+  // Listen for thread suggestions
+  React.useEffect(() => {
+    const handleThreadSuggestion = (event) => {
+      setThreadSuggestionModal({
+        message: event.detail.message,
+        suggestion: event.detail.suggestion
+      });
+      setNewThreadTitle(event.detail.suggestion.threadTitle || '');
+    };
+
+    window.addEventListener('thread-suggestion', handleThreadSuggestion);
+    return () => window.removeEventListener('thread-suggestion', handleThreadSuggestion);
+  }, []);
 
   // Invite state for sharing a room with a co-parent
   const [inviteLink, setInviteLink] = React.useState('');
@@ -221,6 +265,10 @@ function ChatRoom() {
   // Contact suggestion modal state
   const [pendingContactSuggestion, setPendingContactSuggestion] = React.useState(null);
   const [dismissedSuggestions, setDismissedSuggestions] = React.useState(new Set());
+
+  // Message flagging modal state
+  const [flaggingMessage, setFlaggingMessage] = React.useState(null);
+  const [flagReason, setFlagReason] = React.useState('');
 
   // Handler to navigate to contacts when clicking household members in profile
   const handleNavigateToContacts = (memberName) => {
@@ -470,9 +518,17 @@ function ChatRoom() {
   const handleSubmit = async (e) => {
     setError('');
     if (isLoginMode) {
-      await handleLogin(e);
+      const result = await handleLogin(e);
+      if (result && isAuthenticated) {
+        const { trackConversion } = await import('./utils/analytics.js');
+        trackConversion('signup_form', 'login');
+      }
     } else {
-      await handleSignup(e);
+      const result = await handleSignup(e);
+      if (result && isAuthenticated) {
+        const { trackConversion } = await import('./utils/analytics.js');
+        trackConversion('signup_form', 'signup');
+      }
     }
   };
 
@@ -884,9 +940,24 @@ function ChatRoom() {
                 {/* Blue Header */}
                 <div className="bg-gradient-to-r from-[#275559] to-[#4DA8B0] text-white p-4 sm:p-6">
                   <div className="flex items-center justify-between gap-3">
-                    <h2 className="text-xl sm:text-2xl font-bold">
-                      Chat
-                    </h2>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-xl sm:text-2xl font-bold">
+                        Chat
+                      </h2>
+                      {threads.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowThreadsPanel(!showThreadsPanel)}
+                          className="px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white text-xs font-semibold hover:bg-white/30 transition-colors border border-white/30 flex items-center gap-1.5"
+                          title="View threads"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          Threads ({threads.length})
+                        </button>
+                      )}
+                    </div>
                     {!inviteLink && !hasCoParentConnected && (
                       <button
                         type="button"
@@ -909,8 +980,56 @@ function ChatRoom() {
                 </div>
 
                 {/* Chat Content */}
-                <div className="p-4 sm:p-6">
-                  {inviteError && (
+                <div className="flex">
+                  {/* Threads Sidebar */}
+                  {showThreadsPanel && (
+                    <div className="w-64 border-r border-gray-200 bg-gray-50 flex flex-col">
+                      <div className="p-3 border-b border-gray-200 flex items-center justify-between">
+                        <h3 className="font-semibold text-sm text-gray-900">Threads</h3>
+                        <button
+                          type="button"
+                          onClick={() => setShowThreadsPanel(false)}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-y-auto">
+                        {threads.length === 0 ? (
+                          <div className="p-4 text-xs text-gray-500 text-center">
+                            No threads yet. Start a conversation about a specific topic to create one.
+                          </div>
+                        ) : (
+                          threads.map((thread) => (
+                            <button
+                              key={thread.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedThreadId(thread.id === selectedThreadId ? null : thread.id);
+                                if (thread.id !== selectedThreadId) {
+                                  getThreadMessages(thread.id);
+                                }
+                              }}
+                              className={`w-full text-left p-3 border-b border-gray-100 hover:bg-white transition-colors ${
+                                selectedThreadId === thread.id ? 'bg-white border-l-4 border-l-[#275559]' : ''
+                              }`}
+                            >
+                              <div className="font-medium text-sm text-gray-900 mb-1">{thread.title}</div>
+                              <div className="text-xs text-gray-500">
+                                {thread.message_count || 0} messages
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Main Chat Area */}
+                  <div className="flex-1 p-4 sm:p-6">
+                    {inviteError && (
                 <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
                   <div className="font-semibold mb-1">⚠️ Error</div>
                   <div>{inviteError}</div>
@@ -1052,6 +1171,104 @@ function ChatRoom() {
                             {/* INTERVENTION: Validation, Tips, Rewrites */}
                             {!isComment && (
                               <>
+                                {/* Explanation and Override Controls */}
+                                {msg.explanation && (
+                                  <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p className="text-xs text-blue-800 mb-2">
+                                      <strong>Why I'm intervening:</strong> {msg.explanation}
+                                    </p>
+                                    {msg.confidence !== undefined && (
+                                      <p className="text-xs text-blue-600">
+                                        Confidence: {msg.confidence}%
+                                      </p>
+                                    )}
+                                    {msg.overrideOptions && msg.overrideOptions.canOverride && (
+                                      <div className="mt-2 flex flex-wrap gap-2">
+                                        {msg.overrideOptions.overrideOptions.map((option, idx) => (
+                                          <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => {
+                                              if (option.action === 'send_anyway') {
+                                                // Emit override event
+                                                const socket = chatState.socket;
+                                                if (socket) {
+                                                  socket.emit('override_intervention', {
+                                                    messageId: msg.originalMessage?.id || msg.timestamp,
+                                                    overrideAction: option.action
+                                                  });
+                                                  // Remove intervention message
+                                                  removeMessages((m) => m.id === msg.id);
+                                                }
+                                              } else if (option.action === 'edit_first') {
+                                                // Pre-fill input with original message
+                                                setInputMessage(msg.originalMessage?.text || '');
+                                                removeMessages((m) => m.id === msg.id);
+                                              }
+                                            }}
+                                            className="px-2 py-1 text-xs bg-white border border-blue-300 rounded text-blue-700 hover:bg-blue-100 transition-colors"
+                                          >
+                                            {option.label}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Feedback buttons for interventions */}
+                                {isIntervention && (
+                                  <div className="mb-3 flex items-center gap-2 text-xs">
+                                    <span className="text-gray-600">Was this helpful?</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const socket = chatState.socket;
+                                        if (socket) {
+                                          socket.emit('intervention_feedback', {
+                                            interventionId: msg.id,
+                                            helpful: true
+                                          });
+                                          // Show thank you message briefly
+                                          const feedbackBtn = event.target;
+                                          feedbackBtn.textContent = '✓ Thank you!';
+                                          feedbackBtn.disabled = true;
+                                          setTimeout(() => {
+                                            feedbackBtn.textContent = 'Yes';
+                                            feedbackBtn.disabled = false;
+                                          }, 2000);
+                                        }
+                                      }}
+                                      className="px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                                    >
+                                      Yes
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const socket = chatState.socket;
+                                        if (socket) {
+                                          socket.emit('intervention_feedback', {
+                                            interventionId: msg.id,
+                                            helpful: false
+                                          });
+                                          // Show thank you message briefly
+                                          const feedbackBtn = event.target;
+                                          feedbackBtn.textContent = '✓ Thank you!';
+                                          feedbackBtn.disabled = true;
+                                          setTimeout(() => {
+                                            feedbackBtn.textContent = 'No';
+                                            feedbackBtn.disabled = false;
+                                          }, 2000);
+                                        }
+                                      }}
+                                      className="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                                    >
+                                      No
+                                    </button>
+                                  </div>
+                                )}
+
                                 {/* Validation (no label) */}
                                 {msg.validation && (
                                   <div>
@@ -1213,32 +1430,105 @@ function ChatRoom() {
                   }
 
                   // Regular user messages
+                  const isFlagged = msg.user_flagged_by && Array.isArray(msg.user_flagged_by) && msg.user_flagged_by.length > 0;
+                  const isFlaggedByMe = msg.user_flagged_by && Array.isArray(msg.user_flagged_by) && msg.user_flagged_by.includes(username);
+                  const isInThread = msg.threadId !== null && msg.threadId !== undefined;
+                  const thread = threads.find(t => t.id === msg.threadId);
+                  
                   return (
                     <div
                       key={msg.id ?? `${msg.username}-${msg.timestamp}-${msg.text}`}
-                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group ${isInThread ? 'pl-8' : ''}`}
                     >
+                      {isInThread && (
+                        <div className="absolute left-0 w-6 border-l-2 border-blue-300" />
+                      )}
                       <div
-                        className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm shadow ${
+                        className={`relative max-w-[80%] px-3 py-2 rounded-2xl text-sm shadow ${
                           isOwn
                             ? 'bg-[#275559] text-white rounded-br-sm'
-                            : 'bg-white text-slate-900 rounded-bl-sm'
-                        }`}
+                            : `bg-white text-slate-900 rounded-bl-sm ${isFlagged ? 'border-2 border-orange-300 bg-orange-50' : ''}`
+                        } ${isInThread ? 'border-l-4 border-l-blue-400' : ''}`}
                       >
+                        {isInThread && thread && (
+                          <div className="text-[10px] text-blue-600 font-semibold mb-1 flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            {thread.title}
+                          </div>
+                        )}
                         <div className="flex items-baseline justify-between gap-3">
-                          <div>
+                          <div className="flex-1 min-w-0">
                             {!isOwn && (
                               <div className="text-[11px] font-semibold text-slate-500 mb-0.5">
                                 {msg.username || 'Co-parent'}
                               </div>
                             )}
                             <div>{msg.text}</div>
+                            {isFlagged && (
+                              <div className="mt-1 flex items-center gap-1 text-[10px] text-orange-700">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                <span>Flagged as problematic</span>
+                              </div>
+                            )}
                           </div>
-                          {timeLabel && (
-                            <div className="text-[10px] text-slate-400 flex-shrink-0">
-                              {timeLabel}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {timeLabel && (
+                              <div className={`text-[10px] ${isOwn ? 'text-white/70' : 'text-slate-400'}`}>
+                                {timeLabel}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              {!isOwn && (
+                                <>
+                                  {threads.length > 0 && !isInThread && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        // Show thread selection menu
+                                        const threadId = prompt('Select thread ID (or leave empty to create new):');
+                                        if (threadId) {
+                                          addToThread(msg.id || msg.timestamp, threadId);
+                                        }
+                                      }}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-opacity-20 text-slate-400 hover:text-blue-600 hover:bg-slate-100"
+                                      title="Add to thread"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (isFlaggedByMe) {
+                                        // Unflag
+                                        flagMessage(msg.id || msg.timestamp);
+                                      } else {
+                                        // Show flag modal
+                                        setFlaggingMessage(msg);
+                                        setFlagReason('');
+                                      }
+                                    }}
+                                    className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-opacity-20 ${
+                                      isFlaggedByMe
+                                        ? 'opacity-100 text-orange-600 hover:bg-orange-100'
+                                        : 'text-slate-400 hover:text-orange-600 hover:bg-slate-100'
+                                    }`}
+                                    title={isFlaggedByMe ? 'Unflag message' : 'Flag as problematic'}
+                                  >
+                                    <svg className="w-4 h-4" fill={isFlaggedByMe ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                  </button>
+                                </>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1246,6 +1536,65 @@ function ChatRoom() {
                 })}
                 <div ref={messagesEndRef} />
               </div>
+              {/* Proactive Coaching Banner */}
+              {draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend && (
+                <div className="border-t border-orange-200 bg-orange-50 px-3 py-2">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-orange-900 mb-1">
+                        💡 {draftCoaching.coachingMessage}
+                      </p>
+                      {draftCoaching.issues && draftCoaching.issues.length > 0 && (
+                        <ul className="text-xs text-orange-800 mb-2 list-disc list-inside">
+                          {draftCoaching.issues.map((issue, idx) => (
+                            <li key={idx}>{issue}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {(draftCoaching.rewrite1 || draftCoaching.rewrite2) && (
+                        <div className="flex flex-col gap-1.5 mt-2">
+                          {draftCoaching.rewrite1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInputMessage(draftCoaching.rewrite1);
+                                setDraftCoaching(null);
+                              }}
+                              className="text-left px-2 py-1.5 bg-white border border-orange-200 rounded-lg text-xs text-orange-900 hover:bg-orange-100 transition-colors"
+                            >
+                              ✨ Use: "{draftCoaching.rewrite1}"
+                            </button>
+                          )}
+                          {draftCoaching.rewrite2 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInputMessage(draftCoaching.rewrite2);
+                                setDraftCoaching(null);
+                              }}
+                              className="text-left px-2 py-1.5 bg-white border border-orange-200 rounded-lg text-xs text-orange-900 hover:bg-orange-100 transition-colors"
+                            >
+                              ✨ Use: "{draftCoaching.rewrite2}"
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDraftCoaching(null)}
+                      className="text-orange-600 hover:text-orange-800 flex-shrink-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
               <form
                 onSubmit={sendMessage}
                 className="border-t border-slate-200 bg-white px-3 py-2 flex items-center gap-2"
@@ -1255,7 +1604,11 @@ function ChatRoom() {
                   value={inputMessage}
                   onChange={handleInputChange}
                   placeholder="Type a message…"
-                  className="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#275559]"
+                  className={`flex-1 px-3 py-1.5 border rounded-xl text-sm focus:outline-none focus:border-[#275559] ${
+                    draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend
+                      ? 'border-orange-300 bg-orange-50'
+                      : 'border-slate-200'
+                  }`}
                 />
                 <button
                   type="submit"
@@ -1700,6 +2053,86 @@ function ChatRoom() {
                     className="px-8 py-2.5 bg-[#275559] text-white rounded-xl font-semibold hover:bg-[#1f4447] transition-colors"
                   >
                     Complete Profile
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Message Flagging Modal */}
+          {flaggingMessage && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-gray-200">
+                <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Flag Message
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setFlaggingMessage(null);
+                      setFlagReason('');
+                    }}
+                    className="text-2xl leading-none text-gray-500 hover:text-gray-700"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="px-6 py-5">
+                  <p className="text-sm text-gray-700 mb-4">
+                    Help us understand why this message is problematic. This feedback will help the AI mediator learn and adapt.
+                  </p>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                    <p className="text-xs font-semibold text-gray-600 mb-1">
+                      Message:
+                    </p>
+                    <p className="text-sm text-gray-800">
+                      "{flaggingMessage.text}"
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Why is this problematic? (Optional)
+                    </label>
+                    <textarea
+                      value={flagReason}
+                      onChange={(e) => setFlagReason(e.target.value)}
+                      placeholder="e.g., Contains personal attacks, inappropriate language, or violates boundaries..."
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#275559] text-sm min-h-[100px] resize-none"
+                      rows={4}
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Your feedback helps the AI mediator learn what types of messages need intervention.
+                    </p>
+                  </div>
+                </div>
+                <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      flagMessage(flaggingMessage.id || flaggingMessage.timestamp, flagReason.trim() || null);
+                      setFlaggingMessage(null);
+                      setFlagReason('');
+                    }}
+                    className="flex-1 bg-orange-600 text-white py-2.5 px-4 rounded-xl font-semibold hover:bg-orange-700 transition-colors shadow-sm"
+                  >
+                    Flag Message
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFlaggingMessage(null);
+                      setFlagReason('');
+                    }}
+                    className="px-4 py-2.5 rounded-xl border-2 border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
                   </button>
                 </div>
               </div>

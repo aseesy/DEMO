@@ -356,6 +356,127 @@ async function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)
   `);
 
+  // Create relationship insights table for AI mediator persistence
+  db.run(`
+    CREATE TABLE IF NOT EXISTS relationship_insights (
+      room_id TEXT PRIMARY KEY,
+      insights_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_relationship_insights_room ON relationship_insights(room_id)
+  `);
+
+  // Create message flags table for AI learning
+  db.run(`
+    CREATE TABLE IF NOT EXISTS message_flags (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      message_id INTEGER NOT NULL,
+      flagged_by_username TEXT NOT NULL,
+      reason TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_message_flags_message ON message_flags(message_id)
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_message_flags_user ON message_flags(flagged_by_username)
+  `);
+
+  // Create user intervention preferences table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS user_intervention_preferences (
+      user_id INTEGER PRIMARY KEY,
+      intervention_style TEXT DEFAULT 'balanced',
+      coaching_level TEXT DEFAULT 'moderate',
+      preferred_tone TEXT DEFAULT 'warm',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create escalation tracking table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS escalation_tracking (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      room_id TEXT NOT NULL,
+      escalation_score INTEGER DEFAULT 0,
+      risk_level TEXT DEFAULT 'low',
+      detected_patterns TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_escalation_room ON escalation_tracking(room_id)
+  `);
+
+  // Create user feedback table (if not exists - checked in feedbackLearner)
+  try {
+    db.run(`
+      CREATE TABLE IF NOT EXISTS user_feedback (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        feedback_type TEXT NOT NULL,
+        context_json TEXT,
+        reason TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_feedback_user ON user_feedback(user_id)`);
+  } catch (e) {
+    // Table might already exist
+  }
+
+  // Create threads table for conversation threading
+  db.run(`
+    CREATE TABLE IF NOT EXISTS threads (
+      id TEXT PRIMARY KEY,
+      room_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      created_by TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      message_count INTEGER DEFAULT 0,
+      last_message_at TEXT,
+      is_archived INTEGER DEFAULT 0,
+      FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_threads_room ON threads(room_id)
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_threads_updated ON threads(updated_at DESC)
+  `);
+
+  // Add thread_id column to messages table (migration)
+  try {
+    const testResult = db.exec(`SELECT thread_id FROM messages LIMIT 1`);
+    // Column exists
+  } catch (err) {
+    // Column doesn't exist, add it
+    try {
+      db.run(`ALTER TABLE messages ADD COLUMN thread_id TEXT`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_messages_thread ON messages(thread_id)`);
+      console.log(`✅ Added thread_id column to messages table`);
+    } catch (alterErr) {
+      console.warn(`Could not add thread_id column:`, alterErr.message);
+    }
+  }
+
   // Add task assignment and related people columns (migration)
   const taskColumns = ['assigned_to', 'related_people'];
   for (const column of taskColumns) {
