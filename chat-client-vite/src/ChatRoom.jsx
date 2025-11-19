@@ -1968,7 +1968,7 @@ function ChatRoom() {
                     Cancel
                   </button>
                 </div>
-                  ) : null}
+                ) : null}
               </div>
             </div>
           )}
@@ -2212,6 +2212,7 @@ function ChatRoom() {
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>
