@@ -172,6 +172,27 @@ function ChatRoom() {
     }
   }, [isAuthenticated]);
 
+  // Also check localStorage periodically in case another component (LandingPage) authenticated
+  React.useEffect(() => {
+    const checkAuth = () => {
+      const hasToken = localStorage.getItem('auth_token_backup') || localStorage.getItem('token');
+      const isAuthInStorage = localStorage.getItem('isAuthenticated') === 'true';
+
+      if ((hasToken || isAuthInStorage) && !isAuthenticated) {
+        // User is authenticated in localStorage but not in React state
+        // Force a re-check by hiding landing page and letting useAuth verify session
+        setShowLanding(false);
+      }
+    };
+
+    // Check every 500ms when landing page is visible
+    const interval = showLanding ? setInterval(checkAuth, 500) : null;
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [showLanding, isAuthenticated]);
+
   React.useEffect(() => {
     if (isAuthenticated) {
       localStorage.setItem('currentView', currentView);
