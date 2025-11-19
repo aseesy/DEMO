@@ -1726,7 +1726,7 @@ function ChatRoom() {
                               )}
 
                               <p className="text-xs text-slate-500">
-                                You'll only be notified when the chat window is not visible
+                                You'll get a notification every time your co-parent sends a message
                               </p>
                             </div>
                           ) : (

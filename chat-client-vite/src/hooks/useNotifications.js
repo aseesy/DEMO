@@ -5,9 +5,10 @@ import React from 'react';
  *
  * Features:
  * - Requests notification permission
- * - Shows desktop notifications for new messages from other users
- * - Only notifies when tab is not visible or app is in background
- * - Plays sound for notifications (optional)
+ * - Shows desktop notifications for ALL new messages from other users
+ * - Works like SMS - notifies regardless of window visibility
+ * - Plays sound for notifications
+ * - Only filters out user's own messages
  */
 export function useNotifications({ username, enabled = true }) {
   const [permission, setPermission] = React.useState(
@@ -55,18 +56,12 @@ export function useNotifications({ username, enabled = true }) {
     // - Not supported
     // - Permission not granted
     // - Message is from current user
-    // - Tab is visible (user is actively viewing)
     if (!enabled || !isSupported || permission !== 'granted') {
       return;
     }
 
     if (message.username === username) {
       return; // Don't notify for own messages
-    }
-
-    // Check if page is visible
-    if (!document.hidden) {
-      return; // User is actively viewing the page
     }
 
     try {
