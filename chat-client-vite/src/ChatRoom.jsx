@@ -1,12 +1,15 @@
 import React from 'react';
 import './index.css';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth.js';
 import { useTasks } from './hooks/useTasks.js';
 import { useChat } from './hooks/useChat.js';
 import { useContacts } from './hooks/useContacts.js';
 import { useProfile } from './hooks/useProfile.js';
 import { useNotifications } from './hooks/useNotifications.js';
+import { useToast } from './hooks/useToast.js';
 import { ContactsPanel } from './components/ContactsPanel.jsx';
+import { ToastContainer } from './components/Toast.jsx';
 import { ProfilePanel } from './components/ProfilePanel.jsx';
 import { UpdatesPanel } from './components/UpdatesPanel.jsx';
 import { Navigation } from './components/Navigation.jsx';
@@ -132,6 +135,9 @@ function AccountView({ username }) {
 }
 
 function ChatRoom() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const [showLanding, setShowLanding] = React.useState(() => {
     // Don't show landing if user is already authenticated
     // Check both token keys for compatibility
@@ -139,24 +145,11 @@ function ChatRoom() {
   });
 
   const {
-    email,
-    password,
     username,
     isAuthenticated,
     isCheckingAuth,
-    isLoggingIn,
-    isSigningUp,
-    error,
-    setEmail,
-    setPassword,
-    setError,
-    handleLogin,
-    handleSignup,
     handleLogout,
   } = useAuth();
-
-  // Local UI state must be declared before passing into hooks that depend on it
-  const [isLoginMode, setIsLoginMode] = React.useState(true);
   const availableViews = ['dashboard', 'chat', 'contacts', 'profile', 'settings', 'account'];
   const [currentView, setCurrentView] = React.useState(() => {
     const stored = localStorage.getItem('currentView');
@@ -165,6 +158,9 @@ function ChatRoom() {
       : 'dashboard';
   });
 
+  // Track unread message count for navigation badge
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
   // Hide landing page once authenticated
   React.useEffect(() => {
     if (isAuthenticated) {
@@ -172,26 +168,34 @@ function ChatRoom() {
     }
   }, [isAuthenticated]);
 
-  // Also check localStorage periodically in case another component (LandingPage) authenticated
+  // Redirect to /signin if not authenticated and not checking auth
   React.useEffect(() => {
-    const checkAuth = () => {
-      const hasToken = localStorage.getItem('auth_token_backup') || localStorage.getItem('token');
-      const isAuthInStorage = localStorage.getItem('isAuthenticated') === 'true';
-
-      if ((hasToken || isAuthInStorage) && !isAuthenticated) {
-        // User is authenticated in localStorage but not in React state
-        // Force a re-check by hiding landing page and letting useAuth verify session
-        setShowLanding(false);
+    if (!isCheckingAuth && !isAuthenticated) {
+      // If on root path and not authenticated, show landing page first
+      if (showLanding) {
+        // Landing page will handle navigation to /signin via "Get Started" button
+        return;
       }
-    };
 
-    // Check every 500ms when landing page is visible
-    const interval = showLanding ? setInterval(checkAuth, 500) : null;
+      // Otherwise redirect to signin
+      const inviteCode = searchParams.get('invite');
+      if (inviteCode) {
+        navigate(`/signin?invite=${inviteCode}`);
+      } else {
+        // Don't redirect if already on landing
+        if (!showLanding) {
+          navigate('/signin');
+        }
+      }
+    }
+  }, [isCheckingAuth, isAuthenticated, showLanding, navigate, searchParams]);
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [showLanding, isAuthenticated]);
+  // Reset unread count when navigating to chat view
+  React.useEffect(() => {
+    if (currentView === 'chat') {
+      setUnreadCount(0);
+    }
+  }, [currentView]);
 
   React.useEffect(() => {
     if (isAuthenticated) {
@@ -225,11 +229,33 @@ function ChatRoom() {
     enabled: isAuthenticated
   });
 
+  // Toast notification system (always works, no permissions needed)
+  const toast = useToast();
+
+  // Callback for new messages - Option C: Toast notifications only
+  const handleNewMessage = React.useCallback((message) => {
+    // Always show toast notification (works without permissions, always visible)
+    toast.show({
+      sender: message.username,
+      message: message.text,
+      timestamp: message.timestamp,
+      username: username, // For filtering own messages
+    });
+
+    // Increment unread count if not on chat screen
+    if (currentView !== 'chat') {
+      setUnreadCount(prev => prev + 1);
+    }
+
+    // Note: Browser notifications removed for Option C
+    // PWA Service Worker will handle background notifications when app is closed
+  }, [toast, username, currentView]);
+
   const chatState = useChat({
     username,
     isAuthenticated,
     currentView,
-    onNewMessage: notifications.showNotification
+    onNewMessage: handleNewMessage
   });
   const {
     messages,
@@ -253,6 +279,7 @@ function ChatRoom() {
     getThreadMessages,
     addToThread,
     removeFromThread,
+    socket,
   } = chatState;
 
   // Thread UI state
@@ -349,17 +376,14 @@ function ChatRoom() {
 
   // Check for invite code in URL on mount
   React.useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const inviteCodeFromUrl = urlParams.get('invite');
+    const inviteCodeFromUrl = searchParams.get('invite');
     if (inviteCodeFromUrl) {
       console.log('Invite code detected in URL:', inviteCodeFromUrl);
       setPendingInviteCode(inviteCodeFromUrl);
-      // Default to signup mode for invite links (new users are more common)
-      setIsLoginMode(false);
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Clean up URL (remove invite param)
+      navigate(window.location.pathname, { replace: true });
     }
-  }, []);
+  }, [searchParams, navigate]);
 
   // Auto-accept invite after authentication
   React.useEffect(() => {
@@ -569,28 +593,18 @@ function ChatRoom() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    setError('');
-    if (isLoginMode) {
-      const result = await handleLogin(e);
-      if (result && isAuthenticated) {
-        const { trackConversion } = await import('./utils/analytics.js');
-        trackConversion('signup_form', 'login');
-      }
-    } else {
-      const result = await handleSignup(e);
-      if (result && isAuthenticated) {
-        const { trackConversion } = await import('./utils/analytics.js');
-        trackConversion('signup_form', 'signup');
-      }
-    }
-  };
-
   // Callback for when user clicks Get Started on landing page
   const handleGetStarted = React.useCallback(() => {
-    setShowLanding(false);
-    setIsLoginMode(false);
-  }, []);
+    navigate('/signin');
+  }, [navigate]);
+
+  // Debug logging
+  console.log('[ChatRoom] Render state:', {
+    isAuthenticated,
+    showLanding,
+    isCheckingAuth,
+    username
+  });
 
   // Show landing page for first-time visitors
   if (!isAuthenticated && showLanding) {
@@ -605,19 +619,40 @@ function ChatRoom() {
     );
   }
 
+  // If not authenticated and not showing landing, will redirect to /signin via useEffect
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center px-4">
+        <div className="text-white text-lg">Redirecting to sign in…</div>
+      </div>
+    );
+  }
+
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="h-screen bg-white flex flex-col overflow-hidden">
+        {/* Toast Notifications - WhatsApp-style pop-ups */}
+        <ToastContainer
+          toasts={toast.toasts}
+          onDismiss={toast.dismiss}
+          onClick={(toastItem) => {
+            // Navigate to chat when toast is clicked
+            setCurrentView('chat');
+            toast.dismiss(toastItem.id);
+          }}
+        />
+
         {/* Navigation - Top for desktop, Bottom for mobile */}
         <Navigation
           currentView={currentView}
           setCurrentView={setCurrentView}
           onLogout={handleLogout}
+          unreadCount={unreadCount}
         />
 
         {/* Main Content Area */}
-        <div className="pt-14 md:pt-16 pb-20 md:pb-8 px-2 sm:px-4 md:px-6 lg:px-8 relative z-10">
-          <div className="max-w-7xl mx-auto w-full">
+        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-20 md:pt-16 md:pb-0' : 'pt-14 md:pt-16 pb-20 md:pb-8 overflow-y-auto'} px-2 sm:px-4 md:px-6 lg:px-8 relative z-10`}>
+          <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : 'max-w-7xl mx-auto w-full'}`}>
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
               <div className="space-y-0 md:space-y-4">
@@ -991,53 +1026,46 @@ function ChatRoom() {
             )}
 
           {/* Full chat view */}
-            {/* Chat View - Blue Header Style */}
+            {/* Chat View */}
             {currentView === 'chat' && (
-              <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-                {/* Blue Header */}
-                <div className="bg-gradient-to-r from-[#275559] to-[#4DA8B0] text-white p-4 sm:p-6">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                    <h2 className="text-xl sm:text-2xl font-bold">
-                      Chat
-                    </h2>
-                      {threads.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setShowThreadsPanel(!showThreadsPanel)}
-                          className="px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white text-xs font-semibold hover:bg-white/30 transition-colors border border-white/30 flex items-center gap-1.5"
-                          title="View threads"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                          </svg>
-                          Threads ({threads.length})
-                        </button>
+              <div className="bg-white rounded-3xl shadow-xl overflow-hidden h-full flex flex-col relative">
+                {/* Threads button and invite link - moved to top right corner */}
+                <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                  {threads.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowThreadsPanel(!showThreadsPanel)}
+                      className="px-3 py-1.5 rounded-lg bg-[#275559] text-white text-xs font-semibold hover:bg-[#1f4447] transition-colors border border-[#275559] flex items-center gap-1.5 shadow-md"
+                      title="View threads"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      Threads ({threads.length})
+                    </button>
+                  )}
+                  {!inviteLink && !hasCoParentConnected && (
+                    <button
+                      type="button"
+                      onClick={handleLoadInvite}
+                      disabled={isLoadingInvite || !isAuthenticated}
+                      className="px-4 py-2 rounded-xl bg-[#275559] text-white text-xs sm:text-sm font-semibold hover:bg-[#1f4447] disabled:opacity-60 disabled:cursor-not-allowed transition-colors border border-[#275559] shadow-md"
+                      title="Invite your co-parent to join this mediation room"
+                    >
+                      {isLoadingInvite ? (
+                        <span className="flex items-center gap-2">
+                          <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Loading…
+                        </span>
+                      ) : (
+                        'Invite co-parent'
                       )}
-                    </div>
-                    {!inviteLink && !hasCoParentConnected && (
-                      <button
-                        type="button"
-                        onClick={handleLoadInvite}
-                        disabled={isLoadingInvite || !isAuthenticated}
-                        className="px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm text-white text-xs sm:text-sm font-semibold hover:bg-white/30 disabled:opacity-60 disabled:cursor-not-allowed transition-colors border border-white/30"
-                        title="Invite your co-parent to join this mediation room"
-                      >
-                    {isLoadingInvite ? (
-                      <span className="flex items-center gap-2">
-                        <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Loading…
-                      </span>
-                    ) : (
-                      'Invite co-parent'
-                    )}
-                  </button>
-                    )}
-                  </div>
+                    </button>
+                  )}
                 </div>
 
                 {/* Chat Content */}
-                <div className="flex">
+                <div className="flex flex-1 min-h-0">
                   {/* Threads Sidebar */}
                   {showThreadsPanel && (
                     <div className="w-64 border-r border-gray-200 bg-gray-50 flex flex-col">
@@ -1085,7 +1113,7 @@ function ChatRoom() {
                   )}
 
                   {/* Main Chat Area */}
-                  <div className="flex-1 p-4 sm:p-6">
+                  <div className="flex-1 p-4 sm:p-6 flex flex-col min-h-0 overflow-hidden">
                   {inviteError && (
                 <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
                   <div className="font-semibold mb-1">⚠️ Error</div>
@@ -1156,12 +1184,44 @@ function ChatRoom() {
                 </div>
               )}
 
-              <div className="h-[50vh] sm:h-[55vh] md:h-[60vh] lg:h-[65vh] max-h-[600px] bg-white rounded-2xl flex flex-col overflow-hidden shadow-inner border border-slate-100">
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 bg-slate-50/50">
-                {messages
-                  .filter((msg) => msg.type !== 'contact_suggestion') // Hide contact suggestions from chat (they show in modal)
-                  .map((msg) => {
+              <div className="flex-1 bg-white rounded-2xl flex flex-col overflow-hidden shadow-inner border border-slate-100 min-h-0">
+              <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-5 bg-slate-50/50" style={{ fontFamily: "'Inter', sans-serif" }}>
+                {(() => {
+                  // Helper function to get initials from username
+                  const getInitials = (name) => {
+                    if (!name) return '?';
+                    const parts = name.split(/[\s@._-]/);
+                    if (parts.length >= 2) {
+                      return (parts[0][0] + parts[1][0]).toUpperCase();
+                    }
+                    return name.substring(0, 2).toUpperCase();
+                  };
+                  
+                  // Get avatar color based on username
+                  const getAvatarColor = (name) => {
+                    if (!name) return 'bg-gray-400';
+                    const colors = [
+                      'bg-gradient-to-br from-[#4DA8B0] to-[#275559]',
+                      'bg-gradient-to-br from-[#3d8a92] to-[#1f4447]',
+                      'bg-gradient-to-br from-teal-500 to-teal-700',
+                      'bg-gradient-to-br from-cyan-500 to-cyan-700',
+                    ];
+                    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                    return colors[hash % colors.length];
+                  };
+                  
+                  const filteredMessages = messages.filter((msg) => msg.type !== 'contact_suggestion');
+                  
+                  return filteredMessages.map((msg, index) => {
                   const isOwn = msg.username === username;
+                  
+                  // Determine if we need spacing (new speaker or time gap > 5 minutes)
+                  const prevMsg = index > 0 ? filteredMessages[index - 1] : null;
+                  const needsSpacing = prevMsg && (
+                    prevMsg.username !== msg.username ||
+                    (prevMsg.timestamp && msg.timestamp && 
+                     new Date(msg.timestamp).getTime() - new Date(prevMsg.timestamp).getTime() > 5 * 60 * 1000)
+                  );
                   const timeLabel =
                     msg.timestamp &&
                     new Date(msg.timestamp).toLocaleTimeString('en-US', {
@@ -1195,7 +1255,7 @@ function ChatRoom() {
                     return (
                       <div
                         key={msg.id ?? `ai-${msg.timestamp}`}
-                        className="flex items-start gap-3 mb-4"
+                        className={`flex items-start gap-2.5 ${needsSpacing || index === 0 ? 'mt-3' : 'mt-1'}`}
                       >
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal to-[#275559] flex items-center justify-center text-white font-bold text-sm flex-shrink-0 border-2 border-white shadow-lg">
                           {isComment ? '💬' : '🤖'}
@@ -1210,13 +1270,14 @@ function ChatRoom() {
                             )}
                           </div>
                           <div
-                            className={`rounded-2xl px-5 py-4 max-w-full break-words space-y-4 shadow-lg ${
+                            className={`rounded-xl px-5 py-4 max-w-full break-words space-y-4 shadow-md ${
                               isIntervention
-                                ? 'bg-pink-50 border-2 border-pink-300'
+                                ? 'bg-gradient-to-br from-pink-50 to-pink-100 border-2 border-pink-300'
                                 : isComment
-                                ? 'bg-teal-50 border-2 border-teal-300'
-                                : 'bg-blue-50 border-2 border-blue-300'
+                                ? 'bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300'
+                                : 'bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300'
                             }`}
+                            style={{ fontFamily: "'Inter', sans-serif" }}
                           >
                             {/* COMMENT: Simple conversational message */}
                             {isComment && msg.text && (
@@ -1248,7 +1309,6 @@ function ChatRoom() {
                                             onClick={() => {
                                               if (option.action === 'send_anyway') {
                                                 // Emit override event
-                                                const socket = chatState.socket;
                                                 if (socket) {
                                                   socket.emit('override_intervention', {
                                                     messageId: msg.originalMessage?.id || msg.timestamp,
@@ -1279,15 +1339,14 @@ function ChatRoom() {
                                     <span className="text-gray-600">Was this helpful?</span>
                                     <button
                                       type="button"
-                                      onClick={() => {
-                                        const socket = chatState.socket;
+                                      onClick={(e) => {
                                         if (socket) {
                                           socket.emit('intervention_feedback', {
                                             interventionId: msg.id,
                                             helpful: true
                                           });
                                           // Show thank you message briefly
-                                          const feedbackBtn = event.target;
+                                          const feedbackBtn = e.target;
                                           feedbackBtn.textContent = '✓ Thank you!';
                                           feedbackBtn.disabled = true;
                                           setTimeout(() => {
@@ -1302,15 +1361,14 @@ function ChatRoom() {
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => {
-                                        const socket = chatState.socket;
+                                      onClick={(e) => {
                                         if (socket) {
                                           socket.emit('intervention_feedback', {
                                             interventionId: msg.id,
                                             helpful: false
                                           });
                                           // Show thank you message briefly
-                                          const feedbackBtn = event.target;
+                                          const feedbackBtn = e.target;
                                           feedbackBtn.textContent = '✓ Thank you!';
                                           feedbackBtn.disabled = true;
                                           setTimeout(() => {
@@ -1495,17 +1553,24 @@ function ChatRoom() {
                   return (
                     <div
                       key={msg.id ?? `${msg.username}-${msg.timestamp}-${msg.text}`}
-                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group ${isInThread ? 'pl-8' : ''}`}
+                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-end gap-2 group ${isInThread ? 'pl-8' : ''} ${needsSpacing ? 'mt-3' : 'mt-1'}`}
                     >
                       {isInThread && (
                         <div className="absolute left-0 w-6 border-l-2 border-blue-300" />
                       )}
+                      {/* Avatar for other person's messages */}
+                      {!isOwn && (
+                        <div className={`w-8 h-8 rounded-full ${getAvatarColor(msg.username)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 shadow-md border-2 border-white`}>
+                          {getInitials(msg.username || 'Co-parent')}
+                        </div>
+                      )}
                       <div
-                        className={`relative max-w-[80%] px-3 py-2 rounded-2xl text-sm shadow ${
+                        className={`relative max-w-[85%] sm:max-w-[75%] px-4 py-2.5 rounded-xl text-sm shadow-md ${
                           isOwn
-                            ? 'bg-[#275559] text-white rounded-br-sm'
-                            : `bg-white text-slate-900 rounded-bl-sm ${isFlagged ? 'border-2 border-orange-300 bg-orange-50' : ''}`
+                            ? 'bg-gradient-to-br from-[#275559] to-[#1f4447] text-white rounded-br-sm'
+                            : `bg-gradient-to-br from-white to-slate-50 text-slate-900 rounded-bl-sm ${isFlagged ? 'border-2 border-orange-300 bg-orange-50' : ''}`
                         } ${isInThread ? 'border-l-4 border-l-blue-400' : ''}`}
+                        style={{ fontFamily: "'Inter', sans-serif" }}
                       >
                         {isInThread && thread && (
                           <div className="text-[10px] text-blue-600 font-semibold mb-1 flex items-center gap-1">
@@ -1517,12 +1582,7 @@ function ChatRoom() {
                         )}
                         <div className="flex items-baseline justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            {!isOwn && (
-                              <div className="text-[11px] font-semibold text-slate-500 mb-0.5">
-                                {msg.username || 'Co-parent'}
-                              </div>
-                            )}
-                            <div>{msg.text}</div>
+                            <div className="leading-relaxed">{msg.text}</div>
                             {isFlagged && (
                               <div className="mt-1 flex items-center gap-1 text-[10px] text-orange-700">
                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -1588,9 +1648,16 @@ function ChatRoom() {
                           </div>
                         </div>
                       </div>
+                      {/* Avatar for own messages */}
+                      {isOwn && (
+                        <div className={`w-8 h-8 rounded-full ${getAvatarColor(username)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 shadow-md border-2 border-white`}>
+                          {getInitials(username)}
+                        </div>
+                      )}
                     </div>
                   );
-                })}
+                });
+                })()}
                 <div ref={messagesEndRef} />
               </div>
               {/* Proactive Coaching Banner */}
@@ -1677,8 +1744,8 @@ function ChatRoom() {
               </form>
               </div>
             </div>
-                </div>
-              </div>
+          </div>
+        </div>
             )}
 
             {/* Contacts View */}
@@ -1883,133 +1950,6 @@ function ChatRoom() {
       </div>
     );
   }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white/95 rounded-3xl shadow-2xl p-6 sm:p-8">
-        <div className="flex flex-col items-center mb-6">
-          <img 
-            src="/assets/TransB.svg" 
-            alt="@TransB" 
-            className="logo-image"
-            style={{ height: '64px', width: 'auto', marginBottom: '0', display: 'block' }}
-          />
-          <div style={{ marginTop: '-32px', marginBottom: '-32px', lineHeight: 0, overflow: 'hidden' }}>
-          <img 
-            src="/assets/LZlogo.svg" 
-            alt="LiaiZen" 
-            className="logo-image"
-              style={{ 
-                height: '96px', 
-                width: 'auto', 
-                display: 'block',
-                lineHeight: 0,
-                verticalAlign: 'top',
-                margin: 0,
-                padding: 0
-              }}
-          />
-        </div>
-          <p className="text-sm sm:text-base text-slate-600 font-medium mt-0.5">
-            Collaborative Parenting
-        </p>
-        </div>
-
-        {pendingInviteCode && (
-          <div className="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
-            <div className="font-semibold mb-1">✨ You've been invited to a co-parent mediation room!</div>
-            <div>
-              {isLoginMode
-                ? 'Log in to join your co-parent in this mediation room.'
-                : 'Create an account to join your co-parent in this mediation room. Already have an account? Switch to log in above.'}
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-slate-900 placeholder-slate-400"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-slate-900 placeholder-slate-400"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoggingIn || isSigningUp}
-            className="w-full mt-2 bg-[#275559] text-white py-2.5 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:bg-[#1f4447] transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed"
-          >
-            {isLoginMode
-              ? isLoggingIn
-                ? 'Logging in…'
-                : 'Log in'
-              : isSigningUp
-              ? 'Creating account…'
-              : 'Create account'}
-          </button>
-        </form>
-
-        <div className="mt-4 text-center text-sm text-slate-600">
-          {isLoginMode ? (
-            <>
-              Don&apos;t have an account?{' '}
-              <button
-                type="button"
-                className="text-[#275559] font-semibold hover:underline"
-                onClick={() => {
-                  setError('');
-                  setIsLoginMode(false);
-                }}
-              >
-                Sign up
-              </button>
-            </>
-          ) : (
-            <>
-              Already have an account?{' '}
-              <button
-                type="button"
-                className="text-[#275559] font-semibold hover:underline"
-                onClick={() => {
-                  setError('');
-                  setIsLoginMode(true);
-                }}
-              >
-                Log in
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default ChatRoom;

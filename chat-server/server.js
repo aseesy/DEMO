@@ -130,12 +130,31 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting - general API protection (exclude auth endpoints)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 100, // limit each IP to 100 requests per windowMs
+  skip: (req) => {
+    // Skip rate limiting for auth endpoints (they have their own limits)
+    return req.path.startsWith('/api/auth/');
+  }
 });
+
+// More lenient rate limiting for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // limit each IP to 50 login/signup attempts per 15 minutes
+  message: 'Too many login attempts. Please try again in 15 minutes.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful logins against limit
+});
+
+// Apply general rate limiting (excludes auth endpoints)
 app.use(limiter);
+// Apply auth-specific rate limiting to auth endpoints
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/signup', authLimiter);
 
 const io = new Server(server, {
   cors: {

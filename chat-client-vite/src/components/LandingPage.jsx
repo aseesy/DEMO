@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import {
   trackCTAClick,
@@ -14,6 +15,7 @@ import {
 } from '../utils/analytics.js';
 
 export function LandingPage({ onGetStarted }) {
+  const navigate = useNavigate();
   const [email, setEmail] = React.useState('');
   const [newsletterSubmitted, setNewsletterSubmitted] = React.useState(false);
   const [showSignInModal, setShowSignInModal] = React.useState(false);
@@ -34,16 +36,16 @@ export function LandingPage({ onGetStarted }) {
     handleSignup,
   } = useAuth();
 
-  // If authenticated, hide landing page
+  // If authenticated, navigate to dashboard
   React.useEffect(() => {
     if (isAuthenticated) {
       // Close modals if open
       setShowSignInModal(false);
       setShowSignupModal(false);
-      // Navigate to dashboard
-      onGetStarted();
+      // Navigate to dashboard (root path)
+      navigate('/');
     }
-  }, [isAuthenticated, onGetStarted]);
+  }, [isAuthenticated, navigate]);
 
   // Scroll tracking for sections
   React.useEffect(() => {
@@ -164,7 +166,7 @@ export function LandingPage({ onGetStarted }) {
               <button
                 onClick={() => {
                   trackSignInModalOpen();
-                  setShowSignInModal(true);
+                  navigate('/signin');
                 }}
                 className="px-4 sm:px-6 py-2 sm:py-3 bg-white text-[#275559] rounded-xl font-semibold text-sm sm:text-base hover:bg-gray-50 transition-all border-2 border-[#275559] shadow-sm hover:shadow-md"
               >
@@ -173,7 +175,7 @@ export function LandingPage({ onGetStarted }) {
             <button
                 onClick={() => {
                   trackCTAClick('navigation', 'Get Started', 'header');
-                  setShowSignupModal(true);
+                  navigate('/signin');
                 }}
               className="px-4 sm:px-6 py-2 sm:py-3 bg-[#275559] text-white rounded-xl font-semibold text-sm sm:text-base hover:bg-[#1f4447] transition-all shadow-lg hover:shadow-xl"
             >
@@ -207,7 +209,7 @@ export function LandingPage({ onGetStarted }) {
               <button
                 onClick={() => {
                   trackCTAClick('hero', 'Get Started', 'primary');
-                  setShowSignupModal(true);
+                  navigate('/signin');
                 }}
                 className="px-10 py-5 bg-gradient-to-r from-[#4DA8B0] to-[#3d8a92] text-white rounded-2xl font-bold text-lg sm:text-xl hover:from-[#3d8a92] hover:to-[#2d6d75] transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform w-full sm:w-auto"
               >
@@ -1094,17 +1096,21 @@ export function LandingPage({ onGetStarted }) {
                 </div>
                 <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] shadow-lg">
                   <div className="space-y-4">
-                    <div className="bg-[#275559] text-white rounded-xl p-4">
-                      <div className="text-xs opacity-75 mb-1">You</div>
-                      <div className="text-sm">Can you pick up the kids tomorrow?</div>
-                    </div>
-                    <div className="bg-gray-100 rounded-xl p-4">
-                      <div className="text-xs text-gray-600 mb-1">Co-Parent</div>
-                      <div className="text-sm text-gray-800">Sure, what time works for you?</div>
+                    <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+                      <div className="text-xs text-red-600 mb-1">You</div>
+                      <div className="text-sm text-red-800">You always ask me this last minute</div>
                     </div>
                     <div className="bg-teal-50 border-2 border-teal-200 rounded-xl p-4">
-                      <div className="text-xs text-teal-700 font-semibold mb-1">💡 AI Suggestion</div>
-                      <div className="text-sm text-teal-800">This conversation is respectful and child-focused. Great communication!</div>
+                      <div className="text-xs text-teal-700 font-semibold mb-1">💡 Liaizen</div>
+                      <div className="text-sm text-teal-800 font-semibold mb-2">Try this message:</div>
+                      <div className="bg-white border border-teal-300 rounded-lg p-3 mt-2">
+                        <div className="text-xs text-gray-500 mb-1">Suggested message</div>
+                        <div className="text-sm text-gray-800">Can you pick up the kids tomorrow? I know it's short notice, but I'd really appreciate it if you're available.</div>
+                      </div>
+                    </div>
+                    <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
+                      <div className="text-xs text-green-700 font-semibold mb-1">✓ Result</div>
+                      <div className="text-sm text-green-800">Everybody's Happy! Conflict avoided.</div>
                     </div>
                   </div>
                 </div>
@@ -1129,7 +1135,7 @@ export function LandingPage({ onGetStarted }) {
             <button
                 onClick={() => {
                   trackCTAClick('final_cta', 'Start Free Beta Access Now', 'bottom');
-                  onGetStarted();
+                  navigate('/signin');
                 }}
                 className="px-12 py-6 bg-gradient-to-r from-[#4DA8B0] to-[#3d8a92] text-white rounded-2xl font-bold text-xl hover:from-[#3d8a92] hover:to-[#2d6d75] transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform mb-4"
             >
@@ -1242,10 +1248,7 @@ export function LandingPage({ onGetStarted }) {
                   type="button"
                   onClick={() => {
                     setShowSignInModal(false);
-                    setShowSignupModal(true);
-                    setAuthError('');
-                    setAuthEmail('');
-                    setPassword('');
+                    navigate('/signin');
                   }}
                   className="px-4 py-3 rounded-xl border-2 border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >

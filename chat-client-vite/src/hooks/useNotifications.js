@@ -41,13 +41,17 @@ export function useNotifications({ username, enabled = true }) {
     }
   }, [isSupported, permission]);
 
-  // Auto-request permission on mount if not already requested
-  React.useEffect(() => {
-    if (enabled && isSupported && permission === 'default' && !hasRequestedPermission) {
-      // Don't auto-request immediately - let user interact first
-      // This will be called manually from UI
-    }
-  }, [enabled, isSupported, permission, hasRequestedPermission]);
+  // Option C: No auto-request for browser notifications (toast handles everything)
+  // Browser notifications are now only used for PWA when app is closed
+  // React.useEffect(() => {
+  //   if (enabled && isSupported && permission === 'default' && !hasRequestedPermission) {
+  //     const timer = setTimeout(() => {
+  //       console.log('[useNotifications] Auto-requesting browser notification permission...');
+  //       requestPermission();
+  //     }, 2000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [enabled, isSupported, permission, hasRequestedPermission, requestPermission]);
 
   // Show notification for a new message
   const showNotification = React.useCallback((message) => {
@@ -62,6 +66,13 @@ export function useNotifications({ username, enabled = true }) {
 
     if (message.username === username) {
       return; // Don't notify for own messages
+    }
+
+    // Only show browser notification if page is hidden/not visible
+    // (Toast notifications will handle visible state)
+    if (!document.hidden) {
+      console.log('[useNotifications] Page visible, skipping browser notification (toast will show)');
+      return;
     }
 
     try {
