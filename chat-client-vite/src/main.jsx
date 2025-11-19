@@ -6,7 +6,12 @@ import { injectGoogleTag } from './utils/injectGoogleTag.js'
 import { initAnalytics } from './utils/analytics.js'
 
 // Inject Google Tag immediately (before React loads)
-injectGoogleTag();
+// This runs synchronously to ensure tag is present before any other scripts
+try {
+  injectGoogleTag();
+} catch (error) {
+  console.error('Failed to inject Google Tag:', error);
+}
 
 // Initialize analytics on app load (only if GOOGLE_TAG is not set, use VITE_GA_MEASUREMENT_ID)
 initAnalytics();

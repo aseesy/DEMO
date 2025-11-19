@@ -27,9 +27,15 @@ export function injectGoogleTag() {
   const googleTag = import.meta.env.VITE_GOOGLE_TAG || import.meta.env.GOOGLE_TAG || '';
   
   if (!googleTag || !googleTag.trim()) {
-    console.log('No GOOGLE_TAG found in environment variables');
+    console.warn('No GOOGLE_TAG found in environment variables. Checked:', {
+      'VITE_GOOGLE_TAG': import.meta.env.VITE_GOOGLE_TAG ? 'found' : 'not found',
+      'GOOGLE_TAG': import.meta.env.GOOGLE_TAG ? 'found' : 'not found',
+      'mode': import.meta.env.MODE
+    });
     return;
   }
+  
+  console.log('Google Tag found in environment variables, injecting...');
 
   try {
     // Parse the Google Tag HTML snippet
