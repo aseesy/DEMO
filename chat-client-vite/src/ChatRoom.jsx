@@ -10,6 +10,11 @@ import { ProfilePanel } from './components/ProfilePanel.jsx';
 import { UpdatesPanel } from './components/UpdatesPanel.jsx';
 import { Navigation } from './components/Navigation.jsx';
 import { LandingPage } from './components/LandingPage.jsx';
+import { TaskFormModal } from './components/modals/TaskFormModal.jsx';
+import { WelcomeModal } from './components/modals/WelcomeModal.jsx';
+import { ProfileTaskModal } from './components/modals/ProfileTaskModal.jsx';
+import { FlaggingModal } from './components/modals/FlaggingModal.jsx';
+import { ContactSuggestionModal } from './components/modals/ContactSuggestionModal.jsx';
 import { API_BASE_URL } from './config.js';
 import { apiPost } from './apiClient.js';
 
@@ -1672,547 +1677,91 @@ function ChatRoom() {
             {currentView === 'account' && <AccountView username={username} />}
 
             {/* Enhanced task form modal with Manual/AI toggle */}
-            {showTaskForm && (
-              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-2 sm:px-4 py-2 sm:py-4 overflow-y-auto">
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl my-auto flex flex-col max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)]">
-                  <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-                    <h3 className="text-base sm:text-lg font-semibold">
-                      {editingTask ? 'Edit Task' : 'Add Task'}
-                    </h3>
-                    <button
-                      className="text-2xl leading-none text-gray-500 hover:text-gray-700 p-1 touch-manipulation min-w-[36px] min-h-[36px] flex items-center justify-center"
-                      onClick={() => {
-                        setShowTaskForm(false);
-                        setEditingTask(null);
-                        setTaskFormMode('manual');
-                        setAiTaskDetails('');
-                        setIsGeneratingTask(false);
-                        setTaskFormData({
-                          title: '',
-                          description: '',
-                          status: 'open',
-                          priority: 'medium',
-                          due_date: '',
-                          assigned_to: 'self',
-                          related_people: [],
-                        });
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 min-h-0">
-                    {/* Mode Toggle - Only show when creating new task */}
-                    {!editingTask && (
-                      <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg">
-                        <button
-                          onClick={() => setTaskFormMode('manual')}
-                          className={`flex-1 px-3 py-2.5 sm:py-2 rounded-md text-sm font-semibold transition-all min-h-[40px] touch-manipulation ${
-                            taskFormMode === 'manual'
-                              ? 'bg-white text-[#275559] shadow-sm'
-                              : 'text-gray-600 hover:text-[#275559]'
-                          }`}
-                        >
-                          Manual
-                        </button>
-                        <button
-                          onClick={() => setTaskFormMode('ai')}
-                          className={`flex-1 px-3 py-2.5 sm:py-2 rounded-md text-sm font-semibold transition-all min-h-[40px] touch-manipulation ${
-                            taskFormMode === 'ai'
-                              ? 'bg-white text-[#275559] shadow-sm'
-                              : 'text-gray-600 hover:text-[#275559]'
-                          }`}
-                        >
-                          AI-Assisted
-                        </button>
-                      </div>
-                    )}
-
-                    {taskFormMode === 'ai' && !editingTask ? (
-                      /* AI Mode */
-                      <div className="space-y-4">
-                    <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                            Describe your task
-                          </label>
-                          <textarea
-                            value={aiTaskDetails}
-                            onChange={(e) => setAiTaskDetails(e.target.value)}
-                            placeholder="e.g., Schedule pediatrician appointment for Emma next week"
-                            className="w-full px-3 py-2.5 sm:px-3 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm min-h-[100px]"
-                            rows={4}
-                          />
-                          <p className="mt-1 text-[10px] sm:text-xs text-gray-500">
-                            AI will generate a structured task with title, description, priority, and due date.
-                          </p>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            if (!aiTaskDetails.trim() || !username) return;
-                            setIsGeneratingTask(true);
-                            try {
-                              const response = await apiPost('/api/tasks/generate', {
-                                username,
-                                taskDetails: aiTaskDetails,
-                              });
-                              if (response.ok) {
-                                const data = await response.json();
-                                if (data.task) {
-                                  setTaskFormData({
-                                    title: data.task.title,
-                                    description: data.task.description,
-                                    status: data.task.status || 'open',
-                                    priority: data.task.priority || 'medium',
-                                    due_date: data.task.due_date || '',
-                                    assigned_to: 'self',
-                                    related_people: [],
-                                  });
-                                  // Switch to manual mode to show editable form
-                                  setTaskFormMode('manual');
-                                }
-                              } else {
-                                const errorData = await response.json().catch(() => ({ error: 'Failed to generate task' }));
-                                alert(errorData.error || 'Failed to generate task');
-                              }
-                            } catch (err) {
-                              console.error('Error generating task:', err);
-                              alert('Failed to generate task. Please try again.');
-                            } finally {
-                              setIsGeneratingTask(false);
-                            }
-                          }}
-                          disabled={!aiTaskDetails.trim() || isGeneratingTask}
-                          className="w-full bg-[#4DA8B0] text-white py-3 sm:py-2.5 rounded-lg sm:rounded-xl font-semibold text-sm hover:bg-[#3d8a92] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px] touch-manipulation"
-                        >
-                          {isGeneratingTask ? (
-                            <>
-                              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              <span>Generating...</span>
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                              </svg>
-                              <span>Generate Task</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    ) : (
-                      /* Manual Mode or Edit Mode */
-                      <div className="space-y-2.5 sm:space-y-3">
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                        Title *
-                      </label>
-                      <input
-                        type="text"
-                        value={taskFormData.title}
-                        onChange={(e) =>
-                          setTaskFormData((prev) => ({
-                            ...prev,
-                            title: e.target.value,
-                          }))
-                        }
-                            className="w-full px-3 py-2.5 sm:px-3 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm min-h-[44px]"
-                        required
-                      />
-                    </div>
-                    <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                        Description
-                      </label>
-                      <textarea
-                        value={taskFormData.description}
-                        onChange={(e) =>
-                          setTaskFormData((prev) => ({
-                            ...prev,
-                            description: e.target.value,
-                          }))
-                        }
-                            className="w-full px-3 py-2.5 sm:px-3 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm min-h-[80px]"
-                        rows={3}
-                      />
-                    </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                          <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                              Priority
-                            </label>
-                            <select
-                              value={taskFormData.priority}
-                              onChange={(e) =>
-                                setTaskFormData((prev) => ({
-                                  ...prev,
-                                  priority: e.target.value,
-                                }))
-                              }
-                              className="w-full px-3 py-2.5 sm:px-3 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm min-h-[44px]"
-                            >
-                              <option value="low">Low</option>
-                              <option value="medium">Medium</option>
-                              <option value="high">High</option>
-                            </select>
-                  </div>
-                          <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                              Due Date
-                            </label>
-                            <input
-                              type="date"
-                              value={taskFormData.due_date || ''}
-                              onChange={(e) =>
-                                setTaskFormData((prev) => ({
-                                  ...prev,
-                                  due_date: e.target.value,
-                                }))
-                              }
-                              className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                            Assign To
-                          </label>
-                          <select
-                            value={taskFormData.assigned_to || 'self'}
-                            onChange={(e) =>
-                              setTaskFormData((prev) => ({
-                                ...prev,
-                                assigned_to: e.target.value,
-                              }))
-                            }
-                              className="w-full px-3 py-2.5 sm:px-3 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#275559] text-sm text-gray-900 min-h-[44px]"
-                          >
-                            <option value="self">Self (me)</option>
-                            <option value="">No one (unassigned)</option>
-                            {contacts.map((contact) => (
-                              <option key={contact.id} value={contact.id}>
-                                {contact.contact_name} ({contact.relationship || 'Contact'})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                            Add People for Context
-                          </label>
-                          <div className="space-y-1.5 sm:space-y-2 max-h-32 sm:max-h-40 overflow-y-auto">
-                            {contacts.map((contact) => {
-                              const isSelected = Array.isArray(taskFormData.related_people) && taskFormData.related_people.includes(contact.id.toString());
-                              return (
-                                <label key={contact.id} className="flex items-center gap-1.5 sm:gap-2 cursor-pointer py-0.5">
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={(e) => {
-                                      const currentPeople = Array.isArray(taskFormData.related_people) ? taskFormData.related_people : [];
-                                      if (e.target.checked) {
-                                        setTaskFormData((prev) => ({
-                                          ...prev,
-                                          related_people: [...currentPeople, contact.id.toString()],
-                                        }));
-                                      } else {
-                                        setTaskFormData((prev) => ({
-                                          ...prev,
-                                          related_people: currentPeople.filter((id) => id !== contact.id.toString()),
-                                        }));
-                                      }
-                                    }}
-                                    className="w-4 h-4 sm:w-5 sm:h-5 text-[#275559] border-gray-300 rounded focus:ring-[#275559] flex-shrink-0 touch-manipulation"
-                                  />
-                                  <span className="text-xs sm:text-sm text-gray-700 truncate">
-                                    {contact.contact_name} ({contact.relationship || 'Contact'})
-                                  </span>
-                                </label>
-                              );
-                            })}
-                            {contacts.length === 0 && (
-                              <p className="text-[10px] sm:text-xs text-gray-500">No contacts available. Add contacts to assign tasks.</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {taskFormMode === 'manual' || editingTask ? (
-                    <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex gap-2 sm:gap-3 flex-shrink-0">
-                    <button
-                      onClick={saveTask}
-                      disabled={!taskFormData.title.trim()}
-                        className="flex-1 bg-[#275559] text-white py-3 sm:py-2.5 rounded-lg sm:rounded-xl font-semibold text-sm hover:bg-[#1f4447] transition-colors disabled:bg-gray-400 min-h-[44px] touch-manipulation"
-                    >
-                      {editingTask ? (taskFormData.title === 'Welcome to LiaiZen' ? 'OK' : 'Update') : 'Create'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowTaskForm(false);
-                        setEditingTask(null);
-                          setTaskFormMode('manual');
-                          setAiTaskDetails('');
-                          setIsGeneratingTask(false);
-                        setTaskFormData({
-                          title: '',
-                          description: '',
-                          status: 'open',
-                          priority: 'medium',
-                          due_date: '',
-                            assigned_to: 'self',
-                            related_people: [],
-                        });
-                      }}
-                        className="px-4 py-3 sm:px-4 sm:py-2.5 border-2 border-gray-300 rounded-lg sm:rounded-xl font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px] touch-manipulation"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                  ) : null}
-                </div>
-              </div>
-            )}
+            <TaskFormModal
+              showTaskForm={showTaskForm}
+              editingTask={editingTask}
+              taskFormMode={taskFormMode}
+              setTaskFormMode={setTaskFormMode}
+              aiTaskDetails={aiTaskDetails}
+              setAiTaskDetails={setAiTaskDetails}
+              isGeneratingTask={isGeneratingTask}
+              setIsGeneratingTask={setIsGeneratingTask}
+              taskFormData={taskFormData}
+              setTaskFormData={setTaskFormData}
+              contacts={contacts}
+              username={username}
+              onClose={() => {
+                setShowTaskForm(false);
+                setEditingTask(null);
+              }}
+              onSave={saveTask}
+            />
 
             {/* Welcome to LiaiZen Modal */}
-            {showWelcomeModal && editingTask && (
-              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-200">
-                  <div className="border-b border-gray-100 px-6 py-5 flex items-center justify-between flex-shrink-0">
-                    <h3 className="text-2xl font-bold text-gray-900">
-                      {editingTask.title}
-                    </h3>
-                    <button
-                      onClick={() => {
-                        setShowWelcomeModal(false);
-                        setEditingTask(null);
-                      }}
-                      className="text-2xl font-bold text-gray-500 hover:text-gray-700"
-                    >
-                      ×
-                    </button>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto px-6 py-6">
-                    <div className="prose prose-slate max-w-none">
-                      <p className="text-base text-gray-700 whitespace-pre-wrap leading-relaxed">
-                        {editingTask.description || 'Welcome to LiaiZen! We\'re here to help make co-parenting easier.'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="px-6 py-4 border-t border-gray-200 flex justify-end flex-shrink-0">
-                    <button
-                      onClick={() => {
-                        toggleTaskStatus(editingTask);
-                        setShowWelcomeModal(false);
-                        setEditingTask(null);
-                      }}
-                      className="px-8 py-2.5 bg-[#275559] text-white rounded-xl font-semibold hover:bg-[#1f4447] transition-colors"
-                    >
-                      OK
-                    </button>
-                  </div>
-                </div>
-              </div>
+            {showWelcomeModal && (
+              <WelcomeModal
+                editingTask={editingTask}
+                onClose={() => {
+                  setShowWelcomeModal(false);
+                  setEditingTask(null);
+                }}
+                onComplete={() => {
+                  toggleTaskStatus(editingTask);
+                  setShowWelcomeModal(false);
+                  setEditingTask(null);
+                }}
+              />
             )}
 
             {/* Complete Profile Task Modal */}
-            {showProfileTaskModal && editingTask && (
-              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-200">
-                  <div className="border-b border-gray-100 px-6 py-5 flex items-center justify-between flex-shrink-0">
-                    <h3 className="text-2xl font-bold text-gray-900">
-                      {editingTask.title}
-                    </h3>
-                    <button
-                      onClick={() => {
-                        setShowProfileTaskModal(false);
-                        setEditingTask(null);
-                      }}
-                      className="text-2xl font-bold text-gray-500 hover:text-gray-700"
-                    >
-                      ×
-                    </button>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto px-6 py-6">
-                    <div className="prose prose-slate max-w-none">
-                      <p className="text-base text-gray-700 whitespace-pre-wrap leading-relaxed">
-                        {editingTask.description || 'Complete your profile to help us personalize your LiaiZen experience.'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="px-6 py-4 border-t border-gray-200 flex justify-end flex-shrink-0">
-                    <button
-                      onClick={() => {
-                        setShowProfileTaskModal(false);
-                        setEditingTask(null);
-                        setCurrentView('profile');
-                      }}
-                      className="px-8 py-2.5 bg-[#275559] text-white rounded-xl font-semibold hover:bg-[#1f4447] transition-colors"
-                    >
-                      Complete Profile
-                    </button>
-                  </div>
-                </div>
-              </div>
+            {showProfileTaskModal && (
+              <ProfileTaskModal
+                editingTask={editingTask}
+                onClose={() => {
+                  setShowProfileTaskModal(false);
+                  setEditingTask(null);
+                }}
+                onNavigateToProfile={() => {
+                  setShowProfileTaskModal(false);
+                  setEditingTask(null);
+                  setCurrentView('profile');
+                }}
+              />
             )}
 
             {/* Message Flagging Modal */}
-            {flaggingMessage && (
-              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-gray-200">
-                  <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Flag Message
-                      </h3>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setFlaggingMessage(null);
-                        setFlagReason('');
-                      }}
-                      className="text-2xl leading-none text-gray-500 hover:text-gray-700"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="px-6 py-5">
-                    <p className="text-sm text-gray-700 mb-4">
-                      Help us understand why this message is problematic. This feedback will help the AI mediator learn and adapt.
-                    </p>
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
-                      <p className="text-xs font-semibold text-gray-600 mb-1">
-                        Message:
-                      </p>
-                      <p className="text-sm text-gray-800">
-                        "{flaggingMessage.text}"
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Why is this problematic? (Optional)
-                      </label>
-                      <textarea
-                        value={flagReason}
-                        onChange={(e) => setFlagReason(e.target.value)}
-                        placeholder="e.g., Contains personal attacks, inappropriate language, or violates boundaries..."
-                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#275559] text-sm min-h-[100px] resize-none"
-                        rows={4}
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        Your feedback helps the AI mediator learn what types of messages need intervention.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        flagMessage(flaggingMessage.id || flaggingMessage.timestamp, flagReason.trim() || null);
-                        setFlaggingMessage(null);
-                        setFlagReason('');
-                      }}
-                      className="flex-1 bg-orange-600 text-white py-2.5 px-4 rounded-xl font-semibold hover:bg-orange-700 transition-colors shadow-sm"
-                    >
-                      Flag Message
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFlaggingMessage(null);
-                        setFlagReason('');
-                      }}
-                      className="px-4 py-2.5 rounded-xl border-2 border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <FlaggingModal
+              flaggingMessage={flaggingMessage}
+              flagReason={flagReason}
+              setFlagReason={setFlagReason}
+              onFlag={(reason) => {
+                flagMessage(flaggingMessage.id || flaggingMessage.timestamp, reason);
+                setFlaggingMessage(null);
+                setFlagReason('');
+              }}
+              onClose={() => {
+                setFlaggingMessage(null);
+                setFlagReason('');
+              }}
+            />
 
             {/* Contact Suggestion Modal */}
-            {pendingContactSuggestion && (
-              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-gray-200">
-                  <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal to-[#275559] flex items-center justify-center text-white font-bold text-sm">
-                        💡
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Add Contact?
-                      </h3>
-                    </div>
-                    <button
-                      onClick={() => {
-                        if (pendingContactSuggestion?.id) {
-                          setDismissedSuggestions((prev) => new Set(prev).add(pendingContactSuggestion.id));
-                        }
-                        setPendingContactSuggestion(null);
-                      }}
-                      className="text-2xl leading-none text-gray-500 hover:text-gray-700"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="px-6 py-5">
-                    <p className="text-sm text-gray-700 mb-4">
-                      {pendingContactSuggestion.text || `Would you like to add ${pendingContactSuggestion.detectedName} to your contacts?`}
-                    </p>
-                    <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4">
-                      <p className="text-xs font-semibold text-teal-900 mb-1">
-                        Detected name:
-                      </p>
-                      <p className="text-sm text-teal-800 font-medium">
-                        {pendingContactSuggestion.detectedName}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Navigate to contacts and open form with name pre-filled
-                        setCurrentView('contacts');
-                        localStorage.setItem('liaizen_add_contact', JSON.stringify({
-                          name: pendingContactSuggestion.detectedName,
-                          context: pendingContactSuggestion.text
-                        }));
-                        if (pendingContactSuggestion?.id) {
-                          setDismissedSuggestions((prev) => new Set(prev).add(pendingContactSuggestion.id));
-                        }
-                        setPendingContactSuggestion(null);
-                      }}
-                      className="flex-1 bg-[#4DA8B0] text-white py-2.5 px-4 rounded-xl font-semibold hover:bg-[#3d8a92] transition-colors shadow-sm"
-                    >
-                      Yes, Add Contact
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (pendingContactSuggestion?.id) {
-                          setDismissedSuggestions((prev) => new Set(prev).add(pendingContactSuggestion.id));
-                        }
-                        setPendingContactSuggestion(null);
-                      }}
-                      className="px-4 py-2.5 rounded-xl border-2 border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
-                    >
-                      Not Now
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-            </>
+            <ContactSuggestionModal
+              pendingContactSuggestion={pendingContactSuggestion}
+              onAddContact={() => {
+                setCurrentView('contacts');
+                localStorage.setItem('liaizen_add_contact', JSON.stringify({
+                  name: pendingContactSuggestion.detectedName,
+                  context: pendingContactSuggestion.text
+                }));
+                if (pendingContactSuggestion?.id) {
+                  setDismissedSuggestions((prev) => new Set(prev).add(pendingContactSuggestion.id));
+                }
+                setPendingContactSuggestion(null);
+              }}
+              onDismiss={() => setPendingContactSuggestion(null)}
+              setDismissedSuggestions={setDismissedSuggestions}
+            />
           </div>
         </div>
       </div>
