@@ -1637,10 +1637,11 @@ function ChatRoom() {
                   Send
                 </button>
               </form>
-                </div>
               </div>
             </div>
-          )}
+                </div>
+              </div>
+            )}
 
             {/* Contacts View */}
             {currentView === 'contacts' && (
