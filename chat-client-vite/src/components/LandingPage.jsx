@@ -394,30 +394,33 @@ export function LandingPage({ onGetStarted }) {
             </div>
           </div>
 
-          {/* Social Proof Section - Beta Users */}
+          {/* Social Proof Section - Beta Community */}
           <div className="mt-32 mb-24" data-section="social_proof">
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4">
                 Join Our Growing Beta Community
               </h2>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Early families are already finding peace through better communication
+                Be part of building the future of respectful co-parenting communication
               </p>
             </div>
 
-            {/* Beta Stats */}
+            {/* Beta Benefits */}
             <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-16">
               <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] text-center shadow-sm">
-                <div className="text-4xl font-bold text-[#4DA8B0] mb-2">50+</div>
-                <div className="text-sm text-gray-600">Beta Families</div>
+                <div className="text-4xl mb-3">🎯</div>
+                <div className="font-semibold text-[#275559] mb-2">Early Access</div>
+                <div className="text-sm text-gray-600">Be among the first to experience real-time AI mediation</div>
               </div>
               <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] text-center shadow-sm">
-                <div className="text-4xl font-bold text-[#4DA8B0] mb-2">1,000+</div>
-                <div className="text-sm text-gray-600">Messages Mediated</div>
+                <div className="text-4xl mb-3">💡</div>
+                <div className="font-semibold text-[#275559] mb-2">Shape the Future</div>
+                <div className="text-sm text-gray-600">Your feedback directly influences how we build LiaiZen</div>
               </div>
               <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] text-center shadow-sm">
-                <div className="text-4xl font-bold text-[#4DA8B0] mb-2">95%</div>
-                <div className="text-sm text-gray-600">Would Recommend</div>
+                <div className="text-4xl mb-3">🎁</div>
+                <div className="font-semibold text-[#275559] mb-2">Free Forever Access</div>
+                <div className="text-sm text-gray-600">Beta testers get special lifetime benefits</div>
               </div>
             </div>
           </div>
@@ -425,10 +428,10 @@ export function LandingPage({ onGetStarted }) {
           {/* Testimonials */}
           <div className="mt-32 mb-24 bg-gradient-to-br from-[#E6F7F5] to-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4]" data-section="testimonials">
             <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4 text-center">
-              What Beta Users Are Saying
+              What Professionals Are Saying
             </h2>
             <p className="text-lg text-gray-600 mb-12 text-center max-w-2xl mx-auto">
-              Real feedback from families testing LiaiZen
+              Early feedback from family professionals and co-parents
             </p>
             <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
               {/* Testimonial 1 */}
