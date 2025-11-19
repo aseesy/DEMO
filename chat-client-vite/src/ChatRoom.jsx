@@ -1705,11 +1705,27 @@ function ChatRoom() {
                           {notifications.isSupported ? (
                             <div className="space-y-3">
                               {notifications.permission === 'granted' ? (
-                                <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
-                                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                  </svg>
-                                  <span className="font-medium">Notifications enabled</span>
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                    <span className="font-medium">Notifications enabled</span>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      // Send a test notification
+                                      notifications.showNotification({
+                                        username: 'Co-parent',
+                                        text: 'This is a test notification! You will see this every time a new message arrives.',
+                                        id: 'test-' + Date.now(),
+                                        timestamp: new Date().toISOString()
+                                      });
+                                    }}
+                                    className="w-full px-4 py-2 bg-white text-[#275559] border-2 border-[#4DA8B0] rounded-xl font-semibold hover:bg-[#E6F7F5] transition-all"
+                                  >
+                                    Test Notification
+                                  </button>
                                 </div>
                               ) : notifications.permission === 'denied' ? (
                                 <div className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg">
