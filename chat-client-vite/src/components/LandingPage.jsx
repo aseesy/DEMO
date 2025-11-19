@@ -312,6 +312,62 @@ export function LandingPage({ onGetStarted }) {
             </div>
           </div>
 
+          {/* User Wish-List Section - Interview Quotes */}
+          <div className="mt-24 mb-24 bg-gradient-to-br from-[#275559] to-[#1f4347] rounded-3xl p-8 sm:p-12 text-white">
+            <div className="max-w-5xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-center">
+                After conducting several user interviews, the wish-list is clear:
+              </h2>
+
+              <div className="grid md:grid-cols-2 gap-4 sm:gap-6 mt-8 mb-8">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                  <p className="text-lg italic text-white/95">
+                    "I wish someone could rewrite the message before I send it."
+                  </p>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                  <p className="text-lg italic text-white/95">
+                    "I want communication that doesn't escalate every week."
+                  </p>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                  <p className="text-lg italic text-white/95">
+                    "I'm tired of paying thousands for things that don't actually change anything."
+                  </p>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                  <p className="text-lg italic text-white/95">
+                    "I want a tool that protects my sanity AND my reputation."
+                  </p>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                  <p className="text-lg italic text-white/95">
+                    "I need help staying calm when they trigger me."
+                  </p>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                  <p className="text-lg italic text-white/95">
+                    "I want conversations that don't end up in court."
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-center mt-8">
+                <p className="text-2xl sm:text-3xl font-bold text-[#6dd4b0] mb-4">
+                  Your wishes have been granted!
+                </p>
+                <p className="text-xl text-white/90">
+                  LiaiZen takes care of this.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Value Proposition Section */}
           <div className="mt-24 mb-24" data-section="value_proposition">
             <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-12 text-center">
