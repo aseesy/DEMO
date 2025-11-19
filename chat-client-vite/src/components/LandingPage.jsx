@@ -257,7 +257,7 @@ export function LandingPage({ onGetStarted }) {
                 <span className="text-[#4DA8B0]">And the Messages Still Explode.</span>
               </h2>
               <p className="text-lg text-gray-700 mb-8 text-center max-w-2xl mx-auto">
-                Court orders, lawyers, mediators, therapy—none of it stops that one text from ruining your whole day.
+                Court orders, lawyers, mediators, therapy—none of it stops the cycle of conflict.
               </p>
 
               <div className="grid md:grid-cols-2 gap-6 mb-8">
