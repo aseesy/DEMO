@@ -70,7 +70,7 @@ export function TaskFormModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-2 sm:px-4 py-2 sm:py-4 md:py-4 pb-16 md:pb-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] px-2 sm:px-4 py-2 sm:py-4 md:py-4 pb-20 md:pb-4 overflow-y-auto">
       <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl flex flex-col max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-5rem)] my-auto">
         {/* Header - Always visible */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">

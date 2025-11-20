@@ -2,20 +2,20 @@ import React from 'react';
 
 export function Navigation({ currentView, setCurrentView, onLogout, unreadCount = 0 }) {
   const navItems = [
-    { 
-      id: 'dashboard', 
-      label: 'Dashboard', 
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
       icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
       )
     },
-    { 
-      id: 'chat', 
-      label: 'Chat', 
+    {
+      id: 'chat',
+      label: 'Chat',
       icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
       )
@@ -316,98 +316,65 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       </nav>
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-[#C5E8E4] shadow-lg safe-area-inset-bottom">
-        <div className="flex items-center justify-around h-14 px-2 pb-safe">
-          {navItems.map((item) => {
-            const isActive = currentView === item.id;
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-[#C5E8E4] shadow-lg">
+        <div className="flex items-center justify-around h-12 px-2 py-1">
+          {/* Dashboard button */}
+          <button
+            type="button"
+            onClick={() => setCurrentView('dashboard')}
+            className={`relative flex items-center justify-center w-14 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
+              currentView === 'dashboard'
+                ? 'bg-[#275559] text-white'
+                : 'text-[#4DA8B0] active:bg-[#E6F7F5]'
+            }`}
+            aria-label="Dashboard"
+            aria-current={currentView === 'dashboard' ? 'page' : undefined}
+          >
+            <span className="text-xl">
+              {navItems[0].icon}
+            </span>
+          </button>
 
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setCurrentView(item.id)}
-                className={`relative flex flex-col items-center justify-center gap-1 min-w-[60px] px-2 py-1.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
-                  isActive
-                    ? 'bg-[#E6F7F5] text-[#275559]'
-                    : 'text-slate-500 active:bg-[#E6F7F5] active:text-[#275559]'
-                }`}
-                aria-label={item.label}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {/* Icon container with consistent sizing */}
-                <div className={`relative flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 ${
-                  isActive
-                    ? 'bg-[#275559] text-white scale-105'
-                    : 'bg-[#E6F7F5] text-[#4DA8B0]'
-                }`}>
-                  <span className={`text-sm ${isActive ? 'scale-110' : ''}`}>
-                    {item.icon}
-                  </span>
-                  {/* Unread count badge for chat */}
-                  {item.id === 'chat' && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-md">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
-                  {/* Active indicator dot */}
-                  {isActive && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#4DA8B0] rounded-full border-2 border-white" />
-                  )}
-                </div>
-                {/* Label - always visible */}
-                <span className={`text-[10px] font-semibold leading-tight transition-all duration-200 ${
-                  isActive 
-                    ? 'text-[#275559] font-bold' 
-                    : 'text-slate-500'
-                }`}>
-                  {item.label}
-                </span>
-                {/* Bottom active indicator */}
-                {isActive && (
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-[#275559] rounded-t-full" />
-                )}
-              </button>
-            );
-          })}
-          {/* Menu button - consistent styling */}
+          {/* Menu button - in the middle */}
           <button
             type="button"
             onClick={() => setIsMenuOpen((prev) => !prev)}
-            className={`relative flex flex-col items-center justify-center gap-1 min-w-[60px] px-2 py-1.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
+            className={`relative flex items-center justify-center w-14 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
               isMenuOpen
-                ? 'bg-[#E6F7F5] text-[#275559]'
-                : 'text-slate-500 active:bg-[#E6F7F5] active:text-[#275559]'
+                ? 'bg-[#275559] text-white'
+                : 'text-[#4DA8B0] active:bg-[#E6F7F5]'
             }`}
             aria-label="Menu"
             aria-expanded={isMenuOpen}
             aria-haspopup="true"
           >
-            {/* Icon container matching nav items */}
-            <div className={`relative flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 ${
-              isMenuOpen
-                ? 'bg-[#275559] text-white scale-105'
-                : 'bg-[#E6F7F5] text-[#4DA8B0]'
-            }`}>
-              <img
-                src="/assets/TransB.svg"
-                alt="Menu"
-                className="w-4 h-4 object-contain"
-              />
-              {isMenuOpen && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#4DA8B0] rounded-full border-2 border-white" />
-              )}
-            </div>
-            {/* Label */}
-            <span className={`text-[10px] font-semibold leading-tight transition-all duration-200 ${
-              isMenuOpen 
-                ? 'text-[#275559] font-bold' 
-                : 'text-slate-500'
-            }`}>
-              More
+            <img
+              src="/assets/TransB.svg"
+              alt="Menu"
+              className={`w-7 h-7 object-contain ${isMenuOpen ? 'brightness-0 invert' : ''}`}
+            />
+          </button>
+
+          {/* Chat button */}
+          <button
+            type="button"
+            onClick={() => setCurrentView('chat')}
+            className={`relative flex items-center justify-center w-14 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
+              currentView === 'chat'
+                ? 'bg-[#275559] text-white'
+                : 'text-[#4DA8B0] active:bg-[#E6F7F5]'
+            }`}
+            aria-label="Chat"
+            aria-current={currentView === 'chat' ? 'page' : undefined}
+          >
+            <span className="text-xl">
+              {navItems[1].icon}
             </span>
-            {/* Bottom indicator when menu is open */}
-            {isMenuOpen && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-[#275559] rounded-t-full" />
+            {/* Unread count badge for chat */}
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-md">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
             )}
           </button>
           {/* Menu dropdown - positioned above */}
@@ -418,7 +385,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                   menuRefs.current[1] = node; // Register mobile dropdown in refs array
                 }
               }}
-              className="absolute bottom-20 right-2 w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100"
+              className="absolute bottom-14 right-2 w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100"
               role="menu"
               aria-label="User menu"
               style={{
