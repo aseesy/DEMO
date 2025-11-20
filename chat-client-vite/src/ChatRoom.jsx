@@ -1400,13 +1400,13 @@ function ChatRoom() {
                         key={msg.id ?? `ai-${msg.timestamp}`}
                         className={`flex items-start gap-2.5 ${needsSpacing || index === 0 ? 'mt-3' : 'mt-1'}`}
                       >
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal to-[#275559] flex items-center justify-center text-white font-bold text-sm flex-shrink-0 border-2 border-white shadow-lg">
-                          {isComment ? '💬' : '🤖'}
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 border-2 border-white shadow-lg">
+                          {isComment ? '💬' : '🤝'}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-2">
-                            <span className="font-semibold text-[#275559]">
-                              {msg.username || (isComment ? 'Alex' : 'AI Moderator')}
+                            <span className="font-semibold text-teal-700">
+                              {msg.username || 'Alex, Your Co-Parenting Coach'}
                             </span>
                             {timeLabel && (
                               <span className="text-xs text-gray-500">{timeLabel}</span>
@@ -1415,7 +1415,7 @@ function ChatRoom() {
                           <div
                             className={`rounded-xl px-5 py-4 max-w-full break-words space-y-4 shadow-md ${
                               isIntervention
-                                ? 'bg-gradient-to-br from-pink-50 to-pink-100 border-2 border-pink-300'
+                                ? 'bg-gradient-to-br from-teal-50 to-blue-50 border-2 border-teal-200'
                                 : isComment
                                 ? 'bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300'
                                 : 'bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300'
@@ -1530,11 +1530,7 @@ function ChatRoom() {
                                 {/* Personal Message from AI Coach */}
                                 {msg.personalMessage && (
                                   <div className="mb-4">
-                                    <p
-                                      className={`text-sm leading-relaxed ${
-                                        isIntervention ? 'text-pink-900' : 'text-purple-800'
-                                      }`}
-                                    >
+                                    <p className="text-base leading-relaxed text-slate-700 font-medium">
                                       {msg.personalMessage}
                                     </p>
                                   </div>
@@ -1543,34 +1539,25 @@ function ChatRoom() {
                                 {/* Communication Tips (3 tips) */}
                                 {(msg.tip1 || msg.tip2 || msg.tip3) && (
                                   <div>
-                                    <p className="text-xs font-semibold text-[#275559] mb-2">
+                                    <p className="text-sm font-semibold text-teal-700 mb-3">
                                       💡 Communication Tips:
                                     </p>
-                                    <ul className="space-y-2 list-disc list-inside">
+                                    <ul className="space-y-2.5 list-none pl-0">
                                       {msg.tip1 && (
-                                        <li
-                                          className={`text-sm ${
-                                            isIntervention ? 'text-red-800' : 'text-purple-800'
-                                          }`}
-                                        >
+                                        <li className="text-sm text-slate-600 leading-relaxed pl-6 relative">
+                                          <span className="absolute left-0 top-0.5 text-teal-500">•</span>
                                           {msg.tip1}
                                         </li>
                                       )}
                                       {msg.tip2 && (
-                                        <li
-                                          className={`text-sm ${
-                                            isIntervention ? 'text-red-800' : 'text-purple-800'
-                                          }`}
-                                        >
+                                        <li className="text-sm text-slate-600 leading-relaxed pl-6 relative">
+                                          <span className="absolute left-0 top-0.5 text-teal-500">•</span>
                                           {msg.tip2}
                                         </li>
                                       )}
                                       {msg.tip3 && (
-                                        <li
-                                          className={`text-sm ${
-                                            isIntervention ? 'text-red-800' : 'text-purple-800'
-                                          }`}
-                                        >
+                                        <li className="text-sm text-slate-600 leading-relaxed pl-6 relative">
+                                          <span className="absolute left-0 top-0.5 text-teal-500">•</span>
                                           {msg.tip3}
                                         </li>
                                       )}
