@@ -173,14 +173,9 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
           ref={refIndex === 0 ? menuButtonRef : null}
           type="button"
           onClick={(e) => {
-            console.log('[Navigation] Menu button clicked, current state:', isMenuOpen);
             e.stopPropagation();
-            setIsMenuOpen((prev) => {
-              console.log('[Navigation] Toggling menu from', prev, 'to', !prev);
-              return !prev;
-            });
+            setIsMenuOpen((prev) => !prev);
           }}
-          onTouchStart={() => console.log('[Navigation] Menu button touched')}
           className={`rounded-lg bg-white border-2 cursor-pointer touch-manipulation ${
             isMenuOpen
               ? 'border-[#4DA8B0] shadow-md'
@@ -206,13 +201,12 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
         </button>
         {isMenuOpen && (
           <div
-            className={`absolute ${menuPositionClass} w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-[10000] transition-all duration-200 ease-out opacity-100`}
+            className={`absolute ${menuPositionClass} w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100`}
             role="menu"
             aria-label="User menu"
             style={{
               animation: 'fadeIn 0.2s ease-out',
             }}
-            onTouchStart={() => console.log('[Navigation] Menu touched')}
           >
             {menuItems.map((item, index) => {
               if (item.isDivider) {
@@ -238,17 +232,11 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                   }}
                 type="button"
                 onClick={(e) => {
-                  console.log('[Navigation] Menu item clicked:', item.label);
                   e.stopPropagation();
                   if (item.action) {
-                    console.log('[Navigation] Executing action for:', item.label);
                     item.action();
-                  } else {
-                    console.warn('[Navigation] No action defined for:', item.label);
                   }
                 }}
-                onTouchStart={() => console.log('[Navigation] Menu item touched:', item.label)}
-                onTouchEnd={() => console.log('[Navigation] Menu item touch ended:', item.label)}
                   className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 cursor-pointer touch-manipulation select-none ${
                     isDanger
                       ? 'text-red-600 hover:bg-red-50 focus:bg-red-50 active:bg-red-100'
@@ -328,7 +316,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       </nav>
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[10001] bg-white/95 backdrop-blur-sm border-t border-[#C5E8E4] shadow-lg safe-area-inset-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-[#C5E8E4] shadow-lg safe-area-inset-bottom">
         <div className="flex items-center justify-around h-16 px-2 pb-safe">
           {navItems.map((item) => {
             const isActive = currentView === item.id;
@@ -381,75 +369,62 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
               </button>
             );
           })}
-          {/* Menu button and dropdown - wrapped in ref container */}
-          <div
-            ref={(node) => {
-              if (node) {
-                menuRefs.current[1] = node; // Index 1 for mobile menu
-              }
-            }}
-            className="relative"
+          {/* Menu button - consistent styling */}
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            className={`relative flex flex-col items-center justify-center gap-1 min-w-[60px] px-2 py-1.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
+              isMenuOpen
+                ? 'bg-[#E6F7F5] text-[#275559]'
+                : 'text-slate-500 active:bg-[#E6F7F5] active:text-[#275559]'
+            }`}
+            aria-label="Menu"
+            aria-expanded={isMenuOpen}
+            aria-haspopup="true"
           >
-            <button
-              type="button"
-              onClick={(e) => {
-                console.log('[Navigation MOBILE] More button clicked, current state:', isMenuOpen);
-                e.stopPropagation();
-                setIsMenuOpen((prev) => {
-                  console.log('[Navigation MOBILE] Toggling menu from', prev, 'to', !prev);
-                  return !prev;
-                });
-              }}
-              onTouchStart={() => console.log('[Navigation MOBILE] More button touched')}
-              onTouchEnd={() => console.log('[Navigation MOBILE] More button touch ended')}
-              className={`relative flex flex-col items-center justify-center gap-1 min-w-[60px] px-2 py-1.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 touch-manipulation ${
-                isMenuOpen
-                  ? 'bg-[#E6F7F5] text-[#275559]'
-                  : 'text-slate-500 active:bg-[#E6F7F5] active:text-[#275559]'
-              }`}
-              aria-label="Menu"
-              aria-expanded={isMenuOpen}
-              aria-haspopup="true"
-            >
-              {/* Icon container matching nav items */}
-              <div className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${
-                isMenuOpen
-                  ? 'bg-[#275559] text-white scale-105'
-                  : 'bg-[#E6F7F5] text-[#4DA8B0]'
-              }`}>
-                <img
-                  src="/assets/TransB.svg"
-                  alt="Menu"
-                  className="w-5 h-5 object-contain"
-                />
-                {isMenuOpen && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#4DA8B0] rounded-full border-2 border-white" />
-                )}
-              </div>
-              {/* Label */}
-              <span className={`text-[10px] font-semibold leading-tight transition-all duration-200 ${
-                isMenuOpen
-                  ? 'text-[#275559] font-bold'
-                  : 'text-slate-500'
-              }`}>
-                More
-              </span>
-              {/* Bottom indicator when menu is open */}
+            {/* Icon container matching nav items */}
+            <div className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${
+              isMenuOpen
+                ? 'bg-[#275559] text-white scale-105'
+                : 'bg-[#E6F7F5] text-[#4DA8B0]'
+            }`}>
+              <img
+                src="/assets/TransB.svg"
+                alt="Menu"
+                className="w-5 h-5 object-contain"
+              />
               {isMenuOpen && (
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-[#275559] rounded-t-full" />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#4DA8B0] rounded-full border-2 border-white" />
               )}
-            </button>
-            {/* Menu dropdown - positioned above */}
+            </div>
+            {/* Label */}
+            <span className={`text-[10px] font-semibold leading-tight transition-all duration-200 ${
+              isMenuOpen 
+                ? 'text-[#275559] font-bold' 
+                : 'text-slate-500'
+            }`}>
+              More
+            </span>
+            {/* Bottom indicator when menu is open */}
             {isMenuOpen && (
-              <div
-                className="absolute bottom-20 right-2 w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-[10000] transition-all duration-200 ease-out opacity-100"
-                role="menu"
-                aria-label="User menu"
-                style={{
-                  animation: 'fadeIn 0.2s ease-out',
-                }}
-                onTouchStart={() => console.log('[Navigation MOBILE] Menu touched')}
-              >
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-[#275559] rounded-t-full" />
+            )}
+          </button>
+          {/* Menu dropdown - positioned above */}
+          {isMenuOpen && (
+            <div
+              ref={(node) => {
+                if (node) {
+                  menuRefs.current[1] = node; // Register mobile dropdown in refs array
+                }
+              }}
+              className="absolute bottom-20 right-2 w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100"
+              role="menu"
+              aria-label="User menu"
+              style={{
+                animation: 'fadeIn 0.2s ease-out',
+              }}
+            >
               {menuItems.map((item, index) => {
                 if (item.isDivider) {
                   return (
@@ -473,22 +448,11 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                       }
                     }}
                     type="button"
-                    onClick={(e) => {
-                      console.log('[Navigation MOBILE] Menu item clicked:', item.label);
-                      e.stopPropagation();
-                      if (item.action) {
-                        console.log('[Navigation MOBILE] Executing action for:', item.label);
-                        item.action();
-                      } else {
-                        console.warn('[Navigation MOBILE] No action defined for:', item.label);
-                      }
-                    }}
-                    onTouchStart={() => console.log('[Navigation MOBILE] Menu item touched:', item.label)}
-                    onTouchEnd={() => console.log('[Navigation MOBILE] Menu item touch ended:', item.label)}
-                    className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 cursor-pointer touch-manipulation select-none ${
+                    onClick={item.action}
+                    className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 ${
                       isDanger
-                        ? 'text-red-600 hover:bg-red-50 focus:bg-red-50 active:bg-red-100'
-                        : `text-[#275559] hover:bg-[#E6F7F5] focus:bg-[#E6F7F5] active:bg-[#C5E8E4] ${
+                        ? 'text-red-600 hover:bg-red-50 focus:bg-red-50'
+                        : `text-[#275559] hover:bg-[#E6F7F5] focus:bg-[#E6F7F5] ${
                             isActive ? 'bg-[#E6F7F5] font-semibold' : ''
                           }`
                     } focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-inset`}
@@ -507,9 +471,8 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                   </button>
                 );
               })}
-            </div>
-            )}
           </div>
+          )}
         </div>
       </nav>
     </>
