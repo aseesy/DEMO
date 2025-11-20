@@ -12,6 +12,7 @@ export function useAuth() {
   const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
   const [isSigningUp, setIsSigningUp] = React.useState(false);
+  const [isGoogleLoggingIn, setIsGoogleLoggingIn] = React.useState(false);
   const [error, setError] = React.useState('');
 
   // Restore/verify session on mount (similar to legacy verifySession)
@@ -163,6 +164,70 @@ export function useAuth() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setError('');
+    setIsGoogleLoggingIn(true);
+    
+    try {
+      const response = await apiGet('/api/auth/google');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        setError(data.error || 'Failed to initiate Google login');
+        setIsGoogleLoggingIn(false);
+        return;
+      }
+      
+      // Redirect to Google OAuth page
+      window.location.href = data.authUrl;
+    } catch (err) {
+      console.error('Google login error:', err);
+      setError('Unable to connect to server. Please try again.');
+      setIsGoogleLoggingIn(false);
+    }
+  };
+
+  const handleGoogleCallback = async (code) => {
+    setIsGoogleLoggingIn(true);
+    setError('');
+    
+    try {
+      const response = await apiPost('/api/auth/google/callback', { code });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        setError(data.error || 'Google login failed');
+        setIsGoogleLoggingIn(false);
+        return false;
+      }
+      
+      // Success - set authentication state
+      setIsAuthenticated(true);
+      if (data.user?.username) {
+        setUsername(data.user.username);
+        localStorage.setItem('username', data.user.username);
+      }
+      localStorage.setItem('isAuthenticated', 'true');
+      if (data.user?.email) {
+        localStorage.setItem('userEmail', data.user.email);
+      }
+      if (data.token) {
+        localStorage.setItem('auth_token_backup', data.token);
+      }
+      if (data.user) {
+        localStorage.setItem('chatUser', JSON.stringify(data.user));
+      }
+      
+      setIsGoogleLoggingIn(false);
+      return true;
+    } catch (err) {
+      console.error('Google callback error:', err);
+      setError('Unable to complete Google login. Please try again.');
+      setIsGoogleLoggingIn(false);
+      return false;
+    }
+  };
+
   const handleLogout = async () => {
     try {
       // Call logout endpoint to clear server-side cookie
@@ -196,6 +261,7 @@ export function useAuth() {
     isCheckingAuth,
     isLoggingIn,
     isSigningUp,
+    isGoogleLoggingIn,
     error,
     // setters
     setEmail,
@@ -205,6 +271,8 @@ export function useAuth() {
     // actions
     handleLogin,
     handleSignup,
+    handleGoogleLogin,
+    handleGoogleCallback,
     handleLogout,
   };
 }

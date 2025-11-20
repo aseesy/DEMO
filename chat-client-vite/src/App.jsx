@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ChatRoom from './ChatRoom.jsx';
 import { LoginSignup } from './components/LoginSignup.jsx';
+import { GoogleOAuthCallback } from './components/GoogleOAuthCallback.jsx';
 import { usePWA } from './hooks/usePWA.js';
 
 function App() {
@@ -22,6 +23,9 @@ function App() {
 
         {/* Sign in route - dedicated login/signup page */}
         <Route path="/signin" element={<LoginSignup />} />
+
+        {/* Google OAuth callback route */}
+        <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
       </Routes>
     </BrowserRouter>
   );
