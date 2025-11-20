@@ -122,12 +122,14 @@ app.use(cors({
     if (isOriginAllowed(origin, allowedOrigins)) {
       callback(null, true);
     } else {
-      // For development, allow localhost from any port
-      if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+      // For development, allow localhost and local network IPs from any port
+      if (origin.startsWith('http://localhost:') ||
+          origin.startsWith('http://127.0.0.1:') ||
+          origin.startsWith('http://192.168.')) {
         callback(null, true);
       } else {
         console.warn(`CORS blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+        callback(new Error('Not allowed by CORS'));
       }
     }
   },
@@ -137,7 +139,7 @@ app.use(cors({
 // Rate limiting - general API protection (exclude auth endpoints)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Much higher limit for development
   skip: (req) => {
     // Skip rate limiting for auth endpoints (they have their own limits)
     return req.path.startsWith('/api/auth/');
@@ -176,8 +178,10 @@ const io = new Server(server, {
       if (isOriginAllowed(origin, allowedOrigins)) {
         callback(null, true);
       } else {
-        // For development, allow localhost from any port
-        if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+        // For development, allow localhost and local network IPs from any port
+        if (origin.startsWith('http://localhost:') ||
+            origin.startsWith('http://127.0.0.1:') ||
+            origin.startsWith('http://192.168.')) {
           callback(null, true);
         } else {
           console.warn(`Socket.io CORS blocked origin: ${origin}`);

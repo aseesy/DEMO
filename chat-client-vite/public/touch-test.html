@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Touch Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-button {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            padding: 20px;
+            margin: 20px auto;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: #275559;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .test-button:active {
+            background: #1e4145;
+            transform: scale(0.98);
+        }
+        #log {
+            background: white;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Touch Event Test</h1>
+    <p style="text-align: center;">Tap the buttons below to test touch events</p>
+
+    <button class="test-button" id="btn1">Test Button 1</button>
+    <button class="test-button" id="btn2">Test Button 2 (with stopPropagation)</button>
+    <button class="test-button" id="btn3">Test Button 3 (with preventDefault)</button>
+
+    <div id="log"></div>
+
+    <script>
+        const log = document.getElementById('log');
+        let logCount = 0;
+
+        function addLog(message) {
+            logCount++;
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `${logCount}. ${new Date().toLocaleTimeString()}: ${message}`;
+            log.insertBefore(entry, log.firstChild);
+            console.log(message);
+        }
+
+        // Test Button 1 - Basic
+        const btn1 = document.getElementById('btn1');
+        btn1.addEventListener('touchstart', () => addLog('BTN1: touchstart'));
+        btn1.addEventListener('touchend', () => addLog('BTN1: touchend'));
+        btn1.addEventListener('click', () => addLog('BTN1: click'));
+
+        // Test Button 2 - With stopPropagation
+        const btn2 = document.getElementById('btn2');
+        btn2.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            addLog('BTN2: touchstart (stopped)');
+        });
+        btn2.addEventListener('touchend', (e) => {
+            e.stopPropagation();
+            addLog('BTN2: touchend (stopped)');
+        });
+        btn2.addEventListener('click', (e) => {
+            e.stopPropagation();
+            addLog('BTN2: click (stopped)');
+        });
+
+        // Test Button 3 - With preventDefault
+        const btn3 = document.getElementById('btn3');
+        btn3.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            addLog('BTN3: touchstart (prevented)');
+        });
+        btn3.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            addLog('BTN3: touchend (prevented)');
+        });
+        btn3.addEventListener('click', () => addLog('BTN3: click'));
+
+        addLog('Touch test page loaded - ready to test!');
+    </script>
+</body>
+</html>

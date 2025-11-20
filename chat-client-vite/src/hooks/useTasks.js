@@ -9,7 +9,7 @@ export function useTasks(username) {
   const [tasks, setTasks] = React.useState([]);
   const [isLoadingTasks, setIsLoadingTasks] = React.useState(false);
   const [taskSearch, setTaskSearch] = React.useState('');
-  const [taskFilter, setTaskFilter] = React.useState('open');
+  const [taskFilter, setTaskFilter] = React.useState('all');
   const [showTaskForm, setShowTaskForm] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState(null);
   const [taskFormData, setTaskFormData] = React.useState({
