@@ -173,9 +173,14 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
           ref={refIndex === 0 ? menuButtonRef : null}
           type="button"
           onClick={(e) => {
+            console.log('[Navigation] Menu button clicked, current state:', isMenuOpen);
             e.stopPropagation();
-            setIsMenuOpen((prev) => !prev);
+            setIsMenuOpen((prev) => {
+              console.log('[Navigation] Toggling menu from', prev, 'to', !prev);
+              return !prev;
+            });
           }}
+          onTouchStart={() => console.log('[Navigation] Menu button touched')}
           className={`rounded-lg bg-white border-2 cursor-pointer touch-manipulation ${
             isMenuOpen
               ? 'border-[#4DA8B0] shadow-md'
@@ -201,12 +206,13 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
         </button>
         {isMenuOpen && (
           <div
-            className={`absolute ${menuPositionClass} w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100`}
+            className={`absolute ${menuPositionClass} w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-[10000] transition-all duration-200 ease-out opacity-100`}
             role="menu"
             aria-label="User menu"
             style={{
               animation: 'fadeIn 0.2s ease-out',
             }}
+            onTouchStart={() => console.log('[Navigation] Menu touched')}
           >
             {menuItems.map((item, index) => {
               if (item.isDivider) {
@@ -232,11 +238,17 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                   }}
                 type="button"
                 onClick={(e) => {
+                  console.log('[Navigation] Menu item clicked:', item.label);
                   e.stopPropagation();
                   if (item.action) {
+                    console.log('[Navigation] Executing action for:', item.label);
                     item.action();
+                  } else {
+                    console.warn('[Navigation] No action defined for:', item.label);
                   }
                 }}
+                onTouchStart={() => console.log('[Navigation] Menu item touched:', item.label)}
+                onTouchEnd={() => console.log('[Navigation] Menu item touch ended:', item.label)}
                   className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 cursor-pointer touch-manipulation select-none ${
                     isDanger
                       ? 'text-red-600 hover:bg-red-50 focus:bg-red-50 active:bg-red-100'
