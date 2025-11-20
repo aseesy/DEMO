@@ -270,7 +270,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       {/* Top Navigation - Desktop Only */}
       <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#C5E8E4] shadow-sm">
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-12">
             {/* Logo */}
             <div className="flex items-center cursor-pointer" onClick={() => setCurrentView('dashboard')}>
               <img
@@ -317,7 +317,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
 
       {/* Bottom Navigation - Mobile Only */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-[#C5E8E4] shadow-lg safe-area-inset-bottom">
-        <div className="flex items-center justify-around h-16 px-2 pb-safe">
+        <div className="flex items-center justify-around h-14 px-2 pb-safe">
           {navItems.map((item) => {
             const isActive = currentView === item.id;
 
@@ -335,12 +335,12 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                 aria-current={isActive ? 'page' : undefined}
               >
                 {/* Icon container with consistent sizing */}
-                <div className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 ${
+                <div className={`relative flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 ${
                   isActive
                     ? 'bg-[#275559] text-white scale-105'
                     : 'bg-[#E6F7F5] text-[#4DA8B0]'
                 }`}>
-                  <span className={`text-base ${isActive ? 'scale-110' : ''}`}>
+                  <span className={`text-sm ${isActive ? 'scale-110' : ''}`}>
                     {item.icon}
                   </span>
                   {/* Unread count badge for chat */}
@@ -383,7 +383,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             aria-haspopup="true"
           >
             {/* Icon container matching nav items */}
-            <div className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${
+            <div className={`relative flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 ${
               isMenuOpen
                 ? 'bg-[#275559] text-white scale-105'
                 : 'bg-[#E6F7F5] text-[#4DA8B0]'
@@ -391,7 +391,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
               <img
                 src="/assets/TransB.svg"
                 alt="Menu"
-                className="w-5 h-5 object-contain"
+                className="w-4 h-4 object-contain"
               />
               {isMenuOpen && (
                 <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#4DA8B0] rounded-full border-2 border-white" />

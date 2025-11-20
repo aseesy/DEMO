@@ -71,18 +71,21 @@ export function TaskFormModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-2 sm:px-4 py-2 sm:py-4 overflow-y-auto">
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl my-auto flex flex-col max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)]">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl flex flex-col max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-4rem)] my-auto">
+        {/* Header - Always visible */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
           <h3 className="text-base sm:text-lg font-semibold">
             {editingTask ? 'Edit Task' : 'Add Task'}
           </h3>
           <button
-            className="text-2xl leading-none text-gray-500 hover:text-gray-700 p-1 touch-manipulation min-w-[36px] min-h-[36px] flex items-center justify-center"
+            className="text-2xl leading-none text-gray-500 hover:text-gray-700 p-1 touch-manipulation min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
             onClick={handleClose}
+            aria-label="Close"
           >
             ×
           </button>
         </div>
+        {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 min-h-0">
           {/* Mode Toggle - Only show when creating new task */}
           {!editingTask && (

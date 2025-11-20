@@ -652,7 +652,7 @@ function ChatRoom() {
         />
 
         {/* Main Content Area */}
-        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-20 md:pt-16 md:pb-0' : 'pt-14 md:pt-16 pb-20 md:pb-8 overflow-y-auto'} px-2 sm:px-4 md:px-6 lg:px-8 relative z-10`}>
+        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-14 md:pt-12 md:pb-0' : 'pt-12 md:pt-12 pb-14 md:pb-8 overflow-y-auto'} px-2 sm:px-4 md:px-6 lg:px-8 relative z-10`}>
           <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : 'max-w-7xl mx-auto w-full'}`}>
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
@@ -731,16 +731,6 @@ function ChatRoom() {
                       {/* Filter Buttons */}
                       <div className="flex items-center gap-2 flex-wrap">
                         <button
-                          onClick={() => setTaskFilter('all')}
-                          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
-                            taskFilter === 'all'
-                              ? 'bg-[#275559] text-white'
-                              : 'bg-white border-2 border-[#C5E8E4] text-[#275559] hover:border-[#4DA8B0]'
-                          }`}
-                        >
-                          All
-                        </button>
-                        <button
                           onClick={() => setTaskFilter('open')}
                           className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
                             taskFilter === 'open'
@@ -761,15 +751,14 @@ function ChatRoom() {
                           Completed
                         </button>
                         <button
-                          onClick={() => setTaskFilter('high')}
+                          onClick={() => setTaskFilter('all')}
                           className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
-                            taskFilter === 'high'
+                            taskFilter === 'all'
                               ? 'bg-[#275559] text-white'
                               : 'bg-white border-2 border-[#C5E8E4] text-[#275559] hover:border-[#4DA8B0]'
                           }`}
                         >
-                          <span className="hidden sm:inline">High Priority</span>
-                          <span className="sm:hidden">High</span>
+                          All
                         </button>
                       </div>
                     </div>
@@ -780,9 +769,9 @@ function ChatRoom() {
                   ) : tasks.length === 0 ? (
                     <div className="text-center py-6">
                       <p className="text-gray-600 text-sm">
-                        {taskSearch || taskFilter !== 'all' 
+                        {taskSearch || taskFilter !== 'open'
                           ? 'No tasks match your search or filter criteria.'
-                          : 'No tasks found. Create your first task to get started!'}
+                          : 'No open tasks found. Create your first task to get started!'}
                       </p>
                     </div>
                   ) : (
@@ -1015,13 +1004,81 @@ function ChatRoom() {
                   </div>
 
                   {/* Updates Section */}
-                  <UpdatesPanel 
-                    username={username} 
+                  <UpdatesPanel
+                    username={username}
                     onContactClick={(contactName) => {
                       // Navigate to contacts view when clicking on a person
                       setCurrentView('contacts');
                     }}
                   />
+
+                  {/* Threads Section */}
+                  <div className="bg-white rounded-2xl shadow-xl overflow-hidden mt-3 md:mt-4">
+                    <div className="p-4 sm:p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#275559]">
+                          Threads
+                        </h2>
+                        {threads.length > 0 && (
+                          <button
+                            onClick={() => setCurrentView('chat')}
+                            className="text-xs sm:text-sm text-[#4DA8B0] hover:text-[#275559] font-semibold"
+                          >
+                            View All ({threads.length})
+                          </button>
+                        )}
+                      </div>
+
+                      {threads.length === 0 ? (
+                        <div className="text-center py-6">
+                          <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          <p className="text-gray-600 text-sm">
+                            No conversation threads yet. Start a chat to create threads!
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {threads.slice(0, 3).map((thread) => (
+                            <div
+                              key={thread.id}
+                              onClick={() => {
+                                setSelectedThreadId(thread.id);
+                                setCurrentView('chat');
+                              }}
+                              className="p-3 border-2 border-[#C5E8E4] rounded-lg hover:border-[#4DA8B0] hover:bg-[#E6F7F5] transition-all cursor-pointer"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <svg className="w-4 h-4 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <h3 className="text-sm font-semibold text-[#275559] truncate">
+                                      {thread.title}
+                                    </h3>
+                                    {thread.message_count > 0 && (
+                                      <span className="text-xs text-gray-500 flex-shrink-0">
+                                        {thread.message_count} {thread.message_count === 1 ? 'msg' : 'msgs'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {thread.last_message_at && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {new Date(thread.last_message_at).toLocaleDateString()}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
