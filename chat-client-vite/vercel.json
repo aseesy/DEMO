@@ -6,7 +6,14 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/((?!api|assets|.*\\..*).*)",
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "header",
+          "key": "accept",
+          "value": "(?<accept>.*text/html.*)"
+        }
+      ],
       "destination": "/index.html"
     }
   ],
