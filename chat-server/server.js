@@ -24,6 +24,10 @@ const dbSafe = require('./dbSafe');
 const app = express();
 const server = http.createServer(app);
 
+// Trust proxy - required for Railway/Vercel deployment and rate limiting
+// This allows Express to correctly identify client IPs behind Railway's reverse proxy
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
