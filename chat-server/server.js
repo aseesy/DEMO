@@ -12,6 +12,7 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const { URL } = require('url');
 const aiMediator = require('./aiMediator');
 const userContext = require('./userContext');
 const auth = require('./auth');
@@ -2678,10 +2679,11 @@ function getFrontendUrl(req) {
   const origin = req.headers.origin || req.headers.referer;
   if (origin) {
     try {
-      const url = new URL(origin);
-      return `${url.protocol}//${url.host}`;
+      const urlObj = new URL(origin);
+      return `${urlObj.protocol}//${urlObj.host}`;
     } catch (e) {
       // Invalid URL, continue to fallback
+      console.warn('[getFrontendUrl] Error parsing origin:', e.message);
     }
   }
   
