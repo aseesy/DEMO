@@ -46,7 +46,23 @@ self.addEventListener('activate', (event) => {
       })
       .then(() => {
         console.log('[Service Worker] Activated successfully');
-        return self.clients.claim(); // Take control immediately
+        // Claim clients - wrap in try-catch to handle InvalidStateError
+        try {
+          return self.clients.claim().catch((error) => {
+            // Only log if it's not the expected InvalidStateError
+            if (error.name !== 'InvalidStateError') {
+              console.warn('[Service Worker] Error claiming clients:', error);
+            }
+            // Don't fail activation if claim fails
+            return Promise.resolve();
+          });
+        } catch (error) {
+          // Handle synchronous errors
+          if (error.name !== 'InvalidStateError') {
+            console.warn('[Service Worker] Error claiming clients:', error);
+          }
+          return Promise.resolve();
+        }
       })
   );
 });
