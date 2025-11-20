@@ -1406,7 +1406,7 @@ function ChatRoom() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-2">
                             <span className="font-semibold text-teal-700">
-                              {msg.username || 'LiaiZen Mediator'}
+                              {msg.username || 'LiaiZen'}
                             </span>
                             {timeLabel && (
                               <span className="text-xs text-gray-500">{timeLabel}</span>
@@ -1790,8 +1790,8 @@ function ChatRoom() {
                 })()}
                 <div ref={messagesEndRef} />
               </div>
-              {/* Proactive Coaching Banner */}
-              {draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend && (
+              {/* Proactive Coaching Banner - DISABLED: Using unified intervention system instead */}
+              {false && draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend && (
                 <div className="border-t border-orange-200 bg-orange-50 px-3 py-2">
                   <div className="flex items-start gap-2">
                     <svg className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
