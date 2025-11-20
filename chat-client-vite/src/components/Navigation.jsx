@@ -172,11 +172,14 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
         <button
           ref={refIndex === 0 ? menuButtonRef : null}
           type="button"
-          onClick={() => setIsMenuOpen((prev) => !prev)}
-          className={`rounded-lg bg-white border-2 ${
-            isMenuOpen 
-              ? 'border-[#4DA8B0] shadow-md' 
-              : 'border-[#C5E8E4] shadow-sm hover:border-[#4DA8B0] hover:shadow-md'
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen((prev) => !prev);
+          }}
+          className={`rounded-lg bg-white border-2 cursor-pointer touch-manipulation ${
+            isMenuOpen
+              ? 'border-[#4DA8B0] shadow-md'
+              : 'border-[#C5E8E4] shadow-sm hover:border-[#4DA8B0] hover:shadow-md active:shadow-lg'
           } flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
             isMobile ? 'w-8 h-8' : 'w-10 h-10'
           }`}
@@ -228,11 +231,16 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                     }
                   }}
                 type="button"
-                onClick={item.action}
-                  className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 ${
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (item.action) {
+                    item.action();
+                  }
+                }}
+                  className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 cursor-pointer touch-manipulation select-none ${
                     isDanger
-                      ? 'text-red-600 hover:bg-red-50 focus:bg-red-50'
-                      : `text-[#275559] hover:bg-[#E6F7F5] focus:bg-[#E6F7F5] ${
+                      ? 'text-red-600 hover:bg-red-50 focus:bg-red-50 active:bg-red-100'
+                      : `text-[#275559] hover:bg-[#E6F7F5] focus:bg-[#E6F7F5] active:bg-[#C5E8E4] ${
                           isActive ? 'bg-[#E6F7F5] font-semibold' : ''
                         }`
                   } focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-inset`}
