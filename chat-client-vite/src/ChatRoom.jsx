@@ -1406,7 +1406,7 @@ function ChatRoom() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-2">
                             <span className="font-semibold text-teal-700">
-                              {msg.username || 'Alex, Your Co-Parenting Coach'}
+                              {msg.username || 'LiaiZen Mediator'}
                             </span>
                             {timeLabel && (
                               <span className="text-xs text-gray-500">{timeLabel}</span>
