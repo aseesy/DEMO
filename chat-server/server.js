@@ -12,6 +12,7 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const fs = require('fs');
 const { URL } = require('url');
 const aiMediator = require('./aiMediator');
 const userContext = require('./userContext');
@@ -2460,21 +2461,63 @@ app.get('/api/debug/pending-connections', async (req, res) => {
   }
 });
 
-// Frontend is served by Vercel - backend only serves API
-// Root endpoint provides API information
-app.get('/', (req, res) => {
-  res.json({
-    name: 'Multi-User Chat Server',
-    version: '1.0.0',
-    activeUsers: activeUsers.size,
-    message: 'API server running. Frontend is served by Vercel.',
-    endpoints: {
-      api: '/api',
-      health: '/health',
-      admin: '/admin'
+// Serve static files from Vite build (if dist directory exists)
+// This allows the backend to serve the frontend if needed
+const distPath = path.join(__dirname, '..', 'chat-client-vite', 'dist');
+const distExists = fs.existsSync(distPath);
+
+if (distExists) {
+  console.log('[Server] Serving static files from:', distPath);
+  // Serve static assets (JS, CSS, images, etc.)
+  app.use(express.static(distPath, {
+    maxAge: '1y', // Cache static assets for 1 year
+    etag: true,
+    lastModified: true
+  }));
+  
+  // Serve favicon if it exists
+  app.get('/favicon.ico', (req, res) => {
+    const faviconPath = path.join(distPath, 'favicon.ico');
+    if (fs.existsSync(faviconPath)) {
+      res.sendFile(faviconPath);
+    } else {
+      res.status(404).end();
     }
   });
-});
+  
+  // Catch-all handler: serve index.html for all non-API routes
+  // This allows React Router to handle client-side routing
+  app.get('*', (req, res, next) => {
+    // Skip API routes and admin routes
+    if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/health')) {
+      return next();
+    }
+    
+    // Serve index.html for all other routes (React Router will handle routing)
+    const indexPath = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      next();
+    }
+  });
+} else {
+  // Frontend is served by Vercel - backend only serves API
+  // Root endpoint provides API information
+  app.get('/', (req, res) => {
+    res.json({
+      name: 'Multi-User Chat Server',
+      version: '1.0.0',
+      activeUsers: activeUsers.size,
+      message: 'API server running. Frontend is served by Vercel.',
+      endpoints: {
+        api: '/api',
+        health: '/health',
+        admin: '/admin'
+      }
+    });
+  });
+}
 
 // API info endpoint (moved to /api/info)
 app.get('/api/info', (req, res) => {
