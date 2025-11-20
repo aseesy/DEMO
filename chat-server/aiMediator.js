@@ -1,64 +1,552 @@
-const OpenAI = require('openai');
+/**
+ * AI Mediator - Consolidated AI Mediation System
+ *
+ * This module handles ALL AI-powered mediation features in a single, efficient system:
+ * - Conflict escalation detection
+ * - Emotional state analysis
+ * - Intervention policy decisions
+ * - Message mediation and rewriting
+ * - Contact name detection
+ * - Relationship insights learning
+ *
+ * OPTIMIZED: Single API call instead of 4-5 separate calls
+ */
+
+const openaiClient = require('./openaiClient');
 const userContext = require('./userContext');
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || ''
-});
-
-// Conversation context tracker
+// Conversation context tracker (unified state management)
 const conversationContext = {
   recentMessages: [],
-  userSentiments: new Map(), // Track sentiment per user
+  userSentiments: new Map(),
   topicChanges: [],
   lastIntervention: null,
-  relationshipInsights: new Map(), // roomId -> insights about the relationship dynamic
-  lastCommentTime: new Map() // roomId -> timestamp of last comment to avoid spamming
+  relationshipInsights: new Map(),
+  lastCommentTime: new Map(),
+
+  // Escalation tracking (from conflictPredictor)
+  escalationState: new Map(), // roomId -> escalation data
+
+  // Emotional tracking (from emotionalModel)
+  emotionalState: new Map(), // roomId -> emotional data
+
+  // Policy tracking (from interventionPolicy)
+  policyState: new Map() // roomId -> policy configuration
 };
 
 /**
- * Detect names in a message using AI
- * @param {string} text - Message text
- * @param {Array} existingContacts - Array of existing contact names
+ * Initialize escalation state for a room
+ */
+function initializeEscalationState(roomId) {
+  if (!conversationContext.escalationState.has(roomId)) {
+    conversationContext.escalationState.set(roomId, {
+      escalationScore: 0,
+      lastNegativeTime: null,
+      patternCounts: {
+        accusatory: 0,
+        triangulation: 0,
+        comparison: 0,
+        blaming: 0
+      }
+    });
+  }
+  return conversationContext.escalationState.get(roomId);
+}
+
+/**
+ * Initialize emotional state for a room
+ */
+function initializeEmotionalState(roomId) {
+  if (!conversationContext.emotionalState.has(roomId)) {
+    conversationContext.emotionalState.set(roomId, {
+      participants: {},
+      conversationEmotion: 'neutral',
+      escalationRisk: 0,
+      lastUpdated: Date.now()
+    });
+  }
+  return conversationContext.emotionalState.get(roomId);
+}
+
+/**
+ * Initialize policy state for a room
+ */
+function initializePolicyState(roomId) {
+  if (!conversationContext.policyState.has(roomId)) {
+    conversationContext.policyState.set(roomId, {
+      interventionThreshold: 60,
+      interventionStyle: 'moderate',
+      preferredMethods: ['suggestion', 'reframing'],
+      userPreferences: {},
+      lastIntervention: null,
+      interventionHistory: []
+    });
+  }
+  return conversationContext.policyState.get(roomId);
+}
+
+/**
+ * Detect conflict patterns in message (local analysis, no API call)
+ */
+function detectConflictPatterns(messageText) {
+  const text = messageText.toLowerCase();
+
+  const patterns = {
+    hasAccusatory: /\b(you always|you never|you're|you are)\b/.test(text),
+    hasTriangulation: /\b(she told me|he said|the kids|child.*said)\b/.test(text),
+    hasComparison: /\b(fine with me|never does that|at my house|at your house)\b/.test(text),
+    hasBlaming: /\b(your fault|because of you|you made|you caused)\b/.test(text)
+  };
+
+  return patterns;
+}
+
+/**
+ * Update escalation score based on detected patterns
+ */
+function updateEscalationScore(roomId, patterns) {
+  const state = initializeEscalationState(roomId);
+
+  if (patterns.hasAccusatory) state.patternCounts.accusatory++;
+  if (patterns.hasTriangulation) state.patternCounts.triangulation++;
+  if (patterns.hasComparison) state.patternCounts.comparison++;
+  if (patterns.hasBlaming) state.patternCounts.blaming++;
+
+  // Increase escalation score based on detected patterns
+  if (Object.values(patterns).some(p => p === true)) {
+    state.escalationScore += 10;
+    state.lastNegativeTime = Date.now();
+  }
+
+  // Decay escalation score over time (reduce by 1 every 5 minutes)
+  const timeSinceLastNegative = state.lastNegativeTime
+    ? Date.now() - state.lastNegativeTime
+    : Infinity;
+  if (timeSinceLastNegative > 300000) { // 5 minutes
+    state.escalationScore = Math.max(0, state.escalationScore - 1);
+  }
+
+  return state;
+}
+
+/**
+ * MAIN FUNCTION: Analyze message with unified AI call
+ *
+ * This replaces the previous separate calls to:
+ * - conflictPredictor.assessEscalationRisk()
+ * - emotionalModel.analyzeEmotionalState()
+ * - interventionPolicy.generateInterventionPolicy()
+ * - aiMediator.analyzeAndIntervene()
+ *
+ * @param {Object} message - The message object
+ * @param {Array} recentMessages - Last 15 messages for context
  * @param {Array} participantUsernames - Usernames of active participants
- * @returns {Promise<Array>} - Array of detected names that aren't contacts
+ * @param {Array} existingContacts - Existing contacts for the user
+ * @param {string} contactContextForAI - Formatted contact context string
+ * @param {string} roomId - Room ID for tracking insights and comment frequency
+ * @param {string} taskContextForAI - Formatted task context string
+ * @param {string} flaggedMessagesContext - Context from previously flagged messages
+ * @returns {Promise<Object>} - Unified mediation result
+ */
+async function analyzeMessage(message, recentMessages, participantUsernames = [], existingContacts = [], contactContextForAI = null, roomId = null, taskContextForAI = null, flaggedMessagesContext = null) {
+  // Check if OpenAI is configured
+  if (!openaiClient.isConfigured()) {
+    console.log('⚠️  AI Mediator: OpenAI not configured - allowing all messages through');
+    return null;
+  }
+
+  // Pre-filter: Allow common greetings and polite messages without AI analysis
+  const text = message.text.toLowerCase().trim();
+  const allowedGreetings = ['hi', 'hello', 'hey', 'hi there', 'hello there', 'hey there'];
+  const allowedPolite = ['thanks', 'thank you', 'ok', 'okay', 'sure', 'yes', 'no', 'got it', 'sounds good'];
+
+  if (allowedGreetings.includes(text) || allowedPolite.includes(text)) {
+    console.log('✅ AI Mediator: Pre-approved message (greeting/polite) - allowing without analysis');
+    return null;
+  }
+
+  try {
+    console.log('🤖 AI Mediator: Analyzing message from', message.username);
+
+    // Local pattern detection (no API call)
+    const patterns = detectConflictPatterns(message.text);
+    const escalationState = updateEscalationScore(roomId, patterns);
+
+    // Initialize states
+    const emotionalState = initializeEmotionalState(roomId);
+    const policyState = initializePolicyState(roomId);
+
+    // Get user contexts for all participants
+    const userContexts = [];
+    const allParticipants = [...new Set([message.username, ...participantUsernames])];
+
+    // Fetch profile data for all participants
+    const participantProfiles = new Map();
+    try {
+      const db = await require('./db').getDb();
+      const dbSafe = require('./dbSafe');
+
+      for (const username of allParticipants) {
+        try {
+          const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+          const users = dbSafe.parseResult(userResult);
+          if (users.length > 0) {
+            participantProfiles.set(username.toLowerCase(), users[0]);
+          }
+        } catch (err) {
+          console.error(`Error fetching profile for ${username}:`, err.message);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching participant profiles:', err.message);
+    }
+
+    for (const username of allParticipants) {
+      const profileData = participantProfiles.get(username.toLowerCase());
+      const context = await userContext.formatContextForAI(username, profileData);
+      if (context && !context.includes('No context available')) {
+        userContexts.push(context);
+      }
+    }
+
+    // Build context for AI
+    const messageHistory = recentMessages
+      .slice(-15)
+      .map(msg => `${msg.username}: ${msg.text}`)
+      .join('\n');
+
+    const userContextString = userContexts.length > 0
+      ? `\n\nUser Context Information:\n${userContexts.join('\n')}`
+      : '';
+
+    const contactContextString = contactContextForAI
+      ? `\n\n${contactContextForAI}`
+      : '';
+
+    const taskContextString = taskContextForAI
+      ? `\n\nACTIVE PARENTING TASKS:\n${taskContextForAI}`
+      : '';
+
+    const flaggedContextString = flaggedMessagesContext || '';
+
+    // Get relationship insights
+    let insights = null;
+    if (roomId) {
+      try {
+        const db = await require('./db').getDb();
+        const dbSafe = require('./dbSafe');
+        const insightsResult = await dbSafe.safeSelect('relationship_insights', { room_id: roomId }, { limit: 1 });
+        const insightsRows = dbSafe.parseResult(insightsResult);
+        if (insightsRows.length > 0) {
+          insights = JSON.parse(insightsRows[0].insights_json);
+          conversationContext.relationshipInsights.set(roomId, insights);
+        } else {
+          insights = conversationContext.relationshipInsights.get(roomId);
+        }
+      } catch (err) {
+        console.error('Error loading relationship insights:', err.message);
+        insights = conversationContext.relationshipInsights.get(roomId);
+      }
+    }
+
+    const insightsString = insights
+      ? `\n\nLEARNED RELATIONSHIP INSIGHTS:\n- Communication style: ${insights.communicationStyle || 'Not yet learned'}\n- Common topics: ${insights.commonTopics.join(', ') || 'Not yet learned'}\n- Tension points: ${insights.tensionPoints.join(', ') || 'None identified'}\n- Positive patterns: ${insights.positivePatterns.join(', ') || 'Not yet identified'}`
+      : '';
+
+    // Check comment frequency
+    const lastCommentTime = roomId ? conversationContext.lastCommentTime.get(roomId) : null;
+    const timeSinceLastComment = lastCommentTime ? Date.now() - lastCommentTime : Infinity;
+    const shouldLimitComments = timeSinceLastComment < 60000;
+    const commentFrequencyNote = shouldLimitComments
+      ? '\n\nIMPORTANT: You recently commented. Only use COMMENT if truly valuable.'
+      : '';
+
+    // Build escalation context
+    const patternSummary = Object.entries(escalationState.patternCounts)
+      .filter(([_, count]) => count > 0)
+      .map(([pattern, count]) => `${pattern}: ${count}`)
+      .join(', ');
+
+    // Get previous emotional state for this user
+    const username = message.username;
+    if (!emotionalState.participants[username]) {
+      emotionalState.participants[username] = {
+        currentEmotion: 'neutral',
+        emotionHistory: [],
+        stressLevel: 0,
+        stressTrajectory: 'stable',
+        emotionalMomentum: 0,
+        stressPoints: [],
+        recentTriggers: []
+      };
+    }
+    const participantState = emotionalState.participants[username];
+
+    // Build relationship context
+    const relationshipContext = contactContextForAI
+      ? `\n\nRELATIONSHIP CONTEXT:\n${contactContextForAI}\n\nThese two people are co-parents who share children but are no longer together. They need to communicate about shared children while navigating their separated relationship.${insightsString}${taskContextString}${flaggedContextString}`
+      : `\n\nRELATIONSHIP CONTEXT:\nThese are co-parents sharing children but no longer together.${insightsString}${taskContextString}${flaggedContextString}`;
+
+    // UNIFIED PROMPT: Get ALL information in ONE API call
+    const prompt = `You are Alex, a warm and emotionally intelligent co-parenting coach with expertise in:
+- Nonviolent Communication (Marshall Rosenberg)
+- Gottman Method relationship dynamics
+- Trauma-informed communication
+- Motivational interviewing
+
+Your role is to help ${message.username} communicate more effectively while making them feel safe, heard, and empowered.
+
+${relationshipContext}
+
+Recent conversation (last 15 messages):
+${messageHistory}${userContextString}
+
+Current message from ${message.username}: "${message.text}"
+
+CONTEXT:
+- Conflict patterns detected: ${patternSummary || 'none'}
+- Escalation score: ${escalationState.escalationScore}/100
+- ${message.username}'s emotional state: ${participantState.currentEmotion} (stress: ${participantState.stressLevel}/100)
+- Emotional trajectory: ${participantState.stressTrajectory}
+- Recent triggers: ${participantState.recentTriggers.slice(-3).join(', ') || 'none'}${commentFrequencyNote}
+
+YOUR TASK:
+Analyze this message and provide a response that makes ${message.username} feel:
+1. SAFE - you understand their feelings and perspective
+2. EMPOWERED - they can communicate effectively
+3. SUPPORTED - you're on their team, helping them succeed
+
+RESPOND WITH JSON:
+
+{
+  "action": "STAY_SILENT|INTERVENE|COMMENT",
+
+  "escalation": {
+    "riskLevel": "low|medium|high|critical",
+    "confidence": 0-100,
+    "reasons": ["specific reason 1", "reason 2"]
+  },
+
+  "emotion": {
+    "currentEmotion": "neutral|frustrated|calm|defensive|collaborative|anxious|angry",
+    "stressLevel": 0-100,
+    "stressTrajectory": "increasing|decreasing|stable",
+    "emotionalMomentum": 0-100,
+    "triggers": ["trigger1"],
+    "conversationEmotion": "neutral|tense|collaborative|escalating"
+  },
+
+  "intervention": {
+    "personalMessage": "Warm, validating 2-3 sentence message TO THE SENDER that: (1) Acknowledges their feelings/needs, (2) Explains why this approach might not get the outcome they want, (3) Offers hope that there's a better way. Use 'I notice...' 'It sounds like...' 'What if...' language. (only if ACTION=INTERVENE)",
+
+    "tip1": "First communication tip - focus on ONE specific technique (e.g., 'Use I-statements', 'Focus on needs not blame', 'Ask questions instead of accusing'). Be specific and actionable. (only if ACTION=INTERVENE)",
+
+    "tip2": "Second communication tip - focus on emotional regulation or de-escalation (e.g., 'Take a breath before responding', 'Acknowledge their perspective first', 'Focus on the child's needs'). (only if ACTION=INTERVENE)",
+
+    "tip3": "Third communication tip - focus on collaboration or future-orientation (e.g., 'Suggest a solution together', 'Keep it about moving forward', 'Find common ground'). (only if ACTION=INTERVENE)",
+
+    "rewrite1": "First rewrite option - preserve their core message but use collaborative, non-defensive language. Keep their voice authentic. (only if ACTION=INTERVENE)",
+
+    "rewrite2": "Second rewrite option - alternative approach that gets to their underlying need/concern in a different way. More solution-focused. (only if ACTION=INTERVENE)",
+
+    "comment": "Brief, warm observation or gentle question that moves the conversation forward constructively (only if ACTION=COMMENT)"
+  }
+}
+
+COMMUNICATION PRINCIPLES:
+- Use validation and empathy FIRST before any suggestion
+- Frame rewrites as "you could try..." not "you should say..."
+- Acknowledge the sender's underlying needs (to be heard, to protect their child, to be respected)
+- Never make them feel scolded or criticized
+- Use language like "I notice..." "It sounds like..." "What if..." "Have you considered..."
+- Make tips actionable and specific, not vague platitudes
+- Rewrites should sound authentic to the sender, not robotic
+
+WHEN TO ACT:
+- STAY_SILENT: Respectful, constructive communication (most messages)
+- INTERVENE: Messages with blame, accusations, defensiveness, triangulation, contempt, or manipulation that will likely escalate conflict
+- COMMENT: Rare - only when a gentle question or observation could significantly help (max 1-2 per conversation)`;
+
+    // Make single unified API call
+    const completion = await openaiClient.createChatCompletion({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are Alex, a warm and emotionally intelligent co-parenting coach. Your expertise includes Nonviolent Communication, Gottman Method, trauma-informed practices, and motivational interviewing. You help parents communicate effectively while making them feel safe, heard, and empowered. Respond ONLY with valid JSON in the exact format specified.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 1000,
+      temperature: 0.7
+    });
+
+    const response = completion.choices[0].message.content.trim();
+    console.log('🤖 AI Mediator: Received unified response');
+
+    // Parse unified response
+    let result;
+    try {
+      result = JSON.parse(response);
+    } catch (parseError) {
+      console.error('❌ Failed to parse AI response as JSON:', parseError.message);
+      console.error('Response was:', response);
+      return null;
+    }
+
+    // Update emotional state
+    if (result.emotion) {
+      const previousStress = participantState.stressLevel;
+      const previousEmotion = participantState.currentEmotion;
+
+      participantState.currentEmotion = result.emotion.currentEmotion || 'neutral';
+      participantState.stressLevel = result.emotion.stressLevel || 0;
+      participantState.stressTrajectory = result.emotion.stressTrajectory || 'stable';
+      participantState.emotionalMomentum = result.emotion.emotionalMomentum || 0;
+
+      // Track emotion history
+      participantState.emotionHistory.push({
+        timestamp: Date.now(),
+        emotion: result.emotion.currentEmotion,
+        intensity: result.emotion.stressLevel,
+        triggers: result.emotion.triggers || []
+      });
+      if (participantState.emotionHistory.length > 20) {
+        participantState.emotionHistory.shift();
+      }
+
+      // Update recent triggers
+      if (result.emotion.triggers && result.emotion.triggers.length > 0) {
+        participantState.recentTriggers.push(...result.emotion.triggers);
+        if (participantState.recentTriggers.length > 10) {
+          participantState.recentTriggers = participantState.recentTriggers.slice(-10);
+        }
+      }
+
+      // Update conversation-level emotion
+      emotionalState.conversationEmotion = result.emotion.conversationEmotion || 'neutral';
+
+      // Calculate overall escalation risk
+      const allStressLevels = Object.values(emotionalState.participants).map(p => p.stressLevel);
+      const avgStress = allStressLevels.length > 0
+        ? allStressLevels.reduce((a, b) => a + b, 0) / allStressLevels.length
+        : 0;
+      emotionalState.escalationRisk = avgStress;
+      emotionalState.lastUpdated = Date.now();
+    }
+
+    // Process action
+    const action = (result.action || 'STAY_SILENT').toUpperCase();
+
+    if (action === 'STAY_SILENT') {
+      console.log('🤖 AI Mediator: STAY_SILENT - allowing message');
+      return null;
+    }
+
+    if (action === 'COMMENT') {
+      if (shouldLimitComments) {
+        console.log('💬 AI Mediator: Skipping comment due to frequency limit');
+        return null;
+      }
+
+      if (!result.intervention?.comment) {
+        console.error('❌ COMMENT action but no comment text');
+        return null;
+      }
+
+      // Track comment time
+      if (roomId) {
+        conversationContext.lastCommentTime.set(roomId, Date.now());
+      }
+
+      console.log('💬 AI Mediator: Adding comment');
+
+      return {
+        type: 'ai_comment',
+        action: 'COMMENT',
+        text: result.intervention.comment,
+        originalMessage: message,
+        escalation: result.escalation,
+        emotion: result.emotion
+      };
+    }
+
+    if (action === 'INTERVENE') {
+      const intervention = result.intervention || {};
+
+      // Validate required fields
+      if (!intervention.personalMessage || !intervention.tip1 || !intervention.tip2 ||
+          !intervention.tip3 || !intervention.rewrite1 || !intervention.rewrite2) {
+        console.error('❌ INTERVENE action missing required fields');
+        console.error('Full response:', result);
+        return null;
+      }
+
+      console.log('✅ AI Mediator: INTERVENE - blocking message');
+
+      // Record intervention
+      policyState.interventionHistory.push({
+        timestamp: Date.now(),
+        type: 'intervene',
+        escalationRisk: result.escalation?.riskLevel || 'unknown',
+        emotionalState: result.emotion?.currentEmotion || 'unknown'
+      });
+      if (policyState.interventionHistory.length > 20) {
+        policyState.interventionHistory.shift();
+      }
+
+      return {
+        type: 'ai_intervention',
+        action: 'INTERVENE',
+        personalMessage: intervention.personalMessage,
+        tip1: intervention.tip1,
+        tip2: intervention.tip2,
+        tip3: intervention.tip3,
+        rewrite1: intervention.rewrite1,
+        rewrite2: intervention.rewrite2,
+        originalMessage: message,
+        escalation: result.escalation,
+        emotion: result.emotion
+      };
+    }
+
+    // Unknown action
+    console.log(`🤖 AI Mediator: Unknown action "${action}" - defaulting to STAY_SILENT`);
+    return null;
+
+  } catch (error) {
+    console.error('❌ Error in AI mediator:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Detect names in a message using AI
  */
 async function detectNamesInMessage(text, existingContacts = [], participantUsernames = []) {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!openaiClient.isConfigured()) {
     return [];
   }
 
   try {
     const existingNames = [...existingContacts.map(c => c.toLowerCase()), ...participantUsernames.map(u => u.toLowerCase())];
     const existingNamesString = existingNames.length > 0 ? `\n\nExisting contacts/participants to EXCLUDE: ${existingNames.join(', ')}` : '';
-    
-    const prompt = `Analyze this message and extract any PERSON NAMES that appear to be NEW people mentioned (not the message sender).
+
+    const prompt = `Extract NEW person names from this message (not already in contacts).
 
 Message: "${text}"${existingNamesString}
 
-IMPORTANT:
-- Only return names that are NEW people (not already in contacts/participants)
-- Exclude common words like "the", "and", "or", "but"
-- Exclude pronouns like "he", "she", "they", "it"
-- Only return proper names (capitalized words that appear to be people's names)
-- Return ONLY the names, one per line, or "NONE" if no new names found
+Return ONLY names, one per line, or "NONE" if no new names found.`;
 
-Examples:
-- "I talked to Sarah yesterday" → Sarah
-- "John picked up the kids" → John
-- "My therapist Dr. Smith suggested..." → Dr. Smith
-- "I need to call the school" → NONE
-- "The teacher said..." → NONE (too generic)
-
-Return format (one name per line, or "NONE"):
-`;
-
-    const completion = await openai.chat.completions.create({
+    const completion = await openaiClient.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
         {
           role: 'system',
-          content: 'You are a name extractor. Extract only proper names of NEW people mentioned in messages. Return one name per line, or "NONE" if no new names found.'
+          content: 'Extract proper names of NEW people. Return one name per line, or "NONE".'
         },
         {
           role: 'user',
@@ -74,12 +562,11 @@ Return format (one name per line, or "NONE"):
       return [];
     }
 
-    // Extract names from response (one per line)
     const names = response
       .split('\n')
       .map(line => line.trim())
       .filter(line => line && line !== 'NONE')
-      .filter(line => line.length > 1 && /^[A-Z]/.test(line)); // Must start with capital letter
+      .filter(line => line.length > 1 && /^[A-Z]/.test(line));
 
     return names;
   } catch (error) {
@@ -89,425 +576,24 @@ Return format (one name per line, or "NONE"):
 }
 
 /**
- * Analyze a message and decide if AI intervention is needed
- * @param {Object} message - The message object
- * @param {Array} recentMessages - Last 15 messages for context
- * @param {Array} participantUsernames - Usernames of active participants
- * @param {Array} existingContacts - Existing contacts for the user
- * @param {string} contactContextForAI - Formatted contact context string
- * @param {string} roomId - Room ID for tracking insights and comment frequency
- * @param {string} taskContextForAI - Formatted task context string
- * @param {string} flaggedMessagesContext - Context from previously flagged messages for learning
- * @param {Object} escalationAssessment - Escalation risk assessment from conflict predictor
- * @param {Object} emotionalState - Extended emotional state analysis
- * @param {Object} interventionPolicy - Adaptive intervention policy decision
- * @param {Object} adaptationRecommendations - User-specific adaptation recommendations
- * @returns {Promise<Object>} - Intervention decision and message
- */
-async function analyzeAndIntervene(message, recentMessages, participantUsernames = [], existingContacts = [], contactContextForAI = null, roomId = null, taskContextForAI = null, flaggedMessagesContext = null, escalationAssessment = null, emotionalState = null, interventionPolicy = null, adaptationRecommendations = null) {
-  // If no API key, return null (no intervention) - allow all messages
-  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim() === '') {
-    console.log('⚠️  AI Mediator: No OPENAI_API_KEY found in environment - allowing all messages through');
-    return null;
-  }
-
-  // Pre-filter: Allow common greetings and polite messages without AI analysis
-  const text = message.text.toLowerCase().trim();
-  const allowedGreetings = ['hi', 'hello', 'hey', 'hi there', 'hello there', 'hey there'];
-  const allowedPolite = ['thanks', 'thank you', 'ok', 'okay', 'sure', 'yes', 'no', 'got it', 'sounds good'];
-  
-  if (allowedGreetings.includes(text) || allowedPolite.includes(text)) {
-    console.log('✅ AI Mediator: Pre-approved message (common greeting/polite) - allowing without analysis');
-    return null; // No intervention needed
-  }
-
-  try {
-    console.log('🤖 AI Mediator: Analyzing message from', message.username);
-    
-    // Get user contexts for all participants (enhanced with profile data)
-    const userContexts = [];
-    const allParticipants = [...new Set([message.username, ...participantUsernames])];
-    
-    // Fetch profile data for all participants
-    const participantProfiles = new Map();
-    try {
-      const db = await require('./db').getDb();
-      const dbSafe = require('./dbSafe');
-      
-      for (const username of allParticipants) {
-        try {
-          const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
-          const users = dbSafe.parseResult(userResult);
-          if (users.length > 0) {
-            participantProfiles.set(username.toLowerCase(), users[0]);
-          }
-        } catch (err) {
-          console.error(`Error fetching profile for ${username}:`, err.message);
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching participant profiles:', err.message);
-    }
-    
-    for (const username of allParticipants) {
-      const profileData = participantProfiles.get(username.toLowerCase());
-      const context = await userContext.formatContextForAI(username, profileData);
-      if (context && !context.includes('No context available')) {
-        userContexts.push(context);
-      }
-    }
-    
-    // Build context for AI
-    const messageHistory = recentMessages
-      .slice(-15) // Last 15 messages for better context
-      .map(msg => `${msg.username}: ${msg.text}`)
-      .join('\n');
-
-    const userContextString = userContexts.length > 0 
-      ? `\n\nUser Context Information:\n${userContexts.join('\n')}`
-      : '';
-
-    const contactContextString = contactContextForAI 
-      ? `\n\n${contactContextForAI}`
-      : '';
-
-    const taskContextString = taskContextForAI
-      ? `\n\nACTIVE PARENTING TASKS AND RESPONSIBILITIES:\n${taskContextForAI}\n\nUse this task context to understand what parenting responsibilities are currently active. If a message references tasks, scheduling, or responsibilities, use this context to provide more relevant mediation.`
-      : '';
-
-    const flaggedContextString = flaggedMessagesContext || '';
-
-    // Add escalation risk context if available
-    const escalationContextString = escalationAssessment && escalationAssessment.riskLevel !== 'low'
-      ? `\n\nESCALATION RISK ALERT:\nRisk Level: ${escalationAssessment.riskLevel.toUpperCase()}\nConfidence: ${escalationAssessment.confidence}%\nReasons: ${escalationAssessment.reasons.join(', ')}\nUrgency: ${escalationAssessment.urgency}\n\nThis conversation shows signs of escalation. Be more proactive in intervention if needed.`
-      : '';
-
-    // Add extended emotional state context
-    const emotionalContextString = emotionalState && emotionalState.participant
-      ? `\n\nEXTENDED EMOTIONAL STATE:\nParticipant: ${emotionalState.participant.username}\nCurrent Emotion: ${emotionalState.participant.currentEmotion}\nStress Level: ${emotionalState.participant.stressLevel}/100\nStress Trajectory: ${emotionalState.participant.stressTrajectory}\nEmotional Momentum: ${emotionalState.participant.emotionalMomentum}/100\nRecent Triggers: ${emotionalState.participant.recentTriggers.join(', ') || 'none'}\nConversation Emotion: ${emotionalState.conversation.emotion}\nOverall Escalation Risk: ${emotionalState.conversation.escalationRisk}/100\n\nUse this emotional trajectory to understand the emotional momentum and stress points in this conversation.`
-      : '';
-
-    // Add intervention policy context
-    const policyContextString = interventionPolicy && interventionPolicy.shouldIntervene
-      ? `\n\nINTERVENTION POLICY:\nType: ${interventionPolicy.interventionType}\nStyle: ${interventionPolicy.interventionStyle}\nUrgency: ${interventionPolicy.urgency}\nReasoning: ${interventionPolicy.reasoning}\nConfidence: ${interventionPolicy.confidence}%\n\nFollow this policy when deciding how to intervene.`
-      : '';
-
-    // Add adaptation recommendations context
-    const adaptationContextString = adaptationRecommendations
-      ? `\n\nUSER ADAPTATION PREFERENCES:\nIntervention Frequency: ${adaptationRecommendations.interventionFrequency}\nIntervention Style: ${adaptationRecommendations.interventionStyle}\nPreferred Tone: ${adaptationRecommendations.preferredTone}\nAvoid Types: ${(adaptationRecommendations.avoidTypes || []).join(', ') || 'none'}\nReasoning: ${adaptationRecommendations.reasoning || 'Based on user feedback'}\n\nAdapt your approach based on these user preferences.`
-      : '';
-
-    // Get relationship insights for this room (load from database if available)
-    let insights = null;
-    if (roomId) {
-      // Try to load from database first
-      try {
-        const db = await require('./db').getDb();
-        const dbSafe = require('./dbSafe');
-        const insightsResult = await dbSafe.safeSelect('relationship_insights', { room_id: roomId }, { limit: 1 });
-        const insightsRows = dbSafe.parseResult(insightsResult);
-        if (insightsRows.length > 0) {
-          insights = JSON.parse(insightsRows[0].insights_json);
-          // Also cache in memory for faster access
-          conversationContext.relationshipInsights.set(roomId, insights);
-        } else {
-          // Fall back to memory cache
-          insights = conversationContext.relationshipInsights.get(roomId);
-        }
-      } catch (err) {
-        console.error('Error loading relationship insights from database:', err.message);
-        // Fall back to memory cache
-        insights = conversationContext.relationshipInsights.get(roomId);
-      }
-    }
-    const insightsString = insights 
-      ? `\n\nLEARNED RELATIONSHIP INSIGHTS (use these to be more contextually aware):\n- Communication style: ${insights.communicationStyle || 'Not yet learned'}\n- Common topics: ${insights.commonTopics.join(', ') || 'Not yet learned'}\n- Tension points: ${insights.tensionPoints.join(', ') || 'None identified yet'}\n- Positive patterns: ${insights.positivePatterns.join(', ') || 'Not yet identified'}\n- Questions to explore: ${insights.questionsToAsk?.slice(0, 2).join(', ') || 'None yet'}\n\nUse these insights to ask curious questions or make helpful observations.`
-      : '';
-
-    // Check if we should limit COMMENT frequency (don't comment too often)
-    const lastCommentTime = roomId ? conversationContext.lastCommentTime.get(roomId) : null;
-    const timeSinceLastComment = lastCommentTime ? Date.now() - lastCommentTime : Infinity;
-    const shouldLimitComments = timeSinceLastComment < 60000; // Don't comment more than once per minute
-    const commentFrequencyNote = shouldLimitComments 
-      ? '\n\nIMPORTANT: You recently commented in this conversation. Only use ACTION: COMMENT if it\'s truly valuable and different from your previous comment. Prefer STAY_SILENT if unsure.'
-      : '';
-
-    // Build relationship context summary
-    const relationshipContext = contactContextForAI 
-      ? `\n\nRELATIONSHIP CONTEXT:\n${contactContextForAI}\n\nKEY UNDERSTANDING: These two people share a child/children together but are no longer in a romantic relationship. They are co-parenting, which means they need to communicate about their shared children while navigating the complexities of their separated relationship. This dynamic often involves:\n- Emotional history and potential unresolved feelings\n- Different parenting styles or philosophies\n- Logistics around custody, schedules, and child care\n- Financial matters related to children\n- The challenge of maintaining boundaries while co-parenting effectively\n\nThe AI mediator should be aware that co-parenting conversations can be emotionally charged even when the words seem neutral, because of this underlying relationship dynamic.${insightsString}${taskContextString}${flaggedContextString}${escalationContextString}${emotionalContextString}${policyContextString}${adaptationContextString}`
-      : `\n\nRELATIONSHIP CONTEXT:\nThese two people are co-parents - they share a child/children together but are no longer in a romantic relationship. This is a co-parenting mediation room designed to help them communicate effectively about their shared children.${insightsString}${taskContextString}${flaggedContextString}${escalationContextString}${emotionalContextString}${policyContextString}${adaptationContextString}`;
-
-    const prompt = `You are a warm, empathetic AI mediator named Alex who helps co-parents communicate more effectively. You're not a robot - you're like a trusted friend who understands the unique challenges of co-parenting after separation.
-
-Your personality:
-- Warm, conversational, and genuinely caring
-- Contextually aware of the co-parenting relationship dynamic
-- Curious about their situation so you can help better over time
-- Non-judgmental and supportive
-- You remember what you learn about their relationship to provide better guidance
-
-${relationshipContext}
-
-Recent conversation (last 15 messages):
-${messageHistory}${userContextString}${taskContextString}
-
-Current message: ${message.username}: "${message.text}"
-
-IMPORTANT CONTEXTUAL AWARENESS:
-- These are co-parents who share children but are no longer together
-- Co-parenting conversations can be emotionally complex even when words seem neutral
-- Reference specific children's names, relationship dynamics, and concerns from the contact information
-- **CRITICAL: If a child's name appears in the contact information for BOTH co-parents, that child is their SHARED CHILD. When either co-parent mentions that child's name, they are referring to their shared child together. Use this understanding to provide contextually aware mediation.**
-- Be aware that underlying tensions may exist even in seemingly simple messages
-- Show curiosity about their dynamic when appropriate to learn and help better
-
-You have THREE possible actions:
-
-1. ACTION: STAY_SILENT - For normal, respectful communication (MOST messages should use this)
-   - Normal greetings: "hi", "hello", "hey"
-   - Questions: "can we talk?", "what time is pickup?"
-   - Polite requests: "can we discuss?", "could you let me know?"
-   - Neutral messages: "okay", "thanks", "sounds good"
-   - Any respectful, normal communication
-
-2. ACTION: INTERVENE - For messages that could escalate conflict or harm the co-parenting relationship
-   - Clear insults: "you suck", "you're terrible"
-   - Personal attacks: "you're a bad parent"
-   - Hostile comparisons: "I'm better than you"
-   - Threats or extremely inappropriate content
-   - **Accusatory language**: Messages that imply the other parent is doing something wrong (e.g., "it's just weird", "she is scared to tell you", "you always...", "you never...")
-   - **Triangulating the child**: Putting the child in the middle of parental conflict (e.g., "she told me you...", "he said you...", "the kids are afraid to...")
-   - **Comparison/competition**: Comparing how the child acts with each parent (e.g., "she's fine with me but...", "he never does that at my house")
-   - **Leading/defensive questions**: Questions that put the other parent on the defensive (e.g., "Any thought on why?", "Why would you...", "What did you do to...")
-   - **Blaming language**: Messages that assign blame or fault (e.g., "this is your fault", "because of you")
-   - **Emotional manipulation**: Using guilt, fear, or obligation to control (e.g., "if you cared about the kids...", "you're making this hard")
-
-3. ACTION: COMMENT - For offering helpful, contextual observations or gentle guidance (use sparingly, maybe 1-2 times per conversation)
-   - When you notice a pattern that might be helpful to point out
-   - When you want to acknowledge something positive in their communication
-   - When you're curious about their dynamic and want to learn more (ask a gentle question)
-   - When you can offer a helpful perspective based on their relationship context
-   - Use this VERY sparingly - only when it genuinely adds value
-
-If using ACTION: COMMENT, respond in this format:
-
-ACTION: COMMENT
-
-MESSAGE: [A warm, conversational message (2-3 sentences max). Write as if you're a caring friend who understands co-parenting. Be curious, supportive, and contextually aware. Reference their children's names, relationship dynamics, or concerns when relevant. You might ask a gentle question to learn more about their situation, acknowledge something positive, or offer a helpful perspective. Write naturally, not robotically.]
-
-If using ACTION: INTERVENE, respond EXACTLY in this format:
-
-ACTION: INTERVENE
-
-VALIDATION: [1-2 sentences validating their feelings and concerns, being specific about their context, children's names, and relevant relationship dynamics. Write warmly, like a caring friend who understands co-parenting challenges. Acknowledge that their concern about their child is valid, even if the way they're expressing it could be improved. Do NOT include the word "Validation" in your response - just write the validating message directly.]
-
-WHY_THIS_NEEDS_MEDIATION: [Identify the specific conflict triggers in this message. Be specific: "This message contains [accusatory language/triangulation/comparison/etc.] which could escalate tension because [explain the impact]. This could make your co-parent defensive rather than collaborative." Reference the actual phrases from the message. This is for AI processing only and will not be shown to the user.]
-
-TIP1: [One specific, actionable communication tip - one sentence only, directly addressing the conflict trigger. Focus on child-centered communication. Example: "Instead of asking why your co-parent did something, focus on what your child needs."]
-
-TIP2: [One specific, actionable communication tip - one sentence only, directly addressing the conflict trigger. Example: "Avoid putting your child in the middle by sharing what they said directly; instead, focus on collaborative problem-solving."]
-
-TIP3: [One specific, actionable communication tip - one sentence only, directly addressing the conflict trigger. Provide a third perspective or alternative approach.]
-
-REWRITE1: [First rewrite of "${message.text}" using the tips. Make it child-focused, collaborative, and respectful while keeping the core concern. Frame it as a shared problem to solve together, not something to blame. No quotes in rewrite. Example format: "I noticed [child's name] seemed [observation]. She might be having a hard time with [situation]. Could we talk about ways to make her feel [desired outcome]?"]
-
-REWRITE2: [Second rewrite of "${message.text}" with a different approach or tone. Provide an alternative way to express the same concern. Make it child-focused, collaborative, and respectful. No quotes in rewrite.]
-
-If the message is appropriate and respectful, respond with:
-ACTION: STAY_SILENT
-
-Remember:
-- MOST messages should be STAY_SILENT
-- Use COMMENT very sparingly (maybe 1-2 times per conversation) and only when it genuinely helps${commentFrequencyNote}
-- INTERVENE proactively for messages that could escalate conflict, including subtle triggers like accusatory language, triangulation, comparisons, leading questions, blaming, or emotional manipulation
-- Be warm, conversational, and contextually aware
-- Show curiosity about their relationship dynamic when appropriate
-- Use the learned relationship insights to ask thoughtful questions or make helpful observations
-- When intervening, always explain WHY the message needs mediation by identifying the specific conflict triggers`;
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are Alex, a warm and empathetic AI mediator for co-parenting. You help co-parents communicate effectively. You understand they share children but are no longer together, and you\'re aware this creates unique emotional complexities. You\'re curious about their relationship dynamic so you can help better over time. MOST messages should use ACTION: STAY_SILENT. Use ACTION: COMMENT very sparingly (1-2 times per conversation) for helpful observations or gentle questions. Use ACTION: INTERVENE for messages that could escalate conflict, including: insults, personal attacks, accusatory language, triangulating children, comparisons between parents, leading/defensive questions, blaming language, or emotional manipulation. Be proactive about catching subtle conflict triggers that could harm the co-parenting relationship, even if the words seem neutral. Write conversationally and warmly, like a caring friend who understands co-parenting challenges.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      max_tokens: 600,
-      temperature: 0.8
-    });
-
-    const response = completion.choices[0].message.content.trim();
-    console.log('🤖 AI Mediator: Full response received:', response);
-    
-    // Parse the response - handle STAY_SILENT, INTERVENE, and COMMENT actions
-    const actionMatch = response.match(/ACTION:\s*(\w+)/i);
-    
-    if (!actionMatch) {
-      console.log('🤖 AI Mediator: Could not parse action from response');
-      return null;
-    }
-
-    const action = actionMatch[1].toUpperCase();
-
-    if (action === 'STAY_SILENT') {
-      console.log('🤖 AI Mediator: Decided to stay silent - allowing message');
-      return null;
-    }
-
-    // Handle COMMENT action (contextual observations/questions)
-    if (action === 'COMMENT') {
-      // Check frequency limit
-      if (shouldLimitComments) {
-        console.log('💬 AI Mediator: Skipping comment due to frequency limit');
-        return null;
-      }
-
-      let messageMatch = response.match(/MESSAGE:\s*(.+?)(?=\n\s*ACTION:|$)/is);
-      if (!messageMatch) {
-        messageMatch = response.match(/MESSAGE[:\s]+(.+?)(?=$)/is);
-      }
-      
-      const commentMessage = messageMatch ? messageMatch[1].trim() : null;
-      
-      if (!commentMessage) {
-        console.error('❌ AI Mediator: COMMENT action but no MESSAGE found - defaulting to STAY_SILENT');
-        return null;
-      }
-
-      // Track when we commented
-      if (roomId) {
-        conversationContext.lastCommentTime.set(roomId, Date.now());
-      }
-
-      console.log('💬 AI Mediator: Adding contextual comment:', commentMessage.substring(0, 50) + '...');
-      
-      return {
-        type: 'ai_comment',
-        action: 'COMMENT',
-        text: commentMessage,
-        originalMessage: message
-      };
-    }
-
-    // Handle INTERVENE action (blocking problematic messages)
-    if (action === 'INTERVENE') {
-      let validationMatch = response.match(/VALIDATION:\s*(.+?)(?=\n\s*WHY_THIS_NEEDS_MEDIATION|TIP1|$)/is);
-      let whyMediationMatch = response.match(/WHY_THIS_NEEDS_MEDIATION:\s*(.+?)(?=\n\s*TIP1|$)/is);
-      let tip1Match = response.match(/TIP1:\s*(.+?)(?=\n\s*TIP2|$)/is);
-      let tip2Match = response.match(/TIP2:\s*(.+?)(?=\n\s*TIP3|$)/is);
-      let tip3Match = response.match(/TIP3:\s*(.+?)(?=\n\s*REWRITE1|$)/is);
-      let rewrite1Match = response.match(/REWRITE1:\s*(.+?)(?=\n\s*REWRITE2|$)/is);
-      let rewrite2Match = response.match(/REWRITE2:\s*(.+?)(?=\n|$)/is);
-      
-      // If new format not found, try alternate patterns
-      if (!validationMatch) {
-        validationMatch = response.match(/VALIDATION[:\s]+(.+?)(?=WHY_THIS_NEEDS_MEDIATION|TIP1|REWRITE|$)/is);
-      }
-      if (!whyMediationMatch) {
-        whyMediationMatch = response.match(/WHY_THIS_NEEDS_MEDIATION[:\s]+(.+?)(?=TIP1|REWRITE|$)/is);
-      }
-      if (!tip1Match) {
-        tip1Match = response.match(/TIP1[:\s]+(.+?)(?=TIP2|REWRITE|$)/is);
-      }
-      if (!tip2Match) {
-        tip2Match = response.match(/TIP2[:\s]+(.+?)(?=TIP3|REWRITE|$)/is);
-      }
-      if (!tip3Match) {
-        tip3Match = response.match(/TIP3[:\s]+(.+?)(?=REWRITE|$)/is);
-      }
-      if (!rewrite1Match) {
-        rewrite1Match = response.match(/REWRITE1[:\s]+(.+?)(?=REWRITE2|$)/is);
-      }
-      if (!rewrite2Match) {
-        rewrite2Match = response.match(/REWRITE2[:\s]+(.+?)(?=$)/is);
-      }
-
-      const validation = validationMatch ? validationMatch[1].trim() : null;
-      const whyMediation = whyMediationMatch ? whyMediationMatch[1].trim() : null;
-      const tip1 = tip1Match ? tip1Match[1].trim() : null;
-      const tip2 = tip2Match ? tip2Match[1].trim() : null;
-      const tip3 = tip3Match ? tip3Match[1].trim() : null;
-      const rewrite1 = rewrite1Match ? rewrite1Match[1].trim() : null;
-      const rewrite2 = rewrite2Match ? rewrite2Match[1].trim() : null;
-
-      console.log('🤖 AI Mediator: Parsed intervention components:');
-      console.log('  Validation:', validation ? validation.substring(0, 50) + '...' : 'MISSING');
-      console.log('  Why Mediation:', whyMediation ? whyMediation.substring(0, 50) + '...' : 'MISSING');
-      console.log('  Tip1:', tip1 ? tip1.substring(0, 50) + '...' : 'MISSING');
-      console.log('  Tip2:', tip2 ? tip2.substring(0, 50) + '...' : 'MISSING');
-      console.log('  Tip3:', tip3 ? tip3.substring(0, 50) + '...' : 'MISSING');
-      console.log('  Rewrite1:', rewrite1 ? rewrite1.substring(0, 50) + '...' : 'MISSING');
-      console.log('  Rewrite2:', rewrite2 ? rewrite2.substring(0, 50) + '...' : 'MISSING');
-
-      // Validate that we have all required components (whyMediation is optional for backward compatibility)
-      if (!validation || !tip1 || !tip2 || !tip3 || !rewrite1 || !rewrite2) {
-        console.error('❌ AI Mediator: Missing required components in intervention - defaulting to STAY_SILENT');
-        console.error('Full response was:', response);
-        return null;
-      }
-
-      const intervention = {
-        type: 'ai_intervention',
-        action: 'INTERVENE',
-        validation,
-        whyMediation, // For AI processing only, not shown to user
-        tip1,
-        tip2,
-        tip3,
-        rewrite1,
-        rewrite2,
-        originalMessage: message
-      };
-      
-      console.log('✅ AI Mediator: Successfully parsed structured intervention');
-      return intervention;
-    }
-
-    // Unknown action
-    console.log(`🤖 AI Mediator: Unexpected action "${action}" - defaulting to STAY_SILENT`);
-    return null;
-
-  } catch (error) {
-    console.error('❌ Error in AI mediator:', error.message);
-    if (error.response) {
-      console.error('OpenAI API Error:', error.response.status, error.response.data);
-    }
-    return null;
-  }
-}
-
-/**
  * Generate a contact suggestion message
- * @param {string} detectedName - The name that was detected
- * @param {string} messageContext - The message context where the name appeared
- * @returns {Promise<Object>} - Contact suggestion message
  */
 async function generateContactSuggestion(detectedName, messageContext) {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!openaiClient.isConfigured()) {
     return null;
   }
 
   try {
-    const prompt = `A user mentioned the name "${detectedName}" in their message: "${messageContext}"
+    const prompt = `Generate a brief, friendly message asking if user wants to add "${detectedName}" to contacts. Context: "${messageContext}"
 
-Generate a friendly, helpful AI message asking if they'd like to add this person to their contacts. The message should:
-- Be brief and conversational (1-2 sentences)
-- Ask if they want to add ${detectedName} to contacts
-- Be helpful and not pushy
+Respond with ONLY the message text (1-2 sentences), no quotes.`;
 
-Respond with ONLY the message text, no quotes or formatting.`;
-
-    const completion = await openai.chat.completions.create({
+    const completion = await openaiClient.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful AI assistant. Generate brief, friendly messages asking users if they want to add mentioned people to their contacts.'
+          content: 'Generate brief, friendly contact suggestion messages.'
         },
         {
           role: 'user',
@@ -519,7 +605,7 @@ Respond with ONLY the message text, no quotes or formatting.`;
     });
 
     const suggestionText = completion.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
-    
+
     return {
       type: 'contact_suggestion',
       detectedName,
@@ -533,54 +619,16 @@ Respond with ONLY the message text, no quotes or formatting.`;
 }
 
 /**
- * Analyze sentiment of a message
- * @param {string} text - Message text
- * @returns {Promise<string>} - Sentiment: 'positive', 'negative', or 'neutral'
- */
-async function analyzeSentiment(text) {
-  if (!process.env.OPENAI_API_KEY) {
-    return 'neutral';
-  }
-
-  try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a sentiment analyzer. Respond with only one word: positive, negative, or neutral.'
-        },
-        {
-          role: 'user',
-          content: `What is the sentiment of this message: "${text}"`
-        }
-      ],
-      max_tokens: 10,
-      temperature: 0.3
-    });
-
-    const sentiment = completion.choices[0].message.content.trim().toLowerCase();
-    return sentiment === 'positive' || sentiment === 'negative' ? sentiment : 'neutral';
-  } catch (error) {
-    console.error('Error analyzing sentiment:', error.message);
-    return 'neutral';
-  }
-}
-
-/**
  * Extract relationship insights from conversation
- * @param {Array} recentMessages - Recent conversation messages
- * @param {string} roomId - Room ID for storing insights
- * @returns {Promise<void>}
  */
 async function extractRelationshipInsights(recentMessages, roomId) {
-  if (!process.env.OPENAI_API_KEY || recentMessages.length < 3) {
-    return; // Need at least a few messages to extract insights
+  if (!openaiClient.isConfigured() || recentMessages.length < 3) {
+    return;
   }
 
   try {
     const messageHistory = recentMessages
-      .slice(-10) // Last 10 messages for context
+      .slice(-10)
       .map(msg => `${msg.username}: ${msg.text}`)
       .join('\n');
 
@@ -592,7 +640,7 @@ async function extractRelationshipInsights(recentMessages, roomId) {
       questionsToAsk: []
     };
 
-    const prompt = `You are analyzing a co-parenting conversation to understand the relationship dynamic. These two people share children but are no longer together.
+    const prompt = `Analyze this co-parenting conversation to understand relationship dynamics.
 
 Recent conversation:
 ${messageHistory}
@@ -602,28 +650,26 @@ ${JSON.stringify(existingInsights, null, 2)}
 
 Extract insights about:
 1. Communication style (formal/casual, direct/indirect, collaborative/defensive)
-2. Common topics they discuss (pickup times, child activities, etc.)
+2. Common topics they discuss
 3. Tension points or recurring issues
 4. Positive patterns (what works well)
-5. Questions you should ask to learn more about their dynamic
+5. Questions to ask to learn more
 
-Respond with ONLY a JSON object in this format:
+Respond with ONLY valid JSON:
 {
-  "communicationStyle": "brief description",
+  "communicationStyle": "description",
   "commonTopics": ["topic1", "topic2"],
-  "tensionPoints": ["point1", "point2"],
+  "tensionPoints": ["point1"],
   "positivePatterns": ["pattern1"],
   "questionsToAsk": ["question1", "question2"]
-}
+}`;
 
-Keep it concise. Only include new or updated insights.`;
-
-    const completion = await openai.chat.completions.create({
+    const completion = await openaiClient.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
         {
           role: 'system',
-          content: 'You are an analyst extracting insights about co-parenting relationship dynamics. Return only valid JSON.'
+          content: 'Analyze co-parenting dynamics. Return only valid JSON.'
         },
         {
           role: 'user',
@@ -636,7 +682,7 @@ Keep it concise. Only include new or updated insights.`;
 
     const response = completion.choices[0].message.content.trim();
     const insights = JSON.parse(response);
-    
+
     // Merge with existing insights
     const merged = {
       communicationStyle: insights.communicationStyle || existingInsights.communicationStyle,
@@ -647,30 +693,26 @@ Keep it concise. Only include new or updated insights.`;
       lastUpdated: new Date().toISOString()
     };
 
-    // Store in memory cache
     conversationContext.relationshipInsights.set(roomId, merged);
-    
+
     // Persist to database
     try {
       const db = await require('./db').getDb();
       const dbSafe = require('./dbSafe');
       const now = new Date().toISOString();
-      
-      // Check if insights already exist
+
       const existingResult = await dbSafe.safeSelect('relationship_insights', { room_id: roomId }, { limit: 1 });
       const existingRows = dbSafe.parseResult(existingResult);
-      
+
       if (existingRows.length > 0) {
-        // Update existing
-        await dbSafe.safeUpdate('relationship_insights', 
+        await dbSafe.safeUpdate('relationship_insights',
           { room_id: roomId },
-          { 
+          {
             insights_json: JSON.stringify(merged),
             updated_at: now
           }
         );
       } else {
-        // Insert new
         await dbSafe.safeInsert('relationship_insights', {
           room_id: roomId,
           insights_json: JSON.stringify(merged),
@@ -678,16 +720,14 @@ Keep it concise. Only include new or updated insights.`;
           updated_at: now
         });
       }
-      
+
       require('./db').saveDatabase();
-      console.log('📚 Relationship insights saved to database for room:', roomId);
+      console.log('📚 Relationship insights saved for room:', roomId);
     } catch (err) {
-      console.error('Error saving relationship insights to database:', err.message);
-      // Continue even if database save fails - memory cache still works
+      console.error('Error saving relationship insights:', err.message);
     }
   } catch (error) {
     console.error('Error extracting relationship insights:', error.message);
-    // Don't fail the whole process if insight extraction fails
   }
 }
 
@@ -701,7 +741,6 @@ function updateContext(message) {
     timestamp: message.timestamp
   });
 
-  // Keep only last 20 messages
   if (conversationContext.recentMessages.length > 20) {
     conversationContext.recentMessages.shift();
   }
@@ -717,13 +756,58 @@ function getContext() {
   };
 }
 
+/**
+ * Record intervention feedback for learning
+ */
+function recordInterventionFeedback(roomId, helpful) {
+  const policyState = initializePolicyState(roomId);
+
+  if (policyState.interventionHistory.length > 0) {
+    const lastIntervention = policyState.interventionHistory[policyState.interventionHistory.length - 1];
+    lastIntervention.outcome = helpful ? 'helpful' : 'unhelpful';
+    lastIntervention.feedback = helpful ? 'User found helpful' : 'User found unhelpful';
+
+    // Adjust threshold based on feedback
+    if (!helpful) {
+      policyState.interventionThreshold = Math.min(100, policyState.interventionThreshold + 5);
+    } else {
+      policyState.interventionThreshold = Math.max(30, policyState.interventionThreshold - 2);
+    }
+  }
+}
+
+/**
+ * Reset escalation after successful intervention
+ */
+function resetEscalation(roomId) {
+  const escalationState = conversationContext.escalationState.get(roomId);
+  if (escalationState) {
+    escalationState.escalationScore = Math.max(0, escalationState.escalationScore - 20);
+    escalationState.lastNegativeTime = null;
+  }
+}
+
+/**
+ * Get policy state for a room
+ */
+function getPolicyState(roomId) {
+  return conversationContext.policyState.get(roomId) || null;
+}
+
 module.exports = {
-  analyzeAndIntervene,
-  analyzeSentiment,
-  updateContext,
-  getContext,
+  // Main unified function (replaces 4-5 separate calls)
+  analyzeMessage,
+
+  // Utility functions
   detectNamesInMessage,
   generateContactSuggestion,
-  extractRelationshipInsights
-};
+  extractRelationshipInsights,
+  updateContext,
+  getContext,
+  recordInterventionFeedback,
+  resetEscalation,
+  getPolicyState,
 
+  // Legacy function name for backwards compatibility
+  analyzeAndIntervene: analyzeMessage
+};

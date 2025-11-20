@@ -32,9 +32,15 @@ function AccountView({ username }) {
     profileData,
     isLoadingProfile,
     isSavingProfile,
+    showPasswordChange,
+    passwordData,
+    isChangingPassword,
     error,
     setProfileData,
+    setShowPasswordChange,
+    setPasswordData,
     saveProfile,
+    changePassword,
   } = useProfile(username);
 
   if (isLoadingProfile) {
@@ -94,6 +100,85 @@ function AccountView({ username }) {
               />
             </div>
           </div>
+        </div>
+
+        {/* Password Section */}
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-[#C5E8E4] shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-[#275559]">Password</h3>
+            </div>
+            <button
+              onClick={() => setShowPasswordChange(!showPasswordChange)}
+              className="px-4 py-2 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] text-[#275559] border border-[#C5E8E4] hover:from-[#C5E8E4] hover:to-[#A8D9D3] rounded-lg font-semibold text-sm transition-all shadow-sm hover:shadow-md"
+            >
+              {showPasswordChange ? 'Cancel' : 'Change Password'}
+            </button>
+          </div>
+          {showPasswordChange && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-[#275559] mb-2">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      currentPassword: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#275559] mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      newPassword: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#275559] mb-2">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                />
+              </div>
+              <button
+                onClick={changePassword}
+                disabled={isChangingPassword}
+                className="w-full bg-[#275559] hover:bg-[#1f4447] text-white py-3 px-4 rounded-lg font-semibold disabled:bg-gray-400 transition-all shadow-md hover:shadow-lg"
+              >
+                {isChangingPassword ? 'Changing...' : 'Update Password'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Other Account Sections */}
@@ -652,7 +737,7 @@ function ChatRoom() {
         />
 
         {/* Main Content Area */}
-        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-16 md:pt-10 md:pb-0' : 'pt-10 md:pt-10 pb-16 md:pb-8 overflow-y-auto'} px-2 sm:px-4 md:px-6 lg:px-8 relative z-10`}>
+        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-20 md:pt-10 md:pb-4' : 'pt-10 md:pt-10 pb-20 md:pb-8 overflow-y-auto'} px-2 sm:px-4 md:px-6 lg:px-8 relative z-10`}>
           <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : 'max-w-7xl mx-auto w-full'}`}>
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
@@ -1291,7 +1376,7 @@ function ChatRoom() {
                   // AI Moderator messages (interventions/comments)
                   if (msg.type === 'ai_intervention' || msg.type === 'ai_comment') {
                     const isIntervention = msg.type === 'ai_intervention';
-                    const isComment = msg.type === 'ai_comment' && msg.text && !msg.validation;
+                    const isComment = msg.type === 'ai_comment' && msg.text && !msg.personalMessage;
                     
                     // Helper function to remove intervention and original blocked message (only for interventions)
                     const handleRewriteSelected = () => {
@@ -1442,15 +1527,15 @@ function ChatRoom() {
                                   </div>
                                 )}
 
-                                {/* Validation (no label) */}
-                                {msg.validation && (
-                                  <div>
+                                {/* Personal Message from AI Coach */}
+                                {msg.personalMessage && (
+                                  <div className="mb-4">
                                     <p
-                                      className={`text-sm ${
-                                        isIntervention ? 'text-red-800' : 'text-purple-800'
+                                      className={`text-sm leading-relaxed ${
+                                        isIntervention ? 'text-pink-900' : 'text-purple-800'
                                       }`}
                                     >
-                                      {msg.validation}
+                                      {msg.personalMessage}
                                     </p>
                                   </div>
                                 )}

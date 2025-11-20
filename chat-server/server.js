@@ -1147,24 +1147,32 @@ io.on('connection', (socket) => {
           if (intervention) {
             // Handle different intervention types
             if (intervention.type === 'ai_intervention') {
-              // AI MODERATION DISABLED - Just allow message through
-              console.log(`⚠️ Message from ${user.username} flagged by AI but allowing through (moderation disabled)`);
+              // AI INTERVENTION - Block message and show intervention ONLY to sender
+              console.log(`🚫 Message from ${user.username} blocked by AI - showing intervention to sender ONLY`);
 
-              // Allow the message through normally - just broadcast it
-              console.log(`✅ Message from ${user.username} approved - broadcasting to room ${user.roomId}`);
+              // DO NOT save the blocked message to database
+              // DO NOT broadcast to room - this message should never reach other users
 
-              // Save to database
-              messageStore.saveMessage({
-                ...message,
-                roomId: user.roomId
-              }).then(() => {
-                console.log(`💾 Saved new message ${message.id} to database (room: ${user.roomId})`);
-              }).catch(err => {
-                console.error('Error saving message to database:', err);
-              });
+              // Send intervention UI ONLY to the sender (private message)
+              const interventionMessage = {
+                id: `ai-intervention-${Date.now()}`,
+                type: 'ai_intervention',
+                personalMessage: intervention.personalMessage,
+                tip1: intervention.tip1,
+                tip2: intervention.tip2,
+                tip3: intervention.tip3,
+                rewrite1: intervention.rewrite1,
+                rewrite2: intervention.rewrite2,
+                originalMessage: message,
+                escalation: intervention.escalation,
+                emotion: intervention.emotion,
+                timestamp: new Date().toISOString()
+              };
 
-              // Broadcast to room
-              io.to(user.roomId).emit('new_message', message);
+              // Send ONLY to the sender (not to the room)
+              socket.emit('new_message', interventionMessage);
+
+              console.log(`✅ Intervention UI sent to ${user.username} privately - message NOT visible to others`);
             } else if (intervention.type === 'ai_comment') {
               // COMMENT: Helpful observation - show to everyone in room
               console.log(`💬 AI adding contextual comment - broadcasting to room`);
