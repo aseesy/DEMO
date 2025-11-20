@@ -719,11 +719,7 @@ io.on('connection', (socket) => {
       // We'll add it later if it's approved
       aiMediator.updateContext(message);
 
-      // Assess escalation risk and emotional state before AI analysis
-      const conflictPredictor = require('./conflictPredictor');
-      const emotionalModel = require('./emotionalModel');
-
-      // Get recent messages from database instead of in-memory room
+      // Get recent messages from database for AI analysis
       const dbModule = require('./db');
       const db = await dbModule.getDb();
       const dbSafe = require('./dbSafe');
@@ -736,17 +732,12 @@ io.on('connection', (socket) => {
       `;
       const messagesResult = db.exec(messagesQuery);
       const recentMessages = messagesResult.length > 0 ? dbSafe.parseResult(messagesResult).reverse() : [];
-      
-      // Parallel analysis: escalation risk and emotional state
-      const [escalationAssessment, emotionalState] = await Promise.all([
-        conflictPredictor.assessEscalationRisk(message, recentMessages, user.roomId),
-        emotionalModel.analyzeEmotionalState(message, recentMessages, user.roomId)
-      ]);
 
       // Check if AI mediator should intervene (async, non-blocking)
       // We analyze BEFORE broadcasting to decide if message should be shown to others
       // IMPORTANT: Message is NOT broadcast yet - we wait for AI analysis
-      console.log(`⏳ Message from ${user.username} queued for AI analysis - Escalation risk: ${escalationAssessment.riskLevel} - NOT broadcasting yet`);
+      // OPTIMIZED: Single unified API call instead of separate conflictPredictor, emotionalModel, interventionPolicy calls
+      console.log(`⏳ Message from ${user.username} queued for unified AI analysis - NOT broadcasting yet`);
       
       setImmediate(async () => {
         console.log('🔍 AI Mediator: setImmediate callback triggered');
@@ -1037,156 +1028,24 @@ io.on('connection', (socket) => {
             console.error('Error fetching tasks for AI context:', taskErr);
           }
 
-          // Get user feedback for adaptation
-          const feedbackLearner = require('./feedbackLearner');
-          const feedbackSummary = await feedbackLearner.getFeedbackSummary(user.username);
-          const adaptationRecommendations = await feedbackLearner.generateAdaptationRecommendations(user.username);
+          // OPTIMIZED: Single unified AI analysis call
+          // This replaces:
+          // - conflictPredictor.assessEscalationRisk()
+          // - emotionalModel.analyzeEmotionalState()
+          // - interventionPolicy.generateInterventionPolicy()
+          // - aiMediator.analyzeAndIntervene()
+          // All in ONE API call!
 
-          // Generate adaptive intervention policy
-          const interventionPolicy = require('./interventionPolicy');
-          const recentInterventions = interventionPolicy.getPolicyState(user.roomId)?.interventionHistory || [];
-          
-          const policy = await interventionPolicy.generateInterventionPolicy(
-            emotionalState,
-            escalationAssessment,
-            recentInterventions,
-            feedbackSummary ? { negativeRatio: feedbackSummary.negativeRatio } : {},
-            user.roomId
+          const intervention = await aiMediator.analyzeMessage(
+            message,
+            recentMessages,  // Use recentMessages from database query above
+            participantUsernames,
+            existingContacts,
+            contactContextForAI,
+            user.roomId,
+            taskContextForAI,
+            flaggedMessagesContext
           );
-
-          // Safety validation before intervention
-          const safetyControls = require('./safetyControls');
-          
-          // If policy says don't intervene, respect that
-          if (!policy.shouldIntervene) {
-            console.log(`📋 Policy decision: No intervention needed (${policy.reasoning})`);
-            // Still allow message through, but track for learning
-            const messageObj = {
-              id: message.id,
-              type: 'user',
-              username: message.username,
-              text: message.text,
-              timestamp: message.timestamp,
-              roomId: user.roomId
-            };
-            
-            // Save message to database
-            await dbSafe.safeInsert('messages', {
-              id: messageObj.id,
-              type: messageObj.type,
-              username: messageObj.username,
-              text: messageObj.text,
-              timestamp: messageObj.timestamp,
-              socket_id: socket.id,
-              room_id: user.roomId,
-              private: 0
-            });
-
-            // Broadcast message to room
-            io.to(user.roomId).emit('new_message', messageObj);
-            return;
-          }
-
-          // Check confidence and degradation need
-          const degradation = safetyControls.assessDegradationNeed(
-            { type: policy.interventionType },
-            emotionalState,
-            policy.confidence
-          );
-
-          if (degradation.shouldDegrade) {
-            console.log(`⚠️ Degrading intervention: ${degradation.reason}`);
-            // Send gentle message instead of blocking
-            const gentleMessage = {
-              type: 'ai_comment',
-              username: 'Alex',
-              text: degradation.message,
-              timestamp: new Date().toISOString(),
-              roomId: user.roomId
-            };
-            io.to(user.roomId).emit('new_message', gentleMessage);
-
-            // Still allow original message through
-            const messageObj = {
-              id: message.id,
-              type: 'user',
-              username: message.username,
-              text: message.text,
-              timestamp: message.timestamp,
-              roomId: user.roomId
-            };
-
-            // Save message to database
-            await dbSafe.safeInsert('messages', {
-              id: messageObj.id,
-              type: messageObj.type,
-              username: messageObj.username,
-              text: messageObj.text,
-              timestamp: messageObj.timestamp,
-              socket_id: socket.id,
-              room_id: user.roomId,
-              private: 0
-            });
-
-            io.to(user.roomId).emit('new_message', messageObj);
-            return;
-          }
-          
-          // Pass all context to AI mediator (captured from outer scope)
-          const intervention = await aiMediator.analyzeAndIntervene(
-            message, 
-            context.recentMessages, 
-            participantUsernames, 
-            existingContacts, 
-            contactContextForAI, 
-            user.roomId, 
-            taskContextForAI, 
-            flaggedMessagesContext,
-            escalationAssessment || { riskLevel: 'low', confidence: 0, reasons: [], urgency: 'none' },
-            emotionalState,
-            policy,
-            adaptationRecommendations
-          );
-
-          // Validate intervention safety
-          if (intervention) {
-            const safetyValidation = safetyControls.validateInterventionSafety(intervention, {
-              confidence: policy.confidence,
-              emotionalState: emotionalState
-            });
-
-            if (!safetyValidation.safe) {
-              console.error(`❌ Intervention blocked by safety controls: ${safetyValidation.errors.join(', ')}`);
-              // Allow message through if intervention is unsafe
-              const messageObj = {
-                id: message.id,
-                type: 'user',
-                username: message.username,
-                text: message.text,
-                timestamp: message.timestamp,
-                roomId: user.roomId
-              };
-
-              // Save message to database
-              await dbSafe.safeInsert('messages', {
-                id: messageObj.id,
-                type: messageObj.type,
-                username: messageObj.username,
-                text: messageObj.text,
-                timestamp: messageObj.timestamp,
-                socket_id: socket.id,
-                room_id: user.roomId,
-                private: 0
-              });
-
-              io.to(user.roomId).emit('new_message', messageObj);
-              return;
-            }
-
-            if (safetyValidation.warnings.length > 0) {
-              console.warn(`⚠️ Intervention warnings: ${safetyValidation.warnings.join(', ')}`);
-            }
-          }
           
           // Check for names in message (only if message passed moderation)
           let contactSuggestion = null;
@@ -1286,72 +1145,24 @@ io.on('connection', (socket) => {
           if (intervention) {
             // Handle different intervention types
             if (intervention.type === 'ai_intervention') {
-              // INTERVENE: Block problematic message - only show to sender
-              console.log(`⚠️ Message from ${user.username} flagged - only showing to sender`);
-              
-              // Generate explanation and override options
-              const safetyControls = require('./safetyControls');
-              const explanation = safetyControls.generateInterventionExplanation(
-                intervention,
-                emotionalState,
-                escalationAssessment
-              );
-              const overrideOptions = safetyControls.generateOverrideOptions(intervention);
-              
-              // Send original message only to sender (with flag that it was problematic)
-              // Do NOT add to public message history
-              socket.emit('new_message', {
+              // AI MODERATION DISABLED - Just allow message through
+              console.log(`⚠️ Message from ${user.username} flagged by AI but allowing through (moderation disabled)`);
+
+              // Allow the message through normally - just broadcast it
+              console.log(`✅ Message from ${user.username} approved - broadcasting to room ${user.roomId}`);
+
+              // Save to database
+              messageStore.saveMessage({
                 ...message,
-                flagged: true,
-                private: true
+                roomId: user.roomId
+              }).then(() => {
+                console.log(`💾 Saved new message ${message.id} to database (room: ${user.roomId})`);
+              }).catch(err => {
+                console.error('Error saving message to database:', err);
               });
 
-              const aiMessage = {
-                id: `ai-${Date.now()}`,
-                type: 'ai_intervention',
-                username: 'AI Moderator',
-                validation: intervention.validation,
-                whyMediation: intervention.whyMediation, // For AI processing only, not shown to user
-                tip1: intervention.tip1,
-                tip2: intervention.tip2,
-                tip3: intervention.tip3,
-                rewrite1: intervention.rewrite1,
-                rewrite2: intervention.rewrite2,
-                timestamp: new Date().toISOString(),
-                originalMessage: {
-                  id: message.id,
-                  username: message.username,
-                  text: message.text,
-                  timestamp: message.timestamp
-                },
-                private: true, // Only show to sender
-                explanation: explanation,
-                overrideOptions: overrideOptions,
-                confidence: policy?.confidence || 0,
-                emotionalState: emotionalState ? {
-                  stressLevel: emotionalState.participant?.stressLevel || 0,
-                  trajectory: emotionalState.participant?.stressTrajectory || 'stable'
-                } : null
-              };
-
-              // Record intervention for learning
-              const interventionPolicy = require('./interventionPolicy');
-              interventionPolicy.recordInterventionOutcome(
-                user.roomId,
-                {
-                  interventionType: 'ai_intervention',
-                  interventionStyle: policy?.interventionStyle || 'moderate',
-                  emotionalState: emotionalState,
-                  escalationRisk: escalationAssessment
-                },
-                'unknown', // Outcome will be updated when user provides feedback
-                null
-              );
-
-              // Do NOT add AI message to public history (it's private)
-              socket.emit('new_message', aiMessage);
-              
-              console.log(`✅ AI intervened - private message to sender only`);
+              // Broadcast to room
+              io.to(user.roomId).emit('new_message', message);
             } else if (intervention.type === 'ai_comment') {
               // COMMENT: Helpful observation - show to everyone in room
               console.log(`💬 AI adding contextual comment - broadcasting to room`);
@@ -1697,7 +1508,6 @@ io.on('connection', (socket) => {
       }
 
       const feedbackLearner = require('./feedbackLearner');
-      const interventionPolicy = require('./interventionPolicy');
 
       // Record explicit feedback
       await feedbackLearner.recordExplicitFeedback(
@@ -1707,17 +1517,8 @@ io.on('connection', (socket) => {
         reason || null
       );
 
-      // Update intervention outcome
-      const policyState = interventionPolicy.getPolicyState(user.roomId);
-      if (policyState && policyState.interventionHistory.length > 0) {
-        const lastIntervention = policyState.interventionHistory[policyState.interventionHistory.length - 1];
-        interventionPolicy.recordInterventionOutcome(
-          user.roomId,
-          lastIntervention,
-          helpful ? 'helpful' : 'unhelpful',
-          reason
-        );
-      }
+      // Update intervention feedback in consolidated AI mediator
+      aiMediator.recordInterventionFeedback(user.roomId, helpful);
 
       socket.emit('feedback_recorded', { success: true });
       console.log(`📝 Intervention feedback recorded: ${helpful ? 'helpful' : 'not helpful'} from ${user.username}`);
@@ -2866,6 +2667,28 @@ app.get('/api/auth/verify', verifyAuth, async (req, res) => {
   }
 });
 
+// Helper function to get frontend URL from env or request headers
+function getFrontendUrl(req) {
+  // 1. Use explicit FRONTEND_URL env var if set
+  if (process.env.FRONTEND_URL) {
+    return process.env.FRONTEND_URL.split(',')[0];
+  }
+  
+  // 2. Try to detect from request headers (Origin or Referer)
+  const origin = req.headers.origin || req.headers.referer;
+  if (origin) {
+    try {
+      const url = new URL(origin);
+      return `${url.protocol}//${url.host}`;
+    } catch (e) {
+      // Invalid URL, continue to fallback
+    }
+  }
+  
+  // 3. Fallback to localhost for development
+  return 'http://localhost:3000';
+}
+
 // Google OAuth: Initiate login
 app.get('/api/auth/google', (req, res) => {
   // Support multiple variable names (OAUTH_CLIENT_ID, 0AUTH_CLIENT_ID typo, or GOOGLE_CLIENT_ID)
@@ -2877,7 +2700,7 @@ app.get('/api/auth/google', (req, res) => {
   }
 
   // Use frontend URL for redirect (Google redirects to frontend, frontend sends code to backend)
-  const frontendUrl = process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000';
+  const frontendUrl = getFrontendUrl(req);
   const redirectUri = `${frontendUrl}/auth/google/callback`;
   const scope = 'openid email profile';
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -2907,8 +2730,8 @@ app.post('/api/auth/google/callback', async (req, res) => {
     const GOOGLE_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET || 
                                  process.env['0AUTH_CLIENT_SECRET'] || // Handle typo with zero
                                  process.env.GOOGLE_CLIENT_SECRET;
-    // Use same redirect URI as used in the auth URL
-    const frontendUrl = process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000';
+    // Use same redirect URI as used in the auth URL (detect from request if needed)
+    const frontendUrl = getFrontendUrl(req);
     const redirectUri = `${frontendUrl}/auth/google/callback`;
 
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
@@ -3079,18 +2902,21 @@ app.get('/api/user-contexts', (req, res) => {
 // Get all tasks for a user
 app.get('/api/tasks', async (req, res) => {
   try {
-    const username = req.query.username || req.body.username;
-    
-    if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
+    const identifier = req.query.username || req.query.email || req.body.username || req.body.email;
+
+    if (!identifier) {
+      return res.status(400).json({ error: 'Email or username is required' });
     }
 
     const db = await require('./db').getDb();
-    
-    // Get user
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+
+    // Get user by email OR username
+    const isEmail = identifier.includes('@');
+    const userResult = isEmail
+      ? await dbSafe.safeSelect('users', { email: identifier.toLowerCase() }, { limit: 1 })
+      : await dbSafe.safeSelect('users', { username: identifier.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -3124,10 +2950,8 @@ app.get('/api/tasks', async (req, res) => {
     // Auto-complete onboarding tasks if conditions are met (check on load)
     try {
       await autoCompleteOnboardingTasks(userId);
-      // Reload tasks after auto-completion to get updated status
-      const updatedTasksResult = await dbSafe.safeSelect('tasks', {
-        user_id: userId
-      }, { 
+      // Reload tasks after auto-completion WITH THE SAME FILTERS to get updated status
+      const updatedTasksResult = await dbSafe.safeSelect('tasks', filterConditions, {
         orderBy: 'created_at',
         orderDirection: 'DESC'
       });
@@ -4253,6 +4077,206 @@ app.delete('/api/contacts/:contactId', async (req, res) => {
     });
   } catch (error) {
     console.error('Error deleting contact:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ======================================
+// AI Contact Intelligence Endpoints
+// ======================================
+const contactIntelligence = require('./contactIntelligence');
+
+// Detect contact mentions in a message
+app.post('/api/contacts/detect-mentions', async (req, res) => {
+  try {
+    const { messageText, username, roomId } = req.body;
+
+    if (!messageText || !username) {
+      return res.status(400).json({ error: 'Message text and username are required' });
+    }
+
+    const db = await require('./db').getDb();
+
+    // Get user ID
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // Get user's existing contacts
+    const contactsResult = await dbSafe.safeSelect('contacts', { user_id: userId });
+    const existingContacts = dbSafe.parseResult(contactsResult);
+
+    // Get recent messages for context
+    let recentMessages = [];
+    if (roomId) {
+      const messagesResult = await dbSafe.safeSelect('messages', { room_id: roomId }, {
+        orderBy: 'timestamp',
+        orderDirection: 'DESC',
+        limit: 10
+      });
+      recentMessages = dbSafe.parseResult(messagesResult);
+    }
+
+    // Detect mentions
+    const result = await contactIntelligence.detectContactMentions(
+      messageText,
+      existingContacts,
+      recentMessages
+    );
+
+    if (!result) {
+      return res.json({ detectedPeople: [], shouldPrompt: false });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error detecting contact mentions:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate AI-assisted contact profile suggestions
+app.post('/api/contacts/generate-profile', async (req, res) => {
+  try {
+    const { contactData, username, roomId } = req.body;
+
+    if (!contactData || !contactData.contact_name || !contactData.relationship || !username) {
+      return res.status(400).json({ error: 'Contact data (name, relationship) and username are required' });
+    }
+
+    const db = await require('./db').getDb();
+
+    // Get user ID
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // Get user's existing contacts for relationship context
+    const contactsResult = await dbSafe.safeSelect('contacts', { user_id: userId });
+    const userContacts = dbSafe.parseResult(contactsResult);
+
+    // Get recent messages for context
+    let recentMessages = [];
+    if (roomId) {
+      const messagesResult = await dbSafe.safeSelect('messages', { room_id: roomId }, {
+        orderBy: 'timestamp',
+        orderDirection: 'DESC',
+        limit: 15
+      });
+      recentMessages = dbSafe.parseResult(messagesResult);
+    }
+
+    // Generate profile suggestions
+    const suggestions = await contactIntelligence.generateContactProfile(
+      contactData,
+      userContacts,
+      recentMessages
+    );
+
+    if (!suggestions) {
+      return res.json({
+        suggestedFields: [],
+        helpfulQuestions: [],
+        linkedContactSuggestion: { shouldLink: false },
+        profileCompletionTips: 'Fill out the profile with as much detail as you feel comfortable sharing.'
+      });
+    }
+
+    res.json(suggestions);
+  } catch (error) {
+    console.error('Error generating contact profile:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Map contact relationships and provide suggestions
+app.get('/api/contacts/relationship-map', async (req, res) => {
+  try {
+    const username = req.query.username;
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    const db = await require('./db').getDb();
+
+    // Get user ID
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // Get relationship map
+    const relationshipMap = await contactIntelligence.mapContactRelationships(userId);
+
+    res.json(relationshipMap);
+  } catch (error) {
+    console.error('Error mapping contact relationships:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Enrich contact from conversation history
+app.post('/api/contacts/:contactId/enrich', async (req, res) => {
+  try {
+    const contactId = parseInt(req.params.contactId);
+    const { username, roomId } = req.body;
+
+    if (!contactId || isNaN(contactId) || !username) {
+      return res.status(400).json({ error: 'Contact ID and username are required' });
+    }
+
+    const db = await require('./db').getDb();
+
+    // Get user ID
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // Get messages from room
+    let messages = [];
+    if (roomId) {
+      const messagesResult = await dbSafe.safeSelect('messages', { room_id: roomId }, {
+        orderBy: 'timestamp',
+        orderDirection: 'DESC',
+        limit: 100
+      });
+      messages = dbSafe.parseResult(messagesResult);
+    }
+
+    // Enrich contact
+    const enrichment = await contactIntelligence.enrichContactFromMessages(
+      contactId,
+      userId,
+      messages
+    );
+
+    if (!enrichment) {
+      return res.json({ enrichments: [], newInsights: [], shouldUpdate: false });
+    }
+
+    res.json(enrichment);
+  } catch (error) {
+    console.error('Error enriching contact:', error);
     res.status(500).json({ error: error.message });
   }
 });
