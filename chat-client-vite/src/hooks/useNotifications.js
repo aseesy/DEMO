@@ -106,6 +106,16 @@ export function useNotifications({ username, enabled = true }) {
     }
   }, [enabled, isSupported, permission, username]);
 
+  // Auto-subscribe to push notifications when PWA is ready
+  React.useEffect(() => {
+    if (permission === 'granted' && window.liaizenPWA?.subscribeToPush) {
+      console.log('[useNotifications] Permission granted, subscribing to push notifications...');
+      window.liaizenPWA.subscribeToPush().catch((error) => {
+        console.warn('[useNotifications] Could not subscribe to push:', error);
+      });
+    }
+  }, [permission]);
+
   // Play a subtle notification sound
   const playNotificationSound = () => {
     try {

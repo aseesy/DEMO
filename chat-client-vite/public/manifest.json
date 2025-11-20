@@ -3,8 +3,9 @@
   "short_name": "LiaiZen",
   "description": "A secure co-parenting communication platform",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#275559",
   "theme_color": "#275559",
   "orientation": "portrait-primary",
   "icons": [
@@ -36,6 +37,8 @@
         }
       ]
     }
-  ]
+  ],
+  "gcm_sender_id": "103953800507",
+  "prefer_related_applications": false
 }
 

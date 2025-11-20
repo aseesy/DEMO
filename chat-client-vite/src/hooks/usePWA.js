@@ -1,0 +1,214 @@
+import React from 'react';
+
+/**
+ * usePWA Hook - Manages PWA installation and Service Worker registration
+ *
+ * Features:
+ * - Registers Service Worker for offline support and push notifications
+ * - Detects if app is installable
+ * - Provides install prompt functionality
+ * - Subscribes to push notifications
+ * - Manages PWA state and permissions
+ */
+export function usePWA() {
+  const [isInstallable, setIsInstallable] = React.useState(false);
+  const [isInstalled, setIsInstalled] = React.useState(false);
+  const [swRegistration, setSwRegistration] = React.useState(null);
+  const [pushSubscription, setPushSubscription] = React.useState(null);
+  const [installPromptEvent, setInstallPromptEvent] = React.useState(null);
+
+  // Register Service Worker on mount
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      registerServiceWorker();
+    } else {
+      console.warn('[usePWA] Service Worker not supported in this browser');
+    }
+
+    // Detect if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+      console.log('[usePWA] App is installed (standalone mode)');
+    }
+  }, []);
+
+  // Listen for install prompt event
+  React.useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      console.log('[usePWA] Install prompt available');
+      e.preventDefault(); // Prevent automatic prompt
+      setInstallPromptEvent(e);
+      setIsInstallable(true);
+    };
+
+    const handleAppInstalled = () => {
+      console.log('[usePWA] App installed successfully');
+      setIsInstalled(true);
+      setIsInstallable(false);
+      setInstallPromptEvent(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  // Register Service Worker
+  const registerServiceWorker = React.useCallback(async () => {
+    try {
+      console.log('[usePWA] Registering Service Worker...');
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+      });
+
+      console.log('[usePWA] Service Worker registered successfully:', registration);
+      setSwRegistration(registration);
+
+      // Check for updates periodically
+      setInterval(() => {
+        registration.update();
+      }, 60000); // Check every minute
+
+      // Listen for updates
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        console.log('[usePWA] New Service Worker found, installing...');
+
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('[usePWA] New Service Worker installed, update available');
+            // You can show an update notification here
+          }
+        });
+      });
+
+      return registration;
+    } catch (error) {
+      console.error('[usePWA] Service Worker registration failed:', error);
+      return null;
+    }
+  }, []);
+
+  // Show install prompt
+  const showInstallPrompt = React.useCallback(async () => {
+    if (!installPromptEvent) {
+      console.warn('[usePWA] Install prompt not available');
+      return false;
+    }
+
+    try {
+      console.log('[usePWA] Showing install prompt');
+      installPromptEvent.prompt();
+
+      const { outcome } = await installPromptEvent.userChoice;
+      console.log('[usePWA] Install prompt outcome:', outcome);
+
+      if (outcome === 'accepted') {
+        setIsInstallable(false);
+        setInstallPromptEvent(null);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('[usePWA] Install prompt error:', error);
+      return false;
+    }
+  }, [installPromptEvent]);
+
+  // Subscribe to push notifications
+  const subscribeToPush = React.useCallback(async () => {
+    if (!swRegistration) {
+      console.warn('[usePWA] Service Worker not registered yet');
+      return null;
+    }
+
+    try {
+      console.log('[usePWA] Subscribing to push notifications...');
+
+      // Request notification permission
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        console.warn('[usePWA] Notification permission denied');
+        return null;
+      }
+
+      // Subscribe to push notifications
+      const subscription = await swRegistration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(
+          'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U' // VAPID public key
+        ),
+      });
+
+      console.log('[usePWA] Push subscription created:', subscription);
+      setPushSubscription(subscription);
+
+      return subscription;
+    } catch (error) {
+      console.error('[usePWA] Push subscription failed:', error);
+      return null;
+    }
+  }, [swRegistration]);
+
+  // Unsubscribe from push notifications
+  const unsubscribeFromPush = React.useCallback(async () => {
+    if (!pushSubscription) {
+      console.warn('[usePWA] No active push subscription');
+      return false;
+    }
+
+    try {
+      console.log('[usePWA] Unsubscribing from push notifications...');
+      await pushSubscription.unsubscribe();
+      setPushSubscription(null);
+      console.log('[usePWA] Push subscription removed');
+      return true;
+    } catch (error) {
+      console.error('[usePWA] Unsubscribe failed:', error);
+      return false;
+    }
+  }, [pushSubscription]);
+
+  // Send message to Service Worker
+  const sendMessageToSW = React.useCallback((message) => {
+    if (!swRegistration || !swRegistration.active) {
+      console.warn('[usePWA] Service Worker not active');
+      return;
+    }
+
+    swRegistration.active.postMessage(message);
+  }, [swRegistration]);
+
+  return {
+    isInstallable,
+    isInstalled,
+    swRegistration,
+    pushSubscription,
+    showInstallPrompt,
+    subscribeToPush,
+    unsubscribeFromPush,
+    sendMessageToSW,
+  };
+}
+
+// Helper function to convert VAPID key
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+
+  return outputArray;
+}

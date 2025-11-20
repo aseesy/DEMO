@@ -14,6 +14,7 @@ import { ProfilePanel } from './components/ProfilePanel.jsx';
 import { UpdatesPanel } from './components/UpdatesPanel.jsx';
 import { Navigation } from './components/Navigation.jsx';
 import { LandingPage } from './components/LandingPage.jsx';
+import { PWAInstallButton } from './components/PWAInstallButton.jsx';
 import { TaskFormModal } from './components/modals/TaskFormModal.jsx';
 import { WelcomeModal } from './components/modals/WelcomeModal.jsx';
 import { ProfileTaskModal } from './components/modals/ProfileTaskModal.jsx';
@@ -1779,6 +1780,12 @@ function ChatRoom() {
                       but here you can preview the sections that will live here.
                     </p>
                   </div>
+
+                  {/* PWA Install Section */}
+                  <div className="mb-4">
+                    <PWAInstallButton />
+                  </div>
+
                   <div className="grid gap-4 md:grid-cols-2">
                     {/* Notifications Settings */}
                     <div className="border-2 border-[#C5E8E4] rounded-2xl p-6 bg-gradient-to-br from-[#E6F7F5] to-white">
