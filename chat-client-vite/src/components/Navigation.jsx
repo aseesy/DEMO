@@ -328,7 +328,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       </nav>
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-[#C5E8E4] shadow-lg safe-area-inset-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[10001] bg-white/95 backdrop-blur-sm border-t border-[#C5E8E4] shadow-lg safe-area-inset-bottom">
         <div className="flex items-center justify-around h-16 px-2 pb-safe">
           {navItems.map((item) => {
             const isActive = currentView === item.id;
@@ -384,8 +384,17 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
           {/* Menu button - consistent styling */}
           <button
             type="button"
-            onClick={() => setIsMenuOpen((prev) => !prev)}
-            className={`relative flex flex-col items-center justify-center gap-1 min-w-[60px] px-2 py-1.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
+            onClick={(e) => {
+              console.log('[Navigation MOBILE] More button clicked, current state:', isMenuOpen);
+              e.stopPropagation();
+              setIsMenuOpen((prev) => {
+                console.log('[Navigation MOBILE] Toggling menu from', prev, 'to', !prev);
+                return !prev;
+              });
+            }}
+            onTouchStart={() => console.log('[Navigation MOBILE] More button touched')}
+            onTouchEnd={() => console.log('[Navigation MOBILE] More button touch ended')}
+            className={`relative flex flex-col items-center justify-center gap-1 min-w-[60px] px-2 py-1.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 touch-manipulation ${
               isMenuOpen
                 ? 'bg-[#E6F7F5] text-[#275559]'
                 : 'text-slate-500 active:bg-[#E6F7F5] active:text-[#275559]'
