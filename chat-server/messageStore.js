@@ -35,11 +35,14 @@ async function saveMessage(message) {
     const existing = await dbSafe.safeSelect('messages', { id: id }, { limit: 1 });
     if (dbSafe.parseResult(existing).length > 0) {
       await dbSafe.safeUpdate('messages', messageData, { id: id });
+      console.log(`💾 Updated message ${id} in database (room: ${messageData.room_id || 'none'})`);
     } else {
       await dbSafe.safeInsert('messages', messageData);
+      console.log(`💾 Saved new message ${id} to database (room: ${messageData.room_id || 'none'})`);
     }
   } catch (err) {
-    console.error('Error saving message to database:', err);
+    console.error('❌ Error saving message to database:', err);
+    console.error('Message data:', JSON.stringify(messageData, null, 2));
   }
 }
 

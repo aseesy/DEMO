@@ -5,13 +5,36 @@ const path = require('path');
 // Support environment variable for Railway volumes or custom paths
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'chat.db');
 
+// Log database path configuration
+console.log(`📁 Database path: ${DB_PATH}`);
+console.log(`📁 DB_PATH env var: ${process.env.DB_PATH || 'NOT SET (using default)'}`);
+
 // Ensure directory exists if using custom path
 if (process.env.DB_PATH) {
   const dbDir = path.dirname(DB_PATH);
   if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-    console.log(`✅ Created database directory: ${dbDir}`);
+    try {
+      fs.mkdirSync(dbDir, { recursive: true });
+      console.log(`✅ Created database directory: ${dbDir}`);
+    } catch (err) {
+      console.error(`❌ Failed to create database directory: ${dbDir}`, err);
+    }
+  } else {
+    console.log(`✅ Database directory exists: ${dbDir}`);
+    
+    // Check if directory is writable
+    try {
+      const testFile = path.join(dbDir, '.write-test');
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+      console.log(`✅ Database directory is writable: ${dbDir}`);
+    } catch (err) {
+      console.error(`❌ Database directory is NOT writable: ${dbDir}`, err);
+    }
   }
+} else {
+  console.log(`⚠️  DB_PATH not set - using default path (ephemeral on Railway/Vercel)`);
+  console.log(`💡 Set DB_PATH environment variable to point to your Railway volume (e.g., /data/chat.db)`);
 }
 
 let db = null;
@@ -25,11 +48,24 @@ async function initDatabase() {
   try {
     buffer = fs.readFileSync(DB_PATH);
     db = new SQL.Database(buffer);
-    console.log('✅ Database loaded from file');
+    const fileSize = (buffer.length / 1024).toFixed(2);
+    console.log(`✅ Database loaded from file: ${DB_PATH} (${fileSize} KB)`);
+    
+    // Check message count
+    try {
+      const msgCount = db.exec("SELECT COUNT(*) as count FROM messages");
+      if (msgCount.length > 0) {
+        const count = msgCount[0].values[0][0];
+        console.log(`📊 Database contains ${count} messages`);
+      }
+    } catch (err) {
+      // Table might not exist yet
+    }
   } catch (err) {
     // Database doesn't exist, create new one
     db = new SQL.Database();
-    console.log('✅ Database created');
+    console.log(`✅ Database created (new file): ${DB_PATH}`);
+    console.log(`⚠️  WARNING: Database file is ephemeral on Railway/Vercel unless DB_PATH points to a volume!`);
   }
 
   // Enable foreign key constraints (required for CASCADE to work)
@@ -530,8 +566,8 @@ function saveDatabase() {
       }
 
       isSaving = true;
-    const data = db.export();
-    const buffer = Buffer.from(data);
+      const data = db.export();
+      const buffer = Buffer.from(data);
       
       // Ensure directory exists
       const dbDir = path.dirname(DB_PATH);
@@ -539,12 +575,29 @@ function saveDatabase() {
         fs.mkdirSync(dbDir, { recursive: true });
       }
       
-    fs.writeFileSync(DB_PATH, buffer);
+      fs.writeFileSync(DB_PATH, buffer);
       isSaving = false;
-      console.log(`✅ Database saved to: ${DB_PATH}`);
+      const fileSize = (buffer.length / 1024).toFixed(2);
+      console.log(`✅ Database saved to: ${DB_PATH} (${fileSize} KB)`);
+      
+      // Verify file was written
+      if (fs.existsSync(DB_PATH)) {
+        const stats = fs.statSync(DB_PATH);
+        console.log(`✅ Verified: Database file exists (${(stats.size / 1024).toFixed(2)} KB)`);
+      } else {
+        console.error(`❌ WARNING: Database file was not created at ${DB_PATH}`);
+      }
     } catch (err) {
       isSaving = false;
       console.error('❌ Error saving database:', err);
+      console.error(`   Path: ${DB_PATH}`);
+      console.error(`   Directory exists: ${fs.existsSync(path.dirname(DB_PATH))}`);
+      try {
+        fs.accessSync(path.dirname(DB_PATH), fs.constants.W_OK);
+        console.error(`   Directory writable: true`);
+      } catch (accessErr) {
+        console.error(`   Directory writable: false - ${accessErr.message}`);
+      }
   }
   }, 100); // Batch writes every 100ms
 }
