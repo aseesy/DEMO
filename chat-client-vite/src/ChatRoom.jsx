@@ -652,7 +652,7 @@ function ChatRoom() {
         />
 
         {/* Main Content Area */}
-        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-14 md:pt-12 md:pb-0' : 'pt-12 md:pt-12 pb-14 md:pb-8 overflow-y-auto'} px-2 sm:px-4 md:px-6 lg:px-8 relative z-10`}>
+        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-14 md:pt-10 md:pb-0' : 'pt-10 md:pt-10 pb-14 md:pb-8 overflow-y-auto'} px-2 sm:px-4 md:px-6 lg:px-8 relative z-10`}>
           <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : 'max-w-7xl mx-auto w-full'}`}>
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (

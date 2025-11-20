@@ -270,13 +270,13 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       {/* Top Navigation - Desktop Only */}
       <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#C5E8E4] shadow-sm">
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-12">
+          <div className="flex items-center justify-between h-10">
             {/* Logo */}
             <div className="flex items-center cursor-pointer" onClick={() => setCurrentView('dashboard')}>
               <img
                 src="/assets/LZlogo.svg"
                 alt="LiaiZen"
-                className="logo-image h-9 w-auto transition-opacity hover:opacity-80"
+                className="logo-image h-7 w-auto transition-opacity hover:opacity-80"
               />
             </div>
 
