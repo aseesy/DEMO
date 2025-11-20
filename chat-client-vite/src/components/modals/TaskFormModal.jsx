@@ -70,8 +70,8 @@ export function TaskFormModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-2 sm:px-4 py-2 sm:py-4 overflow-y-auto">
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl flex flex-col max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-4rem)] my-auto">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-2 sm:px-4 py-2 sm:py-4 md:py-4 pb-16 md:pb-4 overflow-y-auto">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl flex flex-col max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-5rem)] my-auto">
         {/* Header - Always visible */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
           <h3 className="text-base sm:text-lg font-semibold">
@@ -290,7 +290,7 @@ export function TaskFormModal({
           )}
         </div>
         {taskFormMode === 'manual' || editingTask ? (
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex gap-2 sm:gap-3 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex gap-2 sm:gap-3 flex-shrink-0 bg-white sticky bottom-0">
             <button
               onClick={onSave}
               disabled={!taskFormData.title.trim()}
