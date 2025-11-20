@@ -76,26 +76,53 @@ self.addEventListener('fetch', (event) => {
         // Clone the request
         const fetchRequest = event.request.clone();
 
-        return fetch(fetchRequest).then((response) => {
-          // Check if valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+        return fetch(fetchRequest)
+          .then((response) => {
+            // Check if valid response
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // Clone the response
+            const responseToCache = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              })
+              .catch((err) => {
+                console.error('[Service Worker] Error caching response:', err);
+              });
+
             return response;
-          }
-
-          // Clone the response
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
+          })
+          .catch((error) => {
+            console.error('[Service Worker] Fetch failed:', error);
+            // Try to return cached index.html as fallback
+            return caches.match('/index.html').then((cachedResponse) => {
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+              // If no cache, return a basic error response
+              return new Response('Offline - content not available', {
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: { 'Content-Type': 'text/plain' }
+              });
             });
-
-          return response;
-        });
+          });
       })
-      .catch(() => {
-        // Return offline page if available
-        return caches.match('/index.html');
+      .catch((error) => {
+        console.error('[Service Worker] Cache match failed:', error);
+        // Try to fetch from network as last resort
+        return fetch(event.request).catch(() => {
+          // If all else fails, return error response
+          return new Response('Offline - content not available', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        });
       })
   );
 });
@@ -159,17 +186,33 @@ self.addEventListener('notificationclick', (event) => {
         for (let i = 0; i < clientList.length; i++) {
           const client = clientList[i];
           if (client.url.includes(self.location.origin) && 'focus' in client) {
-            // App is open - focus it and navigate to chat
+            // App is open - focus it
             return client.focus().then(() => {
-              return client.navigate(urlToOpen);
+              // Try to navigate if supported, otherwise just focus
+              if (client.navigate && typeof client.navigate === 'function') {
+                return client.navigate(urlToOpen).catch(() => {
+                  // If navigate fails, just focus (already done)
+                  return Promise.resolve();
+                });
+              }
+              return Promise.resolve();
             });
           }
         }
 
         // App is not open - open new window
         if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
+          return clients.openWindow(urlToOpen).catch((error) => {
+            console.error('[Service Worker] Error opening window:', error);
+            return Promise.resolve();
+          });
         }
+        
+        return Promise.resolve();
+      })
+      .catch((error) => {
+        console.error('[Service Worker] Error handling notification click:', error);
+        return Promise.resolve();
       })
   );
 });
