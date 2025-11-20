@@ -425,12 +425,13 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
           {/* Menu dropdown - positioned above */}
           {isMenuOpen && (
             <div
-              className="absolute bottom-20 right-2 w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100"
+              className="absolute bottom-20 right-2 w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-[10000] transition-all duration-200 ease-out opacity-100"
               role="menu"
               aria-label="User menu"
               style={{
                 animation: 'fadeIn 0.2s ease-out',
               }}
+              onTouchStart={() => console.log('[Navigation MOBILE] Menu touched')}
             >
               {menuItems.map((item, index) => {
                 if (item.isDivider) {
@@ -455,11 +456,22 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                       }
                     }}
                     type="button"
-                    onClick={item.action}
-                    className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 ${
+                    onClick={(e) => {
+                      console.log('[Navigation MOBILE] Menu item clicked:', item.label);
+                      e.stopPropagation();
+                      if (item.action) {
+                        console.log('[Navigation MOBILE] Executing action for:', item.label);
+                        item.action();
+                      } else {
+                        console.warn('[Navigation MOBILE] No action defined for:', item.label);
+                      }
+                    }}
+                    onTouchStart={() => console.log('[Navigation MOBILE] Menu item touched:', item.label)}
+                    onTouchEnd={() => console.log('[Navigation MOBILE] Menu item touch ended:', item.label)}
+                    className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 cursor-pointer touch-manipulation select-none ${
                       isDanger
-                        ? 'text-red-600 hover:bg-red-50 focus:bg-red-50'
-                        : `text-[#275559] hover:bg-[#E6F7F5] focus:bg-[#E6F7F5] ${
+                        ? 'text-red-600 hover:bg-red-50 focus:bg-red-50 active:bg-red-100'
+                        : `text-[#275559] hover:bg-[#E6F7F5] focus:bg-[#E6F7F5] active:bg-[#C5E8E4] ${
                             isActive ? 'bg-[#E6F7F5] font-semibold' : ''
                           }`
                     } focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-inset`}
