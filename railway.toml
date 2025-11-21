@@ -9,3 +9,5 @@ buildCommand = "cd chat-server && npm install --legacy-peer-deps"
 startCommand = "cd chat-server && node server.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
+healthcheckPath = "/health"
+healthcheckTimeout = 100

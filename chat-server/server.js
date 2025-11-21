@@ -2215,8 +2215,9 @@ io.on('connection', (socket) => {
 });
 
 // Health check endpoint
+// Health check endpoint - must respond quickly for Railway
 app.get('/health', (req, res) => {
-  res.json({
+  res.status(200).json({
     status: 'ok',
     activeUsers: activeUsers.size,
     uptime: process.uptime(),
