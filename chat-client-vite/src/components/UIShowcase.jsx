@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from './ui';
-import { Modal } from './ui';
+import { Button, Modal, Input, Textarea, Select } from './ui';
 
 /**
  * UI Component Showcase
@@ -11,6 +10,16 @@ export function UIShowcase() {
   const [loadingButton, setLoadingButton] = useState(null);
   const [selectedDays, setSelectedDays] = useState(['Mon', 'Wed', 'Fri']);
 
+  // Form component states
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [bio, setBio] = useState('');
+  const [description, setDescription] = useState('');
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
+  const [multiSelect, setMultiSelect] = useState([]);
+
   const handleLoadingDemo = (buttonId) => {
     setLoadingButton(buttonId);
     setTimeout(() => setLoadingButton(null), 2000);
@@ -20,6 +29,15 @@ export function UIShowcase() {
     setSelectedDays(prev =>
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
     );
+  };
+
+  const validateEmail = (value) => {
+    setEmail(value);
+    if (value && !value.includes('@')) {
+      setEmailError('Please enter a valid email address');
+    } else {
+      setEmailError('');
+    }
   };
 
   return (
@@ -367,6 +385,260 @@ export function UIShowcase() {
                     <p className="text-sm text-teal-medium">Flexible footer content</p>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Input Component Section */}
+        <section className="mb-12">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-dark to-teal-medium px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Input Component</h2>
+              <p className="text-teal-lightest mt-1">Text inputs with validation, states, and accessibility</p>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Basic inputs */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Inputs</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Email Address"
+                    type="email"
+                    value={email}
+                    onChange={validateEmail}
+                    placeholder="you@example.com"
+                    error={emailError}
+                  />
+                  <Input
+                    label="Password"
+                    type="password"
+                    value={password}
+                    onChange={setPassword}
+                    placeholder="••••••••"
+                    helperText="At least 8 characters"
+                  />
+                </div>
+              </div>
+
+              {/* Character counter */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Character Counter</h3>
+                <Input
+                  label="Bio"
+                  value={bio}
+                  onChange={setBio}
+                  placeholder="Tell us about yourself..."
+                  maxLength={150}
+                  showCharCount
+                  helperText="Short bio for your profile"
+                />
+              </div>
+
+              {/* Prefix/Suffix */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">With Icons</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Search"
+                    type="search"
+                    value=""
+                    onChange={() => {}}
+                    placeholder="Search..."
+                    prefix={
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    }
+                  />
+                  <Input
+                    label="Website"
+                    type="url"
+                    value=""
+                    onChange={() => {}}
+                    placeholder="https://example.com"
+                    suffix={
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* States */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">States</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input
+                    label="Disabled"
+                    value="Disabled input"
+                    onChange={() => {}}
+                    disabled
+                  />
+                  <Input
+                    label="Read-only"
+                    value="Read-only value"
+                    onChange={() => {}}
+                    readOnly
+                  />
+                  <Input
+                    label="Required"
+                    value=""
+                    onChange={() => {}}
+                    placeholder="Required field"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Textarea Component Section */}
+        <section className="mb-12">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-dark to-teal-medium px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Textarea Component</h2>
+              <p className="text-teal-lightest mt-1">Multi-line text inputs with auto-resize</p>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Basic textarea */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Textarea</h3>
+                <Textarea
+                  label="Description"
+                  value={description}
+                  onChange={setDescription}
+                  placeholder="Enter a detailed description..."
+                  rows={4}
+                  helperText="Provide as much detail as possible"
+                />
+              </div>
+
+              {/* Auto-resize */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Auto-Resize</h3>
+                <Textarea
+                  label="Auto-expanding Textarea"
+                  value=""
+                  onChange={() => {}}
+                  placeholder="Type to see it expand..."
+                  autoResize
+                  minRows={2}
+                  maxRows={8}
+                  helperText="Automatically expands as you type"
+                />
+              </div>
+
+              {/* Character counter */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">With Character Counter</h3>
+                <Textarea
+                  label="Feedback"
+                  value=""
+                  onChange={() => {}}
+                  placeholder="Share your feedback..."
+                  maxLength={500}
+                  showCharCount
+                  rows={3}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Select Component Section */}
+        <section className="mb-12">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-dark to-teal-medium px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Select Component</h2>
+              <p className="text-teal-lightest mt-1">Dropdowns with search and multi-select</p>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Basic select */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Select (Native)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Select
+                    label="Country"
+                    value={country}
+                    onChange={setCountry}
+                    options={[
+                      { value: 'us', label: 'United States' },
+                      { value: 'ca', label: 'Canada' },
+                      { value: 'mx', label: 'Mexico' },
+                      { value: 'uk', label: 'United Kingdom' },
+                      { value: 'au', label: 'Australia' }
+                    ]}
+                    placeholder="Select a country..."
+                  />
+                  <Select
+                    label="Priority"
+                    value=""
+                    onChange={() => {}}
+                    options={[
+                      { value: 'low', label: 'Low' },
+                      { value: 'medium', label: 'Medium' },
+                      { value: 'high', label: 'High' },
+                      { value: 'urgent', label: 'Urgent' }
+                    ]}
+                    placeholder="Select priority..."
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Searchable select */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Searchable Select</h3>
+                <Select
+                  label="City"
+                  value={city}
+                  onChange={setCity}
+                  searchable
+                  options={[
+                    { value: 'nyc', label: 'New York City' },
+                    { value: 'la', label: 'Los Angeles' },
+                    { value: 'chicago', label: 'Chicago' },
+                    { value: 'houston', label: 'Houston' },
+                    { value: 'phoenix', label: 'Phoenix' },
+                    { value: 'philadelphia', label: 'Philadelphia' },
+                    { value: 'san-antonio', label: 'San Antonio' },
+                    { value: 'san-diego', label: 'San Diego' },
+                    { value: 'dallas', label: 'Dallas' },
+                    { value: 'san-jose', label: 'San Jose' }
+                  ]}
+                  placeholder="Search for a city..."
+                  helperText="Type to filter cities"
+                />
+              </div>
+
+              {/* Multi-select */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Multi-Select</h3>
+                <Select
+                  label="Skills"
+                  value={multiSelect}
+                  onChange={setMultiSelect}
+                  multiple
+                  searchable
+                  options={[
+                    { value: 'react', label: 'React' },
+                    { value: 'vue', label: 'Vue' },
+                    { value: 'angular', label: 'Angular' },
+                    { value: 'svelte', label: 'Svelte' },
+                    { value: 'nodejs', label: 'Node.js' },
+                    { value: 'python', label: 'Python' },
+                    { value: 'java', label: 'Java' },
+                    { value: 'go', label: 'Go' }
+                  ]}
+                  placeholder="Select multiple skills..."
+                  helperText="Click to select/deselect multiple options"
+                />
               </div>
             </div>
           </div>

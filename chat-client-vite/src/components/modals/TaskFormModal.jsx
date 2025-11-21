@@ -1,6 +1,6 @@
 import React from 'react';
 import { apiPost } from '../../apiClient.js';
-import { Button } from '../ui';
+import { Button, Input, Textarea, Select } from '../ui';
 
 export function TaskFormModal({
   showTaskForm,

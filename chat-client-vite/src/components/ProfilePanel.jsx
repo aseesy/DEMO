@@ -1,7 +1,7 @@
 import React from 'react';
 import { useProfile } from '../hooks/useProfile.js';
 import { useGooglePlaces } from '../hooks/useGooglePlaces.js';
-import { Button } from './ui';
+import { Button, Input, Textarea } from './ui';
 
 export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
   const {
@@ -58,40 +58,32 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
             </div>
             <div className="space-y-3 sm:space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5 sm:mb-2">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    value={profileData.first_name}
-                    onChange={(e) =>
-                      setProfileData({
-                        ...profileData,
-                        first_name: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium transition-all text-gray-900 text-sm min-h-[44px]"
-                    placeholder="First name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5 sm:mb-2">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    value={profileData.last_name}
-                    onChange={(e) =>
-                      setProfileData({
-                        ...profileData,
-                        last_name: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium transition-all text-gray-900 text-sm min-h-[44px]"
-                    placeholder="Last name"
-                  />
-                </div>
+                <Input
+                  label="First Name"
+                  type="text"
+                  value={profileData.first_name}
+                  onChange={(value) =>
+                    setProfileData({
+                      ...profileData,
+                      first_name: value,
+                    })
+                  }
+                  placeholder="First name"
+                  className="text-sm"
+                />
+                <Input
+                  label="Last Name"
+                  type="text"
+                  value={profileData.last_name}
+                  onChange={(value) =>
+                    setProfileData({
+                      ...profileData,
+                      last_name: value,
+                    })
+                  }
+                  placeholder="Last name"
+                  className="text-sm"
+                />
               </div>
               <div>
                 <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5 sm:mb-2">
@@ -127,60 +119,49 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
                 )}
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1">
-                  Occupation / Daily Responsibilities
-                </label>
                 <p className="text-xs text-[#3d8a92] mb-2">
                   This helps understand your schedule demands.
                 </p>
-                <textarea
+                <Textarea
+                  label="Occupation / Daily Responsibilities"
                   value={profileData.occupation}
-                  onChange={(e) =>
+                  onChange={(value) =>
                     setProfileData({
                       ...profileData,
-                      occupation: e.target.value,
+                      occupation: value,
                     })
                   }
-                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium transition-all text-gray-900 text-sm min-h-[100px]"
                   rows={3}
                   placeholder="Describe your occupation and daily responsibilities..."
+                  className="text-sm"
                 />
               </div>
-              <div>
-                <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5 sm:mb-2">
-                  What is your parenting philosophy?
-                </label>
-                <textarea
-                  value={profileData.parenting_philosophy}
-                  onChange={(e) =>
-                    setProfileData({
-                      ...profileData,
-                      parenting_philosophy: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium transition-all text-gray-900 text-sm min-h-[120px]"
-                  rows={4}
-                  placeholder="Share your parenting philosophy and approach..."
-                />
-              </div>
-              <div>
-                <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5 sm:mb-2">
-                  What personal growth or changes would you like to work on during
-                  this process?
-                </label>
-                <textarea
-                  value={profileData.personal_growth}
-                  onChange={(e) =>
-                    setProfileData({
-                      ...profileData,
-                      personal_growth: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium transition-all text-gray-900 text-sm min-h-[120px]"
-                  rows={4}
-                  placeholder="Describe areas you'd like to improve or work on..."
-                />
-              </div>
+              <Textarea
+                label="What is your parenting philosophy?"
+                value={profileData.parenting_philosophy}
+                onChange={(value) =>
+                  setProfileData({
+                    ...profileData,
+                    parenting_philosophy: value,
+                  })
+                }
+                rows={4}
+                placeholder="Share your parenting philosophy and approach..."
+                className="text-sm"
+              />
+              <Textarea
+                label="What personal growth or changes would you like to work on during this process?"
+                value={profileData.personal_growth}
+                onChange={(value) =>
+                  setProfileData({
+                    ...profileData,
+                    personal_growth: value,
+                  })
+                }
+                rows={4}
+                placeholder="Describe areas you'd like to improve or work on..."
+                className="text-sm"
+              />
             </div>
           </div>
 
