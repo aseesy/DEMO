@@ -918,6 +918,213 @@ export function UIShowcase() {
           </div>
         </section>
 
+        {/* Typography Section */}
+        <section className="mb-12">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-dark to-teal-medium px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Typography System</h2>
+              <p className="text-teal-lightest mt-1">Font families, sizes, and the 5-level teal color palette</p>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Font Families */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Font Families</h3>
+                <div className="space-y-4">
+                  <div className="bg-white border-2 border-gray-200 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-2">Serif - For headings and impactful statements</p>
+                    <p className="font-serif text-2xl">Georgia, Cambria, Times New Roman</p>
+                    <p className="font-serif text-lg italic mt-2">Moving forward, together apart.</p>
+                  </div>
+                  <div className="bg-white border-2 border-gray-200 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-2">Sans-serif - For body text and UI elements</p>
+                    <p className="font-sans text-2xl">Inter, system-ui, -apple-system</p>
+                    <p className="font-sans text-lg mt-2">Expert communication support for co-parents</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Font Sizes */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Font Size Scale</h3>
+                <div className="space-y-3">
+                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
+                    <span className="text-xs font-mono text-gray-500 w-16">xs (12px)</span>
+                    <span className="text-xs">The quick brown fox jumps over the lazy dog</span>
+                  </div>
+                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
+                    <span className="text-xs font-mono text-gray-500 w-16">sm (14px)</span>
+                    <span className="text-sm">The quick brown fox jumps over the lazy dog</span>
+                  </div>
+                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
+                    <span className="text-xs font-mono text-gray-500 w-16">base (16px)</span>
+                    <span className="text-base">The quick brown fox jumps over the lazy dog</span>
+                  </div>
+                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
+                    <span className="text-xs font-mono text-gray-500 w-16">lg (18px)</span>
+                    <span className="text-lg">The quick brown fox jumps over the lazy dog</span>
+                  </div>
+                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
+                    <span className="text-xs font-mono text-gray-500 w-16">xl (20px)</span>
+                    <span className="text-xl">The quick brown fox jumps over the lazy dog</span>
+                  </div>
+                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
+                    <span className="text-xs font-mono text-gray-500 w-16">2xl (24px)</span>
+                    <span className="text-2xl">The quick brown fox</span>
+                  </div>
+                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
+                    <span className="text-xs font-mono text-gray-500 w-16">3xl (30px)</span>
+                    <span className="text-3xl">The quick brown fox</span>
+                  </div>
+                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
+                    <span className="text-xs font-mono text-gray-500 w-16">4xl (36px)</span>
+                    <span className="text-4xl">The quick brown</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Font Weights */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Font Weights</h3>
+                <div className="space-y-3">
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <span className="font-normal text-lg">Normal (400) - Body text and paragraphs</span>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <span className="font-medium text-lg">Medium (500) - Subtle emphasis</span>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <span className="font-semibold text-lg">Semibold (600) - Headings and labels</span>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <span className="font-bold text-lg">Bold (700) - Strong emphasis</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5-Level Teal Color Palette */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">5-Level Teal Color Palette</h3>
+                <div className="space-y-4">
+                  <div className="bg-teal-lightest p-6 rounded-lg border-2 border-teal-light">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-teal-darkest">teal-lightest</span>
+                      <code className="text-sm bg-white px-2 py-1 rounded">#E6F7F5</code>
+                    </div>
+                    <p className="text-sm text-teal-dark">Backgrounds, subtle highlights, gentle accents</p>
+                  </div>
+
+                  <div className="bg-teal-light p-6 rounded-lg border-2 border-teal-medium">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-teal-darkest">teal-light</span>
+                      <code className="text-sm bg-white px-2 py-1 rounded">#B2E5E0</code>
+                    </div>
+                    <p className="text-sm text-teal-darkest">Borders, secondary elements, hover states</p>
+                  </div>
+
+                  <div className="bg-teal-medium p-6 rounded-lg border-2 border-teal-dark">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-white">teal-medium</span>
+                      <code className="text-sm bg-white/90 px-2 py-1 rounded text-teal-dark">#4DA8B0</code>
+                    </div>
+                    <p className="text-sm text-white">Primary buttons, section headers, main brand color</p>
+                  </div>
+
+                  <div className="bg-teal-dark p-6 rounded-lg border-2 border-teal-darkest">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-white">teal-dark</span>
+                      <code className="text-sm bg-white/90 px-2 py-1 rounded text-teal-darkest">#275559</code>
+                    </div>
+                    <p className="text-sm text-teal-lightest">Text, dark buttons, strong emphasis</p>
+                  </div>
+
+                  <div className="bg-teal-darkest p-6 rounded-lg border-2 border-gray-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-white">teal-darkest</span>
+                      <code className="text-sm bg-white/90 px-2 py-1 rounded text-teal-darkest">#1A3E41</code>
+                    </div>
+                    <p className="text-sm text-teal-lightest">Hover states, deep contrast, shadows</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Text Colors in Context */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Text Colors in Context</h3>
+                <div className="bg-white border-2 border-gray-200 p-6 rounded-lg space-y-4">
+                  <p className="text-teal-lightest text-lg">Text in teal-lightest (use on dark backgrounds)</p>
+                  <p className="text-teal-light text-lg">Text in teal-light</p>
+                  <p className="text-teal-medium text-lg">Text in teal-medium (primary accent color)</p>
+                  <p className="text-teal-dark text-lg">Text in teal-dark (main heading color)</p>
+                  <p className="text-teal-darkest text-lg">Text in teal-darkest (strong emphasis)</p>
+                </div>
+              </div>
+
+              {/* Typography Combinations */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recommended Combinations</h3>
+                <div className="space-y-6">
+                  {/* Hero Section */}
+                  <div className="bg-gradient-to-br from-teal-lightest to-white p-8 rounded-lg border-2 border-teal-light">
+                    <SectionHeader color="medium" className="mb-2">Professional Mediation</SectionHeader>
+                    <h2 className="font-serif text-4xl md:text-5xl text-gray-900 mb-4">
+                      Moving forward, <em className="italic">together apart.</em>
+                    </h2>
+                    <p className="text-lg text-gray-700 mb-6">
+                      Expert communication support and scheduling for co-parents seeking clarity, calm, and stability.
+                    </p>
+                    <Button variant="teal-solid" size="large">Get Started</Button>
+                  </div>
+
+                  {/* Content Section */}
+                  <div className="bg-white p-8 rounded-lg border-2 border-gray-200">
+                    <h3 className="text-2xl font-semibold text-teal-dark mb-3">Section Heading (2xl, semibold, teal-dark)</h3>
+                    <p className="text-base text-gray-700 mb-4">
+                      Body paragraph (base/16px, normal, gray-700). This is the standard text size for readable content. Use Inter or system sans-serif fonts for optimal legibility in long-form text.
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Small text (sm/14px, normal, gray-600) for secondary information, captions, or helper text.
+                    </p>
+                  </div>
+
+                  {/* Card */}
+                  <div className="bg-teal-dark p-8 rounded-lg text-white">
+                    <h4 className="text-xl font-semibold mb-2">Dark Background Card</h4>
+                    <p className="text-teal-lightest mb-4">
+                      Use teal-lightest text on dark teal backgrounds for optimal contrast and readability.
+                    </p>
+                    <Button variant="teal-outline" size="medium" className="border-white text-white hover:bg-white/10">
+                      Learn More
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Code Example */}
+              <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                <pre>{`// Font Families
+font-serif → Georgia, Cambria, Times New Roman
+font-sans → Inter, system-ui, -apple-system
+
+// Teal Palette
+text-teal-lightest → #E6F7F5
+text-teal-light → #B2E5E0
+text-teal-medium → #4DA8B0
+text-teal-dark → #275559
+text-teal-darkest → #1A3E41
+
+// Example Usage
+<h1 className="font-serif text-4xl text-teal-dark">
+  Heading
+</h1>
+<p className="font-sans text-base text-gray-700">
+  Body text
+</p>`}</pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Resources */}
         <section>
           <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
