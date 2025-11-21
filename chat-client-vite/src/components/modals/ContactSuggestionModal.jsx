@@ -11,11 +11,11 @@ export function ContactSuggestionModal({ pendingContactSuggestion, onAddContact,
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-gray-200">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 pb-24 md:pb-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-full flex flex-col border border-gray-200 my-auto">
         <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal to-[#275559] flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal to-[#4DA8B0] flex items-center justify-center text-white font-bold text-sm">
               💡
             </div>
             <h3 className="text-lg font-semibold text-gray-900">
@@ -24,13 +24,13 @@ export function ContactSuggestionModal({ pendingContactSuggestion, onAddContact,
           </div>
           <button
             onClick={handleDismiss}
-            className="text-2xl leading-none text-gray-500 hover:text-gray-700"
+            className="text-2xl leading-none text-gray-500 hover:text-[#4DA8B0]"
           >
             ×
           </button>
         </div>
         <div className="px-6 py-5">
-          <p className="text-sm text-gray-700 mb-4">
+          <p className="text-sm text-[#4DA8B0] mb-4">
             {pendingContactSuggestion.text || `Would you like to add ${pendingContactSuggestion.detectedName} to your contacts?`}
           </p>
           <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4">
@@ -53,7 +53,7 @@ export function ContactSuggestionModal({ pendingContactSuggestion, onAddContact,
           <button
             type="button"
             onClick={handleDismiss}
-            className="px-4 py-2.5 rounded-xl border-2 border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
+            className="px-4 py-2.5 rounded-xl border-2 border-gray-300 text-sm font-medium text-[#4DA8B0] hover:bg-gray-50 transition-colors whitespace-nowrap"
           >
             Not Now
           </button>

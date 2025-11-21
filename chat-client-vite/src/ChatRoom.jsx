@@ -46,8 +46,8 @@ function AccountView({ username }) {
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="p-4 sm:p-6">
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#E6F7F5] border-t-[#4DA8B0]" />
-            <p className="mt-4 text-[#275559] font-medium">Loading account...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-100 border-t-[#4DA8B0]" />
+            <p className="mt-4 text-[#4DA8B0] font-medium">Loading account...</p>
           </div>
         </div>
       </div>
@@ -73,18 +73,18 @@ function AccountView({ username }) {
         {/* Account Information */}
         <div className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-[#C5E8E4] shadow-sm hover:shadow-md transition-all">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 bg-[#E6F7F5] rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-[#275559]">
+            <h3 className="text-xl font-bold text-[#4DA8B0]">
               Account Information
             </h3>
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-[#275559] mb-2">
+              <label className="block text-sm font-semibold text-[#4DA8B0] mb-2">
                 Email Address
               </label>
               <input
@@ -93,7 +93,7 @@ function AccountView({ username }) {
                 onChange={(e) =>
                   setProfileData({ ...profileData, email: e.target.value })
                 }
-                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
                 placeholder="your@email.com"
               />
             </div>
@@ -104,16 +104,16 @@ function AccountView({ username }) {
         <div className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-[#C5E8E4] shadow-sm hover:shadow-md transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 bg-[#E6F7F5] rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-[#275559]">Password</h3>
+              <h3 className="text-xl font-bold text-[#4DA8B0]">Password</h3>
             </div>
             <button
               onClick={() => setShowPasswordChange(!showPasswordChange)}
-              className="px-4 py-2 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] text-[#275559] border border-[#C5E8E4] hover:from-[#C5E8E4] hover:to-[#A8D9D3] rounded-lg font-semibold text-sm transition-all shadow-sm hover:shadow-md"
+              className="px-4 py-2 bg-[#E6F7F5] text-[#4DA8B0] border border-[#C5E8E4] hover:bg-gray-200 rounded-lg font-semibold text-sm transition-all shadow-sm hover:shadow-md"
             >
               {showPasswordChange ? 'Cancel' : 'Change Password'}
             </button>
@@ -121,7 +121,7 @@ function AccountView({ username }) {
           {showPasswordChange && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-[#275559] mb-2">
+                <label className="block text-sm font-semibold text-[#4DA8B0] mb-2">
                   Current Password
                 </label>
                 <input
@@ -133,11 +133,11 @@ function AccountView({ username }) {
                       currentPassword: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                  className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#275559] mb-2">
+                <label className="block text-sm font-semibold text-[#4DA8B0] mb-2">
                   New Password
                 </label>
                 <input
@@ -149,11 +149,11 @@ function AccountView({ username }) {
                       newPassword: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                  className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#275559] mb-2">
+                <label className="block text-sm font-semibold text-[#4DA8B0] mb-2">
                   Confirm New Password
                 </label>
                 <input
@@ -165,13 +165,13 @@ function AccountView({ username }) {
                       confirmPassword: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                  className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
                 />
               </div>
               <button
                 onClick={changePassword}
                 disabled={isChangingPassword}
-                className="w-full bg-[#275559] hover:bg-[#1f4447] text-white py-3 px-4 rounded-lg font-semibold disabled:bg-gray-400 transition-all shadow-md hover:shadow-lg"
+                className="w-full bg-[#4DA8B0] hover:bg-[#1f4447] text-white py-3 px-4 rounded-lg font-semibold disabled:bg-gray-400 transition-all shadow-md hover:shadow-lg"
               >
                 {isChangingPassword ? 'Changing...' : 'Update Password'}
               </button>
@@ -688,7 +688,7 @@ function ChatRoom() {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
         <div className="text-white text-lg">Checking your session…</div>
       </div>
     );
@@ -697,7 +697,7 @@ function ChatRoom() {
   // If not authenticated and not showing landing, will redirect to /signin via useEffect
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
         <div className="text-white text-lg">Redirecting to sign in…</div>
       </div>
     );
@@ -705,7 +705,7 @@ function ChatRoom() {
 
   if (isAuthenticated) {
     return (
-      <div className="h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex flex-col overflow-hidden">
+      <div className="h-screen bg-white flex flex-col overflow-hidden">
         {/* Device notifications handled by PWA Service Worker - no in-browser toasts */}
 
         {/* Navigation - Top for desktop, Bottom for mobile */}
@@ -714,6 +714,12 @@ function ChatRoom() {
           setCurrentView={setCurrentView}
           onLogout={handleLogout}
           unreadCount={unreadCount}
+          hasMeanMessage={messages.some(msg =>
+            msg.username === username &&
+            msg.user_flagged_by &&
+            Array.isArray(msg.user_flagged_by) &&
+            msg.user_flagged_by.length > 0
+          )}
         />
 
         {/* Main Content Area */}
@@ -724,20 +730,95 @@ function ChatRoom() {
               <div className="space-y-0 md:space-y-4">
                 {/* Invite acceptance notification */}
                 {isAcceptingInvite && (
-                  <div className="rounded-lg border-2 border-[#C5E8E4] bg-[#E6F7F5] px-4 py-3 text-sm text-[#275559] mb-4">
+                  <div className="rounded-lg border-2 border-[#C5E8E4] bg-[#E6F7F5] px-4 py-3 text-sm text-[#4DA8B0] mb-4">
                     <div className="flex items-center gap-2">
-                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-[#C5E8E4] border-t-[#275559]" />
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-[#C5E8E4] border-t-[#4DA8B0]" />
                       <span>Accepting invite and joining room…</span>
                     </div>
                   </div>
                 )}
 
+                {/* Communication Streak Stats */}
+                {(() => {
+                  // Calculate streak statistics
+                  const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+                  const userMessages = messages.filter(msg =>
+                    msg.username === username &&
+                    msg.timestamp >= thirtyDaysAgo
+                  );
+
+                  // Find all streaks in the last 30 days
+                  let allStreaks = [];
+                  let currentStreak = 0;
+
+                  for (let i = 0; i < userMessages.length; i++) {
+                    const msg = userMessages[i];
+                    const isFlagged = msg.user_flagged_by &&
+                                     Array.isArray(msg.user_flagged_by) &&
+                                     msg.user_flagged_by.length > 0;
+
+                    if (isFlagged) {
+                      if (currentStreak > 0) {
+                        allStreaks.push(currentStreak);
+                      }
+                      currentStreak = 0;
+                    } else {
+                      currentStreak++;
+                    }
+                  }
+
+                  // Add current streak if ongoing
+                  if (currentStreak > 0) {
+                    allStreaks.push(currentStreak);
+                  }
+
+                  const highScore = allStreaks.length > 0 ? Math.max(...allStreaks) : 0;
+                  const avgScore = allStreaks.length > 0
+                    ? (allStreaks.reduce((a, b) => a + b, 0) / allStreaks.length).toFixed(1)
+                    : 0;
+
+                  return (
+                    <div className="bg-white rounded-2xl border-2 border-[#C5E8E4] p-4 md:p-6 mb-4 shadow-sm">
+                      <div className="mb-4">
+                        <h2 className="text-xl font-bold text-[#4DA8B0]">Communication Stats</h2>
+                        <p className="text-sm text-gray-600">Your positive messaging streak</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* High Score */}
+                        <div className="bg-[#E6F7F5] rounded-xl p-4 border-2 border-[#C5E8E4]">
+                          <div className="mb-2">
+                            <span className="text-sm font-semibold text-[#4DA8B0]">Record Streak</span>
+                          </div>
+                          <div className="text-3xl font-bold text-[#4DA8B0]">{highScore}</div>
+                          <div className="text-xs text-gray-600 mt-1">messages in a row</div>
+                        </div>
+
+                        {/* Average Score */}
+                        <div className="bg-[#E6F7F5] rounded-xl p-4 border-2 border-[#C5E8E4]">
+                          <div className="mb-2">
+                            <span className="text-sm font-semibold text-[#4DA8B0]">30-Day Average</span>
+                          </div>
+                          <div className="text-3xl font-bold text-[#4DA8B0]">{avgScore}</div>
+                          <div className="text-xs text-gray-600 mt-1">average streak</div>
+                        </div>
+                      </div>
+
+                      {highScore > 0 && (
+                        <div className="mt-4 text-center text-sm text-gray-600">
+                          Keep up the great communication!
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* Dashboard Grid: Tasks and Updates */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
                   {/* Tasks Section */}
-                  <div>
+                  <div className="bg-white rounded-2xl border-2 border-[#C5E8E4] p-4 md:p-6 shadow-sm">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                      <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#275559]">
+                      <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#4DA8B0]">
                     Your Tasks
                   </h2>
                       <button
@@ -757,7 +838,7 @@ function ChatRoom() {
                           });
                           setShowTaskForm(true);
                         }}
-                        className="px-3 py-1.5 sm:px-3 sm:py-2 bg-[#275559] text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#1f4447] transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 self-start sm:self-auto min-h-[36px] sm:min-h-[40px]"
+                        className="px-3 py-1.5 sm:px-3 sm:py-2 bg-[#4DA8B0] text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#1f4447] transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 self-start sm:self-auto min-h-[36px] sm:min-h-[40px]"
                       >
                         <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -783,7 +864,7 @@ function ChatRoom() {
                         {taskSearch && (
                           <button
                             onClick={() => setTaskSearch('')}
-                            className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#275559] p-1 touch-manipulation"
+                            className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#4DA8B0] p-1 touch-manipulation"
                             aria-label="Clear search"
                           >
                             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -799,8 +880,8 @@ function ChatRoom() {
                           onClick={() => setTaskFilter('open')}
                           className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
                             taskFilter === 'open'
-                              ? 'bg-[#275559] text-white'
-                              : 'bg-white border-2 border-[#C5E8E4] text-[#275559] hover:border-[#4DA8B0]'
+                              ? 'bg-[#4DA8B0] text-white'
+                              : 'bg-white border-2 border-[#C5E8E4] text-[#4DA8B0] hover:border-[#4DA8B0]'
                           }`}
                         >
                           Open
@@ -809,8 +890,8 @@ function ChatRoom() {
                           onClick={() => setTaskFilter('completed')}
                           className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
                             taskFilter === 'completed'
-                              ? 'bg-[#275559] text-white'
-                              : 'bg-white border-2 border-[#C5E8E4] text-[#275559] hover:border-[#4DA8B0]'
+                              ? 'bg-[#4DA8B0] text-white'
+                              : 'bg-white border-2 border-[#C5E8E4] text-[#4DA8B0] hover:border-[#4DA8B0]'
                           }`}
                         >
                           Completed
@@ -819,8 +900,8 @@ function ChatRoom() {
                           onClick={() => setTaskFilter('all')}
                           className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
                             taskFilter === 'all'
-                              ? 'bg-[#275559] text-white'
-                              : 'bg-white border-2 border-[#C5E8E4] text-[#275559] hover:border-[#4DA8B0]'
+                              ? 'bg-[#4DA8B0] text-white'
+                              : 'bg-white border-2 border-[#C5E8E4] text-[#4DA8B0] hover:border-[#4DA8B0]'
                           }`}
                         >
                           All
@@ -829,7 +910,7 @@ function ChatRoom() {
                     </div>
                   {isLoadingTasks ? (
                     <div className="text-center py-6">
-                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-[#C5E8E4] border-t-[#275559]" />
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-[#C5E8E4] border-t-[#4DA8B0]" />
                     </div>
                   ) : tasks.length === 0 ? (
                     <div className="text-center py-6">
@@ -939,7 +1020,7 @@ function ChatRoom() {
                             }}
                             className={`flex items-start sm:items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all touch-manipulation ${
                               task.status === 'completed'
-                                ? 'bg-gray-50 opacity-70 border border-gray-200'
+                                ? 'bg-[#E6F7F5] opacity-70 border border-[#C5E8E4]'
                                 : 'bg-white hover:shadow-sm active:scale-[0.98] border-2 border-[#C5E8E4] hover:border-[#4DA8B0]'
                             }`}
                           >
@@ -951,7 +1032,7 @@ function ChatRoom() {
                                   toggleTaskStatus(task);
                                 }}
                                 className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all touch-manipulation min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] ${
-                                  task.status === 'completed' ? 'bg-[#4DA8B0]' : 'bg-[#275559]'
+                                  task.status === 'completed' ? 'bg-[#4DA8B0]' : 'bg-[#4DA8B0]'
                                 }`}
                               >
                                 {task.status === 'completed' ? (
@@ -980,7 +1061,7 @@ function ChatRoom() {
                             <div className="flex-1 min-w-0 overflow-hidden">
                               <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                                 <h3
-                                  className={`text-xs sm:text-sm font-semibold text-[#275559] mb-0.5 sm:mb-1 truncate ${
+                                  className={`text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-0.5 sm:mb-1 truncate ${
                                     task.status === 'completed'
                                       ? 'line-through text-gray-400'
                                       : ''
@@ -1029,7 +1110,7 @@ function ChatRoom() {
                                   {task.assigned_to && (() => {
                                     if (task.assigned_to === 'self') {
                                       return (
-                                        <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#275559] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
+                                        <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#4DA8B0] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
                                           <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                           </svg>
@@ -1040,7 +1121,7 @@ function ChatRoom() {
                                     }
                                     const assignedContact = contacts.find(c => c.id.toString() === task.assigned_to.toString());
                                     return assignedContact ? (
-                                      <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#275559] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
+                                      <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#4DA8B0] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
                                         <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
@@ -1050,7 +1131,7 @@ function ChatRoom() {
                                     ) : null;
                                   })()}
                                   {Array.isArray(task.related_people) && task.related_people.length > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#275559] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
+                                    <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#4DA8B0] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
                                       <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                       </svg>
@@ -1081,13 +1162,13 @@ function ChatRoom() {
                   <div className="bg-white rounded-2xl shadow-xl overflow-hidden mt-3 md:mt-4">
                     <div className="p-4 sm:p-6">
                       <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#275559]">
+                        <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#4DA8B0]">
                           Threads
                         </h2>
                         {threads.length > 0 && (
                           <button
                             onClick={() => setCurrentView('chat')}
-                            className="text-xs sm:text-sm text-[#4DA8B0] hover:text-[#275559] font-semibold"
+                            className="text-xs sm:text-sm text-[#4DA8B0] hover:text-[#4DA8B0] font-semibold"
                           >
                             View All ({threads.length})
                           </button>
@@ -1115,14 +1196,14 @@ function ChatRoom() {
                               className="p-3 border-2 border-[#C5E8E4] rounded-lg hover:border-[#4DA8B0] hover:bg-[#E6F7F5] transition-all cursor-pointer"
                             >
                               <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <svg className="w-4 h-4 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-8 h-8 bg-[#E6F7F5] rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <svg className="w-4 h-4 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                   </svg>
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between gap-2">
-                                    <h3 className="text-sm font-semibold text-[#275559] truncate">
+                                    <h3 className="text-sm font-semibold text-[#4DA8B0] truncate">
                                       {thread.title}
                                     </h3>
                                     {thread.message_count > 0 && (
@@ -1158,7 +1239,7 @@ function ChatRoom() {
                     <button
                       type="button"
                       onClick={() => setShowThreadsPanel(!showThreadsPanel)}
-                      className="px-3 py-1.5 rounded-lg bg-[#275559] text-white text-xs font-semibold hover:bg-[#1f4447] transition-colors border border-[#275559] flex items-center gap-1.5 shadow-md"
+                      className="px-3 py-1.5 rounded-lg bg-[#4DA8B0] text-white text-xs font-semibold hover:bg-[#1f4447] transition-colors border border-[#4DA8B0] flex items-center gap-1.5 shadow-md"
                       title="View threads"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1172,7 +1253,7 @@ function ChatRoom() {
                       type="button"
                       onClick={handleLoadInvite}
                       disabled={isLoadingInvite || !isAuthenticated}
-                      className="px-4 py-2 rounded-xl bg-[#275559] text-white text-xs sm:text-sm font-semibold hover:bg-[#1f4447] disabled:opacity-60 disabled:cursor-not-allowed transition-colors border border-[#275559] shadow-md"
+                      className="px-4 py-2 rounded-xl bg-[#4DA8B0] text-white text-xs sm:text-sm font-semibold hover:bg-[#1f4447] disabled:opacity-60 disabled:cursor-not-allowed transition-colors border border-[#4DA8B0] shadow-md"
                       title="Invite your co-parent to join this mediation room"
                     >
                       {isLoadingInvite ? (
@@ -1191,13 +1272,13 @@ function ChatRoom() {
                 <div className="flex flex-1 min-h-0">
                   {/* Threads Sidebar */}
                   {showThreadsPanel && (
-                    <div className="w-64 border-r border-gray-200 bg-gray-50 flex flex-col">
-                      <div className="p-3 border-b border-gray-200 flex items-center justify-between">
+                    <div className="w-64 border-r border-[#C5E8E4] bg-[#E6F7F5] flex flex-col">
+                      <div className="p-3 border-b border-[#C5E8E4] flex items-center justify-between">
                         <h3 className="font-semibold text-sm text-gray-900">Threads</h3>
                         <button
                           type="button"
                           onClick={() => setShowThreadsPanel(false)}
-                          className="text-gray-500 hover:text-gray-700"
+                          className="text-gray-500 hover:text-[#4DA8B0]"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1221,7 +1302,7 @@ function ChatRoom() {
                                 }
                               }}
                               className={`w-full text-left p-3 border-b border-gray-100 hover:bg-white transition-colors ${
-                                selectedThreadId === thread.id ? 'bg-white border-l-4 border-l-[#275559]' : ''
+                                selectedThreadId === thread.id ? 'bg-white border-l-4 border-l-[#4DA8B0]' : ''
                               }`}
                             >
                               <div className="font-medium text-sm text-gray-900 mb-1">{thread.title}</div>
@@ -1307,24 +1388,67 @@ function ChatRoom() {
                 </div>
               )}
 
-              <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+              <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-white rounded-2xl">
               <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-5" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {(() => {
                   // Helper function to get initials from username
-                  const getInitials = (name) => {
-                    if (!name) return '?';
-                    const parts = name.split(/[\s@._-]/);
-                    if (parts.length >= 2) {
-                      return (parts[0][0] + parts[1][0]).toUpperCase();
+                  // Calculate streak for each message
+                  const getMessageStreak = (msgIndex) => {
+                    let streak = 0;
+                    // Count backwards from current message to find streak
+                    for (let i = msgIndex; i >= 0; i--) {
+                      const msg = filteredMessages[i];
+                      // Only count messages from the same user
+                      if (msg.username !== username) continue;
+
+                      const isFlagged = msg.user_flagged_by &&
+                                       Array.isArray(msg.user_flagged_by) &&
+                                       msg.user_flagged_by.length > 0;
+
+                      if (isFlagged) {
+                        // If this is the current message (flagged), return the streak before it
+                        if (i === msgIndex) return streak;
+                        // If we hit a flagged message in the past, stop counting
+                        break;
+                      }
+
+                      // Only increment if it's from the current user
+                      if (msg.username === username) {
+                        streak++;
+                      }
                     }
-                    return name.substring(0, 2).toUpperCase();
+                    return streak;
+                  };
+
+                  const getStreakBadge = (message, messageIndex) => {
+                    // Only show badge for current user's messages
+                    if (message.username !== username) return null;
+
+                    // Check if message is flagged (needs moderation)
+                    const isFlagged = message.user_flagged_by &&
+                                     Array.isArray(message.user_flagged_by) &&
+                                     message.user_flagged_by.length > 0;
+
+                    const streak = getMessageStreak(messageIndex);
+
+                    // Return just the streak badge
+                    return (
+                      <div className={`rounded-full text-sm font-bold px-2 py-1 shadow-md ${
+                        isFlagged
+                          ? 'bg-red-500 text-white'
+                          : 'text-white'
+                      }`}
+                      style={!isFlagged ? { backgroundColor: '#FFBE74' } : {}}>
+                        {isFlagged ? streak : '+1'}
+                      </div>
+                    );
                   };
                   
                   // Get avatar color based on username
                   const getAvatarColor = (name) => {
                     if (!name) return 'bg-gray-400';
                     const colors = [
-                      'bg-gradient-to-br from-[#4DA8B0] to-[#275559]',
+                      'bg-gradient-to-br from-[#4DA8B0] to-[#4DA8B0]',
                       'bg-gradient-to-br from-[#3d8a92] to-[#1f4447]',
                       'bg-gradient-to-br from-teal-500 to-teal-700',
                       'bg-gradient-to-br from-cyan-500 to-cyan-700',
@@ -1380,12 +1504,12 @@ function ChatRoom() {
                         key={msg.id ?? `ai-${msg.timestamp}`}
                         className={`flex items-start gap-2.5 ${needsSpacing || index === 0 ? 'mt-3' : 'mt-1'}`}
                       >
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 border-2 border-white shadow-lg">
+                        <div className="w-10 h-10 rounded-xl bg-[#E6F7F5] flex items-center justify-center text-xl font-bold flex-shrink-0 shadow-sm border border-[#C5E8E4]">
                           {isComment ? '💬' : '🤝'}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-2">
-                            <span className="font-semibold text-teal-700">
+                            <span className="font-semibold text-[#4DA8B0]">
                               {msg.username || 'LiaiZen'}
                             </span>
                             {timeLabel && (
@@ -1393,12 +1517,12 @@ function ChatRoom() {
                             )}
                           </div>
                           <div
-                            className={`rounded-xl px-5 py-4 max-w-full break-words space-y-4 shadow-md ${
+                            className={`rounded-xl px-5 py-4 max-w-full break-words space-y-4 shadow-sm hover:shadow-md transition-all bg-white border-2 ${
                               isIntervention
-                                ? 'bg-gradient-to-br from-teal-50 to-blue-50 border-2 border-teal-200'
+                                ? 'border-[#C5E8E4]'
                                 : isComment
-                                ? 'bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300'
-                                : 'bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300'
+                                ? 'border-[#C5E8E4]'
+                                : 'border-[#C5E8E4]'
                             }`}
                             style={{ fontFamily: "'Inter', sans-serif" }}
                           >
@@ -1609,7 +1733,7 @@ function ChatRoom() {
                                           input?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                                         }, 100);
                                       }}
-                                      className="w-full mt-2 px-4 py-2 bg-white border-2 border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                                      className="w-full mt-2 px-4 py-2 bg-white border-2 border-gray-300 rounded-lg text-sm font-medium text-[#4DA8B0] hover:bg-[#E6F7F5] hover:border-gray-400 transition-colors"
                                     >
                                       Try sending a new message
                                     </button>
@@ -1674,16 +1798,16 @@ function ChatRoom() {
                       )}
                       {/* Avatar for other person's messages */}
                       {!isOwn && (
-                        <div className={`w-8 h-8 rounded-full ${getAvatarColor(msg.username)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 shadow-md border-2 border-white`}>
-                          {getInitials(msg.username || 'Co-parent')}
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0">
+                          {getStreakBadge(msg, index)}
                         </div>
                       )}
                       <div
-                        className={`relative max-w-[85%] sm:max-w-[75%] px-4 py-2.5 rounded-xl text-sm shadow-md ${
+                        className={`relative max-w-[85%] sm:max-w-[75%] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all ${
                           isOwn
-                            ? 'bg-gradient-to-br from-[#275559] to-[#1f4447] text-white rounded-br-sm'
-                            : `bg-gradient-to-br from-white to-slate-50 text-slate-900 rounded-bl-sm ${isFlagged ? 'border-2 border-orange-300 bg-orange-50' : ''}`
-                        } ${isInThread ? 'border-l-4 border-l-blue-400' : ''}`}
+                            ? 'bg-[#4DA8B0] text-white border-2 border-[#4DA8B0]'
+                            : `bg-white text-gray-900 border-2 ${isFlagged ? 'border-orange-300 bg-orange-50' : 'border-[#C5E8E4]'}`
+                        } ${isInThread ? 'border-l-4 border-l-[#4DA8B0]' : ''}`}
                         style={{ fontFamily: "'Inter', sans-serif" }}
                       >
                         {isInThread && thread && (
@@ -1764,8 +1888,8 @@ function ChatRoom() {
                       </div>
                       {/* Avatar for own messages */}
                       {isOwn && (
-                        <div className={`w-8 h-8 rounded-full ${getAvatarColor(username)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 shadow-md border-2 border-white`}>
-                          {getInitials(username)}
+                        <div className="flex items-center justify-center flex-shrink-0">
+                          {getStreakBadge(msg, index)}
                         </div>
                       )}
                     </div>
@@ -1846,7 +1970,7 @@ function ChatRoom() {
                   value={inputMessage}
                   onChange={handleInputChange}
                   placeholder="Type a message…"
-                  className={`flex-1 px-3 py-1.5 border rounded-xl text-sm focus:outline-none focus:border-[#275559] ${
+                  className={`flex-1 px-3 py-1.5 border rounded-xl text-sm focus:outline-none focus:border-[#4DA8B0] ${
                     draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend
                       ? 'border-orange-300 bg-orange-50'
                       : 'border-slate-200'
@@ -1855,7 +1979,7 @@ function ChatRoom() {
                 <button
                   type="submit"
                   disabled={!inputMessage.trim()}
-                  className="px-3 py-1.5 bg-[#275559] text-white rounded-xl text-sm font-semibold disabled:bg-slate-400"
+                  className="px-3 py-1.5 bg-[#4DA8B0] text-white rounded-xl text-sm font-semibold disabled:bg-slate-400"
                 >
                   Send
                 </button>
@@ -1905,7 +2029,7 @@ function ChatRoom() {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     {/* Notifications Settings */}
-                    <div className="border-2 border-[#C5E8E4] rounded-2xl p-6 bg-gradient-to-br from-[#E6F7F5] to-white">
+                    <div className="border-2 border-[#C5E8E4] rounded-2xl p-6 bg-white">
                       <div className="flex items-start gap-3 mb-4">
                         <div className="w-10 h-10 rounded-xl bg-[#4DA8B0] flex items-center justify-center flex-shrink-0">
                           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1913,7 +2037,7 @@ function ChatRoom() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-bold text-[#275559] mb-2">Desktop Notifications</h3>
+                          <h3 className="font-bold text-[#4DA8B0] mb-2">Desktop Notifications</h3>
                           <p className="text-sm text-slate-600 mb-4">
                             Get notified when your co-parent sends you a message
                           </p>
@@ -1938,7 +2062,7 @@ function ChatRoom() {
                                         timestamp: new Date().toISOString()
                                       });
                                     }}
-                                    className="w-full px-4 py-2 bg-white text-[#275559] border-2 border-[#4DA8B0] rounded-xl font-semibold hover:bg-[#E6F7F5] transition-all"
+                                    className="w-full px-4 py-2 bg-white text-[#4DA8B0] border-2 border-[#4DA8B0] rounded-xl font-semibold hover:bg-[#E6F7F5] transition-all"
                                   >
                                     Test Notification
                                   </button>
@@ -2077,3 +2201,4 @@ function ChatRoom() {
 }
 
 export default ChatRoom;
+// Color scheme updated: white primary, grey secondary, teal accents - Thu Nov 20 22:21:14 PST 2025

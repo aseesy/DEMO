@@ -2656,7 +2656,7 @@ app.post('/api/auth/signup', async (req, res) => {
         email: user.email 
       },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
+      { expiresIn: '90d' }
     );
 
     // Set httpOnly cookie (more secure than localStorage)
@@ -2664,7 +2664,7 @@ app.post('/api/auth/signup', async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       sameSite: 'lax', // Allow cross-site requests from same domain
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 90 * 24 * 60 * 60 * 1000 // 7 days
     });
 
     // Also return token in response for compatibility (frontend can use this if cookies don't work)
@@ -2881,7 +2881,7 @@ app.post('/api/auth/google/callback', async (req, res) => {
         email: user.email,
       },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
+      { expiresIn: '90d' }
     );
 
     // Set httpOnly cookie
@@ -2889,7 +2889,7 @@ app.post('/api/auth/google/callback', async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 90 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     res.json({

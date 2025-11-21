@@ -47,7 +47,7 @@ export function LoginSignup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#4DA8B0] to-[#4DA8B0] flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white/95 rounded-3xl shadow-2xl p-6 sm:p-8">
         <div className="flex flex-col items-center mb-6">
           <img
@@ -103,7 +103,7 @@ export function LoginSignup() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-slate-900 placeholder-slate-400"
+              className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#4DA8B0] text-slate-900 placeholder-slate-400"
               placeholder="you@example.com"
               required
             />
@@ -117,7 +117,7 @@ export function LoginSignup() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-slate-900 placeholder-slate-400"
+              className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#4DA8B0] text-slate-900 placeholder-slate-400"
               placeholder="••••••••"
               required
             />
@@ -126,7 +126,7 @@ export function LoginSignup() {
           <button
             type="submit"
             disabled={isLoggingIn || isSigningUp || isGoogleLoggingIn}
-            className="w-full mt-2 bg-[#275559] text-white py-2.5 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:bg-[#1f4447] transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed"
+            className="w-full mt-2 bg-[#4DA8B0] text-white py-2.5 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:bg-[#1f4447] transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed"
           >
             {isLoginMode
               ? isLoggingIn
@@ -191,7 +191,7 @@ export function LoginSignup() {
               Don&apos;t have an account?{' '}
               <button
                 type="button"
-                className="text-[#275559] font-semibold hover:underline"
+                className="text-[#4DA8B0] font-semibold hover:underline"
                 onClick={() => {
                   setError('');
                   setIsLoginMode(false);
@@ -205,7 +205,7 @@ export function LoginSignup() {
               Already have an account?{' '}
               <button
                 type="button"
-                className="text-[#275559] font-semibold hover:underline"
+                className="text-[#4DA8B0] font-semibold hover:underline"
                 onClick={() => {
                   setError('');
                   setIsLoginMode(true);

@@ -1,24 +1,16 @@
 import React from 'react';
 
-export function Navigation({ currentView, setCurrentView, onLogout, unreadCount = 0 }) {
+export function Navigation({ currentView, setCurrentView, onLogout, unreadCount = 0, hasMeanMessage = false }) {
   const navItems = [
     {
       id: 'dashboard',
       label: 'Dashboard',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-      )
+      icon: '🏠'
     },
     {
       id: 'chat',
       label: 'Chat',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-      )
+      icon: '💬'
     },
   ];
 
@@ -31,11 +23,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
     {
       id: 'contacts',
       label: 'Contacts',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
+      icon: '👥',
       action: () => {
         setCurrentView('contacts');
         setIsMenuOpen(false);
@@ -44,11 +32,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
     {
       id: 'profile',
       label: 'Profile',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      ),
+      icon: '👤',
       action: () => {
         setCurrentView('profile');
         setIsMenuOpen(false);
@@ -57,12 +41,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
     {
       id: 'settings',
       label: 'Settings',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
+      icon: '⚙️',
       action: () => {
         setCurrentView('settings');
         setIsMenuOpen(false);
@@ -71,11 +50,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
     {
       id: 'account',
       label: 'Account',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-        </svg>
-      ),
+      icon: '💳',
       action: () => {
         setCurrentView('account');
         setIsMenuOpen(false);
@@ -89,11 +64,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
     {
       id: 'logout',
       label: 'Logout',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-        </svg>
-      ),
+      icon: '🚪',
       isDanger: true,
       action: () => {
         if (typeof onLogout === 'function') {
@@ -179,7 +150,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
           className={`rounded-lg bg-white border-2 cursor-pointer touch-manipulation ${
             isMenuOpen
               ? 'border-[#4DA8B0] shadow-md'
-              : 'border-[#C5E8E4] shadow-sm hover:border-[#4DA8B0] hover:shadow-md active:shadow-lg'
+              : 'border-gray-200 shadow-sm hover:border-[#4DA8B0] hover:shadow-md active:shadow-lg'
           } flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
             isMobile ? 'w-8 h-8' : 'w-10 h-10'
           }`}
@@ -189,19 +160,19 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
         >
           <div className={`rounded flex items-center justify-center transition-transform duration-200 ${
             isMenuOpen ? 'rotate-90' : ''
-          } ${isMobile ? 'w-6 h-6' : 'w-7 h-7'}`}>
+          }`}>
               <img
               src="/assets/TransB.svg"
                 alt="LiaiZen menu"
               className={`object-contain ${
-                isMobile ? 'w-4 h-4' : 'w-5 h-5'
+                isMobile ? 'w-6 h-6' : 'w-6 h-6'
               }`}
               />
           </div>
         </button>
         {isMenuOpen && (
           <div
-            className={`absolute ${menuPositionClass} w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100`}
+            className={`absolute ${menuPositionClass} w-52 rounded-xl border-2 border-gray-200 bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100`}
             role="menu"
             aria-label="User menu"
             style={{
@@ -213,7 +184,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                 return (
                   <div
                     key={item.id}
-                    className="h-px bg-[#E6F7F5] my-1.5 mx-2"
+                    className="h-px bg-gray-50 my-1.5 mx-2"
                     role="separator"
                   />
                 );
@@ -240,16 +211,14 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                   className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 cursor-pointer touch-manipulation select-none ${
                     isDanger
                       ? 'text-red-600 hover:bg-red-50 focus:bg-red-50 active:bg-red-100'
-                      : `text-[#275559] hover:bg-[#E6F7F5] focus:bg-[#E6F7F5] active:bg-[#C5E8E4] ${
-                          isActive ? 'bg-[#E6F7F5] font-semibold' : ''
+                      : `text-[#4DA8B0] hover:bg-gray-50 focus:bg-gray-50 active:bg-gray-100 ${
+                          isActive ? 'bg-gray-50 font-semibold' : ''
                         }`
                   } focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-inset`}
                 role="menuitem"
                   tabIndex={0}
                 >
-                  <span className={`flex-shrink-0 ${
-                    isDanger ? 'text-red-600' : 'text-[#4DA8B0]'
-                  }`}>
+                  <span className="flex-shrink-0 text-base">
                     {item.icon}
                   </span>
                   <span>{item.label}</span>
@@ -268,7 +237,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
   return (
     <>
       {/* Top Navigation - Desktop Only */}
-      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#C5E8E4] shadow-sm">
+      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-10">
             {/* Logo */}
@@ -291,12 +260,12 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                   onClick={() => setCurrentView(item.id)}
                     className={`relative px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
                       isActive
-                        ? 'bg-[#275559] text-white shadow-md'
-                        : 'text-[#275559] hover:bg-[#E6F7F5] hover:text-[#275559] hover:shadow-sm'
+                        ? 'bg-[#E6F7F5] text-[#4DA8B0] shadow-md border-2 border-[#C5E8E4]'
+                        : 'text-[#4DA8B0] hover:bg-[#E6F7F5] hover:text-[#4DA8B0] hover:shadow-sm'
                   }`}
                     aria-current={isActive ? 'page' : undefined}
                 >
-                    <span className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-[#4DA8B0]'}`}>
+                    <span className="flex-shrink-0 text-2xl">
                       {item.icon}
                     </span>
                     <span>{item.label}</span>
@@ -316,7 +285,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       </nav>
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-[#C5E8E4] shadow-lg">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-lg">
         <div className="flex items-center justify-around h-12 px-2 py-1">
           {/* Dashboard button */}
           <button
@@ -324,7 +293,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             onClick={() => setCurrentView('dashboard')}
             className={`relative flex items-center justify-center w-14 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
               currentView === 'dashboard'
-                ? 'bg-[#275559] text-white'
+                ? 'bg-[#E6F7F5] text-[#4DA8B0] border-2 border-[#C5E8E4]'
                 : 'text-[#4DA8B0] active:bg-[#E6F7F5]'
             }`}
             aria-label="Dashboard"
@@ -341,7 +310,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             onClick={() => setIsMenuOpen((prev) => !prev)}
             className={`relative flex items-center justify-center w-14 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
               isMenuOpen
-                ? 'bg-[#275559] text-white'
+                ? 'bg-[#E6F7F5] text-[#4DA8B0] border-2 border-[#C5E8E4]'
                 : 'text-[#4DA8B0] active:bg-[#E6F7F5]'
             }`}
             aria-label="Menu"
@@ -351,7 +320,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             <img
               src="/assets/TransB.svg"
               alt="Menu"
-              className={`w-7 h-7 object-contain ${isMenuOpen ? 'brightness-0 invert' : ''}`}
+              className="w-6 h-6 object-contain"
             />
           </button>
 
@@ -361,7 +330,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             onClick={() => setCurrentView('chat')}
             className={`relative flex items-center justify-center w-14 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 ${
               currentView === 'chat'
-                ? 'bg-[#275559] text-white'
+                ? 'bg-[#E6F7F5] text-[#4DA8B0] border-2 border-[#C5E8E4]'
                 : 'text-[#4DA8B0] active:bg-[#E6F7F5]'
             }`}
             aria-label="Chat"
@@ -385,7 +354,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                   menuRefs.current[1] = node; // Register mobile dropdown in refs array
                 }
               }}
-              className="absolute bottom-14 right-2 w-52 rounded-xl border-2 border-[#C5E8E4] bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100"
+              className="absolute bottom-14 right-2 w-52 rounded-xl border-2 border-gray-200 bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100"
               role="menu"
               aria-label="User menu"
               style={{
@@ -397,7 +366,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                   return (
                     <div
                       key={item.id}
-                      className="h-px bg-[#E6F7F5] my-1.5 mx-2"
+                      className="h-px bg-gray-50 my-1.5 mx-2"
                       role="separator"
                     />
                   );
@@ -419,8 +388,8 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                     className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 ${
                       isDanger
                         ? 'text-red-600 hover:bg-red-50 focus:bg-red-50'
-                        : `text-[#275559] hover:bg-[#E6F7F5] focus:bg-[#E6F7F5] ${
-                            isActive ? 'bg-[#E6F7F5] font-semibold' : ''
+                        : `text-[#4DA8B0] hover:bg-gray-50 focus:bg-gray-50 ${
+                            isActive ? 'bg-gray-50 font-semibold' : ''
                           }`
                     } focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-inset`}
                     role="menuitem"

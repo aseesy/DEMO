@@ -89,17 +89,17 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
         <div className="border-b-2 border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-bold text-gray-700">
+            <h3 className="text-lg font-bold text-[#4DA8B0]">
               {activity ? 'Edit Activity' : 'Add Activity'}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="text-2xl leading-none text-gray-700 hover:text-[#4DA8B0] transition-colors p-1 min-w-[36px] min-h-[36px]"
+            className="text-2xl leading-none text-[#4DA8B0] hover:text-[#4DA8B0] transition-colors p-1 min-w-[36px] min-h-[36px]"
             aria-label="Close"
           >
             ×
@@ -111,7 +111,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
           <div className="p-4 space-y-4 flex-1">
             {/* Activity Name */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              <label className="block text-sm font-semibold text-[#4DA8B0] mb-1.5">
                 Activity Name *
               </label>
               <input
@@ -126,7 +126,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              <label className="block text-sm font-semibold text-[#4DA8B0] mb-1.5">
                 Description
               </label>
               <textarea
@@ -140,11 +140,11 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
             {/* Schedule Section */}
             <div className="bg-gray-50 rounded-lg p-3 space-y-3">
-              <h4 className="font-semibold text-gray-700 text-sm">Schedule</h4>
+              <h4 className="font-semibold text-[#4DA8B0] text-sm">Schedule</h4>
 
               {/* Days of Week */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[#4DA8B0] mb-2">
                   Days of Week
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -155,8 +155,8 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                       onClick={() => handleDayToggle(day)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         formData.daysOfWeek.includes(day)
-                          ? 'bg-[#275559] text-white'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:border-[#4DA8B0]'
+                          ? 'bg-[#4DA8B0] text-white'
+                          : 'bg-white text-[#4DA8B0] border border-gray-200 hover:border-[#4DA8B0]'
                       }`}
                     >
                       {day.substring(0, 3)}
@@ -168,7 +168,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
               {/* Time Range */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
                     Start Time
                   </label>
                   <input
@@ -179,7 +179,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
                     End Time
                   </label>
                   <input
@@ -194,7 +194,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
               {/* Recurrence and Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
                     Recurrence *
                   </label>
                   <select
@@ -210,7 +210,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
                     Start Date *
                   </label>
                   <input
@@ -222,7 +222,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
                     End Date
                   </label>
                   <input
@@ -238,7 +238,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
             {/* Location Section */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-[#4DA8B0] mb-1.5">
                   Location
                 </label>
                 <input
@@ -250,7 +250,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-[#4DA8B0] mb-1.5">
                   Instructor Contact
                 </label>
                 <input
@@ -265,11 +265,11 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
             {/* Cost Section */}
             <div className="bg-[#F0F9F8] rounded-lg p-3 space-y-3">
-              <h4 className="font-semibold text-gray-700 text-sm">Cost & Split</h4>
+              <h4 className="font-semibold text-[#4DA8B0] text-sm">Cost & Split</h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
                     Cost
                   </label>
                   <input
@@ -283,7 +283,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
                     Frequency
                   </label>
                   <select
@@ -303,7 +303,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
                     Split Type
                   </label>
                   <select
@@ -318,7 +318,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                 </div>
                 {formData.splitType === 'custom' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
                       Your Percentage
                     </label>
                     <input
@@ -334,7 +334,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                 )}
                 {formData.splitType === 'full' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
                       Paid By
                     </label>
                     <input
@@ -351,7 +351,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              <label className="block text-sm font-semibold text-[#4DA8B0] mb-1.5">
                 Notes
               </label>
               <textarea
@@ -369,14 +369,14 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border-2 border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-semibold"
+              className="px-4 py-2 border-2 border-gray-200 text-[#4DA8B0] rounded-lg hover:bg-gray-50 transition-colors text-sm font-semibold"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="px-4 py-2 bg-[#275559] text-white rounded-lg hover:bg-[#1f4447] transition-all shadow-sm hover:shadow-md text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-[#4DA8B0] text-white rounded-lg hover:bg-[#1f4447] transition-all shadow-sm hover:shadow-md text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? 'Saving...' : activity ? 'Update' : 'Add Activity'}
             </button>

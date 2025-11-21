@@ -4,8 +4,8 @@ export function FlaggingModal({ flaggingMessage, flagReason, setFlagReason, onFl
   if (!flaggingMessage) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-gray-200">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 pb-24 md:pb-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-full flex flex-col border border-gray-200 my-auto">
         <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
@@ -19,13 +19,13 @@ export function FlaggingModal({ flaggingMessage, flagReason, setFlagReason, onFl
           </div>
           <button
             onClick={onClose}
-            className="text-2xl leading-none text-gray-500 hover:text-gray-700"
+            className="text-2xl leading-none text-gray-500 hover:text-[#4DA8B0]"
           >
             ×
           </button>
         </div>
         <div className="px-6 py-5">
-          <p className="text-sm text-gray-700 mb-4">
+          <p className="text-sm text-[#4DA8B0] mb-4">
             Help us understand why this message is problematic. This feedback will help the AI mediator learn and adapt.
           </p>
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
@@ -37,14 +37,14 @@ export function FlaggingModal({ flaggingMessage, flagReason, setFlagReason, onFl
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-[#4DA8B0] mb-2">
               Why is this problematic? (Optional)
             </label>
             <textarea
               value={flagReason}
               onChange={(e) => setFlagReason(e.target.value)}
               placeholder="e.g., Contains personal attacks, inappropriate language, or violates boundaries..."
-              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#275559] text-sm min-h-[100px] resize-none"
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm min-h-[100px] resize-none"
               rows={4}
             />
             <p className="mt-1 text-xs text-gray-500">
@@ -63,7 +63,7 @@ export function FlaggingModal({ flaggingMessage, flagReason, setFlagReason, onFl
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border-2 border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="px-4 py-2.5 rounded-xl border-2 border-gray-300 text-sm font-medium text-[#4DA8B0] hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>

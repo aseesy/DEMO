@@ -125,7 +125,7 @@ export function ContactsPanel({ username }) {
       <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 flex-shrink-0">
         <button
           onClick={startNewContact}
-          className="px-3 py-2 sm:py-1.5 bg-[#275559] text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#1f4447] transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 min-h-[36px] sm:min-h-[40px] touch-manipulation"
+          className="px-3 py-2 sm:py-1.5 bg-[#4DA8B0] text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#1f4447] transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 min-h-[36px] sm:min-h-[40px] touch-manipulation"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -146,7 +146,7 @@ export function ContactsPanel({ username }) {
             value={contactSearch}
             onChange={(e) => setContactSearch(e.target.value)}
             placeholder="Search..."
-            className="w-full pl-10 sm:pl-11 pr-3 py-2.5 sm:py-1.5 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-colors bg-white text-[#275559] placeholder-gray-400 text-sm min-h-[40px] sm:min-h-[44px]"
+            className="w-full pl-10 sm:pl-11 pr-3 py-2.5 sm:py-1.5 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-colors bg-white text-[#4DA8B0] placeholder-gray-400 text-sm min-h-[40px] sm:min-h-[44px]"
           />
         </div>
       </div>
@@ -159,12 +159,12 @@ export function ContactsPanel({ username }) {
 
       <div className="flex-1 overflow-y-auto px-3 sm:px-4 pb-3 space-y-2">
         {isLoadingContacts ? (
-          <div className="text-center py-6 text-sm text-[#275559]">
-            <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-[#C5E8E4] border-t-[#275559] mb-2" />
+          <div className="text-center py-6 text-sm text-[#4DA8B0]">
+            <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-[#C5E8E4] border-t-[#4DA8B0] mb-2" />
             <p>Loading…</p>
           </div>
         ) : filteredContacts.length === 0 ? (
-          <div className="text-center py-6 text-xs sm:text-sm text-[#275559] px-2">
+          <div className="text-center py-6 text-xs sm:text-sm text-[#4DA8B0] px-2">
             {contactSearch ? 'No matches found' : 'No entries yet. Add your co-parent and other key people.'}
           </div>
         ) : (
@@ -175,11 +175,11 @@ export function ContactsPanel({ username }) {
               className="flex items-center p-2.5 sm:p-3 rounded-lg border-2 border-[#C5E8E4] hover:border-[#4DA8B0] bg-white transition-colors cursor-pointer touch-manipulation active:scale-[0.98]"
             >
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#275559] text-white flex items-center justify-center font-semibold text-sm sm:text-base flex-shrink-0">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#4DA8B0] text-white flex items-center justify-center font-semibold text-sm sm:text-base flex-shrink-0">
                   {(contact.contact_name || '?').charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-sm sm:text-base text-[#275559] truncate">
+                  <div className="font-semibold text-sm sm:text-base text-[#4DA8B0] truncate">
                     {contact.contact_name || 'Unnamed'}
                   </div>
                   <div className="text-xs sm:text-sm text-[#4DA8B0] truncate">
@@ -199,7 +199,7 @@ export function ContactsPanel({ username }) {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 pb-24 md:pb-4 overflow-y-auto">
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-full flex flex-col border-2 border-[#C5E8E4] my-auto">
             <div className="border-b-2 border-[#C5E8E4] px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between flex-shrink-0">
-              <h3 className="text-base sm:text-lg font-bold text-[#275559]">
+              <h3 className="text-base sm:text-lg font-bold text-[#4DA8B0]">
                 {editingContact ? 'Edit' : 'Add'}
               </h3>
               <button
@@ -207,7 +207,7 @@ export function ContactsPanel({ username }) {
                   setShowContactForm(false);
                   resetForm();
                 }}
-                className="text-2xl leading-none text-[#275559] hover:text-[#4DA8B0] transition-colors p-1 touch-manipulation min-w-[36px] min-h-[36px] flex items-center justify-center"
+                className="text-2xl leading-none text-[#4DA8B0] hover:text-[#4DA8B0] transition-colors p-1 touch-manipulation min-w-[36px] min-h-[36px] flex items-center justify-center"
                 aria-label="Close"
               >
                 ×
@@ -222,7 +222,7 @@ export function ContactsPanel({ username }) {
             >
               <div className="p-3 sm:p-4 space-y-3 flex-1 overflow-y-auto">
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1.5">
                     Name *
                   </label>
                   <input
@@ -237,7 +237,7 @@ export function ContactsPanel({ username }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1.5">
                     Relationship *
                   </label>
                   <select
@@ -371,7 +371,7 @@ export function ContactsPanel({ username }) {
                 )}
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1.5">
                     Email
                   </label>
                   <input
@@ -393,7 +393,7 @@ export function ContactsPanel({ username }) {
                   <>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-semibold text-[#275559] mb-1">
+                        <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                           Age
                         </label>
                         <input
@@ -408,7 +408,7 @@ export function ContactsPanel({ username }) {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-[#275559] mb-1">
+                        <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                           Birthdate
                         </label>
                         <input
@@ -422,7 +422,7 @@ export function ContactsPanel({ username }) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         School
                       </label>
                       <input
@@ -436,7 +436,7 @@ export function ContactsPanel({ username }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         Custody Arrangement
                       </label>
                       <textarea
@@ -451,7 +451,7 @@ export function ContactsPanel({ username }) {
                     </div>
                     {contactFormData.relationship === "My Partner's Child" && (
                       <div>
-                        <label className="block text-xs font-semibold text-[#275559] mb-1">
+                        <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                           Other Parent
                         </label>
                         <select
@@ -474,7 +474,7 @@ export function ContactsPanel({ username }) {
                     )}
                     {contactFormData.relationship === 'My Child' && (
                       <div>
-                        <label className="block text-xs font-semibold text-[#275559] mb-1">
+                        <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                           Other Parent
                         </label>
                         <select
@@ -504,10 +504,10 @@ export function ContactsPanel({ username }) {
                       <div className="bg-[#E6F7F5] rounded-lg p-3 space-y-3 mt-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <h4 className="font-semibold text-[#275559] text-sm">Activities & Schedule</h4>
+                            <h4 className="font-semibold text-[#4DA8B0] text-sm">Activities & Schedule</h4>
                           </div>
                           <button
                             type="button"
@@ -516,7 +516,7 @@ export function ContactsPanel({ username }) {
                               setEditingActivity(null);
                               setShowActivityModal(true);
                             }}
-                            className="px-2 py-1 bg-[#275559] text-white rounded text-xs font-semibold hover:bg-[#1f4447] transition-colors min-h-[32px] touch-manipulation"
+                            className="px-2 py-1 bg-[#4DA8B0] text-white rounded text-xs font-semibold hover:bg-[#1f4447] transition-colors min-h-[32px] touch-manipulation"
                           >
                             + Add Activity
                           </button>
@@ -530,7 +530,7 @@ export function ContactsPanel({ username }) {
 
                         {isLoadingActivities ? (
                           <div className="text-center py-3">
-                            <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-[#E6F7F5] border-t-[#275559]" />
+                            <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-[#E6F7F5] border-t-[#4DA8B0]" />
                             <p className="text-xs text-gray-500 mt-1">Loading activities...</p>
                           </div>
                         ) : activities && activities.length === 0 ? (
@@ -564,7 +564,7 @@ export function ContactsPanel({ username }) {
                 {contactFormData.relationship === 'My Partner' && (
                   <>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         How long have you been together?
                       </label>
                       <input
@@ -578,7 +578,7 @@ export function ContactsPanel({ username }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         Does your partner have children?
                       </label>
                       <select
@@ -599,7 +599,7 @@ export function ContactsPanel({ username }) {
                 {(contactFormData.relationship === 'My Co-Parent' || contactFormData.relationship === "My Partner's Co-Parent") && (
                   <>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         Separation Date
                       </label>
                       <input
@@ -612,7 +612,7 @@ export function ContactsPanel({ username }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         Address
                       </label>
                       <input
@@ -627,7 +627,7 @@ export function ContactsPanel({ username }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         What aspects of co-parenting are most difficult?
                       </label>
                       <textarea
@@ -641,7 +641,7 @@ export function ContactsPanel({ username }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         Any legal matters or custody concerns?
                       </label>
                       <textarea
@@ -655,7 +655,7 @@ export function ContactsPanel({ username }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         Any safety concerns?
                       </label>
                       <textarea
@@ -669,7 +669,7 @@ export function ContactsPanel({ username }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         Any substance abuse or mental health concerns?
                       </label>
                       <textarea
@@ -683,7 +683,7 @@ export function ContactsPanel({ username }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         Any neglect or abuse concerns?
                       </label>
                       <textarea
@@ -697,7 +697,7 @@ export function ContactsPanel({ username }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
+                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                         Additional thoughts or context
                       </label>
                       <textarea
@@ -715,7 +715,7 @@ export function ContactsPanel({ username }) {
 
                 {(contactFormData.relationship === "My Child's Teacher" || contactFormData.relationship === 'Other') && (
                   <div>
-                    <label className="block text-xs font-semibold text-[#275559] mb-1">
+                    <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                       Phone Number
                     </label>
                     <input
@@ -732,7 +732,7 @@ export function ContactsPanel({ username }) {
 
                 {/* Additional notes textarea */}
                 <div>
-                  <label className="block text-xs font-semibold text-[#275559] mb-1">
+                  <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
                     Notes
                   </label>
                   <textarea
@@ -765,7 +765,7 @@ export function ContactsPanel({ username }) {
                 <button
                   type="submit"
                   disabled={isSavingContact || !contactFormData.contact_name.trim() || !contactFormData.relationship}
-                  className="flex-1 bg-[#275559] text-white py-2.5 sm:py-2 rounded-lg font-semibold text-sm hover:bg-[#1f4447] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-sm min-h-[44px] touch-manipulation"
+                  className="flex-1 bg-[#4DA8B0] text-white py-2.5 sm:py-2 rounded-lg font-semibold text-sm hover:bg-[#1f4447] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-sm min-h-[44px] touch-manipulation"
                 >
                   {isSavingContact ? 'Saving…' : editingContact ? 'Update' : 'Add'}
                 </button>
@@ -775,7 +775,7 @@ export function ContactsPanel({ username }) {
                     setShowContactForm(false);
                     resetForm();
                   }}
-                  className="px-3 py-2.5 sm:py-2 rounded-lg border-2 border-[#C5E8E4] text-xs sm:text-sm font-medium text-[#275559] hover:bg-[#E6F7F5] transition-colors min-h-[44px] touch-manipulation"
+                  className="px-3 py-2.5 sm:py-2 rounded-lg border-2 border-[#C5E8E4] text-xs sm:text-sm font-medium text-[#4DA8B0] hover:bg-[#E6F7F5] transition-colors min-h-[44px] touch-manipulation"
                 >
                   Cancel
                 </button>

@@ -103,9 +103,9 @@ export function UpdatesPanel({ username, onContactClick }) {
   if (isLoadingUpdates) {
     return (
       <div>
-        <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#275559] mb-3 sm:mb-4">Updates</h2>
+        <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#4DA8B0] mb-3 sm:mb-4">Updates</h2>
         <div className="text-center py-6">
-          <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-[#C5E8E4] border-t-[#275559]" />
+          <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-[#C5E8E4] border-t-[#4DA8B0]" />
         </div>
       </div>
     );
@@ -114,7 +114,7 @@ export function UpdatesPanel({ username, onContactClick }) {
   if (updates.length === 0) {
     return (
       <div>
-        <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#275559] mb-3 sm:mb-4">Updates</h2>
+        <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#4DA8B0] mb-3 sm:mb-4">Updates</h2>
         <div className="text-center py-6">
           <p className="text-gray-600 text-xs sm:text-sm">No recent updates</p>
         </div>
@@ -124,7 +124,7 @@ export function UpdatesPanel({ username, onContactClick }) {
 
   return (
     <div>
-      <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#275559] mb-3 sm:mb-4">Updates</h2>
+      <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#4DA8B0] mb-3 sm:mb-4">Updates</h2>
       <div className="space-y-2">
         {updates.map((update, index) => (
           <div
@@ -133,7 +133,7 @@ export function UpdatesPanel({ username, onContactClick }) {
             className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all bg-white border-2 border-[#C5E8E4] hover:border-[#4DA8B0] hover:shadow-sm touch-manipulation active:scale-[0.98]"
           >
             <div className="flex-shrink-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#275559] text-white flex items-center justify-center text-xs sm:text-sm font-semibold">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#4DA8B0] text-white flex items-center justify-center text-xs sm:text-sm font-semibold">
                 {update.personName?.charAt(0).toUpperCase() || '?'}
               </div>
             </div>
@@ -142,7 +142,7 @@ export function UpdatesPanel({ username, onContactClick }) {
                 <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0">
                   {getUpdateIcon(update.type)}
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-[#275559] hover:text-[#4DA8B0] transition-colors truncate">
+                <span className="text-xs sm:text-sm font-semibold text-[#4DA8B0] hover:text-[#4DA8B0] transition-colors truncate">
                   {update.personName}
                 </span>
               </div>

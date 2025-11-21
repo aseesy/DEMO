@@ -38,15 +38,15 @@ export function ActivityCard({ activity, onEdit, onDelete }) {
       {/* Header with Title and Actions */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-[#275559] text-sm sm:text-base truncate">
+          <h4 className="font-semibold text-[#4DA8B0] text-sm sm:text-base truncate">
             {activity.activity_name}
           </h4>
           <div className="flex flex-wrap items-center gap-2 mt-1">
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#E6F7F5] text-[#275559]">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#E6F7F5] text-[#4DA8B0]">
               {formatRecurrence(activity.recurrence)}
             </span>
             {activity.cost && activity.cost > 0 && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#D4F0EC] text-[#275559]">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#D4F0EC] text-[#4DA8B0]">
                 {formatCost(activity.cost, activity.cost_frequency)}
               </span>
             )}

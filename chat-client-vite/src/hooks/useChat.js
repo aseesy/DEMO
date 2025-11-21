@@ -16,6 +16,8 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
   const [threads, setThreads] = React.useState([]);
   const [threadMessages, setThreadMessages] = React.useState({});
   const [selectedThreadId, setSelectedThreadId] = React.useState(null);
+  const [isPreApprovedRewrite, setIsPreApprovedRewrite] = React.useState(false);
+  const [originalRewrite, setOriginalRewrite] = React.useState('');
 
   const socketRef = React.useRef(null);
   const messagesEndRef = React.useRef(null);
@@ -206,8 +208,14 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     if (e?.preventDefault) e.preventDefault();
     const clean = inputMessage.trim();
     if (!clean || !socketRef.current) return;
-    socketRef.current.emit('send_message', { text: clean });
+    socketRef.current.emit('send_message', {
+      text: clean,
+      isPreApprovedRewrite: isPreApprovedRewrite,
+      originalRewrite: originalRewrite
+    });
     setInputMessage('');
+    setIsPreApprovedRewrite(false); // Reset the flag after sending
+    setOriginalRewrite(''); // Reset the original rewrite after sending
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -314,6 +322,8 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     flagMessage,
     draftCoaching,
     setDraftCoaching,
+    setIsPreApprovedRewrite,
+    setOriginalRewrite,
     threads,
     threadMessages,
     selectedThreadId,

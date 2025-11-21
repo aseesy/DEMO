@@ -243,10 +243,16 @@ export function useContacts(username) {
 
   const editContact = (contact) => {
     setEditingContact(contact);
-    const relationshipDisplay =
-      contact.relationship === 'co-parent'
-        ? 'My Co-Parent'
-        : contact.relationship || '';
+    // Normalize relationship values to match dropdown options
+    let relationshipDisplay = contact.relationship || '';
+    if (contact.relationship) {
+      // Convert lowercase to title case to match dropdown options
+      if (contact.relationship.toLowerCase() === 'co-parent' || contact.relationship.toLowerCase() === 'my co-parent') {
+        relationshipDisplay = 'My Co-Parent';
+      } else if (contact.relationship.toLowerCase() === 'my child') {
+        relationshipDisplay = 'My Child';
+      }
+    }
     setContactFormData({
       contact_name: contact.contact_name || '',
       contact_email: contact.contact_email || '',

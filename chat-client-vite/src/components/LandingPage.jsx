@@ -168,7 +168,7 @@ export function LandingPage({ onGetStarted }) {
                   trackSignInModalOpen();
                   navigate('/signin');
                 }}
-                className="px-4 sm:px-6 py-2 sm:py-3 bg-white text-[#275559] rounded-xl font-semibold text-sm sm:text-base hover:bg-gray-50 transition-all border-2 border-[#275559] shadow-sm hover:shadow-md"
+                className="px-4 sm:px-6 py-2 sm:py-3 bg-white text-[#4DA8B0] rounded-xl font-semibold text-sm sm:text-base hover:bg-gray-50 transition-all border-2 border-[#4DA8B0] shadow-sm hover:shadow-md"
               >
                 Sign In
               </button>
@@ -177,7 +177,7 @@ export function LandingPage({ onGetStarted }) {
                   trackCTAClick('navigation', 'Get Started', 'header');
                   navigate('/signin');
                 }}
-              className="px-4 sm:px-6 py-2 sm:py-3 bg-[#275559] text-white rounded-xl font-semibold text-sm sm:text-base hover:bg-[#1f4447] transition-all shadow-lg hover:shadow-xl"
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-[#4DA8B0] text-white rounded-xl font-semibold text-sm sm:text-base hover:bg-[#1f4447] transition-all shadow-lg hover:shadow-xl"
             >
               Get Started
             </button>
@@ -193,14 +193,14 @@ export function LandingPage({ onGetStarted }) {
             {/* Beta Badge with Urgency */}
             <div className="inline-flex flex-wrap items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#E6F7F5] to-[#C5E8E4] rounded-full mb-6 border border-[#A8D9D3] animate-pulse">
               <span className="text-2xl">🎉</span>
-              <span className="text-xs sm:text-sm font-semibold text-[#275559] text-center">Join Our Beta Program • Limited Spots Available</span>
+              <span className="text-xs sm:text-sm font-semibold text-[#4DA8B0] text-center">Join Our Beta Program • Limited Spots Available</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#275559] mb-6 leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#4DA8B0] mb-6 leading-tight">
               Cringe-Worthy Co-Parenting Messages?{' '}
               <span className="text-[#4DA8B0]">We Get It.</span>
             </h1>
-            <p className="text-xl sm:text-2xl text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed font-medium">
+            <p className="text-xl sm:text-2xl text-[#4DA8B0] mb-8 max-w-3xl mx-auto leading-relaxed font-medium">
               LiaiZen prevents conflict in real time—so every message moves the conversation forward, not backward.
             </p>
 
@@ -220,7 +220,7 @@ export function LandingPage({ onGetStarted }) {
                   trackCTAClick('hero', 'See How It Works', 'secondary');
                   document.querySelector('[data-section="value_proposition"]')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="px-10 py-5 bg-white text-[#275559] rounded-2xl font-bold text-lg sm:text-xl border-2 border-[#4DA8B0] hover:bg-[#E6F7F5] transition-all shadow-lg hover:shadow-xl w-full sm:w-auto"
+                className="px-10 py-5 bg-white text-[#4DA8B0] rounded-2xl font-bold text-lg sm:text-xl border-2 border-[#4DA8B0] hover:bg-[#E6F7F5] transition-all shadow-lg hover:shadow-xl w-full sm:w-auto"
               >
                 See How It Works
               </button>
@@ -235,7 +235,7 @@ export function LandingPage({ onGetStarted }) {
           {/* The Real Problem Section - NEW */}
           <div className="mt-24 mb-24 bg-gradient-to-br from-slate-50 to-white rounded-3xl p-8 sm:p-12 border border-slate-200">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-6 text-center">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#4DA8B0] mb-6 text-center">
                 Finally, you can look at messages from your co-parent{' '}
                 <span className="block sm:inline text-[#4DA8B0]">without feeling sick to your stomach.</span>
               </h2>
@@ -264,7 +264,7 @@ export function LandingPage({ onGetStarted }) {
                 </div>
 
                 <div className="bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 border-2 border-[#4DA8B0]">
-                  <h3 className="font-bold text-lg text-[#275559] mb-4">What Actually Works:</h3>
+                  <h3 className="font-bold text-lg text-[#4DA8B0] mb-4">What Actually Works:</h3>
                   <ul className="space-y-3 text-slate-700">
                     <li className="flex items-start gap-3">
                       <span className="text-[#4DA8B0] font-bold">✓</span>
@@ -296,7 +296,7 @@ export function LandingPage({ onGetStarted }) {
           </div>
 
           {/* User Wish-List Section - Interview Quotes */}
-          <div className="mt-24 mb-24 bg-gradient-to-br from-[#275559] to-[#1f4347] rounded-3xl p-8 sm:p-12 text-white">
+          <div className="mt-24 mb-24 bg-gray-50 rounded-3xl p-8 sm:p-12 text-gray-900 border-2 border-gray-200">
             <div className="max-w-5xl mx-auto">
               <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-center">
                 After conducting several user interviews, the wish-list is clear:
@@ -306,7 +306,7 @@ export function LandingPage({ onGetStarted }) {
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </div>
@@ -319,7 +319,7 @@ export function LandingPage({ onGetStarted }) {
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                       </svg>
                     </div>
@@ -332,7 +332,7 @@ export function LandingPage({ onGetStarted }) {
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
@@ -345,7 +345,7 @@ export function LandingPage({ onGetStarted }) {
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
                     </div>
@@ -358,7 +358,7 @@ export function LandingPage({ onGetStarted }) {
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
                     </div>
@@ -371,7 +371,7 @@ export function LandingPage({ onGetStarted }) {
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 bg-[#6dd4b0] rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                       </svg>
                     </div>
@@ -405,10 +405,10 @@ export function LandingPage({ onGetStarted }) {
           {/* Product Screenshot/Mockup Section */}
           <div className="mt-24 mb-24">
             <div className="max-w-5xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4 text-center">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#4DA8B0] mb-4 text-center">
                 See How It Works
               </h2>
-              <p className="text-xl text-gray-700 mb-12 text-center max-w-2xl mx-auto">
+              <p className="text-xl text-[#4DA8B0] mb-12 text-center max-w-2xl mx-auto">
                 Real-time AI assistance before you hit send
               </p>
 
@@ -442,18 +442,18 @@ export function LandingPage({ onGetStarted }) {
                   <div className="space-y-4">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-8 h-8 rounded-full bg-[#6dd4b0] flex items-center justify-center">
-                        <svg className="w-5 h-5 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
-                      <h3 className="font-bold text-lg text-[#275559]">With LiaiZen</h3>
+                      <h3 className="font-bold text-lg text-[#4DA8B0]">With LiaiZen</h3>
                     </div>
                     <div className="bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 border-2 border-[#6dd4b0] shadow-sm">
                       <p className="text-gray-800 leading-relaxed">
                         "I noticed the schedule changed. For planning purposes, could we aim for 48-hour notice when possible? It helps me coordinate childcare. What works best for you?"
                       </p>
                     </div>
-                    <div className="flex items-start gap-2 text-sm text-[#275559] bg-[#E6F7F5] p-3 rounded-lg">
+                    <div className="flex items-start gap-2 text-sm text-[#4DA8B0] bg-[#E6F7F5] p-3 rounded-lg">
                       <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
@@ -484,7 +484,7 @@ export function LandingPage({ onGetStarted }) {
 
           {/* Value Proposition Section */}
           <div className="mt-24 mb-24" data-section="value_proposition">
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-12 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#4DA8B0] mb-12 text-center">
               Finally, you can look at messages from your co-parent{' '}
               <span className="block sm:inline text-[#4DA8B0]">without feeling sick to your stomach.</span>
             </h2>
@@ -496,8 +496,8 @@ export function LandingPage({ onGetStarted }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-[#275559] mb-3">Prevents Hostile Exchanges</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <h3 className="text-xl font-bold text-[#4DA8B0] mb-3">Prevents Hostile Exchanges</h3>
+                <p className="text-[#4DA8B0] leading-relaxed">
                   AI-powered mediation stops hostile exchanges before they damage your co-parenting relationship
                 </p>
               </div>
@@ -509,8 +509,8 @@ export function LandingPage({ onGetStarted }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-[#275559] mb-3">Protects Children</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <h3 className="text-xl font-bold text-[#4DA8B0] mb-3">Protects Children</h3>
+                <p className="text-[#4DA8B0] leading-relaxed">
                   Keep your children safe from parental conflict with child-focused communication
                 </p>
               </div>
@@ -522,21 +522,21 @@ export function LandingPage({ onGetStarted }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-[#275559] mb-3">Promotes Collaboration</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <h3 className="text-xl font-bold text-[#4DA8B0] mb-3">Promotes Collaboration</h3>
+                <p className="text-[#4DA8B0] leading-relaxed">
                   Smart tools help you solve problems together, not against each other
                 </p>
               </div>
 
               {/* Value Prop 4 */}
               <div className="bg-gradient-to-br from-[#A8D9D3] to-white rounded-3xl p-8 border-2 border-[#6EBBB0] hover:border-[#4DA8B0] transition-all shadow-sm hover:shadow-lg">
-                <div className="w-14 h-14 bg-gradient-to-br from-[#1f4447] to-[#275559] rounded-2xl flex items-center justify-center mb-6 shadow-md">
+                <div className="w-14 h-14 bg-gradient-to-br from-[#1f4447] to-[#4DA8B0] rounded-2xl flex items-center justify-center mb-6 shadow-md">
                   <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-[#275559] mb-3">Educational Support</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <h3 className="text-xl font-bold text-[#4DA8B0] mb-3">Educational Support</h3>
+                <p className="text-[#4DA8B0] leading-relaxed">
                   Learn about child psychology and healthy communication patterns that work
                 </p>
               </div>
@@ -548,11 +548,11 @@ export function LandingPage({ onGetStarted }) {
             {/* Feature 1 */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all shadow-sm hover:shadow-md">
               <div className="w-16 h-16 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-[#275559] mb-3">AI-Mediated Chat</h3>
+              <h3 className="text-2xl font-bold text-[#4DA8B0] mb-3">AI-Mediated Chat</h3>
               <p className="text-gray-600 leading-relaxed">
                 Real-time message filtering and tone adjustment to keep conversations respectful and child-focused
               </p>
@@ -561,11 +561,11 @@ export function LandingPage({ onGetStarted }) {
             {/* Feature 2 */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-gray-100 hover:border-[#A8D9D3] transition-all shadow-sm hover:shadow-md">
               <div className="w-16 h-16 bg-gradient-to-br from-[#D4F0EC] to-[#A8D9D3] rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-[#275559] mb-3">Smart Task Manager</h3>
+              <h3 className="text-2xl font-bold text-[#4DA8B0] mb-3">Smart Task Manager</h3>
               <p className="text-gray-600 leading-relaxed">
                 Organize schedules, custody arrangements, and shared responsibilities in one place
               </p>
@@ -574,11 +574,11 @@ export function LandingPage({ onGetStarted }) {
             {/* Feature 3 */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-gray-100 hover:border-[#8BCAC1] transition-all shadow-sm hover:shadow-md">
               <div className="w-16 h-16 bg-gradient-to-br from-[#C0E9E3] to-[#8BCAC1] rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-[#275559] mb-3">Contact Hub</h3>
+              <h3 className="text-2xl font-bold text-[#4DA8B0] mb-3">Contact Hub</h3>
               <p className="text-gray-600 leading-relaxed">
                 Keep track of teachers, doctors, and everyone important in your child's life
               </p>
@@ -586,12 +586,12 @@ export function LandingPage({ onGetStarted }) {
           </div>
 
           {/* Parallel Parenting / Emotional Toll Section - NEW */}
-          <div className="mt-32 mb-24 bg-gradient-to-br from-[#275559] to-[#3d8a92] rounded-3xl p-8 sm:p-12 text-white">
+          <div className="mt-32 mb-24 bg-gray-50 rounded-3xl p-8 sm:p-12 text-gray-900 border-2 border-gray-200">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-3xl sm:text-4xl font-bold mb-6 text-center">
                 Stuck in Parallel Parenting? You're Not Alone.
               </h2>
-              <p className="text-xl text-white/90 mb-8 text-center max-w-2xl mx-auto">
+              <p className="text-xl text-[#4DA8B0] mb-8 text-center max-w-2xl mx-auto">
                 You didn't want it this way. You wanted to co-parent as a team. But here you are—limiting contact just to protect your sanity.
               </p>
 
@@ -652,7 +652,7 @@ export function LandingPage({ onGetStarted }) {
 
           {/* How It Works */}
           <div className="mt-32 mb-24">
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#4DA8B0] mb-4 text-center">
               How It Works
             </h2>
             <p className="text-lg text-gray-600 mb-12 text-center max-w-2xl mx-auto">
@@ -662,9 +662,9 @@ export function LandingPage({ onGetStarted }) {
               {/* Step 1 */}
               <div className="text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-lg">
-                  <span className="text-3xl font-bold text-[#275559]">1</span>
+                  <span className="text-3xl font-bold text-[#4DA8B0]">1</span>
                 </div>
-                <h3 className="text-xl font-bold text-[#275559] mb-3">Create Your Account</h3>
+                <h3 className="text-xl font-bold text-[#4DA8B0] mb-3">Create Your Account</h3>
                 <p className="text-gray-600 leading-relaxed">
                   Sign up in seconds. No credit card required. Your data is encrypted and secure.
                 </p>
@@ -673,9 +673,9 @@ export function LandingPage({ onGetStarted }) {
               {/* Step 2 */}
               <div className="text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-[#C5E8E4] to-[#A8D9D3] rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-lg">
-                  <span className="text-3xl font-bold text-[#275559]">2</span>
+                  <span className="text-3xl font-bold text-[#4DA8B0]">2</span>
                 </div>
-                <h3 className="text-xl font-bold text-[#275559] mb-3">Invite Your Co-Parent</h3>
+                <h3 className="text-xl font-bold text-[#4DA8B0] mb-3">Invite Your Co-Parent</h3>
                 <p className="text-gray-600 leading-relaxed">
                   Share a simple invite link. Both parents communicate on equal footing.
                 </p>
@@ -684,9 +684,9 @@ export function LandingPage({ onGetStarted }) {
               {/* Step 3 */}
               <div className="text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-[#A8D9D3] to-[#8BCAC1] rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-lg">
-                  <span className="text-3xl font-bold text-[#275559]">3</span>
+                  <span className="text-3xl font-bold text-[#4DA8B0]">3</span>
                 </div>
-                <h3 className="text-xl font-bold text-[#275559] mb-3">Communicate Peacefully</h3>
+                <h3 className="text-xl font-bold text-[#4DA8B0] mb-3">Communicate Peacefully</h3>
                 <p className="text-gray-600 leading-relaxed">
                   AI helps you find common ground, meet in the middle, and keep conversations productive.
                 </p>
@@ -697,7 +697,7 @@ export function LandingPage({ onGetStarted }) {
           {/* Social Proof Section - Beta Community */}
           <div className="mt-32 mb-24" data-section="social_proof">
             <div className="text-center mb-12">
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#4DA8B0] mb-4">
                 Join Our Growing Beta Community
               </h2>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -709,12 +709,12 @@ export function LandingPage({ onGetStarted }) {
             <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-16">
               <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] text-center shadow-sm">
                 <div className="text-4xl mb-3">🎯</div>
-                <div className="font-semibold text-[#275559] mb-2">Early Access</div>
+                <div className="font-semibold text-[#4DA8B0] mb-2">Early Access</div>
                 <div className="text-sm text-gray-600">Be among the first to experience real-time AI mediation</div>
               </div>
               <div className="bg-white rounded-2xl p-6 border-2 border-[#C5E8E4] text-center shadow-sm">
                 <div className="text-4xl mb-3">💡</div>
-                <div className="font-semibold text-[#275559] mb-2">Shape the Future</div>
+                <div className="font-semibold text-[#4DA8B0] mb-2">Shape the Future</div>
                 <div className="text-sm text-gray-600">Your feedback directly influences how we build LiaiZen</div>
               </div>
             </div>
@@ -722,7 +722,7 @@ export function LandingPage({ onGetStarted }) {
 
           {/* Testimonials */}
           <div className="mt-32 mb-24 bg-gradient-to-br from-[#E6F7F5] to-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4]" data-section="testimonials">
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#4DA8B0] mb-4 text-center">
               What Professionals Are Saying
             </h2>
             <p className="text-lg text-gray-600 mb-12 text-center max-w-2xl mx-auto">
@@ -748,10 +748,10 @@ export function LandingPage({ onGetStarted }) {
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 </div>
-                <p className="text-gray-700 leading-relaxed mb-4 italic">
+                <p className="text-[#4DA8B0] leading-relaxed mb-4 italic">
                   "This is an effective tool that family lawyers would welcome. As a family mediator for over 17 years, I think it is a great idea."
                 </p>
-                <p className="text-sm font-semibold text-[#275559]">— Family Mediator</p>
+                <p className="text-sm font-semibold text-[#4DA8B0]">— Family Mediator</p>
               </div>
 
               {/* Testimonial 2 */}
@@ -773,10 +773,10 @@ export function LandingPage({ onGetStarted }) {
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 </div>
-                <p className="text-gray-700 leading-relaxed mb-4 italic">
+                <p className="text-[#4DA8B0] leading-relaxed mb-4 italic">
                   "For our family, I could see this helping us adapt better to change. I think it's a great idea not only for my family, but for situations at work."
                 </p>
-                <p className="text-sm font-semibold text-[#275559]">— Divorced Mom</p>
+                <p className="text-sm font-semibold text-[#4DA8B0]">— Divorced Mom</p>
               </div>
 
               {/* Testimonial 3 */}
@@ -798,10 +798,10 @@ export function LandingPage({ onGetStarted }) {
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 </div>
-                <p className="text-gray-700 leading-relaxed mb-4 italic">
+                <p className="text-[#4DA8B0] leading-relaxed mb-4 italic">
                   "I regularly see the impact of divorce on children who go to my school. An app like this would be extremely helpful for the parents and children."
                 </p>
-                <p className="text-sm font-semibold text-[#275559]">— Minister & School Director</p>
+                <p className="text-sm font-semibold text-[#4DA8B0]">— Minister & School Director</p>
               </div>
 
               {/* Testimonial 4 */}
@@ -823,17 +823,17 @@ export function LandingPage({ onGetStarted }) {
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 </div>
-                <p className="text-gray-700 leading-relaxed mb-4 italic">
+                <p className="text-[#4DA8B0] leading-relaxed mb-4 italic">
                   "Our biggest challenge is being on the same page about how our children should be raised. I could see this being helpful to find a middle ground."
                 </p>
-                <p className="text-sm font-semibold text-[#275559]">— Divorced Mom</p>
+                <p className="text-sm font-semibold text-[#4DA8B0]">— Divorced Mom</p>
               </div>
             </div>
           </div>
 
           {/* FAQ Section */}
           <div className="mt-32 mb-24">
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#4DA8B0] mb-4 text-center">
               Frequently Asked Questions
             </h2>
             <p className="text-lg text-gray-600 mb-12 text-center max-w-2xl mx-auto">
@@ -849,7 +849,7 @@ export function LandingPage({ onGetStarted }) {
                   }
                 }}
               >
-                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                <summary className="font-semibold text-lg text-[#4DA8B0] cursor-pointer">
                   Is my information private and secure?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -859,7 +859,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 2 */}
               <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
-                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                <summary className="font-semibold text-lg text-[#4DA8B0] cursor-pointer">
                   What if my co-parent doesn't want to use it?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -869,7 +869,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 3 */}
               <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
-                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                <summary className="font-semibold text-lg text-[#4DA8B0] cursor-pointer">
                   How does the AI mediation work?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -879,7 +879,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 4 */}
               <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
-                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                <summary className="font-semibold text-lg text-[#4DA8B0] cursor-pointer">
                   Is this really free during beta?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -889,7 +889,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 5 */}
               <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
-                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                <summary className="font-semibold text-lg text-[#4DA8B0] cursor-pointer">
                   Can this be used for legal purposes?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -899,7 +899,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 6 */}
               <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
-                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                <summary className="font-semibold text-lg text-[#4DA8B0] cursor-pointer">
                   What happens after the beta period?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -909,7 +909,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 7 - Beta Specific */}
               <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
-                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                <summary className="font-semibold text-lg text-[#4DA8B0] cursor-pointer">
                   How do I join the beta program?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -919,7 +919,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 8 - Beta Specific */}
               <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
-                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                <summary className="font-semibold text-lg text-[#4DA8B0] cursor-pointer">
                   Is the beta program really free?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -929,7 +929,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 9 - Beta Specific */}
               <details className="bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#C5E8E4] transition-all">
-                <summary className="font-semibold text-lg text-[#275559] cursor-pointer">
+                <summary className="font-semibold text-lg text-[#4DA8B0] cursor-pointer">
                   What if I find bugs or have suggestions?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -941,7 +941,7 @@ export function LandingPage({ onGetStarted }) {
 
           {/* Co-Parenting Tips Section */}
           <div className="mt-32 mb-24 bg-gradient-to-br from-[#E6F7F5] to-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4]">
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#4DA8B0] mb-4 text-center">
               Co-Parenting Principles We Stand By
             </h2>
             <p className="text-lg text-gray-600 mb-8 text-center max-w-2xl mx-auto">
@@ -958,7 +958,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#275559] mb-2">No One Is Wrong</h3>
+                  <h3 className="font-bold text-[#4DA8B0] mb-2">No One Is Wrong</h3>
                   <p className="text-gray-600 leading-relaxed">
                     Both parents have valid perspectives. We help you understand each other's viewpoints and find solutions that work for everyone.
                   </p>
@@ -975,7 +975,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#275559] mb-2">Treat Everyone Equal</h3>
+                  <h3 className="font-bold text-[#4DA8B0] mb-2">Treat Everyone Equal</h3>
                   <p className="text-gray-600 leading-relaxed">
                     Fair communication means both parents have an equal voice. Our platform ensures balanced, respectful dialogue.
                   </p>
@@ -992,7 +992,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#275559] mb-2">Meet in the Middle</h3>
+                  <h3 className="font-bold text-[#4DA8B0] mb-2">Meet in the Middle</h3>
                   <p className="text-gray-600 leading-relaxed">
                     Compromise isn't losing - it's winning together. We help you find common ground that puts your children first.
                   </p>
@@ -1009,7 +1009,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#275559] mb-2">Preventative Approach</h3>
+                  <h3 className="font-bold text-[#4DA8B0] mb-2">Preventative Approach</h3>
                   <p className="text-gray-600 leading-relaxed">
                     Stop conflicts before they start. Our AI helps you communicate in ways that prevent escalation and protect your family.
                   </p>
@@ -1021,7 +1021,7 @@ export function LandingPage({ onGetStarted }) {
           {/* Newsletter Signup */}
           <div className="mt-32 mb-24">
             <div className="max-w-2xl mx-auto text-center bg-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4] shadow-sm">
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#4DA8B0] mb-4">
                 Stay Updated
               </h2>
               <p className="text-lg text-gray-600 mb-8">
@@ -1054,7 +1054,7 @@ export function LandingPage({ onGetStarted }) {
           {/* Product Preview Section */}
           <div className="mt-32 mb-24" data-section="product_preview">
             <div className="text-center mb-12">
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#4DA8B0] mb-4">
                 See LiaiZen in Action
               </h2>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -1064,10 +1064,10 @@ export function LandingPage({ onGetStarted }) {
             <div className="max-w-4xl mx-auto bg-gradient-to-br from-[#E6F7F5] to-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4]">
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div>
-                  <h3 className="text-2xl font-bold text-[#275559] mb-4">
+                  <h3 className="text-2xl font-bold text-[#4DA8B0] mb-4">
                     Real-Time AI Mediation
                   </h3>
-                  <ul className="space-y-3 text-gray-700">
+                  <ul className="space-y-3 text-[#4DA8B0]">
                     <li className="flex items-start gap-2">
                       <svg className="w-5 h-5 text-[#4DA8B0] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -1121,12 +1121,12 @@ export function LandingPage({ onGetStarted }) {
           {/* Final CTA */}
           <div className="mt-24 text-center bg-gradient-to-br from-[#E6F7F5] to-white rounded-3xl p-8 sm:p-12 border-2 border-[#C5E8E4] relative overflow-hidden" data-section="final_cta">
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#4DA8B0] opacity-5 rounded-full -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#275559] opacity-5 rounded-full -ml-32 -mb-32"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#4DA8B0] opacity-5 rounded-full -ml-32 -mb-32"></div>
             <div className="relative">
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#275559] mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#4DA8B0] mb-4">
               Ready to Transform Your Co-Parenting?
             </h2>
-              <p className="text-xl text-gray-700 mb-2 max-w-2xl mx-auto">
+              <p className="text-xl text-[#4DA8B0] mb-2 max-w-2xl mx-auto">
               Join beta families who are finding peace and clarity through LiaiZen
             </p>
               <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
@@ -1174,7 +1174,7 @@ export function LandingPage({ onGetStarted }) {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-gray-200">
             <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4DA8B0] to-[#4DA8B0] flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
@@ -1190,7 +1190,7 @@ export function LandingPage({ onGetStarted }) {
                   setAuthEmail('');
                   setPassword('');
                 }}
-                className="text-2xl leading-none text-gray-500 hover:text-gray-700"
+                className="text-2xl leading-none text-gray-500 hover:text-[#4DA8B0]"
               >
                 ×
               </button>
@@ -1202,7 +1202,7 @@ export function LandingPage({ onGetStarted }) {
                 </div>
               )}
               <div className="mb-4">
-                <label htmlFor="signin-email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="signin-email" className="block text-sm font-medium text-[#4DA8B0] mb-2">
                   Email
                 </label>
                 <input
@@ -1212,11 +1212,11 @@ export function LandingPage({ onGetStarted }) {
                   onChange={(e) => setAuthEmail(e.target.value)}
                   placeholder="your@email.com"
                   required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-sm"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#4DA8B0] text-sm"
                 />
               </div>
               <div className="mb-6">
-                <label htmlFor="signin-password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="signin-password" className="block text-sm font-medium text-[#4DA8B0] mb-2">
                   Password
                 </label>
                 <input
@@ -1226,14 +1226,14 @@ export function LandingPage({ onGetStarted }) {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-sm"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#4DA8B0] text-sm"
                 />
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   type="submit"
                   disabled={isLoggingIn}
-                  className="flex-1 bg-[#275559] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#1f4447] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex-1 bg-[#4DA8B0] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#1f4447] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isLoggingIn ? (
                     <span className="flex items-center justify-center gap-2">
@@ -1250,7 +1250,7 @@ export function LandingPage({ onGetStarted }) {
                     setShowSignInModal(false);
                     navigate('/signin');
                   }}
-                  className="px-4 py-3 rounded-xl border-2 border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="px-4 py-3 rounded-xl border-2 border-gray-300 text-sm font-medium text-[#4DA8B0] hover:bg-gray-50 transition-colors"
                 >
                   New Account
                 </button>
@@ -1269,7 +1269,7 @@ export function LandingPage({ onGetStarted }) {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-gray-200">
             <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4DA8B0] to-[#4DA8B0] flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                   </svg>
@@ -1285,7 +1285,7 @@ export function LandingPage({ onGetStarted }) {
                   setAuthEmail('');
                   setPassword('');
                 }}
-                className="text-2xl leading-none text-gray-500 hover:text-gray-700"
+                className="text-2xl leading-none text-gray-500 hover:text-[#4DA8B0]"
               >
                 ×
               </button>
@@ -1297,7 +1297,7 @@ export function LandingPage({ onGetStarted }) {
                 </div>
               )}
               <div className="mb-4">
-                <label htmlFor="signup-email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="signup-email" className="block text-sm font-medium text-[#4DA8B0] mb-2">
                   Email
                 </label>
                 <input
@@ -1307,11 +1307,11 @@ export function LandingPage({ onGetStarted }) {
                   onChange={(e) => setAuthEmail(e.target.value)}
                   placeholder="your@email.com"
                   required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-sm"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#4DA8B0] text-sm"
                 />
               </div>
               <div className="mb-6">
-                <label htmlFor="signup-password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="signup-password" className="block text-sm font-medium text-[#4DA8B0] mb-2">
                   Password
                 </label>
                 <input
@@ -1321,14 +1321,14 @@ export function LandingPage({ onGetStarted }) {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter a password (min 4 characters)"
                   required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#275559] text-sm"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#4DA8B0] text-sm"
                 />
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   type="submit"
                   disabled={isSigningUp}
-                  className="flex-1 bg-[#275559] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#1f4447] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex-1 bg-[#4DA8B0] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#1f4447] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isSigningUp ? (
                     <span className="flex items-center justify-center gap-2">
@@ -1348,7 +1348,7 @@ export function LandingPage({ onGetStarted }) {
                     setAuthEmail('');
                     setPassword('');
                   }}
-                  className="px-4 py-3 rounded-xl border-2 border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="px-4 py-3 rounded-xl border-2 border-gray-300 text-sm font-medium text-[#4DA8B0] hover:bg-gray-50 transition-colors"
                 >
                   Sign In
                 </button>

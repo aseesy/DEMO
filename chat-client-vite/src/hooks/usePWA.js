@@ -150,7 +150,12 @@ export function usePWA() {
 
       return subscription;
     } catch (error) {
-      console.error('[usePWA] Push subscription failed:', error);
+      // Only warn in development - this is expected to fail in local dev
+      if (import.meta.env.DEV) {
+        console.warn('[usePWA] Push subscription failed (expected in dev):', error.name);
+      } else {
+        console.error('[usePWA] Push subscription failed:', error);
+      }
       return null;
     }
   }, [swRegistration]);

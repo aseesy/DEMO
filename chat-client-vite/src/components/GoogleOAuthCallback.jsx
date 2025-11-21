@@ -57,7 +57,7 @@ export function GoogleOAuthCallback() {
   }, [searchParams, handleGoogleCallback, navigate, setError]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#4DA8B0] to-[#4DA8B0] flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white/95 rounded-3xl shadow-2xl p-6 sm:p-8 text-center">
         <div className="flex flex-col items-center mb-6">
           <img
@@ -87,7 +87,7 @@ export function GoogleOAuthCallback() {
         {isProcessing ? (
           <>
             <div className="mb-4">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#275559] border-t-transparent"></div>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#4DA8B0] border-t-transparent"></div>
             </div>
             <p className="text-slate-700 font-medium">Completing Google login...</p>
           </>

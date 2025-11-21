@@ -9,7 +9,7 @@ export function useTasks(username) {
   const [tasks, setTasks] = React.useState([]);
   const [isLoadingTasks, setIsLoadingTasks] = React.useState(false);
   const [taskSearch, setTaskSearch] = React.useState('');
-  const [taskFilter, setTaskFilter] = React.useState('all');
+  const [taskFilter, setTaskFilter] = React.useState('open'); // Default to 'open' tasks
   const [showTaskForm, setShowTaskForm] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState(null);
   const [taskFormData, setTaskFormData] = React.useState({
@@ -49,9 +49,9 @@ export function useTasks(username) {
             const dateB = new Date(b.created_at || 0);
             return dateA - dateB;
           });
-          // Only limit to 5 if no search/filter is active and showing all tasks
-          if (!taskSearch && taskFilter === 'all') {
-          setTasks(sorted.slice(0, 5));
+          // Only limit to 5 if no search is active
+          if (!taskSearch) {
+            setTasks(sorted.slice(0, 5));
           } else {
             setTasks(sorted);
           }
