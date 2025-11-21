@@ -1,9 +1,4 @@
-const OpenAI = require('openai');
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || ''
-});
+const openaiClient = require('./openaiClient');
 
 /**
  * Analyze a draft message before sending and provide proactive coaching
@@ -15,7 +10,7 @@ const openai = new OpenAI({
  * @returns {Promise<Object>} - Coaching suggestions and rewrite options
  */
 async function analyzeDraftMessage(draftText, recentMessages = [], userContext = {}, contactContext = null, flaggedMessages = []) {
-  if (!process.env.OPENAI_API_KEY || !draftText || draftText.trim().length === 0) {
+  if (!openaiClient.isConfigured() || !draftText || draftText.trim().length === 0) {
     return null;
   }
 
@@ -53,7 +48,7 @@ Respond in JSON format:
 
 If the message is fine as-is, set shouldSend to true and provide minimal feedback.`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await openaiClient.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
         {

@@ -392,6 +392,48 @@ async function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)
   `);
 
+  // Create child_activities table for managing children's schedules
+  db.run(`
+    CREATE TABLE IF NOT EXISTS child_activities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      contact_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+
+      activity_name TEXT NOT NULL,
+      description TEXT,
+      location TEXT,
+      instructor_contact TEXT,
+
+      days_of_week TEXT,
+      start_time TEXT,
+      end_time TEXT,
+      recurrence TEXT NOT NULL,
+      start_date TEXT NOT NULL,
+      end_date TEXT,
+
+      cost REAL DEFAULT 0,
+      cost_frequency TEXT,
+      split_type TEXT DEFAULT 'equal',
+      split_percentage REAL,
+      paid_by TEXT,
+
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+
+      FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_activities_contact_id ON child_activities(contact_id)
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_activities_user_id ON child_activities(user_id)
+  `);
+
   // Create relationship insights table for AI mediator persistence
   db.run(`
     CREATE TABLE IF NOT EXISTS relationship_insights (

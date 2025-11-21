@@ -40,4 +40,14 @@ export async function apiPut(path, body, options = {}) {
   return response;
 }
 
+export async function apiDelete(path, params = {}) {
+  const queryString = new URLSearchParams(params).toString();
+  const url = queryString ? `${API_BASE_URL}${path}?${queryString}` : `${API_BASE_URL}${path}`;
+  const response = await fetch(url, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return response;
+}
+
 

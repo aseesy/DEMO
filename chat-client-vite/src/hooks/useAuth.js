@@ -33,22 +33,45 @@ export function useAuth() {
           if (data.authenticated && data.user) {
             setUsername(data.user.username);
             setIsAuthenticated(true);
+            // Keep localStorage in sync
+            localStorage.setItem('username', data.user.username);
+            localStorage.setItem('isAuthenticated', 'true');
+          } else {
+            // Session invalid - clear everything
+            localStorage.removeItem('username');
+            localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('auth_token_backup');
+            localStorage.removeItem('chatUser');
+            localStorage.removeItem('userEmail');
           }
         } else {
+          // Session invalid - clear everything
           localStorage.removeItem('username');
           localStorage.removeItem('isAuthenticated');
           localStorage.removeItem('auth_token_backup');
           localStorage.removeItem('chatUser');
+          localStorage.removeItem('userEmail');
         }
       } catch (err) {
         console.error('Error verifying session (Vite):', err);
+        // On error, try to restore from localStorage if available
+        const storedUsername = localStorage.getItem('username');
+        const storedAuth = localStorage.getItem('isAuthenticated');
+        if (storedUsername && storedAuth === 'true') {
+          setUsername(storedUsername);
+          setIsAuthenticated(true);
+        }
       } finally {
         setIsCheckingAuth(false);
       }
     };
 
+    // Always verify session if we have any auth data in localStorage
     const storedUsername = localStorage.getItem('username');
-    if (storedUsername) {
+    const storedAuth = localStorage.getItem('isAuthenticated');
+    const storedToken = localStorage.getItem('auth_token_backup');
+
+    if (storedUsername || storedAuth || storedToken) {
       verifySession();
     } else {
       setIsCheckingAuth(false);

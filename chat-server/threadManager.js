@@ -1,9 +1,5 @@
 const dbSafe = require('./dbSafe');
-const OpenAI = require('openai');
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || ''
-});
+const openaiClient = require('./openaiClient');
 
 /**
  * Create a new thread
@@ -221,7 +217,7 @@ Respond in JSON:
   "reasoning": "Why this decision"
 }`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await openaiClient.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
         {

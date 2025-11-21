@@ -1,7 +1,13 @@
 import React from 'react';
 import { useContacts } from '../hooks/useContacts.js';
+import { useGooglePlaces } from '../hooks/useGooglePlaces.js';
+import { useActivities } from '../hooks/useActivities.js';
+import { ActivityCard } from './ActivityCard.jsx';
+import { AddActivityModal } from './modals/AddActivityModal.jsx';
 
 export function ContactsPanel({ username }) {
+  // Address autocomplete ref
+  const addressInputRef = React.useRef(null);
   const {
     contacts,
     isLoadingContacts,
@@ -20,6 +26,39 @@ export function ContactsPanel({ username }) {
     resetForm,
   } = useContacts(username);
 
+  // Google Places autocomplete for address field
+  const handlePlaceSelected = React.useCallback((addressComponents) => {
+    setContactFormData({
+      ...contactFormData,
+      address: addressComponents.fullAddress,
+    });
+  }, [contactFormData, setContactFormData]);
+
+  useGooglePlaces(addressInputRef, handlePlaceSelected);
+
+  // AI profile assistant state
+  const [isGeneratingProfile, setIsGeneratingProfile] = React.useState(false);
+  const [profileSuggestions, setProfileSuggestions] = React.useState(null);
+  const [showAiAssistant, setShowAiAssistant] = React.useState(false);
+
+  // Activities modal state
+  const [showActivityModal, setShowActivityModal] = React.useState(false);
+  const [editingActivity, setEditingActivity] = React.useState(null);
+
+  // Activities hook - only load when editing a "My Child" contact
+  const {
+    activities,
+    isLoading: isLoadingActivities,
+    isSaving: isSavingActivity,
+    error: activitiesError,
+    createActivity,
+    updateActivity,
+    deleteActivity
+  } = useActivities(
+    editingContact?.relationship === 'My Child' ? editingContact.id : null,
+    username
+  );
+
   const filteredContacts = React.useMemo(() => {
     const q = contactSearch.trim().toLowerCase();
     if (!q) return contacts;
@@ -33,7 +72,53 @@ export function ContactsPanel({ username }) {
   const startNewContact = () => {
     resetForm();
     setShowContactForm(true);
+    setShowAiAssistant(false);
+    setProfileSuggestions(null);
   };
+
+  // Generate AI profile suggestions
+  const generateProfileSuggestions = React.useCallback(async () => {
+    if (!contactFormData.contact_name.trim() || !contactFormData.relationship) {
+      alert('Please enter a name and select a relationship first');
+      return;
+    }
+
+    setIsGeneratingProfile(true);
+    try {
+      const response = await fetch('/api/contacts/generate-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contactData: {
+            contact_name: contactFormData.contact_name,
+            relationship: contactFormData.relationship
+          },
+          username: username
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate profile suggestions');
+      }
+
+      const data = await response.json();
+      setProfileSuggestions(data);
+      setShowAiAssistant(true);
+    } catch (err) {
+      console.error('Error generating profile suggestions:', err);
+      alert('Failed to generate AI suggestions. Please try again.');
+    } finally {
+      setIsGeneratingProfile(false);
+    }
+  }, [contactFormData, username]);
+
+  // Apply AI suggestion to a field
+  const applySuggestion = React.useCallback((fieldName, value) => {
+    setContactFormData(prev => ({
+      ...prev,
+      [fieldName]: value
+    }));
+  }, [setContactFormData]);
 
   return (
     <div className="bg-gradient-to-br from-[#E6F7F5] to-white rounded-2xl border-2 border-[#C5E8E4] overflow-hidden flex flex-col h-full">
@@ -111,8 +196,8 @@ export function ContactsPanel({ username }) {
       </div>
 
       {showContactForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[calc(100vh-1rem)] sm:max-h-[90vh] flex flex-col border-2 border-[#C5E8E4] my-auto">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 pb-24 md:pb-4 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-full flex flex-col border-2 border-[#C5E8E4] my-auto">
             <div className="border-b-2 border-[#C5E8E4] px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between flex-shrink-0">
               <h3 className="text-base sm:text-lg font-bold text-[#275559]">
                 {editingContact ? 'Edit' : 'Add'}
@@ -181,6 +266,110 @@ export function ContactsPanel({ username }) {
                     <option value="Other">Other</option>
                   </select>
                 </div>
+
+                {/* AI Profile Assistant Button */}
+                {contactFormData.contact_name.trim() && contactFormData.relationship && !editingContact && (
+                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-3 sm:p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-purple-900 mb-1">
+                          AI Profile Assistant
+                        </h4>
+                        <p className="text-xs text-purple-700 mb-3">
+                          Get intelligent suggestions for important fields based on the relationship type
+                        </p>
+                        <button
+                          type="button"
+                          onClick={generateProfileSuggestions}
+                          disabled={isGeneratingProfile}
+                          className="w-full px-3 py-2.5 bg-purple-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors shadow-sm hover:shadow-md flex items-center justify-center gap-2 min-h-[44px] touch-manipulation"
+                        >
+                          {isGeneratingProfile ? (
+                            <>
+                              <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                              Generating suggestions...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              Get AI Suggestions
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Suggestions Display */}
+                {showAiAssistant && profileSuggestions && (
+                  <div className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-3 sm:p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-indigo-900">
+                        AI Suggestions
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setShowAiAssistant(false)}
+                        className="text-indigo-600 hover:text-indigo-800 text-xs"
+                      >
+                        Hide
+                      </button>
+                    </div>
+
+                    {profileSuggestions.profileCompletionTips && (
+                      <p className="text-xs text-indigo-700 mb-3 p-2 bg-indigo-100 rounded-lg">
+                        💡 {profileSuggestions.profileCompletionTips}
+                      </p>
+                    )}
+
+                    {profileSuggestions.helpfulQuestions && profileSuggestions.helpfulQuestions.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-xs font-semibold text-indigo-900 mb-1.5">Helpful questions to consider:</p>
+                        <ul className="space-y-1">
+                          {profileSuggestions.helpfulQuestions.slice(0, 3).map((q, i) => (
+                            <li key={i} className="text-xs text-indigo-700 pl-4 relative before:content-['•'] before:absolute before:left-0">
+                              {q}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {profileSuggestions.suggestedFields && profileSuggestions.suggestedFields.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-indigo-900">Quick suggestions:</p>
+                        {profileSuggestions.suggestedFields.filter(f => f.importance === 'required' || f.importance === 'recommended').slice(0, 3).map((field, i) => (
+                          <div key={i} className="bg-white rounded-lg p-2 border border-indigo-200">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-gray-900">{field.label}</p>
+                                <p className="text-xs text-gray-600 mt-0.5">{field.suggestion}</p>
+                              </div>
+                              {field.suggestion && field.fieldName && (
+                                <button
+                                  type="button"
+                                  onClick={() => applySuggestion(field.fieldName, field.suggestion)}
+                                  className="flex-shrink-0 px-2 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700"
+                                >
+                                  Apply
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs sm:text-sm font-semibold text-[#275559] mb-1.5">
                     Email
@@ -309,6 +498,66 @@ export function ContactsPanel({ username }) {
                         </select>
                       </div>
                     )}
+
+                    {/* Activities Schedule Section - Only for "My Child" */}
+                    {contactFormData.relationship === 'My Child' && editingContact && (
+                      <div className="bg-[#E6F7F5] rounded-lg p-3 space-y-3 mt-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-[#275559]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <h4 className="font-semibold text-[#275559] text-sm">Activities & Schedule</h4>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setEditingActivity(null);
+                              setShowActivityModal(true);
+                            }}
+                            className="px-2 py-1 bg-[#275559] text-white rounded text-xs font-semibold hover:bg-[#1f4447] transition-colors min-h-[32px] touch-manipulation"
+                          >
+                            + Add Activity
+                          </button>
+                        </div>
+
+                        {activitiesError && (
+                          <div className="bg-red-50 border border-red-200 text-red-700 px-2 py-1 rounded text-xs">
+                            {activitiesError}
+                          </div>
+                        )}
+
+                        {isLoadingActivities ? (
+                          <div className="text-center py-3">
+                            <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-[#E6F7F5] border-t-[#275559]" />
+                            <p className="text-xs text-gray-500 mt-1">Loading activities...</p>
+                          </div>
+                        ) : activities && activities.length === 0 ? (
+                          <p className="text-sm text-gray-500 text-center py-3">No activities yet. Click "+ Add Activity" to create one.</p>
+                        ) : (
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {activities && activities.map((activity) => (
+                              <ActivityCard
+                                key={activity.id}
+                                activity={activity}
+                                onEdit={(activity) => {
+                                  setEditingActivity(activity);
+                                  setShowActivityModal(true);
+                                }}
+                                onDelete={async (activityId) => {
+                                  try {
+                                    await deleteActivity(activityId);
+                                  } catch (err) {
+                                    console.error('Failed to delete activity:', err);
+                                  }
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -367,13 +616,14 @@ export function ContactsPanel({ username }) {
                         Address
                       </label>
                       <input
+                        ref={addressInputRef}
                         type="text"
                         value={contactFormData.address || ''}
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, address: e.target.value })
                         }
                         className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
-                        placeholder="Address"
+                        placeholder="Start typing address..."
                       />
                     </div>
                     <div>
@@ -388,20 +638,6 @@ export function ContactsPanel({ username }) {
                         className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
                         rows={3}
                         placeholder="Describe challenges..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#275559] mb-1">
-                        What situations create the most friction?
-                      </label>
-                      <textarea
-                        value={contactFormData.friction_situations || ''}
-                        onChange={(e) =>
-                          setContactFormData({ ...contactFormData, friction_situations: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
-                        rows={3}
-                        placeholder="Describe friction points..."
                       />
                     </div>
                     <div>
@@ -510,7 +746,7 @@ export function ContactsPanel({ username }) {
                   />
                 </div>
               </div>
-              <div className="px-3 sm:px-4 py-3 border-t-2 border-[#C5E8E4] flex gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">
+              <div className="px-3 sm:px-4 py-3 pb-4 border-t-2 border-[#C5E8E4] flex gap-2 flex-wrap sm:flex-nowrap flex-shrink-0 bg-white">
                 {editingContact && (
                   <button
                     type="button"
@@ -548,6 +784,31 @@ export function ContactsPanel({ username }) {
           </div>
         </div>
       )}
+
+      {/* Activity Modal */}
+      <AddActivityModal
+        isOpen={showActivityModal}
+        onClose={() => {
+          setShowActivityModal(false);
+          setEditingActivity(null);
+        }}
+        onSave={async (formData) => {
+          try {
+            if (editingActivity) {
+              await updateActivity(editingActivity.id, formData);
+            } else {
+              await createActivity(formData);
+            }
+            setShowActivityModal(false);
+            setEditingActivity(null);
+          } catch (err) {
+            console.error('Failed to save activity:', err);
+            // Error is already displayed by the hook
+          }
+        }}
+        activity={editingActivity}
+        isSaving={isSavingActivity}
+      />
     </div>
   );
 }
