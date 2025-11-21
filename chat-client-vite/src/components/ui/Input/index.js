@@ -1,1 +1,3 @@
-export { Input, default } from './Input';
+import InputComponent from './Input';
+export { Input } from './Input';
+export default InputComponent;

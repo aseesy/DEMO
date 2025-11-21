@@ -1,1 +1,3 @@
-export { Select, default } from './Select';
+import SelectComponent from './Select';
+export { Select } from './Select';
+export default SelectComponent;
