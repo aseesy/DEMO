@@ -6,12 +6,16 @@ const variants = {
   tertiary: 'border-2 border-teal-dark text-teal-dark hover:bg-teal-lightest disabled:border-gray-400 disabled:text-gray-400',
   ghost: 'text-teal-dark hover:bg-teal-lightest disabled:text-gray-400',
   danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400',
+  // Professional mediation-style variants
+  'teal-solid': 'bg-teal-medium text-white hover:bg-teal-dark disabled:bg-gray-400 shadow-md hover:shadow-lg',
+  'teal-outline': 'border-2 border-gray-900 text-gray-900 bg-transparent hover:bg-gray-50 disabled:border-gray-400 disabled:text-gray-400',
 };
 
 const sizes = {
   small: 'px-3 py-2 text-sm',
   medium: 'px-4 py-3 text-base',
-  large: 'px-6 py-4 text-lg',
+  large: 'px-8 py-4 text-lg',
+  xl: 'px-10 py-5 text-xl',
 };
 
 export const Button = ({
@@ -28,7 +32,7 @@ export const Button = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = 'font-semibold rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2';
+  const baseClasses = 'font-semibold rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2';
 
   const variantClasses = variants[variant] || variants.primary;
   const sizeClasses = sizes[size] || sizes.medium;

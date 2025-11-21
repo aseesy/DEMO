@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Modal, Input, Textarea, Select } from './ui';
+import { Button, Modal, Input, Textarea, Select, Heading, SectionHeader } from './ui';
 
 /**
  * UI Component Showcase
@@ -82,6 +82,235 @@ export function UIShowcase() {
             <div className="text-sm text-teal-medium">Lines Removed</div>
           </div>
         </div>
+
+        {/* Heading Component Section */}
+        <section className="mb-12">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-dark to-teal-medium px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Heading Component</h2>
+              <p className="text-teal-lightest mt-1">Professional serif headings for impactful statements</p>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Hero Variant */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Hero Heading</h3>
+                <div className="bg-gradient-to-br from-teal-lightest to-white p-8 rounded-lg">
+                  <Heading variant="hero">
+                    Moving forward, <em className="italic">together apart.</em>
+                  </Heading>
+                </div>
+              </div>
+
+              {/* Large Variant */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Large Heading</h3>
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <Heading variant="large" color="teal">
+                    Expert communication support
+                  </Heading>
+                </div>
+              </div>
+
+              {/* Medium & Small Variants */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Medium & Small Headings</h3>
+                <div className="space-y-4">
+                  <div className="bg-white border-2 border-teal-light p-4 rounded-lg">
+                    <Heading variant="medium" as="h2">
+                      Clarity, calm, and stability for your children
+                    </Heading>
+                  </div>
+                  <div className="bg-white border-2 border-teal-light p-4 rounded-lg">
+                    <Heading variant="small" as="h3" color="teal-medium">
+                      The neutral ground you need
+                    </Heading>
+                  </div>
+                </div>
+              </div>
+
+              {/* Color Variants */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Color Options</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+                    <Heading variant="medium" color="dark" as="h3">Dark Text</Heading>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border-2 border-teal-medium">
+                    <Heading variant="medium" color="teal" as="h3">Teal Text</Heading>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border-2 border-teal-light">
+                    <Heading variant="medium" color="teal-medium" as="h3">Teal Medium</Heading>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+                    <Heading variant="medium" color="light" as="h3">Light Text</Heading>
+                  </div>
+                </div>
+              </div>
+
+              {/* Code Example */}
+              <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                <pre>{`<Heading variant="hero">
+  Moving forward, <em>together apart.</em>
+</Heading>
+
+<Heading variant="large" color="teal">
+  Expert communication support
+</Heading>`}</pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SectionHeader Component Section */}
+        <section className="mb-12">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-dark to-teal-medium px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">SectionHeader Component</h2>
+              <p className="text-teal-lightest mt-1">Small caps section labels and category headers</p>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Basic Usage */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Usage</h3>
+                <div className="bg-gradient-to-br from-teal-lightest to-white p-8 rounded-lg space-y-4">
+                  <SectionHeader>Professional Mediation & Support</SectionHeader>
+                  <p className="text-gray-700 text-lg mt-2">
+                    We provide the neutral ground you need. Expert communication support and scheduling for co-parents seeking clarity, calm, and stability for their children.
+                  </p>
+                </div>
+              </div>
+
+              {/* Size Variants */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Size Variants</h3>
+                <div className="space-y-4">
+                  <div className="bg-white border-2 border-teal-light p-4 rounded-lg">
+                    <SectionHeader size="sm">Small Section Header</SectionHeader>
+                  </div>
+                  <div className="bg-white border-2 border-teal-light p-4 rounded-lg">
+                    <SectionHeader size="base">Base Section Header</SectionHeader>
+                  </div>
+                  <div className="bg-white border-2 border-teal-light p-4 rounded-lg">
+                    <SectionHeader size="lg">Large Section Header</SectionHeader>
+                  </div>
+                </div>
+              </div>
+
+              {/* Color Variants */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Color Variants</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white border-2 border-teal-light p-4 rounded-lg">
+                    <SectionHeader color="light">Teal Light</SectionHeader>
+                  </div>
+                  <div className="bg-white border-2 border-teal-medium p-4 rounded-lg">
+                    <SectionHeader color="medium">Teal Medium</SectionHeader>
+                  </div>
+                  <div className="bg-white border-2 border-teal-dark p-4 rounded-lg">
+                    <SectionHeader color="dark">Teal Dark</SectionHeader>
+                  </div>
+                </div>
+              </div>
+
+              {/* Code Example */}
+              <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                <pre>{`<SectionHeader>
+  Professional Mediation & Support
+</SectionHeader>
+
+<SectionHeader size="lg" color="dark">
+  Our Services
+</SectionHeader>`}</pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Professional Button Styles */}
+        <section className="mb-12">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-dark to-teal-medium px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Professional Button Styles</h2>
+              <p className="text-teal-lightest mt-1">New pill-shaped buttons matching the mediation design</p>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Professional CTA Buttons */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Call-to-Action Buttons (Pill Shape)</h3>
+                <div className="bg-gradient-to-br from-teal-lightest to-white p-8 rounded-lg">
+                  <div className="flex flex-wrap gap-4 items-center justify-center">
+                    <Button variant="teal-solid" size="large">
+                      Book Consultation
+                    </Button>
+                    <Button variant="teal-outline" size="large">
+                      How it Works
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* All Sizes */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Button Sizes</h3>
+                <div className="bg-white p-6 rounded-lg border-2 border-gray-200 flex flex-wrap gap-4 items-center">
+                  <Button variant="teal-solid" size="small">Small</Button>
+                  <Button variant="teal-solid" size="medium">Medium</Button>
+                  <Button variant="teal-solid" size="large">Large</Button>
+                  <Button variant="teal-solid" size="xl">Extra Large</Button>
+                </div>
+              </div>
+
+              {/* Outlined Variants */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Outlined Variants</h3>
+                <div className="bg-white p-6 rounded-lg border-2 border-gray-200 flex flex-wrap gap-4 items-center">
+                  <Button variant="teal-outline" size="small">Learn More</Button>
+                  <Button variant="teal-outline" size="medium">Get Started</Button>
+                  <Button variant="teal-outline" size="large">Contact Us</Button>
+                </div>
+              </div>
+
+              {/* Full Demo with Heading */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Complete Professional Layout</h3>
+                <div className="bg-gradient-to-br from-teal-lightest to-white p-12 rounded-lg text-center">
+                  <SectionHeader className="mb-4">Professional Mediation & Support</SectionHeader>
+                  <Heading variant="large" className="mb-6">
+                    Moving forward, <em className="italic">together apart.</em>
+                  </Heading>
+                  <p className="text-gray-700 text-lg mb-8 max-w-3xl mx-auto">
+                    We provide the neutral ground you need. Expert communication support and scheduling for co-parents seeking clarity, calm, and stability for their children.
+                  </p>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <Button variant="teal-solid" size="large">
+                      Book Consultation
+                    </Button>
+                    <Button variant="teal-outline" size="large">
+                      How it Works
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Code Example */}
+              <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                <pre>{`<SectionHeader>Professional Mediation</SectionHeader>
+<Heading variant="hero">
+  Moving forward, <em>together apart.</em>
+</Heading>
+<Button variant="teal-solid" size="large">
+  Book Consultation
+</Button>
+<Button variant="teal-outline" size="large">
+  How it Works
+</Button>`}</pre>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Button Component Section */}
         <section className="mb-12">
