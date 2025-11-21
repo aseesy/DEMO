@@ -87,7 +87,7 @@ export function GoogleOAuthCallback() {
         {isProcessing ? (
           <>
             <div className="mb-4">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#4DA8B0] border-t-transparent"></div>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-teal-medium border-t-transparent"></div>
             </div>
             <p className="text-slate-700 font-medium">Completing Google login...</p>
           </>

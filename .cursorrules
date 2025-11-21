@@ -1,0 +1,117 @@
+# Cursor Rules for LiaiZen
+
+## Design System Reference
+
+**CRITICAL**: Before writing ANY UI code, read and reference:
+- `/prompts/design_system.md` - Complete design system guidelines
+- `/prompts/design_critic.md` - UI critique and evaluation guide (your design mentor)
+
+These files contain:
+- Color palette and usage rules
+- Spacing philosophy (8px base unit)
+- Typography standards
+- Component patterns (buttons, inputs, cards, modals)
+- Chat layout patterns
+- Good vs bad UI examples
+- UX principles and accessibility requirements
+- **Design critique heuristics and common mistakes**
+- **How to ensure balance, rhythm, and cohesion**
+- **Visual hierarchy guidelines**
+- **What "professional and modern" means**
+
+## Design Critique Workflow
+
+**Before generating UI code:**
+1. ✅ Read `/prompts/design_system.md` for patterns
+2. ✅ Read `/prompts/design_critic.md` for evaluation criteria
+3. ✅ Run the pre-generation checklist from design_critic.md
+4. ✅ Critique your own work before submitting
+
+**When reviewing UI code:**
+- Use design_critic.md as your evaluation framework
+- Check spacing, hierarchy, consistency, clutter, balance, cohesion
+- Ensure it meets "professional and modern" standards
+
+## Code Style
+
+- Use Tailwind CSS classes, never inline styles
+- Functional React components with hooks
+- Named exports preferred
+- Components in `chat-client-vite/src/components/`
+- Modals in `chat-client-vite/src/components/modals/`
+- Custom hooks in `chat-client-vite/src/hooks/`
+
+## Design System Compliance
+
+When creating UI components:
+1. ✅ Reference `/prompts/design_system.md` for patterns
+2. ✅ Reference `/prompts/design_critic.md` for critique guidelines
+3. ✅ **Use design tokens via Tailwind classes** - See `DESIGN_TOKENS_USAGE.md` for token mapping
+4. ✅ Follow spacing scale (4px, 8px, 16px, 24px, 32px, 48px, 64px)
+5. ✅ Ensure 44px minimum touch targets
+6. ✅ Use 16px base font size for inputs
+7. ✅ Follow z-index hierarchy (nav: 50, modals: 100)
+8. ✅ Mobile-first responsive design
+9. ✅ Include accessibility features (labels, focus states, keyboard nav)
+
+## Design Token Usage
+
+**CRITICAL**: Always use Tailwind classes based on design tokens, never hardcode hex values.
+
+**Token Classes Available:**
+- Colors: `bg-teal-dark`, `bg-teal-medium`, `bg-teal-light`, `bg-teal-lightest`, `text-teal-dark`, etc.
+- Spacing: Use standard Tailwind spacing (p-4, p-8, etc.) which matches tokens
+- Border Radius: `rounded-lg`, `rounded-xl`, `rounded-2xl` (matches tokens)
+- Shadows: `shadow-sm`, `shadow-md`, `shadow-lg`, `shadow-xl`, `shadow-2xl`
+- Z-Index: `z-nav` (50), `z-modal` (100)
+
+**Migration Guide:**
+- `bg-[#275559]` → `bg-teal-dark`
+- `bg-[#4DA8B0]` → `bg-teal-medium`
+- `bg-[#C5E8E4]` → `bg-teal-light`
+- `bg-[#E6F7F5]` → `bg-teal-lightest`
+- `bg-[#1f4447]` → `bg-teal-darkest`
+- `border-[#C5E8E4]` → `border-teal-light`
+- `text-[#4DA8B0]` → `text-teal-medium`
+- `text-[#275559]` → `text-teal-dark`
+
+See `DESIGN_TOKENS_USAGE.md` for complete token reference.
+10. ✅ Run pre-generation checklist from design_critic.md
+
+## Architecture
+
+- Frontend: React 18+ with Vite, Tailwind CSS v4
+- Backend: Node.js 18+ with Express.js
+- Database: SQLite (with PostgreSQL migration path)
+- Realtime: Socket.io
+- AI: OpenAI API for message mediation
+
+## File Structure
+
+- `chat-client-vite/src/components/` - React components
+- `chat-client-vite/src/components/modals/` - Modal components
+- `chat-client-vite/src/hooks/` - Custom React hooks
+- `chat-server/` - Backend server code
+
+## Common Patterns
+
+See `.codebase-context-mcp/codebase-context.json` for:
+- Component patterns
+- Modal patterns
+- Navigation patterns
+- Button patterns
+- Form patterns
+
+## Best Practices
+
+1. Always reference design system AND design critic before writing UI
+2. Critique your own work using design_critic.md checklist
+3. Use MCP servers for codebase context
+4. Follow mobile-first responsive design
+5. Ensure accessibility (WCAG 2.1 AA)
+6. Test on mobile devices
+7. Use semantic HTML
+8. Handle errors gracefully
+9. Validate all user input
+10. Ask "Would a design professional approve this?" before submitting
+

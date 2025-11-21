@@ -194,50 +194,50 @@ export function LandingPage({ onGetStarted }) {
       {/* Hero Section */}
       <div className="pt-32 pb-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            {/* Beta Badge with Urgency */}
-            <div className="inline-flex flex-wrap items-center justify-center gap-2 px-5 py-2.5 bg-gray-50 rounded-full mb-8 border border-gray-200">
-              <span className="text-xs sm:text-sm font-medium text-gray-700 text-center">Join Our Beta Program • Limited Spots Available</span>
+          <div className="mb-20">
+            {/* Top Label - Teal uppercase */}
+            <div className="mb-6">
+              <p className="text-sm sm:text-base font-medium text-teal-medium uppercase tracking-wide">
+                PROFESSIONAL MEDIATION & SUPPORT
+              </p>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-gray-900 mb-8 leading-tight">
-              Cringe-Worthy Co-Parenting Messages?{' '}
-              <span className="text-[#007AFF]">We Get It.</span>
+            {/* Main Headline - Large serif font with italicized part */}
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-[#5D4037] mb-8 leading-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Co-parenting communication,{' '}
+              <span className="italic">without the cringe.</span>
             </h1>
-            <p className="text-xl sm:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-              LiaiZen prevents conflict in real time—so every message moves the conversation forward, not backward.
+
+            {/* Description Text */}
+            <p className="text-lg sm:text-xl text-gray-700 mb-10 max-w-3xl leading-relaxed">
+              We provide the neutral ground you need. Expert communication support and scheduling for co-parents seeking clarity, calm, and stability for their children.
             </p>
 
             {/* Dual CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-4 mb-8">
+            <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-4">
               <Button
                 onClick={() => {
-                  trackCTAClick('hero', 'Get Started', 'primary');
+                  trackCTAClick('hero', 'Try Our Beta', 'primary');
                   navigate('/signin');
                 }}
                 variant="primary"
                 size="large"
-                className="px-8 sm:px-10 text-base sm:text-lg w-full sm:w-auto"
+                className="px-8 sm:px-10 text-base sm:text-lg w-full sm:w-auto bg-teal-medium hover:bg-teal-dark"
               >
-                Get Started
+                Try Our Beta
               </Button>
               <Button
                 onClick={() => {
-                  trackCTAClick('hero', 'See How It Works', 'secondary');
+                  trackCTAClick('hero', 'Learn More', 'secondary');
                   document.querySelector('[data-section="value_proposition"]')?.scrollIntoView({ behavior: 'smooth' });
                 }}
                 variant="tertiary"
                 size="large"
-                className="px-8 sm:px-10 text-base sm:text-lg w-full sm:w-auto"
+                className="px-8 sm:px-10 text-base sm:text-lg w-full sm:w-auto border-2 border-gray-300 text-gray-700 hover:bg-gray-50 bg-white"
               >
-                See How It Works
+                Learn More
               </Button>
             </div>
-
-            {/* Microcopy */}
-            <p className="text-base text-gray-500 font-medium">
-              No lawyers, no $400/hr mediators. Just instant help before things escalate.
-            </p>
           </div>
 
           {/* The Real Problem Section - NEW */}

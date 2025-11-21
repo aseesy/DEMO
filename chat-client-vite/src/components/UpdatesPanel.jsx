@@ -53,25 +53,25 @@ export function UpdatesPanel({ username, onContactClick }) {
     switch (updateType) {
       case 'message':
         return (
-          <svg className="w-4 h-4 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
         );
       case 'task':
         return (
-          <svg className="w-4 h-4 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
         );
       case 'profile':
         return (
-          <svg className="w-4 h-4 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         );
       default:
         return (
-          <svg className="w-4 h-4 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
@@ -103,9 +103,9 @@ export function UpdatesPanel({ username, onContactClick }) {
   if (isLoadingUpdates) {
     return (
       <div>
-        <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#4DA8B0] mb-3 sm:mb-4">Updates</h2>
+        <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
         <div className="text-center py-6">
-          <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-[#C5E8E4] border-t-[#4DA8B0]" />
+          <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-teal-light border-t-[#4DA8B0]" />
         </div>
       </div>
     );
@@ -114,7 +114,7 @@ export function UpdatesPanel({ username, onContactClick }) {
   if (updates.length === 0) {
     return (
       <div>
-        <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#4DA8B0] mb-3 sm:mb-4">Updates</h2>
+        <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
         <div className="text-center py-6">
           <p className="text-gray-600 text-xs sm:text-sm">No recent updates</p>
         </div>
@@ -124,16 +124,16 @@ export function UpdatesPanel({ username, onContactClick }) {
 
   return (
     <div>
-      <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#4DA8B0] mb-3 sm:mb-4">Updates</h2>
+      <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
       <div className="space-y-2">
         {updates.map((update, index) => (
           <div
             key={index}
             onClick={() => handlePersonClick(update.personName)}
-            className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all bg-white border-2 border-[#C5E8E4] hover:border-[#4DA8B0] hover:shadow-sm touch-manipulation active:scale-[0.98]"
+            className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all bg-white border-2 border-teal-light hover:border-teal-medium hover:shadow-sm touch-manipulation active:scale-[0.98]"
           >
             <div className="flex-shrink-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#4DA8B0] text-white flex items-center justify-center text-xs sm:text-sm font-semibold">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-teal-medium text-white flex items-center justify-center text-xs sm:text-sm font-semibold">
                 {update.personName?.charAt(0).toUpperCase() || '?'}
               </div>
             </div>
@@ -142,7 +142,7 @@ export function UpdatesPanel({ username, onContactClick }) {
                 <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0">
                   {getUpdateIcon(update.type)}
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-[#4DA8B0] hover:text-[#4DA8B0] transition-colors truncate">
+                <span className="text-xs sm:text-sm font-semibold text-teal-medium hover:text-teal-medium transition-colors truncate">
                   {update.personName}
                 </span>
               </div>

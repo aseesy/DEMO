@@ -927,199 +927,396 @@ export function UIShowcase() {
             </div>
 
             <div className="p-6 space-y-8">
-              {/* Font Families */}
+              {/* Font Families - CEO Presentation Style */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Font Families</h3>
-                <div className="space-y-4">
-                  <div className="bg-white border-2 border-gray-200 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">Serif - For headings and impactful statements</p>
-                    <p className="font-serif text-2xl">Georgia, Cambria, Times New Roman</p>
-                    <p className="font-serif text-lg italic mt-2">Moving forward, together apart.</p>
+                <h3 className="text-2xl font-bold text-teal-dark mb-8">Typography System</h3>
+
+                {/* Serif Font Specimen */}
+                <div className="bg-gradient-to-br from-teal-lightest via-white to-teal-lightest p-12 rounded-2xl border-2 border-teal-light mb-8 shadow-lg">
+                  <div className="text-xs uppercase tracking-widest text-teal-dark font-semibold mb-3">Primary Typeface — Headings</div>
+                  <div className="mb-6">
+                    <div className="text-sm text-gray-600 mb-2">Font Type Used:</div>
+                    <div className="font-serif text-7xl text-gray-900 leading-tight mb-4">Georgia</div>
                   </div>
-                  <div className="bg-white border-2 border-gray-200 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">Sans-serif - For body text and UI elements</p>
-                    <p className="font-sans text-2xl">Inter, system-ui, -apple-system</p>
-                    <p className="font-sans text-lg mt-2">Expert communication support for co-parents</p>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+                    <div>
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Alphabet</div>
+                      <div className="font-serif text-2xl text-gray-800">
+                        ABCDEFGHIJKLMNOPQRSTUVWXYZ<br/>
+                        abcdefghijklmnopqrstuvwxyz
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Numbers & Characters</div>
+                      <div className="font-serif text-2xl text-gray-800">
+                        0123456789<br/>
+                        !@#$%^&*()
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t-2 border-teal-light pt-6">
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-3">Example Usage</div>
+                    <p className="font-serif text-4xl text-gray-900 italic leading-relaxed">
+                      Moving forward, together apart.
+                    </p>
+                    <p className="text-sm text-gray-600 mt-4">Use for: Hero headings, section titles, impactful statements, emotional messaging</p>
+                  </div>
+                </div>
+
+                {/* Sans-Serif Font Specimen */}
+                <div className="bg-white p-12 rounded-2xl border-2 border-gray-200 shadow-lg">
+                  <div className="text-xs uppercase tracking-widest text-teal-dark font-semibold mb-3">Secondary Typeface — Body Text</div>
+                  <div className="mb-6">
+                    <div className="text-sm text-gray-600 mb-2">Font Type Used:</div>
+                    <div className="font-sans text-7xl text-gray-900 leading-tight mb-4 font-semibold">Inter</div>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+                    <div>
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Alphabet</div>
+                      <div className="font-sans text-2xl text-gray-800">
+                        ABCDEFGHIJKLMNOPQRSTUVWXYZ<br/>
+                        abcdefghijklmnopqrstuvwxyz
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Numbers & Characters</div>
+                      <div className="font-sans text-2xl text-gray-800">
+                        0123456789<br/>
+                        !@#$%^&*()
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t-2 border-gray-200 pt-6">
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-3">Example Usage</div>
+                    <p className="font-sans text-2xl text-gray-700 leading-relaxed">
+                      Expert communication support and scheduling for co-parents seeking clarity, calm, and stability in their children's lives.
+                    </p>
+                    <p className="text-sm text-gray-600 mt-4">Use for: Paragraphs, UI elements, buttons, forms, navigation, readable content</p>
                   </div>
                 </div>
               </div>
 
-              {/* Font Sizes */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Font Size Scale</h3>
-                <div className="space-y-3">
-                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
-                    <span className="text-xs font-mono text-gray-500 w-16">xs (12px)</span>
-                    <span className="text-xs">The quick brown fox jumps over the lazy dog</span>
+              {/* Type Scale - CEO Presentation Style */}
+              <div className="bg-white p-10 rounded-2xl border-2 border-gray-200 shadow-lg">
+                <h3 className="text-2xl font-bold text-teal-dark mb-6">Type Scale & Hierarchy</h3>
+
+                <div className="space-y-6">
+                  {/* Display Sizes */}
+                  <div className="border-b-2 border-gray-100 pb-6">
+                    <div className="text-xs uppercase tracking-widest text-teal-dark font-semibold mb-4">Display Sizes — Hero & Headlines</div>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="text-xs font-mono text-gray-500">4xl / 36px</span>
+                          <span className="text-xs text-gray-500">Hero Headlines</span>
+                        </div>
+                        <div className="text-4xl font-serif text-gray-900">Moving Forward Together</div>
+                      </div>
+                      <div>
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="text-xs font-mono text-gray-500">3xl / 30px</span>
+                          <span className="text-xs text-gray-500">Section Headlines</span>
+                        </div>
+                        <div className="text-3xl font-serif text-gray-900">Professional Mediation & Support</div>
+                      </div>
+                      <div>
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="text-xs font-mono text-gray-500">2xl / 24px</span>
+                          <span className="text-xs text-gray-500">Card Headlines</span>
+                        </div>
+                        <div className="text-2xl font-semibold text-gray-900">Communication Tools</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
-                    <span className="text-xs font-mono text-gray-500 w-16">sm (14px)</span>
-                    <span className="text-sm">The quick brown fox jumps over the lazy dog</span>
+
+                  {/* Body Sizes */}
+                  <div className="border-b-2 border-gray-100 pb-6">
+                    <div className="text-xs uppercase tracking-widest text-teal-dark font-semibold mb-4">Body Sizes — Content & UI</div>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="text-xs font-mono text-gray-500">xl / 20px</span>
+                          <span className="text-xs text-gray-500">Subheadings</span>
+                        </div>
+                        <div className="text-xl text-gray-800">Expert support for co-parents seeking clarity</div>
+                      </div>
+                      <div>
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="text-xs font-mono text-gray-500">lg / 18px</span>
+                          <span className="text-xs text-gray-500">Prominent Body</span>
+                        </div>
+                        <div className="text-lg text-gray-700">Communication support and scheduling for separated families</div>
+                      </div>
+                      <div>
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="text-xs font-mono text-gray-500">base / 16px</span>
+                          <span className="text-xs text-gray-500">Standard Body Text</span>
+                        </div>
+                        <div className="text-base text-gray-700">This is the primary reading size for paragraphs and longer content</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
-                    <span className="text-xs font-mono text-gray-500 w-16">base (16px)</span>
-                    <span className="text-base">The quick brown fox jumps over the lazy dog</span>
-                  </div>
-                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
-                    <span className="text-xs font-mono text-gray-500 w-16">lg (18px)</span>
-                    <span className="text-lg">The quick brown fox jumps over the lazy dog</span>
-                  </div>
-                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
-                    <span className="text-xs font-mono text-gray-500 w-16">xl (20px)</span>
-                    <span className="text-xl">The quick brown fox jumps over the lazy dog</span>
-                  </div>
-                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
-                    <span className="text-xs font-mono text-gray-500 w-16">2xl (24px)</span>
-                    <span className="text-2xl">The quick brown fox</span>
-                  </div>
-                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
-                    <span className="text-xs font-mono text-gray-500 w-16">3xl (30px)</span>
-                    <span className="text-3xl">The quick brown fox</span>
-                  </div>
-                  <div className="flex items-baseline gap-4 bg-gray-50 p-3 rounded-lg">
-                    <span className="text-xs font-mono text-gray-500 w-16">4xl (36px)</span>
-                    <span className="text-4xl">The quick brown</span>
+
+                  {/* Small Sizes */}
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-teal-dark font-semibold mb-4">Small Sizes — Metadata & Labels</div>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="text-xs font-mono text-gray-500">sm / 14px</span>
+                          <span className="text-xs text-gray-500">Helper Text, Captions</span>
+                        </div>
+                        <div className="text-sm text-gray-600">Secondary information and supporting details appear at this size</div>
+                      </div>
+                      <div>
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="text-xs font-mono text-gray-500">xs / 12px</span>
+                          <span className="text-xs text-gray-500">Labels, Timestamps</span>
+                        </div>
+                        <div className="text-xs text-gray-500">Small labels, metadata, and supplementary information</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Font Weights */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Font Weights</h3>
-                <div className="space-y-3">
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <span className="font-normal text-lg">Normal (400) - Body text and paragraphs</span>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <span className="font-medium text-lg">Medium (500) - Subtle emphasis</span>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <span className="font-semibold text-lg">Semibold (600) - Headings and labels</span>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <span className="font-bold text-lg">Bold (700) - Strong emphasis</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 5-Level Teal Color Palette */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">5-Level Teal Color Palette</h3>
-                <div className="space-y-4">
-                  <div className="bg-teal-lightest p-6 rounded-lg border-2 border-teal-light">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-teal-darkest">teal-lightest</span>
-                      <code className="text-sm bg-white px-2 py-1 rounded">#E6F7F5</code>
-                    </div>
-                    <p className="text-sm text-teal-dark">Backgrounds, subtle highlights, gentle accents</p>
-                  </div>
-
-                  <div className="bg-teal-light p-6 rounded-lg border-2 border-teal-medium">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-teal-darkest">teal-light</span>
-                      <code className="text-sm bg-white px-2 py-1 rounded">#B2E5E0</code>
-                    </div>
-                    <p className="text-sm text-teal-darkest">Borders, secondary elements, hover states</p>
-                  </div>
-
-                  <div className="bg-teal-medium p-6 rounded-lg border-2 border-teal-dark">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-white">teal-medium</span>
-                      <code className="text-sm bg-white/90 px-2 py-1 rounded text-teal-dark">#4DA8B0</code>
-                    </div>
-                    <p className="text-sm text-white">Primary buttons, section headers, main brand color</p>
-                  </div>
-
-                  <div className="bg-teal-dark p-6 rounded-lg border-2 border-teal-darkest">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-white">teal-dark</span>
-                      <code className="text-sm bg-white/90 px-2 py-1 rounded text-teal-darkest">#275559</code>
-                    </div>
-                    <p className="text-sm text-teal-lightest">Text, dark buttons, strong emphasis</p>
-                  </div>
-
-                  <div className="bg-teal-darkest p-6 rounded-lg border-2 border-gray-800">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-white">teal-darkest</span>
-                      <code className="text-sm bg-white/90 px-2 py-1 rounded text-teal-darkest">#1A3E41</code>
-                    </div>
-                    <p className="text-sm text-teal-lightest">Hover states, deep contrast, shadows</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Text Colors in Context */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Text Colors in Context</h3>
-                <div className="bg-white border-2 border-gray-200 p-6 rounded-lg space-y-4">
-                  <p className="text-teal-lightest text-lg">Text in teal-lightest (use on dark backgrounds)</p>
-                  <p className="text-teal-light text-lg">Text in teal-light</p>
-                  <p className="text-teal-medium text-lg">Text in teal-medium (primary accent color)</p>
-                  <p className="text-teal-dark text-lg">Text in teal-dark (main heading color)</p>
-                  <p className="text-teal-darkest text-lg">Text in teal-darkest (strong emphasis)</p>
-                </div>
-              </div>
-
-              {/* Typography Combinations */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recommended Combinations</h3>
+              <div className="bg-white p-10 rounded-2xl border-2 border-gray-200 shadow-lg">
+                <h3 className="text-2xl font-bold text-teal-dark mb-6">Font Weights</h3>
                 <div className="space-y-6">
-                  {/* Hero Section */}
-                  <div className="bg-gradient-to-br from-teal-lightest to-white p-8 rounded-lg border-2 border-teal-light">
-                    <SectionHeader color="medium" className="mb-2">Professional Mediation</SectionHeader>
-                    <h2 className="font-serif text-4xl md:text-5xl text-gray-900 mb-4">
-                      Moving forward, <em className="italic">together apart.</em>
-                    </h2>
-                    <p className="text-lg text-gray-700 mb-6">
-                      Expert communication support and scheduling for co-parents seeking clarity, calm, and stability.
-                    </p>
-                    <Button variant="teal-solid" size="large">Get Started</Button>
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Normal / 400</div>
+                    <div className="font-normal text-2xl text-gray-900 mb-1">Body Text Weight</div>
+                    <p className="font-normal text-base text-gray-600">Standard weight for paragraphs and readable content. Maintains excellent legibility at all sizes.</p>
                   </div>
-
-                  {/* Content Section */}
-                  <div className="bg-white p-8 rounded-lg border-2 border-gray-200">
-                    <h3 className="text-2xl font-semibold text-teal-dark mb-3">Section Heading (2xl, semibold, teal-dark)</h3>
-                    <p className="text-base text-gray-700 mb-4">
-                      Body paragraph (base/16px, normal, gray-700). This is the standard text size for readable content. Use Inter or system sans-serif fonts for optimal legibility in long-form text.
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Small text (sm/14px, normal, gray-600) for secondary information, captions, or helper text.
-                    </p>
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Medium / 500</div>
+                    <div className="font-medium text-2xl text-gray-900 mb-1">Subtle Emphasis Weight</div>
+                    <p className="font-medium text-base text-gray-700">Slightly heavier than normal for gentle emphasis without overwhelming the hierarchy.</p>
                   </div>
-
-                  {/* Card */}
-                  <div className="bg-teal-dark p-8 rounded-lg text-white">
-                    <h4 className="text-xl font-semibold mb-2">Dark Background Card</h4>
-                    <p className="text-teal-lightest mb-4">
-                      Use teal-lightest text on dark teal backgrounds for optimal contrast and readability.
-                    </p>
-                    <Button variant="teal-outline" size="medium" className="border-white text-white hover:bg-white/10">
-                      Learn More
-                    </Button>
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Semibold / 600</div>
+                    <div className="font-semibold text-2xl text-gray-900 mb-1">Heading Weight</div>
+                    <p className="font-semibold text-base text-gray-800">Perfect for subheadings, labels, and UI elements that need clear distinction.</p>
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Bold / 700</div>
+                    <div className="font-bold text-2xl text-gray-900 mb-1">Strong Emphasis Weight</div>
+                    <p className="font-bold text-base text-gray-900">Maximum emphasis for critical information, calls to action, and primary headings.</p>
                   </div>
                 </div>
               </div>
 
-              {/* Code Example */}
-              <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                <pre>{`// Font Families
-font-serif → Georgia, Cambria, Times New Roman
-font-sans → Inter, system-ui, -apple-system
+              {/* 5-Level Teal Color Palette - CEO Presentation Style */}
+              <div className="bg-gradient-to-br from-gray-50 to-white p-10 rounded-2xl border-2 border-gray-200 shadow-lg">
+                <h3 className="text-2xl font-bold text-teal-dark mb-3">Brand Color Palette</h3>
+                <p className="text-gray-600 mb-8">A monochromatic teal system designed for harmony, trust, and clarity</p>
 
-// Teal Palette
-text-teal-lightest → #E6F7F5
-text-teal-light → #B2E5E0
-text-teal-medium → #4DA8B0
-text-teal-dark → #275559
-text-teal-darkest → #1A3E41
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                  {/* Teal Lightest */}
+                  <div className="group">
+                    <div className="bg-teal-lightest h-32 rounded-t-xl border-2 border-teal-light transition-transform group-hover:scale-105"></div>
+                    <div className="bg-white p-4 rounded-b-xl border-2 border-t-0 border-teal-light">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Lightest</div>
+                      <div className="font-mono text-sm font-bold text-teal-darkest mb-2">#E6F7F5</div>
+                      <div className="text-xs text-gray-600 leading-relaxed">
+                        Backgrounds, subtle highlights, gentle accents
+                      </div>
+                    </div>
+                  </div>
 
-// Example Usage
-<h1 className="font-serif text-4xl text-teal-dark">
-  Heading
-</h1>
-<p className="font-sans text-base text-gray-700">
-  Body text
-</p>`}</pre>
+                  {/* Teal Light */}
+                  <div className="group">
+                    <div className="bg-teal-light h-32 rounded-t-xl border-2 border-teal-medium transition-transform group-hover:scale-105"></div>
+                    <div className="bg-white p-4 rounded-b-xl border-2 border-t-0 border-teal-medium">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Light</div>
+                      <div className="font-mono text-sm font-bold text-teal-darkest mb-2">#B2E5E0</div>
+                      <div className="text-xs text-gray-600 leading-relaxed">
+                        Borders, secondary elements, hover states
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Teal Medium - PRIMARY BRAND */}
+                  <div className="group">
+                    <div className="bg-teal-medium h-32 rounded-t-xl border-2 border-teal-dark transition-transform group-hover:scale-105 relative overflow-hidden">
+                      <div className="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded text-xs font-semibold text-teal-dark">
+                        PRIMARY
+                      </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-b-xl border-2 border-t-0 border-teal-dark">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Medium</div>
+                      <div className="font-mono text-sm font-bold text-teal-darkest mb-2">#4DA8B0</div>
+                      <div className="text-xs text-gray-600 leading-relaxed">
+                        Primary buttons, headers, main brand color
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Teal Dark */}
+                  <div className="group">
+                    <div className="bg-teal-dark h-32 rounded-t-xl border-2 border-teal-darkest transition-transform group-hover:scale-105"></div>
+                    <div className="bg-white p-4 rounded-b-xl border-2 border-t-0 border-teal-darkest">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Dark</div>
+                      <div className="font-mono text-sm font-bold text-teal-darkest mb-2">#275559</div>
+                      <div className="text-xs text-gray-600 leading-relaxed">
+                        Text, dark buttons, strong emphasis
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Teal Darkest */}
+                  <div className="group">
+                    <div className="bg-teal-darkest h-32 rounded-t-xl border-2 border-gray-800 transition-transform group-hover:scale-105"></div>
+                    <div className="bg-white p-4 rounded-b-xl border-2 border-t-0 border-gray-800">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Darkest</div>
+                      <div className="font-mono text-sm font-bold text-teal-darkest mb-2">#1A3E41</div>
+                      <div className="text-xs text-gray-600 leading-relaxed">
+                        Hover states, deep contrast, shadows
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Color Usage Examples */}
+                <div className="mt-8 pt-8 border-t-2 border-gray-200">
+                  <div className="text-xs uppercase tracking-widest text-teal-dark font-semibold mb-4">Color In Context</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-teal-lightest p-6 rounded-xl border-2 border-teal-light">
+                      <div className="text-teal-dark font-semibold mb-2">Light Background</div>
+                      <p className="text-teal-dark text-sm">Perfect for cards, panels, and subtle section backgrounds that need gentle visual separation.</p>
+                    </div>
+                    <div className="bg-teal-medium p-6 rounded-xl border-2 border-teal-dark">
+                      <div className="text-white font-semibold mb-2">Primary Actions</div>
+                      <p className="text-white text-sm">Use for call-to-action buttons, active states, and primary interactive elements.</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl border-2 border-teal-light">
+                      <div className="text-teal-dark font-semibold mb-2">Text on White</div>
+                      <p className="text-teal-dark text-sm">Use teal-dark or teal-darkest for headings on white backgrounds for maximum readability.</p>
+                    </div>
+                    <div className="bg-teal-dark p-6 rounded-xl border-2 border-teal-darkest">
+                      <div className="text-teal-lightest font-semibold mb-2">Dark Backgrounds</div>
+                      <p className="text-teal-lightest text-sm">Use teal-lightest text on dark teal backgrounds for optimal contrast and elegance.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Real-World Application Examples */}
+              <div className="bg-white p-10 rounded-2xl border-2 border-gray-200 shadow-lg">
+                <h3 className="text-2xl font-bold text-teal-dark mb-3">Typography in Application</h3>
+                <p className="text-gray-600 mb-8">See how these elements come together in real interface patterns</p>
+
+                <div className="space-y-8">
+                  {/* Hero Section Example */}
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-teal-dark font-semibold mb-3">Hero Section Pattern</div>
+                    <div className="bg-gradient-to-br from-teal-lightest to-white p-10 rounded-2xl border-2 border-teal-light">
+                      <div className="text-xs uppercase tracking-wider text-teal-medium font-semibold mb-3">PROFESSIONAL MEDIATION</div>
+                      <h2 className="font-serif text-5xl text-gray-900 mb-4 leading-tight">
+                        Moving forward, <em className="italic">together apart.</em>
+                      </h2>
+                      <p className="text-lg text-gray-700 max-w-2xl mb-6">
+                        Expert communication support and scheduling for co-parents seeking clarity, calm, and stability.
+                      </p>
+                      <Button variant="teal-solid" size="xl">Get Started Today</Button>
+                    </div>
+                  </div>
+
+                  {/* Content Card Example */}
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-teal-dark font-semibold mb-3">Content Card Pattern</div>
+                    <div className="bg-white p-8 rounded-2xl border-2 border-teal-light shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-teal-medium text-white p-3 rounded-xl">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-2xl font-semibold text-teal-dark mb-2">AI-Mediated Messaging</h3>
+                          <p className="text-base text-gray-700 mb-4 leading-relaxed">
+                            Real-time message filtering and tone adjustment helps reduce conflict and improve communication quality between co-parents.
+                          </p>
+                          <div className="flex gap-3">
+                            <Button variant="teal-solid" size="medium">Learn More</Button>
+                            <Button variant="teal-outline" size="medium">View Demo</Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dark Background Example */}
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-teal-dark font-semibold mb-3">Dark Background Pattern</div>
+                    <div className="bg-teal-dark p-10 rounded-2xl">
+                      <div className="max-w-3xl">
+                        <h4 className="text-3xl font-serif text-white mb-3 italic">Better co-parenting through better communication</h4>
+                        <p className="text-teal-lightest text-lg mb-6 leading-relaxed">
+                          Join thousands of separated parents who have improved their communication and reduced conflict using our AI-powered platform.
+                        </p>
+                        <div className="flex gap-4">
+                          <div className="bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl p-4 flex-1">
+                            <div className="text-3xl font-bold text-white mb-1">92%</div>
+                            <div className="text-teal-lightest text-sm">Report Less Conflict</div>
+                          </div>
+                          <div className="bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl p-4 flex-1">
+                            <div className="text-3xl font-bold text-white mb-1">4.8★</div>
+                            <div className="text-teal-lightest text-sm">Average Rating</div>
+                          </div>
+                          <div className="bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl p-4 flex-1">
+                            <div className="text-3xl font-bold text-white mb-1">10k+</div>
+                            <div className="text-teal-lightest text-sm">Active Users</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Developer Reference */}
+              <div className="bg-gray-900 rounded-2xl overflow-hidden shadow-lg">
+                <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4 border-b border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-mono text-green-400">typography-reference.css</div>
+                    <div className="text-xs text-gray-500">Developer Quick Reference</div>
+                  </div>
+                </div>
+                <div className="p-6 text-green-400 font-mono text-sm overflow-x-auto">
+                  <pre className="leading-relaxed">{`// FONT FAMILIES
+font-serif     → Georgia, Cambria, Times New Roman
+font-sans      → Inter, system-ui, -apple-system
+
+// BRAND COLOR PALETTE (5-Level Teal)
+text-teal-lightest   → #E6F7F5  // Light backgrounds, text on dark
+text-teal-light      → #B2E5E0  // Borders, secondary elements
+text-teal-medium     → #4DA8B0  // PRIMARY - Buttons, headers
+text-teal-dark       → #275559  // Headings, emphasis text
+text-teal-darkest    → #1A3E41  // Hover states, deep contrast
+
+// TYPOGRAPHY SCALE
+text-xs    → 12px   // Labels, timestamps
+text-sm    → 14px   // Helper text, captions
+text-base  → 16px   // Body paragraphs (default)
+text-lg    → 18px   // Prominent body text
+text-xl    → 20px   // Subheadings
+text-2xl   → 24px   // Card headings
+text-3xl   → 30px   // Section headings
+text-4xl   → 36px   // Hero headings
+
+// RECOMMENDED PATTERNS
+<div className="bg-gradient-to-br from-teal-lightest to-white">
+  <h1 className="font-serif text-4xl text-gray-900 italic">
+    Hero Heading
+  </h1>
+  <p className="font-sans text-lg text-gray-700">
+    Supporting paragraph with readable body text
+  </p>
+  <Button variant="teal-solid" size="xl">Call to Action</Button>
+</div>`}</pre>
+                </div>
               </div>
             </div>
           </div>

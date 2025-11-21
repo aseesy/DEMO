@@ -1,0 +1,16 @@
+{
+  "name": "liaizen-codebase-context-mcp",
+  "version": "1.0.0",
+  "description": "MCP server providing LiaiZen codebase context and architectural knowledge",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "liaizen-codebase-context-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  }
+}

@@ -43,11 +43,11 @@ function AccountView({ username }) {
 
   if (isLoadingProfile) {
     return (
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div className="p-4 sm:p-6">
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-100 border-t-[#4DA8B0]" />
-            <p className="mt-4 text-[#4DA8B0] font-medium">Loading account...</p>
+      <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden">
+        <div className="p-8 sm:p-10">
+          <div className="text-center py-16">
+            <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-100 border-t-teal-medium" />
+            <p className="mt-6 text-teal-medium font-semibold text-lg">Loading account...</p>
           </div>
         </div>
       </div>
@@ -55,36 +55,40 @@ function AccountView({ username }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden">
+      <div className="p-6 sm:p-8 space-y-8">
         {error && (
-          <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
-            {error}
+          <div className="bg-red-50 border-2 border-red-200 text-red-700 px-5 py-4 rounded-xl mb-6 text-sm shadow-sm">
+            <div className="font-semibold mb-1">Error</div>
+            <div>{error}</div>
           </div>
         )}
 
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Account</h2>
-          <p className="text-slate-600 text-sm">
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold text-teal-dark mb-3">Account</h2>
+          <p className="text-base text-gray-600 leading-relaxed">
             Manage billing, authentication, and household members connected to your space.
           </p>
         </div>
 
         {/* Account Information */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-[#C5E8E4] shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-[#E6F7F5] rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow mb-6">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 bg-white border-2 border-teal-light rounded-xl flex items-center justify-center shadow-sm">
+              <svg className="w-6 h-6 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-[#4DA8B0]">
-              Account Information
-            </h3>
-          </div>
-          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-[#4DA8B0] mb-2">
+              <h3 className="text-xl font-semibold text-teal-dark mb-1">
+                Account Information
+              </h3>
+              <p className="text-sm text-gray-600">Update your email and account details</p>
+            </div>
+          </div>
+          <div className="space-y-5">
+            <div>
+              <label className="block text-sm font-semibold text-teal-dark mb-2.5">
                 Email Address
               </label>
               <input
@@ -93,7 +97,7 @@ function AccountView({ username }) {
                 onChange={(e) =>
                   setProfileData({ ...profileData, email: e.target.value })
                 }
-                className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px]"
                 placeholder="your@email.com"
               />
             </div>
@@ -101,27 +105,30 @@ function AccountView({ username }) {
         </div>
 
         {/* Password Section */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-[#C5E8E4] shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#E6F7F5] rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white border-2 border-teal-light rounded-xl flex items-center justify-center shadow-sm">
+              <svg className="w-6 h-6 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-[#4DA8B0]">Password</h3>
+              <div>
+                <h3 className="text-xl font-semibold text-teal-dark mb-1">Password</h3>
+                <p className="text-sm text-gray-600">Update your account password</p>
+              </div>
             </div>
             <button
               onClick={() => setShowPasswordChange(!showPasswordChange)}
-              className="px-4 py-2 bg-[#E6F7F5] text-[#4DA8B0] border border-[#C5E8E4] hover:bg-gray-200 rounded-lg font-semibold text-sm transition-all shadow-sm hover:shadow-md"
+              className="px-5 py-3 bg-white text-teal-medium border-2 border-teal-light hover:bg-teal-lightest rounded-lg font-semibold text-sm transition-all shadow-sm hover:shadow-md min-h-[44px] whitespace-nowrap"
             >
               {showPasswordChange ? 'Cancel' : 'Change Password'}
             </button>
           </div>
           {showPasswordChange && (
-            <div className="space-y-4">
+            <div className="space-y-5 pt-4 border-t-2 border-teal-light">
               <div>
-                <label className="block text-sm font-semibold text-[#4DA8B0] mb-2">
+                <label className="block text-sm font-semibold text-teal-dark mb-2.5">
                   Current Password
                 </label>
                 <input
@@ -133,11 +140,12 @@ function AccountView({ username }) {
                       currentPassword: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                  className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px]"
+                  placeholder="Enter current password"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#4DA8B0] mb-2">
+                <label className="block text-sm font-semibold text-teal-dark mb-2.5">
                   New Password
                 </label>
                 <input
@@ -149,11 +157,12 @@ function AccountView({ username }) {
                       newPassword: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                  className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px]"
+                  placeholder="Enter new password"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#4DA8B0] mb-2">
+                <label className="block text-sm font-semibold text-teal-dark mb-2.5">
                   Confirm New Password
                 </label>
                 <input
@@ -165,50 +174,63 @@ function AccountView({ username }) {
                       confirmPassword: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all"
+                  className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px]"
+                  placeholder="Confirm new password"
                 />
               </div>
               <button
                 onClick={changePassword}
                 disabled={isChangingPassword}
-                className="w-full bg-[#4DA8B0] hover:bg-[#1f4447] text-white py-3 px-4 rounded-lg font-semibold disabled:bg-gray-400 transition-all shadow-md hover:shadow-lg"
+                className="w-full bg-teal-dark hover:bg-teal-darkest text-white py-3.5 px-5 rounded-lg font-semibold disabled:bg-gray-400 transition-all shadow-sm hover:shadow-md min-h-[44px] flex items-center justify-center gap-2"
               >
-                {isChangingPassword ? 'Changing...' : 'Update Password'}
+                {isChangingPassword ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Changing...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Update Password</span>
+                  </>
+                )}
               </button>
             </div>
           )}
         </div>
 
         {/* Other Account Sections */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="border border-slate-100 rounded-2xl p-4">
-            <h3 className="font-semibold text-slate-900 mb-2">Plan &amp; Billing</h3>
-            <p className="text-sm text-slate-600">Upgrade plans or download invoices.</p>
+        <div className="grid gap-6 md:grid-cols-2 mb-6">
+          <div className="border-2 border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <h3 className="font-semibold text-lg text-teal-dark mb-2">Plan &amp; Billing</h3>
+            <p className="text-sm text-gray-600 leading-relaxed">Upgrade plans or download invoices.</p>
           </div>
-          <div className="border border-slate-100 rounded-2xl p-4">
-            <h3 className="font-semibold text-slate-900 mb-2">Household Access</h3>
-            <p className="text-sm text-slate-600">Invite, remove, or update connected caregivers.</p>
+          <div className="border-2 border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <h3 className="font-semibold text-lg text-teal-dark mb-2">Household Access</h3>
+            <p className="text-sm text-gray-600 leading-relaxed">Invite, remove, or update connected caregivers.</p>
           </div>
         </div>
 
         {/* Save button */}
-        <div className="bg-gradient-to-br from-[#4DA8B0] to-[#3d8a92] rounded-2xl p-1 shadow-lg hover:shadow-xl transition-all">
+        <div className="bg-teal-dark rounded-xl p-1.5 shadow-md hover:shadow-lg transition-shadow">
           <button
             onClick={saveProfile}
             disabled={isSavingProfile}
-            className="w-full bg-gradient-to-br from-[#4DA8B0] to-[#3d8a92] hover:from-[#3d8a92] hover:to-[#2d6d75] text-white py-3 px-6 rounded-xl font-semibold text-base disabled:from-gray-400 disabled:to-gray-500 transition-all flex items-center justify-center gap-2"
+            className="w-full bg-teal-dark hover:bg-teal-darkest text-white py-3.5 px-6 rounded-lg font-semibold text-base disabled:bg-gray-400 transition-all flex items-center justify-center gap-2 min-h-[44px]"
           >
             {isSavingProfile ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Saving Changes...
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Saving Changes...</span>
               </>
             ) : (
               <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                Save Account
+                <span>Save Account</span>
               </>
             )}
           </button>
@@ -508,11 +530,15 @@ function ChatRoom() {
     if (!isAuthenticated) return;
 
     try {
+      const token = localStorage.getItem('auth_token_backup');
       const response = await fetch(
         `${API_BASE_URL.replace(/\/+$/, '')}/api/room/members/check`,
         {
           method: 'GET',
           credentials: 'include',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
         },
       );
 
@@ -723,7 +749,7 @@ function ChatRoom() {
 
   if (isAuthenticated) {
     return (
-      <div className="h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex flex-col overflow-hidden">
+      <div className="h-screen bg-white flex flex-col overflow-hidden">
         {/* Device notifications handled by PWA Service Worker - no in-browser toasts */}
 
         {/* Navigation - Top for desktop, Bottom for mobile */}
@@ -741,17 +767,17 @@ function ChatRoom() {
         />
 
         {/* Main Content Area */}
-        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-16 md:pt-10 md:pb-4' : 'pt-10 md:pt-10 pb-20 md:pb-8 overflow-y-auto'} px-2 sm:px-4 md:px-6 lg:px-8 relative z-10`}>
+        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-16 md:pt-10 md:pb-4' : 'pt-10 md:pt-10 pb-20 md:pb-8 overflow-y-auto'} px-4 sm:px-6 md:px-8 relative z-10`}>
           <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : 'max-w-7xl mx-auto w-full'}`}>
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
-              <div className="space-y-0 md:space-y-4">
+              <div className="space-y-6 md:space-y-8">
                 {/* Invite acceptance notification */}
                 {isAcceptingInvite && (
-                  <div className="rounded-lg border-2 border-[#C5E8E4] bg-[#E6F7F5] px-4 py-3 text-sm text-[#4DA8B0] mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-[#C5E8E4] border-t-[#4DA8B0]" />
-                      <span>Accepting invite and joining room…</span>
+                  <div className="rounded-xl border-2 border-teal-light bg-white px-6 py-4 text-sm text-teal-medium mb-6 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-teal-light border-t-teal-medium" />
+                      <span className="font-medium">Accepting invite and joining room…</span>
                     </div>
                   </div>
                 )}
@@ -796,35 +822,35 @@ function ChatRoom() {
                     : 0;
 
                   return (
-                    <div className="bg-white rounded-2xl border-2 border-[#C5E8E4] p-4 md:p-6 mb-4 shadow-sm">
-                      <div className="mb-4">
-                        <h2 className="text-xl font-bold text-[#4DA8B0]">Communication Stats</h2>
-                        <p className="text-sm text-gray-600">Your positive messaging streak</p>
+                    <div className="bg-white rounded-2xl border-2 border-teal-light p-6 md:p-8 mb-6 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="mb-6">
+                        <h2 className="text-2xl font-semibold text-teal-dark mb-2">Communication Stats</h2>
+                        <p className="text-base text-gray-600">Your positive messaging streak</p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-6">
                         {/* High Score */}
-                        <div className="bg-[#E6F7F5] rounded-xl p-4 border-2 border-[#C5E8E4]">
-                          <div className="mb-2">
-                            <span className="text-sm font-semibold text-[#4DA8B0]">Record Streak</span>
+                        <div className="bg-white rounded-xl p-6 border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow">
+                          <div className="mb-3">
+                            <span className="text-sm font-semibold text-teal-medium uppercase tracking-wide">Record Streak</span>
                           </div>
-                          <div className="text-3xl font-bold text-[#4DA8B0]">{highScore}</div>
-                          <div className="text-xs text-gray-600 mt-1">messages in a row</div>
+                          <div className="text-4xl font-semibold text-teal-dark mb-2">{highScore}</div>
+                          <div className="text-xs text-gray-500">messages in a row</div>
                         </div>
 
                         {/* Average Score */}
-                        <div className="bg-[#E6F7F5] rounded-xl p-4 border-2 border-[#C5E8E4]">
-                          <div className="mb-2">
-                            <span className="text-sm font-semibold text-[#4DA8B0]">30-Day Average</span>
+                        <div className="bg-white rounded-xl p-6 border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow">
+                          <div className="mb-3">
+                            <span className="text-sm font-semibold text-teal-medium uppercase tracking-wide">30-Day Average</span>
                           </div>
-                          <div className="text-3xl font-bold text-[#4DA8B0]">{avgScore}</div>
-                          <div className="text-xs text-gray-600 mt-1">average streak</div>
+                          <div className="text-4xl font-semibold text-teal-dark mb-2">{avgScore}</div>
+                          <div className="text-xs text-gray-500">average streak</div>
                         </div>
                       </div>
 
                       {highScore > 0 && (
-                        <div className="mt-4 text-center text-sm text-gray-600">
-                          Keep up the great communication!
+                        <div className="mt-6 text-center">
+                          <p className="text-sm font-medium text-teal-medium">Keep up the great communication!</p>
                         </div>
                       )}
                     </div>
@@ -832,13 +858,16 @@ function ChatRoom() {
                 })()}
 
                 {/* Dashboard Grid: Tasks and Updates */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                   {/* Tasks Section */}
-                  <div className="bg-white rounded-2xl border-2 border-[#C5E8E4] p-4 md:p-6 shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                      <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#4DA8B0]">
-                    Your Tasks
-                  </h2>
+                  <div className="bg-white rounded-2xl border-2 border-teal-light p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                      <div>
+                        <h2 className="text-2xl font-semibold text-teal-dark mb-1">
+                          Your Tasks
+                        </h2>
+                        <p className="text-sm text-gray-600">Manage your co-parenting tasks</p>
+                      </div>
                       <button
                         onClick={() => {
                           setEditingTask(null);
@@ -856,17 +885,17 @@ function ChatRoom() {
                           });
                           setShowTaskForm(true);
                         }}
-                        className="px-3 py-1.5 sm:px-3 sm:py-2 bg-[#4DA8B0] text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#1f4447] transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 self-start sm:self-auto min-h-[36px] sm:min-h-[40px]"
+                        className="px-6 py-3 bg-teal-dark text-white rounded-lg text-sm font-semibold hover:bg-teal-darkest transition-all shadow-sm hover:shadow-md flex items-center gap-2 min-h-[44px] whitespace-nowrap"
                       >
-                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                         </svg>
                         Add Task
                       </button>
                     </div>
                     
                     {/* Search and Filter Controls */}
-                    <div className="mb-3 space-y-2">
+                    <div className="mb-6 space-y-4">
                       {/* Search Input */}
                       <div className="relative">
                         <input
@@ -874,52 +903,52 @@ function ChatRoom() {
                           value={taskSearch}
                           onChange={(e) => setTaskSearch(e.target.value)}
                           placeholder="Search tasks..."
-                          className="w-full px-3 py-2 sm:px-3 sm:py-2.5 pl-9 sm:pl-10 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm bg-white min-h-[40px] sm:min-h-[44px]"
+                          className="w-full px-5 py-3.5 pl-11 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 text-base bg-white min-h-[44px] transition-all"
                         />
-                        <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        <svg className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         {taskSearch && (
                           <button
                             onClick={() => setTaskSearch('')}
-                            className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#4DA8B0] p-1 touch-manipulation"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-medium p-1.5 rounded-lg hover:bg-gray-50 transition-all touch-manipulation"
                             aria-label="Clear search"
                           >
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </button>
                         )}
                       </div>
                       
                       {/* Filter Buttons */}
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-3 flex-wrap">
                         <button
                           onClick={() => setTaskFilter('open')}
-                          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
+                          className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all min-h-[44px] touch-manipulation ${
                             taskFilter === 'open'
-                              ? 'bg-[#4DA8B0] text-white'
-                              : 'bg-white border-2 border-[#C5E8E4] text-[#4DA8B0] hover:border-[#4DA8B0]'
+                              ? 'bg-teal-dark text-white shadow-sm hover:shadow-md'
+                              : 'bg-white border-2 border-teal-light text-teal-medium hover:border-teal-medium hover:bg-teal-lightest'
                           }`}
                         >
                           Open
                         </button>
                         <button
                           onClick={() => setTaskFilter('completed')}
-                          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
+                          className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all min-h-[44px] touch-manipulation ${
                             taskFilter === 'completed'
-                              ? 'bg-[#4DA8B0] text-white'
-                              : 'bg-white border-2 border-[#C5E8E4] text-[#4DA8B0] hover:border-[#4DA8B0]'
+                              ? 'bg-teal-medium text-white shadow-sm hover:shadow-md'
+                              : 'bg-white border-2 border-teal-light text-teal-medium hover:border-teal-medium hover:bg-teal-lightest'
                           }`}
                         >
                           Completed
                         </button>
                         <button
                           onClick={() => setTaskFilter('all')}
-                          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[36px] sm:min-h-[40px] touch-manipulation ${
+                          className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all min-h-[44px] touch-manipulation ${
                             taskFilter === 'all'
-                              ? 'bg-[#4DA8B0] text-white'
-                              : 'bg-white border-2 border-[#C5E8E4] text-[#4DA8B0] hover:border-[#4DA8B0]'
+                              ? 'bg-teal-medium text-white shadow-sm hover:shadow-md'
+                              : 'bg-white border-2 border-teal-light text-teal-medium hover:border-teal-medium hover:bg-teal-lightest'
                           }`}
                         >
                           All
@@ -927,19 +956,19 @@ function ChatRoom() {
                       </div>
                     </div>
                   {isLoadingTasks ? (
-                    <div className="text-center py-6">
-                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-[#C5E8E4] border-t-[#4DA8B0]" />
+                    <div className="text-center py-12">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-teal-light border-t-teal-medium" />
                     </div>
                   ) : tasks.length === 0 ? (
-                    <div className="text-center py-6">
-                      <p className="text-gray-600 text-sm">
+                    <div className="text-center py-12">
+                      <p className="text-gray-600 text-base">
                         {taskSearch || taskFilter !== 'open'
                           ? 'No tasks match your search or filter criteria.'
                           : 'No open tasks found. Create your first task to get started!'}
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {tasks.map((task) => {
                         const titleLower = (task.title || '').toLowerCase().trim();
                         const isCoparentTask =
@@ -1036,10 +1065,10 @@ function ChatRoom() {
                               });
                               setShowTaskForm(true);
                             }}
-                            className={`flex items-start sm:items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all touch-manipulation ${
+                            className={`flex items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-xl cursor-pointer transition-all touch-manipulation ${
                               task.status === 'completed'
-                                ? 'bg-[#E6F7F5] opacity-70 border border-[#C5E8E4]'
-                                : 'bg-white hover:shadow-sm active:scale-[0.98] border-2 border-[#C5E8E4] hover:border-[#4DA8B0]'
+                                ? 'bg-gray-50 opacity-70 border-2 border-gray-200'
+                                : 'bg-white hover:shadow-md active:scale-[0.98] border-2 border-teal-light hover:border-teal-medium shadow-sm'
                             }`}
                           >
                             {/* Task Icon/Status Circle */}
@@ -1049,26 +1078,26 @@ function ChatRoom() {
                                   e.stopPropagation();
                                   toggleTaskStatus(task);
                                 }}
-                                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all touch-manipulation min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] ${
-                                  task.status === 'completed' ? 'bg-[#4DA8B0]' : 'bg-[#4DA8B0]'
+                                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all touch-manipulation shadow-sm hover:shadow-md ${
+                                  task.status === 'completed' ? 'bg-teal-medium' : 'bg-teal-medium'
                                 }`}
                               >
                                 {task.status === 'completed' ? (
                                   <svg
-                                    className="w-4 h-4 sm:w-5 sm:h-5 text-white"
+                                    className="w-5 h-5 sm:w-6 sm:h-6 text-white"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
+                                    strokeWidth={2.5}
                                   >
                                     <path
                                       strokeLinecap="round"
                                       strokeLinejoin="round"
-                                      strokeWidth={3}
                                       d="M5 13l4 4L19 7"
                                     />
                                   </svg>
                                 ) : (
-                                  <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
+                                  <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center">
                                     {getTaskIcon()}
                                   </div>
                                 )}
@@ -1077,9 +1106,9 @@ function ChatRoom() {
 
                             {/* Task Content */}
                             <div className="flex-1 min-w-0 overflow-hidden">
-                              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                              <div className="flex items-center gap-2 sm:gap-3 min-w-0 mb-1">
                                 <h3
-                                  className={`text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-0.5 sm:mb-1 truncate ${
+                                  className={`text-sm sm:text-base font-semibold text-teal-dark truncate ${
                                     task.status === 'completed'
                                       ? 'line-through text-gray-400'
                                       : ''
@@ -1097,15 +1126,15 @@ function ChatRoom() {
                                 </h3>
                                 {isSmartTask && (
                                   <svg
-                                    className="w-3 h-3 sm:w-4 sm:h-4 text-[#4DA8B0] flex-shrink-0"
+                                    className="w-4 h-4 sm:w-5 sm:h-5 text-teal-medium flex-shrink-0"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
+                                    strokeWidth={2}
                                   >
                                     <path
                                       strokeLinecap="round"
                                       strokeLinejoin="round"
-                                      strokeWidth={2}
                                       d="M9 5l7 7-7 7"
                                     />
                                   </svg>
@@ -1113,7 +1142,7 @@ function ChatRoom() {
                               </div>
                               {task.description && (
                                 <p
-                                  className={`text-xs text-gray-600 line-clamp-2 break-words ${
+                                  className={`text-sm text-gray-600 line-clamp-2 break-words leading-relaxed ${
                                     task.status === 'completed'
                                       ? 'line-through text-gray-400'
                                       : ''
@@ -1124,13 +1153,13 @@ function ChatRoom() {
                               )}
                               {/* Assigned and Related People */}
                               {(task.assigned_to || (Array.isArray(task.related_people) && task.related_people.length > 0)) && (
-                                <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 flex-wrap">
+                                <div className="flex items-center gap-2 sm:gap-3 mt-3 flex-wrap">
                                   {task.assigned_to && (() => {
                                     if (task.assigned_to === 'self') {
                                       return (
-                                        <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#4DA8B0] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
-                                          <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white text-teal-medium rounded-lg text-xs font-medium border-2 border-teal-light shadow-sm">
+                                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                           </svg>
                                           <span className="hidden sm:inline">Assigned: </span>
                                           Self (me)
@@ -1139,9 +1168,9 @@ function ChatRoom() {
                                     }
                                     const assignedContact = contacts.find(c => c.id.toString() === task.assigned_to.toString());
                                     return assignedContact ? (
-                                      <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#4DA8B0] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
-                                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white text-teal-medium rounded-lg text-xs font-medium border-2 border-teal-light shadow-sm">
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                         <span className="hidden sm:inline">Assigned: </span>
                                         {assignedContact.contact_name}
@@ -1149,9 +1178,9 @@ function ChatRoom() {
                                     ) : null;
                                   })()}
                                   {Array.isArray(task.related_people) && task.related_people.length > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-[#E6F7F5] text-[#4DA8B0] rounded text-[10px] sm:text-xs font-medium border border-[#C5E8E4]">
-                                      <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white text-teal-medium rounded-lg text-xs font-medium border-2 border-teal-light shadow-sm">
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                       </svg>
                                       {task.related_people.length} {task.related_people.length === 1 ? 'person' : 'people'}
                                       <span className="hidden sm:inline"> for context</span>
@@ -1177,16 +1206,19 @@ function ChatRoom() {
                   />
 
                   {/* Threads Section */}
-                  <div className="bg-white rounded-2xl shadow-xl overflow-hidden mt-3 md:mt-4">
-                    <div className="p-4 sm:p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#4DA8B0]">
-                          Threads
-                        </h2>
+                  <div className="bg-white rounded-2xl border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow overflow-hidden mt-6 md:mt-8">
+                    <div className="p-6 sm:p-8">
+                      <div className="flex items-center justify-between mb-6">
+                        <div>
+                          <h2 className="text-2xl font-semibold text-teal-dark mb-1">
+                            Threads
+                          </h2>
+                          <p className="text-sm text-gray-600">Organized conversation topics</p>
+                        </div>
                         {threads.length > 0 && (
                           <button
                             onClick={() => setCurrentView('chat')}
-                            className="text-xs sm:text-sm text-[#4DA8B0] hover:text-[#4DA8B0] font-semibold"
+                            className="text-sm text-teal-medium hover:text-teal-dark font-semibold px-4 py-2 rounded-lg hover:bg-teal-lightest transition-colors"
                           >
                             View All ({threads.length})
                           </button>
@@ -1194,16 +1226,16 @@ function ChatRoom() {
                       </div>
 
                       {threads.length === 0 ? (
-                        <div className="text-center py-6">
-                          <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        <div className="text-center py-12">
+                          <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                           </svg>
-                          <p className="text-gray-600 text-sm">
+                          <p className="text-gray-600 text-base">
                             No conversation threads yet. Start a chat to create threads!
                           </p>
                         </div>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {threads.slice(0, 3).map((thread) => (
                             <div
                               key={thread.id}
@@ -1211,27 +1243,27 @@ function ChatRoom() {
                                 setSelectedThreadId(thread.id);
                                 setCurrentView('chat');
                               }}
-                              className="p-3 border-2 border-[#C5E8E4] rounded-lg hover:border-[#4DA8B0] hover:bg-[#E6F7F5] transition-all cursor-pointer"
+                              className="p-4 border-2 border-teal-light rounded-xl hover:border-teal-medium hover:bg-teal-lightest transition-all cursor-pointer shadow-sm hover:shadow-md"
                             >
-                              <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 bg-[#E6F7F5] rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <svg className="w-4 h-4 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              <div className="flex items-start gap-4">
+                                <div className="w-10 h-10 bg-white border-2 border-teal-light rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                                  <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                   </svg>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <h3 className="text-sm font-semibold text-[#4DA8B0] truncate">
+                                  <div className="flex items-center justify-between gap-3 mb-1">
+                                    <h3 className="text-base font-semibold text-teal-dark truncate">
                                       {thread.title}
                                     </h3>
                                     {thread.message_count > 0 && (
-                                      <span className="text-xs text-gray-500 flex-shrink-0">
+                                      <span className="text-xs text-gray-500 font-medium flex-shrink-0 bg-gray-100 px-2 py-1 rounded-lg">
                                         {thread.message_count} {thread.message_count === 1 ? 'msg' : 'msgs'}
                                       </span>
                                     )}
                                   </div>
                                   {thread.last_message_at && (
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className="text-xs text-gray-500">
                                       {new Date(thread.last_message_at).toLocaleDateString()}
                                     </p>
                                   )}
@@ -1252,16 +1284,16 @@ function ChatRoom() {
             {currentView === 'chat' && (
               <div className="h-full flex flex-col relative">
                 {/* Threads button and invite link - moved to top right corner */}
-                <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                <div className="absolute top-6 right-6 z-10 flex items-center gap-3">
                   {threads.length > 0 && (
                     <button
                       type="button"
                       onClick={() => setShowThreadsPanel(!showThreadsPanel)}
-                      className="px-3 py-1.5 rounded-lg bg-[#4DA8B0] text-white text-xs font-semibold hover:bg-[#1f4447] transition-colors border border-[#4DA8B0] flex items-center gap-1.5 shadow-md"
+                      className="px-5 py-3 rounded-lg bg-teal-dark text-white text-sm font-semibold hover:bg-teal-darkest transition-all border-2 border-teal-dark flex items-center gap-2 shadow-sm hover:shadow-md min-h-[44px]"
                       title="View threads"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
                       Threads ({threads.length})
                     </button>
@@ -1276,16 +1308,21 @@ function ChatRoom() {
                         type="button"
                         onClick={handleLoadInvite}
                         disabled={isLoadingInvite || !isAuthenticated}
-                        className="px-4 py-2 rounded-xl bg-[#4DA8B0] text-white text-xs sm:text-sm font-semibold hover:bg-[#1f4447] disabled:opacity-60 disabled:cursor-not-allowed transition-colors border border-[#4DA8B0] shadow-md"
+                        className="px-5 py-3 rounded-lg bg-teal-dark text-white text-sm font-semibold hover:bg-teal-darkest disabled:opacity-60 disabled:cursor-not-allowed transition-all border-2 border-teal-dark shadow-sm hover:shadow-md min-h-[44px] flex items-center gap-2"
                         title="Invite your co-parent to join this mediation room"
                       >
                         {isLoadingInvite ? (
-                          <span className="flex items-center gap-2">
-                            <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Loading…
-                          </span>
+                          <>
+                            <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Loading…</span>
+                          </>
                         ) : (
-                          'Invite co-parent'
+                          <>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span>Invite co-parent</span>
+                          </>
                         )}
                       </button>
                     ) : null;
@@ -1296,23 +1333,26 @@ function ChatRoom() {
                 <div className="flex flex-1 min-h-0">
                   {/* Threads Sidebar */}
                   {showThreadsPanel && (
-                    <div className="w-64 border-r border-[#C5E8E4] bg-[#E6F7F5] flex flex-col">
-                      <div className="p-3 border-b border-[#C5E8E4] flex items-center justify-between">
-                        <h3 className="font-semibold text-sm text-gray-900">Threads</h3>
+                    <div className="w-72 border-r-2 border-teal-light bg-white flex flex-col shadow-lg">
+                      <div className="p-4 border-b-2 border-teal-light flex items-center justify-between bg-teal-lightest">
+                        <h3 className="font-semibold text-base text-teal-dark">Threads</h3>
                         <button
                           type="button"
                           onClick={() => setShowThreadsPanel(false)}
-                          className="text-gray-500 hover:text-[#4DA8B0]"
+                          className="text-gray-500 hover:text-teal-medium p-1.5 rounded-lg hover:bg-white transition-colors"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
                       </div>
                       <div className="flex-1 overflow-y-auto">
                         {threads.length === 0 ? (
-                          <div className="p-4 text-xs text-gray-500 text-center">
-                            No threads yet. Start a conversation about a specific topic to create one.
+                          <div className="p-6 text-sm text-gray-500 text-center">
+                            <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <p>No threads yet. Start a conversation about a specific topic to create one.</p>
                           </div>
                         ) : (
                           threads.map((thread) => (
@@ -1325,13 +1365,13 @@ function ChatRoom() {
                                   getThreadMessages(thread.id);
                                 }
                               }}
-                              className={`w-full text-left p-3 border-b border-gray-100 hover:bg-white transition-colors ${
-                                selectedThreadId === thread.id ? 'bg-white border-l-4 border-l-[#4DA8B0]' : ''
+                              className={`w-full text-left p-4 border-b border-gray-100 hover:bg-teal-lightest transition-colors ${
+                                selectedThreadId === thread.id ? 'bg-teal-lightest border-l-4 border-l-teal-medium' : ''
                               }`}
                             >
-                              <div className="font-medium text-sm text-gray-900 mb-1">{thread.title}</div>
-                              <div className="text-xs text-gray-500">
-                                {thread.message_count || 0} messages
+                              <div className="font-semibold text-sm text-teal-dark mb-1">{thread.title}</div>
+                              <div className="text-xs text-gray-500 font-medium">
+                                {thread.message_count || 0} {thread.message_count === 1 ? 'message' : 'messages'}
                               </div>
                             </button>
                           ))
@@ -1341,13 +1381,13 @@ function ChatRoom() {
                   )}
 
                   {/* Main Chat Area */}
-                  <div className="flex-1 p-2 sm:p-4 md:p-6 flex flex-col min-h-0 overflow-hidden">
+                  <div className="flex-1 p-4 sm:p-6 md:p-8 flex flex-col min-h-0 overflow-hidden">
                   {inviteError && (
-                <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
-                  <div className="font-semibold mb-1">⚠️ Error</div>
-                  <div>{inviteError}</div>
+                <div className="mb-4 rounded-xl border-2 border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900 shadow-sm">
+                  <div className="font-semibold mb-2 text-base">Error</div>
+                  <div className="leading-relaxed">{inviteError}</div>
                   {inviteError.includes('404') && (
-                    <div className="mt-2 text-xs text-red-700">
+                    <div className="mt-3 text-xs text-red-700">
                       The server may need to be restarted. Please contact support if this persists.
                     </div>
                   )}
@@ -1355,15 +1395,15 @@ function ChatRoom() {
               )}
 
               {inviteLink && !hasCoParentConnected && (
-                <div className="mb-3 rounded-xl border-2 border-emerald-300 bg-emerald-50 px-4 py-3 text-xs sm:text-sm text-emerald-900 shadow-sm">
-                  <div className="font-semibold mb-2 text-base">
-                    ✨ Invite your co-parent
+                <div className="mb-6 rounded-xl border-2 border-emerald-300 bg-emerald-50 px-6 py-5 text-sm text-emerald-900 shadow-md">
+                  <div className="font-semibold mb-3 text-lg text-emerald-800">
+                    Invite your co-parent
                   </div>
                   <a
                     href={inviteLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mb-3 block p-2 bg-white rounded-lg border border-emerald-200 break-all text-emerald-800 font-mono text-xs hover:bg-emerald-100 transition-colors"
+                    className="mb-4 block p-3 bg-white rounded-lg border-2 border-emerald-200 break-all text-emerald-800 font-mono text-xs hover:bg-emerald-100 transition-colors shadow-sm"
                     onClick={(e) => {
                       // Ensure link opens even if service worker tries to intercept
                       e.preventDefault();
@@ -1372,25 +1412,25 @@ function ChatRoom() {
                   >
                     {inviteLink}
                   </a>
-                  <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                  <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
                     <button
                       type="button"
                       onClick={handleCopyInvite}
-                      className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 px-5 py-3 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 min-h-[44px] shadow-sm hover:shadow-md"
                     >
                       {inviteCopied ? (
                         <>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
-                          Copied!
+                          <span>Copied!</span>
                         </>
                       ) : (
                         <>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
-                          Copy link
+                          <span>Copy link</span>
                         </>
                       )}
                     </button>
@@ -1401,19 +1441,19 @@ function ChatRoom() {
                         setInviteCode('');
                         setInviteError('');
                       }}
-                      className="px-4 py-2 rounded-lg border border-emerald-300 text-emerald-700 text-sm font-medium hover:bg-emerald-100 transition-colors"
+                      className="px-5 py-3 rounded-lg border-2 border-emerald-300 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-colors min-h-[44px] bg-white"
                     >
                       Close
                     </button>
                   </div>
-                  <div className="mt-2 text-xs text-emerald-700">
+                  <div className="mt-4 text-xs text-emerald-700 leading-relaxed">
                     Share this link with your co-parent. When they click it, they'll join this mediation room. This room is for co-parents only.
                   </div>
                 </div>
               )}
 
               <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-              <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-5" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {(() => {
                   // Helper function to get initials from username
                   // Calculate streak for each message
@@ -1472,8 +1512,8 @@ function ChatRoom() {
                   const getAvatarColor = (name) => {
                     if (!name) return 'bg-gray-400';
                     const colors = [
-                      'bg-gradient-to-br from-[#4DA8B0] to-[#4DA8B0]',
-                      'bg-gradient-to-br from-[#3d8a92] to-[#1f4447]',
+                      'bg-gradient-to-br from-teal-medium to-teal-medium',
+                      'bg-gradient-to-br from-teal-dark to-teal-darkest',
                       'bg-gradient-to-br from-teal-500 to-teal-700',
                       'bg-gradient-to-br from-cyan-500 to-cyan-700',
                     ];
@@ -1483,26 +1523,187 @@ function ChatRoom() {
                   
                   const filteredMessages = messages.filter((msg) => msg.type !== 'contact_suggestion');
                   
-                  return filteredMessages.map((msg, index) => {
-                  const isOwn = msg.username === username;
+                  // Group messages for better iMessage-like display
+                  const messageGroups = [];
+                  let currentGroup = null;
                   
-                  // Determine if we need spacing (new speaker or time gap > 5 minutes)
-                  const prevMsg = index > 0 ? filteredMessages[index - 1] : null;
-                  const needsSpacing = prevMsg && (
-                    prevMsg.username !== msg.username ||
-                    (prevMsg.timestamp && msg.timestamp && 
-                     new Date(msg.timestamp).getTime() - new Date(prevMsg.timestamp).getTime() > 5 * 60 * 1000)
-                  );
-                  const timeLabel =
-                    msg.timestamp &&
-                    new Date(msg.timestamp).toLocaleTimeString('en-US', {
+                  filteredMessages.forEach((msg, index) => {
+                    const isOwn = msg.username === username;
+                    const isAI = msg.type === 'ai_intervention' || msg.type === 'ai_comment';
+                    const prevMsg = index > 0 ? filteredMessages[index - 1] : null;
+                    const prevIsAI = prevMsg && (prevMsg.type === 'ai_intervention' || prevMsg.type === 'ai_comment');
+                    const timeGap = prevMsg && msg.timestamp && prevMsg.timestamp
+                      ? new Date(msg.timestamp).getTime() - new Date(prevMsg.timestamp).getTime() > 5 * 60 * 1000
+                      : false;
+                    const newSpeaker = prevMsg && prevMsg.username !== msg.username;
+                    const typeChanged = prevIsAI !== isAI;
+                    
+                    // AI messages always start a new group, and regular messages always start new group after AI
+                    // Start new group if: first message, new speaker, type changed (AI vs regular), or time gap > 5 min
+                    if (!currentGroup || newSpeaker || typeChanged || timeGap || index === 0) {
+                      currentGroup = {
+                        messages: [msg],
+                        username: msg.username,
+                        isOwn: isOwn,
+                        isAI: isAI,
+                        timestamp: msg.timestamp,
+                        startIndex: index
+                      };
+                      messageGroups.push(currentGroup);
+                    } else {
+                      // Add to current group (only if same type and speaker)
+                      currentGroup.messages.push(msg);
+                    }
+                  });
+                  
+                  return messageGroups.map((group, groupIndex) => {
+                    const isOwn = group.isOwn;
+                    const isAI = group.isAI;
+                    const groupTimeLabel = group.timestamp && new Date(group.timestamp).toLocaleTimeString('en-US', {
                       hour: 'numeric',
                       minute: '2-digit',
                       hour12: true,
                     });
+                    
+                    // Check if we should show date separator
+                    const prevGroup = groupIndex > 0 ? messageGroups[groupIndex - 1] : null;
+                    const showDateSeparator = prevGroup && group.timestamp && prevGroup.timestamp
+                      ? new Date(group.timestamp).toDateString() !== new Date(prevGroup.timestamp).toDateString()
+                      : groupIndex === 0;
+                    
+                    const dateLabel = group.timestamp && (() => {
+                      const msgDate = new Date(group.timestamp);
+                      const today = new Date();
+                      const yesterday = new Date(today);
+                      yesterday.setDate(yesterday.getDate() - 1);
+                      
+                      if (msgDate.toDateString() === today.toDateString()) {
+                        return 'Today';
+                      } else if (msgDate.toDateString() === yesterday.toDateString()) {
+                        return 'Yesterday';
+                      } else {
+                        return msgDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: msgDate.getFullYear() !== today.getFullYear() ? 'numeric' : undefined });
+                      }
+                    })();
+                    
+                    // Handle AI messages separately
+                    if (isAI) {
+                      return group.messages.map((msg) => {
+                        const isIntervention = msg.type === 'ai_intervention';
+                        const isComment = msg.type === 'ai_comment' && msg.text && !msg.personalMessage;
+                        
+                        const handleRewriteSelected = () => {
+                          removeMessages((m) => m.id === msg.id || 
+                            (m.type === 'ai_intervention' && m.timestamp === msg.timestamp));
+                          if (msg.originalMessage) {
+                            removeMessages((m) => 
+                              m.flagged === true && 
+                              m.private === true &&
+                              m.username === msg.originalMessage.username &&
+                              m.text === msg.originalMessage.text
+                            );
+                          }
+                        };
+                        
+                        return (
+                          <div key={msg.id ?? `ai-${msg.timestamp}`} className="mb-6 first:mt-6">
+                            {groupTimeLabel && (
+                              <div className="flex items-center justify-center mb-3">
+                                <span className="text-xs font-medium text-gray-500">{groupTimeLabel}</span>
+                              </div>
+                            )}
+                            <div className="flex items-start gap-3 max-w-[85%] mx-auto">
+                              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 border border-gray-200">
+                                {isComment ? (
+                                  <svg className="w-5 h-5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-5 h-5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2 mb-2">
+                                  <span className="font-semibold text-sm text-gray-900">
+                                    {msg.username || 'LiaiZen'}
+                                  </span>
+                                </div>
+                                <div className="rounded-2xl px-4 py-3 bg-white border border-gray-200 shadow-sm">
+                                  {isComment && msg.text && (
+                                    <p className="text-sm text-gray-900 leading-relaxed">{msg.text}</p>
+                                  )}
+                                  {!isComment && (
+                                    <>
+                                      {msg.explanation && (
+                                        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                                          <p className="text-sm text-blue-800 mb-1 leading-relaxed">
+                                            <strong className="font-semibold">Why I'm intervening:</strong> {msg.explanation}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {msg.personalMessage && (
+                                        <p className="text-sm text-gray-900 leading-relaxed mb-3">{msg.personalMessage}</p>
+                                      )}
+                                      {(msg.tip1 || msg.tip2 || msg.tip3) && (
+                                        <div className="mb-3">
+                                          <p className="text-xs font-semibold text-gray-700 mb-2">Communication Tips:</p>
+                                          <ul className="space-y-1.5 text-sm text-gray-700">
+                                            {msg.tip1 && <li className="leading-relaxed">• {msg.tip1}</li>}
+                                            {msg.tip2 && <li className="leading-relaxed">• {msg.tip2}</li>}
+                                            {msg.tip3 && <li className="leading-relaxed">• {msg.tip3}</li>}
+                                          </ul>
+                                        </div>
+                                      )}
+                                      {(msg.rewrite1 || msg.rewrite2) && (
+                                        <div className="space-y-2 pt-3 border-t border-gray-200">
+                                          <p className="text-xs font-semibold text-gray-700 mb-2">Suggested Rewrites:</p>
+                                          {msg.rewrite1 && (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                handleRewriteSelected();
+                                                setInputMessage(msg.rewrite1);
+                                                setIsPreApprovedRewrite(true);
+                                                setOriginalRewrite(msg.rewrite1);
+                                              }}
+                                              className="w-full text-left p-3 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100 transition-colors text-sm text-green-800"
+                                            >
+                                              <span className="text-xs font-semibold text-green-700 mb-1 block">Option 1:</span>
+                                              "{msg.rewrite1}"
+                                            </button>
+                                          )}
+                                          {msg.rewrite2 && (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                handleRewriteSelected();
+                                                setInputMessage(msg.rewrite2);
+                                                setIsPreApprovedRewrite(true);
+                                                setOriginalRewrite(msg.rewrite2);
+                                              }}
+                                              className="w-full text-left p-3 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100 transition-colors text-sm text-green-800"
+                                            >
+                                              <span className="text-xs font-semibold text-green-700 mb-1 block">Option 2:</span>
+                                              "{msg.rewrite2}"
+                                            </button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      });
+                    }
 
-                  // AI Moderator messages (interventions/comments)
-                  if (msg.type === 'ai_intervention' || msg.type === 'ai_comment') {
+                  // AI messages are now handled in the grouping logic above
+                  // This old code block is no longer needed
+                  if (false && (msg.type === 'ai_intervention' || msg.type === 'ai_comment')) {
                     const isIntervention = msg.type === 'ai_intervention';
                     const isComment = msg.type === 'ai_comment' && msg.text && !msg.personalMessage;
                     
@@ -1526,33 +1727,41 @@ function ChatRoom() {
                     return (
                       <div
                         key={msg.id ?? `ai-${msg.timestamp}`}
-                        className={`flex items-start gap-2.5 ${needsSpacing || index === 0 ? 'mt-3' : 'mt-1'}`}
+                        className={`flex items-start gap-3 ${needsSpacing || index === 0 ? 'mt-3' : 'mt-1'}`}
                       >
-                        <div className="w-10 h-10 rounded-xl bg-[#E6F7F5] flex items-center justify-center text-xl font-bold flex-shrink-0 shadow-sm border border-[#C5E8E4]">
-                          {isComment ? '💬' : '🤝'}
+                        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center flex-shrink-0 shadow-md border-2 border-teal-light">
+                          {isComment ? (
+                            <svg className="w-6 h-6 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-6 h-6 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline gap-2 mb-2">
-                            <span className="font-semibold text-[#4DA8B0]">
+                          <div className="flex items-baseline gap-3 mb-3">
+                            <span className="font-semibold text-base text-teal-dark">
                               {msg.username || 'LiaiZen'}
                             </span>
                             {timeLabel && (
-                              <span className="text-xs text-gray-500">{timeLabel}</span>
+                              <span className="text-xs text-gray-500 font-medium">{timeLabel}</span>
                             )}
                           </div>
                           <div
-                            className={`rounded-xl px-5 py-4 max-w-full break-words space-y-4 shadow-sm hover:shadow-md transition-all bg-white border-2 ${
+                            className={`rounded-xl px-6 py-5 max-w-full break-words space-y-4 shadow-md hover:shadow-lg transition-all bg-white border-2 ${
                               isIntervention
-                                ? 'border-[#C5E8E4]'
+                                ? 'border-teal-light'
                                 : isComment
-                                ? 'border-[#C5E8E4]'
-                                : 'border-[#C5E8E4]'
+                                ? 'border-teal-light'
+                                : 'border-teal-light'
                             }`}
                             style={{ fontFamily: "'Inter', sans-serif" }}
                           >
                             {/* COMMENT: Simple conversational message */}
                             {isComment && msg.text && (
-                              <p className="text-sm text-slate-800 leading-relaxed">
+                              <p className="text-sm text-gray-900 leading-relaxed">
                                 {msg.text}
                               </p>
                             )}
@@ -1562,17 +1771,17 @@ function ChatRoom() {
                               <>
                                 {/* Explanation and Override Controls */}
                                 {msg.explanation && (
-                                  <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <p className="text-xs text-blue-800 mb-2">
-                                      <strong>Why I'm intervening:</strong> {msg.explanation}
+                                  <div className="mb-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl shadow-sm">
+                                    <p className="text-sm text-blue-800 mb-2 leading-relaxed">
+                                      <strong className="font-semibold">Why I'm intervening:</strong> {msg.explanation}
                                     </p>
                                     {msg.confidence !== undefined && (
-                                      <p className="text-xs text-blue-600">
+                                      <p className="text-xs text-blue-600 font-medium">
                                         Confidence: {msg.confidence}%
                                       </p>
                                     )}
                                     {msg.overrideOptions && msg.overrideOptions.canOverride && (
-                                      <div className="mt-2 flex flex-wrap gap-2">
+                                      <div className="mt-3 flex flex-wrap gap-2">
                                         {msg.overrideOptions.overrideOptions.map((option, idx) => (
                                           <button
                                             key={idx}
@@ -1594,7 +1803,7 @@ function ChatRoom() {
                                                 removeMessages((m) => m.id === msg.id);
                                               }
                                             }}
-                                            className="px-2 py-1 text-xs bg-white border border-blue-300 rounded text-blue-700 hover:bg-blue-100 transition-colors"
+                                            className="px-3 py-2 text-xs font-medium bg-white border-2 border-blue-300 rounded-lg text-blue-700 hover:bg-blue-100 transition-all shadow-sm"
                                           >
                                             {option.label}
                                           </button>
@@ -1606,8 +1815,8 @@ function ChatRoom() {
 
                                 {/* Feedback buttons for interventions */}
                                 {isIntervention && (
-                                  <div className="mb-3 flex items-center gap-2 text-xs">
-                                    <span className="text-gray-600">Was this helpful?</span>
+                                  <div className="mb-4 flex items-center gap-3 text-sm">
+                                    <span className="text-gray-600 font-medium">Was this helpful?</span>
                                     <button
                                       type="button"
                                       onClick={(e) => {
@@ -1626,7 +1835,7 @@ function ChatRoom() {
                                           }, 2000);
                                         }
                                       }}
-                                      className="px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                                      className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all font-medium shadow-sm"
                                     >
                                       Yes
                                     </button>
@@ -1648,7 +1857,7 @@ function ChatRoom() {
                                           }, 2000);
                                         }
                                       }}
-                                      className="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                                      className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all font-medium shadow-sm"
                                     >
                                       No
                                     </button>
@@ -1657,8 +1866,8 @@ function ChatRoom() {
 
                                 {/* Personal Message from AI Coach */}
                                 {msg.personalMessage && (
-                                  <div className="mb-4">
-                                    <p className="text-base leading-relaxed text-slate-700 font-medium">
+                                  <div className="mb-5">
+                                    <p className="text-base leading-relaxed text-gray-800 font-medium">
                                       {msg.personalMessage}
                                     </p>
                                   </div>
@@ -1667,25 +1876,30 @@ function ChatRoom() {
                                 {/* Communication Tips (3 tips) */}
                                 {(msg.tip1 || msg.tip2 || msg.tip3) && (
                                   <div>
-                                    <p className="text-sm font-semibold text-teal-700 mb-3">
-                                      💡 Communication Tips:
-                                    </p>
-                                    <ul className="space-y-2.5 list-none pl-0">
+                                    <div className="flex items-center gap-3 mb-4">
+                                      <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                      </svg>
+                                      <p className="text-base font-semibold text-teal-dark">
+                                        Communication Tips:
+                                      </p>
+                                    </div>
+                                    <ul className="space-y-3 list-none pl-0">
                                       {msg.tip1 && (
-                                        <li className="text-sm text-slate-600 leading-relaxed pl-6 relative">
-                                          <span className="absolute left-0 top-0.5 text-teal-500">•</span>
+                                        <li className="text-sm text-gray-700 leading-relaxed pl-7 relative">
+                                          <span className="absolute left-0 top-0.5 text-teal-medium text-lg">•</span>
                                           {msg.tip1}
                                         </li>
                                       )}
                                       {msg.tip2 && (
-                                        <li className="text-sm text-slate-600 leading-relaxed pl-6 relative">
-                                          <span className="absolute left-0 top-0.5 text-teal-500">•</span>
+                                        <li className="text-sm text-gray-700 leading-relaxed pl-7 relative">
+                                          <span className="absolute left-0 top-0.5 text-teal-medium text-lg">•</span>
                                           {msg.tip2}
                                         </li>
                                       )}
                                       {msg.tip3 && (
-                                        <li className="text-sm text-slate-600 leading-relaxed pl-6 relative">
-                                          <span className="absolute left-0 top-0.5 text-teal-500">•</span>
+                                        <li className="text-sm text-gray-700 leading-relaxed pl-7 relative">
+                                          <span className="absolute left-0 top-0.5 text-teal-medium text-lg">•</span>
                                           {msg.tip3}
                                         </li>
                                       )}
@@ -1695,10 +1909,15 @@ function ChatRoom() {
 
                                 {/* Suggested Rewrites (2 clickable rewrites) */}
                                 {(msg.rewrite1 || msg.rewrite2) && (
-                                  <div className="pt-3 border-t border-gray-300 space-y-3">
-                                    <p className="text-xs font-semibold text-green-600 mb-2">
-                                      ✨ Suggested Rewrites:
-                                    </p>
+                                  <div className="pt-4 border-t-2 border-gray-200 space-y-4">
+                                    <div className="flex items-center gap-2.5 mb-3">
+                                      <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                      <p className="text-sm font-semibold text-teal-dark">
+                                        Suggested Rewrites:
+                                      </p>
+                                    </div>
                                     {msg.rewrite1 && (
                                       <button
                                         type="button"
@@ -1712,12 +1931,12 @@ function ChatRoom() {
                                             document.querySelector('input[type="text"][placeholder*="Type a message"]')?.focus();
                                           }, 100);
                                         }}
-                                        className="w-full text-left p-3 bg-green-50 border-2 border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 transition-colors"
+                                        className="w-full text-left p-4 bg-green-50 border-2 border-green-200 rounded-xl hover:bg-green-100 hover:border-green-300 transition-all shadow-sm"
                                       >
-                                        <p className="text-xs font-semibold text-green-700 mb-1">
+                                        <p className="text-xs font-semibold text-green-700 mb-2 uppercase tracking-wide">
                                           Option 1:
                                         </p>
-                                        <p className="text-sm text-green-800 font-medium">
+                                        <p className="text-sm text-green-800 font-medium leading-relaxed">
                                           "{msg.rewrite1}"
                                         </p>
                                       </button>
@@ -1735,12 +1954,12 @@ function ChatRoom() {
                                             document.querySelector('input[type="text"][placeholder*="Type a message"]')?.focus();
                                           }, 100);
                                         }}
-                                        className="w-full text-left p-3 bg-green-50 border-2 border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 transition-colors"
+                                        className="w-full text-left p-4 bg-green-50 border-2 border-green-200 rounded-xl hover:bg-green-100 hover:border-green-300 transition-all shadow-sm"
                                       >
-                                        <p className="text-xs font-semibold text-green-700 mb-1">
+                                        <p className="text-xs font-semibold text-green-700 mb-2 uppercase tracking-wide">
                                           Option 2:
                                         </p>
-                                        <p className="text-sm text-green-800 font-medium">
+                                        <p className="text-sm text-green-800 font-medium leading-relaxed">
                                           "{msg.rewrite2}"
                                         </p>
                                       </button>
@@ -1757,7 +1976,7 @@ function ChatRoom() {
                                           input?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                                         }, 100);
                                       }}
-                                      className="w-full mt-2 px-4 py-2 bg-white border-2 border-gray-300 rounded-lg text-sm font-medium text-[#4DA8B0] hover:bg-[#E6F7F5] hover:border-gray-400 transition-colors"
+                                      className="w-full mt-3 px-5 py-3 bg-white border-2 border-gray-300 rounded-lg text-sm font-semibold text-teal-medium hover:bg-gray-50 hover:border-teal-medium transition-all min-h-[44px] shadow-sm"
                                     >
                                       Try sending a new message
                                     </button>
@@ -1767,9 +1986,14 @@ function ChatRoom() {
                                 {/* Fallback for old format (backward compatibility) */}
                                 {msg.rewrite && !msg.rewrite1 && !msg.rewrite2 && (
                                   <div className="pt-3 border-t border-gray-300">
-                                    <p className="text-xs font-semibold text-green-600 mb-1">
-                                      ✨ Suggested Rewrite:
-                                    </p>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <svg className="w-3 h-3 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                      <p className="text-xs font-semibold text-teal-medium">
+                                        Suggested Rewrite:
+                                      </p>
+                                    </div>
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -1806,116 +2030,134 @@ function ChatRoom() {
                     );
                   }
 
-                  // Regular user messages
-                  const isFlagged = msg.user_flagged_by && Array.isArray(msg.user_flagged_by) && msg.user_flagged_by.length > 0;
-                  const isFlaggedByMe = msg.user_flagged_by && Array.isArray(msg.user_flagged_by) && msg.user_flagged_by.includes(username);
-                  const isInThread = msg.threadId !== null && msg.threadId !== undefined;
-                  const thread = threads.find(t => t.id === msg.threadId);
-                  
-                  return (
-                    <div
-                      key={msg.id ?? `${msg.username}-${msg.timestamp}-${msg.text}`}
-                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-start group ${isInThread ? 'pl-8' : ''} ${needsSpacing ? 'mt-3' : 'mt-1'}`}
-                    >
-                      {isInThread && (
-                        <div className="absolute left-0 w-6 border-l-2 border-blue-300" />
-                      )}
-                      <div className={`flex flex-col gap-1 ${isOwn ? 'items-end' : 'items-start'} relative`}>
-                      {/* Badge positioned at top right corner of bubble */}
-                      {isOwn && getStreakBadge(msg, index) && (
-                        <div className="absolute -top-2 -right-2 z-10">
-                          {getStreakBadge(msg, index)}
-                        </div>
-                      )}
-                      <div
-                        className={`relative ${isOwn ? 'max-w-[70%]' : 'max-w-[80%]'} sm:${isOwn ? 'max-w-[65%]' : 'max-w-[75%]'} px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all ${
-                          isOwn
-                            ? 'bg-[#4DA8B0] text-white border-2 border-[#4DA8B0]'
-                            : `bg-white text-gray-900 border-2 ${isFlagged ? 'border-orange-300 bg-orange-50' : 'border-[#C5E8E4]'}`
-                        } ${isInThread ? 'border-l-4 border-l-[#4DA8B0]' : ''}`}
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      >
-                        {isInThread && thread && (
-                          <div className="text-[10px] text-blue-600 font-semibold mb-1 flex items-center gap-1">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                            </svg>
-                            {thread.title}
-                          </div>
-                        )}
-                        <div className="flex items-baseline justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="leading-relaxed">{msg.text}</div>
-                            {isFlagged && (
-                              <div className="mt-1 flex items-center gap-1 text-[10px] text-orange-700">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                                <span>Flagged as problematic</span>
-                          </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="flex items-center gap-1">
-                              {!isOwn && (
-                                <>
-                                  {threads.length > 0 && !isInThread && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        // Show thread selection menu
-                                        const threadId = prompt('Select thread ID (or leave empty to create new):');
-                                        if (threadId) {
-                                          addToThread(msg.id || msg.timestamp, threadId);
-                                        }
-                                      }}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-opacity-20 text-slate-400 hover:text-blue-600 hover:bg-slate-100"
-                                      title="Add to thread"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                      </svg>
-                                    </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (isFlaggedByMe) {
-                                        // Unflag
-                                        flagMessage(msg.id || msg.timestamp);
-                                      } else {
-                                        // Show flag modal
-                                        setFlaggingMessage(msg);
-                                        setFlagReason('');
-                                      }
-                                    }}
-                                    className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-opacity-20 ${
-                                      isFlaggedByMe
-                                        ? 'opacity-100 text-orange-600 hover:bg-orange-100'
-                                        : 'text-slate-400 hover:text-orange-600 hover:bg-slate-100'
-                                    }`}
-                                    title={isFlaggedByMe ? 'Unflag message' : 'Flag as problematic'}
-                                  >
-                                    <svg className="w-4 h-4" fill={isFlaggedByMe ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    </svg>
-                                  </button>
-                                </>
-                              )}
+                    return (
+                      <div key={`group-${groupIndex}`} className="mb-6 first:mt-6">
+                        {/* Date Separator */}
+                        {showDateSeparator && dateLabel && (
+                          <div className="flex items-center justify-center my-8">
+                            <div className="px-4 py-1.5 bg-gray-100 rounded-full">
+                              <span className="text-xs font-medium text-gray-600">{dateLabel}</span>
                             </div>
                           </div>
+                        )}
+                        
+                        {/* Timestamp above group */}
+                        {groupTimeLabel && (
+                          <div className="flex items-center justify-center mb-3">
+                            <span className="text-xs font-medium text-gray-500">{groupTimeLabel}</span>
+                          </div>
+                        )}
+                        
+                        {/* Message Group */}
+                        <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} gap-1.5`}>
+                          {group.messages.map((msg, msgIndex) => {
+                            const isFlagged = msg.user_flagged_by && Array.isArray(msg.user_flagged_by) && msg.user_flagged_by.length > 0;
+                            const isFlaggedByMe = msg.user_flagged_by && Array.isArray(msg.user_flagged_by) && msg.user_flagged_by.includes(username);
+                            const isInThread = msg.threadId !== null && msg.threadId !== undefined;
+                            const thread = threads.find(t => t.id === msg.threadId);
+                            const isLastInGroup = msgIndex === group.messages.length - 1;
+                            const originalIndex = group.startIndex + msgIndex;
+                            
+                            return (
+                              <div
+                                key={msg.id ?? `${msg.username}-${msg.timestamp}-${msg.text}-${msgIndex}`}
+                                className={`group relative ${isOwn ? 'flex justify-end' : 'flex justify-start'} w-full`}
+                              >
+                                <div className={`relative ${isOwn ? 'max-w-[75%] sm:max-w-[70%] md:max-w-[65%]' : 'max-w-[80%] sm:max-w-[75%] md:max-w-[70%]'}`}>
+                                  {/* Badge positioned at top right corner of bubble */}
+                                  {isOwn && isLastInGroup && getStreakBadge(msg, originalIndex) && (
+                                    <div className="absolute -top-2 -right-2 z-10">
+                                      {getStreakBadge(msg, originalIndex)}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Message Bubble */}
+                                  <div
+                                    className={`relative px-4 py-2.5 rounded-2xl text-base leading-relaxed transition-all ${
+                                      isOwn
+                                        ? isLastInGroup
+                                          ? 'bg-[#007AFF] text-white rounded-br-md'
+                                          : 'bg-[#007AFF] text-white rounded-br-md'
+                                        : isLastInGroup
+                                          ? 'bg-[#E5E5EA] text-gray-900 rounded-bl-md'
+                                          : 'bg-[#E5E5EA] text-gray-900 rounded-bl-md'
+                                    } ${
+                                      isFlagged ? 'ring-2 ring-orange-300 bg-orange-50' : ''
+                                    } ${isInThread ? 'border-l-4 border-l-[#007AFF] pl-3' : ''}`}
+                                    style={{ fontFamily: "'Inter', sans-serif" }}
+                                  >
+                                    {isInThread && thread && (
+                                      <div className="text-xs text-[#007AFF] font-semibold mb-1.5 flex items-center gap-1">
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                        </svg>
+                                        {thread.title}
+                                      </div>
+                                    )}
+                                    
+                                    <div className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</div>
+                                    
+                                    {isFlagged && (
+                                      <div className="mt-2 flex items-center gap-1.5 text-xs text-orange-700 font-medium">
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                        <span>Flagged as problematic</span>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Action buttons - only show on last message in group */}
+                                    {isLastInGroup && !isOwn && (
+                                      <div className="absolute -right-10 top-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {threads.length > 0 && !isInThread && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const threadId = prompt('Select thread ID (or leave empty to create new):');
+                                              if (threadId) {
+                                                addToThread(msg.id || msg.timestamp, threadId);
+                                              }
+                                            }}
+                                            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-[#007AFF] transition-colors"
+                                            title="Add to thread"
+                                          >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                            </svg>
+                                          </button>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (isFlaggedByMe) {
+                                              flagMessage(msg.id || msg.timestamp);
+                                            } else {
+                                              setFlaggingMessage(msg);
+                                              setFlagReason('');
+                                            }
+                                          }}
+                                          className={`p-1.5 rounded-full transition-colors ${
+                                            isFlaggedByMe
+                                              ? 'text-orange-600 hover:bg-orange-100'
+                                              : 'text-gray-400 hover:text-orange-600 hover:bg-gray-100'
+                                          }`}
+                                          title={isFlaggedByMe ? 'Unflag message' : 'Flag as problematic'}
+                                        >
+                                          <svg className="w-4 h-4" fill={isFlaggedByMe ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                          </svg>
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                      {/* Timestamp outside and underneath bubble */}
-                      {timeLabel && (
-                        <div className={`text-[10px] ${isOwn ? 'text-right' : 'text-left'} text-slate-400 px-1`}>
-                          {timeLabel}
-                        </div>
-                      )}
-                      </div>
-                    </div>
-                  );
-                });
+                    );
+                  });
                 })()}
                 <div ref={messagesEndRef} />
               </div>
@@ -1927,9 +2169,14 @@ function ChatRoom() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-orange-900 mb-1">
-                        💡 {draftCoaching.coachingMessage}
-                      </p>
+                            <div className="flex items-start gap-2 mb-1">
+                        <svg className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        <p className="text-xs font-semibold text-orange-900">
+                          {draftCoaching.coachingMessage}
+                        </p>
+                      </div>
                       {draftCoaching.issues && draftCoaching.issues.length > 0 && (
                         <ul className="text-xs text-orange-800 mb-2 list-disc list-inside">
                           {draftCoaching.issues.map((issue, idx) => (
@@ -1948,9 +2195,9 @@ function ChatRoom() {
                                 setOriginalRewrite(draftCoaching.rewrite1); // Store original for edit detection
                                 setDraftCoaching(null);
                               }}
-                              className="text-left px-2 py-1.5 bg-white border border-orange-200 rounded-lg text-xs text-orange-900 hover:bg-orange-100 transition-colors"
+                              className="text-left px-3 py-2 bg-white border-2 border-orange-200 rounded-lg text-xs text-orange-900 hover:bg-orange-100 transition-colors min-h-[44px]"
                             >
-                              ✨ Use: "{draftCoaching.rewrite1}"
+                              Use: "{draftCoaching.rewrite1}"
                             </button>
                           )}
                           {draftCoaching.rewrite2 && (
@@ -1964,7 +2211,7 @@ function ChatRoom() {
                               }}
                               className="text-left px-2 py-1.5 bg-white border border-orange-200 rounded-lg text-xs text-orange-900 hover:bg-orange-100 transition-colors"
                             >
-                              ✨ Use: "{draftCoaching.rewrite2}"
+                              Use: "{draftCoaching.rewrite2}"
                             </button>
                           )}
                         </div>
@@ -1984,26 +2231,40 @@ function ChatRoom() {
               )}
               <form
                 onSubmit={sendMessage}
-                className="border-t border-white/20 bg-white/90 backdrop-blur-sm px-3 py-2 flex items-center gap-2 safe-area-inset-bottom"
-                style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+                className="border-t border-gray-200 bg-white px-4 sm:px-6 md:px-8 py-4 flex items-end gap-3 safe-area-inset-bottom"
+                style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
               >
-                <input
-                  type="text"
-                  value={inputMessage}
-                  onChange={handleInputChange}
-                  placeholder="Type a message…"
-                  className={`flex-1 px-3 py-1.5 border rounded-xl text-sm focus:outline-none focus:border-[#4DA8B0] ${
-                    draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend
-                      ? 'border-orange-300 bg-orange-50'
-                      : 'border-slate-200'
-                  }`}
-                />
+                <div className="flex-1 flex items-center gap-3 bg-gray-100 rounded-3xl px-4 py-2.5 min-h-[44px]">
+                  <button
+                    type="button"
+                    className="p-2 text-gray-500 hover:text-gray-700 transition-colors rounded-full hover:bg-gray-200"
+                    title="Add attachment"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                  <input
+                    type="text"
+                    value={inputMessage}
+                    onChange={handleInputChange}
+                    placeholder="iMessage"
+                    className={`flex-1 bg-transparent border-0 text-base focus:outline-none text-gray-900 placeholder-gray-500 min-h-[36px] ${
+                      draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend
+                        ? 'placeholder-orange-400'
+                        : ''
+                    }`}
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={!inputMessage.trim()}
-                  className="px-3 py-1.5 bg-[#4DA8B0] text-white rounded-xl text-sm font-semibold disabled:bg-slate-400"
+                  className="w-10 h-10 rounded-full bg-[#007AFF] text-white flex items-center justify-center transition-all disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-[#0051D5] shadow-sm"
+                  title="Send message"
                 >
-                  Send
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
                 </button>
               </form>
               </div>
@@ -2021,7 +2282,7 @@ function ChatRoom() {
 
             {/* Profile View - Clean Style */}
             {currentView === 'profile' && (
-              <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-xl overflow-hidden">
+              <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden">
                 <div className="h-[calc(100vh-9rem)] sm:h-[calc(100vh-8rem)] md:h-[75vh] md:max-h-[800px] overflow-y-auto">
                   <ProfilePanel
                     username={username}
@@ -2034,11 +2295,11 @@ function ChatRoom() {
 
             {/* Settings View - Placeholder */}
             {currentView === 'settings' && (
-              <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-                <div className="p-6 sm:p-8 space-y-4">
+              <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden">
+                <div className="p-8 sm:p-10 space-y-8">
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
-                    <p className="text-slate-600">
+                    <h2 className="text-3xl font-semibold text-teal-dark mb-3">Settings</h2>
+                    <p className="text-base text-gray-600 leading-relaxed">
                       Customize notifications, privacy, and other preferences. Full controls are coming soon,
                       but here you can preview the sections that will live here.
                     </p>
@@ -2049,18 +2310,18 @@ function ChatRoom() {
                     <PWAInstallButton />
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-6 md:grid-cols-2">
                     {/* Notifications Settings */}
-                    <div className="border-2 border-[#C5E8E4] rounded-2xl p-6 bg-white">
-                      <div className="flex items-start gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-[#4DA8B0] flex items-center justify-center flex-shrink-0">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    <div className="border-2 border-teal-light rounded-2xl p-8 bg-white shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-start gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-xl bg-teal-medium flex items-center justify-center flex-shrink-0 shadow-md">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-bold text-[#4DA8B0] mb-2">Desktop Notifications</h3>
-                          <p className="text-sm text-slate-600 mb-4">
+                          <h3 className="text-xl font-semibold text-teal-dark mb-2">Desktop Notifications</h3>
+                          <p className="text-base text-gray-600 mb-6 leading-relaxed">
                             Get notified when your co-parent sends you a message
                           </p>
 
@@ -2084,7 +2345,7 @@ function ChatRoom() {
                                         timestamp: new Date().toISOString()
                                       });
                                     }}
-                                    className="w-full px-4 py-2 bg-white text-[#4DA8B0] border-2 border-[#4DA8B0] rounded-xl font-semibold hover:bg-[#E6F7F5] transition-all"
+                                    className="w-full px-5 py-3 bg-white text-teal-medium border-2 border-teal-medium rounded-lg font-semibold hover:bg-teal-lightest transition-all min-h-[44px] shadow-sm hover:shadow-md"
                                   >
                                     Test Notification
                                   </button>
@@ -2097,18 +2358,18 @@ function ChatRoom() {
                               ) : (
                                 <button
                                   onClick={notifications.requestPermission}
-                                  className="w-full px-4 py-2.5 bg-[#4DA8B0] text-white rounded-xl font-semibold hover:bg-[#3d8a92] transition-all shadow-sm"
+                                  className="w-full px-5 py-3 bg-teal-medium text-white rounded-lg font-semibold hover:bg-teal-dark transition-all shadow-sm hover:shadow-md min-h-[44px]"
                                 >
                                   Enable Notifications
                                 </button>
                               )}
 
-                              <p className="text-xs text-slate-500">
+                              <p className="text-xs text-gray-500">
                                 You'll get a notification every time your co-parent sends a message
                               </p>
                             </div>
                           ) : (
-                            <div className="text-sm text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
+                            <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
                               Notifications are not supported in this browser
                             </div>
                           )}
@@ -2117,17 +2378,17 @@ function ChatRoom() {
                     </div>
 
                     {/* Privacy Settings */}
-                    <div className="border border-slate-200 rounded-2xl p-6">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-                          <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    <div className="border-2 border-gray-200 rounded-2xl p-8 bg-white shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-slate-900 mb-2">Privacy</h3>
-                          <p className="text-sm text-slate-600">Control who can see activity within your room.</p>
-                          <p className="text-xs text-slate-500 mt-3">More privacy controls coming soon</p>
+                          <h3 className="text-xl font-semibold text-teal-dark mb-2">Privacy</h3>
+                          <p className="text-base text-gray-600 mb-4 leading-relaxed">Control who can see activity within your room.</p>
+                          <p className="text-sm text-gray-500">More privacy controls coming soon</p>
                         </div>
                       </div>
                     </div>
