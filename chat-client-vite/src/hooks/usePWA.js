@@ -59,6 +59,13 @@ export function usePWA() {
 
   // Register Service Worker
   const registerServiceWorker = React.useCallback(async () => {
+    // Skip Service Worker registration in development
+    // main.jsx explicitly unregisters service workers to fix Safari navigation issues
+    if (import.meta.env.DEV) {
+      console.log('[usePWA] Skipping Service Worker registration in development mode');
+      return null;
+    }
+
     try {
       console.log('[usePWA] Registering Service Worker...');
       const registration = await navigator.serviceWorker.register('/sw.js', {
