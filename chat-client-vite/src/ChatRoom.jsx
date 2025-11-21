@@ -7,9 +7,7 @@ import { useChat } from './hooks/useChat.js';
 import { useContacts } from './hooks/useContacts.js';
 import { useProfile } from './hooks/useProfile.js';
 import { useNotifications } from './hooks/useNotifications.js';
-import { useToast } from './hooks/useToast.js';
 import { ContactsPanel } from './components/ContactsPanel.jsx';
-import { ToastContainer } from './components/Toast.jsx';
 import { ProfilePanel } from './components/ProfilePanel.jsx';
 import { UpdatesPanel } from './components/UpdatesPanel.jsx';
 import { Navigation } from './components/Navigation.jsx';
@@ -315,27 +313,16 @@ function ChatRoom() {
     enabled: isAuthenticated
   });
 
-  // Toast notification system (always works, no permissions needed)
-  const toast = useToast();
-
-  // Callback for new messages - Option C: Toast notifications only
+  // Callback for new messages - Device notifications only (no in-browser toast)
   const handleNewMessage = React.useCallback((message) => {
-    // Always show toast notification (works without permissions, always visible)
-    toast.show({
-      sender: message.username,
-      message: message.text,
-      timestamp: message.timestamp,
-      username: username, // For filtering own messages
-    });
-
     // Increment unread count if not on chat screen
     if (currentView !== 'chat') {
       setUnreadCount(prev => prev + 1);
     }
 
-    // Note: Browser notifications removed for Option C
-    // PWA Service Worker will handle background notifications when app is closed
-  }, [toast, username, currentView]);
+    // Device notifications are handled by PWA Service Worker
+    // No in-browser toast pop-ups - only native device notifications
+  }, [username, currentView]);
 
   const chatState = useChat({
     username,
@@ -356,6 +343,8 @@ function ChatRoom() {
     flagMessage,
     draftCoaching,
     setDraftCoaching,
+    setIsPreApprovedRewrite,
+    setOriginalRewrite,
     threads,
     threadMessages,
     selectedThreadId,
@@ -716,17 +705,8 @@ function ChatRoom() {
 
   if (isAuthenticated) {
     return (
-      <div className="h-screen bg-white flex flex-col overflow-hidden">
-        {/* Toast Notifications - WhatsApp-style pop-ups */}
-        <ToastContainer
-          toasts={toast.toasts}
-          onDismiss={toast.dismiss}
-          onClick={(toastItem) => {
-            // Navigate to chat when toast is clicked
-            setCurrentView('chat');
-            toast.dismiss(toastItem.id);
-          }}
-        />
+      <div className="h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex flex-col overflow-hidden">
+        {/* Device notifications handled by PWA Service Worker - no in-browser toasts */}
 
         {/* Navigation - Top for desktop, Bottom for mobile */}
         <Navigation
@@ -737,7 +717,7 @@ function ChatRoom() {
         />
 
         {/* Main Content Area */}
-        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-20 md:pt-10 md:pb-4' : 'pt-10 md:pt-10 pb-20 md:pb-8 overflow-y-auto'} px-2 sm:px-4 md:px-6 lg:px-8 relative z-10`}>
+        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-16 md:pt-10 md:pb-4' : 'pt-10 md:pt-10 pb-20 md:pb-8 overflow-y-auto'} px-2 sm:px-4 md:px-6 lg:px-8 relative z-10`}>
           <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : 'max-w-7xl mx-auto w-full'}`}>
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
@@ -1171,7 +1151,7 @@ function ChatRoom() {
           {/* Full chat view */}
             {/* Chat View */}
             {currentView === 'chat' && (
-              <div className="bg-white rounded-3xl shadow-xl overflow-hidden h-full flex flex-col relative">
+              <div className="h-full flex flex-col relative">
                 {/* Threads button and invite link - moved to top right corner */}
                 <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
                   {threads.length > 0 && (
@@ -1256,7 +1236,7 @@ function ChatRoom() {
                   )}
 
                   {/* Main Chat Area */}
-                  <div className="flex-1 p-4 sm:p-6 flex flex-col min-h-0 overflow-hidden">
+                  <div className="flex-1 p-2 sm:p-4 md:p-6 flex flex-col min-h-0 overflow-hidden">
                   {inviteError && (
                 <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
                   <div className="font-semibold mb-1">⚠️ Error</div>
@@ -1327,8 +1307,8 @@ function ChatRoom() {
                 </div>
               )}
 
-              <div className="flex-1 bg-white rounded-2xl flex flex-col overflow-hidden shadow-inner border border-slate-100 min-h-0">
-              <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-5 bg-slate-50/50" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+              <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-5" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {(() => {
                   // Helper function to get initials from username
                   const getInitials = (name) => {
@@ -1577,6 +1557,8 @@ function ChatRoom() {
                                         onClick={() => {
                                           handleRewriteSelected();
                                           setInputMessage(msg.rewrite1);
+                                          setIsPreApprovedRewrite(true); // Mark as pre-approved
+                                          setOriginalRewrite(msg.rewrite1); // Store original for edit detection
                                           // Scroll to input
                                           setTimeout(() => {
                                             document.querySelector('input[type="text"][placeholder*="Type a message"]')?.focus();
@@ -1598,6 +1580,8 @@ function ChatRoom() {
                                         onClick={() => {
                                           handleRewriteSelected();
                                           setInputMessage(msg.rewrite2);
+                                          setIsPreApprovedRewrite(true); // Mark as pre-approved
+                                          setOriginalRewrite(msg.rewrite2); // Store original for edit detection
                                           // Scroll to input
                                           setTimeout(() => {
                                             document.querySelector('input[type="text"][placeholder*="Type a message"]')?.focus();
@@ -1815,6 +1799,8 @@ function ChatRoom() {
                               type="button"
                               onClick={() => {
                                 setInputMessage(draftCoaching.rewrite1);
+                                setIsPreApprovedRewrite(true); // Mark as pre-approved
+                                setOriginalRewrite(draftCoaching.rewrite1); // Store original for edit detection
                                 setDraftCoaching(null);
                               }}
                               className="text-left px-2 py-1.5 bg-white border border-orange-200 rounded-lg text-xs text-orange-900 hover:bg-orange-100 transition-colors"
@@ -1827,6 +1813,8 @@ function ChatRoom() {
                               type="button"
                               onClick={() => {
                                 setInputMessage(draftCoaching.rewrite2);
+                                setIsPreApprovedRewrite(true); // Mark as pre-approved
+                                setOriginalRewrite(draftCoaching.rewrite2); // Store original for edit detection
                                 setDraftCoaching(null);
                               }}
                               className="text-left px-2 py-1.5 bg-white border border-orange-200 rounded-lg text-xs text-orange-900 hover:bg-orange-100 transition-colors"
@@ -1851,7 +1839,7 @@ function ChatRoom() {
               )}
               <form
                 onSubmit={sendMessage}
-                className="border-t border-slate-200 bg-white px-3 py-2 flex items-center gap-2"
+                className="border-t border-white/20 bg-white/90 backdrop-blur-sm px-3 py-2 flex items-center gap-2"
               >
                 <input
                   type="text"
