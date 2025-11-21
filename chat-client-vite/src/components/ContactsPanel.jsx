@@ -4,6 +4,7 @@ import { useGooglePlaces } from '../hooks/useGooglePlaces.js';
 import { useActivities } from '../hooks/useActivities.js';
 import { ActivityCard } from './ActivityCard.jsx';
 import { AddActivityModal } from './modals/AddActivityModal.jsx';
+import { Button } from './ui';
 
 export function ContactsPanel({ username }) {
   // Address autocomplete ref
@@ -121,23 +122,26 @@ export function ContactsPanel({ username }) {
   }, [setContactFormData]);
 
   return (
-    <div className="bg-gradient-to-br from-[#E6F7F5] to-white rounded-2xl border-2 border-[#C5E8E4] overflow-hidden flex flex-col h-full">
+    <div className="bg-gradient-to-br from-[#E6F7F5] to-white rounded-2xl border-2 border-teal-light overflow-hidden flex flex-col h-full">
       <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 flex-shrink-0">
-        <button
+        <Button
           onClick={startNewContact}
-          className="px-3 py-2 sm:py-1.5 bg-[#4DA8B0] text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#1f4447] transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 min-h-[36px] sm:min-h-[40px] touch-manipulation"
+          variant="secondary"
+          size="small"
+          icon={
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          }
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
           Add
-        </button>
+        </Button>
       </div>
 
       <div className="px-3 sm:px-4 py-2 flex-shrink-0">
         <div className="relative">
           <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
@@ -146,7 +150,7 @@ export function ContactsPanel({ username }) {
             value={contactSearch}
             onChange={(e) => setContactSearch(e.target.value)}
             placeholder="Search..."
-            className="w-full pl-10 sm:pl-11 pr-3 py-2.5 sm:py-1.5 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-colors bg-white text-[#4DA8B0] placeholder-gray-400 text-sm min-h-[40px] sm:min-h-[44px]"
+            className="w-full pl-10 sm:pl-11 pr-3 py-2.5 sm:py-1.5 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium transition-colors bg-white text-teal-medium placeholder-gray-400 text-sm min-h-[40px] sm:min-h-[44px]"
           />
         </div>
       </div>
@@ -159,12 +163,12 @@ export function ContactsPanel({ username }) {
 
       <div className="flex-1 overflow-y-auto px-3 sm:px-4 pb-3 space-y-2">
         {isLoadingContacts ? (
-          <div className="text-center py-6 text-sm text-[#4DA8B0]">
-            <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-[#C5E8E4] border-t-[#4DA8B0] mb-2" />
+          <div className="text-center py-6 text-sm text-teal-medium">
+            <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-teal-light border-t-[#4DA8B0] mb-2" />
             <p>Loading…</p>
           </div>
         ) : filteredContacts.length === 0 ? (
-          <div className="text-center py-6 text-xs sm:text-sm text-[#4DA8B0] px-2">
+          <div className="text-center py-6 text-xs sm:text-sm text-teal-medium px-2">
             {contactSearch ? 'No matches found' : 'No entries yet. Add your co-parent and other key people.'}
           </div>
         ) : (
@@ -172,17 +176,17 @@ export function ContactsPanel({ username }) {
             <div
               key={contact.id}
               onClick={() => editContact(contact)}
-              className="flex items-center p-2.5 sm:p-3 rounded-lg border-2 border-[#C5E8E4] hover:border-[#4DA8B0] bg-white transition-colors cursor-pointer touch-manipulation active:scale-[0.98]"
+              className="flex items-center p-2.5 sm:p-3 rounded-lg border-2 border-teal-light hover:border-teal-medium bg-white transition-colors cursor-pointer touch-manipulation active:scale-[0.98]"
             >
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#4DA8B0] text-white flex items-center justify-center font-semibold text-sm sm:text-base flex-shrink-0">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-teal-medium text-white flex items-center justify-center font-semibold text-sm sm:text-base flex-shrink-0">
                   {(contact.contact_name || '?').charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-sm sm:text-base text-[#4DA8B0] truncate">
+                  <div className="font-semibold text-sm sm:text-base text-teal-medium truncate">
                     {contact.contact_name || 'Unnamed'}
                   </div>
-                  <div className="text-xs sm:text-sm text-[#4DA8B0] truncate">
+                  <div className="text-xs sm:text-sm text-teal-medium truncate">
                     {contact.relationship || 'Relationship not set'}
                   </div>
                   {contact.contact_email && (
@@ -197,21 +201,23 @@ export function ContactsPanel({ username }) {
 
       {showContactForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 pb-24 md:pb-4 overflow-y-auto">
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-full flex flex-col border-2 border-[#C5E8E4] my-auto">
-            <div className="border-b-2 border-[#C5E8E4] px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between flex-shrink-0">
-              <h3 className="text-base sm:text-lg font-bold text-[#4DA8B0]">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-full flex flex-col border-2 border-teal-light my-auto">
+            <div className="border-b-2 border-teal-light px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-base sm:text-lg font-bold text-teal-medium">
                 {editingContact ? 'Edit' : 'Add'}
               </h3>
-              <button
+              <Button
                 onClick={() => {
                   setShowContactForm(false);
                   resetForm();
                 }}
-                className="text-2xl leading-none text-[#4DA8B0] hover:text-[#4DA8B0] transition-colors p-1 touch-manipulation min-w-[36px] min-h-[36px] flex items-center justify-center"
+                variant="ghost"
+                size="small"
+                className="text-2xl leading-none p-1 min-w-[36px]"
                 aria-label="Close"
               >
                 ×
-              </button>
+              </Button>
             </div>
             <form
               onSubmit={(e) => {
@@ -222,7 +228,7 @@ export function ContactsPanel({ username }) {
             >
               <div className="p-3 sm:p-4 space-y-3 flex-1 overflow-y-auto">
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5">
                     Name *
                   </label>
                   <input
@@ -231,13 +237,13 @@ export function ContactsPanel({ username }) {
                     onChange={(e) =>
                       setContactFormData({ ...contactFormData, contact_name: e.target.value })
                     }
-                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm min-h-[44px]"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm min-h-[44px]"
                     placeholder="Name"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5">
                     Relationship *
                   </label>
                   <select
@@ -245,7 +251,7 @@ export function ContactsPanel({ username }) {
                     onChange={(e) =>
                       setContactFormData({ ...contactFormData, relationship: e.target.value })
                     }
-                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm min-h-[44px]"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm min-h-[44px]"
                     required
                   >
                     <option value="">Select relationship...</option>
@@ -283,26 +289,22 @@ export function ContactsPanel({ username }) {
                         <p className="text-xs text-purple-700 mb-3">
                           Get intelligent suggestions for important fields based on the relationship type
                         </p>
-                        <button
+                        <Button
                           type="button"
                           onClick={generateProfileSuggestions}
                           disabled={isGeneratingProfile}
-                          className="w-full px-3 py-2.5 bg-purple-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors shadow-sm hover:shadow-md flex items-center justify-center gap-2 min-h-[44px] touch-manipulation"
-                        >
-                          {isGeneratingProfile ? (
-                            <>
-                              <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                              Generating suggestions...
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                              </svg>
-                              Get AI Suggestions
-                            </>
+                          loading={isGeneratingProfile}
+                          fullWidth
+                          size="small"
+                          className="bg-purple-600 hover:bg-purple-700"
+                          icon={!isGeneratingProfile && (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
                           )}
-                        </button>
+                        >
+                          Get AI Suggestions
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -315,13 +317,15 @@ export function ContactsPanel({ username }) {
                       <h4 className="text-sm font-semibold text-indigo-900">
                         AI Suggestions
                       </h4>
-                      <button
+                      <Button
                         type="button"
                         onClick={() => setShowAiAssistant(false)}
+                        variant="ghost"
+                        size="small"
                         className="text-indigo-600 hover:text-indigo-800 text-xs"
                       >
                         Hide
-                      </button>
+                      </Button>
                     </div>
 
                     {profileSuggestions.profileCompletionTips && (
@@ -354,13 +358,14 @@ export function ContactsPanel({ username }) {
                                 <p className="text-xs text-gray-600 mt-0.5">{field.suggestion}</p>
                               </div>
                               {field.suggestion && field.fieldName && (
-                                <button
+                                <Button
                                   type="button"
                                   onClick={() => applySuggestion(field.fieldName, field.suggestion)}
-                                  className="flex-shrink-0 px-2 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700"
+                                  size="small"
+                                  className="flex-shrink-0 px-2 py-1 bg-indigo-600 text-white text-xs hover:bg-indigo-700"
                                 >
                                   Apply
-                                </button>
+                                </Button>
                               )}
                             </div>
                           </div>
@@ -371,7 +376,7 @@ export function ContactsPanel({ username }) {
                 )}
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5">
                     Email
                   </label>
                   <input
@@ -383,7 +388,7 @@ export function ContactsPanel({ username }) {
                         contact_email: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm min-h-[44px]"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm min-h-[44px]"
                     placeholder="email@example.com"
                   />
                 </div>
@@ -393,7 +398,7 @@ export function ContactsPanel({ username }) {
                   <>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                        <label className="block text-xs font-semibold text-teal-medium mb-1">
                           Age
                         </label>
                         <input
@@ -402,13 +407,13 @@ export function ContactsPanel({ username }) {
                           onChange={(e) =>
                             setContactFormData({ ...contactFormData, child_age: e.target.value })
                           }
-                          className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                           placeholder="Age"
                           min="0"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                        <label className="block text-xs font-semibold text-teal-medium mb-1">
                           Birthdate
                         </label>
                         <input
@@ -417,12 +422,12 @@ export function ContactsPanel({ username }) {
                           onChange={(e) =>
                             setContactFormData({ ...contactFormData, child_birthdate: e.target.value })
                           }
-                          className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         School
                       </label>
                       <input
@@ -431,12 +436,12 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, school: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                         placeholder="School name"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         Custody Arrangement
                       </label>
                       <textarea
@@ -444,14 +449,14 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, custody_arrangement: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                         rows={2}
                         placeholder="Describe custody arrangement..."
                       />
                     </div>
                     {contactFormData.relationship === "My Partner's Child" && (
                       <div>
-                        <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                        <label className="block text-xs font-semibold text-teal-medium mb-1">
                           Other Parent
                         </label>
                         <select
@@ -459,7 +464,7 @@ export function ContactsPanel({ username }) {
                           onChange={(e) =>
                             setContactFormData({ ...contactFormData, linked_contact_id: e.target.value })
                           }
-                          className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                         >
                           <option value="">Select other parent...</option>
                           {contacts
@@ -474,7 +479,7 @@ export function ContactsPanel({ username }) {
                     )}
                     {contactFormData.relationship === 'My Child' && (
                       <div>
-                        <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                        <label className="block text-xs font-semibold text-teal-medium mb-1">
                           Other Parent
                         </label>
                         <select
@@ -482,7 +487,7 @@ export function ContactsPanel({ username }) {
                           onChange={(e) =>
                             setContactFormData({ ...contactFormData, linked_contact_id: e.target.value })
                           }
-                          className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                         >
                           <option value="">Select other parent...</option>
                           {contacts
@@ -501,25 +506,27 @@ export function ContactsPanel({ username }) {
 
                     {/* Activities Schedule Section - Only for "My Child" */}
                     {contactFormData.relationship === 'My Child' && editingContact && (
-                      <div className="bg-[#E6F7F5] rounded-lg p-3 space-y-3 mt-3">
+                      <div className="bg-teal-lightest rounded-lg p-3 space-y-3 mt-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <h4 className="font-semibold text-[#4DA8B0] text-sm">Activities & Schedule</h4>
+                            <h4 className="font-semibold text-teal-medium text-sm">Activities & Schedule</h4>
                           </div>
-                          <button
+                          <Button
                             type="button"
                             onClick={(e) => {
                               e.preventDefault();
                               setEditingActivity(null);
                               setShowActivityModal(true);
                             }}
-                            className="px-2 py-1 bg-[#4DA8B0] text-white rounded text-xs font-semibold hover:bg-[#1f4447] transition-colors min-h-[32px] touch-manipulation"
+                            variant="secondary"
+                            size="small"
+                            className="text-xs px-2 py-1"
                           >
                             + Add Activity
-                          </button>
+                          </Button>
                         </div>
 
                         {activitiesError && (
@@ -564,7 +571,7 @@ export function ContactsPanel({ username }) {
                 {contactFormData.relationship === 'My Partner' && (
                   <>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         How long have you been together?
                       </label>
                       <input
@@ -573,12 +580,12 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, partner_duration: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                         placeholder="e.g., 2 years, 6 months"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         Does your partner have children?
                       </label>
                       <select
@@ -586,7 +593,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, has_children: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                       >
                         <option value="">Select...</option>
                         <option value="yes">Yes</option>
@@ -599,7 +606,7 @@ export function ContactsPanel({ username }) {
                 {(contactFormData.relationship === 'My Co-Parent' || contactFormData.relationship === "My Partner's Co-Parent") && (
                   <>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         Separation Date
                       </label>
                       <input
@@ -608,11 +615,11 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, separation_date: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         Address
                       </label>
                       <input
@@ -622,12 +629,12 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, address: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                         placeholder="Start typing address..."
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         What aspects of co-parenting are most difficult?
                       </label>
                       <textarea
@@ -635,13 +642,13 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, difficult_aspects: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                         rows={3}
                         placeholder="Describe challenges..."
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         Any legal matters or custody concerns?
                       </label>
                       <textarea
@@ -649,13 +656,13 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, legal_matters: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                         rows={2}
                         placeholder="Legal matters..."
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         Any safety concerns?
                       </label>
                       <textarea
@@ -663,13 +670,13 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, safety_concerns: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                         rows={2}
                         placeholder="Safety concerns..."
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         Any substance abuse or mental health concerns?
                       </label>
                       <textarea
@@ -677,13 +684,13 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, substance_mental_health: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                         rows={2}
                         placeholder="Concerns..."
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         Any neglect or abuse concerns?
                       </label>
                       <textarea
@@ -691,13 +698,13 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, neglect_abuse_concerns: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                         rows={2}
                         placeholder="Concerns..."
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         Additional thoughts or context
                       </label>
                       <textarea
@@ -705,7 +712,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, additional_thoughts: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                         rows={3}
                         placeholder="Anything else that would help..."
                       />
@@ -715,7 +722,7 @@ export function ContactsPanel({ username }) {
 
                 {(contactFormData.relationship === "My Child's Teacher" || contactFormData.relationship === 'Other') && (
                   <div>
-                    <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                    <label className="block text-xs font-semibold text-teal-medium mb-1">
                       Phone Number
                     </label>
                     <input
@@ -724,7 +731,7 @@ export function ContactsPanel({ username }) {
                       onChange={(e) =>
                         setContactFormData({ ...contactFormData, phone: e.target.value })
                       }
-                      className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                      className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                       placeholder="Phone number"
                     />
                   </div>
@@ -732,7 +739,7 @@ export function ContactsPanel({ username }) {
 
                 {/* Additional notes textarea */}
                 <div>
-                  <label className="block text-xs font-semibold text-[#4DA8B0] mb-1">
+                  <label className="block text-xs font-semibold text-teal-medium mb-1">
                     Notes
                   </label>
                   <textarea
@@ -740,15 +747,15 @@ export function ContactsPanel({ username }) {
                     onChange={(e) =>
                       setContactFormData({ ...contactFormData, notes: e.target.value })
                     }
-                    className="w-full px-3 py-2 border-2 border-[#C5E8E4] rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                    className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                     rows={3}
                     placeholder="Any extra details"
                   />
                 </div>
               </div>
-              <div className="px-3 sm:px-4 py-3 pb-4 border-t-2 border-[#C5E8E4] flex gap-2 flex-wrap sm:flex-nowrap flex-shrink-0 bg-white">
+              <div className="px-3 sm:px-4 py-3 pb-4 border-t-2 border-teal-light flex gap-2 flex-wrap sm:flex-nowrap flex-shrink-0 bg-white">
                 {editingContact && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => {
                       if (window.confirm('Are you sure you want to delete this contact?')) {
@@ -757,28 +764,35 @@ export function ContactsPanel({ username }) {
                         resetForm();
                       }
                     }}
-                    className="px-3 py-2.5 sm:py-2 rounded-lg border-2 border-red-200 text-xs sm:text-sm font-medium text-red-600 hover:bg-red-50 transition-colors min-h-[44px] touch-manipulation"
+                    variant="danger"
+                    size="small"
+                    className="text-xs sm:text-sm"
                   >
                     Delete
-                  </button>
+                  </Button>
                 )}
-                <button
+                <Button
                   type="submit"
                   disabled={isSavingContact || !contactFormData.contact_name.trim() || !contactFormData.relationship}
-                  className="flex-1 bg-[#4DA8B0] text-white py-2.5 sm:py-2 rounded-lg font-semibold text-sm hover:bg-[#1f4447] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-sm min-h-[44px] touch-manipulation"
+                  loading={isSavingContact}
+                  variant="secondary"
+                  size="small"
+                  className="flex-1 text-sm"
                 >
-                  {isSavingContact ? 'Saving…' : editingContact ? 'Update' : 'Add'}
-                </button>
-                <button
+                  {editingContact ? 'Update' : 'Add'}
+                </Button>
+                <Button
                   type="button"
                   onClick={() => {
                     setShowContactForm(false);
                     resetForm();
                   }}
-                  className="px-3 py-2.5 sm:py-2 rounded-lg border-2 border-[#C5E8E4] text-xs sm:text-sm font-medium text-[#4DA8B0] hover:bg-[#E6F7F5] transition-colors min-h-[44px] touch-manipulation"
+                  variant="tertiary"
+                  size="small"
+                  className="text-xs sm:text-sm"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </form>
           </div>

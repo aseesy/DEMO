@@ -1,6 +1,7 @@
 import React from 'react';
 import { useProfile } from '../hooks/useProfile.js';
 import { useGooglePlaces } from '../hooks/useGooglePlaces.js';
+import { Button } from './ui';
 
 export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
   const {
@@ -39,7 +40,7 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
         {isLoadingProfile ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#E6F7F5] border-t-[#4DA8B0]" />
-            <p className="mt-4 text-[#4DA8B0] font-medium">Loading profile...</p>
+            <p className="mt-4 text-teal-medium font-medium">Loading profile...</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -47,18 +48,18 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
           <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border-2 border-gray-200 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-[#4DA8B0]">
+              <h3 className="text-lg sm:text-xl font-bold text-teal-medium">
                 Personal Information
               </h3>
             </div>
             <div className="space-y-3 sm:space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1.5 sm:mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5 sm:mb-2">
                     First Name
                   </label>
                   <input
@@ -70,12 +71,12 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
                         first_name: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[44px]"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium transition-all text-gray-900 text-sm min-h-[44px]"
                     placeholder="First name"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1.5 sm:mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5 sm:mb-2">
                     Last Name
                   </label>
                   <input
@@ -87,13 +88,13 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
                         last_name: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[44px]"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium transition-all text-gray-900 text-sm min-h-[44px]"
                     placeholder="Last name"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1.5 sm:mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5 sm:mb-2">
                   Address
                 </label>
                 <div className="relative">
@@ -104,7 +105,7 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
                     onChange={(e) =>
                       setProfileData({ ...profileData, address: e.target.value })
                     }
-                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[44px]"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium transition-all text-gray-900 text-sm min-h-[44px]"
                     placeholder="Start typing your address..."
                   />
                   {!isGoogleMapsLoaded && !googleMapsError && (
@@ -126,7 +127,7 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
                 )}
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1">
+                <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1">
                   Occupation / Daily Responsibilities
                 </label>
                 <p className="text-xs text-[#3d8a92] mb-2">
@@ -140,13 +141,13 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
                       occupation: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[100px]"
+                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium transition-all text-gray-900 text-sm min-h-[100px]"
                   rows={3}
                   placeholder="Describe your occupation and daily responsibilities..."
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1.5 sm:mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5 sm:mb-2">
                   What is your parenting philosophy?
                 </label>
                 <textarea
@@ -157,13 +158,13 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
                       parenting_philosophy: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[120px]"
+                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium transition-all text-gray-900 text-sm min-h-[120px]"
                   rows={4}
                   placeholder="Share your parenting philosophy and approach..."
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-semibold text-[#4DA8B0] mb-1.5 sm:mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5 sm:mb-2">
                   What personal growth or changes would you like to work on during
                   this process?
                 </label>
@@ -175,7 +176,7 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
                       personal_growth: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] transition-all text-gray-900 text-sm min-h-[120px]"
+                  className="w-full px-3 py-2.5 sm:py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium transition-all text-gray-900 text-sm min-h-[120px]"
                   rows={4}
                   placeholder="Describe areas you'd like to improve or work on..."
                 />
@@ -184,26 +185,23 @@ export function ProfilePanel({ username, onLogout, onNavigateToContacts }) {
           </div>
 
           {/* Save button */}
-          <div className="bg-gradient-to-br from-[#4DA8B0] to-[#3d8a92] rounded-xl sm:rounded-2xl p-1 shadow-lg hover:shadow-xl transition-all">
-            <button
+          <div className="bg-gradient-to-br from-teal-medium to-[#3d8a92] rounded-xl sm:rounded-2xl p-1 shadow-lg hover:shadow-xl transition-all">
+            <Button
               onClick={saveProfile}
               disabled={isSavingProfile}
-              className="w-full bg-gradient-to-br from-[#4DA8B0] to-[#3d8a92] hover:from-[#3d8a92] hover:to-[#2d6d75] text-white py-3 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base disabled:from-gray-400 disabled:to-gray-500 transition-all flex items-center justify-center gap-2 min-h-[48px] touch-manipulation"
-            >
-              {isSavingProfile ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Saving Changes...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Save Profile
-                </>
+              loading={isSavingProfile}
+              variant="secondary"
+              size="large"
+              fullWidth
+              icon={!isSavingProfile && (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
               )}
-            </button>
+              className="bg-gradient-to-br from-teal-medium to-[#3d8a92] hover:from-[#3d8a92] hover:to-[#2d6d75] text-sm sm:text-base"
+            >
+              Save Profile
+            </Button>
           </div>
 
           </div>

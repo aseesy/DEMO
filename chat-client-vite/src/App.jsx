@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ChatRoom from './ChatRoom.jsx';
 import { LoginSignup } from './components/LoginSignup.jsx';
 import { GoogleOAuthCallback } from './components/GoogleOAuthCallback.jsx';
+import { UIShowcase } from './components/UIShowcase.jsx';
 import { usePWA } from './hooks/usePWA.js';
 
 function App() {
@@ -26,6 +27,9 @@ function App() {
 
         {/* Google OAuth callback route */}
         <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
+
+        {/* UI Component Showcase - Design System Documentation */}
+        <Route path="/ui-showcase" element={<UIShowcase />} />
       </Routes>
     </BrowserRouter>
   );

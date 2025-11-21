@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from './ui';
 
 /**
  * Toast Notification Component
@@ -25,25 +26,28 @@ export function Toast({ toast, onDismiss, onClick }) {
       <div className="toast-content">
         <div className="toast-header">
           <div className="toast-avatar">
-            <svg className="w-5 h-5 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
           <div className="toast-sender">
             {toast.sender}
           </div>
-          <button
+          <Button
             onClick={(e) => {
               e.stopPropagation();
               onDismiss(toast.id);
             }}
+            variant="ghost"
+            size="small"
             className="toast-close"
             aria-label="Dismiss notification"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+            icon={
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            }
+          />
         </div>
         <div className="toast-message">
           {toast.message}

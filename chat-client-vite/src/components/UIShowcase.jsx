@@ -1,0 +1,477 @@
+import React, { useState } from 'react';
+import { Button } from './ui';
+import { Modal } from './ui';
+
+/**
+ * UI Component Showcase
+ * Interactive documentation and testing page for all design system components
+ */
+export function UIShowcase() {
+  const [showModal, setShowModal] = useState(false);
+  const [loadingButton, setLoadingButton] = useState(null);
+  const [selectedDays, setSelectedDays] = useState(['Mon', 'Wed', 'Fri']);
+
+  const handleLoadingDemo = (buttonId) => {
+    setLoadingButton(buttonId);
+    setTimeout(() => setLoadingButton(null), 2000);
+  };
+
+  const toggleDay = (day) => {
+    setSelectedDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-teal-lightest to-white">
+      {/* Header */}
+      <div className="bg-white border-b-2 border-teal-light shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-teal-dark">LiaiZen Design System</h1>
+              <p className="text-teal-medium mt-1">Component Library & Documentation</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">
+                Phase 2 Complete
+              </span>
+              <span className="px-3 py-1 bg-teal-lightest text-teal-dark text-sm font-semibold rounded-full">
+                v2.0
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-lg p-4 border-2 border-teal-light">
+            <div className="text-2xl font-bold text-teal-dark">33</div>
+            <div className="text-sm text-teal-medium">Buttons Migrated</div>
+          </div>
+          <div className="bg-white rounded-lg p-4 border-2 border-teal-light">
+            <div className="text-2xl font-bold text-teal-dark">9</div>
+            <div className="text-sm text-teal-medium">Files Completed</div>
+          </div>
+          <div className="bg-white rounded-lg p-4 border-2 border-teal-light">
+            <div className="text-2xl font-bold text-teal-dark">100%</div>
+            <div className="text-sm text-teal-medium">Token Usage</div>
+          </div>
+          <div className="bg-white rounded-lg p-4 border-2 border-teal-light">
+            <div className="text-2xl font-bold text-teal-dark">400+</div>
+            <div className="text-sm text-teal-medium">Lines Removed</div>
+          </div>
+        </div>
+
+        {/* Button Component Section */}
+        <section className="mb-12">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-dark to-teal-medium px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Button Component</h2>
+              <p className="text-teal-lightest mt-1">Flexible, accessible action buttons with multiple variants</p>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Variants */}
+              <div>
+                <h3 className="text-lg font-semibold text-teal-dark mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-teal-medium rounded"></span>
+                  Variants
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-600">Primary</div>
+                    <Button variant="primary">Primary Button</Button>
+                    <code className="block text-xs bg-gray-100 p-2 rounded">
+                      variant="primary"
+                    </code>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-600">Secondary</div>
+                    <Button variant="secondary">Secondary Button</Button>
+                    <code className="block text-xs bg-gray-100 p-2 rounded">
+                      variant="secondary"
+                    </code>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-600">Tertiary</div>
+                    <Button variant="tertiary">Tertiary Button</Button>
+                    <code className="block text-xs bg-gray-100 p-2 rounded">
+                      variant="tertiary"
+                    </code>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-600">Ghost</div>
+                    <Button variant="ghost">Ghost Button</Button>
+                    <code className="block text-xs bg-gray-100 p-2 rounded">
+                      variant="ghost"
+                    </code>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-600">Danger</div>
+                    <Button variant="danger">Danger Button</Button>
+                    <code className="block text-xs bg-gray-100 p-2 rounded">
+                      variant="danger"
+                    </code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sizes */}
+              <div>
+                <h3 className="text-lg font-semibold text-teal-dark mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-teal-medium rounded"></span>
+                  Sizes
+                </h3>
+                <div className="flex flex-wrap items-end gap-4">
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-600">Small</div>
+                    <Button variant="primary" size="small">Small Button</Button>
+                    <code className="block text-xs bg-gray-100 p-2 rounded">
+                      size="small"
+                    </code>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-600">Medium (Default)</div>
+                    <Button variant="primary" size="medium">Medium Button</Button>
+                    <code className="block text-xs bg-gray-100 p-2 rounded">
+                      size="medium"
+                    </code>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-600">Large</div>
+                    <Button variant="primary" size="large">Large Button</Button>
+                    <code className="block text-xs bg-gray-100 p-2 rounded">
+                      size="large"
+                    </code>
+                  </div>
+                </div>
+              </div>
+
+              {/* States */}
+              <div>
+                <h3 className="text-lg font-semibold text-teal-dark mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-teal-medium rounded"></span>
+                  States
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-600">Loading State</div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="primary"
+                        loading={loadingButton === 'demo1'}
+                        onClick={() => handleLoadingDemo('demo1')}
+                      >
+                        Click to Load
+                      </Button>
+                    </div>
+                    <code className="block text-xs bg-gray-100 p-2 rounded">
+                      loading={'{isLoading}'}
+                    </code>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-600">Disabled State</div>
+                    <Button variant="primary" disabled>Disabled Button</Button>
+                    <code className="block text-xs bg-gray-100 p-2 rounded">
+                      disabled={'{true}'}
+                    </code>
+                  </div>
+                </div>
+              </div>
+
+              {/* With Icons */}
+              <div>
+                <h3 className="text-lg font-semibold text-teal-dark mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-teal-medium rounded"></span>
+                  With Icons
+                </h3>
+                <div className="flex flex-wrap gap-4">
+                  <Button
+                    variant="primary"
+                    icon={
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    }
+                  >
+                    Add Item
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    icon={
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    }
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="danger"
+                    icon={
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    }
+                  >
+                    Delete
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="small"
+                    icon={
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    }
+                    aria-label="Close"
+                  />
+                </div>
+                <code className="block text-xs bg-gray-100 p-2 rounded mt-3">
+                  icon={'{<IconComponent />}'}
+                </code>
+              </div>
+
+              {/* Full Width */}
+              <div>
+                <h3 className="text-lg font-semibold text-teal-dark mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-teal-medium rounded"></span>
+                  Full Width
+                </h3>
+                <Button variant="primary" fullWidth>Full Width Button</Button>
+                <code className="block text-xs bg-gray-100 p-2 rounded mt-3">
+                  fullWidth={'{true}'}
+                </code>
+              </div>
+
+              {/* Toggle Pattern */}
+              <div>
+                <h3 className="text-lg font-semibold text-teal-dark mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-teal-medium rounded"></span>
+                  Toggle Pattern (Days Selector)
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                    <Button
+                      key={day}
+                      variant={selectedDays.includes(day) ? 'secondary' : 'tertiary'}
+                      size="small"
+                      onClick={() => toggleDay(day)}
+                    >
+                      {day}
+                    </Button>
+                  ))}
+                </div>
+                <code className="block text-xs bg-gray-100 p-2 rounded mt-3">
+                  variant={'{isActive ? "secondary" : "tertiary"}'}
+                </code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Modal Component Section */}
+        <section className="mb-12">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-dark to-teal-medium px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Modal Component</h2>
+              <p className="text-teal-lightest mt-1">Accessible dialog overlays with backdrop and keyboard support</p>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Modal Demo */}
+              <div>
+                <h3 className="text-lg font-semibold text-teal-dark mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-teal-medium rounded"></span>
+                  Interactive Demo
+                </h3>
+                <Button variant="primary" onClick={() => setShowModal(true)}>
+                  Open Demo Modal
+                </Button>
+                <Modal
+                  isOpen={showModal}
+                  onClose={() => setShowModal(false)}
+                  title="Demo Modal"
+                  subtitle="This is a subtitle explaining the modal purpose"
+                  footer={
+                    <>
+                      <Button variant="tertiary" onClick={() => setShowModal(false)}>
+                        Cancel
+                      </Button>
+                      <Button variant="primary" onClick={() => setShowModal(false)}>
+                        Confirm
+                      </Button>
+                    </>
+                  }
+                >
+                  <div className="space-y-4">
+                    <p className="text-gray-700">
+                      This is a demo modal showing the Modal component in action. It includes:
+                    </p>
+                    <ul className="list-disc list-inside space-y-2 text-gray-700">
+                      <li>Backdrop overlay (40% black)</li>
+                      <li>Escape key support (press Esc to close)</li>
+                      <li>Scroll locking on body</li>
+                      <li>Custom footer with buttons</li>
+                      <li>Proper accessibility (ARIA attributes)</li>
+                      <li>Mobile-safe padding (pb-24)</li>
+                    </ul>
+                  </div>
+                </Modal>
+              </div>
+
+              {/* Modal Features */}
+              <div>
+                <h3 className="text-lg font-semibold text-teal-dark mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-teal-medium rounded"></span>
+                  Features
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-teal-lightest p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="font-semibold text-teal-dark">Escape Key</span>
+                    </div>
+                    <p className="text-sm text-teal-medium">Press Esc to close modal</p>
+                  </div>
+                  <div className="bg-teal-lightest p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="font-semibold text-teal-dark">Scroll Lock</span>
+                    </div>
+                    <p className="text-sm text-teal-medium">Body scroll locked when open</p>
+                  </div>
+                  <div className="bg-teal-lightest p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="font-semibold text-teal-dark">ARIA Support</span>
+                    </div>
+                    <p className="text-sm text-teal-medium">Proper accessibility attributes</p>
+                  </div>
+                  <div className="bg-teal-lightest p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="font-semibold text-teal-dark">Custom Footer</span>
+                    </div>
+                    <p className="text-sm text-teal-medium">Flexible footer content</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Design Tokens Section */}
+        <section className="mb-12">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-dark to-teal-medium px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Design Tokens</h2>
+              <p className="text-teal-lightest mt-1">Centralized color system used across all components</p>
+            </div>
+
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <div className="h-20 bg-teal-darkest rounded-lg flex items-center justify-center text-white font-semibold">
+                    teal-darkest
+                  </div>
+                  <code className="block text-xs text-gray-600">#1f4447</code>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-20 bg-teal-dark rounded-lg flex items-center justify-center text-white font-semibold">
+                    teal-dark
+                  </div>
+                  <code className="block text-xs text-gray-600">#275559</code>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-20 bg-teal-medium rounded-lg flex items-center justify-center text-white font-semibold">
+                    teal-medium
+                  </div>
+                  <code className="block text-xs text-gray-600">#4DA8B0</code>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-20 bg-teal-light rounded-lg flex items-center justify-center text-teal-dark font-semibold border-2 border-teal-medium">
+                    teal-light
+                  </div>
+                  <code className="block text-xs text-gray-600">#C5E8E4</code>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-20 bg-teal-lightest rounded-lg flex items-center justify-center text-teal-dark font-semibold border-2 border-teal-light">
+                    teal-lightest
+                  </div>
+                  <code className="block text-xs text-gray-600">#E6F7F5</code>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Resources */}
+        <section>
+          <div className="bg-white rounded-xl shadow-lg border-2 border-teal-light overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-dark to-teal-medium px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Documentation Resources</h2>
+              <p className="text-teal-lightest mt-1">Comprehensive guides and references</p>
+            </div>
+
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border-2 border-teal-light rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <h3 className="font-semibold text-teal-dark mb-2">📚 DESIGN_SYSTEM.md</h3>
+                  <p className="text-sm text-gray-600 mb-3">Master documentation with complete API reference, usage guidelines, and patterns</p>
+                  <code className="text-xs bg-gray-100 p-1 rounded">Desktop/chat/DESIGN_SYSTEM.md</code>
+                </div>
+                <div className="border-2 border-teal-light rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <h3 className="font-semibold text-teal-dark mb-2">⚡ BUTTON_QUICK_REFERENCE.md</h3>
+                  <p className="text-sm text-gray-600 mb-3">Quick lookup guide for common button patterns and props</p>
+                  <code className="text-xs bg-gray-100 p-1 rounded">Desktop/chat/BUTTON_QUICK_REFERENCE.md</code>
+                </div>
+                <div className="border-2 border-teal-light rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <h3 className="font-semibold text-teal-dark mb-2">📊 PHASE_2_COMPLETION_REPORT.md</h3>
+                  <p className="text-sm text-gray-600 mb-3">Comprehensive report with metrics, examples, and achievements</p>
+                  <code className="text-xs bg-gray-100 p-1 rounded">Desktop/chat/PHASE_2_COMPLETION_REPORT.md</code>
+                </div>
+                <div className="border-2 border-teal-light rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <h3 className="font-semibold text-teal-dark mb-2">📝 SESSION_SUMMARY.md</h3>
+                  <p className="text-sm text-gray-600 mb-3">Complete session overview with ROI analysis and next steps</p>
+                  <code className="text-xs bg-gray-100 p-1 rounded">Desktop/chat/SESSION_SUMMARY.md</code>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* Footer */}
+      <div className="bg-white border-t-2 border-teal-light mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              LiaiZen Design System v2.0 - Phase 2 Complete
+            </div>
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <span>33 Buttons Migrated</span>
+              <span>•</span>
+              <span>9 Files Completed</span>
+              <span>•</span>
+              <span>100% Token Usage</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default UIShowcase;

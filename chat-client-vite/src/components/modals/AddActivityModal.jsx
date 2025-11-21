@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from '../ui';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -89,21 +90,23 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
         <div className="border-b-2 border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-[#4DA8B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-bold text-[#4DA8B0]">
+            <h3 className="text-lg font-bold text-teal-medium">
               {activity ? 'Edit Activity' : 'Add Activity'}
             </h3>
           </div>
-          <button
+          <Button
             onClick={onClose}
-            className="text-2xl leading-none text-[#4DA8B0] hover:text-[#4DA8B0] transition-colors p-1 min-w-[36px] min-h-[36px]"
+            variant="ghost"
+            size="small"
+            className="text-2xl leading-none p-1 min-w-[36px]"
             aria-label="Close"
           >
             ×
-          </button>
+          </Button>
         </div>
 
         {/* Form */}
@@ -111,14 +114,14 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
           <div className="p-4 space-y-4 flex-1">
             {/* Activity Name */}
             <div>
-              <label className="block text-sm font-semibold text-[#4DA8B0] mb-1.5">
+              <label className="block text-sm font-semibold text-teal-medium mb-1.5">
                 Activity Name *
               </label>
               <input
                 type="text"
                 value={formData.activityName}
                 onChange={(e) => setFormData({ ...formData, activityName: e.target.value })}
-                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                 placeholder="e.g., Soccer Practice"
                 required
               />
@@ -126,13 +129,13 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-semibold text-[#4DA8B0] mb-1.5">
+              <label className="block text-sm font-semibold text-teal-medium mb-1.5">
                 Description
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm resize-none"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium text-sm resize-none"
                 rows={2}
                 placeholder="Brief description of the activity"
               />
@@ -140,27 +143,25 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
             {/* Schedule Section */}
             <div className="bg-gray-50 rounded-lg p-3 space-y-3">
-              <h4 className="font-semibold text-[#4DA8B0] text-sm">Schedule</h4>
+              <h4 className="font-semibold text-teal-medium text-sm">Schedule</h4>
 
               {/* Days of Week */}
               <div>
-                <label className="block text-sm font-medium text-[#4DA8B0] mb-2">
+                <label className="block text-sm font-medium text-teal-medium mb-2">
                   Days of Week
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {DAYS_OF_WEEK.map(day => (
-                    <button
+                    <Button
                       key={day}
                       type="button"
                       onClick={() => handleDayToggle(day)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        formData.daysOfWeek.includes(day)
-                          ? 'bg-[#4DA8B0] text-white'
-                          : 'bg-white text-[#4DA8B0] border border-gray-200 hover:border-[#4DA8B0]'
-                      }`}
+                      variant={formData.daysOfWeek.includes(day) ? 'secondary' : 'tertiary'}
+                      size="small"
+                      className="px-3 py-1.5 text-xs"
                     >
                       {day.substring(0, 3)}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -168,25 +169,25 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
               {/* Time Range */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
+                  <label className="block text-sm font-medium text-teal-medium mb-1">
                     Start Time
                   </label>
                   <input
                     type="time"
                     value={formData.startTime}
                     onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
+                  <label className="block text-sm font-medium text-teal-medium mb-1">
                     End Time
                   </label>
                   <input
                     type="time"
                     value={formData.endTime}
                     onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                   />
                 </div>
               </div>
@@ -194,13 +195,13 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
               {/* Recurrence and Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
+                  <label className="block text-sm font-medium text-teal-medium mb-1">
                     Recurrence *
                   </label>
                   <select
                     value={formData.recurrence}
                     onChange={(e) => setFormData({ ...formData, recurrence: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                     required
                   >
                     <option value="weekly">Weekly</option>
@@ -210,26 +211,26 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
+                  <label className="block text-sm font-medium text-teal-medium mb-1">
                     Start Date *
                   </label>
                   <input
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
+                  <label className="block text-sm font-medium text-teal-medium mb-1">
                     End Date
                   </label>
                   <input
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                   />
                 </div>
               </div>
@@ -238,26 +239,26 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
             {/* Location Section */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-semibold text-[#4DA8B0] mb-1.5">
+                <label className="block text-sm font-semibold text-teal-medium mb-1.5">
                   Location
                 </label>
                 <input
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                   placeholder="e.g., Community Center"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#4DA8B0] mb-1.5">
+                <label className="block text-sm font-semibold text-teal-medium mb-1.5">
                   Instructor Contact
                 </label>
                 <input
                   type="text"
                   value={formData.instructorContact}
                   onChange={(e) => setFormData({ ...formData, instructorContact: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                   placeholder="e.g., Coach Name: (555) 123-4567"
                 />
               </div>
@@ -265,11 +266,11 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
             {/* Cost Section */}
             <div className="bg-[#F0F9F8] rounded-lg p-3 space-y-3">
-              <h4 className="font-semibold text-[#4DA8B0] text-sm">Cost & Split</h4>
+              <h4 className="font-semibold text-teal-medium text-sm">Cost & Split</h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
+                  <label className="block text-sm font-medium text-teal-medium mb-1">
                     Cost
                   </label>
                   <input
@@ -278,18 +279,18 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                     min="0"
                     value={formData.cost}
                     onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                     placeholder="0.00"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
+                  <label className="block text-sm font-medium text-teal-medium mb-1">
                     Frequency
                   </label>
                   <select
                     value={formData.costFrequency}
                     onChange={(e) => setFormData({ ...formData, costFrequency: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                   >
                     <option value="one-time">One-time</option>
                     <option value="weekly">Weekly</option>
@@ -303,13 +304,13 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
+                  <label className="block text-sm font-medium text-teal-medium mb-1">
                     Split Type
                   </label>
                   <select
                     value={formData.splitType}
                     onChange={(e) => setFormData({ ...formData, splitType: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                   >
                     <option value="equal">Equal Split (50/50)</option>
                     <option value="custom">Custom Split</option>
@@ -318,7 +319,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                 </div>
                 {formData.splitType === 'custom' && (
                   <div>
-                    <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
+                    <label className="block text-sm font-medium text-teal-medium mb-1">
                       Your Percentage
                     </label>
                     <input
@@ -327,21 +328,21 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                       max="100"
                       value={formData.splitPercentage}
                       onChange={(e) => setFormData({ ...formData, splitPercentage: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                       placeholder="50"
                     />
                   </div>
                 )}
                 {formData.splitType === 'full' && (
                   <div>
-                    <label className="block text-sm font-medium text-[#4DA8B0] mb-1">
+                    <label className="block text-sm font-medium text-teal-medium mb-1">
                       Paid By
                     </label>
                     <input
                       type="text"
                       value={formData.paidBy}
                       onChange={(e) => setFormData({ ...formData, paidBy: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] bg-white text-sm"
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                       placeholder="e.g., Mom"
                     />
                   </div>
@@ -351,13 +352,13 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-semibold text-[#4DA8B0] mb-1.5">
+              <label className="block text-sm font-semibold text-teal-medium mb-1.5">
                 Notes
               </label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] text-sm resize-none"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium text-sm resize-none"
                 rows={2}
                 placeholder="Any additional notes..."
               />
@@ -366,20 +367,23 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
           {/* Footer Actions */}
           <div className="border-t-2 border-gray-200 px-4 py-3 flex gap-2 justify-end flex-shrink-0">
-            <button
+            <Button
               type="button"
+              variant="tertiary"
+              size="small"
               onClick={onClose}
-              className="px-4 py-2 border-2 border-gray-200 text-[#4DA8B0] rounded-lg hover:bg-gray-50 transition-colors text-sm font-semibold"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="secondary"
+              size="small"
               disabled={isSaving}
-              className="px-4 py-2 bg-[#4DA8B0] text-white rounded-lg hover:bg-[#1f4447] transition-all shadow-sm hover:shadow-md text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              loading={isSaving}
             >
-              {isSaving ? 'Saving...' : activity ? 'Update' : 'Add Activity'}
-            </button>
+              {activity ? 'Update' : 'Add Activity'}
+            </Button>
           </div>
         </form>
       </div>
