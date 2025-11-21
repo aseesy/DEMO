@@ -927,71 +927,99 @@ export function UIShowcase() {
             </div>
 
             <div className="p-6 space-y-8">
-              {/* Font Families - CEO Presentation Style */}
+              {/* Font Families - Technical Specimens */}
               <div>
-                <h3 className="text-2xl font-bold text-teal-dark mb-8">Typography System</h3>
+                <h3 className="text-2xl font-bold text-teal-dark mb-8">Font Family Specimens</h3>
 
                 {/* Serif Font Specimen */}
                 <div className="bg-gradient-to-br from-teal-lightest via-white to-teal-lightest p-12 rounded-2xl border-2 border-teal-light mb-8 shadow-lg">
-                  <div className="text-xs uppercase tracking-widest text-teal-dark font-semibold mb-3">Primary Typeface — Headings</div>
-                  <div className="mb-6">
-                    <div className="text-sm text-gray-600 mb-2">Font Type Used:</div>
-                    <div className="font-serif text-7xl text-gray-900 leading-tight mb-4">Georgia</div>
+                  <div className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3 font-sans">Serif Typeface</div>
+                  <div className="mb-8">
+                    <div className="text-sm text-gray-600 mb-3 font-sans">Font Type Used:</div>
+                    <div className="font-serif text-8xl text-gray-900 leading-none">Georgia</div>
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
-                    <div>
-                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Alphabet</div>
-                      <div className="font-serif text-2xl text-gray-800">
-                        ABCDEFGHIJKLMNOPQRSTUVWXYZ<br/>
+
+                  <div className="space-y-6">
+                    <div className="bg-white/60 p-6 rounded-xl">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-3 font-sans">Uppercase Alphabet</div>
+                      <div className="font-serif text-3xl text-gray-900 tracking-wide">
+                        ABCDEFGHIJKLMNOPQRSTUVWXYZ
+                      </div>
+                    </div>
+
+                    <div className="bg-white/60 p-6 rounded-xl">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-3 font-sans">Lowercase Alphabet</div>
+                      <div className="font-serif text-3xl text-gray-900">
                         abcdefghijklmnopqrstuvwxyz
                       </div>
                     </div>
-                    <div>
-                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Numbers & Characters</div>
-                      <div className="font-serif text-2xl text-gray-800">
-                        0123456789<br/>
-                        !@#$%^&*()
+
+                    <div className="bg-white/60 p-6 rounded-xl">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-3 font-sans">Numbers</div>
+                      <div className="font-serif text-3xl text-gray-900">
+                        0 1 2 3 4 5 6 7 8 9
                       </div>
                     </div>
-                  </div>
-                  <div className="border-t-2 border-teal-light pt-6">
-                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-3">Example Usage</div>
-                    <p className="font-serif text-4xl text-gray-900 italic leading-relaxed">
-                      Moving forward, together apart.
-                    </p>
-                    <p className="text-sm text-gray-600 mt-4">Use for: Hero headings, section titles, impactful statements, emotional messaging</p>
+
+                    <div className="bg-white/60 p-6 rounded-xl">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-3 font-sans">Special Characters & Punctuation</div>
+                      <div className="font-serif text-3xl text-gray-900">
+                        ! @ # $ % ^ & * ( ) - _ = + [ ] {'{}'} ; : ' " , . / ? \ | ~
+                      </div>
+                    </div>
+
+                    <div className="bg-white/60 p-6 rounded-xl">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-3 font-sans">Font Stack (CSS)</div>
+                      <div className="font-mono text-sm text-gray-700 bg-gray-900 text-green-400 p-3 rounded">
+                        font-family: Georgia, Cambria, 'Times New Roman', Times, serif;
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Sans-Serif Font Specimen */}
                 <div className="bg-white p-12 rounded-2xl border-2 border-gray-200 shadow-lg">
-                  <div className="text-xs uppercase tracking-widest text-teal-dark font-semibold mb-3">Secondary Typeface — Body Text</div>
-                  <div className="mb-6">
-                    <div className="text-sm text-gray-600 mb-2">Font Type Used:</div>
-                    <div className="font-sans text-7xl text-gray-900 leading-tight mb-4 font-semibold">Inter</div>
+                  <div className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3 font-sans">Sans-Serif Typeface</div>
+                  <div className="mb-8">
+                    <div className="text-sm text-gray-600 mb-3 font-sans">Font Type Used:</div>
+                    <div className="font-sans text-8xl text-gray-900 leading-none font-semibold">Inter</div>
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
-                    <div>
-                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Alphabet</div>
-                      <div className="font-sans text-2xl text-gray-800">
-                        ABCDEFGHIJKLMNOPQRSTUVWXYZ<br/>
+
+                  <div className="space-y-6">
+                    <div className="bg-gray-50 p-6 rounded-xl">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-3 font-sans">Uppercase Alphabet</div>
+                      <div className="font-sans text-3xl text-gray-900 tracking-wide">
+                        ABCDEFGHIJKLMNOPQRSTUVWXYZ
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-6 rounded-xl">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-3 font-sans">Lowercase Alphabet</div>
+                      <div className="font-sans text-3xl text-gray-900">
                         abcdefghijklmnopqrstuvwxyz
                       </div>
                     </div>
-                    <div>
-                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Numbers & Characters</div>
-                      <div className="font-sans text-2xl text-gray-800">
-                        0123456789<br/>
-                        !@#$%^&*()
+
+                    <div className="bg-gray-50 p-6 rounded-xl">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-3 font-sans">Numbers</div>
+                      <div className="font-sans text-3xl text-gray-900">
+                        0 1 2 3 4 5 6 7 8 9
                       </div>
                     </div>
-                  </div>
-                  <div className="border-t-2 border-gray-200 pt-6">
-                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-3">Example Usage</div>
-                    <p className="font-sans text-2xl text-gray-700 leading-relaxed">
-                      Expert communication support and scheduling for co-parents seeking clarity, calm, and stability in their children's lives.
-                    </p>
-                    <p className="text-sm text-gray-600 mt-4">Use for: Paragraphs, UI elements, buttons, forms, navigation, readable content</p>
+
+                    <div className="bg-gray-50 p-6 rounded-xl">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-3 font-sans">Special Characters & Punctuation</div>
+                      <div className="font-sans text-3xl text-gray-900">
+                        ! @ # $ % ^ & * ( ) - _ = + [ ] {'{}'} ; : ' " , . / ? \ | ~
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-6 rounded-xl">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-3 font-sans">Font Stack (CSS)</div>
+                      <div className="font-mono text-sm text-gray-700 bg-gray-900 text-green-400 p-3 rounded">
+                        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
