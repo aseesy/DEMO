@@ -687,7 +687,7 @@ io.on('connection', (socket) => {
   });
 
   // Handle new messages
-  socket.on('send_message', async ({ text }) => {
+  socket.on('send_message', async ({ text, isPreApprovedRewrite }) => {
     try {
       const user = activeUsers.get(socket.id);
 
@@ -717,6 +717,29 @@ io.on('connection', (socket) => {
         roomId: user.roomId
       };
 
+      // IF THIS IS A PRE-APPROVED REWRITE, SKIP AI MEDIATION AND SEND DIRECTLY
+      if (isPreApprovedRewrite) {
+        console.log(`✅ Pre-approved rewrite from ${user.username} - SKIPPING AI mediation, broadcasting directly`);
+
+        // Add to history
+        messageHistory.push(message);
+        if (messageHistory.length > 100) {
+          messageHistory.shift();
+        }
+
+        // Save to database using messageStore (proper abstraction)
+        messageStore.saveMessage({
+          ...message,
+          roomId: user.roomId
+        }).catch(err => {
+          console.error('Error saving pre-approved rewrite to database:', err);
+        });
+
+        // Broadcast to all users in the room
+        io.to(user.roomId).emit('new_message', message);
+        return; // Exit early - no AI mediation needed
+      }
+
       // Don't add to history yet - wait for AI analysis
       // We'll add it later if it's approved
       aiMediator.updateContext(message);
@@ -740,7 +763,7 @@ io.on('connection', (socket) => {
       // IMPORTANT: Message is NOT broadcast yet - we wait for AI analysis
       // OPTIMIZED: Single unified API call instead of separate conflictPredictor, emotionalModel, interventionPolicy calls
       console.log(`⏳ Message from ${user.username} queued for unified AI analysis - NOT broadcasting yet`);
-      
+
       setImmediate(async () => {
         console.log('🔍 AI Mediator: setImmediate callback triggered');
         try {
