@@ -5292,13 +5292,42 @@ app.post('/api/auth/signup-with-token', async (req, res) => {
   }
 });
 
+// Error handlers - catch unhandled errors to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  console.error('Stack:', error.stack);
+  // Don't exit immediately - let the server try to handle it
+  // In production, you might want to exit after logging
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise);
+  console.error('Reason:', reason);
+  // Don't exit - log and continue
+});
+
 // Start server
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
+
+server.listen(PORT, (error) => {
+  if (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
   console.log(`✅ Chat server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔒 CORS enabled for: ${allowedOrigins.join(', ')}`);
   console.log(`   Press Ctrl+C to stop`);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use`);
+    process.exit(1);
+  } else {
+    console.error('❌ Server error:', error);
+  }
 });
 
 // Graceful shutdown
@@ -5308,6 +5337,12 @@ process.on('SIGTERM', () => {
     console.log('Server closed');
     process.exit(0);
   });
+  
+  // Force exit after 10 seconds if graceful shutdown doesn't complete
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
 });
 
 process.on('SIGINT', () => {
@@ -5316,4 +5351,10 @@ process.on('SIGINT', () => {
     console.log('Server closed');
     process.exit(0);
   });
+  
+  // Force exit after 10 seconds if graceful shutdown doesn't complete
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
 });
