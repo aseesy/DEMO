@@ -27,7 +27,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Safe area support for mobile devices */
+/* Safe area support for mobile devices (iPhone notch/home indicator) */
 @supports (padding: max(0px)) {
   .safe-area-inset-bottom {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
@@ -36,6 +36,23 @@ body {
   .pb-safe {
     padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
   }
+  
+  .safe-area-inset-top {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+  
+  .safe-area-inset-left {
+    padding-left: max(0px, env(safe-area-inset-left));
+  }
+  
+  .safe-area-inset-right {
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}
+
+/* Ensure body respects safe areas */
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 /* Crisp image rendering for logos and SVGs */

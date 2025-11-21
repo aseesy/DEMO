@@ -518,22 +518,38 @@ function ChatRoom() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.hasMultipleMembers) {
-          setHasCoParentConnected(true);
-        } else {
-          setHasCoParentConnected(false);
-        }
+        const hasMultiple = data.hasMultipleMembers === true;
+        console.log(`[checkRoomMembers] API response: hasMultipleMembers=${hasMultiple}`);
+        setHasCoParentConnected(hasMultiple);
       } else if (response.status === 404) {
         // Endpoint doesn't exist yet (server not restarted) - fallback to message-based detection
+        console.log('[checkRoomMembers] API endpoint not found, using message-based detection');
         if (messages.length > 0 && username) {
           const uniqueUsernames = new Set(
             messages
               .filter((msg) => msg.username && msg.type !== 'ai_intervention' && msg.type !== 'ai_comment')
               .map((msg) => msg.username),
           );
-          if (uniqueUsernames.size >= 2) {
-            setHasCoParentConnected(true);
-          }
+          const hasMultiple = uniqueUsernames.size >= 2;
+          console.log(`[checkRoomMembers] Message-based: ${uniqueUsernames.size} unique users, hasMultiple=${hasMultiple}`);
+          setHasCoParentConnected(hasMultiple);
+        } else {
+          setHasCoParentConnected(false);
+        }
+      } else {
+        // Other error - try message-based detection
+        console.log(`[checkRoomMembers] API error ${response.status}, using message-based detection`);
+        if (messages.length > 0 && username) {
+          const uniqueUsernames = new Set(
+            messages
+              .filter((msg) => msg.username && msg.type !== 'ai_intervention' && msg.type !== 'ai_comment')
+              .map((msg) => msg.username),
+          );
+          const hasMultiple = uniqueUsernames.size >= 2;
+          console.log(`[checkRoomMembers] Message-based: ${uniqueUsernames.size} unique users, hasMultiple=${hasMultiple}`);
+          setHasCoParentConnected(hasMultiple);
+        } else {
+          setHasCoParentConnected(false);
         }
       }
     } catch (err) {
@@ -545,9 +561,11 @@ function ChatRoom() {
             .filter((msg) => msg.username && msg.type !== 'ai_intervention' && msg.type !== 'ai_comment')
             .map((msg) => msg.username),
         );
-        if (uniqueUsernames.size >= 2) {
-          setHasCoParentConnected(true);
-        }
+        const hasMultiple = uniqueUsernames.size >= 2;
+        console.log(`[checkRoomMembers] Error fallback: ${uniqueUsernames.size} unique users, hasMultiple=${hasMultiple}`);
+        setHasCoParentConnected(hasMultiple);
+      } else {
+        setHasCoParentConnected(false);
       }
     }
   }, [isAuthenticated, messages, username]);
@@ -705,7 +723,7 @@ function ChatRoom() {
 
   if (isAuthenticated) {
     return (
-      <div className="h-screen bg-white flex flex-col overflow-hidden">
+      <div className="h-screen bg-gradient-to-br from-[#275559] to-[#4DA8B0] flex flex-col overflow-hidden">
         {/* Device notifications handled by PWA Service Worker - no in-browser toasts */}
 
         {/* Navigation - Top for desktop, Bottom for mobile */}
@@ -1248,24 +1266,30 @@ function ChatRoom() {
                       Threads ({threads.length})
                     </button>
                   )}
-                  {!inviteLink && !hasCoParentConnected && (
-                    <button
-                      type="button"
-                      onClick={handleLoadInvite}
-                      disabled={isLoadingInvite || !isAuthenticated}
-                      className="px-4 py-2 rounded-xl bg-[#4DA8B0] text-white text-xs sm:text-sm font-semibold hover:bg-[#1f4447] disabled:opacity-60 disabled:cursor-not-allowed transition-colors border border-[#4DA8B0] shadow-md"
-                      title="Invite your co-parent to join this mediation room"
-                    >
-                      {isLoadingInvite ? (
-                        <span className="flex items-center gap-2">
-                          <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Loading…
-                        </span>
-                      ) : (
-                        'Invite co-parent'
-                      )}
-                    </button>
-                  )}
+                  {(() => {
+                    const shouldShowInvite = !inviteLink && !hasCoParentConnected;
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log('[Invite Button] shouldShowInvite:', shouldShowInvite, 'inviteLink:', inviteLink, 'hasCoParentConnected:', hasCoParentConnected);
+                    }
+                    return shouldShowInvite ? (
+                      <button
+                        type="button"
+                        onClick={handleLoadInvite}
+                        disabled={isLoadingInvite || !isAuthenticated}
+                        className="px-4 py-2 rounded-xl bg-[#4DA8B0] text-white text-xs sm:text-sm font-semibold hover:bg-[#1f4447] disabled:opacity-60 disabled:cursor-not-allowed transition-colors border border-[#4DA8B0] shadow-md"
+                        title="Invite your co-parent to join this mediation room"
+                      >
+                        {isLoadingInvite ? (
+                          <span className="flex items-center gap-2">
+                            <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Loading…
+                          </span>
+                        ) : (
+                          'Invite co-parent'
+                        )}
+                      </button>
+                    ) : null;
+                  })()}
                 </div>
 
                 {/* Chat Content */}
@@ -1388,7 +1412,7 @@ function ChatRoom() {
                 </div>
               )}
 
-              <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-white rounded-2xl">
+              <div className="flex-1 flex flex-col overflow-hidden min-h-0">
               <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-5" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {(() => {
                   // Helper function to get initials from username
@@ -1791,19 +1815,20 @@ function ChatRoom() {
                   return (
                     <div
                       key={msg.id ?? `${msg.username}-${msg.timestamp}-${msg.text}`}
-                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-end gap-2 group ${isInThread ? 'pl-8' : ''} ${needsSpacing ? 'mt-3' : 'mt-1'}`}
+                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-start group ${isInThread ? 'pl-8' : ''} ${needsSpacing ? 'mt-3' : 'mt-1'}`}
                     >
                       {isInThread && (
                         <div className="absolute left-0 w-6 border-l-2 border-blue-300" />
                       )}
-                      {/* Avatar for other person's messages */}
-                      {!isOwn && (
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0">
+                      <div className={`flex flex-col gap-1 ${isOwn ? 'items-end' : 'items-start'} relative`}>
+                      {/* Badge positioned at top right corner of bubble */}
+                      {isOwn && getStreakBadge(msg, index) && (
+                        <div className="absolute -top-2 -right-2 z-10">
                           {getStreakBadge(msg, index)}
                         </div>
                       )}
                       <div
-                        className={`relative max-w-[85%] sm:max-w-[75%] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all ${
+                        className={`relative ${isOwn ? 'max-w-[70%]' : 'max-w-[80%]'} sm:${isOwn ? 'max-w-[65%]' : 'max-w-[75%]'} px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all ${
                           isOwn
                             ? 'bg-[#4DA8B0] text-white border-2 border-[#4DA8B0]'
                             : `bg-white text-gray-900 border-2 ${isFlagged ? 'border-orange-300 bg-orange-50' : 'border-[#C5E8E4]'}`
@@ -1831,11 +1856,6 @@ function ChatRoom() {
                             )}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                          {timeLabel && (
-                              <div className={`text-[10px] ${isOwn ? 'text-white/70' : 'text-slate-400'}`}>
-                              {timeLabel}
-                            </div>
-                          )}
                             <div className="flex items-center gap-1">
                               {!isOwn && (
                                 <>
@@ -1886,12 +1906,13 @@ function ChatRoom() {
                           </div>
                         </div>
                       </div>
-                      {/* Avatar for own messages */}
-                      {isOwn && (
-                        <div className="flex items-center justify-center flex-shrink-0">
-                          {getStreakBadge(msg, index)}
+                      {/* Timestamp outside and underneath bubble */}
+                      {timeLabel && (
+                        <div className={`text-[10px] ${isOwn ? 'text-right' : 'text-left'} text-slate-400 px-1`}>
+                          {timeLabel}
                         </div>
                       )}
+                      </div>
                     </div>
                   );
                 });
@@ -1963,7 +1984,8 @@ function ChatRoom() {
               )}
               <form
                 onSubmit={sendMessage}
-                className="border-t border-white/20 bg-white/90 backdrop-blur-sm px-3 py-2 flex items-center gap-2"
+                className="border-t border-white/20 bg-white/90 backdrop-blur-sm px-3 py-2 flex items-center gap-2 safe-area-inset-bottom"
+                style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
               >
                 <input
                   type="text"
