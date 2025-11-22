@@ -979,29 +979,126 @@ export function UIShowcase() {
                   </div>
                 </div>
 
+                {/* Usage Rules & Best Practices */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Do's */}
+                  <div className="bg-green-50 p-6 rounded-xl border-2 border-green-200">
+                    <h4 className="text-lg font-semibold text-green-800 mb-4 flex items-center gap-2">
+                      <span className="text-2xl">✅</span>
+                      Do's - Best Practices
+                    </h4>
+                    <ul className="space-y-3 text-sm text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold flex-shrink-0">✓</span>
+                        <span><strong>Use semantic variants:</strong> Use <code className="bg-white px-1 rounded">danger</code> for destructive actions, <code className="bg-white px-1 rounded">primary</code> for main actions</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold flex-shrink-0">✓</span>
+                        <span><strong>Provide clear labels:</strong> Button text should describe the action (e.g., "Save Changes", not just "OK")</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold flex-shrink-0">✓</span>
+                        <span><strong>Use loading states:</strong> Show <code className="bg-white px-1 rounded">loading</code> during async operations to prevent double-clicks</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold flex-shrink-0">✓</span>
+                        <span><strong>Icon + text is best:</strong> Combine icons with text for clarity (icon-only buttons can be ambiguous)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold flex-shrink-0">✓</span>
+                        <span><strong>One primary per section:</strong> Limit to one primary button per section to guide user attention</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold flex-shrink-0">✓</span>
+                        <span><strong>Mobile-first sizing:</strong> Use <code className="bg-white px-1 rounded">medium</code> or larger for touch interfaces</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Don'ts */}
+                  <div className="bg-red-50 p-6 rounded-xl border-2 border-red-200">
+                    <h4 className="text-lg font-semibold text-red-800 mb-4 flex items-center gap-2">
+                      <span className="text-2xl">❌</span>
+                      Don'ts - Common Mistakes
+                    </h4>
+                    <ul className="space-y-3 text-sm text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-600 font-bold flex-shrink-0">✗</span>
+                        <span><strong>Don't use too many variants:</strong> Stick to 2-3 button styles per page (primary + tertiary usually works best)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-600 font-bold flex-shrink-0">✗</span>
+                        <span><strong>Don't use vague labels:</strong> Avoid "Click Here", "Yes", "No" without context</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-600 font-bold flex-shrink-0">✗</span>
+                        <span><strong>Don't disable without feedback:</strong> If a button is disabled, show why (e.g., form validation message)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-600 font-bold flex-shrink-0">✗</span>
+                        <span><strong>Don't use small size on mobile:</strong> Touch targets must be at least 44px, use <code className="bg-white px-1 rounded">medium+</code></span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-600 font-bold flex-shrink-0">✗</span>
+                        <span><strong>Don't overuse danger variant:</strong> Reserve red for truly destructive actions (delete, cancel subscription)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-600 font-bold flex-shrink-0">✗</span>
+                        <span><strong>Don't stack buttons vertically:</strong> Use horizontal layouts with proper spacing for better UX</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Co-Parenting Context */}
+                <div className="bg-gradient-to-br from-teal-lightest to-white p-6 rounded-xl border-2 border-teal-light">
+                  <h4 className="text-lg font-semibold text-teal-dark mb-4 flex items-center gap-2">
+                    <span className="text-2xl">👨‍👩‍👧</span>
+                    Co-Parenting Context
+                  </h4>
+                  <div className="space-y-3 text-sm text-gray-700">
+                    <p>
+                      <strong>Calming Language:</strong> In co-parenting interfaces, button labels should use calming, non-confrontational language.
+                      Instead of "Send Message", use "Share Update". Instead of "Reject Request", use "Decline Politely".
+                    </p>
+                    <p>
+                      <strong>Recommended Variants by Context:</strong>
+                    </p>
+                    <ul className="ml-4 space-y-1">
+                      <li>• <code className="bg-white px-1 rounded">teal-solid</code> - Primary co-parenting actions (Schedule Event, Add Contact)</li>
+                      <li>• <code className="bg-white px-1 rounded">teal-outline</code> - Secondary actions (View Details, Edit Schedule)</li>
+                      <li>• <code className="bg-white px-1 rounded">ghost</code> - Tertiary actions (Cancel, Go Back)</li>
+                      <li>• <code className="bg-white px-1 rounded">danger</code> - Only for truly destructive actions (Remove Child, Delete Account)</li>
+                    </ul>
+                  </div>
+                </div>
+
                 {/* Accessibility */}
-                <div className="bg-teal-lightest p-6 rounded-xl border-2 border-teal-light">
-                  <h4 className="text-lg font-semibold text-teal-dark mb-4">♿ Accessibility Features</h4>
+                <div className="bg-purple-50 p-6 rounded-xl border-2 border-purple-200">
+                  <h4 className="text-lg font-semibold text-purple-800 mb-4 flex items-center gap-2">
+                    <span className="text-2xl">♿</span>
+                    Accessibility Features
+                  </h4>
                   <ul className="space-y-2 text-sm text-gray-700">
                     <li className="flex items-start gap-2">
-                      <span className="text-teal-medium font-bold">✓</span>
-                      <span><strong>Minimum Touch Target:</strong> All buttons meet 44px minimum height for mobile accessibility</span>
+                      <span className="text-purple-600 font-bold">✓</span>
+                      <span><strong>Minimum Touch Target:</strong> All buttons meet 44px minimum height for mobile accessibility (WCAG 2.1 Level AAA)</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-teal-medium font-bold">✓</span>
-                      <span><strong>Keyboard Navigation:</strong> Fully keyboard accessible with focus ring indicators</span>
+                      <span className="text-purple-600 font-bold">✓</span>
+                      <span><strong>Keyboard Navigation:</strong> Fully keyboard accessible with visible focus ring indicators (2px teal ring with offset)</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-teal-medium font-bold">✓</span>
-                      <span><strong>ARIA Attributes:</strong> Uses <code className="bg-gray-100 px-1 rounded">aria-busy</code> for loading states</span>
+                      <span className="text-purple-600 font-bold">✓</span>
+                      <span><strong>ARIA Attributes:</strong> Uses <code className="bg-white px-1 rounded">aria-busy="true"</code> for loading states to announce to screen readers</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-teal-medium font-bold">✓</span>
-                      <span><strong>Disabled State:</strong> Proper cursor and visual feedback for disabled buttons</span>
+                      <span className="text-purple-600 font-bold">✓</span>
+                      <span><strong>Disabled State:</strong> Proper <code className="bg-white px-1 rounded">cursor-not-allowed</code> and 50% opacity for clear visual feedback</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-teal-medium font-bold">✓</span>
-                      <span><strong>Color Contrast:</strong> All variants meet WCAG AA standards for text contrast</span>
+                      <span className="text-purple-600 font-bold">✓</span>
+                      <span><strong>Color Contrast:</strong> All variants meet WCAG AA standards (4.5:1 for normal text, 3:1 for large text)</span>
                     </li>
                   </ul>
                 </div>
