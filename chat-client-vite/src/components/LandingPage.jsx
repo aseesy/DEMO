@@ -249,7 +249,7 @@ export function LandingPage({ onGetStarted }) {
 
               <div className="grid md:grid-cols-2 gap-6 mb-10">
                 <div className="bg-white rounded-xl p-6 border border-red-100">
-                  <h3 className="font-semibold text-lg text-gray-900 mb-5">What Doesn't Work:</h3>
+                  <Heading variant="small" color="dark" as="h3" className="mb-5">What Doesn't Work:</Heading>
                   <ul className="space-y-4 text-gray-700">
                     <li className="flex items-start gap-3">
                       <span className="text-red-500 font-bold text-lg">✗</span>
@@ -271,7 +271,7 @@ export function LandingPage({ onGetStarted }) {
                 </div>
 
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                  <h3 className="font-semibold text-lg text-gray-900 mb-5">What Actually Works:</h3>
+                  <Heading variant="small" color="dark" as="h3" className="mb-5">What Actually Works:</Heading>
                   <ul className="space-y-4 text-gray-700">
                     <li className="flex items-start gap-3">
                       <span className="text-teal-medium font-bold text-lg">✓</span>
@@ -430,7 +430,7 @@ export function LandingPage({ onGetStarted }) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </div>
-                      <h3 className="font-semibold text-lg text-gray-900">Before LiaiZen</h3>
+                      <Heading variant="small" color="dark" as="h3">Before LiaiZen</Heading>
                     </div>
                     <div className="bg-white rounded-xl p-6 border-2 border-red-200 shadow-sm">
                       <p className="text-gray-900 leading-relaxed italic">
@@ -453,7 +453,7 @@ export function LandingPage({ onGetStarted }) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
-                      <h3 className="font-semibold text-lg text-teal-medium">With LiaiZen</h3>
+                      <Heading variant="small" color="teal-medium" as="h3">With LiaiZen</Heading>
                     </div>
                     <div className="bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 border-2 border-[#6dd4b0] shadow-sm">
                       <p className="text-gray-900 leading-relaxed">
@@ -503,7 +503,7 @@ export function LandingPage({ onGetStarted }) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Prevents Hostile Exchanges</h3>
+                <Heading variant="small" color="dark" as="h3" className="mb-3">Prevents Hostile Exchanges</Heading>
                 <p className="text-gray-600 leading-relaxed">
                   AI-powered mediation stops hostile exchanges before they damage your co-parenting relationship
                 </p>
@@ -516,7 +516,7 @@ export function LandingPage({ onGetStarted }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-teal-medium mb-3">Protects Children</h3>
+                <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Protects Children</Heading>
                 <p className="text-teal-medium leading-relaxed">
                   Keep your children safe from parental conflict with child-focused communication
                 </p>
@@ -529,7 +529,7 @@ export function LandingPage({ onGetStarted }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-teal-medium mb-3">Promotes Collaboration</h3>
+                <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Promotes Collaboration</Heading>
                 <p className="text-teal-medium leading-relaxed">
                   Smart tools help you solve problems together, not against each other
                 </p>
@@ -542,7 +542,7 @@ export function LandingPage({ onGetStarted }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-teal-medium mb-3">Educational Support</h3>
+                <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Educational Support</Heading>
                 <p className="text-teal-medium leading-relaxed">
                   Learn about child psychology and healthy communication patterns that work
                 </p>
@@ -559,7 +559,7 @@ export function LandingPage({ onGetStarted }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-semibold text-teal-medium mb-3">AI-Mediated Chat</h3>
+              <Heading variant="small" color="teal-medium" as="h3" className="mb-3">AI-Mediated Chat</Heading>
               <p className="text-gray-600 leading-relaxed">
                 Real-time message filtering and tone adjustment to keep conversations respectful and child-focused
               </p>
@@ -572,7 +572,7 @@ export function LandingPage({ onGetStarted }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-semibold text-teal-medium mb-3">Smart Task Manager</h3>
+              <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Smart Task Manager</Heading>
               <p className="text-gray-600 leading-relaxed">
                 Organize schedules, custody arrangements, and shared responsibilities in one place
               </p>
@@ -585,7 +585,7 @@ export function LandingPage({ onGetStarted }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-semibold text-teal-medium mb-3">Contact Hub</h3>
+              <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Contact Hub</Heading>
               <p className="text-gray-600 leading-relaxed">
                 Keep track of teachers, doctors, and everyone important in your child's life
               </p>
@@ -604,7 +604,7 @@ export function LandingPage({ onGetStarted }) {
 
               <div className="grid md:grid-cols-2 gap-6 mb-8">
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <h3 className="font-semibold text-lg mb-4">You Know This Feeling:</h3>
+                  <Heading variant="small" color="dark" as="h3" className="mb-4">You Know This Feeling:</Heading>
                   <ul className="space-y-3 text-white/90">
                     <li className="flex items-start gap-3">
                       <span>•</span>
@@ -626,7 +626,7 @@ export function LandingPage({ onGetStarted }) {
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <h3 className="font-semibold text-lg mb-4">What You Actually Need:</h3>
+                  <Heading variant="small" color="dark" as="h3" className="mb-4">What You Actually Need:</Heading>
                   <ul className="space-y-3 text-white/90">
                     <li className="flex items-start gap-3">
                       <span>✓</span>
@@ -671,7 +671,7 @@ export function LandingPage({ onGetStarted }) {
                 <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border-4 border-white shadow-md">
                   <span className="text-2xl sm:text-3xl font-semibold text-teal-medium">1</span>
                 </div>
-                <h3 className="text-xl font-semibold text-teal-medium mb-3">Create Your Account</h3>
+                <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Create Your Account</Heading>
                 <p className="text-gray-600 leading-relaxed">
                   Sign up in seconds. No credit card required. Your data is encrypted and secure.
                 </p>
@@ -682,7 +682,7 @@ export function LandingPage({ onGetStarted }) {
                 <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#C5E8E4] to-[#A8D9D3] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border-4 border-white shadow-md">
                   <span className="text-2xl sm:text-3xl font-semibold text-teal-medium">2</span>
                 </div>
-                <h3 className="text-xl font-semibold text-teal-medium mb-3">Invite Your Co-Parent</h3>
+                <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Invite Your Co-Parent</Heading>
                 <p className="text-gray-600 leading-relaxed">
                   Share a simple invite link. Both parents communicate on equal footing.
                 </p>
@@ -693,7 +693,7 @@ export function LandingPage({ onGetStarted }) {
                 <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#A8D9D3] to-[#8BCAC1] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border-4 border-white shadow-md">
                   <span className="text-2xl sm:text-3xl font-semibold text-teal-medium">3</span>
                 </div>
-                <h3 className="text-xl font-semibold text-teal-medium mb-3">Communicate Peacefully</h3>
+                <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Communicate Peacefully</Heading>
                 <p className="text-gray-600 leading-relaxed">
                   AI helps you find common ground, meet in the middle, and keep conversations productive.
                 </p>
@@ -854,7 +854,7 @@ export function LandingPage({ onGetStarted }) {
                   }
                 }}
               >
-                <summary className="font-semibold text-lg text-teal-medium cursor-pointer">
+                <summary className="font-semibold text-lg text-teal-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2">
                   Is my information private and secure?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -864,7 +864,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 2 */}
               <details className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all">
-                <summary className="font-semibold text-lg text-teal-medium cursor-pointer">
+                <summary className="font-semibold text-lg text-teal-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2">
                   What if my co-parent doesn't want to use it?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -874,7 +874,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 3 */}
               <details className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all">
-                <summary className="font-semibold text-lg text-teal-medium cursor-pointer">
+                <summary className="font-semibold text-lg text-teal-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2">
                   How does the AI mediation work?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -884,7 +884,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 4 */}
               <details className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all">
-                <summary className="font-semibold text-lg text-teal-medium cursor-pointer">
+                <summary className="font-semibold text-lg text-teal-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2">
                   Is this really free during beta?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -894,7 +894,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 5 */}
               <details className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all">
-                <summary className="font-semibold text-lg text-teal-medium cursor-pointer">
+                <summary className="font-semibold text-lg text-teal-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2">
                   Can this be used for legal purposes?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -904,7 +904,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 6 */}
               <details className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all">
-                <summary className="font-semibold text-lg text-teal-medium cursor-pointer">
+                <summary className="font-semibold text-lg text-teal-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2">
                   What happens after the beta period?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -914,7 +914,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 7 - Beta Specific */}
               <details className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all">
-                <summary className="font-semibold text-lg text-teal-medium cursor-pointer">
+                <summary className="font-semibold text-lg text-teal-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2">
                   How do I join the beta program?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -924,7 +924,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 8 - Beta Specific */}
               <details className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all">
-                <summary className="font-semibold text-lg text-teal-medium cursor-pointer">
+                <summary className="font-semibold text-lg text-teal-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2">
                   Is the beta program really free?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -934,7 +934,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* FAQ 9 - Beta Specific */}
               <details className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all">
-                <summary className="font-semibold text-lg text-teal-medium cursor-pointer">
+                <summary className="font-semibold text-lg text-teal-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2">
                   What if I find bugs or have suggestions?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
@@ -963,7 +963,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-teal-medium mb-2">No One Is Wrong</h3>
+                  <h3 className="font-semibold text-teal-medium mb-2">No One Is Wrong</Heading>
                   <p className="text-gray-600 leading-relaxed">
                     Both parents have valid perspectives. We help you understand each other's viewpoints and find solutions that work for everyone.
                   </p>
@@ -980,7 +980,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-teal-medium mb-2">Treat Everyone Equal</h3>
+                  <h3 className="font-semibold text-teal-medium mb-2">Treat Everyone Equal</Heading>
                   <p className="text-gray-600 leading-relaxed">
                     Fair communication means both parents have an equal voice. Our platform ensures balanced, respectful dialogue.
                   </p>
@@ -997,7 +997,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-teal-medium mb-2">Meet in the Middle</h3>
+                  <h3 className="font-semibold text-teal-medium mb-2">Meet in the Middle</Heading>
                   <p className="text-gray-600 leading-relaxed">
                     Compromise isn't losing - it's winning together. We help you find common ground that puts your children first.
                   </p>
@@ -1014,7 +1014,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-teal-medium mb-2">Preventative Approach</h3>
+                  <h3 className="font-semibold text-teal-medium mb-2">Preventative Approach</Heading>
                   <p className="text-gray-600 leading-relaxed">
                     Stop conflicts before they start. Our AI helps you communicate in ways that prevent escalation and protect your family.
                   </p>
@@ -1043,9 +1043,9 @@ export function LandingPage({ onGetStarted }) {
                 />
                 <Button
                   type="submit"
-                  variant="primary"
+                  variant="teal-solid"
                   size="large"
-                  className="px-6 sm:px-8 text-base sm:text-lg whitespace-nowrap"
+                  className="whitespace-nowrap"
                 >
                   Subscribe
                 </Button>
@@ -1071,9 +1071,9 @@ export function LandingPage({ onGetStarted }) {
             <div className="max-w-4xl mx-auto bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light">
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div>
-                  <h3 className="text-2xl font-semibold text-teal-medium mb-4">
+                  <Heading variant="small" color="teal-medium" as="h3" className="mb-4">
                     Real-Time AI Mediation
-                  </h3>
+                  </Heading>
                   <ul className="space-y-3 text-teal-medium">
                     <li className="flex items-start gap-2">
                       <svg className="w-5 h-5 text-teal-medium flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -1115,9 +1115,9 @@ export function LandingPage({ onGetStarted }) {
                         <div className="text-sm text-gray-800">Can you pick up the kids tomorrow? I know it's short notice, but I'd really appreciate it if you're available.</div>
                       </div>
                     </div>
-                    <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
-                      <div className="text-xs text-green-700 font-semibold mb-1">✓ Result</div>
-                      <div className="text-sm text-green-800">Everybody's Happy! Conflict avoided.</div>
+                    <div className="bg-teal-lightest border-2 border-teal-light rounded-xl p-4">
+                      <div className="text-xs text-teal-dark font-semibold mb-1">✓ Result</div>
+                      <div className="text-sm text-teal-dark">Everybody's Happy! Conflict avoided.</div>
                     </div>
                   </div>
                 </div>
@@ -1144,9 +1144,9 @@ export function LandingPage({ onGetStarted }) {
                   trackCTAClick('final_cta', 'Start Free Beta Access Now', 'bottom');
                   navigate('/signin');
                 }}
-                variant="primary"
-                size="large"
-                className="px-8 sm:px-12 py-4 sm:py-6 text-lg sm:text-xl mb-4"
+                variant="teal-solid"
+                size="xl"
+                className="mb-4"
             >
                 Start Free Beta Access Now
             </Button>
@@ -1190,7 +1190,7 @@ export function LandingPage({ onGetStarted }) {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">
                   Sign In
-                </h3>
+                </Heading>
               </div>
               <Button
                 onClick={() => {
@@ -1245,7 +1245,7 @@ export function LandingPage({ onGetStarted }) {
                   type="submit"
                   disabled={isLoggingIn}
                   loading={isLoggingIn}
-                  variant="primary"
+                  variant="teal-solid"
                   size="medium"
                   className="flex-1"
                 >
@@ -1257,9 +1257,8 @@ export function LandingPage({ onGetStarted }) {
                     setShowSignInModal(false);
                     navigate('/signin');
                   }}
-                  variant="tertiary"
+                  variant="ghost"
                   size="medium"
-                  className="text-sm"
                 >
                   New Account
                 </Button>
@@ -1285,7 +1284,7 @@ export function LandingPage({ onGetStarted }) {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">
                   Create Account
-                </h3>
+                </Heading>
               </div>
               <Button
                 onClick={() => {
@@ -1340,7 +1339,7 @@ export function LandingPage({ onGetStarted }) {
                   type="submit"
                   disabled={isSigningUp}
                   loading={isSigningUp}
-                  variant="primary"
+                  variant="teal-solid"
                   size="medium"
                   className="flex-1"
                 >
@@ -1355,9 +1354,8 @@ export function LandingPage({ onGetStarted }) {
                     setAuthEmail('');
                     setPassword('');
                   }}
-                  variant="tertiary"
+                  variant="ghost"
                   size="medium"
-                  className="text-sm"
                 >
                   Sign In
                 </Button>
