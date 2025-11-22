@@ -21,6 +21,19 @@ export default {
           dark: tokens.colors.teal.dark.value,
           darkest: tokens.colors.teal.darkest.value,
         },
+        // Gray scale from design tokens
+        gray: {
+          50: tokens.colors.ui.gray['50'].value,
+          100: tokens.colors.ui.gray['100'].value,
+          200: tokens.colors.ui.gray['200'].value,
+          300: tokens.colors.ui.gray['300'].value,
+          400: tokens.colors.ui.gray['400'].value,
+          500: tokens.colors.ui.gray['500'].value,
+          600: tokens.colors.ui.gray['600'].value,
+          700: tokens.colors.ui.gray['700'].value,
+          800: tokens.colors.ui.gray['800'].value,
+          900: tokens.colors.ui.gray['900'].value,
+        },
         // Primary and secondary colors
         primary: {
           white: tokens.colors.primary.white.value,
@@ -45,6 +58,19 @@ export default {
           warning: tokens.colors.semantic.warning.value,
           error: tokens.colors.semantic.error.value,
           info: tokens.colors.semantic.info.value,
+        },
+        // Add common colors for compatibility
+        red: {
+          50: '#fef2f2',
+          200: '#fecaca',
+          600: '#dc2626',
+          700: '#b91c1c',
+        },
+        green: {
+          600: '#16a34a',
+        },
+        yellow: {
+          600: '#ca8a04',
         },
       },
       spacing: {

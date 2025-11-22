@@ -1,5 +1,44 @@
 @import "tailwindcss";
 
+@theme {
+  /* Teal Color Palette */
+  --color-teal-darkest: #1f4447;
+  --color-teal-dark: #275559;
+  --color-teal-medium: #4DA8B0;
+  --color-teal-light: #C5E8E4;
+  --color-teal-lightest: #E6F7F5;
+  
+  /* Gray Scale */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  
+  /* Semantic Colors */
+  --color-semantic-success: #10b981;
+  --color-semantic-warning: #f59e0b;
+  --color-semantic-error: #ef4444;
+  --color-semantic-info: #3b82f6;
+  
+  /* Red shades for UI */
+  --color-red-50: #fef2f2;
+  --color-red-200: #fecaca;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  
+  /* Green shades */
+  --color-green-600: #16a34a;
+  
+  /* Yellow shades */
+  --color-yellow-600: #ca8a04;
+}
+
 * {
   -webkit-tap-highlight-color: transparent;
 }

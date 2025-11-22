@@ -1,5 +1,6 @@
 import React from 'react';
-import { Button } from './ui';
+import { Button } from '../index.js';
+
 
 /**
  * Toast Notification Component
