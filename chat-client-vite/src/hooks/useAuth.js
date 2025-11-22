@@ -1,5 +1,40 @@
 import React from 'react';
 import { apiGet, apiPost } from '../apiClient.js';
+import { setUserProperties, setUserID } from '../utils/analyticsEnhancements.js';
+
+// Helper function to calculate user properties for analytics
+function calculateUserProperties(user, isNewUser = false) {
+  const properties = {
+    user_type: isNewUser ? 'new_user' : 'returning_user',
+    account_status: 'beta', // Default to beta for now
+  };
+
+  // Calculate days since signup if created_at is available
+  if (user.created_at) {
+    const signupDate = new Date(user.created_at);
+    const now = new Date();
+    const daysSinceSignup = Math.floor((now - signupDate) / (1000 * 60 * 60 * 24));
+    properties.days_since_signup = daysSinceSignup;
+    
+    // Determine user type based on days since signup
+    if (daysSinceSignup < 7) {
+      properties.user_type = 'new_user';
+    } else if (daysSinceSignup < 30) {
+      properties.user_type = 'returning_user';
+    } else {
+      properties.user_type = 'active_user';
+    }
+  }
+
+  // Check if user has co-parent (will be updated when co-parent connects)
+  // For now, default to false - will be updated in ChatRoom when connection is detected
+  properties.has_coparent = false;
+
+  // Features used (will be updated based on actual usage)
+  properties.features_used = [];
+
+  return properties;
+}
 
 // This hook will gradually absorb the auth-related logic that currently lives
 // inside ChatRoom in the legacy chat-client/index.html script.
@@ -30,12 +65,17 @@ export function useAuth() {
 
         if (response.ok) {
           const data = await response.json();
-          if (data.authenticated && data.user) {
-            setUsername(data.user.username);
-            setIsAuthenticated(true);
-            // Keep localStorage in sync
-            localStorage.setItem('username', data.user.username);
-            localStorage.setItem('isAuthenticated', 'true');
+        if (data.authenticated && data.user) {
+          setUsername(data.user.username);
+          setIsAuthenticated(true);
+          // Keep localStorage in sync
+          localStorage.setItem('username', data.user.username);
+          localStorage.setItem('isAuthenticated', 'true');
+          
+          // Set User ID and properties for analytics
+          setUserID(data.user.username);
+          const userProperties = calculateUserProperties(data.user, false);
+          setUserProperties(userProperties);
           } else {
             // Session invalid - clear everything
             localStorage.removeItem('username');
@@ -114,6 +154,13 @@ export function useAuth() {
       if (data.user?.username) {
         setUsername(data.user.username);
         localStorage.setItem('username', data.user.username);
+        
+        // Set User ID for analytics
+        setUserID(data.user.username);
+        
+        // Set user properties for analytics
+        const userProperties = calculateUserProperties(data.user, false);
+        setUserProperties(userProperties);
       }
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('userEmail', cleanEmail);
@@ -174,6 +221,13 @@ export function useAuth() {
       if (data.user?.username) {
         setUsername(data.user.username);
         localStorage.setItem('username', data.user.username);
+        
+        // Set User ID for analytics
+        setUserID(data.user.username);
+        
+        // Set user properties for analytics (new user)
+        const userProperties = calculateUserProperties(data.user, true);
+        setUserProperties(userProperties);
       }
       localStorage.setItem('chatUser', JSON.stringify(data.user));
       localStorage.setItem('isAuthenticated', 'true');
@@ -229,6 +283,13 @@ export function useAuth() {
       if (data.user?.username) {
         setUsername(data.user.username);
         localStorage.setItem('username', data.user.username);
+        
+        // Set User ID for analytics
+        setUserID(data.user.username);
+        
+        // Set user properties for analytics
+        const userProperties = calculateUserProperties(data.user, false);
+        setUserProperties(userProperties);
       }
       localStorage.setItem('isAuthenticated', 'true');
       if (data.user?.email) {
@@ -265,6 +326,10 @@ export function useAuth() {
       localStorage.removeItem('auth_token_backup');
       localStorage.removeItem('chatUser');
       localStorage.removeItem('userEmail');
+      
+      // Clear analytics user data
+      setUserID(null);
+      setUserProperties({});
       
       // Reset state
       setIsAuthenticated(false);
