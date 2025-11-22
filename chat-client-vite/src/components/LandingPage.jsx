@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
-import { Button } from './ui';
+import { Button, Heading, SectionHeader } from './ui';
 import {
   trackCTAClick,
   trackSectionView,
@@ -162,16 +162,15 @@ export function LandingPage({ onGetStarted }) {
               />
             </div>
 
-            {/* CTA Buttons */}
+            {/* CTA Buttons - Design System */}
             <div className="flex items-center gap-3 sm:gap-4">
               <Button
                 onClick={() => {
                   trackSignInModalOpen();
                   navigate('/signin');
                 }}
-                variant="tertiary"
+                variant="ghost"
                 size="medium"
-                className="px-5 sm:px-6 text-sm sm:text-base"
               >
                 Sign In
               </Button>
@@ -180,9 +179,8 @@ export function LandingPage({ onGetStarted }) {
                   trackCTAClick('navigation', 'Get Started', 'header');
                   navigate('/signin');
                 }}
-                variant="primary"
+                variant="teal-solid"
                 size="medium"
-                className="px-5 sm:px-6 text-sm sm:text-base"
               >
                 Get Started
               </Button>
@@ -195,34 +193,35 @@ export function LandingPage({ onGetStarted }) {
       <div className="pt-32 pb-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-20">
-            {/* Top Label - Teal uppercase */}
+            {/* Top Label - Design System SectionHeader */}
             <div className="mb-6">
-              <p className="text-sm sm:text-base font-medium text-teal-medium uppercase tracking-wide">
-                PROFESSIONAL MEDIATION & SUPPORT
-              </p>
+              <SectionHeader color="medium" size="base">
+                Professional Mediation & Support
+              </SectionHeader>
             </div>
 
-            {/* Main Headline - Large serif font with italicized part */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-[#5D4037] mb-8 leading-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Co-parenting communication,{' '}
-              <span className="italic">without the cringe.</span>
-            </h1>
+            {/* Main Headline - Design System Heading with serif */}
+            <div className="mb-8">
+              <Heading variant="hero" color="dark" as="h1">
+                Co-parenting communication, <em>without the cringe.</em>
+              </Heading>
+            </div>
 
             {/* Description Text */}
             <p className="text-lg sm:text-xl text-gray-700 mb-10 max-w-3xl leading-relaxed">
               We provide the neutral ground you need. Expert communication support and scheduling for co-parents seeking clarity, calm, and stability for their children.
             </p>
 
-            {/* Dual CTAs */}
+            {/* Dual CTAs - Design System Buttons */}
             <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-4">
               <Button
                 onClick={() => {
                   trackCTAClick('hero', 'Try Our Beta', 'primary');
                   navigate('/signin');
                 }}
-                variant="primary"
+                variant="teal-solid"
                 size="large"
-                className="px-8 sm:px-10 text-base sm:text-lg w-full sm:w-auto bg-teal-medium hover:bg-teal-dark"
+                className="w-full sm:w-auto"
               >
                 Try Our Beta
               </Button>
@@ -231,9 +230,9 @@ export function LandingPage({ onGetStarted }) {
                   trackCTAClick('hero', 'Learn More', 'secondary');
                   document.querySelector('[data-section="value_proposition"]')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                variant="tertiary"
+                variant="teal-outline"
                 size="large"
-                className="px-8 sm:px-10 text-base sm:text-lg w-full sm:w-auto border-2 border-gray-300 text-gray-700 hover:bg-gray-50 bg-white"
+                className="w-full sm:w-auto"
               >
                 Learn More
               </Button>
@@ -243,10 +242,10 @@ export function LandingPage({ onGetStarted }) {
           {/* The Real Problem Section - NEW */}
           <div className="mt-32 mb-32 bg-white rounded-2xl p-8 sm:p-10 border border-gray-200">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-8 text-center leading-tight">
+              <Heading variant="medium" color="dark" as="h2" className="mb-8 text-center">
                 Finally, you can look at messages from your co-parent{' '}
-                <span className="block sm:inline text-[#007AFF]">without feeling sick to your stomach.</span>
-              </h2>
+                <span className="block sm:inline text-teal-medium">without feeling sick to your stomach.</span>
+              </Heading>
 
               <div className="grid md:grid-cols-2 gap-6 mb-10">
                 <div className="bg-white rounded-xl p-6 border border-red-100">
@@ -275,26 +274,26 @@ export function LandingPage({ onGetStarted }) {
                   <h3 className="font-semibold text-lg text-gray-900 mb-5">What Actually Works:</h3>
                   <ul className="space-y-4 text-gray-700">
                     <li className="flex items-start gap-3">
-                      <span className="text-[#007AFF] font-bold text-lg">✓</span>
+                      <span className="text-teal-medium font-bold text-lg">✓</span>
                       <span className="leading-relaxed"><strong>Intercepting</strong> conflict before it escalates</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <span className="text-[#007AFF] font-bold text-lg">✓</span>
+                      <span className="text-teal-medium font-bold text-lg">✓</span>
                       <span className="leading-relaxed"><strong>Writing proactive messages</strong> that move things forward</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <span className="text-[#007AFF] font-bold text-lg">✓</span>
+                      <span className="text-teal-medium font-bold text-lg">✓</span>
                       <span className="leading-relaxed"><strong>Keeping a neutral tone</strong> so you stay calm and defensible</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <span className="text-[#007AFF] font-bold text-lg">✓</span>
+                      <span className="text-teal-medium font-bold text-lg">✓</span>
                       <span className="leading-relaxed"><strong>Focusing on the child's best interest</strong> even when emotions run hot</span>
                     </li>
                   </ul>
                 </div>
               </div>
 
-              <div className="bg-gray-50 border-l-4 border-[#007AFF] p-6 rounded-r-lg">
+              <div className="bg-gray-50 border-l-4 border-teal-medium p-6 rounded-r-lg">
                 <p className="text-gray-800 italic leading-relaxed text-lg">
                   "The conflict isn't happening in court—it's happening in the messages. And nothing we tried changed the way we talk to each other."
                 </p>
@@ -306,14 +305,14 @@ export function LandingPage({ onGetStarted }) {
           {/* User Wish-List Section - Interview Quotes */}
           <div className="mt-32 mb-32 bg-white rounded-2xl p-8 sm:p-10 text-gray-900 border border-gray-200">
             <div className="max-w-5xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-semibold mb-8 text-center text-gray-900">
+              <Heading variant="medium" color="dark" as="h2" className="mb-8 text-center">
                 After conducting several user interviews, the wish-list is clear:
-              </h2>
+              </Heading>
 
               <div className="grid md:grid-cols-2 gap-5 sm:gap-6 mt-10 mb-10">
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#007AFF] rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
@@ -326,7 +325,7 @@ export function LandingPage({ onGetStarted }) {
 
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#007AFF] rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                       </svg>
@@ -339,7 +338,7 @@ export function LandingPage({ onGetStarted }) {
 
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#007AFF] rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -352,7 +351,7 @@ export function LandingPage({ onGetStarted }) {
 
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#007AFF] rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
@@ -365,7 +364,7 @@ export function LandingPage({ onGetStarted }) {
 
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#007AFF] rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
@@ -378,7 +377,7 @@ export function LandingPage({ onGetStarted }) {
 
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#007AFF] rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                       </svg>
@@ -391,7 +390,7 @@ export function LandingPage({ onGetStarted }) {
               </div>
 
               <div className="text-center mt-10">
-                <p className="text-2xl sm:text-3xl font-semibold text-[#007AFF] mb-4">
+                <p className="text-2xl sm:text-3xl font-semibold text-teal-medium mb-4">
                   Your wishes have been granted!
                 </p>
                 <p className="text-xl text-gray-600">
@@ -413,9 +412,9 @@ export function LandingPage({ onGetStarted }) {
           {/* Product Screenshot/Mockup Section */}
           <div className="mt-32 mb-32">
             <div className="max-w-5xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-4 text-center">
+              <Heading variant="medium" color="dark" as="h2" className="mb-4 text-center">
                 See How It Works
-              </h2>
+              </Heading>
               <p className="text-xl text-gray-600 mb-12 text-center max-w-2xl mx-auto">
                 Real-time AI assistance before you hit send
               </p>
@@ -492,14 +491,14 @@ export function LandingPage({ onGetStarted }) {
 
           {/* Value Proposition Section */}
           <div className="mt-24 mb-24" data-section="value_proposition">
-            <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-12 text-center">
+            <Heading variant="medium" color="dark" as="h2" className="mb-12 text-center">
               Finally, you can look at messages from your co-parent{' '}
-              <span className="block sm:inline text-[#007AFF]">without feeling sick to your stomach.</span>
-            </h2>
+              <span className="block sm:inline text-teal-medium">without feeling sick to your stomach.</span>
+            </Heading>
             <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
               {/* Value Prop 1 */}
               <div className="bg-white rounded-xl p-6 sm:p-8 border border-gray-200 hover:border-gray-300 transition-all">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#007AFF] rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-teal-medium rounded-xl flex items-center justify-center mb-4 sm:mb-6">
                   <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
@@ -596,9 +595,9 @@ export function LandingPage({ onGetStarted }) {
           {/* Parallel Parenting / Emotional Toll Section - NEW */}
           <div className="mt-24 mb-24 bg-gray-50 rounded-xl p-6 sm:p-8 text-gray-900 border-2 border-gray-200">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-semibold mb-6 text-center">
+              <Heading variant="medium" color="dark" as="h2" className="mb-6 text-center">
                 Stuck in Parallel Parenting? You're Not Alone.
-              </h2>
+              </Heading>
               <p className="text-xl text-teal-medium mb-8 text-center max-w-2xl mx-auto">
                 You didn't want it this way. You wanted to co-parent as a team. But here you are—limiting contact just to protect your sanity.
               </p>
@@ -660,9 +659,9 @@ export function LandingPage({ onGetStarted }) {
 
           {/* How It Works */}
           <div className="mt-24 mb-24">
-            <h2 className="text-3xl sm:text-4xl font-semibold text-teal-medium mb-4 text-center">
+            <Heading variant="medium" color="teal-medium" as="h2" className="mb-4 text-center">
               How It Works
-            </h2>
+            </Heading>
             <p className="text-lg text-gray-600 mb-12 text-center max-w-2xl mx-auto">
               Getting started is simple. Three steps to healthier co-parenting.
             </p>
@@ -705,9 +704,9 @@ export function LandingPage({ onGetStarted }) {
           {/* Social Proof Section - Beta Community */}
           <div className="mt-24 mb-24" data-section="social_proof">
             <div className="text-center mb-12">
-              <h2 className="text-3xl sm:text-4xl font-semibold text-teal-medium mb-4">
+              <Heading variant="medium" color="teal-medium" as="h2" className="mb-4">
                 Join Our Growing Beta Community
-              </h2>
+              </Heading>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 Be part of building the future of respectful co-parenting communication
               </p>
@@ -728,9 +727,9 @@ export function LandingPage({ onGetStarted }) {
 
           {/* Testimonials */}
           <div className="mt-24 mb-24 bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light" data-section="testimonials">
-            <h2 className="text-3xl sm:text-4xl font-semibold text-teal-medium mb-4 text-center">
+            <Heading variant="medium" color="teal-medium" as="h2" className="mb-4 text-center">
               What Professionals Are Saying
-            </h2>
+            </Heading>
             <p className="text-lg text-gray-600 mb-12 text-center max-w-2xl mx-auto">
               Early feedback from family professionals and co-parents
             </p>
@@ -839,9 +838,9 @@ export function LandingPage({ onGetStarted }) {
 
           {/* FAQ Section */}
           <div className="mt-24 mb-24">
-            <h2 className="text-3xl sm:text-4xl font-semibold text-teal-medium mb-4 text-center">
+            <Heading variant="medium" color="teal-medium" as="h2" className="mb-4 text-center">
               Frequently Asked Questions
-            </h2>
+            </Heading>
             <p className="text-lg text-gray-600 mb-12 text-center max-w-2xl mx-auto">
               Everything you need to know about getting started
             </p>
@@ -947,9 +946,9 @@ export function LandingPage({ onGetStarted }) {
 
           {/* Co-Parenting Tips Section */}
           <div className="mt-24 mb-24 bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light">
-            <h2 className="text-3xl sm:text-4xl font-semibold text-teal-medium mb-4 text-center">
+            <Heading variant="medium" color="teal-medium" as="h2" className="mb-4 text-center">
               Co-Parenting Principles We Stand By
-            </h2>
+            </Heading>
             <p className="text-lg text-gray-600 mb-8 text-center max-w-2xl mx-auto">
               Our approach is built on mutual respect, equality, and prevention
             </p>
@@ -1027,9 +1026,9 @@ export function LandingPage({ onGetStarted }) {
           {/* Newsletter Signup */}
           <div className="mt-24 mb-24">
             <div className="max-w-2xl mx-auto text-center bg-white rounded-xl p-6 sm:p-8 border-2 border-teal-light shadow-sm">
-              <h2 className="text-3xl sm:text-4xl font-semibold text-teal-medium mb-4">
+              <Heading variant="medium" color="teal-medium" as="h2" className="mb-4">
                 Stay Updated
-              </h2>
+              </Heading>
               <p className="text-lg text-gray-600 mb-8">
                 Get co-parenting tips, product updates, and early access to new features
               </p>
@@ -1062,9 +1061,9 @@ export function LandingPage({ onGetStarted }) {
           {/* Product Preview Section */}
           <div className="mt-24 mb-24" data-section="product_preview">
             <div className="text-center mb-12">
-              <h2 className="text-3xl sm:text-4xl font-semibold text-teal-medium mb-4">
+              <Heading variant="medium" color="teal-medium" as="h2" className="mb-4">
                 See LiaiZen in Action
-              </h2>
+              </Heading>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 Experience how AI mediation helps you communicate more effectively
               </p>
@@ -1131,9 +1130,9 @@ export function LandingPage({ onGetStarted }) {
             <div className="absolute top-0 right-0 w-64 h-64 bg-teal-medium opacity-5 rounded-full -mr-32 -mt-32"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-medium opacity-5 rounded-full -ml-32 -mb-32"></div>
             <div className="relative">
-            <h2 className="text-3xl sm:text-4xl font-semibold text-teal-medium mb-4">
+            <Heading variant="medium" color="teal-medium" as="h2" className="mb-4">
               Ready to Transform Your Co-Parenting?
-            </h2>
+            </Heading>
               <p className="text-xl text-teal-medium mb-2 max-w-2xl mx-auto">
               Join beta families who are finding peace and clarity through LiaiZen
             </p>
