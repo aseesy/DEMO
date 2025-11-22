@@ -322,6 +322,7 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     flagMessage,
     draftCoaching,
     setDraftCoaching,
+    isPreApprovedRewrite,
     setIsPreApprovedRewrite,
     setOriginalRewrite,
     threads,

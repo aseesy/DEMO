@@ -980,7 +980,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-teal-medium mb-2">Treat Everyone Equal</Heading>
+                  <Heading variant="small" color="teal-medium" as="h3" className="mb-2">Treat Everyone Equal</Heading>
                   <p className="text-gray-600 leading-relaxed">
                     Fair communication means both parents have an equal voice. Our platform ensures balanced, respectful dialogue.
                   </p>
@@ -997,7 +997,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-teal-medium mb-2">Meet in the Middle</Heading>
+                  <Heading variant="small" color="teal-medium" as="h3" className="mb-2">Meet in the Middle</Heading>
                   <p className="text-gray-600 leading-relaxed">
                     Compromise isn't losing - it's winning together. We help you find common ground that puts your children first.
                   </p>
@@ -1014,7 +1014,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-teal-medium mb-2">Preventative Approach</Heading>
+                  <Heading variant="small" color="teal-medium" as="h3" className="mb-2">Preventative Approach</Heading>
                   <p className="text-gray-600 leading-relaxed">
                     Stop conflicts before they start. Our AI helps you communicate in ways that prevent escalation and protect your family.
                   </p>

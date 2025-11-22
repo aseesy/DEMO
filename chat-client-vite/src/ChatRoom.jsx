@@ -344,9 +344,29 @@ function ChatRoom() {
     setTaskFormData,
     setTaskSearch,
     setTaskFilter,
-    toggleTaskStatus,
-    saveTask,
+    toggleTaskStatus: originalToggleTaskStatus,
+    saveTask: originalSaveTask,
   } = tasksState;
+
+  // Wrap toggleTaskStatus to track analytics
+  const toggleTaskStatus = React.useCallback((task) => {
+    const wasCompleted = task.status === 'completed';
+    originalToggleTaskStatus(task);
+    if (!wasCompleted && task.status === 'open') {
+      // Task was just completed
+      trackTaskCompleted(task.type || 'general');
+    }
+  }, [originalToggleTaskStatus]);
+
+  // Wrap saveTask to track analytics
+  const saveTask = React.useCallback(async (taskData) => {
+    const isNewTask = !taskData.id;
+    const result = await originalSaveTask(taskData);
+    if (isNewTask && result) {
+      trackTaskCreated(taskData.type || 'general', taskData.priority || 'medium');
+    }
+    return result;
+  }, [originalSaveTask]);
 
   const { contacts } = useContacts(username);
 
@@ -386,6 +406,7 @@ function ChatRoom() {
     flagMessage: originalFlagMessage,
     draftCoaching,
     setDraftCoaching,
+    isPreApprovedRewrite,
     setIsPreApprovedRewrite,
     setOriginalRewrite,
     threads,
@@ -402,14 +423,12 @@ function ChatRoom() {
 
   // Wrap sendMessage to track analytics
   const sendMessage = React.useCallback((e) => {
-    if (e?.preventDefault) e.preventDefault();
     const clean = inputMessage.trim();
-    if (!clean) return;
-    
-    // Track message sent
-    trackMessageSent(clean.length, isPreApprovedRewrite);
-    
-    // Call original sendMessage
+    if (clean) {
+      // Track message sent before sending
+      trackMessageSent(clean.length, isPreApprovedRewrite);
+    }
+    // Call original sendMessage (it handles validation)
     originalSendMessage(e);
   }, [inputMessage, isPreApprovedRewrite, originalSendMessage]);
 
@@ -456,6 +475,21 @@ function ChatRoom() {
     window.addEventListener('thread-suggestion', handleThreadSuggestion);
     return () => window.removeEventListener('thread-suggestion', handleThreadSuggestion);
   }, []);
+
+  // Track AI interventions when they appear
+  const trackedInterventionsRef = React.useRef(new Set());
+  React.useEffect(() => {
+    messages.forEach((msg) => {
+      if (msg.type === 'ai_intervention' && msg.id && !trackedInterventionsRef.current.has(msg.id)) {
+        trackedInterventionsRef.current.add(msg.id);
+        trackAIIntervention(
+          msg.interventionType || 'general',
+          msg.confidence || 'medium',
+          msg.riskLevel || 'medium'
+        );
+      }
+    });
+  }, [messages]);
 
   // Invite state for sharing a room with a co-parent
   const [inviteLink, setInviteLink] = React.useState('');
@@ -1710,6 +1744,8 @@ function ChatRoom() {
                                             <button
                                               type="button"
                                               onClick={() => {
+                                                const originalText = msg.originalMessage?.text || '';
+                                                trackRewriteUsed('option_1', originalText.length, msg.rewrite1.length);
                                                 handleRewriteSelected();
                                                 setInputMessage(msg.rewrite1);
                                                 setIsPreApprovedRewrite(true);
@@ -1725,6 +1761,8 @@ function ChatRoom() {
                                             <button
                                               type="button"
                                               onClick={() => {
+                                                const originalText = msg.originalMessage?.text || '';
+                                                trackRewriteUsed('option_2', originalText.length, msg.rewrite2.length);
                                                 handleRewriteSelected();
                                                 setInputMessage(msg.rewrite2);
                                                 setIsPreApprovedRewrite(true);
@@ -1835,6 +1873,8 @@ function ChatRoom() {
                                             type="button"
                                             onClick={() => {
                                               if (option.action === 'send_anyway') {
+                                                // Track override
+                                                trackInterventionOverride(option.action);
                                                 // Emit override event
                                                 if (socket) {
                                                   socket.emit('override_intervention', {
@@ -1845,6 +1885,8 @@ function ChatRoom() {
                                                   removeMessages((m) => m.id === msg.id);
                                                 }
                                               } else if (option.action === 'edit_first') {
+                                                // Track override
+                                                trackInterventionOverride(option.action);
                                                 // Pre-fill input with original message
                                                 setInputMessage(msg.originalMessage?.text || '');
                                                 removeMessages((m) => m.id === msg.id);
@@ -1969,6 +2011,8 @@ function ChatRoom() {
                                       <button
                                         type="button"
                                         onClick={() => {
+                                          const originalText = msg.originalMessage?.text || '';
+                                          trackRewriteUsed('option_1', originalText.length, msg.rewrite1.length);
                                           handleRewriteSelected();
                                           setInputMessage(msg.rewrite1);
                                           setIsPreApprovedRewrite(true); // Mark as pre-approved
@@ -1992,6 +2036,8 @@ function ChatRoom() {
                                       <button
                                         type="button"
                                         onClick={() => {
+                                          const originalText = msg.originalMessage?.text || '';
+                                          trackRewriteUsed('option_2', originalText.length, msg.rewrite2.length);
                                           handleRewriteSelected();
                                           setInputMessage(msg.rewrite2);
                                           setIsPreApprovedRewrite(true); // Mark as pre-approved
@@ -2237,6 +2283,8 @@ function ChatRoom() {
                             <button
                               type="button"
                               onClick={() => {
+                                const originalLength = inputMessage.length;
+                                trackRewriteUsed('draft_rewrite_1', originalLength, draftCoaching.rewrite1.length);
                                 setInputMessage(draftCoaching.rewrite1);
                                 setIsPreApprovedRewrite(true); // Mark as pre-approved
                                 setOriginalRewrite(draftCoaching.rewrite1); // Store original for edit detection
@@ -2251,6 +2299,8 @@ function ChatRoom() {
                             <button
                               type="button"
                               onClick={() => {
+                                const originalLength = inputMessage.length;
+                                trackRewriteUsed('draft_rewrite_2', originalLength, draftCoaching.rewrite2.length);
                                 setInputMessage(draftCoaching.rewrite2);
                                 setIsPreApprovedRewrite(true); // Mark as pre-approved
                                 setOriginalRewrite(draftCoaching.rewrite2); // Store original for edit detection
