@@ -963,7 +963,7 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-teal-medium mb-2">No One Is Wrong</Heading>
+                  <Heading variant="small" color="teal-medium" as="h3" className="mb-2">No One Is Wrong</Heading>
                   <p className="text-gray-600 leading-relaxed">
                     Both parents have valid perspectives. We help you understand each other's viewpoints and find solutions that work for everyone.
                   </p>

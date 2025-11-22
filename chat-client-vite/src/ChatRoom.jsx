@@ -20,6 +20,19 @@ import { FlaggingModal } from './components/modals/FlaggingModal.jsx';
 import { ContactSuggestionModal } from './components/modals/ContactSuggestionModal.jsx';
 import { API_BASE_URL } from './config.js';
 import { apiPost } from './apiClient.js';
+import {
+  trackMessageSent,
+  trackAIIntervention,
+  trackRewriteUsed,
+  trackInterventionOverride,
+  trackMessageFlagged,
+  trackTaskCreated,
+  trackTaskCompleted,
+  trackContactAdded,
+  trackViewChange,
+  trackThreadCreated,
+  trackInterventionFeedback,
+} from './utils/analytics.js';
 
 // Vite-migrated shell for the main LiaiZen app.
 // Currently focuses on login/signup; chat, tasks, contacts, and profile
@@ -257,12 +270,20 @@ function ChatRoom() {
     handleLogout,
   } = useAuth();
   const availableViews = ['dashboard', 'chat', 'contacts', 'profile', 'settings', 'account'];
-  const [currentView, setCurrentView] = React.useState(() => {
+  const [currentView, setCurrentViewState] = React.useState(() => {
     const stored = localStorage.getItem('currentView');
     return stored && availableViews.includes(stored)
       ? stored
       : 'dashboard';
   });
+
+  // Wrap setCurrentView to track analytics
+  const setCurrentView = React.useCallback((view) => {
+    if (view !== currentView) {
+      trackViewChange(view);
+    }
+    setCurrentViewState(view);
+  }, [currentView]);
 
   // Track unread message count for navigation badge
   const [unreadCount, setUnreadCount] = React.useState(0);
@@ -356,13 +377,13 @@ function ChatRoom() {
     messages,
     inputMessage,
     isConnected,
-    sendMessage,
+    sendMessage: originalSendMessage,
     handleInputChange,
     messagesEndRef,
     typingUsers,
     setInputMessage,
     removeMessages,
-    flagMessage,
+    flagMessage: originalFlagMessage,
     draftCoaching,
     setDraftCoaching,
     setIsPreApprovedRewrite,
@@ -371,13 +392,38 @@ function ChatRoom() {
     threadMessages,
     selectedThreadId,
     setSelectedThreadId,
-    createThread,
+    createThread: originalCreateThread,
     getThreads,
     getThreadMessages,
     addToThread,
     removeFromThread,
     socket,
   } = chatState;
+
+  // Wrap sendMessage to track analytics
+  const sendMessage = React.useCallback((e) => {
+    if (e?.preventDefault) e.preventDefault();
+    const clean = inputMessage.trim();
+    if (!clean) return;
+    
+    // Track message sent
+    trackMessageSent(clean.length, isPreApprovedRewrite);
+    
+    // Call original sendMessage
+    originalSendMessage(e);
+  }, [inputMessage, isPreApprovedRewrite, originalSendMessage]);
+
+  // Wrap flagMessage to track analytics
+  const flagMessage = React.useCallback((messageId, reason = 'user_flagged') => {
+    trackMessageFlagged(reason);
+    originalFlagMessage(messageId);
+  }, [originalFlagMessage]);
+
+  // Wrap createThread to track analytics
+  const createThread = React.useCallback((roomId, title, messageIds) => {
+    trackThreadCreated();
+    return originalCreateThread(roomId, title, messageIds);
+  }, [originalCreateThread]);
 
   // Thread UI state
   const [showThreadsPanel, setShowThreadsPanel] = React.useState(false);
@@ -437,6 +483,7 @@ function ChatRoom() {
   // Handler for adding contact from suggestion modal
   const handleAddContactFromSuggestion = () => {
     if (!pendingContactSuggestion) return;
+    trackContactAdded('suggestion');
     setCurrentView('contacts');
     localStorage.setItem('liaizen_add_contact', JSON.stringify({
       name: pendingContactSuggestion.detectedName,

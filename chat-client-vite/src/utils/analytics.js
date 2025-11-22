@@ -229,3 +229,166 @@ export function trackProductPreviewInteraction(action) {
   });
 }
 
+// ============================================
+// CHAT ROOM TRACKING FUNCTIONS
+// ============================================
+
+// Track message sent
+export function trackMessageSent(messageLength, isPreApprovedRewrite = false) {
+  if (!window.gtag) {
+    return;
+  }
+
+  window.gtag('event', 'message_sent', {
+    message_length: messageLength,
+    is_rewrite: isPreApprovedRewrite,
+    event_category: 'chat',
+  });
+
+  console.log('Analytics: Message sent', { messageLength, isPreApprovedRewrite });
+}
+
+// Track AI intervention triggered
+export function trackAIIntervention(interventionType, confidence, riskLevel) {
+  if (!window.gtag) {
+    return;
+  }
+
+  window.gtag('event', 'ai_intervention', {
+    intervention_type: interventionType,
+    confidence: confidence,
+    risk_level: riskLevel,
+    event_category: 'ai',
+  });
+
+  console.log('Analytics: AI intervention', { interventionType, confidence, riskLevel });
+}
+
+// Track rewrite suggestion used
+export function trackRewriteUsed(rewriteOption, originalLength, rewriteLength) {
+  if (!window.gtag) {
+    return;
+  }
+
+  window.gtag('event', 'rewrite_used', {
+    rewrite_option: rewriteOption,
+    original_length: originalLength,
+    rewrite_length: rewriteLength,
+    event_category: 'ai',
+  });
+
+  console.log('Analytics: Rewrite used', { rewriteOption, originalLength, rewriteLength });
+}
+
+// Track intervention override
+export function trackInterventionOverride(overrideAction) {
+  if (!window.gtag) {
+    return;
+  }
+
+  window.gtag('event', 'intervention_override', {
+    override_action: overrideAction,
+    event_category: 'ai',
+  });
+
+  console.log('Analytics: Intervention overridden', { overrideAction });
+}
+
+// Track message flagged
+export function trackMessageFlagged(reason) {
+  if (!window.gtag) {
+    return;
+  }
+
+  window.gtag('event', 'message_flagged', {
+    flag_reason: reason,
+    event_category: 'moderation',
+  });
+
+  console.log('Analytics: Message flagged', { reason });
+}
+
+// Track task created
+export function trackTaskCreated(taskType, priority) {
+  if (!window.gtag) {
+    return;
+  }
+
+  window.gtag('event', 'task_created', {
+    task_type: taskType,
+    priority: priority,
+    event_category: 'tasks',
+  });
+
+  console.log('Analytics: Task created', { taskType, priority });
+}
+
+// Track task completed
+export function trackTaskCompleted(taskType) {
+  if (!window.gtag) {
+    return;
+  }
+
+  window.gtag('event', 'task_completed', {
+    task_type: taskType,
+    event_category: 'tasks',
+  });
+
+  console.log('Analytics: Task completed', { taskType });
+}
+
+// Track contact added
+export function trackContactAdded(contactType) {
+  if (!window.gtag) {
+    return;
+  }
+
+  window.gtag('event', 'contact_added', {
+    contact_type: contactType,
+    event_category: 'contacts',
+  });
+
+  console.log('Analytics: Contact added', { contactType });
+}
+
+// Track view change
+export function trackViewChange(viewName) {
+  if (!window.gtag) {
+    return;
+  }
+
+  window.gtag('event', 'view_change', {
+    view_name: viewName,
+    event_category: 'navigation',
+  });
+
+  console.log('Analytics: View changed', { viewName });
+}
+
+// Track thread created
+export function trackThreadCreated() {
+  if (!window.gtag) {
+    return;
+  }
+
+  window.gtag('event', 'thread_created', {
+    event_category: 'chat',
+  });
+
+  console.log('Analytics: Thread created');
+}
+
+// Track intervention feedback
+export function trackInterventionFeedback(helpful) {
+  if (!window.gtag) {
+    return;
+  }
+
+  window.gtag('event', 'intervention_feedback', {
+    helpful: helpful,
+    event_category: 'ai',
+  });
+
+  console.log('Analytics: Intervention feedback', { helpful });
+}
+
