@@ -888,6 +888,123 @@ export function UIShowcase() {
                     variant={'{isActive ? "secondary" : "tertiary"}'}
                   </code>
                 </div>
+
+                {/* Props API */}
+                <div>
+                  <h3 className="text-lg font-semibold text-teal-dark mb-4 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-teal-medium rounded"></span>
+                    Props API
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-teal-lightest border-b-2 border-teal-light">
+                          <th className="p-3 font-semibold text-teal-dark">Prop</th>
+                          <th className="p-3 font-semibold text-teal-dark">Type</th>
+                          <th className="p-3 font-semibold text-teal-dark">Default</th>
+                          <th className="p-3 font-semibold text-teal-dark">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm">
+                        <tr className="border-b border-gray-200">
+                          <td className="p-3 font-mono text-xs bg-gray-50">variant</td>
+                          <td className="p-3 font-mono text-xs">string</td>
+                          <td className="p-3 font-mono text-xs">"primary"</td>
+                          <td className="p-3 text-gray-700">
+                            Button style variant: <code className="bg-gray-100 px-1 rounded">primary</code>, <code className="bg-gray-100 px-1 rounded">secondary</code>, <code className="bg-gray-100 px-1 rounded">tertiary</code>, <code className="bg-gray-100 px-1 rounded">ghost</code>, <code className="bg-gray-100 px-1 rounded">danger</code>, <code className="bg-gray-100 px-1 rounded">teal-solid</code>, <code className="bg-gray-100 px-1 rounded">teal-outline</code>
+                          </td>
+                        </tr>
+                        <tr className="border-b border-gray-200">
+                          <td className="p-3 font-mono text-xs bg-gray-50">size</td>
+                          <td className="p-3 font-mono text-xs">string</td>
+                          <td className="p-3 font-mono text-xs">"medium"</td>
+                          <td className="p-3 text-gray-700">
+                            Button size: <code className="bg-gray-100 px-1 rounded">small</code>, <code className="bg-gray-100 px-1 rounded">medium</code>, <code className="bg-gray-100 px-1 rounded">large</code>, <code className="bg-gray-100 px-1 rounded">xl</code>
+                          </td>
+                        </tr>
+                        <tr className="border-b border-gray-200">
+                          <td className="p-3 font-mono text-xs bg-gray-50">fullWidth</td>
+                          <td className="p-3 font-mono text-xs">boolean</td>
+                          <td className="p-3 font-mono text-xs">false</td>
+                          <td className="p-3 text-gray-700">If true, button expands to fill container width</td>
+                        </tr>
+                        <tr className="border-b border-gray-200">
+                          <td className="p-3 font-mono text-xs bg-gray-50">disabled</td>
+                          <td className="p-3 font-mono text-xs">boolean</td>
+                          <td className="p-3 font-mono text-xs">false</td>
+                          <td className="p-3 text-gray-700">Disables button interaction and applies disabled styling</td>
+                        </tr>
+                        <tr className="border-b border-gray-200">
+                          <td className="p-3 font-mono text-xs bg-gray-50">loading</td>
+                          <td className="p-3 font-mono text-xs">boolean</td>
+                          <td className="p-3 font-mono text-xs">false</td>
+                          <td className="p-3 text-gray-700">Shows loading spinner and "Loading..." text, disables interaction</td>
+                        </tr>
+                        <tr className="border-b border-gray-200">
+                          <td className="p-3 font-mono text-xs bg-gray-50">icon</td>
+                          <td className="p-3 font-mono text-xs">React.Node</td>
+                          <td className="p-3 font-mono text-xs">null</td>
+                          <td className="p-3 text-gray-700">Icon component to display alongside button text</td>
+                        </tr>
+                        <tr className="border-b border-gray-200">
+                          <td className="p-3 font-mono text-xs bg-gray-50">iconPosition</td>
+                          <td className="p-3 font-mono text-xs">string</td>
+                          <td className="p-3 font-mono text-xs">"left"</td>
+                          <td className="p-3 text-gray-700">
+                            Icon placement: <code className="bg-gray-100 px-1 rounded">left</code> or <code className="bg-gray-100 px-1 rounded">right</code>
+                          </td>
+                        </tr>
+                        <tr className="border-b border-gray-200">
+                          <td className="p-3 font-mono text-xs bg-gray-50">onClick</td>
+                          <td className="p-3 font-mono text-xs">function</td>
+                          <td className="p-3 font-mono text-xs">-</td>
+                          <td className="p-3 text-gray-700">Click event handler</td>
+                        </tr>
+                        <tr className="border-b border-gray-200">
+                          <td className="p-3 font-mono text-xs bg-gray-50">type</td>
+                          <td className="p-3 font-mono text-xs">string</td>
+                          <td className="p-3 font-mono text-xs">"button"</td>
+                          <td className="p-3 text-gray-700">
+                            HTML button type: <code className="bg-gray-100 px-1 rounded">button</code>, <code className="bg-gray-100 px-1 rounded">submit</code>, <code className="bg-gray-100 px-1 rounded">reset</code>
+                          </td>
+                        </tr>
+                        <tr className="border-b border-gray-200">
+                          <td className="p-3 font-mono text-xs bg-gray-50">className</td>
+                          <td className="p-3 font-mono text-xs">string</td>
+                          <td className="p-3 font-mono text-xs">""</td>
+                          <td className="p-3 text-gray-700">Additional CSS classes to apply</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Accessibility */}
+                <div className="bg-teal-lightest p-6 rounded-xl border-2 border-teal-light">
+                  <h4 className="text-lg font-semibold text-teal-dark mb-4">♿ Accessibility Features</h4>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <span className="text-teal-medium font-bold">✓</span>
+                      <span><strong>Minimum Touch Target:</strong> All buttons meet 44px minimum height for mobile accessibility</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-teal-medium font-bold">✓</span>
+                      <span><strong>Keyboard Navigation:</strong> Fully keyboard accessible with focus ring indicators</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-teal-medium font-bold">✓</span>
+                      <span><strong>ARIA Attributes:</strong> Uses <code className="bg-gray-100 px-1 rounded">aria-busy</code> for loading states</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-teal-medium font-bold">✓</span>
+                      <span><strong>Disabled State:</strong> Proper cursor and visual feedback for disabled buttons</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-teal-medium font-bold">✓</span>
+                      <span><strong>Color Contrast:</strong> All variants meet WCAG AA standards for text contrast</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </section>
