@@ -209,7 +209,7 @@ export function LandingPage({ onGetStarted }) {
 
             {/* Description Text */}
             <p className="text-lg sm:text-xl text-gray-700 mb-10 max-w-3xl leading-relaxed">
-              We provide the neutral ground you need. Expert communication support and scheduling for co-parents seeking clarity, calm, and stability for their children.
+              LiaiZen prevents conflict in real time—so every message moves the conversation forward, not backward.
             </p>
 
             {/* Dual CTAs - Design System Buttons */}

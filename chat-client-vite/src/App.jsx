@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ChatRoom from './ChatRoom.jsx';
 import { LoginSignup } from './components/LoginSignup.jsx';
 import { GoogleOAuthCallback } from './components/GoogleOAuthCallback.jsx';
-import { UIShowcase } from './components/UIShowcase.jsx';
+// import { UIShowcase } from './components/UIShowcase.jsx'; // Dev only - disabled in production
 import { usePWA } from './hooks/usePWA.js';
 
 function App() {
@@ -29,7 +29,7 @@ function App() {
         <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
 
         {/* UI Component Showcase - Design System Documentation */}
-        <Route path="/ui-showcase" element={<UIShowcase />} />
+        {/* <Route path="/ui-showcase" element={<UIShowcase />} /> */} {/* Dev only - disabled in production */}
       </Routes>
     </BrowserRouter>
   );
