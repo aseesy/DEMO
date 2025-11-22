@@ -43,45 +43,174 @@ export function UIShowcase() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-lightest to-white">
       {/* Header */}
-      <div className="bg-white border-b-2 border-teal-light shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-teal-dark">LiaiZen Design System</h1>
-              <p className="text-teal-medium mt-1">Component Library & Documentation</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">
-                Phase 2 Complete
-              </span>
-              <span className="px-3 py-1 bg-teal-lightest text-teal-dark text-sm font-semibold rounded-full">
-                v2.0
-              </span>
-            </div>
+      <div className="bg-white border-b-2 border-teal-light shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-5xl font-serif italic text-teal-dark mb-3">
+              LiaiZen Design System
+            </h1>
+            <p className="text-xl text-teal-medium mb-2">
+              Better co-parenting through better design
+            </p>
+            <p className="text-sm text-gray-600 max-w-2xl mx-auto">
+              A comprehensive design language for building child-centered, conflict-reducing digital experiences
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-lg p-4 border-2 border-teal-light">
-            <div className="text-2xl font-bold text-teal-dark">33</div>
-            <div className="text-sm text-teal-medium">Buttons Migrated</div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Navigation */}
+        <nav className="mb-12 bg-white rounded-xl p-6 border-2 border-teal-light shadow-sm">
+          <div className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-4">Quick Navigation</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <a href="#foundations" className="text-teal-dark hover:text-teal-medium transition-colors font-medium">
+              📐 Foundations
+            </a>
+            <a href="#components" className="text-teal-dark hover:text-teal-medium transition-colors font-medium">
+              🧩 Components
+            </a>
+            <a href="#patterns" className="text-teal-dark hover:text-teal-medium transition-colors font-medium">
+              🎨 Patterns
+            </a>
+            <a href="#accessibility" className="text-teal-dark hover:text-teal-medium transition-colors font-medium">
+              ♿ Accessibility
+            </a>
           </div>
-          <div className="bg-white rounded-lg p-4 border-2 border-teal-light">
-            <div className="text-2xl font-bold text-teal-dark">9</div>
-            <div className="text-sm text-teal-medium">Files Completed</div>
+        </nav>
+
+        {/* === FOUNDATIONS === */}
+        <div id="foundations" className="mb-16">
+          <div className="mb-8">
+            <h2 className="text-4xl font-serif text-teal-dark mb-2">📐 Foundations</h2>
+            <p className="text-lg text-gray-600">Core design principles that define the LiaiZen visual language</p>
           </div>
-          <div className="bg-white rounded-lg p-4 border-2 border-teal-light">
-            <div className="text-2xl font-bold text-teal-dark">100%</div>
-            <div className="text-sm text-teal-medium">Token Usage</div>
-          </div>
-          <div className="bg-white rounded-lg p-4 border-2 border-teal-light">
-            <div className="text-2xl font-bold text-teal-dark">400+</div>
-            <div className="text-sm text-teal-medium">Lines Removed</div>
-          </div>
+
+          {/* Brand Identity */}
+          <section className="mb-12">
+            <div className="bg-gradient-to-br from-teal-dark to-teal-medium rounded-2xl p-12 text-white shadow-xl">
+              <h3 className="text-3xl font-serif italic mb-6">Our Mission</h3>
+              <p className="text-xl leading-relaxed mb-8 text-teal-lightest">
+                Transform high-tension co-parenting exchanges into respectful, child-centric dialogue through intelligent mediation technology.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border-2 border-white/20">
+                  <div className="text-2xl mb-2">👶</div>
+                  <h4 className="font-semibold text-lg mb-2">Child-Centered</h4>
+                  <p className="text-sm text-teal-lightest">Every design decision prioritizes children's wellbeing and stability</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border-2 border-white/20">
+                  <div className="text-2xl mb-2">🤝</div>
+                  <h4 className="font-semibold text-lg mb-2">Conflict Reduction</h4>
+                  <p className="text-sm text-teal-lightest">Design patterns that reduce tension and promote collaboration</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border-2 border-white/20">
+                  <div className="text-2xl mb-2">🛡️</div>
+                  <h4 className="font-semibold text-lg mb-2">Privacy & Trust</h4>
+                  <p className="text-sm text-teal-lightest">Secure, respectful handling of sensitive family information</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Spacing System */}
+          <section className="mb-12">
+            <div className="bg-white rounded-2xl p-10 border-2 border-gray-200 shadow-lg">
+              <h3 className="text-2xl font-bold text-teal-dark mb-3">Spacing System</h3>
+              <p className="text-gray-600 mb-8">Consistent spacing creates rhythm and hierarchy in our interfaces</p>
+
+              <div className="space-y-6">
+                <div className="flex items-center gap-6">
+                  <div className="w-32 text-right">
+                    <span className="font-mono text-sm text-gray-500">xs / 4px</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="bg-teal-medium h-4 rounded" style={{width: '4px'}}></div>
+                  </div>
+                  <div className="w-48 text-sm text-gray-600">Tight spacing, inline elements</div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="w-32 text-right">
+                    <span className="font-mono text-sm text-gray-500">sm / 8px</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="bg-teal-medium h-4 rounded" style={{width: '8px'}}></div>
+                  </div>
+                  <div className="w-48 text-sm text-gray-600">Component internal padding</div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="w-32 text-right">
+                    <span className="font-mono text-sm text-gray-500">md / 16px</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="bg-teal-medium h-4 rounded" style={{width: '16px'}}></div>
+                  </div>
+                  <div className="w-48 text-sm text-gray-600">Default spacing unit</div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="w-32 text-right">
+                    <span className="font-mono text-sm text-gray-500">lg / 24px</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="bg-teal-medium h-4 rounded" style={{width: '24px'}}></div>
+                  </div>
+                  <div className="w-48 text-sm text-gray-600">Between related elements</div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="w-32 text-right">
+                    <span className="font-mono text-sm text-gray-500">xl / 32px</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="bg-teal-medium h-4 rounded" style={{width: '32px'}}></div>
+                  </div>
+                  <div className="w-48 text-sm text-gray-600">Between sections</div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="w-32 text-right">
+                    <span className="font-mono text-sm text-gray-500">2xl / 48px</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="bg-teal-medium h-4 rounded" style={{width: '48px'}}></div>
+                  </div>
+                  <div className="w-48 text-sm text-gray-600">Major section breaks</div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="w-32 text-right">
+                    <span className="font-mono text-sm text-gray-500">3xl / 64px</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="bg-teal-medium h-4 rounded" style={{width: '64px'}}></div>
+                  </div>
+                  <div className="w-48 text-sm text-gray-600">Page-level spacing</div>
+                </div>
+              </div>
+
+              <div className="mt-8 bg-gray-50 p-6 rounded-xl">
+                <div className="text-xs uppercase tracking-wide text-gray-500 mb-3">Usage Example</div>
+                <div className="font-mono text-sm text-gray-700 bg-gray-900 text-green-400 p-4 rounded">
+                  {`<div className="p-md">        // padding: 16px
+  <div className="mb-lg">      // margin-bottom: 24px
+    <h2 className="mb-sm">...</h2>
+  </div>
+</div>`}
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
+
+        {/* === COMPONENTS === */}
+        <div id="components" className="mb-16">
+          <div className="mb-8">
+            <h2 className="text-4xl font-serif text-teal-dark mb-2">🧩 Components</h2>
+            <p className="text-lg text-gray-600">Reusable UI components that make up the LiaiZen interface</p>
+          </div>
 
         {/* Heading Component Section */}
         <section className="mb-12">
