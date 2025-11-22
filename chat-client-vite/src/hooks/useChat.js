@@ -1,6 +1,7 @@
 import React from 'react';
 import { io } from 'socket.io-client';
 import { API_BASE_URL } from '../config.js';
+import { trackConnectionError } from '../utils/analyticsEnhancements.js';
 
 // Minimal chat hook ported from the legacy ChatRoom logic.
 // Handles connecting, joining, receiving history, and sending messages.
@@ -79,6 +80,8 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
       console.error('Chat connection error (Vite):', err);
       setIsConnected(false);
       setError('Unable to connect to chat server. Please check if the server is running.');
+      // Track connection error
+      trackConnectionError('socket_connect_error', err.message || String(err));
     });
 
     socket.on('join_success', () => {
@@ -158,6 +161,8 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     });
 
     socket.on('error', ({ message }) => {
+      // Track socket errors
+      trackConnectionError('socket_error', message || 'Unknown socket error');
       console.error('Socket error:', message);
       setError(message);
     });

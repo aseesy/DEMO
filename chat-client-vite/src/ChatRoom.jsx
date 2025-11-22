@@ -33,6 +33,7 @@ import {
   trackThreadCreated,
   trackInterventionFeedback,
 } from './utils/analytics.js';
+import { setUserProperties } from './utils/analyticsEnhancements.js';
 
 // Vite-migrated shell for the main LiaiZen app.
 // Currently focuses on login/signup; chat, tasks, contacts, and profile
@@ -586,6 +587,12 @@ function ChatRoom() {
           console.log('Successfully accepted invite, joined room:', data.roomId);
           setPendingInviteCode(null);
           setHasCoParentConnected(true); // Co-parents are now connected
+          
+          // Update user properties when co-parent connects
+          setUserProperties({
+            has_coparent: true,
+            room_status: 'multi_user',
+          });
           // Show success message briefly
           setInviteError(''); // Clear errors
           // Note: Periodic room member check will confirm connection
@@ -628,6 +635,14 @@ function ChatRoom() {
         const hasMultiple = data.hasMultipleMembers === true;
         console.log(`[checkRoomMembers] API response: hasMultipleMembers=${hasMultiple}`);
         setHasCoParentConnected(hasMultiple);
+        
+        // Update user properties when co-parent connects
+        if (hasMultiple) {
+          setUserProperties({
+            has_coparent: true,
+            room_status: 'multi_user',
+          });
+        }
       } else if (response.status === 404) {
         // Endpoint doesn't exist yet (server not restarted) - fallback to message-based detection
         console.log('[checkRoomMembers] API endpoint not found, using message-based detection');

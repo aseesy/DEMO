@@ -255,7 +255,7 @@ export function trackAIIntervention(interventionType, confidence, riskLevel) {
   }
 
   window.gtag('event', 'ai_intervention', {
-    intervention_type: interventionType,
+    intervention_type: interventionType, // Custom dimension
     confidence: confidence,
     risk_level: riskLevel,
     event_category: 'ai',
@@ -316,7 +316,7 @@ export function trackTaskCreated(taskType, priority) {
 
   window.gtag('event', 'task_created', {
     task_type: taskType,
-    priority: priority,
+    task_priority: priority, // Custom dimension
     event_category: 'tasks',
   });
 

@@ -4,6 +4,8 @@ import './index.css'
 import App from './App.jsx'
 import { injectGoogleTag } from './utils/injectGoogleTag.js'
 import { initAnalytics } from './utils/analytics.js'
+import { setupGlobalErrorHandler } from './utils/errorHandler.jsx'
+import { trackPagePerformance } from './utils/analyticsEnhancements.js'
 
 // Inject Google Tag immediately (before React loads)
 // This runs synchronously to ensure tag is present before any other scripts
@@ -15,6 +17,14 @@ try {
 
 // Initialize analytics on app load (only if GOOGLE_TAG is not set, use VITE_GA_MEASUREMENT_ID)
 initAnalytics();
+
+// Set up global error handler
+setupGlobalErrorHandler();
+
+// Track page load performance after a short delay to ensure all resources are loaded
+setTimeout(() => {
+  trackPagePerformance();
+}, 1000);
 
 // Unregister any existing service workers (from legacy app)
 // This fixes Safari issues with service workers intercepting navigation

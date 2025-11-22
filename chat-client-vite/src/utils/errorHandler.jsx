@@ -51,6 +51,8 @@ export function trackFormValidationError(formName, fieldName, errorType) {
 }
 
 // React Error Boundary component
+import React from 'react';
+
 export class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
