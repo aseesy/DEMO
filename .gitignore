@@ -65,3 +65,4 @@ users.json
 *.json.bak
 
 .mcp-config.json
+screenshots/*.webm
