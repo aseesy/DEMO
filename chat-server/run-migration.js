@@ -19,6 +19,7 @@ async function runMigration() {
 
         // Try multiple possible paths for the migration file
         const possiblePaths = [
+            path.join(__dirname, 'migrations/001_initial_schema.sql'),
             path.join(__dirname, '../chat-client-vite/scripts/migrate_user_context.sql'),
             path.join(__dirname, './scripts/migrate_user_context.sql'),
             path.join(__dirname, 'migrate_user_context.sql'),
@@ -31,14 +32,24 @@ async function runMigration() {
             if (fs.existsSync(migrationPath)) {
                 sql = fs.readFileSync(migrationPath, 'utf8');
                 foundPath = migrationPath;
+                console.log(`📄 Using migration file: ${foundPath}`);
                 break;
             }
         }
 
         if (!sql) {
-            console.log('⚠️  Migration SQL file not found, creating table inline...');
-            // Fallback: create table inline if SQL file not found
+            console.log('⚠️  Migration SQL file not found, creating tables inline...');
+            // Fallback: create essential tables inline if SQL file not found
             sql = `
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          username TEXT UNIQUE NOT NULL,
+          email TEXT UNIQUE,
+          password_hash TEXT,
+          google_id TEXT UNIQUE,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+
         CREATE TABLE IF NOT EXISTS user_context (
           user_id TEXT PRIMARY KEY,
           co_parent TEXT,
@@ -46,9 +57,34 @@ async function runMigration() {
           contacts JSONB DEFAULT '[]'::jsonb,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS rooms (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          created_by INTEGER NOT NULL,
+          is_private INTEGER DEFAULT 1,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS communication_stats (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          room_id TEXT NOT NULL,
+          current_streak INTEGER DEFAULT 0,
+          best_streak INTEGER DEFAULT 0,
+          total_positive_messages INTEGER DEFAULT 0,
+          total_messages INTEGER DEFAULT 0,
+          total_interventions INTEGER DEFAULT 0,
+          last_message_date TIMESTAMP WITH TIME ZONE,
+          last_intervention_date TIMESTAMP WITH TIME ZONE,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, room_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_comm_stats_user ON communication_stats(user_id);
+        CREATE INDEX IF NOT EXISTS idx_comm_stats_room ON communication_stats(room_id);
       `;
-        } else {
-            console.log(`📄 Using migration file: ${foundPath}`);
         }
 
         // Execute the migration
