@@ -198,6 +198,7 @@ export function LandingPage({ onGetStarted }) {
                 }}
                 variant="ghost"
                 size="medium"
+                className="text-teal-medium hover:text-teal-dark"
               >
                 Sign In
               </Button>
@@ -219,7 +220,7 @@ export function LandingPage({ onGetStarted }) {
       {/* Hero Section */}
       <div className="pt-32 pb-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-20">
+          <div className="mb-20" style={{ overflowX: 'visible' }}>
             {/* Top Label - Design System SectionHeader */}
             <div className="mb-6">
               <SectionHeader color="medium" size="base">
@@ -229,8 +230,9 @@ export function LandingPage({ onGetStarted }) {
 
             {/* Main Headline - Design System Heading with serif */}
             <div className="mb-8">
-              <Heading variant="hero" color="dark" as="h1">
-                Co-parenting communication, <em>without the cringe.</em>
+              <Heading variant="hero" color="dark" as="h1" className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
+                Co-parenting&nbsp;communication,<br />
+                <em>without the cringe.</em>
               </Heading>
             </div>
 
@@ -274,6 +276,7 @@ export function LandingPage({ onGetStarted }) {
                 variant="teal-outline"
                 size="large"
                 className="w-full sm:w-auto"
+                style={{ borderWidth: '1px' }}
               >
                 Learn More
               </Button>
@@ -444,9 +447,9 @@ export function LandingPage({ onGetStarted }) {
           {/* Visual Separator */}
           <div className="my-24 flex items-center justify-center">
             <div className="flex items-center gap-3 max-w-md w-full">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#4DA8B0] to-transparent"></div>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-teal-medium to-transparent"></div>
               <div className="w-3 h-3 rounded-full bg-teal-medium"></div>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#4DA8B0] to-transparent"></div>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-teal-medium to-transparent"></div>
             </div>
           </div>
 
@@ -496,7 +499,7 @@ export function LandingPage({ onGetStarted }) {
                       </div>
                       <Heading variant="small" color="teal-medium" as="h3">With LiaiZen</Heading>
                     </div>
-                    <div className="bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 border-2 border-[#6dd4b0] shadow-sm">
+                    <div className="bg-gradient-to-br from-teal-lightest to-white rounded-xl p-6 border-2 border-teal-light shadow-sm">
                       <p className="text-gray-900 leading-relaxed">
                         "I noticed the schedule changed. For planning purposes, could we aim for 48-hour notice when possible? It helps me coordinate childcare. What works best for you?"
                       </p>
@@ -595,7 +598,7 @@ export function LandingPage({ onGetStarted }) {
           <div className="grid md:grid-cols-3 gap-6 sm:gap-8 mt-20">
             {/* Feature 1 */}
             <div className="bg-white rounded-xl p-6 sm:p-8 border-2 border-gray-200 hover:border-teal-light transition-all shadow-sm hover:shadow-md">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-teal-lightest to-teal-light rounded-xl flex items-center justify-center mb-4 sm:mb-6">
                 <svg className="w-8 h-8 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
@@ -634,66 +637,66 @@ export function LandingPage({ onGetStarted }) {
           </div>
 
           {/* Parallel Parenting / Emotional Toll Section - NEW */}
-          <div className="mt-24 mb-24 bg-gray-50 rounded-xl p-6 sm:p-8 text-gray-900 border-2 border-gray-200">
+          <div className="mt-24 mb-24 bg-gradient-to-br from-teal-dark to-teal-medium rounded-2xl p-8 sm:p-10 border-2 border-teal-dark shadow-lg">
             <div className="max-w-4xl mx-auto">
-              <Heading variant="medium" color="dark" as="h2" className="mb-6 text-center">
+              <Heading variant="medium" color="white" as="h2" className="mb-6 text-center text-white">
                 Stuck in Parallel Parenting? You're Not Alone.
               </Heading>
-              <p className="text-xl text-teal-medium mb-8 text-center max-w-2xl mx-auto">
+              <p className="text-xl text-white/95 mb-10 text-center max-w-2xl mx-auto leading-relaxed">
                 You didn't want it this way. You wanted to co-parent as a team. But here you are—limiting contact just to protect your sanity.
               </p>
 
               <div className="grid md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <Heading variant="small" color="dark" as="h3" className="mb-4">You Know This Feeling:</Heading>
-                  <ul className="space-y-3 text-white/90">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border-2 border-white/20 shadow-sm">
+                  <Heading variant="small" color="white" as="h3" className="mb-4 text-white">You Know This Feeling:</Heading>
+                  <ul className="space-y-3 text-white/95">
                     <li className="flex items-start gap-3">
-                      <span>•</span>
-                      <span>That split-second dread when you see their name on your phone</span>
+                      <span className="text-white font-semibold">•</span>
+                      <span className="leading-relaxed">That split-second dread when you see their name on your phone</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <span>•</span>
-                      <span>Walking on eggshells with every word, knowing anything can explode</span>
+                      <span className="text-white font-semibold">•</span>
+                      <span className="leading-relaxed">Walking on eggshells with every word, knowing anything can explode</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <span>•</span>
-                      <span>Feeling triggered and hating yourself for reacting</span>
+                      <span className="text-white font-semibold">•</span>
+                      <span className="leading-relaxed">Feeling triggered and hating yourself for reacting</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <span>•</span>
-                      <span>Lying awake replaying conversations, crafting perfect responses you'll never send</span>
+                      <span className="text-white font-semibold">•</span>
+                      <span className="leading-relaxed">Lying awake replaying conversations, crafting perfect responses you'll never send</span>
                     </li>
                   </ul>
                 </div>
 
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <Heading variant="small" color="dark" as="h3" className="mb-4">What You Actually Need:</Heading>
-                  <ul className="space-y-3 text-white/90">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border-2 border-white/20 shadow-sm">
+                  <Heading variant="small" color="white" as="h3" className="mb-4 text-white">What You Actually Need:</Heading>
+                  <ul className="space-y-3 text-white/95">
                     <li className="flex items-start gap-3">
-                      <span>✓</span>
-                      <span>A buffer between you and the chaos</span>
+                      <span className="text-white font-semibold">✓</span>
+                      <span className="leading-relaxed">A buffer between you and the chaos</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <span>✓</span>
-                      <span>Help staying calm when they know exactly how to push your buttons</span>
+                      <span className="text-white font-semibold">✓</span>
+                      <span className="leading-relaxed">Help staying calm when they know exactly how to push your buttons</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <span>✓</span>
-                      <span>Messages that say what you mean without handing them ammunition</span>
+                      <span className="text-white font-semibold">✓</span>
+                      <span className="leading-relaxed">Messages that say what you mean without handing them ammunition</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <span>✓</span>
-                      <span>To stop feeling crazy, overwhelmed, and alone in this</span>
+                      <span className="text-white font-semibold">✓</span>
+                      <span className="leading-relaxed">To stop feeling crazy, overwhelmed, and alone in this</span>
                     </li>
                   </ul>
                 </div>
               </div>
 
-              <div className="text-center bg-white/20 backdrop-blur-sm rounded-xl p-6 border border-white/30">
-                <p className="text-lg font-semibold mb-2">
+              <div className="text-center bg-white/15 backdrop-blur-sm rounded-xl p-6 border-2 border-white/25 shadow-sm">
+                <p className="text-lg font-semibold mb-3 text-white leading-relaxed">
                   "I don't need a perfect co-parent. I just need peace, consistency, and the strength to raise my child with love—even when the drama tries to step in."
                 </p>
-                <p className="text-sm text-white/80">— Co-parent, Facebook support group</p>
+                <p className="text-sm text-white/90 font-medium">— Co-parent, Facebook support group</p>
               </div>
             </div>
           </div>
@@ -709,7 +712,7 @@ export function LandingPage({ onGetStarted }) {
             <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {/* Step 1 */}
               <div className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#E6F7F5] to-[#C5E8E4] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border-4 border-white shadow-md">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-teal-lightest to-teal-light rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border-4 border-white shadow-md">
                   <span className="text-2xl sm:text-3xl font-semibold text-teal-medium">1</span>
                 </div>
                 <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Create Your Account</Heading>
@@ -720,7 +723,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* Step 2 */}
               <div className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#C5E8E4] to-[#A8D9D3] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border-4 border-white shadow-md">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-teal-light to-teal-medium rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border-4 border-white shadow-md">
                   <span className="text-2xl sm:text-3xl font-semibold text-teal-medium">2</span>
                 </div>
                 <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Invite Your Co-Parent</Heading>
@@ -731,7 +734,7 @@ export function LandingPage({ onGetStarted }) {
 
               {/* Step 3 */}
               <div className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#A8D9D3] to-[#8BCAC1] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border-4 border-white shadow-md">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-teal-medium to-teal-dark rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border-4 border-white shadow-md">
                   <span className="text-2xl sm:text-3xl font-semibold text-teal-medium">3</span>
                 </div>
                 <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Communicate Peacefully</Heading>
@@ -767,7 +770,7 @@ export function LandingPage({ onGetStarted }) {
           </div>
 
           {/* Testimonials */}
-          <div className="mt-24 mb-24 bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light" data-section="testimonials">
+          <div className="mt-24 mb-24 bg-gradient-to-br from-teal-lightest to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light" data-section="testimonials">
             <Heading variant="medium" color="teal-medium" as="h2" className="mb-4 text-center">
               What Professionals Are Saying
             </Heading>
@@ -986,7 +989,7 @@ export function LandingPage({ onGetStarted }) {
           </div>
 
           {/* Co-Parenting Tips Section */}
-          <div className="mt-24 mb-24 bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light">
+          <div className="mt-24 mb-24 bg-gradient-to-br from-teal-lightest to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light">
             <Heading variant="medium" color="teal-medium" as="h2" className="mb-4 text-center">
               Co-Parenting Principles We Stand By
             </Heading>
@@ -1109,7 +1112,7 @@ export function LandingPage({ onGetStarted }) {
                 Experience how AI mediation helps you communicate more effectively
               </p>
             </div>
-            <div className="max-w-4xl mx-auto bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light">
+            <div className="max-w-4xl mx-auto bg-gradient-to-br from-teal-lightest to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light">
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div>
                   <Heading variant="small" color="teal-medium" as="h3" className="mb-4">
@@ -1167,47 +1170,47 @@ export function LandingPage({ onGetStarted }) {
           </div>
 
           {/* Final CTA */}
-          <div className="mt-24 text-center bg-gradient-to-br from-[#E6F7F5] to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light relative overflow-hidden" data-section="final_cta">
+          <div className="mt-32 mb-24 text-center bg-gradient-to-br from-teal-lightest to-white rounded-2xl p-8 sm:p-12 border-2 border-teal-light shadow-lg relative overflow-hidden" data-section="final_cta">
             <div className="absolute top-0 right-0 w-64 h-64 bg-teal-medium opacity-5 rounded-full -mr-32 -mt-32"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-medium opacity-5 rounded-full -ml-32 -mb-32"></div>
             <div className="relative">
-            <Heading variant="medium" color="teal-medium" as="h2" className="mb-4">
-              Ready to Transform Your Co-Parenting?
-            </Heading>
-              <p className="text-xl text-teal-medium mb-2 max-w-2xl mx-auto">
-              Join beta families who are finding peace and clarity through LiaiZen
-            </p>
-              <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
+              <Heading variant="medium" color="teal-dark" as="h2" className="mb-6">
+                Ready to Transform Your Co-Parenting?
+              </Heading>
+              <p className="text-xl text-teal-dark mb-3 max-w-2xl mx-auto font-medium">
+                Join beta families who are finding peace and clarity through LiaiZen
+              </p>
+              <p className="text-lg text-gray-700 mb-10 max-w-xl mx-auto leading-relaxed">
                 Limited beta spots available. Start your free account today—no credit card required.
               </p>
-            <Button
+              <Button
                 onClick={() => {
                   trackCTAClick('final_cta', 'Start Free Beta Access Now', 'bottom');
                   navigate('/signin');
                 }}
                 variant="teal-solid"
                 size="xl"
-                className="mb-4"
-            >
+                className="mb-6"
+              >
                 Start Free Beta Access Now
-            </Button>
-              <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
-                <div className="flex items-center gap-1">
-                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              </Button>
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-700">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-teal-medium flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span>No credit card required</span>
                 </div>
-                <span>•</span>
-                <div className="flex items-center gap-1">
-                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <span className="text-gray-400">•</span>
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-teal-medium flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span>Set up in 2 minutes</span>
                 </div>
-                <span>•</span>
-                <div className="flex items-center gap-1">
-                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <span className="text-gray-400">•</span>
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-teal-medium flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span>Free forever for beta testers</span>
