@@ -5785,13 +5785,14 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Start server
 const PORT = process.env.PORT || 3001;
+const HOST = '0.0.0.0'; // Bind to all network interfaces (required for Railway/Docker)
 
-server.listen(PORT, (error) => {
+server.listen(PORT, HOST, (error) => {
   if (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
   }
-  console.log(`✅ Chat server running on port ${PORT}`);
+  console.log(`✅ Chat server running on ${HOST}:${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔒 CORS enabled for: ${allowedOrigins.join(', ')}`);
   console.log(`   Press Ctrl+C to stop`);
