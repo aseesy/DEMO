@@ -1,0 +1,16 @@
+{
+    "protected": [
+        {
+            "path": "/app/dashboard",
+            "label": "Dashboard"
+        },
+        {
+            "path": "/app/settings",
+            "label": "Settings"
+        },
+        {
+            "path": "/app/profile",
+            "label": "Profile"
+        }
+    ]
+}

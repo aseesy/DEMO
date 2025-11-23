@@ -864,7 +864,7 @@ function ChatRoom() {
         />
 
         {/* Main Content Area */}
-        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-16 md:pt-10 md:pb-4' : 'pt-10 md:pt-10 pb-20 md:pb-8 overflow-y-auto'} px-4 sm:px-6 md:px-8 relative z-10`}>
+        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-16 md:pt-10 md:pb-4' : 'pt-10 md:pt-10 pb-20 md:pb-8 overflow-y-auto px-4 sm:px-6 md:px-8'} relative z-10`}>
           <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : 'max-w-7xl mx-auto w-full'}`}>
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
@@ -878,81 +878,6 @@ function ChatRoom() {
                     </div>
                   </div>
                 )}
-
-                {/* Communication Streak Stats */}
-                {(() => {
-                  // Calculate streak statistics
-                  const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-                  const userMessages = messages.filter(msg =>
-                    msg.username === username &&
-                    msg.timestamp >= thirtyDaysAgo
-                  );
-
-                  // Find all streaks in the last 30 days
-                  let allStreaks = [];
-                  let currentStreak = 0;
-
-                  for (let i = 0; i < userMessages.length; i++) {
-                    const msg = userMessages[i];
-                    const isFlagged = msg.user_flagged_by &&
-                                     Array.isArray(msg.user_flagged_by) &&
-                                     msg.user_flagged_by.length > 0;
-
-                    if (isFlagged) {
-                      if (currentStreak > 0) {
-                        allStreaks.push(currentStreak);
-                      }
-                      currentStreak = 0;
-                    } else {
-                      currentStreak++;
-                    }
-                  }
-
-                  // Add current streak if ongoing
-                  if (currentStreak > 0) {
-                    allStreaks.push(currentStreak);
-                  }
-
-                  const highScore = allStreaks.length > 0 ? Math.max(...allStreaks) : 0;
-                  const avgScore = allStreaks.length > 0
-                    ? (allStreaks.reduce((a, b) => a + b, 0) / allStreaks.length).toFixed(1)
-                    : 0;
-
-                  return (
-                    <div className="bg-white rounded-2xl border-2 border-teal-light p-6 md:p-8 mb-6 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="mb-6">
-                        <h2 className="text-2xl font-semibold text-teal-dark mb-2">Communication Stats</h2>
-                        <p className="text-base text-gray-600">Your positive messaging streak</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-6">
-                        {/* High Score */}
-                        <div className="bg-white rounded-xl p-6 border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow">
-                          <div className="mb-3">
-                            <span className="text-sm font-semibold text-teal-medium uppercase tracking-wide">Record Streak</span>
-                          </div>
-                          <div className="text-4xl font-semibold text-teal-dark mb-2">{highScore}</div>
-                          <div className="text-xs text-gray-500">messages in a row</div>
-                        </div>
-
-                        {/* Average Score */}
-                        <div className="bg-white rounded-xl p-6 border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow">
-                          <div className="mb-3">
-                            <span className="text-sm font-semibold text-teal-medium uppercase tracking-wide">30-Day Average</span>
-                          </div>
-                          <div className="text-4xl font-semibold text-teal-dark mb-2">{avgScore}</div>
-                          <div className="text-xs text-gray-500">average streak</div>
-                        </div>
-                      </div>
-
-                      {highScore > 0 && (
-                        <div className="mt-6 text-center">
-                          <p className="text-sm font-medium text-teal-medium">Keep up the great communication!</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
 
                 {/* Dashboard Grid: Tasks and Updates */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
@@ -1478,7 +1403,7 @@ function ChatRoom() {
                   )}
 
                   {/* Main Chat Area */}
-                  <div className="flex-1 p-4 sm:p-6 md:p-8 flex flex-col min-h-0 overflow-hidden">
+                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                   {inviteError && (
                 <div className="mb-4 rounded-xl border-2 border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900 shadow-sm">
                   <div className="font-semibold mb-2 text-base">Error</div>
@@ -1550,7 +1475,7 @@ function ChatRoom() {
               )}
 
               <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-6 pb-2 space-y-4" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {(() => {
                   // Helper function to get initials from username
                   // Calculate streak for each message
@@ -1703,20 +1628,20 @@ function ChatRoom() {
                         };
                         
                         return (
-                          <div key={msg.id ?? `ai-${msg.timestamp}`} className="mb-6 first:mt-6">
+                          <div key={msg.id ?? `ai-${msg.timestamp}`} className="mb-4 first:mt-0">
                             {groupTimeLabel && (
-                              <div className="flex items-center justify-center mb-3">
-                                <span className="text-xs font-medium text-gray-500">{groupTimeLabel}</span>
+                              <div className="flex items-center justify-center mb-2">
+                                <span className="text-xs font-medium text-gray-500 bg-white px-2 py-0.5 rounded-md">{groupTimeLabel}</span>
                               </div>
                             )}
-                            <div className="flex items-start gap-3 max-w-[85%] mx-auto">
+                            <div className="flex items-start gap-3 max-w-[75%] sm:max-w-[60%] md:max-w-[55%] mx-auto">
                               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 border border-gray-200">
                                 {isComment ? (
-                                  <svg className="w-5 h-5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                  <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                   </svg>
                                 ) : (
-                                  <svg className="w-5 h-5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                  <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                   </svg>
                                 )}
@@ -1727,7 +1652,7 @@ function ChatRoom() {
                                     {msg.username || 'LiaiZen'}
                                   </span>
                                 </div>
-                                <div className="rounded-2xl px-4 py-3 bg-white border border-gray-200 shadow-sm">
+                                <div className="rounded-2xl px-4 py-3 bg-white border-2 border-teal-light shadow-sm">
                                   {isComment && msg.text && (
                                     <p className="text-sm text-gray-900 leading-relaxed">{msg.text}</p>
                                   )}
@@ -2140,25 +2065,25 @@ function ChatRoom() {
                   }
 
                     return (
-                      <div key={`group-${groupIndex}`} className="mb-6 first:mt-6">
+                      <div key={`group-${groupIndex}`} className="mb-4 first:mt-0">
                         {/* Date Separator */}
                         {showDateSeparator && dateLabel && (
-                          <div className="flex items-center justify-center my-8">
-                            <div className="px-4 py-1.5 bg-gray-100 rounded-full">
-                              <span className="text-xs font-medium text-gray-600">{dateLabel}</span>
+                          <div className="flex items-center justify-center my-4">
+                            <div className="px-3 py-1 bg-white border-2 border-teal-light rounded-full shadow-sm">
+                              <span className="text-xs font-semibold text-gray-600">{dateLabel}</span>
                             </div>
                           </div>
                         )}
                         
-                        {/* Timestamp above group */}
-                        {groupTimeLabel && (
-                          <div className="flex items-center justify-center mb-3">
-                            <span className="text-xs font-medium text-gray-500">{groupTimeLabel}</span>
+                        {/* Timestamp above group - only show if not immediately after date separator */}
+                        {groupTimeLabel && !showDateSeparator && (
+                          <div className="flex items-center justify-center mb-2">
+                            <span className="text-xs font-medium text-gray-500 bg-white px-2 py-0.5 rounded-md">{groupTimeLabel}</span>
                           </div>
                         )}
                         
                         {/* Message Group */}
-                        <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} gap-1.5`}>
+                        <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} gap-2`}>
                           {group.messages.map((msg, msgIndex) => {
                             const isFlagged = msg.user_flagged_by && Array.isArray(msg.user_flagged_by) && msg.user_flagged_by.length > 0;
                             const isFlaggedByMe = msg.user_flagged_by && Array.isArray(msg.user_flagged_by) && msg.user_flagged_by.includes(username);
@@ -2172,7 +2097,7 @@ function ChatRoom() {
                                 key={msg.id ?? `${msg.username}-${msg.timestamp}-${msg.text}-${msgIndex}`}
                                 className={`group relative ${isOwn ? 'flex justify-end' : 'flex justify-start'} w-full`}
                               >
-                                <div className={`relative ${isOwn ? 'max-w-[75%] sm:max-w-[70%] md:max-w-[65%]' : 'max-w-[80%] sm:max-w-[75%] md:max-w-[70%]'}`}>
+                                <div className={`relative ${isOwn ? 'max-w-[75%] sm:max-w-[60%] md:max-w-[55%]' : 'max-w-[75%] sm:max-w-[60%] md:max-w-[55%]'}`}>
                                   {/* Badge positioned at top right corner of bubble */}
                                   {isOwn && isLastInGroup && getStreakBadge(msg, originalIndex) && (
                                     <div className="absolute -top-2 -right-2 z-10">
@@ -2182,21 +2107,24 @@ function ChatRoom() {
                                   
                                   {/* Message Bubble */}
                                   <div
-                                    className={`relative px-4 py-2.5 rounded-2xl text-base leading-relaxed transition-all ${
+                                    className={`relative px-4 py-3 rounded-2xl text-base leading-relaxed transition-all shadow-sm ${
                                       isOwn
                                         ? isLastInGroup
-                                          ? 'bg-[#007AFF] text-white rounded-br-md'
-                                          : 'bg-[#007AFF] text-white rounded-br-md'
+                                          ? 'text-white rounded-br-sm'
+                                          : 'text-white'
                                         : isLastInGroup
-                                          ? 'bg-[#E5E5EA] text-gray-900 rounded-bl-md'
-                                          : 'bg-[#E5E5EA] text-gray-900 rounded-bl-md'
+                                          ? 'bg-white border-2 border-teal-light text-gray-900 rounded-bl-sm'
+                                          : 'bg-white border-2 border-teal-light text-gray-900'
                                     } ${
-                                      isFlagged ? 'ring-2 ring-orange-300 bg-orange-50' : ''
-                                    } ${isInThread ? 'border-l-4 border-l-[#007AFF] pl-3' : ''}`}
-                                    style={{ fontFamily: "'Inter', sans-serif" }}
+                                      isFlagged ? 'ring-2 ring-orange-300 bg-orange-50 border-orange-200' : ''
+                                    } ${isInThread ? 'border-l-4 border-l-teal-medium pl-3' : ''}`}
+                                    style={{ 
+                                      fontFamily: "'Inter', sans-serif",
+                                      ...(isOwn && !isFlagged && { backgroundColor: '#00908B' })
+                                    }}
                                   >
                                     {isInThread && thread && (
-                                      <div className="text-xs text-[#007AFF] font-semibold mb-1.5 flex items-center gap-1">
+                                      <div className="text-xs text-teal-medium font-semibold mb-1.5 flex items-center gap-1">
                                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                           <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                         </svg>
@@ -2204,7 +2132,21 @@ function ChatRoom() {
                                       </div>
                                     )}
                                     
-                                    <div className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</div>
+                                    <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.text}</div>
+                                    
+                                    {/* Timestamp */}
+                                    {isLastInGroup && (
+                                      <div className={`mt-1.5 text-xs ${isOwn ? 'text-white opacity-75' : 'text-gray-500'}`}>
+                                        {(() => {
+                                          const msgDate = new Date(msg.timestamp);
+                                          return msgDate.toLocaleTimeString('en-US', {
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true,
+                                          });
+                                        })()}
+                                      </div>
+                                    )}
                                     
                                     {isFlagged && (
                                       <div className="mt-2 flex items-center gap-1.5 text-xs text-orange-700 font-medium">
@@ -2227,7 +2169,7 @@ function ChatRoom() {
                                                 addToThread(msg.id || msg.timestamp, threadId);
                                               }
                                             }}
-                                            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-[#007AFF] transition-colors"
+                                            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-teal-medium transition-colors"
                                             title="Add to thread"
                                           >
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -2268,7 +2210,7 @@ function ChatRoom() {
                     );
                   });
                 })()}
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} className="h-2" />
               </div>
               {/* Proactive Coaching Banner - DISABLED: Using unified intervention system instead */}
               {false && draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend && (
@@ -2344,35 +2286,32 @@ function ChatRoom() {
               )}
               <form
                 onSubmit={sendMessage}
-                className="border-t border-gray-200 bg-white px-4 sm:px-6 md:px-8 py-4 flex items-end gap-3 safe-area-inset-bottom"
-                style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+                className="bg-white px-4 sm:px-6 md:px-8 py-2 flex items-end gap-3 safe-area-inset-bottom"
+                style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
               >
-                <div className="flex-1 flex items-center gap-3 bg-gray-100 rounded-3xl px-4 py-2.5 min-h-[44px]">
-                  <button
-                    type="button"
-                    className="p-2 text-gray-500 hover:text-gray-700 transition-colors rounded-full hover:bg-gray-200"
-                    title="Add attachment"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                  </button>
-                  <input
-                    type="text"
+                <div className="flex-1 flex items-center gap-3">
+                  <textarea
                     value={inputMessage}
                     onChange={handleInputChange}
-                    placeholder="iMessage"
-                    className={`flex-1 bg-transparent border-0 text-base focus:outline-none text-gray-900 placeholder-gray-500 min-h-[36px] ${
+                    placeholder="Type a message..."
+                    rows={1}
+                    className={`flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 transition-all text-base text-gray-900 placeholder-gray-500 min-h-[40px] max-h-32 resize-none ${
                       draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend
-                        ? 'placeholder-orange-400'
+                        ? 'border-orange-200 placeholder-orange-400'
                         : ''
                     }`}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage(e);
+                      }
+                    }}
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={!inputMessage.trim()}
-                  className="w-10 h-10 rounded-full bg-[#007AFF] text-white flex items-center justify-center transition-all disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-[#0051D5] shadow-sm"
+                  className="px-5 py-2 bg-teal-dark text-white rounded-xl font-semibold hover:bg-teal-darkest transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-sm hover:shadow-md min-h-[40px] min-w-[40px] flex items-center justify-center"
                   title="Send message"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>

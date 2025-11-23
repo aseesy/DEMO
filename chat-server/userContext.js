@@ -1,91 +1,167 @@
 // User Context Management
 // Stores personal information about users for AI mediator context
+// Supports both PostgreSQL (production) and SQLite (dev/fallback)
 
-const userContexts = new Map(); // username -> user context object
+const dbPostgres = require('./dbPostgres');
+const dbSqlite = require('./db');
+const dbSafe = require('./dbSafe');
+
+// Check if Postgres is configured
+const usePostgres = !!process.env.DATABASE_URL;
 
 /**
  * Get user context by username
  * @param {string} username - The username
- * @returns {Object|null} - User context or null if not found
+ * @returns {Promise<Object|null>} - User context or null if not found
  */
-function getUserContext(username) {
-  return userContexts.get(username.toLowerCase()) || null;
+async function getUserContext(username) {
+  try {
+    if (usePostgres) {
+      const result = await dbPostgres.query('SELECT * FROM user_context WHERE user_id = $1', [username]);
+      if (result.rowCount === 0) return null;
+
+      const row = result.rows[0];
+      return {
+        username: row.user_id,
+        co_parent: row.co_parent,
+        children: row.children || [],
+        contacts: row.contacts || []
+      };
+    } else {
+      // SQLite fallback
+      // Need to get user ID from username first
+      const userResult = await dbSafe.safeSelect('users', { username }, { limit: 1 });
+      const users = dbSafe.parseResult(userResult);
+      if (users.length === 0) return null;
+
+      const userId = users[0].id;
+      const contextResult = await dbSafe.safeSelect('user_context', { user_id: userId }, { limit: 1 });
+      const contexts = dbSafe.parseResult(contextResult);
+
+      if (contexts.length === 0) return null;
+
+      const row = contexts[0];
+      return {
+        username: username,
+        co_parent: row.co_parent_name,
+        children: row.children ? JSON.parse(row.children) : [],
+        contacts: row.contacts ? JSON.parse(row.contacts) : []
+      };
+    }
+  } catch (err) {
+    console.error('Error getting user context:', err);
+    return null;
+  }
 }
 
 /**
  * Set or update user context
  * @param {string} username - The username
  * @param {Object} context - User context data
- * @returns {Object} - The saved context
+ * @returns {Promise<Object>} - The saved context
  */
-function setUserContext(username, context) {
-  const usernameKey = username.toLowerCase();
-  const existing = userContexts.get(usernameKey) || {};
-  
-  const updatedContext = {
-    ...existing,
-    ...context,
-    updatedAt: new Date().toISOString(),
-    username: username // Preserve original username case
-  };
-  
-  userContexts.set(usernameKey, updatedContext);
-  return updatedContext;
+async function setUserContext(username, context) {
+  const coParent = context.co_parent || context.coParentName;
+  const children = context.children || [];
+  const contacts = context.contacts || [];
+
+  try {
+    if (usePostgres) {
+      await dbPostgres.query(
+        `INSERT INTO user_context (user_id, co_parent, children, contacts)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (user_id) DO UPDATE SET
+           co_parent = EXCLUDED.co_parent,
+           children = EXCLUDED.children,
+           contacts = EXCLUDED.contacts,
+           updated_at = NOW()`,
+        [username, coParent || null, children, contacts]
+      );
+    } else {
+      // SQLite fallback
+      const db = await dbSqlite.getDb();
+
+      // Get user ID
+      const userResult = await dbSafe.safeSelect('users', { username }, { limit: 1 });
+      let users = dbSafe.parseResult(userResult);
+      let userId;
+
+      if (users.length === 0) {
+        // Create user if not exists (might happen if context is set before login? unlikely but possible in dev)
+        // Actually, we should probably error if user doesn't exist, but for now let's assume they do or we can't link.
+        console.error(`User ${username} not found for setting context`);
+        throw new Error('User not found');
+      } else {
+        userId = users[0].id;
+      }
+
+      // Check if context exists
+      const contextResult = await dbSafe.safeSelect('user_context', { user_id: userId }, { limit: 1 });
+      const contexts = dbSafe.parseResult(contextResult);
+
+      const childrenJson = JSON.stringify(children);
+      const contactsJson = JSON.stringify(contacts);
+      const now = new Date().toISOString();
+
+      if (contexts.length > 0) {
+        // Update
+        await dbSafe.safeUpdate('user_context',
+          { user_id: userId },
+          {
+            co_parent_name: coParent,
+            children: childrenJson,
+            contacts: contactsJson,
+            updated_at: now
+          }
+        );
+      } else {
+        // Insert
+        await dbSafe.safeInsert('user_context', {
+          user_id: userId,
+          co_parent_name: coParent,
+          children: childrenJson,
+          contacts: contactsJson,
+          updated_at: now
+        });
+      }
+
+      // Save DB to file
+      dbSqlite.saveDatabase();
+    }
+
+    return { username, co_parent: coParent, children, contacts };
+  } catch (err) {
+    console.error('Error setting user context:', err);
+    throw err;
+  }
 }
 
 /**
  * Update specific fields in user context
  * @param {string} username - The username
  * @param {Object} updates - Partial context updates
- * @returns {Object} - The updated context
+ * @returns {Promise<Object>} - The updated context
  */
-function updateUserContext(username, updates) {
-  const usernameKey = username.toLowerCase();
-  const existing = userContexts.get(usernameKey) || { username };
-  
-  const updatedContext = {
-    ...existing,
-    ...updates,
-    updatedAt: new Date().toISOString()
-  };
-  
-  userContexts.set(usernameKey, updatedContext);
-  return updatedContext;
-}
-
-/**
- * Get all user contexts (for admin/debugging)
- * @returns {Object} - Map of all contexts
- */
-function getAllContexts() {
-  return Object.fromEntries(userContexts);
-}
-
-/**
- * Delete user context
- * @param {string} username - The username
- * @returns {boolean} - True if deleted, false if not found
- */
-function deleteUserContext(username) {
-  return userContexts.delete(username.toLowerCase());
+async function updateUserContext(username, updates) {
+  const current = await getUserContext(username) || {};
+  const merged = { ...current, ...updates };
+  return setUserContext(username, merged);
 }
 
 /**
  * Format user context for AI prompt
  * @param {string} username - The username
- * @param {Object} profileData - Optional user profile data from database
- * @returns {string} - Formatted context string
+ * @param {Object} profileData - Optional user profile data
+ * @returns {Promise<string>} - Formatted context string
  */
 async function formatContextForAI(username, profileData = null) {
-  const context = getUserContext(username);
-  
+  const context = await getUserContext(username);
+
   // If profileData provided, use it; otherwise try to fetch from database
   let userProfile = profileData;
   if (!userProfile) {
     try {
-      const db = require('./db');
-      const dbSafe = require('./dbSafe');
-      const dbInstance = await db.getDb();
+      const db = await dbSqlite.getDb();
       const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
       const users = dbSafe.parseResult(userResult);
       if (users.length > 0) {
@@ -97,127 +173,54 @@ async function formatContextForAI(username, profileData = null) {
   }
 
   const parts = [];
-  
-  // Name (from profile)
+
+  // Name
   const displayName = [];
   if (userProfile?.first_name) displayName.push(userProfile.first_name);
   if (userProfile?.last_name) displayName.push(userProfile.last_name);
   if (displayName.length > 0) {
     parts.push(`Name: ${displayName.join(' ')}`);
   }
-  
-  // Co-parent name
-  if (context?.coParentName) {
-    parts.push(`Co-parenting with: ${context.coParentName}`);
+
+  // Co-parent
+  if (context?.co_parent) {
+    parts.push(`Co-parenting with: ${context.co_parent}`);
   }
-  
-  // Separation date
-  if (context?.separationDate) {
-    parts.push(`Separation/Living apart since: ${context.separationDate}`);
-  }
-  
+
   // Children
   if (context?.children && context.children.length > 0) {
     const childrenInfo = context.children.map(child => {
       let info = child.name || 'Child';
-      if (child.birthday) {
-        info += ` (born ${child.birthday})`;
+      if (child.age) {
+        info += ` (age ${child.age})`;
       }
       return info;
     }).join(', ');
     parts.push(`Shared custody of: ${childrenInfo}`);
   }
-  
-  // Parenting philosophy (from profile)
+
+  // Contacts
+  if (context?.contacts && context.contacts.length > 0) {
+    const contactsInfo = context.contacts.map(c => `${c.name} (${c.relationship})`).join(', ');
+    parts.push(`Other contacts: ${contactsInfo}`);
+  }
+
+  // Profile fields
   if (userProfile?.parenting_philosophy) {
     parts.push(`Parenting philosophy: "${userProfile.parenting_philosophy}"`);
   }
-  
-  // Occupation (from profile) - useful for scheduling context
   if (userProfile?.occupation) {
     parts.push(`Occupation: ${userProfile.occupation}`);
   }
-  
-  // Address (from profile) - useful for location context
   if (userProfile?.address) {
     parts.push(`Location: ${userProfile.address}`);
   }
-  
-  // Personal growth goals (from profile)
   if (userProfile?.personal_growth) {
     parts.push(`Personal growth focus: ${userProfile.personal_growth}`);
   }
-  
-  // Concerns
-  if (context?.concerns && context.concerns.length > 0) {
-    parts.push(`Concerns: ${context.concerns.join(', ')}`);
-  }
-  
-  // New partner
-  if (context?.newPartner) {
-    let partnerInfo = `New partner: ${context.newPartner.name || 'Unknown'}`;
-    if (context.newPartner.livesWith !== undefined) {
-      partnerInfo += context.newPartner.livesWith ? ' (lives with them)' : ' (does not live with them)';
-    }
-    parts.push(partnerInfo);
-  }
-  
-  return parts.length > 0 
+
+  return parts.length > 0
     ? `${username}${displayName.length > 0 ? ` (${displayName.join(' ')})` : ''}: ${parts.join('; ')}`
-    : `No specific context available for ${username}.`;
-}
-
-/**
- * Format user context for AI prompt (synchronous version for backward compatibility)
- * @param {string} username - The username
- * @returns {string} - Formatted context string
- */
-function formatContextForAISync(username) {
-  const context = getUserContext(username);
-  if (!context) {
-    return `No context available for ${username}.`;
-  }
-
-  const parts = [];
-  
-  // Co-parent name
-  if (context.coParentName) {
-    parts.push(`Co-parenting with: ${context.coParentName}`);
-  }
-  
-  // Separation date
-  if (context.separationDate) {
-    parts.push(`Separation/Living apart since: ${context.separationDate}`);
-  }
-  
-  // Children
-  if (context.children && context.children.length > 0) {
-    const childrenInfo = context.children.map(child => {
-      let info = child.name || 'Child';
-      if (child.birthday) {
-        info += ` (born ${child.birthday})`;
-      }
-      return info;
-    }).join(', ');
-    parts.push(`Shared custody of: ${childrenInfo}`);
-  }
-  
-  // Concerns
-  if (context.concerns && context.concerns.length > 0) {
-    parts.push(`Concerns: ${context.concerns.join(', ')}`);
-  }
-  
-  // New partner
-  if (context.newPartner) {
-    let partnerInfo = `New partner: ${context.newPartner.name || 'Unknown'}`;
-    if (context.newPartner.livesWith !== undefined) {
-      partnerInfo += context.newPartner.livesWith ? ' (lives with them)' : ' (does not live with them)';
-    }
-    parts.push(partnerInfo);
-  }
-  
-  return parts.length > 0 
-    ? `${username}'s context: ${parts.join('; ')}`
     : `No specific context available for ${username}.`;
 }
 
@@ -225,9 +228,5 @@ module.exports = {
   getUserContext,
   setUserContext,
   updateUserContext,
-  getAllContexts,
-  deleteUserContext,
-  formatContextForAI,
-  formatContextForAISync // Backward compatibility
+  formatContextForAI
 };
-

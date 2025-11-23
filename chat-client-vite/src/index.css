@@ -89,9 +89,22 @@ body {
   }
 }
 
-/* Ensure body respects safe areas */
-body {
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+/* Ensure body respects safe areas - only apply on devices that need it */
+@supports (padding: max(0px)) {
+  body {
+    /* Only apply safe area padding if there's actually a safe area */
+    padding-top: max(0px, env(safe-area-inset-top));
+    padding-right: max(0px, env(safe-area-inset-right));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+    padding-left: max(0px, env(safe-area-inset-left));
+  }
+  
+  /* On smaller screens without notches, remove top padding */
+  @media (max-width: 768px) {
+    body {
+      padding-top: 0;
+    }
+  }
 }
 
 /* Crisp image rendering for logos and SVGs */

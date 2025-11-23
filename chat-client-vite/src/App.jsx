@@ -4,8 +4,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ChatRoom from './ChatRoom.jsx';
 import { LoginSignup } from './components/LoginSignup.jsx';
 import { GoogleOAuthCallback } from './components/GoogleOAuthCallback.jsx';
-// import { UIShowcase } from './components/UIShowcase.jsx'; // Dev only - disabled in production
+import { UIShowcase } from './components/UIShowcase.jsx'; // Design system showcase
 import { usePWA } from './hooks/usePWA.js';
+import { MediatorProvider } from './context/MediatorContext.jsx';
 
 function App() {
   // Initialize PWA - registers Service Worker and enables push notifications
@@ -17,21 +18,23 @@ function App() {
   }, [pwa]);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Root route - shows landing or dashboard based on auth */}
-        <Route path="/" element={<ChatRoom />} />
+    <MediatorProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Root route - shows landing or dashboard based on auth */}
+          <Route path="/" element={<ChatRoom />} />
 
-        {/* Sign in route - dedicated login/signup page */}
-        <Route path="/signin" element={<LoginSignup />} />
+          {/* Sign in route - dedicated login/signup page */}
+          <Route path="/signin" element={<LoginSignup />} />
 
-        {/* Google OAuth callback route */}
-        <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
+          {/* Google OAuth callback route */}
+          <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
 
-        {/* UI Component Showcase - Design System Documentation */}
-        {/* <Route path="/ui-showcase" element={<UIShowcase />} /> */} {/* Dev only - disabled in production */}
-      </Routes>
-    </BrowserRouter>
+          {/* UI Component Showcase - Design System Documentation */}
+          <Route path="/ui-showcase" element={<UIShowcase />} />
+        </Routes>
+      </BrowserRouter>
+    </MediatorProvider>
   );
 }
 

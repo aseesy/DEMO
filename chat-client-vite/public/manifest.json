@@ -1,44 +1,22 @@
 {
-  "name": "LiaiZen - Co-Parenting Chat",
-  "short_name": "LiaiZen",
-  "description": "A secure co-parenting communication platform",
+  "name": "Chat Client",
+  "short_name": "Chat",
+  "description": "A progressive web app for real‑time chat",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#275559",
-  "theme_color": "#275559",
-  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#4DA8B0",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "icon-512.png",
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
-  ],
-  "categories": ["communication", "productivity", "social"],
-  "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "Chat",
-      "short_name": "Chat",
-      "description": "Open chat room",
-      "url": "/?shortcut=chat",
-      "icons": [
-        {
-          "src": "icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    }
-  ],
-  "gcm_sender_id": "103953800507",
-  "prefer_related_applications": false
+  ]
 }
-

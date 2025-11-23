@@ -21,7 +21,7 @@ if (process.env.DB_PATH) {
     }
   } else {
     console.log(`✅ Database directory exists: ${dbDir}`);
-    
+
     // Check if directory is writable
     try {
       const testFile = path.join(dbDir, '.write-test');
@@ -42,7 +42,7 @@ let db = null;
 // Initialize database
 async function initDatabase() {
   const SQL = await initSqlJs();
-  
+
   // Load existing database or create new one
   let buffer;
   try {
@@ -50,7 +50,7 @@ async function initDatabase() {
     db = new SQL.Database(buffer);
     const fileSize = (buffer.length / 1024).toFixed(2);
     console.log(`✅ Database loaded from file: ${DB_PATH} (${fileSize} KB)`);
-    
+
     // Check message count
     try {
       const msgCount = db.exec("SELECT COUNT(*) as count FROM messages");
@@ -125,7 +125,7 @@ async function initDatabase() {
       }
     }
   }
-  
+
   // Update password_hash to be nullable (for OAuth users)
   try {
     // Try to insert a user with null password_hash - if it fails, column needs to be updated
@@ -172,9 +172,22 @@ async function initDatabase() {
       concerns TEXT,
       new_partner TEXT,
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      contacts TEXT,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+
+  // Add contacts column to user_context if it doesn't exist (migration)
+  try {
+    db.exec('SELECT contacts FROM user_context LIMIT 1');
+  } catch (err) {
+    try {
+      db.run('ALTER TABLE user_context ADD COLUMN contacts TEXT');
+      console.log('✅ Added contacts column to user_context');
+    } catch (alterErr) {
+      console.warn('Could not add contacts column:', alterErr.message);
+    }
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS messages (
@@ -630,7 +643,7 @@ function saveDatabase() {
     try {
       // Wait for database to be ready
       await dbPromise;
-      
+
       if (!db) {
         console.error('❌ Database not available for saving');
         return;
@@ -639,18 +652,18 @@ function saveDatabase() {
       isSaving = true;
       const data = db.export();
       const buffer = Buffer.from(data);
-      
+
       // Ensure directory exists
       const dbDir = path.dirname(DB_PATH);
       if (!fs.existsSync(dbDir)) {
         fs.mkdirSync(dbDir, { recursive: true });
       }
-      
+
       fs.writeFileSync(DB_PATH, buffer);
       isSaving = false;
       const fileSize = (buffer.length / 1024).toFixed(2);
       console.log(`✅ Database saved to: ${DB_PATH} (${fileSize} KB)`);
-      
+
       // Verify file was written
       if (fs.existsSync(DB_PATH)) {
         const stats = fs.statSync(DB_PATH);
@@ -669,7 +682,7 @@ function saveDatabase() {
       } catch (accessErr) {
         console.error(`   Directory writable: false - ${accessErr.message}`);
       }
-  }
+    }
   }, 100); // Batch writes every 100ms
 }
 

@@ -73,13 +73,13 @@ app.use(cookieParser());
 // Error handler for JSON payload too large (must be after body parsers)
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: 'Request payload too large or invalid JSON. Please reduce the size of your text fields.',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
   if (err.type === 'entity.too.large') {
-    return res.status(413).json({ 
+    return res.status(413).json({
       error: 'Request payload too large. Please reduce the size of your text fields.',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
@@ -103,12 +103,12 @@ if (!allowedOrigins.includes(serverOrigin)) {
 // Helper function to check if origin is allowed (supports regex patterns)
 function isOriginAllowed(origin, allowedList) {
   if (!origin) return true; // Allow requests with no origin
-  
+
   // Check exact matches
   if (allowedList.includes(origin) || allowedList.includes('*')) {
     return true;
   }
-  
+
   // Check regex patterns (for Vercel preview domains: *.vercel.app)
   for (const allowed of allowedList) {
     if (allowed.includes('*')) {
@@ -120,7 +120,7 @@ function isOriginAllowed(origin, allowedList) {
       }
     }
   }
-  
+
   return false;
 }
 
@@ -129,9 +129,14 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
 
+    // Allow Figma plugins (they use origin "null" as a string)
+    if (origin === 'null') {
+      return callback(null, true);
+    }
+
     // Allow same-origin requests (for admin page)
-    if (origin.startsWith(`http://localhost:${serverPort}`) || 
-        origin.startsWith(`https://localhost:${serverPort}`)) {
+    if (origin.startsWith(`http://localhost:${serverPort}`) ||
+      origin.startsWith(`https://localhost:${serverPort}`)) {
       return callback(null, true);
     }
 
@@ -141,8 +146,8 @@ app.use(cors({
     } else {
       // For development, allow localhost and local network IPs from any port
       if (origin.startsWith('http://localhost:') ||
-          origin.startsWith('http://127.0.0.1:') ||
-          origin.startsWith('http://192.168.')) {
+        origin.startsWith('http://127.0.0.1:') ||
+        origin.startsWith('http://192.168.')) {
         callback(null, true);
       } else {
         console.warn(`CORS blocked origin: ${origin}`);
@@ -150,7 +155,11 @@ app.use(cors({
       }
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Figma-Token', 'X-Requested-With'],
+  exposedHeaders: ['Content-Type'],
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 }));
 
 // Rate limiting - general API protection (exclude auth endpoints)
@@ -178,27 +187,28 @@ app.use(limiter);
 // Apply auth-specific rate limiting to auth endpoints
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/signup', authLimiter);
+app.use('/api/userContext', require('./routes/userContext'));
 
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
-      
+
       // Allow same-origin requests
-      if (origin.startsWith(`http://localhost:${serverPort}`) || 
-          origin.startsWith(`https://localhost:${serverPort}`)) {
+      if (origin.startsWith(`http://localhost:${serverPort}`) ||
+        origin.startsWith(`https://localhost:${serverPort}`)) {
         return callback(null, true);
       }
-      
+
       // Check if origin is allowed (supports wildcard patterns for Vercel)
       if (isOriginAllowed(origin, allowedOrigins)) {
         callback(null, true);
       } else {
         // For development, allow localhost and local network IPs from any port
         if (origin.startsWith('http://localhost:') ||
-            origin.startsWith('http://127.0.0.1:') ||
-            origin.startsWith('http://192.168.')) {
+          origin.startsWith('http://127.0.0.1:') ||
+          origin.startsWith('http://192.168.')) {
           callback(null, true);
         } else {
           console.warn(`Socket.io CORS blocked origin: ${origin}`);
@@ -228,7 +238,7 @@ const MAX_MESSAGE_HISTORY = 50;
     const recentMessages = await messageStore.getRecentMessages(MAX_MESSAGE_HISTORY);
     messageHistory.push(...recentMessages);
     console.log(`✅ Loaded ${recentMessages.length} messages from database`);
-    
+
     // Clean old messages periodically (keep last 1000)
     setInterval(async () => {
       try {
@@ -251,16 +261,16 @@ const MAX_MESSAGE_LENGTH = 500;
 async function autoCompleteOnboardingTasks(userId) {
   try {
     const db = await require('./db').getDb();
-    
+
     // Get user profile to check if profile is complete
     const userResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) return;
-    
+
     const user = users[0];
     const now = new Date().toISOString();
-    
+
     // Check if profile is complete (has filled out multiple profile fields)
     // Count how many profile fields are filled out
     const filledFields = [
@@ -272,47 +282,47 @@ async function autoCompleteOnboardingTasks(userId) {
       user.personal_growth,
       user.email
     ].filter(field => field && field.trim().length > 0).length;
-    
+
     // Profile is considered complete if at least 2 fields are filled out
     const profileComplete = filledFields >= 2;
-    
+
     // Check if co-parent exists
     const coparentResult = await dbSafe.safeSelect('contacts', {
       user_id: userId
     }, {});
     const allContacts = dbSafe.parseResult(coparentResult);
-    const hasCoparent = allContacts.some(c => 
-      c.relationship === 'My Co-Parent' || 
-      c.relationship === 'co-parent' || 
+    const hasCoparent = allContacts.some(c =>
+      c.relationship === 'My Co-Parent' ||
+      c.relationship === 'co-parent' ||
       c.relationship === "My Partner's Co-Parent"
     );
-    
+
     // Check if children exist
-    const hasChildren = allContacts.some(c => 
-      c.relationship === 'My Child' || 
+    const hasChildren = allContacts.some(c =>
+      c.relationship === 'My Child' ||
       c.relationship === "My Partner's Child"
     );
-    
+
     // Get all onboarding tasks for this user
     const onboardingTaskTitles = [
       'Complete Your Profile',
       'Add Your Co-parent',
       'Add Your Children'
     ];
-    
+
     for (const taskTitle of onboardingTaskTitles) {
       const taskResult = await dbSafe.safeSelect('tasks', {
         user_id: userId,
         title: taskTitle,
         status: 'open'
       }, { limit: 1 });
-      
+
       const tasks = dbSafe.parseResult(taskResult);
-      
+
       if (tasks.length > 0) {
         const task = tasks[0];
         let shouldComplete = false;
-        
+
         if (taskTitle === 'Complete Your Profile' && profileComplete) {
           shouldComplete = true;
         } else if (taskTitle === 'Add Your Co-parent' && hasCoparent) {
@@ -320,19 +330,19 @@ async function autoCompleteOnboardingTasks(userId) {
         } else if (taskTitle === 'Add Your Children' && hasChildren) {
           shouldComplete = true;
         }
-        
+
         if (shouldComplete) {
           await dbSafe.safeUpdate('tasks', {
             status: 'completed',
             completed_at: now,
             updated_at: now
           }, { id: task.id });
-          
+
           console.log(`✅ Auto-completed onboarding task: ${taskTitle} for user ${userId}`);
         }
       }
     }
-    
+
     require('./db').saveDatabase();
   } catch (error) {
     console.error('Error in autoCompleteOnboardingTasks:', error);
@@ -343,9 +353,9 @@ async function autoCompleteOnboardingTasks(userId) {
 async function verifyAuth(req, res, next) {
   try {
     // Check for token in cookie or Authorization header
-    const token = req.cookies.auth_token || 
-                  (req.headers.authorization && req.headers.authorization.replace('Bearer ', ''));
-    
+    const token = req.cookies.auth_token ||
+      (req.headers.authorization && req.headers.authorization.replace('Bearer ', ''));
+
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -389,7 +399,7 @@ async function addToMessageHistory(message, isPrivate = false) {
     if (messageHistory.length > MAX_MESSAGE_HISTORY) {
       messageHistory.shift();
     }
-    
+
     // Save to database (async, non-blocking)
     messageStore.saveMessage(message).catch(err => {
       console.error('Error saving message to database:', err);
@@ -481,7 +491,7 @@ io.on('connection', (socket) => {
 
       // Get room members
       const members = await roomManager.getRoomMembers(roomId);
-      
+
       // Ensure contacts exist for all users in shared rooms
       if (members.length > 1) {
         console.log(`🔗 Ensuring contacts for room ${roomId} with ${members.length} members`);
@@ -514,7 +524,7 @@ io.on('connection', (socket) => {
             console.warn('Error parsing original_message:', err);
           }
         }
-        
+
         let reactions = null;
         if (msg.reactions) {
           try {
@@ -523,7 +533,7 @@ io.on('connection', (socket) => {
             console.warn('Error parsing reactions:', err);
           }
         }
-        
+
         let userFlaggedBy = null;
         if (msg.user_flagged_by) {
           try {
@@ -532,7 +542,7 @@ io.on('connection', (socket) => {
             console.warn('Error parsing user_flagged_by:', err);
           }
         }
-        
+
         roomHistory.push({
           id: msg.id,
           type: msg.type,
@@ -655,7 +665,7 @@ io.on('connection', (socket) => {
         limit: 5
       });
       const flags = dbSafe.parseResult(flagsResult);
-      
+
       // Get the actual flagged messages
       const flaggedMessages = [];
       if (flags.length > 0) {
@@ -815,7 +825,7 @@ io.on('connection', (socket) => {
           const context = aiMediator.getContext();
           const participantUsernames = Array.from(activeUsers.values()).map(u => u.username);
           console.log('🤖 AI Mediator: Starting analysis for message:', cleanText.substring(0, 30));
-          
+
           // Get existing contacts with full information for AI context
           let existingContacts = [];
           let contactContextForAI = null;
@@ -827,11 +837,11 @@ io.on('connection', (socket) => {
               const contactsResult = await dbSafe.safeSelect('contacts', { user_id: users[0].id });
               const fullContacts = dbSafe.parseResult(contactsResult);
               existingContacts = fullContacts.map(c => c.contact_name);
-              
+
               // Get contacts for all participants to identify shared children
               const allParticipantContacts = new Map(); // username -> contacts array
               allParticipantContacts.set(user.username.toLowerCase(), fullContacts);
-              
+
               // Get contacts for other participants in the room
               for (const participantUsername of participantUsernames) {
                 if (participantUsername.toLowerCase() !== user.username.toLowerCase()) {
@@ -848,24 +858,24 @@ io.on('connection', (socket) => {
                   }
                 }
               }
-              
+
               // Identify shared children (children that appear in both co-parents' contacts)
               const sharedChildren = [];
               const senderContacts = allParticipantContacts.get(user.username.toLowerCase()) || [];
-              const senderChildren = senderContacts.filter(c => 
+              const senderChildren = senderContacts.filter(c =>
                 c.relationship && (
                   c.relationship.toLowerCase().includes('child') ||
                   c.relationship.toLowerCase().includes('son') ||
                   c.relationship.toLowerCase().includes('daughter')
                 )
               );
-              
+
               for (const senderChild of senderChildren) {
                 const childName = senderChild.contact_name.toLowerCase();
                 // Check if this child appears in any other participant's contacts
                 for (const [participantUsername, participantContacts] of allParticipantContacts.entries()) {
                   if (participantUsername !== user.username.toLowerCase()) {
-                    const hasChild = participantContacts.some(c => 
+                    const hasChild = participantContacts.some(c =>
                       c.contact_name.toLowerCase() === childName &&
                       c.relationship && (
                         c.relationship.toLowerCase().includes('child') ||
@@ -886,7 +896,7 @@ io.on('connection', (socket) => {
                   }
                 }
               }
-              
+
               // Format contacts with relationships and context for AI mediator
               if (fullContacts.length > 0) {
                 const contactInfo = fullContacts.map(contact => {
@@ -895,7 +905,7 @@ io.on('connection', (socket) => {
                   if (contact.relationship) {
                     parts.push(`(relationship: ${contact.relationship})`);
                   }
-                  
+
                   // If this is a child contact, check if it's shared with co-parent
                   const isChild = contact.relationship && (
                     contact.relationship.toLowerCase().includes('child') ||
@@ -903,7 +913,7 @@ io.on('connection', (socket) => {
                     contact.relationship.toLowerCase().includes('daughter')
                   );
                   if (isChild) {
-                    const sharedChild = sharedChildren.find(sc => 
+                    const sharedChild = sharedChildren.find(sc =>
                       sc.name.toLowerCase() === contact.contact_name.toLowerCase()
                     );
                     if (sharedChild) {
@@ -912,7 +922,7 @@ io.on('connection', (socket) => {
                       parts.push(`[Child of co-parent: ${contact.other_parent}]`);
                     }
                   }
-                  
+
                   if (contact.notes) {
                     parts.push(`- ${contact.notes}`);
                   }
@@ -943,20 +953,20 @@ io.on('connection', (socket) => {
                   }
                   return parts.join(' ');
                 }).join('\n');
-                
+
                 // Add shared children summary at the top
                 let sharedChildrenInfo = '';
                 if (sharedChildren.length > 0) {
-                  const sharedChildrenList = sharedChildren.map(sc => 
+                  const sharedChildrenList = sharedChildren.map(sc =>
                     `${sc.name} (shared with co-parent: ${sc.coParent})`
                   ).join(', ');
                   sharedChildrenInfo = `\n\nIMPORTANT - SHARED CHILDREN (these children belong to both co-parents):\n${sharedChildrenList}\n\nWhen either co-parent mentions these children's names, they are referring to their shared child. Use this context to understand the relationship dynamic.\n`;
                 }
-                
+
                 contactContextForAI = `Contacts and Relationships:${sharedChildrenInfo}\n${contactInfo}`;
               } else if (sharedChildren.length > 0) {
                 // Even if no contacts, show shared children if found
-                const sharedChildrenList = sharedChildren.map(sc => 
+                const sharedChildrenList = sharedChildren.map(sc =>
                   `${sc.name} (shared with co-parent: ${sc.coParent})`
                 ).join(', ');
                 contactContextForAI = `IMPORTANT - SHARED CHILDREN (these children belong to both co-parents):\n${sharedChildrenList}\n\nWhen either co-parent mentions these children's names, they are referring to their shared child. Use this context to understand the relationship dynamic.`;
@@ -965,7 +975,7 @@ io.on('connection', (socket) => {
           } catch (contactErr) {
             console.error('Error fetching contacts for AI context:', contactErr);
           }
-          
+
           // Get flagged message context for AI mediator (recent flags to learn from)
           let flaggedMessagesContext = null;
           try {
@@ -974,7 +984,7 @@ io.on('connection', (socket) => {
             const users = dbSafe.parseResult(userResult);
             if (users.length > 0) {
               const userId = users[0].id;
-              
+
               // Get recent flags from this user (last 10 flags)
               const flagsResult = await dbSafe.safeSelect('message_flags', {
                 flagged_by_username: user.username
@@ -983,9 +993,9 @@ io.on('connection', (socket) => {
                 orderDirection: 'DESC',
                 limit: 10
               });
-              
+
               const recentFlags = dbSafe.parseResult(flagsResult);
-              
+
               if (recentFlags.length > 0) {
                 // Get the actual messages for these flags
                 const messageIds = recentFlags.map(f => f.message_id).filter(Boolean);
@@ -993,9 +1003,9 @@ io.on('connection', (socket) => {
                   const flaggedMessagesResult = await dbSafe.safeSelect('messages', {
                     id: messageIds
                   });
-                  
+
                   const flaggedMessages = dbSafe.parseResult(flaggedMessagesResult);
-                  
+
                   // Create a map of message_id -> flag reason
                   const flagReasonsMap = new Map();
                   recentFlags.forEach(flag => {
@@ -1003,7 +1013,7 @@ io.on('connection', (socket) => {
                       flagReasonsMap.set(flag.message_id, flag.reason);
                     }
                   });
-                  
+
                   // Format flagged messages with reasons
                   const flaggedContext = flaggedMessages
                     .filter(msg => flagReasonsMap.has(msg.id))
@@ -1013,7 +1023,7 @@ io.on('connection', (socket) => {
                       return `Message: "${msg.text}" - Flagged because: ${reason}`;
                     })
                     .join('\n');
-                  
+
                   if (flaggedContext) {
                     flaggedMessagesContext = `\n\nLEARNING FROM PREVIOUS FLAGS (what this user finds problematic):\n${flaggedContext}\n\nUse this context to better understand what types of messages need intervention for this user.`;
                   }
@@ -1032,7 +1042,7 @@ io.on('connection', (socket) => {
             const users = dbSafe.parseResult(userResult);
             if (users.length > 0) {
               const userId = users[0].id;
-              
+
               // Get active/open tasks (recent and relevant)
               const activeTasksResult = await dbSafe.safeSelect('tasks', {
                 user_id: userId,
@@ -1042,9 +1052,9 @@ io.on('connection', (socket) => {
                 orderDirection: 'ASC',
                 limit: 5
               });
-              
+
               const activeTasks = dbSafe.parseResult(activeTasksResult);
-              
+
               // Also get recently completed tasks for context
               const recentCompletedResult = await dbSafe.safeSelect('tasks', {
                 user_id: userId,
@@ -1054,12 +1064,12 @@ io.on('connection', (socket) => {
                 orderDirection: 'DESC',
                 limit: 3
               });
-              
+
               const recentCompleted = dbSafe.parseResult(recentCompletedResult);
-              
+
               if (activeTasks.length > 0 || recentCompleted.length > 0) {
                 const taskParts = [];
-                
+
                 if (activeTasks.length > 0) {
                   const activeTaskList = activeTasks.map(task => {
                     let taskInfo = task.title;
@@ -1085,12 +1095,12 @@ io.on('connection', (socket) => {
                   }).join('\n  - ');
                   taskParts.push(`Active parenting tasks:\n  - ${activeTaskList}`);
                 }
-                
+
                 if (recentCompleted.length > 0) {
                   const completedList = recentCompleted.map(task => task.title).join(', ');
                   taskParts.push(`Recently completed: ${completedList}`);
                 }
-                
+
                 taskContextForAI = taskParts.join('\n\n');
               }
             }
@@ -1116,18 +1126,18 @@ io.on('connection', (socket) => {
             taskContextForAI,
             flaggedMessagesContext
           );
-          
+
           // Check for names in message (only if message passed moderation)
           let contactSuggestion = null;
           if (!intervention) {
             try {
               const detectedNames = await aiMediator.detectNamesInMessage(cleanText, existingContacts, participantUsernames);
               console.log(`📝 Detected names in message:`, detectedNames);
-              
+
               if (detectedNames.length > 0) {
                 // Check if there's already a pending suggestion
                 let hasPendingSuggestion = socket.data && socket.data.pendingContactSuggestion;
-                
+
                 // Check if pending suggestion is too old (more than 5 minutes) - expire it
                 const SUGGESTION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
                 if (hasPendingSuggestion && socket.data.pendingContactSuggestion.timestamp) {
@@ -1138,7 +1148,7 @@ io.on('connection', (socket) => {
                     hasPendingSuggestion = false; // Treat as if no pending suggestion
                   }
                 }
-                
+
                 if (hasPendingSuggestion) {
                   // If there's already a pending suggestion, queue additional names
                   if (!socket.data.pendingNamesQueue) {
@@ -1147,8 +1157,8 @@ io.on('connection', (socket) => {
                   // Add all detected names to queue (excluding the one already pending)
                   const pendingName = socket.data.pendingContactSuggestion.detectedName.toLowerCase();
                   detectedNames.forEach(name => {
-                    if (name.toLowerCase() !== pendingName && 
-                        !socket.data.pendingNamesQueue.some(q => q.toLowerCase() === name.toLowerCase())) {
+                    if (name.toLowerCase() !== pendingName &&
+                      !socket.data.pendingNamesQueue.some(q => q.toLowerCase() === name.toLowerCase())) {
                       socket.data.pendingNamesQueue.push(name);
                     }
                   });
@@ -1174,8 +1184,8 @@ io.on('connection', (socket) => {
                           socket.data.pendingNamesQueue = [];
                         }
                         detectedNames.forEach(name => {
-                          if (name.toLowerCase() !== queuedName.toLowerCase() && 
-                              !socket.data.pendingNamesQueue.some(q => q.toLowerCase() === name.toLowerCase())) {
+                          if (name.toLowerCase() !== queuedName.toLowerCase() &&
+                            !socket.data.pendingNamesQueue.some(q => q.toLowerCase() === name.toLowerCase())) {
                             socket.data.pendingNamesQueue.push(name);
                           }
                         });
@@ -1194,7 +1204,7 @@ io.on('connection', (socket) => {
                         messageContext: contactSuggestion.messageContext,
                         timestamp: Date.now()
                       };
-                      
+
                       // Store remaining names in queue for later
                       if (detectedNames.length > 1) {
                         if (!socket.data.pendingNamesQueue) {
@@ -1211,7 +1221,7 @@ io.on('connection', (socket) => {
               console.error('Error detecting names:', nameErr);
             }
           }
-          
+
           if (intervention) {
             // Handle different intervention types
             if (intervention.type === 'ai_intervention') {
@@ -1256,7 +1266,7 @@ io.on('connection', (socket) => {
             } else if (intervention.type === 'ai_comment') {
               // COMMENT: Helpful observation - show to everyone in room
               console.log(`💬 AI adding contextual comment - broadcasting to room`);
-              
+
               // First, broadcast the original message normally
               messageStore.saveMessage({
                 ...message,
@@ -1283,7 +1293,7 @@ io.on('connection', (socket) => {
               });
 
               io.to(user.roomId).emit('new_message', aiComment);
-              
+
               console.log(`✅ AI commented - visible to all in room`);
 
               // Extract relationship insights asynchronously (non-blocking)
@@ -1322,7 +1332,7 @@ io.on('connection', (socket) => {
 
             // Broadcast to room only
             io.to(user.roomId).emit('new_message', message);
-            
+
             // If we detected a name, send contact suggestion
             if (contactSuggestion) {
               const suggestionMessage = {
@@ -1334,7 +1344,7 @@ io.on('connection', (socket) => {
                 timestamp: new Date().toISOString(),
                 roomId: user.roomId
               };
-              
+
               // Send suggestion only to the user who mentioned the name
               socket.emit('new_message', suggestionMessage);
               console.log(`💡 Contact suggestion sent for: ${contactSuggestion.detectedName}`);
@@ -1361,7 +1371,7 @@ io.on('connection', (socket) => {
           // If AI fails, allow the message through (fail open) rather than blocking everything
           // This prevents the AI system from breaking normal communication
           console.log(`⚠️ AI moderation failed for ${user.username} - allowing message through (fail open)`);
-          
+
           // Broadcast message normally if AI fails
           messageStore.saveMessage({
             ...message,
@@ -1372,7 +1382,7 @@ io.on('connection', (socket) => {
 
           // Broadcast to room
           io.to(user.roomId).emit('new_message', message);
-          
+
           if (aiError.stack) {
             console.error('Stack trace:', aiError.stack);
           }
@@ -1553,7 +1563,7 @@ io.on('connection', (socket) => {
       `;
       const reactionsResult = db.exec(reactionsQuery);
       const reactionsData = dbSafe.parseResult(reactionsResult);
-      
+
       let reactions = {};
       if (reactionsData.length > 0 && reactionsData[0].reactions) {
         try {
@@ -1567,7 +1577,7 @@ io.on('connection', (socket) => {
       if (!reactions[emoji]) {
         reactions[emoji] = [];
       }
-      
+
       // Toggle reaction - if user already reacted, remove it; otherwise add it
       const userIndex = reactions[emoji].indexOf(user.username);
       if (userIndex > -1) {
@@ -1853,7 +1863,7 @@ io.on('connection', (socket) => {
 
       // Check if user is already flagging this message
       const isCurrentlyFlagged = flaggedBy.includes(user.username);
-      
+
       // Toggle flag - if user already flagged, remove it; otherwise add it
       if (isCurrentlyFlagged) {
         // Unflagging - remove from array
@@ -1861,35 +1871,35 @@ io.on('connection', (socket) => {
       } else {
         // Flagging - add to array
         flaggedBy.push(user.username);
-        
+
         // If reason is provided, save it to the co-parent's contact profile
         if (reason && reason.trim()) {
           try {
             // Get the sender's username (co-parent)
             const senderUsername = message.username;
-            
+
             // Get current user's ID
             const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
             const users = dbSafe.parseResult(userResult);
-            
+
             if (users.length > 0) {
               const userId = users[0].id;
-              
+
               // Find the co-parent contact (case-insensitive)
               const contactResult = await dbSafe.safeSelect('contacts', {
                 user_id: userId,
                 relationship: 'co-parent'
               }, { limit: 100 }); // Get all co-parent contacts to check
-              
+
               const contacts = dbSafe.parseResult(contactResult);
-              
+
               // Find contact with matching name (case-insensitive)
-              const contact = contacts.find(c => 
+              const contact = contacts.find(c =>
                 c.contact_name && c.contact_name.toLowerCase() === senderUsername.toLowerCase()
               );
-              
+
               if (contact) {
-                
+
                 // Get existing triggering reasons
                 let triggeringReasons = [];
                 if (contact.triggering_reasons) {
@@ -1899,7 +1909,7 @@ io.on('connection', (socket) => {
                     triggeringReasons = [];
                   }
                 }
-                
+
                 // Add new triggering reason with timestamp and message context
                 const triggeringReason = {
                   reason: reason.trim(),
@@ -1907,20 +1917,20 @@ io.on('connection', (socket) => {
                   timestamp: new Date().toISOString(),
                   messageId: messageId
                 };
-                
+
                 triggeringReasons.push(triggeringReason);
-                
+
                 // Keep only last 20 triggering reasons to avoid excessive data
                 if (triggeringReasons.length > 20) {
                   triggeringReasons = triggeringReasons.slice(-20);
                 }
-                
+
                 // Update contact with triggering reasons
                 await dbSafe.safeUpdate('contacts', {
                   triggering_reasons: JSON.stringify(triggeringReasons),
                   updated_at: new Date().toISOString()
                 }, { id: contact.id });
-                
+
                 console.log(`💾 Saved triggering reason for ${senderUsername} from ${user.username}: ${reason}`);
               } else {
                 console.log(`⚠️ Co-parent contact not found for ${senderUsername} - cannot save triggering reason`);
@@ -1974,7 +1984,7 @@ io.on('connection', (socket) => {
   socket.on('contact_suggestion_response', async ({ response, detectedName, relationship }) => {
     try {
       console.log('📥 Received contact_suggestion_response:', { response, detectedName, relationship });
-      
+
       const user = activeUsers.get(socket.id);
       if (!user) {
         console.error('❌ User not found for contact suggestion response');
@@ -1989,7 +1999,7 @@ io.on('connection', (socket) => {
 
       const pending = socket.data.pendingContactSuggestion;
       console.log('📋 Processing pending suggestion:', pending);
-      
+
       if (response === 'yes') {
         if (!relationship) {
           console.log('⚠️ No relationship provided, asking for relationship');
@@ -2013,16 +2023,16 @@ io.on('connection', (socket) => {
             relationship: relationship,
             userId: user.username
           });
-          
+
           const db = await require('./db').getDb();
           const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
           const users = dbSafe.parseResult(userResult);
-          
+
           if (users.length === 0) {
             console.error('❌ User not found in database:', user.username);
             return socket.emit('error', { message: 'User not found in database' });
           }
-          
+
           const now = new Date().toISOString();
           const contactId = await dbSafe.safeInsert('contacts', {
             user_id: users[0].id,
@@ -2043,57 +2053,57 @@ io.on('connection', (socket) => {
             updated_at: now
           });
           require('./db').saveDatabase();
-          
+
           console.log('✅ Contact created successfully:', {
             contactId,
             contactName: pending.detectedName,
             userId: users[0].id
           });
 
-            const successMessage = {
-              id: `contact-added-${Date.now()}`,
-              type: 'system',
-              username: 'AI Assistant',
-              text: `✅ ${pending.detectedName} has been added to your contacts!`,
-              timestamp: new Date().toISOString()
-            };
-            socket.emit('new_message', successMessage);
-            
-            // Clear pending suggestion
-            delete socket.data.pendingContactSuggestion;
-            
-            // Process next name in queue if available
-            if (socket.data && socket.data.pendingNamesQueue && socket.data.pendingNamesQueue.length > 0) {
-              const nextName = socket.data.pendingNamesQueue.shift();
-              console.log(`📝 Processing queued name: ${nextName}`);
-              
-              setTimeout(async () => {
-                try {
-                  const contactSuggestion = await aiMediator.generateContactSuggestion(nextName, 'Mentioned in chat');
-                  if (contactSuggestion) {
-                    socket.data.pendingContactSuggestion = {
-                      detectedName: contactSuggestion.detectedName,
-                      messageContext: contactSuggestion.messageContext,
-                      timestamp: Date.now()
-                    };
-                    
-                    const suggestionMessage = {
-                      id: `contact-suggestion-${Date.now()}`,
-                      type: 'contact_suggestion',
-                      username: 'AI Assistant',
-                      text: contactSuggestion.suggestionText,
-                      detectedName: contactSuggestion.detectedName,
-                      messageContext: contactSuggestion.messageContext,
-                      timestamp: new Date().toISOString()
-                    };
-                    socket.emit('new_message', suggestionMessage);
-                    console.log(`💡 Contact suggestion sent for queued name: ${contactSuggestion.detectedName}`);
-                  }
-                } catch (err) {
-                  console.error('Error processing queued name:', err);
+          const successMessage = {
+            id: `contact-added-${Date.now()}`,
+            type: 'system',
+            username: 'AI Assistant',
+            text: `✅ ${pending.detectedName} has been added to your contacts!`,
+            timestamp: new Date().toISOString()
+          };
+          socket.emit('new_message', successMessage);
+
+          // Clear pending suggestion
+          delete socket.data.pendingContactSuggestion;
+
+          // Process next name in queue if available
+          if (socket.data && socket.data.pendingNamesQueue && socket.data.pendingNamesQueue.length > 0) {
+            const nextName = socket.data.pendingNamesQueue.shift();
+            console.log(`📝 Processing queued name: ${nextName}`);
+
+            setTimeout(async () => {
+              try {
+                const contactSuggestion = await aiMediator.generateContactSuggestion(nextName, 'Mentioned in chat');
+                if (contactSuggestion) {
+                  socket.data.pendingContactSuggestion = {
+                    detectedName: contactSuggestion.detectedName,
+                    messageContext: contactSuggestion.messageContext,
+                    timestamp: Date.now()
+                  };
+
+                  const suggestionMessage = {
+                    id: `contact-suggestion-${Date.now()}`,
+                    type: 'contact_suggestion',
+                    username: 'AI Assistant',
+                    text: contactSuggestion.suggestionText,
+                    detectedName: contactSuggestion.detectedName,
+                    messageContext: contactSuggestion.messageContext,
+                    timestamp: new Date().toISOString()
+                  };
+                  socket.emit('new_message', suggestionMessage);
+                  console.log(`💡 Contact suggestion sent for queued name: ${contactSuggestion.detectedName}`);
                 }
-              }, 1000); // Wait 1 second before showing next suggestion
-            }
+              } catch (err) {
+                console.error('Error processing queued name:', err);
+              }
+            }, 1000); // Wait 1 second before showing next suggestion
+          }
         } catch (err) {
           console.error('Error creating contact:', err);
           console.error('Error stack:', err.stack);
@@ -2102,12 +2112,12 @@ io.on('connection', (socket) => {
       } else {
         // User declined - clear pending suggestion
         delete socket.data.pendingContactSuggestion;
-        
+
         // Process next name in queue if available
         if (socket.data && socket.data.pendingNamesQueue && socket.data.pendingNamesQueue.length > 0) {
           const nextName = socket.data.pendingNamesQueue.shift();
           console.log(`📝 Processing queued name after decline: ${nextName}`);
-          
+
           setTimeout(async () => {
             try {
               const contactSuggestion = await aiMediator.generateContactSuggestion(nextName, 'Mentioned in chat');
@@ -2117,7 +2127,7 @@ io.on('connection', (socket) => {
                   messageContext: contactSuggestion.messageContext,
                   timestamp: Date.now()
                 };
-                
+
                 const suggestionMessage = {
                   id: `contact-suggestion-${Date.now()}`,
                   type: 'contact_suggestion',
@@ -2163,7 +2173,7 @@ io.on('connection', (socket) => {
         const db = await require('./db').getDb();
         const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
         const users = dbSafe.parseResult(userResult);
-        
+
         if (users.length > 0 && socket.data && socket.data.pendingContactSuggestion) {
           const pending = socket.data.pendingContactSuggestion;
           const now = new Date().toISOString();
@@ -2195,7 +2205,7 @@ io.on('connection', (socket) => {
             timestamp: new Date().toISOString()
           };
           socket.emit('new_message', successMessage);
-          
+
           // Clear pending suggestion
           delete socket.data.pendingContactSuggestion;
         }
@@ -2391,14 +2401,14 @@ app.get('/api/debug/rooms', async (req, res) => {
 app.post('/api/admin/cleanup', async (req, res) => {
   try {
     const db = await require('./db').getDb();
-    
+
     // Clean up orphaned room_members (entries referencing deleted users)
     const orphanedMembersQuery = `
       DELETE FROM room_members 
       WHERE user_id NOT IN (SELECT id FROM users)
     `;
     const membersDeleted = db.exec(orphanedMembersQuery);
-    
+
     // Clean up orphaned rooms (rooms with no valid members left)
     const orphanedRoomsQuery = `
       DELETE FROM rooms 
@@ -2410,7 +2420,7 @@ app.post('/api/admin/cleanup', async (req, res) => {
       )
     `;
     const roomsDeleted = db.exec(orphanedRoomsQuery);
-    
+
     // Clean up orphaned messages (messages with no room)
     const orphanedMessagesQuery = `
       DELETE FROM messages 
@@ -2418,12 +2428,12 @@ app.post('/api/admin/cleanup', async (req, res) => {
       AND room_id NOT IN (SELECT id FROM rooms)
     `;
     const messagesDeleted = db.exec(orphanedMessagesQuery);
-    
+
     // Save database after cleanup
     require('./db').saveDatabase();
-    
+
     console.log('✅ Cleanup completed: orphaned data removed');
-    
+
     res.json({
       success: true,
       message: 'Cleanup completed successfully',
@@ -2443,26 +2453,26 @@ app.post('/api/admin/cleanup', async (req, res) => {
 app.delete('/api/admin/users/:userId', async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
-    
+
     if (!userId || isNaN(userId)) {
       return res.status(400).json({ error: 'Invalid user ID' });
     }
 
     const db = await require('./db').getDb();
-    
+
     // Check if user exists
     const userResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const username = users[0].username;
-    
+
     // Delete user (CASCADE will handle related records)
     await dbSafe.safeDelete('users', { id: userId });
-    
+
     // Clean up orphaned room_members (entries referencing deleted users)
     // This is a safety net in case CASCADE didn't work
     const orphanedMembersQuery = `
@@ -2470,7 +2480,7 @@ app.delete('/api/admin/users/:userId', async (req, res) => {
       WHERE user_id NOT IN (SELECT id FROM users)
     `;
     db.exec(orphanedMembersQuery);
-    
+
     // Clean up orphaned rooms (rooms with no valid members left)
     // Only count room_members that reference existing users
     const orphanedRoomsQuery = `
@@ -2483,7 +2493,7 @@ app.delete('/api/admin/users/:userId', async (req, res) => {
       )
     `;
     db.exec(orphanedRoomsQuery);
-    
+
     // Also clean up orphaned messages (messages with no room)
     const orphanedMessagesQuery = `
       DELETE FROM messages 
@@ -2491,12 +2501,12 @@ app.delete('/api/admin/users/:userId', async (req, res) => {
       AND room_id NOT IN (SELECT id FROM rooms)
     `;
     db.exec(orphanedMessagesQuery);
-    
+
     // Save database after cleanup
     require('./db').saveDatabase();
-    
+
     console.log(`User ${username} (ID: ${userId}) deleted by admin`);
-    
+
     res.json({
       success: true,
       message: `User ${username} deleted successfully`
@@ -2575,7 +2585,7 @@ if (distExists) {
     etag: true,
     lastModified: true
   }));
-  
+
   // Serve favicon if it exists
   app.get('/favicon.ico', (req, res) => {
     const faviconPath = path.join(distPath, 'favicon.ico');
@@ -2585,7 +2595,7 @@ if (distExists) {
       res.status(404).end();
     }
   });
-  
+
   // Catch-all handler: serve index.html for all non-API routes
   // This allows React Router to handle client-side routing
   app.get('*', (req, res, next) => {
@@ -2593,7 +2603,7 @@ if (distExists) {
     if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/health')) {
       return next();
     }
-    
+
     // Serve index.html for all other routes (React Router will handle routing)
     const indexPath = path.join(distPath, 'index.html');
     if (fs.existsSync(indexPath)) {
@@ -2681,7 +2691,7 @@ app.post('/api/contact', async (req, res) => {
 app.post('/api/auth/signup', async (req, res) => {
   try {
     const { email, password, context } = req.body;
-    
+
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
@@ -2699,13 +2709,13 @@ app.post('/api/auth/signup', async (req, res) => {
 
     // Create user with email (username will be auto-generated from email)
     const user = await auth.createUserWithEmail(cleanEmail, password, context || {});
-    
+
     // Generate JWT token (same as login endpoint)
     const token = jwt.sign(
-      { 
-        userId: user.id, 
+      {
+        userId: user.id,
         username: user.username,
-        email: user.email 
+        email: user.email
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '90d' }
@@ -2720,8 +2730,8 @@ app.post('/api/auth/signup', async (req, res) => {
     });
 
     // Also return token in response for compatibility (frontend can use this if cookies don't work)
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       user,
       token // Include token in response for backward compatibility
     });
@@ -2737,7 +2747,7 @@ app.post('/api/auth/signup', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
@@ -2773,8 +2783,8 @@ app.post('/api/auth/login', async (req, res) => {
     });
 
     // Also return token in response for compatibility (frontend can use this if cookies don't work)
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       user,
       token // Include token in response for backward compatibility
     });
@@ -2802,10 +2812,10 @@ app.get('/api/auth/verify', verifyAuth, async (req, res) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       user,
-      authenticated: true 
+      authenticated: true
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -2818,7 +2828,7 @@ function getFrontendUrl(req) {
   if (process.env.FRONTEND_URL) {
     return process.env.FRONTEND_URL.split(',')[0];
   }
-  
+
   // 2. Try to detect from request headers (Origin or Referer)
   const origin = req.headers.origin || req.headers.referer;
   if (origin) {
@@ -2830,7 +2840,7 @@ function getFrontendUrl(req) {
       console.warn('[getFrontendUrl] Error parsing origin:', e.message);
     }
   }
-  
+
   // 3. Fallback to localhost for development
   return 'http://localhost:3000';
 }
@@ -2838,9 +2848,9 @@ function getFrontendUrl(req) {
 // Google OAuth: Initiate login
 app.get('/api/auth/google', (req, res) => {
   // Support multiple variable names (OAUTH_CLIENT_ID, 0AUTH_CLIENT_ID typo, or GOOGLE_CLIENT_ID)
-  const GOOGLE_CLIENT_ID = process.env.OAUTH_CLIENT_ID || 
-                           process.env['0AUTH_CLIENT_ID'] || // Handle typo with zero
-                           process.env.GOOGLE_CLIENT_ID;
+  const GOOGLE_CLIENT_ID = process.env.OAUTH_CLIENT_ID ||
+    process.env['0AUTH_CLIENT_ID'] || // Handle typo with zero
+    process.env.GOOGLE_CLIENT_ID;
   if (!GOOGLE_CLIENT_ID) {
     return res.status(500).json({ error: 'Google OAuth not configured' });
   }
@@ -2853,9 +2863,7 @@ app.get('/api/auth/google', (req, res) => {
     `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
     `redirect_uri=${encodeURIComponent(redirectUri)}&` +
     `response_type=code&` +
-    `scope=${encodeURIComponent(scope)}&` +
-    `access_type=offline&` +
-    `prompt=consent`;
+    `scope=${encodeURIComponent(scope)}`;
 
   res.json({ authUrl });
 });
@@ -2864,18 +2872,18 @@ app.get('/api/auth/google', (req, res) => {
 app.post('/api/auth/google/callback', async (req, res) => {
   try {
     const { code } = req.body;
-    
+
     if (!code) {
       return res.status(400).json({ error: 'Authorization code is required' });
     }
 
     // Support multiple variable names (OAUTH_CLIENT_ID, 0AUTH_CLIENT_ID typo, or GOOGLE_CLIENT_ID)
-    const GOOGLE_CLIENT_ID = process.env.OAUTH_CLIENT_ID || 
-                             process.env['0AUTH_CLIENT_ID'] || // Handle typo with zero
-                             process.env.GOOGLE_CLIENT_ID;
-    const GOOGLE_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET || 
-                                 process.env['0AUTH_CLIENT_SECRET'] || // Handle typo with zero
-                                 process.env.GOOGLE_CLIENT_SECRET;
+    const GOOGLE_CLIENT_ID = process.env.OAUTH_CLIENT_ID ||
+      process.env['0AUTH_CLIENT_ID'] || // Handle typo with zero
+      process.env.GOOGLE_CLIENT_ID;
+    const GOOGLE_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET ||
+      process.env['0AUTH_CLIENT_SECRET'] || // Handle typo with zero
+      process.env.GOOGLE_CLIENT_SECRET;
     // Use same redirect URI as used in the auth URL (detect from request if needed)
     const frontendUrl = getFrontendUrl(req);
     const redirectUri = `${frontendUrl}/auth/google/callback`;
@@ -2997,14 +3005,14 @@ app.post('/api/user-context/:username', async (req, res) => {
   try {
     const { username } = req.params;
     const contextData = req.body;
-    
+
     // Update in persistent storage if user exists
     try {
       await auth.updateUserContext(username, contextData);
     } catch (err) {
       // User might not have account yet, just update in-memory
     }
-    
+
     // Also update in-memory for compatibility
     const updatedContext = userContext.setUserContext(username, contextData);
     res.json(updatedContext);
@@ -3018,14 +3026,14 @@ app.patch('/api/user-context/:username', async (req, res) => {
   try {
     const { username } = req.params;
     const updates = req.body;
-    
+
     // Update in persistent storage if user exists
     try {
       await auth.updateUserContext(username, updates);
     } catch (err) {
       // User might not have account yet
     }
-    
+
     // Also update in-memory
     const updatedContext = userContext.updateUserContext(username, updates);
     res.json(updatedContext);
@@ -3068,31 +3076,31 @@ app.get('/api/tasks', async (req, res) => {
     }
 
     const userId = users[0].id;
-    
+
     // Get tasks with optional filtering
     const status = req.query.status || req.query.filter;
     const search = req.query.search;
     const priority = req.query.priority;
-    
+
     let tasksResult;
     // Build filter conditions
     const filterConditions = { user_id: userId };
-    
+
     if (status && status !== 'all') {
       filterConditions.status = status;
     }
-    
+
     if (priority && priority !== 'all') {
       filterConditions.priority = priority;
     }
-    
-    tasksResult = await dbSafe.safeSelect('tasks', filterConditions, { 
-        orderBy: 'created_at',
-        orderDirection: 'DESC'
-      });
-    
+
+    tasksResult = await dbSafe.safeSelect('tasks', filterConditions, {
+      orderBy: 'created_at',
+      orderDirection: 'DESC'
+    });
+
     let tasks = dbSafe.parseResult(tasksResult);
-    
+
     // Auto-complete onboarding tasks if conditions are met (check on load)
     try {
       await autoCompleteOnboardingTasks(userId);
@@ -3106,7 +3114,7 @@ app.get('/api/tasks', async (req, res) => {
       console.error('Error auto-completing onboarding tasks on load:', error);
       // Continue with original tasks if auto-complete fails
     }
-    
+
     // Parse JSON fields for assigned_to and related_people
     tasks = tasks.map(task => {
       if (task.related_people) {
@@ -3120,16 +3128,16 @@ app.get('/api/tasks', async (req, res) => {
       }
       return task;
     });
-    
+
     // Apply search filter if provided
     if (search && search.trim()) {
       const searchLower = search.toLowerCase().trim();
-      tasks = tasks.filter(task => 
+      tasks = tasks.filter(task =>
         task.title.toLowerCase().includes(searchLower) ||
         (task.description && task.description.toLowerCase().includes(searchLower))
       );
     }
-    
+
     res.json(tasks);
   } catch (error) {
     console.error('Error fetching tasks:', error);
@@ -3141,24 +3149,24 @@ app.get('/api/tasks', async (req, res) => {
 app.post('/api/tasks', async (req, res) => {
   try {
     const { username, title, description, status, priority, due_date, assigned_to, related_people } = req.body;
-    
+
     if (!username || !title || !title.trim()) {
       return res.status(400).json({ error: 'Username and title are required' });
     }
 
     const db = await require('./db').getDb();
-    
+
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const userId = users[0].id;
     const titleTrimmed = title.trim();
-    
+
     // Check for duplicate onboarding tasks (exact title match for onboarding tasks)
     const onboardingTaskTitles = [
       'Welcome to LiaiZen',
@@ -3166,15 +3174,15 @@ app.post('/api/tasks', async (req, res) => {
       'Add Your Co-parent',
       'Add Your Children'
     ];
-    
+
     if (onboardingTaskTitles.includes(titleTrimmed)) {
       const existingResult = await dbSafe.safeSelect('tasks', {
         user_id: userId,
         title: titleTrimmed
       }, { limit: 1 });
-      
+
       const existingTasks = dbSafe.parseResult(existingResult);
-      
+
       if (existingTasks.length > 0) {
         // Task already exists, return existing task
         return res.json({
@@ -3185,9 +3193,9 @@ app.post('/api/tasks', async (req, res) => {
         });
       }
     }
-    
+
     const now = new Date().toISOString();
-    
+
     const taskId = await dbSafe.safeInsert('tasks', {
       user_id: userId,
       title: titleTrimmed,
@@ -3201,7 +3209,7 @@ app.post('/api/tasks', async (req, res) => {
       updated_at: now,
       completed_at: null
     });
-    
+
     require('./db').saveDatabase();
 
     res.json({
@@ -3220,27 +3228,27 @@ app.put('/api/tasks/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
     const { username, title, description, status, priority, due_date, assigned_to, related_people } = req.body;
-    
+
     if (!username) {
       return res.status(400).json({ error: 'Username is required' });
     }
 
     const db = await require('./db').getDb();
-    
+
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const userId = users[0].id;
-    
+
     // Verify task belongs to user
     const taskResult = await dbSafe.safeSelect('tasks', { id: parseInt(taskId), user_id: userId }, { limit: 1 });
     const tasks = dbSafe.parseResult(taskResult);
-    
+
     if (tasks.length === 0) {
       return res.status(404).json({ error: 'Task not found' });
     }
@@ -3248,7 +3256,7 @@ app.put('/api/tasks/:taskId', async (req, res) => {
     const updateData = {
       updated_at: new Date().toISOString()
     };
-    
+
     if (title !== undefined) updateData.title = title.trim();
     if (description !== undefined) updateData.description = description || null;
     if (status !== undefined) {
@@ -3264,7 +3272,7 @@ app.put('/api/tasks/:taskId', async (req, res) => {
     if (due_date !== undefined) updateData.due_date = due_date || null;
     if (assigned_to !== undefined) updateData.assigned_to = assigned_to || null;
     if (related_people !== undefined) updateData.related_people = related_people ? JSON.stringify(related_people) : null;
-    
+
     await dbSafe.safeUpdate('tasks', updateData, { id: parseInt(taskId) });
     require('./db').saveDatabase();
 
@@ -3283,27 +3291,27 @@ app.delete('/api/tasks/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
     const username = req.query.username || req.body.username;
-    
+
     if (!username) {
       return res.status(400).json({ error: 'Username is required' });
     }
 
     const db = await require('./db').getDb();
-    
+
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const userId = users[0].id;
-    
+
     // Verify task belongs to user
     const taskResult = await dbSafe.safeSelect('tasks', { id: parseInt(taskId), user_id: userId }, { limit: 1 });
     const tasks = dbSafe.parseResult(taskResult);
-    
+
     if (tasks.length === 0) {
       return res.status(404).json({ error: 'Task not found' });
     }
@@ -3326,34 +3334,34 @@ app.post('/api/tasks/:taskId/duplicate', async (req, res) => {
   try {
     const { taskId } = req.params;
     const username = req.body.username || req.query.username;
-    
+
     if (!username) {
       return res.status(400).json({ error: 'Username is required' });
     }
 
     const db = await require('./db').getDb();
-    
+
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const userId = users[0].id;
-    
+
     // Get original task
     const taskResult = await dbSafe.safeSelect('tasks', { id: parseInt(taskId), user_id: userId }, { limit: 1 });
     const tasks = dbSafe.parseResult(taskResult);
-    
+
     if (tasks.length === 0) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
     const originalTask = tasks[0];
     const now = new Date().toISOString();
-    
+
     // Create duplicate with "Copy of" prefix
     const newTaskId = await dbSafe.safeInsert('tasks', {
       user_id: userId,
@@ -3366,7 +3374,7 @@ app.post('/api/tasks/:taskId/duplicate', async (req, res) => {
       updated_at: now,
       completed_at: null
     });
-    
+
     require('./db').saveDatabase();
 
     res.json({
@@ -3384,17 +3392,17 @@ app.post('/api/tasks/:taskId/duplicate', async (req, res) => {
 app.get('/api/dashboard/updates', async (req, res) => {
   try {
     const username = req.query.username;
-    
+
     if (!username) {
       return res.status(400).json({ error: 'Username is required' });
     }
 
     const db = await require('./db').getDb();
-    
+
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -3407,15 +3415,15 @@ app.get('/api/dashboard/updates', async (req, res) => {
     if (userRoom) {
       const roomMembers = await roomManager.getRoomMembers(userRoom.id);
       const coparentMember = roomMembers.find(m => m.user_id !== userId);
-      
+
       if (coparentMember) {
         // Get co-parent user info
         const coparentUserResult = await dbSafe.safeSelect('users', { id: coparentMember.user_id }, { limit: 1 });
         const coparentUsers = dbSafe.parseResult(coparentUserResult);
-        
+
         if (coparentUsers.length > 0) {
           const coparentUsername = coparentUsers[0].username;
-          
+
           // Get recent messages from co-parent (last 48 hours)
           const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
           const messagesQuery = `
@@ -3430,7 +3438,7 @@ app.get('/api/dashboard/updates', async (req, res) => {
           `;
           const messagesResult = db.exec(messagesQuery);
           const messages = dbSafe.parseResult(messagesResult);
-          
+
           messages.forEach(msg => {
             updates.push({
               personName: coparentUsername,
@@ -3451,7 +3459,7 @@ app.get('/api/dashboard/updates', async (req, res) => {
           `;
           const tasksResult = db.exec(coparentTasksQuery);
           const completedTasks = dbSafe.parseResult(tasksResult);
-          
+
           completedTasks.forEach(task => {
             updates.push({
               personName: coparentUsername,
@@ -3494,11 +3502,11 @@ app.get('/api/dashboard/updates', async (req, res) => {
 
     childTasks.forEach(task => {
       // Try to match to a child contact
-      const relatedChild = allChildren.find(c => 
+      const relatedChild = allChildren.find(c =>
         task.title.toLowerCase().includes(c.contact_name?.toLowerCase() || '') ||
         task.description?.toLowerCase().includes(c.contact_name?.toLowerCase() || '')
       );
-      
+
       updates.push({
         personName: relatedChild?.contact_name || 'Your Child',
         type: 'task',
@@ -3559,7 +3567,7 @@ app.get('/api/dashboard/communication-stats', async (req, res) => {
 app.post('/api/tasks/generate', async (req, res) => {
   try {
     const { username, taskDetails } = req.body;
-    
+
     if (!username || !taskDetails || !taskDetails.trim()) {
       return res.status(400).json({ error: 'Username and task details are required' });
     }
@@ -3606,7 +3614,7 @@ Respond in JSON format only with this structure:
     });
 
     const response = completion.choices[0].message.content.trim();
-    
+
     // Parse JSON response
     let taskData;
     try {
@@ -3627,8 +3635,8 @@ Respond in JSON format only with this structure:
     const generatedTask = {
       title: (taskData.title || taskDetails.substring(0, 60)).trim(),
       description: (taskData.description || taskDetails).trim(),
-      priority: ['low', 'medium', 'high'].includes(taskData.priority?.toLowerCase()) 
-        ? taskData.priority.toLowerCase() 
+      priority: ['low', 'medium', 'high'].includes(taskData.priority?.toLowerCase())
+        ? taskData.priority.toLowerCase()
         : 'medium',
       due_date: taskData.due_date || null,
       status: 'open'
@@ -3648,46 +3656,46 @@ Respond in JSON format only with this structure:
 app.get('/api/user/onboarding-status', async (req, res) => {
   try {
     const username = req.query.username || req.body.username;
-    
+
     if (!username) {
       return res.status(400).json({ error: 'Username is required' });
     }
 
     const db = await require('./db').getDb();
-    
+
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const user = users[0];
-    
+
     // Check if profile is complete (has at least first_name or last_name)
     const profileComplete = !!(user.first_name || user.last_name || user.email);
-    
+
     // Check if has co-parent contact
     const coparentResult = await dbSafe.safeSelect('contacts', {
       user_id: user.id,
       relationship: 'co-parent'
     }, { limit: 1 });
     const hasCoparent = dbSafe.parseResult(coparentResult).length > 0;
-    
+
     // Check if has children in contacts (relationship includes "child" or "children")
     const childrenResult = await dbSafe.safeSelect('contacts', {
       user_id: user.id
     });
     const allContacts = dbSafe.parseResult(childrenResult);
-    const hasChildren = allContacts.some(c => 
+    const hasChildren = allContacts.some(c =>
       c.relationship && (
         c.relationship.toLowerCase().includes('child') ||
         c.relationship.toLowerCase().includes('son') ||
         c.relationship.toLowerCase().includes('daughter')
       )
     );
-    
+
     // Check if user is in shared room (co-parent connected)
     // Use safeExec for complex query - user.id is already validated as integer
     const sharedRoomQuery = `
@@ -3702,7 +3710,7 @@ app.get('/api/user/onboarding-status', async (req, res) => {
     `;
     const sharedRoomResult = db.exec(sharedRoomQuery);
     const isConnected = sharedRoomResult.length > 0 && sharedRoomResult[0].values.length > 0;
-    
+
     res.json({
       profileComplete,
       hasCoparent,
@@ -4003,7 +4011,7 @@ app.delete('/api/activities/:activityId', async (req, res) => {
 app.get('/api/user/profile', async (req, res) => {
   try {
     const username = req.query.username || req.body.username;
-    
+
     if (!username) {
       return res.status(400).json({ error: 'Username is required' });
     }
@@ -4011,7 +4019,7 @@ app.get('/api/user/profile', async (req, res) => {
     const db = await require('./db').getDb();
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -4041,9 +4049,9 @@ app.put('/api/user/profile', async (req, res) => {
     if (!req.body || typeof req.body !== 'object') {
       return res.status(400).json({ error: 'Invalid request body. Request may be too large.' });
     }
-    
+
     const { currentUsername, username, email, first_name, last_name, address, household_members, occupation, parenting_philosophy, personal_growth } = req.body;
-    
+
     // Debug logging
     console.log('Profile update request:', {
       currentUsername,
@@ -4051,30 +4059,30 @@ app.put('/api/user/profile', async (req, res) => {
       personalGrowthLength: personal_growth ? personal_growth.length : 0,
       requestBodySize: JSON.stringify(req.body).length
     });
-    
+
     // Use currentUsername to find the user, fallback to username for backward compatibility
     const lookupUsername = currentUsername || username;
-    
+
     if (!lookupUsername) {
       return res.status(400).json({ error: 'Username is required' });
     }
 
     const db = await require('./db').getDb();
-    
+
     // Get user ID using current username (to find the user)
     const userResult = await dbSafe.safeSelect('users', { username: lookupUsername.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const userId = users[0].id;
     const dbUsername = users[0].username;
-    
+
     // Build update object with only provided fields
     const updateData = {};
-    
+
     // Handle username update if provided and different
     const newUsername = username ? username.trim() : null;
     if (newUsername && newUsername.toLowerCase() !== dbUsername.toLowerCase()) {
@@ -4082,17 +4090,17 @@ app.put('/api/user/profile', async (req, res) => {
       if (newUsername.length < 2 || newUsername.length > 20) {
         return res.status(400).json({ error: 'Username must be between 2 and 20 characters' });
       }
-      
+
       // Check username uniqueness (case-insensitive)
       const usernameCheck = await dbSafe.safeSelect('users', { username: newUsername.toLowerCase() }, { limit: 1 });
       const existingUsers = dbSafe.parseResult(usernameCheck);
       if (existingUsers.length > 0 && existingUsers[0].id !== userId) {
         return res.status(400).json({ error: 'Username already in use' });
       }
-      
+
       updateData.username = newUsername.toLowerCase();
     }
-    
+
     if (email !== undefined) {
       const trimmedEmail = email ? email.trim().toLowerCase() : null;
       if (trimmedEmail) {
@@ -4164,8 +4172,8 @@ app.put('/api/user/profile', async (req, res) => {
         return res.status(400).json({ error: `Personal growth must be ${MAX_FIELD_LENGTHS.personal_growth} characters or less` });
       }
       updateData.personal_growth = trimmed;
-      console.log('Updating personal_growth:', { 
-        original: personal_growth, 
+      console.log('Updating personal_growth:', {
+        original: personal_growth,
         processed: updateData.personal_growth,
         length: updateData.personal_growth ? updateData.personal_growth.length : 0
       });
@@ -4202,7 +4210,7 @@ app.put('/api/user/profile', async (req, res) => {
 
     // Return updated username if it was changed
     const updatedUsername = updateData.username || dbUsername;
-    
+
     res.json({
       success: true,
       message: 'Profile updated successfully',
@@ -4212,7 +4220,7 @@ app.put('/api/user/profile', async (req, res) => {
     console.error('Error updating profile:', error);
     console.error('Error stack:', error.stack);
     // Return more detailed error for Safari
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message || 'Failed to update profile',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -4223,7 +4231,7 @@ app.put('/api/user/profile', async (req, res) => {
 app.put('/api/user/password', async (req, res) => {
   try {
     const { username, currentPassword, newPassword } = req.body;
-    
+
     if (!username || !currentPassword || !newPassword) {
       return res.status(400).json({ error: 'Username, current password, and new password are required' });
     }
@@ -4258,17 +4266,17 @@ app.put('/api/user/password', async (req, res) => {
 app.get('/api/contacts', async (req, res) => {
   try {
     const username = req.query.username || req.body.username;
-    
+
     if (!username) {
       return res.status(400).json({ error: 'Username is required' });
     }
 
     const db = await require('./db').getDb();
-    
+
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -4310,35 +4318,35 @@ app.post('/api/contacts', async (req, res) => {
     }
 
     const { username, contact_name, contact_email, relationship, notes, separation_date, address,
-            difficult_aspects, friction_situations, legal_matters, safety_concerns,
-            substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent,
-            child_age, child_birthdate, school, phone, partner_duration, has_children,
-            custody_arrangement, linked_contact_id } = req.body;
-    
+      difficult_aspects, friction_situations, legal_matters, safety_concerns,
+      substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent,
+      child_age, child_birthdate, school, phone, partner_duration, has_children,
+      custody_arrangement, linked_contact_id } = req.body;
+
     console.log('Creating contact:', {
       username,
       contact_name,
       relationship,
       hasNotes: !!notes
     });
-    
+
     if (!username || !contact_name) {
       return res.status(400).json({ error: 'Username and contact name are required' });
     }
 
     const db = await require('./db').getDb();
-    
+
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const userId = users[0].id;
     const now = new Date().toISOString();
-    
+
     // Insert contact
     const contactId = await dbSafe.safeInsert('contacts', {
       user_id: userId,
@@ -4367,7 +4375,7 @@ app.post('/api/contacts', async (req, res) => {
       created_at: now,
       updated_at: now
     });
-    
+
     require('./db').saveDatabase();
 
     console.log('Contact created successfully:', {
@@ -4392,7 +4400,7 @@ app.post('/api/contacts', async (req, res) => {
   } catch (error) {
     console.error('Error creating contact:', error);
     console.error('Error stack:', error.stack);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message || 'Failed to create contact',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -4404,11 +4412,11 @@ app.put('/api/contacts/:contactId', async (req, res) => {
   try {
     const contactId = parseInt(req.params.contactId);
     const { username, contact_name, contact_email, relationship, notes, separation_date, address,
-            difficult_aspects, friction_situations, legal_matters, safety_concerns,
-            substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent,
-            child_age, child_birthdate, school, phone, partner_duration, has_children,
-            custody_arrangement, linked_contact_id } = req.body;
-    
+      difficult_aspects, friction_situations, legal_matters, safety_concerns,
+      substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent,
+      child_age, child_birthdate, school, phone, partner_duration, has_children,
+      custody_arrangement, linked_contact_id } = req.body;
+
     if (!contactId || isNaN(contactId)) {
       return res.status(400).json({ error: 'Invalid contact ID' });
     }
@@ -4418,21 +4426,21 @@ app.put('/api/contacts/:contactId', async (req, res) => {
     }
 
     const db = await require('./db').getDb();
-    
+
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const userId = users[0].id;
-    
+
     // Verify contact belongs to user
     const contactResult = await dbSafe.safeSelect('contacts', { id: contactId }, { limit: 1 });
     const contacts = dbSafe.parseResult(contactResult);
-    
+
     if (contacts.length === 0) {
       return res.status(404).json({ error: 'Contact not found' });
     }
@@ -4469,7 +4477,7 @@ app.put('/api/contacts/:contactId', async (req, res) => {
     if (has_children !== undefined) updateData.has_children = has_children || null;
     if (custody_arrangement !== undefined) updateData.custody_arrangement = custody_arrangement || null;
     if (linked_contact_id !== undefined) updateData.linked_contact_id = linked_contact_id || null;
-    
+
     await dbSafe.safeUpdate('contacts', updateData, { id: contactId });
     require('./db').saveDatabase();
 
@@ -4496,7 +4504,7 @@ app.delete('/api/contacts/:contactId', async (req, res) => {
   try {
     const contactId = parseInt(req.params.contactId);
     const username = req.query.username || req.body.username;
-    
+
     if (!contactId || isNaN(contactId)) {
       return res.status(400).json({ error: 'Invalid contact ID' });
     }
@@ -4506,21 +4514,21 @@ app.delete('/api/contacts/:contactId', async (req, res) => {
     }
 
     const db = await require('./db').getDb();
-    
+
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const userId = users[0].id;
-    
+
     // Verify contact belongs to user
     const contactResult = await dbSafe.safeSelect('contacts', { id: contactId }, { limit: 1 });
     const contacts = dbSafe.parseResult(contactResult);
-    
+
     if (contacts.length === 0) {
       return res.status(404).json({ error: 'Contact not found' });
     }
@@ -4747,7 +4755,7 @@ app.post('/api/contacts/:contactId/enrich', async (req, res) => {
 app.post('/api/admin/backfill-contacts', async (req, res) => {
   try {
     const db = await require('./db').getDb();
-    
+
     // Find all shared rooms (rooms with more than one member)
     const sharedRoomsQuery = `
       SELECT rm.room_id, GROUP_CONCAT(rm.user_id) as user_ids, COUNT(rm.user_id) as member_count
@@ -4755,16 +4763,16 @@ app.post('/api/admin/backfill-contacts', async (req, res) => {
       GROUP BY rm.room_id
       HAVING member_count > 1
     `;
-    
+
     const roomsResult = db.exec(sharedRoomsQuery);
     const rooms = dbSafe.parseResult(roomsResult);
-    
+
     let createdCount = 0;
     const now = new Date().toISOString();
-    
+
     for (const room of rooms) {
       const userIds = room.user_ids.split(',').map(id => parseInt(id));
-      
+
       // Get user info for all members
       const users = [];
       for (const userId of userIds) {
@@ -4774,20 +4782,20 @@ app.post('/api/admin/backfill-contacts', async (req, res) => {
           users.push(userList[0]);
         }
       }
-      
+
       // Create contacts for each pair
       for (let i = 0; i < users.length; i++) {
         for (let j = i + 1; j < users.length; j++) {
           const user1 = users[i];
           const user2 = users[j];
-          
+
           // Check if contact already exists (user1 -> user2)
           const check1 = await dbSafe.safeSelect('contacts', {
             user_id: user1.id,
             contact_name: user2.username,
             relationship: 'co-parent'
           }, { limit: 1 });
-          
+
           if (dbSafe.parseResult(check1).length === 0) {
             await dbSafe.safeInsert('contacts', {
               user_id: user1.id,
@@ -4809,14 +4817,14 @@ app.post('/api/admin/backfill-contacts', async (req, res) => {
             });
             createdCount++;
           }
-          
+
           // Check if contact already exists (user2 -> user1)
           const check2 = await dbSafe.safeSelect('contacts', {
             user_id: user2.id,
             contact_name: user1.username,
             relationship: 'co-parent'
           }, { limit: 1 });
-          
+
           if (dbSafe.parseResult(check2).length === 0) {
             await dbSafe.safeInsert('contacts', {
               user_id: user2.id,
@@ -4841,9 +4849,9 @@ app.post('/api/admin/backfill-contacts', async (req, res) => {
         }
       }
     }
-    
+
     require('./db').saveDatabase();
-    
+
     res.json({
       success: true,
       message: `Backfilled ${createdCount} co-parent contacts`,
@@ -4904,10 +4912,10 @@ app.get('/api/room/shared-check/:username', async (req, res) => {
       HAVING member_count > 1
       LIMIT 1
     `;
-    
+
     const result = db.exec(query);
     const isShared = result.length > 0 && result[0].values.length > 0;
-    
+
     res.json({ isShared });
   } catch (error) {
     console.error('Error checking shared room:', error);
@@ -5041,7 +5049,7 @@ app.post('/api/room/invite', async (req, res) => {
 
     // Create invite
     const invite = await roomManager.createInvite(room.roomId, user.id);
-    
+
     console.log(`API: Returning invite code: ${invite.inviteCode} (length: ${invite.inviteCode.length})`);
 
     res.json({
@@ -5230,7 +5238,7 @@ app.post('/api/invite', async (req, res) => {
 
     res.json({
       success: true,
-      message: emailExists 
+      message: emailExists
         ? 'Connection request sent to existing user'
         : 'Invitation email sent to new user',
       isExistingUser: emailExists
@@ -5253,7 +5261,7 @@ app.get('/api/join', async (req, res) => {
     const connection = await connectionManager.validateConnectionToken(token);
 
     if (!connection) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Invalid or expired invitation token',
         valid: false
       });
@@ -5297,8 +5305,8 @@ app.post('/api/join/accept', async (req, res) => {
 
     // Verify email matches (if user has email set)
     if (user.email && user.email.toLowerCase() !== connection.inviteeEmail.toLowerCase()) {
-      return res.status(403).json({ 
-        error: 'This invitation was sent to another email address. Please log out and try again.' 
+      return res.status(403).json({
+        error: 'This invitation was sent to another email address. Please log out and try again.'
       });
     }
 
@@ -5361,12 +5369,12 @@ app.post('/api/auth/signup-with-token', async (req, res) => {
 
     // Create user with email from invitation
     const user = await auth.createUser(username, password, context || {}, connection.inviteeEmail);
-    
+
     // Immediately accept the connection
     await connectionManager.acceptPendingConnection(token, user.id);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       user,
       message: 'Account created and connection established'
     });
@@ -5386,8 +5394,8 @@ app.post('/api/auth/signup-with-token', async (req, res) => {
 app.get('/api/figma/status', (req, res) => {
   res.json({
     available: !!figmaService,
-    message: figmaService 
-      ? 'Figma API service is available' 
+    message: figmaService
+      ? 'Figma API service is available'
       : 'Figma API service not configured. Set FIGMA_ACCESS_TOKEN environment variable.'
   });
 });
@@ -5541,7 +5549,7 @@ app.post('/api/figma/sync-tokens', async (req, res) => {
     // Store or process tokens
     // For now, we'll log them and return success
     // You can extend this to save to a file or database
-    
+
     console.log('Received tokens from Figma:', {
       fileKey: fileKey || 'unknown',
       tokenCount: {
@@ -5552,7 +5560,7 @@ app.post('/api/figma/sync-tokens', async (req, res) => {
     });
 
     // TODO: Save tokens to .design-tokens-mcp/tokens.json or merge with existing tokens
-    
+
     res.json({
       success: true,
       message: 'Tokens synced successfully',
@@ -5569,7 +5577,7 @@ app.get('/api/figma/scan-components', async (req, res) => {
   try {
     const scanner = new ComponentScanner();
     const components = await scanner.scanComponents();
-    
+
     res.json({
       success: true,
       count: components.length,
@@ -5595,7 +5603,7 @@ app.post('/api/figma/generate-structure', async (req, res) => {
 
     const scanner = new ComponentScanner();
     const allComponents = await scanner.scanComponents();
-    
+
     // Filter to requested components, or use all if none specified
     const components = componentNames && componentNames.length > 0
       ? allComponents.filter(c => componentNames.includes(c.name))
@@ -5626,23 +5634,29 @@ app.post('/api/figma/sync-components', async (req, res) => {
     const { componentNames, pageType = 'wireframes', fileKey } = req.body;
 
     if (!fileKey && !figmaService) {
-      return res.status(400).json({ 
-        error: 'fileKey is required, or set FIGMA_ACCESS_TOKEN to auto-create file' 
+      return res.status(400).json({
+        error: 'fileKey is required, or set FIGMA_ACCESS_TOKEN to auto-create file'
       });
     }
 
     // Scan components
     const scanner = new ComponentScanner();
     const allComponents = await scanner.scanComponents();
-    
+
     const components = componentNames && componentNames.length > 0
       ? allComponents.filter(c => componentNames.includes(c.name))
       : allComponents;
 
-    // Generate Figma structure
-    const generator = new FigmaGenerator(figmaService, fileKey);
+    // Generate Figma structure - use design generator for styled pages
+    let generator;
+    if (pageType === 'design') {
+      const FigmaDesignGenerator = require('./figmaDesignGenerator');
+      generator = new FigmaDesignGenerator(figmaService, fileKey);
+    } else {
+      generator = new FigmaGenerator(figmaService, fileKey);
+    }
     const figmaPage = await generator.generateFigmaPage(components, pageType);
-    
+
     // Return data for plugin to consume
     // The plugin will need to be running and listening for this data
     res.json({
@@ -5669,11 +5683,11 @@ app.post('/api/figma/sync-components', async (req, res) => {
 app.get('/api/figma/component/:componentName', async (req, res) => {
   try {
     const { componentName } = req.params;
-    
+
     const scanner = new ComponentScanner();
     const components = await scanner.scanComponents();
-    
-    const component = components.find(c => 
+
+    const component = components.find(c =>
       c.name.toLowerCase() === componentName.toLowerCase()
     );
 
@@ -5748,7 +5762,7 @@ process.on('SIGTERM', () => {
     console.log('Server closed');
     process.exit(0);
   });
-  
+
   // Force exit after 10 seconds if graceful shutdown doesn't complete
   setTimeout(() => {
     console.error('Forced shutdown after timeout');
@@ -5762,7 +5776,7 @@ process.on('SIGINT', () => {
     console.log('Server closed');
     process.exit(0);
   });
-  
+
   // Force exit after 10 seconds if graceful shutdown doesn't complete
   setTimeout(() => {
     console.error('Forced shutdown after timeout');

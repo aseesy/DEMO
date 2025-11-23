@@ -105,6 +105,8 @@ After configuration changes, restart Claude Code to load the MCP servers.
 "Test the /api/health endpoint"
 "Check if the backend server is running"
 "Fetch user data from the API"
+"Get Figma file data from /api/figma/file/abc123"
+"Export images from Figma design"
 ```
 
 ### Memory MCP
@@ -146,6 +148,20 @@ After configuration changes, restart Claude Code to load the MCP servers.
 - **Keep tokens secure**: Use environment variables or secret managers in production
 - **Limit token permissions**: Only grant necessary GitHub permissions
 - **Rotate tokens regularly**: Change GitHub tokens every 90 days
+
+## Figma Integration via Fetch MCP
+
+The **Fetch MCP server** can be used to access Figma files through the backend API endpoints:
+
+1. **Backend API**: Figma integration is available at `/api/figma/*` endpoints
+2. **Fetch MCP**: Use the fetch server to call these endpoints:
+   ```
+   "Fetch Figma file data from http://localhost:3001/api/figma/file/abc123"
+   "Check Figma service status at /api/figma/status"
+   "Export images from Figma design"
+   ```
+
+See `FIGMA_INTEGRATION.md` for full Figma API documentation.
 
 ## Additional MCP Servers (Optional)
 

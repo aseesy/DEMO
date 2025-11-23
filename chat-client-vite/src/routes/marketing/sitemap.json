@@ -1,0 +1,20 @@
+{
+    "pages": [
+        {
+            "slug": "/",
+            "title": "Home"
+        },
+        {
+            "slug": "/about",
+            "title": "About"
+        },
+        {
+            "slug": "/pricing",
+            "title": "Pricing"
+        },
+        {
+            "slug": "/contact",
+            "title": "Contact"
+        }
+    ]
+}

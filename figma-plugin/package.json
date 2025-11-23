@@ -1,0 +1,19 @@
+{
+  "name": "liaizen-figma-plugin",
+  "version": "1.0.0",
+  "description": "Figma plugin for syncing design tokens and components with LiaiZen codebase",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "dev": "npm run watch"
+  },
+  "keywords": ["figma", "plugin", "design-tokens", "liaizen"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.0",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}
+
