@@ -369,12 +369,13 @@ function ChatRoom() {
     return result;
   }, [originalSaveTask]);
 
-  const { contacts } = useContacts(username);
+  // Only load contacts and chat when NOT showing landing page
+  const { contacts } = useContacts(showLanding ? null : username);
 
   // Notification system for new messages
   const notifications = useNotifications({
     username,
-    enabled: isAuthenticated
+    enabled: isAuthenticated && !showLanding
   });
 
   // Callback for new messages - Device notifications only (no in-browser toast)
@@ -389,8 +390,8 @@ function ChatRoom() {
   }, [username, currentView]);
 
   const chatState = useChat({
-    username,
-    isAuthenticated,
+    username: showLanding ? null : username,
+    isAuthenticated: isAuthenticated && !showLanding,
     currentView,
     onNewMessage: handleNewMessage
   });

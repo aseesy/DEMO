@@ -33,18 +33,23 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
   }, [messages]);
 
   React.useEffect(() => {
+    // Don't connect if username is null (e.g., on landing page)
+    if (!username) {
+      return;
+    }
+
     // Determine socket URL from API_BASE_URL
     let socketUrl = window.SOCKET_URL;
-    
+
     if (!socketUrl) {
       // Remove trailing slashes and /api suffix if present
       socketUrl = API_BASE_URL.replace(/\/+$/, '').replace(/\/api$/, '');
-      
+
       // If API_BASE_URL is just /api (relative), use current origin
       if (socketUrl === '/api' || socketUrl === '') {
         socketUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001';
       }
-      
+
       // Fallback to localhost for development
       if (!socketUrl || socketUrl === 'http://localhost:3001') {
         socketUrl = 'http://localhost:3001';

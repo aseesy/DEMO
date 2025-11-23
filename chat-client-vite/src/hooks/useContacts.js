@@ -76,7 +76,7 @@ export function useContacts(username) {
 
   const loadContacts = React.useCallback(async () => {
     if (!username) {
-      console.warn('loadContacts: No username provided');
+      // Silently skip if no username (e.g., on landing page)
       return;
     }
     setIsLoadingContacts(true);
