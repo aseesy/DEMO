@@ -1,6 +1,7 @@
 import React from 'react';
 import { useContacts } from '../hooks/useContacts.js';
 import { apiGet } from '../apiClient.js';
+import { CommunicationStatsWidget } from './CommunicationStatsWidget.jsx';
 
 export function UpdatesPanel({ username, onContactClick }) {
   const { contacts } = useContacts(username);
@@ -102,10 +103,16 @@ export function UpdatesPanel({ username, onContactClick }) {
 
   if (isLoadingUpdates) {
     return (
-      <div>
-        <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
-        <div className="text-center py-6">
-          <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-teal-light border-t-[#4DA8B0]" />
+      <div className="space-y-6">
+        {/* Communication Stats Widget */}
+        <CommunicationStatsWidget username={username} />
+
+        {/* Updates Loading */}
+        <div>
+          <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
+          <div className="text-center py-6">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-teal-light border-t-[#4DA8B0]" />
+          </div>
         </div>
       </div>
     );
@@ -113,20 +120,31 @@ export function UpdatesPanel({ username, onContactClick }) {
 
   if (updates.length === 0) {
     return (
-      <div>
-        <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
-        <div className="text-center py-6">
-          <p className="text-gray-600 text-xs sm:text-sm">No recent updates</p>
+      <div className="space-y-6">
+        {/* Communication Stats Widget */}
+        <CommunicationStatsWidget username={username} />
+
+        {/* No Updates */}
+        <div>
+          <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
+          <div className="text-center py-6">
+            <p className="text-gray-600 text-xs sm:text-sm">No recent updates</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
-      <div className="space-y-2">
-        {updates.map((update, index) => (
+    <div className="space-y-6">
+      {/* Communication Stats Widget */}
+      <CommunicationStatsWidget username={username} />
+
+      {/* Updates Section */}
+      <div>
+        <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
+        <div className="space-y-2">
+          {updates.map((update, index) => (
           <div
             key={index}
             onClick={() => handlePersonClick(update.personName)}
@@ -152,7 +170,8 @@ export function UpdatesPanel({ username, onContactClick }) {
               {formatTimeAgo(update.timestamp)}
             </div>
           </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

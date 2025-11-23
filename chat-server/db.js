@@ -540,6 +540,35 @@ async function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_threads_updated ON threads(updated_at DESC)
   `);
 
+  // Communication Stats Table - Track positive communication streaks
+  db.run(`
+    CREATE TABLE IF NOT EXISTS communication_stats (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      room_id TEXT NOT NULL,
+      current_streak INTEGER DEFAULT 0,
+      best_streak INTEGER DEFAULT 0,
+      total_positive_messages INTEGER DEFAULT 0,
+      total_messages INTEGER DEFAULT 0,
+      total_interventions INTEGER DEFAULT 0,
+      last_message_date TEXT,
+      last_intervention_date TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
+      UNIQUE(user_id, room_id)
+    )
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_comm_stats_user ON communication_stats(user_id)
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_comm_stats_room ON communication_stats(room_id)
+  `);
+
   // Add thread_id column to messages table (migration)
   try {
     const testResult = db.exec(`SELECT thread_id FROM messages LIMIT 1`);

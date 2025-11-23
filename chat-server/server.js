@@ -22,6 +22,21 @@ const roomManager = require('./roomManager');
 const connectionManager = require('./connectionManager');
 const emailService = require('./emailService');
 const dbSafe = require('./dbSafe');
+const FigmaService = require('./figmaService');
+const ComponentScanner = require('./componentScanner');
+const FigmaGenerator = require('./figmaGenerator');
+const communicationStats = require('./communicationStats');
+
+// Initialize Figma service if API token is provided
+let figmaService = null;
+if (process.env.FIGMA_ACCESS_TOKEN) {
+  try {
+    figmaService = new FigmaService(process.env.FIGMA_ACCESS_TOKEN);
+    console.log('✅ Figma API service initialized');
+  } catch (error) {
+    console.warn('⚠️  Figma API service not available:', error.message);
+  }
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -738,6 +753,18 @@ io.on('connection', (socket) => {
         } else {
           console.log(`✅ Pre-approved rewrite unmodified (${Math.round(similarity * 100)}% similar) - SKIPPING AI mediation`);
 
+          // Update communication stats - successful message using pre-approved rewrite
+          try {
+            const db = await require('./db').getDb();
+            const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
+            const users = dbSafe.parseResult(userResult);
+            if (users.length > 0) {
+              await communicationStats.updateCommunicationStats(users[0].id, user.roomId, false);
+            }
+          } catch (statsErr) {
+            console.error('Error updating communication stats for pre-approved rewrite:', statsErr);
+          }
+
           // Add to history
           messageHistory.push(message);
           if (messageHistory.length > 100) {
@@ -1194,6 +1221,18 @@ io.on('connection', (socket) => {
               // DO NOT save the blocked message to database
               // DO NOT broadcast to room - this message should never reach other users
 
+              // Update communication stats - streak broken by intervention
+              try {
+                const db = await require('./db').getDb();
+                const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
+                const users = dbSafe.parseResult(userResult);
+                if (users.length > 0) {
+                  await communicationStats.updateCommunicationStats(users[0].id, user.roomId, true);
+                }
+              } catch (statsErr) {
+                console.error('Error updating communication stats for intervention:', statsErr);
+              }
+
               // Send intervention UI ONLY to the sender (private message)
               const interventionMessage = {
                 id: `ai-intervention-${Date.now()}`,
@@ -1260,6 +1299,18 @@ io.on('connection', (socket) => {
           } else {
             // Message is fine - broadcast to room only and save to database
             console.log(`✅ Message from ${user.username} approved - broadcasting to room ${user.roomId}`);
+
+            // Update communication stats - successful message, increment streak
+            try {
+              const db = await require('./db').getDb();
+              const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
+              const users = dbSafe.parseResult(userResult);
+              if (users.length > 0) {
+                await communicationStats.updateCommunicationStats(users[0].id, user.roomId, false);
+              }
+            } catch (statsErr) {
+              console.error('Error updating communication stats for approved message:', statsErr);
+            }
 
             // Save to database using messageStore (includes room_id)
             messageStore.saveMessage({
@@ -3470,6 +3521,40 @@ app.get('/api/dashboard/updates', async (req, res) => {
   }
 });
 
+// Get communication stats for a user
+app.get('/api/dashboard/communication-stats', async (req, res) => {
+  try {
+    const username = req.query.username;
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    const db = await require('./db').getDb();
+
+    // Get user ID
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // Get aggregated stats across all rooms
+    const stats = await communicationStats.getUserStats(userId);
+
+    res.json({
+      success: true,
+      stats: stats
+    });
+  } catch (error) {
+    console.error('Error fetching communication stats:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Generate task using AI
 app.post('/api/tasks/generate', async (req, res) => {
   try {
@@ -5289,6 +5374,331 @@ app.post('/api/auth/signup-with-token', async (req, res) => {
     if (error.message === 'Username already exists' || error.message === 'Email already exists') {
       return res.status(409).json({ error: error.message });
     }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// Figma API Endpoints
+// ========================================
+
+// Check Figma service availability
+app.get('/api/figma/status', (req, res) => {
+  res.json({
+    available: !!figmaService,
+    message: figmaService 
+      ? 'Figma API service is available' 
+      : 'Figma API service not configured. Set FIGMA_ACCESS_TOKEN environment variable.'
+  });
+});
+
+// Get file data from Figma
+app.get('/api/figma/file/:fileKey', async (req, res) => {
+  if (!figmaService) {
+    return res.status(503).json({ error: 'Figma API service not configured' });
+  }
+
+  try {
+    const { fileKey } = req.params;
+    const { version, ids, depth, geometry, plugin_data, styles } = req.query;
+
+    const options = {};
+    if (version) options.version = version;
+    if (ids) options.ids = ids.split(',');
+    if (depth) options.depth = parseInt(depth);
+    if (geometry === 'true') options.geometry = 'paths';
+    if (plugin_data === 'true') options.plugin_data = true;
+    if (styles === 'true') options.styles = true;
+
+    const fileData = await figmaService.getFile(fileKey, options);
+    res.json(fileData);
+  } catch (error) {
+    console.error('Error fetching Figma file:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get specific nodes from a Figma file
+app.get('/api/figma/file/:fileKey/nodes', async (req, res) => {
+  if (!figmaService) {
+    return res.status(503).json({ error: 'Figma API service not configured' });
+  }
+
+  try {
+    const { fileKey } = req.params;
+    const { ids } = req.query;
+
+    if (!ids) {
+      return res.status(400).json({ error: 'ids parameter is required' });
+    }
+
+    const nodeIds = ids.split(',');
+    const nodeData = await figmaService.getFileNodes(fileKey, nodeIds);
+    res.json(nodeData);
+  } catch (error) {
+    console.error('Error fetching Figma nodes:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Export images from Figma
+app.get('/api/figma/images/:fileKey', async (req, res) => {
+  if (!figmaService) {
+    return res.status(503).json({ error: 'Figma API service not configured' });
+  }
+
+  try {
+    const { fileKey } = req.params;
+    const { ids, format = 'png', scale = 1, use_absolute_bounds } = req.query;
+
+    if (!ids) {
+      return res.status(400).json({ error: 'ids parameter is required' });
+    }
+
+    const nodeIds = ids.split(',');
+    const imageData = await figmaService.getImages(fileKey, nodeIds, {
+      format,
+      scale: parseFloat(scale),
+      use_absolute_bounds: use_absolute_bounds === 'true'
+    });
+    res.json(imageData);
+  } catch (error) {
+    console.error('Error exporting Figma images:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get comments from a Figma file
+app.get('/api/figma/file/:fileKey/comments', async (req, res) => {
+  if (!figmaService) {
+    return res.status(503).json({ error: 'Figma API service not configured' });
+  }
+
+  try {
+    const { fileKey } = req.params;
+    const comments = await figmaService.getComments(fileKey);
+    res.json(comments);
+  } catch (error) {
+    console.error('Error fetching Figma comments:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Post a comment to a Figma file
+app.post('/api/figma/file/:fileKey/comments', verifyAuth, async (req, res) => {
+  if (!figmaService) {
+    return res.status(503).json({ error: 'Figma API service not configured' });
+  }
+
+  try {
+    const { fileKey } = req.params;
+    const { message, comment_id } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: 'message is required' });
+    }
+
+    const comment = await figmaService.postComment(fileKey, message, comment_id);
+    res.json(comment);
+  } catch (error) {
+    console.error('Error posting Figma comment:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Extract file key from Figma URL
+app.post('/api/figma/extract', (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ error: 'url is required' });
+    }
+
+    const fileKey = FigmaService.extractFileKey(url);
+    const nodeId = FigmaService.extractNodeId(url);
+
+    res.json({
+      fileKey,
+      nodeId,
+      valid: !!fileKey
+    });
+  } catch (error) {
+    console.error('Error extracting Figma data:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Sync design tokens from Figma plugin
+app.post('/api/figma/sync-tokens', async (req, res) => {
+  try {
+    const { fileKey, tokens } = req.body;
+
+    if (!tokens) {
+      return res.status(400).json({ error: 'tokens are required' });
+    }
+
+    // Store or process tokens
+    // For now, we'll log them and return success
+    // You can extend this to save to a file or database
+    
+    console.log('Received tokens from Figma:', {
+      fileKey: fileKey || 'unknown',
+      tokenCount: {
+        colors: Object.keys(tokens.colors || {}).length,
+        spacing: Object.keys(tokens.spacing || {}).length,
+        typography: Object.keys(tokens.typography || {}).length
+      }
+    });
+
+    // TODO: Save tokens to .design-tokens-mcp/tokens.json or merge with existing tokens
+    
+    res.json({
+      success: true,
+      message: 'Tokens synced successfully',
+      tokens: tokens
+    });
+  } catch (error) {
+    console.error('Error syncing tokens:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Scan components from codebase
+app.get('/api/figma/scan-components', async (req, res) => {
+  try {
+    const scanner = new ComponentScanner();
+    const components = await scanner.scanComponents();
+    
+    res.json({
+      success: true,
+      count: components.length,
+      components: components.map(c => ({
+        name: c.name,
+        category: c.category,
+        filename: c.filename,
+        props: c.props,
+        tokens: c.tokens,
+        children: c.children.map(ch => ch.name),
+      }))
+    });
+  } catch (error) {
+    console.error('Error scanning components:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate Figma structure from components
+app.post('/api/figma/generate-structure', async (req, res) => {
+  try {
+    const { componentNames, pageType = 'wireframes', fileKey } = req.body;
+
+    const scanner = new ComponentScanner();
+    const allComponents = await scanner.scanComponents();
+    
+    // Filter to requested components, or use all if none specified
+    const components = componentNames && componentNames.length > 0
+      ? allComponents.filter(c => componentNames.includes(c.name))
+      : allComponents;
+
+    // Generate Figma structure
+    const generator = new FigmaGenerator(figmaService, fileKey);
+    const figmaPage = await generator.generateFigmaPage(components, pageType);
+
+    // Convert to plugin format
+    const pluginFormat = generator.toFigmaPluginFormat(figmaPage);
+
+    res.json({
+      success: true,
+      page: figmaPage,
+      pluginFormat: pluginFormat,
+      components: components.map(c => c.name)
+    });
+  } catch (error) {
+    console.error('Error generating Figma structure:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Sync components to Figma (sends data to plugin)
+app.post('/api/figma/sync-components', async (req, res) => {
+  try {
+    const { componentNames, pageType = 'wireframes', fileKey } = req.body;
+
+    if (!fileKey && !figmaService) {
+      return res.status(400).json({ 
+        error: 'fileKey is required, or set FIGMA_ACCESS_TOKEN to auto-create file' 
+      });
+    }
+
+    // Scan components
+    const scanner = new ComponentScanner();
+    const allComponents = await scanner.scanComponents();
+    
+    const components = componentNames && componentNames.length > 0
+      ? allComponents.filter(c => componentNames.includes(c.name))
+      : allComponents;
+
+    // Generate Figma structure
+    const generator = new FigmaGenerator(figmaService, fileKey);
+    const figmaPage = await generator.generateFigmaPage(components, pageType);
+    
+    // Return data for plugin to consume
+    // The plugin will need to be running and listening for this data
+    res.json({
+      success: true,
+      message: `Generated structure for ${components.length} components. Use Figma plugin to render.`,
+      data: {
+        command: 'create-structure',
+        structure: figmaPage,
+        components: components.map(c => ({
+          name: c.name,
+          category: c.category,
+          structure: c.structure,
+          styles: c.styles,
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error syncing components to Figma:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get component details for a specific component
+app.get('/api/figma/component/:componentName', async (req, res) => {
+  try {
+    const { componentName } = req.params;
+    
+    const scanner = new ComponentScanner();
+    const components = await scanner.scanComponents();
+    
+    const component = components.find(c => 
+      c.name.toLowerCase() === componentName.toLowerCase()
+    );
+
+    if (!component) {
+      return res.status(404).json({ error: 'Component not found' });
+    }
+
+    // Generate wireframe for this component
+    const generator = new FigmaGenerator(figmaService, null);
+    const wireframe = generator.generateWireframe(component);
+
+    res.json({
+      success: true,
+      component: {
+        name: component.name,
+        category: component.category,
+        props: component.props,
+        structure: component.structure,
+        styles: component.styles,
+        tokens: component.tokens,
+      },
+      wireframe: wireframe
+    });
+  } catch (error) {
+    console.error('Error getting component:', error);
     res.status(500).json({ error: error.message });
   }
 });
