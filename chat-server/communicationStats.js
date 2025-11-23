@@ -16,6 +16,14 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
     const db = await require('./db').getDb();
     const now = new Date().toISOString();
 
+    // Check if table exists first (for Railway deployments)
+    try {
+      db.exec('SELECT 1 FROM communication_stats LIMIT 1');
+    } catch (tableErr) {
+      console.warn('⚠️  communication_stats table not ready yet, skipping stats update');
+      return false;
+    }
+
     // Get or create stats record for this user-room combination
     const statsResult = await dbSafe.safeSelect('communication_stats', {
       user_id: userId,
@@ -104,6 +112,22 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
  */
 async function getUserStats(userId) {
   try {
+    // Check if table exists first
+    const db = await require('./db').getDb();
+    try {
+      db.exec('SELECT 1 FROM communication_stats LIMIT 1');
+    } catch (tableErr) {
+      console.warn('⚠️  communication_stats table not ready yet, returning empty stats');
+      return {
+        currentStreak: 0,
+        bestStreak: 0,
+        totalPositive: 0,
+        totalMessages: 0,
+        totalInterventions: 0,
+        successRate: 0
+      };
+    }
+
     const statsResult = await dbSafe.safeSelect('communication_stats', {
       user_id: userId
     });
@@ -158,6 +182,22 @@ async function getUserStats(userId) {
  */
 async function getRoomStats(userId, roomId) {
   try {
+    // Check if table exists first
+    const db = await require('./db').getDb();
+    try {
+      db.exec('SELECT 1 FROM communication_stats LIMIT 1');
+    } catch (tableErr) {
+      console.warn('⚠️  communication_stats table not ready yet, returning empty stats');
+      return {
+        currentStreak: 0,
+        bestStreak: 0,
+        totalPositive: 0,
+        totalMessages: 0,
+        totalInterventions: 0,
+        successRate: 0
+      };
+    }
+
     const statsResult = await dbSafe.safeSelect('communication_stats', {
       user_id: userId,
       room_id: roomId
