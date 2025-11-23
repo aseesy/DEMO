@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Debug Test - LiaiZen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #275559;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .menu-container {
+            position: relative;
+            margin: 30px 0;
+        }
+
+        .menu-button {
+            background: #275559;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            transition: all 0.2s;
+        }
+
+        .menu-button:hover {
+            background: #1a3d40;
+        }
+
+        .menu-button:active {
+            transform: scale(0.98);
+        }
+
+        .menu-dropdown {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            background: white;
+            border: 2px solid #C5E8E4;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            min-width: 200px;
+            z-index: 10000;
+            padding: 8px 0;
+            display: none;
+        }
+
+        .menu-dropdown.show {
+            display: block;
+        }
+
+        .menu-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            transition: background 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-item:hover {
+            background: #f0f9ff;
+        }
+
+        .menu-item:active {
+            background: #dbeafe;
+        }
+
+        .log {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+            padding: 3px 0;
+            border-bottom: 1px solid #334155;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .timestamp {
+            color: #94a3b8;
+        }
+
+        .clear-log {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #475569;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .clear-log:hover {
+            background: #334155;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Menu Debug Test</h1>
+        <p>Test menu interactions and see detailed logs</p>
+
+        <div class="status">
+            <strong>Status:</strong> Ready to test
+        </div>
+
+        <div class="menu-container">
+            <button class="menu-button" id="menuButton">
+                Open Menu
+            </button>
+
+            <div class="menu-dropdown" id="menuDropdown">
+                <div class="menu-item" data-action="profile">
+                    👤 Profile
+                </div>
+                <div class="menu-item" data-action="settings">
+                    ⚙️ Settings
+                </div>
+                <div class="menu-item" data-action="logout">
+                    🚪 Logout
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <strong>Event Log:</strong>
+            <div class="log" id="eventLog"></div>
+            <button class="clear-log" onclick="clearLog()">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        const menuButton = document.getElementById('menuButton');
+        const menuDropdown = document.getElementById('menuDropdown');
+        const eventLog = document.getElementById('eventLog');
+        let isMenuOpen = false;
+
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            eventLog.appendChild(entry);
+            eventLog.scrollTop = eventLog.scrollHeight;
+        }
+
+        function clearLog() {
+            eventLog.innerHTML = '';
+            addLog('Log cleared');
+        }
+
+        // Menu button events
+        menuButton.addEventListener('touchstart', (e) => {
+            addLog('🟢 MENU BUTTON: touchstart');
+        });
+
+        menuButton.addEventListener('touchend', (e) => {
+            addLog('🟢 MENU BUTTON: touchend');
+        });
+
+        menuButton.addEventListener('click', (e) => {
+            addLog('🟢 MENU BUTTON: click');
+            e.stopPropagation();
+            isMenuOpen = !isMenuOpen;
+            menuDropdown.classList.toggle('show', isMenuOpen);
+            addLog(`Menu is now: ${isMenuOpen ? 'OPEN' : 'CLOSED'}`);
+        });
+
+        // Menu item events
+        const menuItems = document.querySelectorAll('.menu-item');
+        menuItems.forEach(item => {
+            const action = item.getAttribute('data-action');
+
+            item.addEventListener('touchstart', (e) => {
+                addLog(`🔵 MENU ITEM (${action}): touchstart`);
+            });
+
+            item.addEventListener('touchend', (e) => {
+                addLog(`🔵 MENU ITEM (${action}): touchend`);
+            });
+
+            item.addEventListener('click', (e) => {
+                addLog(`🔵 MENU ITEM (${action}): click`);
+                e.stopPropagation();
+                addLog(`✅ ACTION: ${action.toUpperCase()} executed`);
+                isMenuOpen = false;
+                menuDropdown.classList.remove('show');
+                addLog('Menu closed');
+            });
+
+            // Also test pointer events
+            item.addEventListener('pointerdown', (e) => {
+                addLog(`🟡 MENU ITEM (${action}): pointerdown (type: ${e.pointerType})`);
+            });
+
+            item.addEventListener('pointerup', (e) => {
+                addLog(`🟡 MENU ITEM (${action}): pointerup (type: ${e.pointerType})`);
+            });
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (isMenuOpen && !menuButton.contains(e.target) && !menuDropdown.contains(e.target)) {
+                addLog('📍 OUTSIDE CLICK: Closing menu');
+                isMenuOpen = false;
+                menuDropdown.classList.remove('show');
+            }
+        });
+
+        // Log page load
+        addLog('✅ Page loaded successfully');
+        addLog('Device: ' + (navigator.maxTouchPoints > 0 ? 'TOUCH DEVICE' : 'MOUSE DEVICE'));
+        addLog(`Screen size: ${window.innerWidth}x${window.innerHeight}`);
+        addLog('Ready to test menu interactions!');
+    </script>
+</body>
+</html>
