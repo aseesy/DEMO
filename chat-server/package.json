@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "migrate": "node run-migration.js",
-    "start": "npm run migrate && node server.js",
+    "start": "node server.js",
+    "start:with-migrate": "npm run migrate && node server.js",
     "dev": "nodemon server.js"
   },
   "keywords": [

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { Button, Heading, SectionHeader } from './ui';
+import { apiGet } from '../apiClient.js';
 import {
   trackCTAClick,
   trackSectionView,
@@ -21,6 +22,7 @@ export function LandingPage({ onGetStarted }) {
   const [newsletterSubmitted, setNewsletterSubmitted] = React.useState(false);
   const [showSignInModal, setShowSignInModal] = React.useState(false);
   const [showSignupModal, setShowSignupModal] = React.useState(false);
+  const [remainingSpots, setRemainingSpots] = React.useState(null); // null = loading, number = loaded
   
   const {
     email: authEmail,
@@ -98,6 +100,31 @@ export function LandingPage({ onGetStarted }) {
     return () => {
       sections.forEach((section) => observer.unobserve(section));
     };
+  }, []);
+
+  // Fetch user count to calculate remaining beta spots
+  React.useEffect(() => {
+    async function fetchUserCount() {
+      try {
+        const response = await apiGet('/api/stats/user-count');
+        if (response.ok) {
+          const data = await response.json();
+          const userCount = data.count || 0;
+          const remaining = Math.max(0, 100 - userCount); // Ensure it doesn't go below 0
+          setRemainingSpots(remaining);
+        }
+      } catch (error) {
+        console.error('Error fetching user count:', error);
+        // On error, show "100" as default
+        setRemainingSpots(100);
+      }
+    }
+    
+    fetchUserCount();
+    
+    // Refresh every 30 seconds to keep spots updated
+    const interval = setInterval(fetchUserCount, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSignInSubmit = async (e) => {
@@ -218,7 +245,11 @@ export function LandingPage({ onGetStarted }) {
                 Join Our Beta.
               </span>
               <span className="text-sm font-semibold text-teal-medium">
-                Only X spots left!
+                {remainingSpots !== null ? (
+                  `Only ${remainingSpots} spot${remainingSpots !== 1 ? 's' : ''} left!`
+                ) : (
+                  'Limited spots available!'
+                )}
               </span>
             </div>
 

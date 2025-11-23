@@ -3,6 +3,14 @@ require('dotenv').config();
 // Initialize database (must be before other imports that might use it)
 require('./db');
 
+// Run PostgreSQL migration if DATABASE_URL is set (non-blocking, async)
+if (process.env.DATABASE_URL) {
+  const { runMigration } = require('./run-migration');
+  runMigration().catch(err => {
+    console.error('⚠️  Migration error (non-blocking):', err.message);
+  });
+}
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -42,8 +50,17 @@ const app = express();
 const server = http.createServer(app);
 
 // Trust proxy - required for Railway/Vercel deployment and rate limiting
-// This allows Express to correctly identify client IPs behind Railway's reverse proxy
-app.set('trust proxy', true);
+// Configure to only trust Railway's proxy (not all proxies) to prevent rate limit bypass
+// Railway uses a reverse proxy, so we trust only the first hop (Railway's proxy)
+if (process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production') {
+  // In production/Railway, trust only the first proxy (Railway's reverse proxy)
+  // This prevents IP spoofing while still getting correct client IPs
+  app.set('trust proxy', 1);
+} else {
+  // In development, we can trust proxy for local testing with Docker/compose
+  // But we'll still use a number to satisfy express-rate-limit
+  app.set('trust proxy', 1);
+}
 
 // Security middleware
 app.use(helmet({
@@ -169,6 +186,9 @@ const limiter = rateLimit({
   skip: (req) => {
     // Skip rate limiting for auth endpoints (they have their own limits)
     return req.path.startsWith('/api/auth/');
+  },
+  validate: {
+    trustProxy: false, // We've configured trust proxy properly (trust only Railway's proxy)
   }
 });
 
@@ -180,6 +200,9 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful logins against limit
+  validate: {
+    trustProxy: false, // We've configured trust proxy properly (trust only Railway's proxy)
+  }
 });
 
 // Apply general rate limiting (excludes auth endpoints)
@@ -2340,6 +2363,35 @@ app.get('/api/debug/users', async (req, res) => {
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Public endpoint: Get total user count (for beta spots calculation)
+app.get('/api/stats/user-count', async (req, res) => {
+  try {
+    const usePostgres = !!process.env.DATABASE_URL;
+    let count = 0;
+
+    if (usePostgres) {
+      // PostgreSQL
+      const dbPostgres = require('./dbPostgres');
+      const result = await dbPostgres.query('SELECT COUNT(*) as count FROM users');
+      count = parseInt(result.rows[0]?.count || 0, 10);
+    } else {
+      // SQLite
+      const db = await require('./db').getDb();
+      const result = db.exec('SELECT COUNT(*) as count FROM users');
+      
+      if (result.length > 0 && result[0].values.length > 0) {
+        count = result[0].values[0][0] || 0;
+      }
+    }
+
+    res.json({ count });
+  } catch (error) {
+    console.error('Error fetching user count:', error);
+    // Return 0 on error so frontend doesn't break
+    res.json({ count: 0 });
   }
 });
 

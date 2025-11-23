@@ -1,71 +1,33 @@
-import { defineConfig, loadEnv } from 'vite'
-import react from '@vitejs/plugin-react'
+// vite.config.js – split vendor libraries into a separate chunk for better caching
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
-export default defineConfig(({ mode }) => {
-  // Load env file based on `mode` in the current working directory.
-  const env = loadEnv(mode, process.cwd(), '');
-  
-  return {
-    plugins: [
-      react(),
-      // Plugin to inject Google Tag into HTML files
-      {
-        name: 'inject-google-tag',
-        transformIndexHtml(html) {
-          // Try multiple ways to get the Google Tag
-          const googleTag = env.VITE_GOOGLE_TAG || env.GOOGLE_TAG || process.env.VITE_GOOGLE_TAG || process.env.GOOGLE_TAG;
-          
-          if (!googleTag || !googleTag.trim()) {
-            console.log('[Vite Plugin] No GOOGLE_TAG found in environment variables');
-            return html;
+// List of large third‑party packages you want to separate
+const VENDOR_LIBS = [
+  'react',
+  'react-dom',
+  'react-router-dom',
+  'socket.io-client',
+  // add more libs here if needed
+];
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    // Optional: raise the warning limit if you just want to silence it
+    // chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            const parts = id.split('node_modules/')[1].split('/');
+            const pkg = parts[0].startsWith('@') ? `${parts[0]}/${parts[1]}` : parts[0];
+            if (VENDOR_LIBS.includes(pkg)) {
+              return 'vendor';
+            }
           }
-
-          // Check if Google Tag already exists
-          if (html.includes('googletagmanager.com') || 
-              html.includes('google-analytics.com') || 
-              html.includes('data-gtag') ||
-              html.includes('gtag') ||
-              html.includes('GTM-')) {
-            console.log('[Vite Plugin] Google Tag already present in HTML, skipping injection');
-            return html;
-          }
-
-          // Inject Google Tag immediately after <head> opening tag
-          const headIndex = html.indexOf('<head>');
-          if (headIndex !== -1) {
-            const insertPosition = headIndex + 6; // After '<head>'
-            const injectedHtml = html.slice(0, insertPosition) + '\n    ' + googleTag.trim() + '\n    ' + html.slice(insertPosition);
-            console.log('[Vite Plugin] Google Tag injected into HTML');
-            return injectedHtml;
-          }
-
-          console.warn('[Vite Plugin] Could not find <head> tag in HTML');
-          return html;
         },
       },
-    ],
-  server: {
-      port: 5173,
-      host: true,
-      hmr: {
-        overlay: true, // Show error overlay on screen
-      },
-      watch: {
-        usePolling: true, // Better file watching on some systems
-      },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
-        },
-        '/socket.io': {
-          target: 'ws://localhost:3001',
-          ws: true,
-          changeOrigin: true,
-        }
-      }
-    }
-  }
-})
+    },
+  },
+});

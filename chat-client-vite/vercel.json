@@ -6,7 +6,7 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/((?!assets|api|.*\\.[a-z0-9]+$).*)",
+      "source": "/((?!api|assets|.*\\.[a-z0-9]+$).*)",
       "destination": "/index.html"
     }
   ],
