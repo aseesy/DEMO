@@ -6,7 +6,7 @@ const path = require('path');
 async function runMigration() {
     if (!process.env.DATABASE_URL) {
         console.log('ℹ️  DATABASE_URL not set - skipping PostgreSQL migration (using SQLite)');
-        process.exit(0);
+        return; // Return instead of exit
     }
 
     try {
@@ -50,18 +50,20 @@ async function runMigration() {
         await query(sql);
 
         console.log('✅ PostgreSQL migration completed successfully');
-        process.exit(0);
     } catch (error) {
         console.error('❌ Migration failed:', error.message);
         console.error('Stack trace:', error.stack);
         // Don't exit with error - allow server to start even if migration fails
         // This prevents deployment failures if migration has already run
         console.log('⚠️  Continuing server startup despite migration error...');
-        process.exit(0);
     }
 }
 
-runMigration().catch((err) => {
-    console.error('Unexpected error in migration:', err);
-    process.exit(0);
-});
+// Run migration and handle any unexpected errors
+runMigration()
+    .then(() => {
+        console.log('Migration script completed');
+    })
+    .catch((err) => {
+        console.error('Unexpected error in migration:', err);
+    });

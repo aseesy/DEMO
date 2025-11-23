@@ -196,7 +196,7 @@ export function LandingPage({ onGetStarted }) {
             {/* Top Label - Design System SectionHeader */}
             <div className="mb-6">
               <SectionHeader color="medium" size="base">
-                Professional Mediation & Support
+                AI Mediation & Guidance
               </SectionHeader>
             </div>
 
@@ -208,22 +208,32 @@ export function LandingPage({ onGetStarted }) {
             </div>
 
             {/* Description Text */}
-            <p className="text-lg sm:text-xl text-gray-700 mb-10 max-w-3xl leading-relaxed">
+            <p className="text-lg sm:text-xl text-gray-700 mb-6 max-w-3xl leading-relaxed">
               LiaiZen prevents conflict in real time—so every message moves the conversation forward, not backward.
             </p>
+
+            {/* Beta Notice - Subtle text element */}
+            <div className="mb-8 flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                Join Our Beta.
+              </span>
+              <span className="text-sm font-semibold text-teal-medium">
+                Only X spots left!
+              </span>
+            </div>
 
             {/* Dual CTAs - Design System Buttons */}
             <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-4">
               <Button
                 onClick={() => {
-                  trackCTAClick('hero', 'Try Our Beta', 'primary');
+                  trackCTAClick('hero', 'Get Early Access', 'primary');
                   navigate('/signin');
                 }}
                 variant="teal-solid"
                 size="large"
                 className="w-full sm:w-auto"
               >
-                Try Our Beta
+                Get Early Access
               </Button>
               <Button
                 onClick={() => {
