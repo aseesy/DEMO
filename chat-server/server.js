@@ -2381,7 +2381,7 @@ app.get('/api/stats/user-count', async (req, res) => {
       // SQLite
       const db = await require('./db').getDb();
       const result = db.exec('SELECT COUNT(*) as count FROM users');
-      
+
       if (result.length > 0 && result[0].values.length > 0) {
         count = result[0].values[0][0] || 0;
       }
@@ -2626,7 +2626,7 @@ app.get('/api/debug/pending-connections', async (req, res) => {
 
 // Serve static files from Vite build (if dist directory exists)
 // This allows the backend to serve the frontend if needed
-const distPath = path.join(__dirname, '..', 'chat-client-vite', 'dist');
+const distPath = path.join(__dirname, 'dist');
 const distExists = fs.existsSync(distPath);
 
 if (distExists) {

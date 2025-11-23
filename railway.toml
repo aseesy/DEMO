@@ -3,7 +3,7 @@
 
 [build]
 builder = "nixpacks"
-buildCommand = "cd chat-server && npm install --legacy-peer-deps"
+buildCommand = "cp -r chat-client-vite/dist chat-server/dist && cd chat-server && npm install --legacy-peer-deps"
 
 [deploy]
 startCommand = "cd chat-server && node server.js"
