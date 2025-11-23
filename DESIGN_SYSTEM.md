@@ -53,7 +53,7 @@ Design tokens are the centralized source of truth for all design decisions (colo
 // Primary teal colors
 teal-darkest: #1f4447   // Dark teal for hover states
 teal-dark: #275559      // Primary dark teal
-teal-medium: #4DA8B0    // Primary teal
+teal-medium: #00908B    // Primary teal
 teal-light: #C5E8E4     // Light teal for backgrounds
 teal-lightest: #E6F7F5  // Very light teal for subtle backgrounds
 ```
@@ -137,7 +137,7 @@ Secondary actions and features.
 ```jsx
 <Button variant="secondary">Add Contact</Button>
 ```
-- **Background:** teal-medium (#4DA8B0)
+- **Background:** teal-medium (#00908B)
 - **Text:** white
 - **Hover:** teal-dark (#275559)
 - **Use For:** Secondary actions, AI features, alternative CTAs

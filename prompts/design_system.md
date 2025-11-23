@@ -33,7 +33,7 @@
 ### Brand Colors (Teal Palette)
 - **Primary Dark**: `#275559` - Headers, primary buttons, emphasis
 - **Primary Hover**: `#1f4447` - Darker state for primary actions
-- **Secondary**: `#4DA8B0` - Interactive elements, links, secondary buttons
+- **Secondary**: `#00908B` - Interactive elements, links, secondary buttons
 - **Secondary Hover**: `#3d8a92` - Hover state for secondary
 - **Accent**: `#6dd4b0` - Success states, positive actions
 - **Focus**: `#46BD92` - Focus rings, active states
@@ -60,7 +60,7 @@
 **Color Rules:**
 - Always use design tokens, never hardcode hex values
 - Primary actions use dark teal (`#275559`)
-- Secondary actions use medium teal (`#4DA8B0`)
+- Secondary actions use medium teal (`#00908B`)
 - Never use pure black text—use grey-900
 - Borders are subtle (grey-200), not harsh
 - Hover states darken by ~10-15%
@@ -120,12 +120,12 @@
 ```jsx
 // Clean, spacious, clear hierarchy
 <div className="bg-white rounded-xl p-6 border-2 border-[#C5E8E4] shadow-sm">
-  <h3 className="text-xl font-semibold text-[#4DA8B0] mb-4">
+  <h3 className="text-xl font-semibold text-[#00908B] mb-4">
     Contact Information
   </h3>
   <div className="space-y-4">
     <div>
-      <label className="block text-sm font-medium text-[#4DA8B0] mb-2">
+      <label className="block text-sm font-medium text-[#00908B] mb-2">
         Email Address
       </label>
       <input
@@ -157,7 +157,7 @@
 ```jsx
 // Cluttered, inconsistent, poor accessibility
 <div style={{background: 'white', padding: '10px', borderRadius: '5px'}}>
-  <h3 style={{color: '#4DA8B0', marginBottom: '8px'}}>Contact</h3>
+  <h3 style={{color: '#00908B', marginBottom: '8px'}}>Contact</h3>
   <input type="email" placeholder="email" style={{width: '100%', padding: '5px'}} />
   <button style={{background: '#275559', color: 'white', padding: '8px', marginTop: '10px'}}>
     Save
@@ -340,7 +340,7 @@
 
 **Secondary Button:**
 ```jsx
-<button className="px-6 py-3 bg-[#4DA8B0] text-white rounded-lg 
+<button className="px-6 py-3 bg-[#00908B] text-white rounded-lg 
                    font-semibold hover:bg-[#3d8a92] transition-colors
                    min-h-[44px]">
   Secondary Action
@@ -349,7 +349,7 @@
 
 **Ghost Button:**
 ```jsx
-<button className="px-6 py-3 bg-[#E6F7F5] text-[#4DA8B0] border border-[#C5E8E4] 
+<button className="px-6 py-3 bg-[#E6F7F5] text-[#00908B] border border-[#C5E8E4] 
                    rounded-lg font-semibold hover:bg-gray-200 transition-colors
                    min-h-[44px]">
   Cancel
@@ -438,7 +438,7 @@
     <div className="border-b border-gray-100 px-6 py-5 flex items-center 
                     justify-between flex-shrink-0">
       <h3 className="text-2xl font-bold text-gray-900">Modal Title</h3>
-      <button className="text-2xl font-bold text-gray-500 hover:text-[#4DA8B0]">
+      <button className="text-2xl font-bold text-gray-500 hover:text-[#00908B]">
         ×
       </button>
     </div>
@@ -451,7 +451,7 @@
     {/* Footer */}
     <div className="px-6 py-4 border-t border-gray-200 flex justify-end 
                     flex-shrink-0">
-      <button className="px-8 py-2.5 bg-[#4DA8B0] text-white rounded-xl 
+      <button className="px-8 py-2.5 bg-[#00908B] text-white rounded-xl 
                          font-semibold hover:bg-[#1f4447] transition-colors">
         Action
       </button>
@@ -476,7 +476,7 @@
 ```jsx
 <div className="flex justify-end mb-4">
   <div className="max-w-[75%] sm:max-w-[60%]">
-    <div className="bg-[#4DA8B0] text-white rounded-2xl rounded-tr-sm 
+    <div className="bg-[#00908B] text-white rounded-2xl rounded-tr-sm 
                     px-4 py-3 shadow-sm">
       <p className="text-sm leading-relaxed">{message.content}</p>
       <p className="text-xs opacity-75 mt-1 text-right">
@@ -543,7 +543,7 @@
 <div className="flex flex-col h-screen">
   {/* Header */}
   <div className="border-b-2 border-[#C5E8E4] bg-white px-4 py-3 flex-shrink-0">
-    <h2 className="text-xl font-semibold text-[#4DA8B0]">Chat Room</h2>
+    <h2 className="text-xl font-semibold text-[#00908B]">Chat Room</h2>
   </div>
   
   {/* Messages */}
@@ -583,10 +583,10 @@
 ### Hierarchy
 
 **Visual Hierarchy (Top to Bottom):**
-1. **Page Title**: 2xl, semibold, `#4DA8B0` - What page am I on?
-2. **Section Headers**: xl, semibold, `#4DA8B0` - What section is this?
+1. **Page Title**: 2xl, semibold, `#00908B` - What page am I on?
+2. **Section Headers**: xl, semibold, `#00908B` - What section is this?
 3. **Card Titles**: lg, semibold, `#275559` - What is this card?
-4. **Labels**: sm, medium, `#4DA8B0` - What is this field?
+4. **Labels**: sm, medium, `#00908B` - What is this field?
 5. **Body Text**: base, normal, `#111827` - The actual content
 6. **Hints/Placeholders**: sm, normal, `#9ca3af` - Supporting info
 

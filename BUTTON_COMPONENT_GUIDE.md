@@ -175,7 +175,7 @@ import { Button } from './components/ui';
 
 ## Design Principles
 
-1. **Primary buttons** use the teal-medium (#4DA8B0) brand color - this is the signature color
+1. **Primary buttons** use the teal-medium (#00908B) brand color - this is the signature color
 2. **Outline buttons** use white background with subtle gray border for clean, minimal look
 3. **All buttons** use `rounded-lg` (12px) for professional, modern appearance
 4. **Minimum height** is 44px for touch-friendly interactions
@@ -208,7 +208,7 @@ import { Button } from './components/ui';
 
 ## Color Reference
 
-- **Primary Brand Color**: `#4DA8B0` (teal-medium)
+- **Primary Brand Color**: `#00908B` (teal-medium)
 - **Primary Hover**: `#3d8a92`
 - **Outline Border**: `#E5E7EB` (gray-200)
 - **Outline Text**: `#111827` (gray-900)

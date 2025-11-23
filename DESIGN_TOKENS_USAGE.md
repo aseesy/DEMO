@@ -17,7 +17,7 @@ Instead of hardcoded hex values, use Tailwind classes:
 |-------|-----------|----------------|-------|
 | `teal.lightest` | `#E6F7F5` | `bg-teal-lightest` | Subtle backgrounds, hover states |
 | `teal.light` | `#C5E8E4` | `bg-teal-light`, `border-teal-light` | Borders, soft backgrounds |
-| `teal.medium` | `#4DA8B0` | `bg-teal-medium`, `text-teal-medium` | Interactive elements, links, secondary buttons |
+| `teal.medium` | `#00908B` | `bg-teal-medium`, `text-teal-medium` | Interactive elements, links, secondary buttons |
 | `teal.dark` | `#275559` | `bg-teal-dark`, `text-teal-dark` | Primary buttons, headers, emphasis |
 | `teal.darkest` | `#1f4447` | `bg-teal-darkest` | Hover states on dark teal elements |
 
@@ -148,12 +148,12 @@ Use Tailwind spacing scale (already aligned with tokens):
 When updating components to use tokens:
 
 - [ ] Replace `bg-[#275559]` → `bg-teal-dark`
-- [ ] Replace `bg-[#4DA8B0]` → `bg-teal-medium`
+- [ ] Replace `bg-[#00908B]` → `bg-teal-medium`
 - [ ] Replace `bg-[#C5E8E4]` → `bg-teal-light`
 - [ ] Replace `bg-[#E6F7F5]` → `bg-teal-lightest`
 - [ ] Replace `bg-[#1f4447]` → `bg-teal-darkest`
 - [ ] Replace `border-[#C5E8E4]` → `border-teal-light`
-- [ ] Replace `text-[#4DA8B0]` → `text-teal-medium`
+- [ ] Replace `text-[#00908B]` → `text-teal-medium`
 - [ ] Replace `text-[#275559]` → `text-teal-dark`
 - [ ] Replace hardcoded spacing with Tailwind spacing classes
 - [ ] Replace hardcoded border radius with token classes

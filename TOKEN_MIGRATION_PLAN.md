@@ -40,7 +40,7 @@
 | Hardcoded | Token Class | Usage |
 |-----------|-------------|-------|
 | `#275559` | `teal-dark` | Primary buttons, headers |
-| `#4DA8B0` | `teal-medium` | Secondary buttons, links, accents |
+| `#00908B` | `teal-medium` | Secondary buttons, links, accents |
 | `#C5E8E4` | `teal-light` | Borders |
 | `#E6F7F5` | `teal-lightest` | Subtle backgrounds |
 | `#1f4447` | `teal-darkest` | Hover states on dark teal |
@@ -83,7 +83,7 @@ You can use find/replace with these patterns:
 ### Find/Replace Patterns
 
 1. `bg-\[#275559\]` → `bg-teal-dark`
-2. `bg-\[#4DA8B0\]` → `bg-teal-medium`
+2. `bg-\[#00908B\]` → `bg-teal-medium`
 3. `bg-\[#C5E8E4\]` → `bg-teal-light`
 4. `bg-\[#E6F7F5\]` → `bg-teal-lightest`
 5. `bg-\[#1f4447\]` → `bg-teal-darkest`

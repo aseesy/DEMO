@@ -134,8 +134,8 @@ export function UIShowcase() {
                   </div>
                   <div>
                     <div className="font-semibold text-sm text-gray-900">Medium</div>
-                    <code className="text-xs text-gray-600">#4DA8B0</code>
-                    <div className="text-xs text-gray-500 mt-1">rgb(77, 168, 176)</div>
+                    <code className="text-xs text-gray-600">#00908B</code>
+                    <div className="text-xs text-gray-500 mt-1">rgb(0, 144, 139)</div>
                   </div>
                 </div>
 
@@ -1720,7 +1720,7 @@ export function UIShowcase() {
                     </div>
                     <div className="bg-white p-4 rounded-b-xl border-2 border-t-0 border-teal-dark">
                       <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Medium</div>
-                      <div className="font-mono text-sm font-bold text-teal-darkest mb-2">#4DA8B0</div>
+                      <div className="font-mono text-sm font-bold text-teal-darkest mb-2">#00908B</div>
                       <div className="text-xs text-gray-600 leading-relaxed">
                         Primary buttons, headers, main brand color
                       </div>
@@ -1809,7 +1809,7 @@ font-sans      → Inter, system-ui, -apple-system
 // BRAND COLOR PALETTE (5-Level Teal)
 text-teal-lightest   → #E6F7F5  // Light backgrounds, text on dark
 text-teal-light      → #B2E5E0  // Borders, secondary elements
-text-teal-medium     → #4DA8B0  // PRIMARY - Buttons, headers
+text-teal-medium     → #00908B  // PRIMARY - Buttons, headers
 text-teal-dark       → #275559  // Headings, emphasis text
 text-teal-darkest    → #1A3E41  // Hover states, deep contrast
 

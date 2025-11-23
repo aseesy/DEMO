@@ -2107,7 +2107,7 @@ function ChatRoom() {
                                   
                                   {/* Message Bubble */}
                                   <div
-                                    className={`relative px-4 py-3 rounded-2xl text-base leading-relaxed transition-all shadow-sm ${
+                                    className={`relative py-3 rounded-2xl text-base leading-relaxed transition-all shadow-sm ${
                                       isOwn
                                         ? isLastInGroup
                                           ? 'text-white rounded-br-sm'
@@ -2117,9 +2117,11 @@ function ChatRoom() {
                                           : 'bg-white border-2 border-teal-light text-gray-900'
                                     } ${
                                       isFlagged ? 'ring-2 ring-orange-300 bg-orange-50 border-orange-200' : ''
-                                    } ${isInThread ? 'border-l-4 border-l-teal-medium pl-3' : ''}`}
+                                    } ${isInThread ? 'border-l-4 border-l-teal-medium' : ''}`}
                                     style={{ 
                                       fontFamily: "'Inter', sans-serif",
+                                      paddingLeft: '16px',
+                                      paddingRight: '16px',
                                       ...(isOwn && !isFlagged && { backgroundColor: '#00908B' })
                                     }}
                                   >
@@ -2132,7 +2134,7 @@ function ChatRoom() {
                                       </div>
                                     )}
                                     
-                                    <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.text}</div>
+                                    <div className="text-sm leading-relaxed whitespace-pre-wrap break-words text-left">{msg.text.trim()}</div>
                                     
                                     {/* Timestamp */}
                                     {isLastInGroup && (
