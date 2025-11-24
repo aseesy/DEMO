@@ -121,6 +121,16 @@ if (!allowedOrigins.includes(serverOrigin)) {
 function isOriginAllowed(origin, allowedList) {
   if (!origin) return true; // Allow requests with no origin
 
+  // Automatically allow all Vercel preview and production domains
+  if (origin.includes('.vercel.app') || origin.includes('vercel.app')) {
+    return true;
+  }
+
+  // Automatically allow production domain
+  if (origin.includes('coparentliaizen.com')) {
+    return true;
+  }
+
   // Check exact matches
   if (allowedList.includes(origin) || allowedList.includes('*')) {
     return true;
@@ -217,6 +227,16 @@ const io = new Server(server, {
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
+
+      // Automatically allow all Vercel preview and production domains
+      if (origin.includes('.vercel.app') || origin.includes('vercel.app')) {
+        return callback(null, true);
+      }
+
+      // Automatically allow production domain
+      if (origin.includes('coparentliaizen.com')) {
+        return callback(null, true);
+      }
 
       // Allow same-origin requests
       if (origin.startsWith(`http://localhost:${serverPort}`) ||
