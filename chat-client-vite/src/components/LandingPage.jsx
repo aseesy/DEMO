@@ -23,7 +23,7 @@ export function LandingPage({ onGetStarted }) {
   const [showSignInModal, setShowSignInModal] = React.useState(false);
   const [showSignupModal, setShowSignupModal] = React.useState(false);
   const [remainingSpots, setRemainingSpots] = React.useState(null); // null = loading, number = loaded
-  
+
   const {
     email: authEmail,
     password,
@@ -119,9 +119,9 @@ export function LandingPage({ onGetStarted }) {
         setRemainingSpots(100);
       }
     }
-    
+
     fetchUserCount();
-    
+
     // Refresh every 30 seconds to keep spots updated
     const interval = setInterval(fetchUserCount, 30000);
     return () => clearInterval(interval);
@@ -231,8 +231,9 @@ export function LandingPage({ onGetStarted }) {
             {/* Main Headline - Design System Heading with serif */}
             <div className="mb-8">
               <Heading variant="hero" color="dark" as="h1" className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
-                Co-parenting&nbsp;communication,<br />
-                <em>without the cringe.</em>
+                <span className="whitespace-nowrap inline-block">Co-parenting</span>{' '}
+                communication,<br />
+                <em className="whitespace-nowrap">without the cringe.</em>
               </Heading>
             </div>
 
@@ -598,7 +599,7 @@ export function LandingPage({ onGetStarted }) {
           <div className="grid md:grid-cols-3 gap-6 sm:gap-8 mt-20">
             {/* Feature 1 */}
             <div className="bg-white rounded-xl p-6 sm:p-8 border-2 border-gray-200 hover:border-teal-light transition-all shadow-sm hover:shadow-md">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-teal-lightest to-teal-light rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-teal-lightest to-teal-light rounded-xl flex items-center justify-center mb-4 sm:mb-6">
                 <svg className="w-8 h-8 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
