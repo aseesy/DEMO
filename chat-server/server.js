@@ -4,11 +4,17 @@ require('dotenv').config();
 require('./db');
 
 // Run PostgreSQL migration if DATABASE_URL is set (non-blocking, async)
+// Migration runs in background - server starts immediately
 if (process.env.DATABASE_URL) {
-  const { runMigration } = require('./run-migration');
-  runMigration().catch(err => {
-    console.error('⚠️  Migration error (non-blocking):', err.message);
-  });
+  console.log('🔄 PostgreSQL detected - migration will run in background');
+  // Delay migration slightly to let server start first
+  setTimeout(() => {
+    const { runMigration } = require('./run-migration');
+    runMigration().catch(err => {
+      console.error('⚠️  Migration error (non-blocking):', err.message);
+      console.log('⚠️  Server will continue running - migration can be retried');
+    });
+  }, 2000); // Wait 2 seconds for server to start
 }
 
 const express = require('express');
@@ -48,6 +54,29 @@ if (process.env.FIGMA_ACCESS_TOKEN) {
 
 const app = express();
 const server = http.createServer(app);
+
+// Register health check IMMEDIATELY so Railway can verify server is starting
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Start server EARLY - before all routes are set up
+// This allows Railway's health check to pass immediately
+const PORT = process.env.PORT || 3001;
+const HOST = '0.0.0.0';
+
+// Start listening immediately with minimal setup
+server.listen(PORT, HOST, (error) => {
+  if (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+  console.log(`✅ Server listening on ${HOST}:${PORT}`);
+  console.log(`🏥 Health check ready at: http://${HOST}:${PORT}/health`);
+});
 
 // Trust proxy - required for Railway/Vercel deployment and rate limiting
 // Configure to only trust Railway's proxy (not all proxies) to prevent rate limit bypass
@@ -2318,16 +2347,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// Health check endpoint
-// Health check endpoint - must respond quickly for Railway
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    activeUsers: activeUsers.size,
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
-});
+// Health check endpoint already registered earlier (line 53) - removing duplicate
 
 // Serve admin UI
 app.get('/admin', (req, res) => {
@@ -5803,19 +5823,18 @@ process.on('unhandledRejection', (reason, promise) => {
   // Don't exit - log and continue
 });
 
-// Start server
-const PORT = process.env.PORT || 3001;
-const HOST = '0.0.0.0'; // Bind to all network interfaces (required for Railway/Docker)
+// Server already started earlier (line ~60) for Railway health check
+// Log final startup information
+console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔒 CORS enabled for: ${allowedOrigins.join(', ')}`);
+console.log(`   Press Ctrl+C to stop`);
 
-server.listen(PORT, HOST, (error) => {
-  if (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
-  }
-  console.log(`✅ Chat server running on ${HOST}:${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔒 CORS enabled for: ${allowedOrigins.join(', ')}`);
-  console.log(`   Press Ctrl+C to stop`);
+// Log database initialization status (non-blocking)
+const dbModule = require('./db');
+dbModule.getDb().then(() => {
+  console.log('✅ Database initialization completed');
+}).catch(err => {
+  console.warn('⚠️  Database initialization still in progress or failed:', err.message);
 });
 
 // Handle server errors

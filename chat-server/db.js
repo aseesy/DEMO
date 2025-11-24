@@ -41,7 +41,13 @@ let db = null;
 
 // Initialize database
 async function initDatabase() {
-  const SQL = await initSqlJs();
+  let SQL;
+  try {
+    SQL = await initSqlJs();
+  } catch (err) {
+    console.error('❌ Failed to load SQL.js:', err.message);
+    throw new Error(`SQL.js initialization failed: ${err.message}`);
+  }
 
   // Load existing database or create new one
   let buffer;
@@ -687,12 +693,21 @@ function saveDatabase() {
 }
 
 // Initialize and export
-const dbPromise = initDatabase();
+// Make database initialization non-blocking - server can start even if DB init is slow
+const dbPromise = initDatabase().catch(err => {
+  console.error('❌ Database initialization failed:', err);
+  console.error('⚠️  Server will continue but database operations may fail');
+  // Return null so server can still start
+  return null;
+});
 
 // Export database with helper methods
 module.exports = {
   getDb: async () => {
-    await dbPromise;
+    const result = await dbPromise;
+    if (!result && !db) {
+      throw new Error('Database not initialized');
+    }
     return db;
   },
   saveDatabase

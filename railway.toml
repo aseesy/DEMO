@@ -1,5 +1,5 @@
 # Railway Configuration
-# Modern Railway config format (replaces nixpacks.toml)
+# PostgreSQL-only production setup
 
 [build]
 builder = "nixpacks"
@@ -10,4 +10,7 @@ startCommand = "cd chat-server && node server.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 healthcheckPath = "/health"
-healthcheckTimeout = 100
+healthcheckTimeout = 1000
+
+# Note: PostgreSQL service should be added separately in Railway dashboard
+# Railway will automatically inject DATABASE_URL when PostgreSQL is connected

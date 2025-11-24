@@ -2,32 +2,23 @@
 // Central place to control the backend API base URL.
 
 // Determine API URL:
-// 1. Use VITE_API_URL if explicitly set
-// 2. If on production domain (coparentliaizen.clm), use same origin with /api
-// 3. Fall back to localhost:3001 for development
+// 1. Use VITE_API_URL if explicitly set (recommended - set in .env.local for dev, Vercel env vars for production)
+// 2. Fall back to localhost:3001 for development
+// 3. For production domains, you MUST set VITE_API_URL environment variable
 function getApiBaseUrl() {
-  // Explicit configuration takes precedence
+  // Explicit configuration takes precedence - this should be set in all environments
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
 
-  // In browser, detect from current location
+  // Fallback for local development only (when VITE_API_URL is not set)
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
-    
-    // Production domain - use Railway backend (not same origin)
-    if (origin.includes('coparentliaizen.com') || origin.includes('liaizen.com')) {
-      // Frontend on Vercel, backend on Railway
-      return 'https://demo-production-6dcd.up.railway.app';
-    }
     
     // Development - use localhost:3001
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return 'http://localhost:3001';
     }
-    
-    // For other domains, assume API is on same origin with /api
-    return `${origin}/api`;
   }
 
   // Server-side rendering fallback

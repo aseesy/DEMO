@@ -9,13 +9,22 @@ async function runMigration() {
         return; // Return instead of exit
     }
 
-    try {
-        console.log('🔄 Running PostgreSQL migration...');
+    // Retry connection up to 3 times with delays
+    let retries = 3;
+    let delay = 2000; // Start with 2 seconds
+    
+    while (retries > 0) {
+        try {
+            console.log(`🔄 Running PostgreSQL migration (attempt ${4 - retries}/3)...`);
 
-        // Check if dbPostgres is properly initialized
-        if (!dbPostgres || typeof dbPostgres.query !== 'function') {
-            throw new Error('PostgreSQL client not properly initialized');
-        }
+            // Check if dbPostgres is properly initialized
+            if (!dbPostgres || typeof dbPostgres.query !== 'function') {
+                throw new Error('PostgreSQL client not properly initialized');
+            }
+            
+            // Test connection first
+            await dbPostgres.query('SELECT 1');
+            console.log('✅ PostgreSQL connection verified');
 
         // Try multiple possible paths for the migration file
         const possiblePaths = [
@@ -87,17 +96,29 @@ async function runMigration() {
       `;
         }
 
-        // Execute the migration
-        const result = await dbPostgres.query(sql);
-        console.log('✅ Migration query executed successfully');
+            // Execute the migration
+            const result = await dbPostgres.query(sql);
+            console.log('✅ Migration query executed successfully');
 
-        console.log('✅ PostgreSQL migration completed successfully');
-    } catch (error) {
-        console.error('❌ Migration failed:', error.message);
-        console.error('Stack trace:', error.stack);
-        // Don't exit with error - allow server to start even if migration fails
-        // This prevents deployment failures if migration has already run
-        console.log('⚠️  Continuing server startup despite migration error...');
+            console.log('✅ PostgreSQL migration completed successfully');
+            return; // Success - exit
+            
+        } catch (error) {
+            retries--;
+            if (retries === 0) {
+                console.error('❌ Migration failed after all retries:', error.message);
+                console.error('Stack trace:', error.stack);
+                // Don't exit with error - allow server to start even if migration fails
+                // This prevents deployment failures if migration has already run
+                console.log('⚠️  Continuing server startup despite migration error...');
+                console.log('⚠️  Migration can be retried manually or on next deployment');
+                return; // Don't throw - allow server to start
+            }
+            console.log(`⚠️  Migration attempt failed, retrying in ${delay}ms... (${retries} attempts remaining)`);
+            console.log(`   Error: ${error.message}`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2; // Exponential backoff
+        }
     }
 }
 
