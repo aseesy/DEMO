@@ -18,13 +18,12 @@ export async function apiGet(path, options = {}) {
     // Track API response time
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
-    
-    // Track API errors
+
+    // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      trackAPIError(endpoint, response.status, errorData.error || response.statusText);
+      trackAPIError(endpoint, response.status, response.statusText);
     }
-    
+
     return response;
   } catch (error) {
     // Track network errors
@@ -54,13 +53,12 @@ export async function apiPost(path, body, options = {}) {
     // Track API response time
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
-    
-    // Track API errors
+
+    // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      trackAPIError(endpoint, response.status, errorData.error || response.statusText);
+      trackAPIError(endpoint, response.status, response.statusText);
     }
-    
+
     return response;
   } catch (error) {
     // Track network errors
@@ -90,13 +88,12 @@ export async function apiPut(path, body, options = {}) {
     // Track API response time
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
-    
-    // Track API errors
+
+    // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      trackAPIError(endpoint, response.status, errorData.error || response.statusText);
+      trackAPIError(endpoint, response.status, response.statusText);
     }
-    
+
     return response;
   } catch (error) {
     // Track network errors
@@ -122,13 +119,12 @@ export async function apiDelete(path, params = {}) {
     // Track API response time
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
-    
-    // Track API errors
+
+    // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      trackAPIError(endpoint, response.status, errorData.error || response.statusText);
+      trackAPIError(endpoint, response.status, response.statusText);
     }
-    
+
     return response;
   } catch (error) {
     // Track network errors
