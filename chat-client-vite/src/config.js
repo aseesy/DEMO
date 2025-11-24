@@ -15,9 +15,10 @@ function getApiBaseUrl() {
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
     
-    // Production domain - use same origin with /api path
-    if (origin.includes('coparentliaizen.clm') || origin.includes('liaizen.com')) {
-      return `${origin}/api`;
+    // Production domain - use Railway backend (not same origin)
+    if (origin.includes('coparentliaizen.com') || origin.includes('liaizen.com')) {
+      // Frontend on Vercel, backend on Railway
+      return 'https://demo-production-6dcd.up.railway.app';
     }
     
     // Development - use localhost:3001
