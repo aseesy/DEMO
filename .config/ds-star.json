@@ -1,0 +1,35 @@
+{
+  "enabled": true,
+  "qualityGates": {
+    "specification": {
+      "enabled": true,
+      "threshold": 0.90
+    },
+    "planning": {
+      "enabled": true,
+      "threshold": 0.85
+    }
+  },
+  "intelligentRouting": {
+    "enabled": true,
+    "fallbackToManual": true
+  },
+  "selfHealing": {
+    "enabled": false,
+    "requireApproval": true
+  },
+  "refinementEngine": {
+    "enabled": true,
+    "maxRounds": 20,
+    "earlyStopThreshold": 0.95
+  },
+  "domainSpecific": {
+    "coParenting": {
+      "enabled": true,
+      "validationRequired": true,
+      "childCenteredFocus": true,
+      "conflictReduction": true,
+      "privacyFirst": true
+    }
+  }
+}
