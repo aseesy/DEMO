@@ -136,7 +136,7 @@ export function LoginSignup() {
             loading={isGoogleLoggingIn}
             fullWidth
             size="medium"
-            className="mt-4 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400"
+            className="mt-4 bg-white border-2 border-gray-300 text-black hover:bg-gray-50 hover:border-gray-400 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400"
             icon={!isGoogleLoggingIn && (
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
