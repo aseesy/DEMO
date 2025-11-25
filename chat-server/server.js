@@ -1641,7 +1641,7 @@ io.on('connection', (socket) => {
         SELECT * FROM messages
         WHERE id = $1
         AND room_id = $2
-        AND (deleted = false OR deleted IS NULL)
+        -- Note: deleted column doesn't exist in PostgreSQL messages table
         LIMIT 1
       `;
       const messageResult = await dbPostgres.query(messageQuery, [messageId, user.roomId]);
@@ -1929,7 +1929,7 @@ io.on('connection', (socket) => {
         SELECT * FROM messages
         WHERE id = $1
         AND room_id = $2
-        AND (deleted = false OR deleted IS NULL)
+        -- Note: deleted column doesn't exist in PostgreSQL messages table
         LIMIT 1
       `;
       const messageResult = await dbPostgres.query(messageQuery, [messageId, user.roomId]);
