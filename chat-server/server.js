@@ -3536,7 +3536,7 @@ app.get('/api/dashboard/updates', async (req, res) => {
             ORDER BY timestamp DESC
             LIMIT 5
           `;
-          const messagesResult = await dbPostgres.query(messagesQuery, [userRoom.id, coparentUsername, twoDaysAgo]);
+          const messagesResult = await dbPostgres.query(messagesQuery, [userRoom.roomId, coparentUsername, twoDaysAgo]);
           const messages = messagesResult.rows;
 
           messages.forEach(msg => {
@@ -3551,14 +3551,14 @@ app.get('/api/dashboard/updates', async (req, res) => {
           // Get recent task completions by co-parent
           const coparentTasksQuery = `
             SELECT * FROM tasks
-            WHERE user_id = ${coparentMember.user_id}
+            WHERE user_id = $1
             AND status = 'completed'
-            AND completed_at > ${dbSafe.escapeSQL(twoDaysAgo)}
+            AND completed_at > $2
             ORDER BY completed_at DESC
             LIMIT 3
           `;
-          const tasksResult = db.exec(coparentTasksQuery);
-          const completedTasks = dbSafe.parseResult(tasksResult);
+          const tasksResult = await dbPostgres.query(coparentTasksQuery, [coparentMember.user_id, twoDaysAgo]);
+          const completedTasks = tasksResult.rows;
 
           completedTasks.forEach(task => {
             updates.push({
