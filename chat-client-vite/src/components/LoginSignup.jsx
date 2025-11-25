@@ -35,7 +35,12 @@ export function LoginSignup() {
   // Redirect to dashboard after successful authentication
   React.useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      // Small delay to ensure auth state is fully set before navigation
+      // This prevents race conditions with ChatRoom's auth verification
+      const timer = setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isAuthenticated, navigate]);
 

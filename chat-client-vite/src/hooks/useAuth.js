@@ -83,6 +83,7 @@ export function useAuth() {
             localStorage.removeItem('auth_token_backup');
             localStorage.removeItem('chatUser');
             localStorage.removeItem('userEmail');
+            setIsAuthenticated(false);
           }
         } else {
           // Session invalid - clear everything
@@ -91,6 +92,7 @@ export function useAuth() {
           localStorage.removeItem('auth_token_backup');
           localStorage.removeItem('chatUser');
           localStorage.removeItem('userEmail');
+          setIsAuthenticated(false);
         }
       } catch (err) {
         console.error('Error verifying session (Vite):', err);
@@ -100,6 +102,8 @@ export function useAuth() {
         if (storedUsername && storedAuth === 'true') {
           setUsername(storedUsername);
           setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
         }
       } finally {
         setIsCheckingAuth(false);
@@ -111,7 +115,16 @@ export function useAuth() {
     const storedAuth = localStorage.getItem('isAuthenticated');
     const storedToken = localStorage.getItem('auth_token_backup');
 
-    if (storedUsername || storedAuth || storedToken) {
+    // If we have all auth data (username, auth flag, and token), we're likely already authenticated
+    // Set state immediately to avoid race conditions, then verify in background
+    if (storedUsername && storedAuth === 'true' && storedToken) {
+      // Set authenticated state immediately from localStorage
+      setUsername(storedUsername);
+      setIsAuthenticated(true);
+      setIsCheckingAuth(false);
+      // Verify in background to ensure session is still valid
+      verifySession();
+    } else if (storedUsername || storedAuth || storedToken) {
       verifySession();
     } else {
       setIsCheckingAuth(false);
