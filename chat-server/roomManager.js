@@ -1,13 +1,6 @@
 const crypto = require('crypto');
-const dbModule = require('./db');
+const dbPostgres = require('./dbPostgres');
 const dbSafe = require('./dbSafe');
-
-/**
- * Get database instance
- */
-async function getDb() {
-  return await dbModule.getDb();
-}
 
 /**
  * Generate a unique room ID
@@ -73,64 +66,58 @@ async function createPrivateRoom(userId, username) {
  * Prioritizes rooms with multiple members (shared rooms) over solo rooms
  */
 async function getUserRoom(userId) {
-  const db = await getDb();
-
   // First, try to find a room with multiple members (shared room)
   // This ensures co-parents end up in the same room after connection
-  // Use safeExec for complex query - userId is already validated as integer
   const sharedRoomQuery = `
     SELECT r.*, rm.role, COUNT(rm2.user_id) as member_count
     FROM rooms r
     INNER JOIN room_members rm ON r.id = rm.room_id
     LEFT JOIN room_members rm2 ON r.id = rm2.room_id
-    WHERE rm.user_id = ${parseInt(userId)}
-    GROUP BY r.id, rm.role
-    HAVING member_count > 1
-    ORDER BY datetime(rm.joined_at) DESC
+    WHERE rm.user_id = $1
+    GROUP BY r.id, rm.role, r.name, r.created_by, r.is_private, r.created_at
+    HAVING COUNT(rm2.user_id) > 1
+    ORDER BY rm.joined_at DESC
     LIMIT 1
   `;
 
-  const sharedRoomResult = db.exec(sharedRoomQuery);
+  const sharedRoomResult = await dbPostgres.query(sharedRoomQuery, [userId]);
 
-  if (sharedRoomResult.length > 0 && sharedRoomResult[0].values.length > 0) {
-    const rooms = dbSafe.parseResult(sharedRoomResult);
-    const room = rooms[0];
+  if (sharedRoomResult.rows.length > 0) {
+    const room = sharedRoomResult.rows[0];
 
     return {
       roomId: room.id,
       roomName: room.name,
       createdBy: room.created_by,
-      isPrivate: room.is_private === 1,
+      isPrivate: room.is_private === 1 || room.is_private === true,
       role: room.role,
       createdAt: room.created_at
     };
   }
 
   // Fallback: return any room the user belongs to (for solo users)
-  // Use safeExec for complex query - userId is already validated as integer
   const fallbackQuery = `
     SELECT r.*, rm.role
     FROM rooms r
     INNER JOIN room_members rm ON r.id = rm.room_id
-    WHERE rm.user_id = ${parseInt(userId)}
-    ORDER BY datetime(rm.joined_at) DESC
+    WHERE rm.user_id = $1
+    ORDER BY rm.joined_at DESC
     LIMIT 1
   `;
 
-  const result = db.exec(fallbackQuery);
-  const rooms = dbSafe.parseResult(result);
+  const result = await dbPostgres.query(fallbackQuery, [userId]);
 
-  if (rooms.length === 0) {
+  if (result.rows.length === 0) {
     return null;
   }
 
-  const room = rooms[0];
+  const room = result.rows[0];
 
   return {
     roomId: room.id,
     roomName: room.name,
     createdBy: room.created_by,
-    isPrivate: room.is_private === 1,
+    isPrivate: room.is_private === 1 || room.is_private === true,
     role: room.role,
     createdAt: room.created_at
   };
@@ -140,20 +127,16 @@ async function getUserRoom(userId) {
  * Get room members
  */
 async function getRoomMembers(roomId) {
-  const db = await getDb();
-
-  // Use safeExec for complex JOIN query - roomId is generated internally, but escape for safety
+  // Use parameterized query for JOIN
   const query = `
     SELECT u.id, u.username, rm.role, rm.joined_at
     FROM users u
     INNER JOIN room_members rm ON u.id = rm.user_id
-    WHERE rm.room_id = ${dbSafe.escapeSQL(roomId)}
+    WHERE rm.room_id = $1
   `;
 
-  const result = db.exec(query);
-  const members = dbSafe.parseResult(result);
-
-  return members;
+  const result = await dbPostgres.query(query, [roomId]);
+  return result.rows;
 }
 
 /**
@@ -196,26 +179,23 @@ async function createInvite(roomId, invitedBy) {
  * Validate and use an invite code
  */
 async function validateInvite(inviteCode) {
-  const db = await getDb();
-
-  // Use safeExec for complex query with datetime comparison
+  // Use parameterized query with PostgreSQL datetime comparison
   const query = `
     SELECT *
     FROM room_invites
-    WHERE invite_code = ${dbSafe.escapeSQL(inviteCode)}
+    WHERE invite_code = $1
     AND used_by IS NULL
-    AND (expires_at IS NULL OR datetime(expires_at) > datetime('now'))
+    AND (expires_at IS NULL OR expires_at > NOW())
     LIMIT 1
   `;
 
-  const result = db.exec(query);
-  const invites = dbSafe.parseResult(result);
+  const result = await dbPostgres.query(query, [inviteCode]);
 
-  if (invites.length === 0) {
+  if (result.rows.length === 0) {
     return null;
   }
 
-  const invite = invites[0];
+  const invite = result.rows[0];
 
   return {
     inviteId: invite.id,
@@ -245,7 +225,7 @@ async function useInvite(inviteCode, userId) {
       user_id: userId
     }, { limit: 1 });
 
-    if (dbSafe.parseResult(existingMember).length > 0) {
+    if (existingMember.length > 0) {
       throw new Error('User is already a member of this room');
     }
 
@@ -270,8 +250,7 @@ async function useInvite(inviteCode, userId) {
       
       if (roomMembers.length > 1) {
         // Get the user who just joined
-        const newUserResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
-        const newUsers = dbSafe.parseResult(newUserResult);
+        const newUsers = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
         
         if (newUsers.length > 0) {
           const newUser = newUsers[0];
@@ -282,8 +261,7 @@ async function useInvite(inviteCode, userId) {
             if (member.id === userId) continue;
             
             // Get the other member's user info
-            const otherUserResult = await dbSafe.safeSelect('users', { id: member.id }, { limit: 1 });
-            const otherUsers = dbSafe.parseResult(otherUserResult);
+            const otherUsers = await dbSafe.safeSelect('users', { id: member.id }, { limit: 1 });
             
             if (otherUsers.length > 0) {
               const otherUser = otherUsers[0];
@@ -295,7 +273,7 @@ async function useInvite(inviteCode, userId) {
                 relationship: 'co-parent'
               }, { limit: 1 });
               
-              if (dbSafe.parseResult(existingContact1).length === 0) {
+              if (existingContact1.length === 0) {
                 await dbSafe.safeInsert('contacts', {
                   user_id: userId,
                   contact_name: otherUser.username,
@@ -324,7 +302,7 @@ async function useInvite(inviteCode, userId) {
                 relationship: 'co-parent'
               }, { limit: 1 });
               
-              if (dbSafe.parseResult(existingContact2).length === 0) {
+              if (existingContact2.length === 0) {
                 await dbSafe.safeInsert('contacts', {
                   user_id: member.id,
                   contact_name: newUser.username,
@@ -348,8 +326,7 @@ async function useInvite(inviteCode, userId) {
             }
           }
           
-          // Save database after creating contacts
-          require('./db').saveDatabase();
+          // PostgreSQL automatically persists changes - no saveDatabase() needed
           
           // Note: Auto-complete onboarding tasks will be called from the server endpoint
           // that calls useInvite, to avoid circular dependencies
@@ -358,19 +335,17 @@ async function useInvite(inviteCode, userId) {
           // This allows each user to see the other's contacts but add their own context
           try {
             // Get new user's contacts (excluding co-parent contacts)
-            const newUserContactsResult = await dbSafe.safeSelect('contacts', {
+            const newUserContacts = await dbSafe.safeSelect('contacts', {
               user_id: userId
             });
-            const newUserContacts = dbSafe.parseResult(newUserContactsResult);
             const newUserContactNames = newUserContacts
               .filter(c => c.relationship !== 'co-parent')
               .map(c => c.contact_name);
             
             // Get other user's contacts (excluding co-parent contacts)
-            const otherUserContactsResult = await dbSafe.safeSelect('contacts', {
+            const otherUserContacts = await dbSafe.safeSelect('contacts', {
               user_id: member.id
             });
-            const otherUserContacts = dbSafe.parseResult(otherUserContactsResult);
             const otherUserContactNames = otherUserContacts
               .filter(c => c.relationship !== 'co-parent')
               .map(c => c.contact_name);
@@ -383,7 +358,7 @@ async function useInvite(inviteCode, userId) {
                 contact_name: contactName
               }, { limit: 1 });
               
-              if (dbSafe.parseResult(existingCheck).length === 0) {
+              if (existingCheck.length === 0) {
                 // Create contact with just the name - user can add their own context
                 await dbSafe.safeInsert('contacts', {
                   user_id: member.id,
@@ -416,7 +391,7 @@ async function useInvite(inviteCode, userId) {
                 contact_name: contactName
               }, { limit: 1 });
               
-              if (dbSafe.parseResult(existingCheck).length === 0) {
+              if (existingCheck.length === 0) {
                 // Create contact with just the name - user can add their own context
                 await dbSafe.safeInsert('contacts', {
                   user_id: userId,
@@ -473,7 +448,7 @@ async function hasRoomAccess(userId, roomId) {
     user_id: userId
   }, { limit: 1 });
 
-  return dbSafe.parseResult(result).length > 0;
+  return result.length > 0;
 }
 
 /**
@@ -501,11 +476,8 @@ async function ensureContactsForRoomMembers(roomId) {
         const user2 = roomMembers[j];
         
         // Get user info for both
-        const user1Result = await dbSafe.safeSelect('users', { id: user1.id }, { limit: 1 });
-        const user2Result = await dbSafe.safeSelect('users', { id: user2.id }, { limit: 1 });
-        
-        const user1Data = dbSafe.parseResult(user1Result);
-        const user2Data = dbSafe.parseResult(user2Result);
+        const user1Data = await dbSafe.safeSelect('users', { id: user1.id }, { limit: 1 });
+        const user2Data = await dbSafe.safeSelect('users', { id: user2.id }, { limit: 1 });
         
         if (user1Data.length > 0 && user2Data.length > 0) {
           const u1 = user1Data[0];
@@ -515,12 +487,11 @@ async function ensureContactsForRoomMembers(roomId) {
           
           // Check if contact exists for user1 -> user2
           // Note: We check by contact_name (username) to avoid case sensitivity issues
-          const check1 = await dbSafe.safeSelect('contacts', {
+          const existing1 = await dbSafe.safeSelect('contacts', {
             user_id: user1.id,
             relationship: 'co-parent'
           }, { limit: 100 }); // Get all co-parent contacts to check
           
-          const existing1 = dbSafe.parseResult(check1);
           // Check if contact with this name already exists
           const contactExists1 = existing1.some(c => c.contact_name && c.contact_name.toLowerCase() === u2.username.toLowerCase());
           console.log(`   ${u1.username} -> ${u2.username}: ${contactExists1 ? 'EXISTS' : 'NOT FOUND'} (checked ${existing1.length} contacts)`);
@@ -548,12 +519,11 @@ async function ensureContactsForRoomMembers(roomId) {
           }
           
           // Check if contact exists for user2 -> user1
-          const check2 = await dbSafe.safeSelect('contacts', {
+          const existing2 = await dbSafe.safeSelect('contacts', {
             user_id: user2.id,
             relationship: 'co-parent'
           }, { limit: 100 }); // Get all co-parent contacts to check
           
-          const existing2 = dbSafe.parseResult(check2);
           // Check if contact with this name already exists
           const contactExists2 = existing2.some(c => c.contact_name && c.contact_name.toLowerCase() === u1.username.toLowerCase());
           console.log(`   ${u2.username} -> ${u1.username}: ${contactExists2 ? 'EXISTS' : 'NOT FOUND'} (checked ${existing2.length} contacts)`);
@@ -595,20 +565,18 @@ async function ensureContactsForRoomMembers(roomId) {
  * Get active invites for a room
  */
 async function getRoomInvites(roomId) {
-  const db = await getDb();
-
-  // Use safeExec for complex query with datetime comparison
+  // Use parameterized query with PostgreSQL datetime comparison
   const query = `
     SELECT *
     FROM room_invites
-    WHERE room_id = ${dbSafe.escapeSQL(roomId)}
+    WHERE room_id = $1
     AND used_by IS NULL
-    AND (expires_at IS NULL OR datetime(expires_at) > datetime('now'))
+    AND (expires_at IS NULL OR expires_at > NOW())
     ORDER BY created_at DESC
   `;
 
-  const result = db.exec(query);
-  const invites = dbSafe.parseResult(result);
+  const result = await dbPostgres.query(query, [roomId]);
+  const invites = result.rows;
 
   return invites.map(invite => ({
     inviteId: invite.id,
