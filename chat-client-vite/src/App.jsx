@@ -5,6 +5,7 @@ import ChatRoom from './ChatRoom.jsx';
 import { LoginSignup } from './components/LoginSignup.jsx';
 import { GoogleOAuthCallback } from './components/GoogleOAuthCallback.jsx';
 import { UIShowcase } from './components/UIShowcase.jsx'; // Design system showcase
+import { PrivacyPage } from './components/PrivacyPage.jsx';
 import { usePWA } from './hooks/usePWA.js';
 import { MediatorProvider } from './context/MediatorContext.jsx';
 
@@ -32,6 +33,9 @@ function App() {
 
           {/* UI Component Showcase - Design System Documentation */}
           <Route path="/ui-showcase" element={<UIShowcase />} />
+
+          {/* Privacy Policy Page */}
+          <Route path="/privacy" element={<PrivacyPage />} />
         </Routes>
       </BrowserRouter>
     </MediatorProvider>
