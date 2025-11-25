@@ -1,5 +1,4 @@
 const bcrypt = require('bcrypt');
-const dbModule = require('./db');
 const roomManager = require('./roomManager');
 const dbSafe = require('./dbSafe');
 
@@ -29,12 +28,7 @@ async function comparePassword(password, hash) {
   }
 }
 
-/**
- * Get database instance
- */
-async function getDb() {
-  return await dbModule.getDb();
-}
+// Database access is now handled through dbSafe (PostgreSQL only)
 
 /**
  * Create a new user account with email (auto-generates username from email)
@@ -44,7 +38,7 @@ async function createUserWithEmail(email, password, context = {}, googleId = nul
   
   // Check if email already exists
   const emailExists = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
-  if (dbSafe.parseResult(emailExists).length > 0) {
+  if (emailExists.length > 0) {
     throw new Error('Email already exists');
   }
 
@@ -58,7 +52,7 @@ async function createUserWithEmail(email, password, context = {}, googleId = nul
   let counter = 1;
   while (true) {
     const existing = await dbSafe.safeSelect('users', { username: username }, { limit: 1 });
-    if (dbSafe.parseResult(existing).length === 0) {
+    if (existing.length === 0) {
       break;
     }
     // Append number if username exists
@@ -83,7 +77,7 @@ async function createUser(username, password, context = {}, email = null, google
   
   // Check if user exists using safe query
   const existing = await dbSafe.safeSelect('users', { username: usernameLower }, { limit: 1 });
-  if (dbSafe.parseResult(existing).length > 0) {
+  if (existing.length > 0) {
     throw new Error('Username already exists');
   }
 
@@ -91,7 +85,7 @@ async function createUser(username, password, context = {}, email = null, google
   if (email) {
     const emailLower = email.trim().toLowerCase();
     const emailExists = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
-    if (dbSafe.parseResult(emailExists).length > 0) {
+    if (emailExists.length > 0) {
       throw new Error('Email already exists');
     }
   }
@@ -99,7 +93,7 @@ async function createUser(username, password, context = {}, email = null, google
   // If googleId provided, check if Google account already exists
   if (googleId) {
     const googleUserExists = await dbSafe.safeSelect('users', { google_id: googleId }, { limit: 1 });
-    if (dbSafe.parseResult(googleUserExists).length > 0) {
+    if (googleUserExists.length > 0) {
       throw new Error('Google account already registered');
     }
   }
@@ -137,11 +131,10 @@ async function createUser(username, password, context = {}, email = null, google
   let actualUserId = userId;
   if (!userId || userId === 0) {
     // Query the user we just inserted to get the actual ID
-    const insertedUserResult = await dbSafe.safeSelect('users', { username: usernameLower }, { limit: 1 });
-    const insertedUsers = dbSafe.parseResult(insertedUserResult);
+    const insertedUsers = await dbSafe.safeSelect('users', { username: usernameLower }, { limit: 1 });
     if (insertedUsers.length > 0) {
       actualUserId = insertedUsers[0].id;
-      console.log(`Warning: last_insert_rowid() returned ${userId}, but user ID is actually ${actualUserId}`);
+      console.log(`Warning: INSERT returned ${userId}, but user ID is actually ${actualUserId}`);
     } else {
       throw new Error('Failed to create user - could not retrieve user ID');
     }
@@ -158,7 +151,7 @@ async function createUser(username, password, context = {}, email = null, google
 
   // Check if context already exists (shouldn't happen, but handle it)
   const existingContext = await dbSafe.safeSelect('user_context', { user_id: actualUserId }, { limit: 1 });
-  const contexts = dbSafe.parseResult(existingContext);
+  const contexts = existingContext;
   
   if (contexts.length > 0) {
     // Update existing context
@@ -244,7 +237,7 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
         title: task.title
       }, { limit: 1 });
       
-      const existingTasks = dbSafe.parseResult(existingResult);
+      const existingTasks = existingResult;
       
       // Only create if it doesn't exist
       if (existingTasks.length === 0) {
@@ -287,7 +280,7 @@ async function authenticateUserByEmail(email, password) {
   
   // Use safe select to get user by email
   const result = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
-  const users = dbSafe.parseResult(result);
+  const users = result;
   
   if (users.length === 0) {
     return null;
@@ -331,7 +324,7 @@ async function authenticateUserByEmail(email, password) {
 
   // Get context using safe select
   const contextResult = await dbSafe.safeSelect('user_context', { user_id: user.id }, { limit: 1 });
-  const contextRows = dbSafe.parseResult(contextResult);
+  const contextRows = contextResult;
   
   let context = {
     coParentName: '',
@@ -381,7 +374,7 @@ async function authenticateUser(username, password) {
   
   // Use safe select to get user
   const result = await dbSafe.safeSelect('users', { username: usernameLower }, { limit: 1 });
-  const users = dbSafe.parseResult(result);
+  const users = result;
   
   if (users.length === 0) {
     return null;
@@ -420,7 +413,7 @@ async function authenticateUser(username, password) {
 
   // Get context using safe select
   const contextResult = await dbSafe.safeSelect('user_context', { user_id: user.id }, { limit: 1 });
-  const contextRows = dbSafe.parseResult(contextResult);
+  const contextRows = contextResult;
   
   let context = {
     coParentName: '',
@@ -470,7 +463,7 @@ async function updateUserContext(username, context) {
   
   // Get user ID using safe select
   const userResult = await dbSafe.safeSelect('users', { username: usernameLower }, { limit: 1 });
-  const users = dbSafe.parseResult(userResult);
+  const users = userResult;
   
   if (users.length === 0) {
     throw new Error('User not found');
@@ -480,7 +473,7 @@ async function updateUserContext(username, context) {
 
   // Get existing context or create new
   const existingResult = await dbSafe.safeSelect('user_context', { user_id: userId }, { limit: 1 });
-  const existingRows = dbSafe.parseResult(existingResult);
+  const existingRows = existingResult;
 
   const contextData = {
     coParentName: context.coParentName !== undefined ? context.coParentName : '',
@@ -524,7 +517,7 @@ async function getUser(username) {
   
   // Get user using safe select
   const userResult = await dbSafe.safeSelect('users', { username: usernameLower }, { limit: 1 });
-  const users = dbSafe.parseResult(userResult);
+  const users = userResult;
   
   if (users.length === 0) {
     return null;
@@ -534,7 +527,7 @@ async function getUser(username) {
 
   // Get context using safe select
   const contextResult = await dbSafe.safeSelect('user_context', { user_id: user.id }, { limit: 1 });
-  const contextRows = dbSafe.parseResult(contextResult);
+  const contextRows = contextResult;
   
   let context = {
     coParentName: '',
@@ -581,7 +574,7 @@ async function getUser(username) {
 async function getOrCreateGoogleUser(googleId, email, name, picture = null) {
   // First, try to find user by Google ID
   const googleUserResult = await dbSafe.safeSelect('users', { google_id: googleId }, { limit: 1 });
-  const googleUsers = dbSafe.parseResult(googleUserResult);
+  const googleUsers = googleUserResult;
   
   if (googleUsers.length > 0) {
     // User exists with this Google ID - update last login and return
@@ -596,7 +589,7 @@ async function getOrCreateGoogleUser(googleId, email, name, picture = null) {
   if (email) {
     const emailLower = email.trim().toLowerCase();
     const emailUserResult = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
-    const emailUsers = dbSafe.parseResult(emailUserResult);
+    const emailUsers = emailUserResult;
     
     if (emailUsers.length > 0) {
       // User exists with this email - link Google account
@@ -621,7 +614,7 @@ async function getOrCreateGoogleUser(googleId, email, name, picture = null) {
   let counter = 1;
   while (true) {
     const existing = await dbSafe.safeSelect('users', { username: uniqueUsername }, { limit: 1 });
-    if (dbSafe.parseResult(existing).length === 0) {
+    if (existing.length === 0) {
       break;
     }
     uniqueUsername = `${username}${counter}`.substring(0, 20);
@@ -637,7 +630,7 @@ async function getOrCreateGoogleUser(googleId, email, name, picture = null) {
  */
 async function getUserByGoogleId(googleId) {
   const result = await dbSafe.safeSelect('users', { google_id: googleId }, { limit: 1 });
-  const users = dbSafe.parseResult(result);
+  const users = result;
   
   if (users.length === 0) {
     return null;
@@ -653,7 +646,7 @@ async function getUserByGoogleId(googleId) {
 async function userExists(username) {
   const usernameLower = username.toLowerCase();
   const result = await dbSafe.safeSelect('users', { username: usernameLower }, { limit: 1 });
-  return dbSafe.parseResult(result).length > 0;
+  return result.length > 0;
 }
 
 module.exports = {

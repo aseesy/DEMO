@@ -1,33 +1,23 @@
 /**
- * Safe Database Query Builder
+ * Safe Database Query Builder for PostgreSQL
  * 
- * This module provides safe methods for building SQL queries that prevent SQL injection.
- * Since sql.js doesn't support traditional prepared statements, we use a safe parameter
- * substitution approach with proper validation and escaping.
+ * This module provides safe methods for building SQL queries that prevent SQL injection
+ * using PostgreSQL parameterized queries.
  */
 
-const dbModule = require('./db');
+const dbPostgres = require('./dbPostgres');
 
-/**
- * Escape SQL string safely
- * This replaces single quotes with double single quotes (SQL standard)
- */
-function escapeSQL(str) {
-  if (str === null || str === undefined) {
-    return 'NULL';
-  }
-  if (typeof str !== 'string') {
-    // Convert to string for non-string values
-    str = String(str);
-  }
-  // Replace single quotes with double single quotes (SQL standard)
-  // Also handle other potentially dangerous characters
-  return `'${str.replace(/'/g, "''").replace(/\\/g, '\\\\')}'`;
+// Check if we're using PostgreSQL
+const usePostgres = !!process.env.DATABASE_URL;
+
+if (!usePostgres) {
+  console.error('❌ ERROR: DATABASE_URL not set. PostgreSQL is required.');
+  console.error('❌ This application now requires PostgreSQL in all environments.');
+  throw new Error('DATABASE_URL must be set. PostgreSQL is required.');
 }
 
 /**
- * Escape SQL identifier (table/column names)
- * Only allows alphanumeric, underscore, and dollar sign
+ * Escape SQL identifier (table/column names) - PostgreSQL uses double quotes
  */
 function escapeIdentifier(identifier) {
   if (typeof identifier !== 'string') {
@@ -37,57 +27,34 @@ function escapeIdentifier(identifier) {
   if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(identifier)) {
     throw new Error(`Invalid identifier: ${identifier}`);
   }
-  return identifier;
+  // PostgreSQL uses double quotes for identifiers
+  return `"${identifier}"`;
 }
 
 /**
- * Validate and escape a value for SQL
- */
-function escapeValue(value) {
-  if (value === null || value === undefined) {
-    return 'NULL';
-  }
-  if (typeof value === 'number') {
-    // Validate number is finite
-    if (!isFinite(value)) {
-      throw new Error('Invalid number value');
-    }
-    return String(value);
-  }
-  if (typeof value === 'boolean') {
-    return value ? '1' : '0';
-  }
-  if (typeof value === 'string') {
-    return escapeSQL(value);
-  }
-  // For objects/arrays, stringify and escape
-  if (typeof value === 'object') {
-    return escapeSQL(JSON.stringify(value));
-  }
-  return escapeSQL(String(value));
-}
-
-/**
- * Build a safe SELECT query
+ * Build a safe SELECT query using PostgreSQL parameterized queries
  * @param {string} table - Table name (will be validated)
  * @param {Object} conditions - WHERE conditions object {column: value}
  * @param {Object} options - Query options {limit, orderBy, orderDirection}
  */
 async function safeSelect(table, conditions = {}, options = {}) {
-  const db = await dbModule.getDb();
   const safeTable = escapeIdentifier(table);
   
   let query = `SELECT * FROM ${safeTable}`;
+  const params = [];
   const whereClauses = [];
+  let paramIndex = 1;
   
-  // Build WHERE clause
+  // Build WHERE clause with parameterized queries
   if (Object.keys(conditions).length > 0) {
     for (const [column, value] of Object.entries(conditions)) {
       const safeColumn = escapeIdentifier(column);
       if (value === null || value === undefined) {
         whereClauses.push(`${safeColumn} IS NULL`);
       } else {
-        whereClauses.push(`${safeColumn} = ${escapeValue(value)}`);
+        whereClauses.push(`${safeColumn} = $${paramIndex}`);
+        params.push(value);
+        paramIndex++;
       }
     }
     query += ` WHERE ${whereClauses.join(' AND ')}`;
@@ -103,141 +70,150 @@ async function safeSelect(table, conditions = {}, options = {}) {
   
   // Add LIMIT
   if (options.limit && Number.isInteger(options.limit) && options.limit > 0) {
-    query += ` LIMIT ${options.limit}`;
+    query += ` LIMIT $${paramIndex}`;
+    params.push(options.limit);
   }
   
   try {
-    const result = db.exec(query);
-    return result;
+    const result = await dbPostgres.query(query, params);
+    // Return in format compatible with parseResult
+    return result.rows;
   } catch (error) {
     console.error('Safe query error:', error);
     console.error('Query:', query);
+    console.error('Params:', params);
     throw error;
   }
 }
 
 /**
- * Build a safe INSERT query
+ * Build a safe INSERT query using PostgreSQL parameterized queries
  * @param {string} table - Table name
  * @param {Object} data - Data object {column: value}
+ * @returns {Promise<number>} - The inserted row ID
  */
 async function safeInsert(table, data) {
-  const db = await dbModule.getDb();
   const safeTable = escapeIdentifier(table);
   
   const columns = Object.keys(data).map(escapeIdentifier);
-  const values = Object.values(data).map(escapeValue);
+  const params = Object.values(data);
+  const placeholders = params.map((_, index) => `$${index + 1}`);
   
-  const query = `INSERT INTO ${safeTable} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
+  // Use RETURNING to get the inserted ID
+  const query = `INSERT INTO ${safeTable} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING id`;
   
   try {
-    db.run(query);
+    const result = await dbPostgres.query(query, params);
     
-    // Get the inserted ID BEFORE saving (to ensure we get the correct ID)
-    const idResult = db.exec('SELECT last_insert_rowid() as id');
-    let insertedId = null;
-    if (idResult.length > 0 && idResult[0].values.length > 0) {
-      insertedId = idResult[0].values[0][0];
+    if (result.rows.length === 0) {
+      throw new Error('INSERT did not return an ID');
     }
     
-    // Save database after insert
-    dbModule.saveDatabase();
+    const insertedId = result.rows[0].id;
     
-    // Validate that we got a valid ID (for tables with AUTOINCREMENT)
-    if (insertedId === null || insertedId === 0) {
-      // Check if this table has an AUTOINCREMENT primary key
-      // For now, we'll return the ID even if it's 0, but log a warning
-      console.warn(`Warning: last_insert_rowid() returned ${insertedId} for table ${table}`);
+    if (!insertedId) {
+      console.warn(`Warning: INSERT did not return a valid ID for table ${table}`);
     }
     
     return insertedId;
   } catch (error) {
     console.error('Safe insert error:', error);
     console.error('Query:', query);
+    console.error('Params:', params);
     throw error;
   }
 }
 
 /**
- * Build a safe UPDATE query
+ * Build a safe UPDATE query using PostgreSQL parameterized queries
  * @param {string} table - Table name
  * @param {Object} data - Data to update {column: value}
  * @param {Object} conditions - WHERE conditions {column: value}
  */
 async function safeUpdate(table, data, conditions) {
-  const db = await dbModule.getDb();
   const safeTable = escapeIdentifier(table);
   
   const setClauses = [];
+  const params = [];
+  let paramIndex = 1;
+  
+  // Build SET clause
   for (const [column, value] of Object.entries(data)) {
     const safeColumn = escapeIdentifier(column);
-    setClauses.push(`${safeColumn} = ${escapeValue(value)}`);
+    setClauses.push(`${safeColumn} = $${paramIndex}`);
+    params.push(value);
+    paramIndex++;
   }
   
+  // Build WHERE clause
   const whereClauses = [];
   for (const [column, value] of Object.entries(conditions)) {
     const safeColumn = escapeIdentifier(column);
     if (value === null || value === undefined) {
       whereClauses.push(`${safeColumn} IS NULL`);
     } else {
-      whereClauses.push(`${safeColumn} = ${escapeValue(value)}`);
+      whereClauses.push(`${safeColumn} = $${paramIndex}`);
+      params.push(value);
+      paramIndex++;
     }
   }
   
   const query = `UPDATE ${safeTable} SET ${setClauses.join(', ')} WHERE ${whereClauses.join(' AND ')}`;
   
   try {
-    db.run(query);
-    dbModule.saveDatabase();
+    await dbPostgres.query(query, params);
   } catch (error) {
     console.error('Safe update error:', error);
     console.error('Query:', query);
+    console.error('Params:', params);
     throw error;
   }
 }
 
 /**
- * Build a safe DELETE query
+ * Build a safe DELETE query using PostgreSQL parameterized queries
  * @param {string} table - Table name
  * @param {Object} conditions - WHERE conditions {column: value}
  */
 async function safeDelete(table, conditions) {
-  const db = await dbModule.getDb();
   const safeTable = escapeIdentifier(table);
   
   const whereClauses = [];
+  const params = [];
+  let paramIndex = 1;
+  
   for (const [column, value] of Object.entries(conditions)) {
     const safeColumn = escapeIdentifier(column);
     if (value === null || value === undefined) {
       whereClauses.push(`${safeColumn} IS NULL`);
     } else {
-      whereClauses.push(`${safeColumn} = ${escapeValue(value)}`);
+      whereClauses.push(`${safeColumn} = $${paramIndex}`);
+      params.push(value);
+      paramIndex++;
     }
   }
   
   const query = `DELETE FROM ${safeTable} WHERE ${whereClauses.join(' AND ')}`;
   
   try {
-    db.run(query);
-    dbModule.saveDatabase();
+    await dbPostgres.query(query, params);
   } catch (error) {
     console.error('Safe delete error:', error);
     console.error('Query:', query);
+    console.error('Params:', params);
     throw error;
   }
 }
 
 /**
- * Execute a raw query safely (use with caution - only for complex queries)
- * This should only be used for queries that don't involve user input
+ * Execute a raw query safely using PostgreSQL parameterized queries
+ * @param {string} query - SQL query with $1, $2, etc. placeholders
+ * @param {Array} params - Array of parameter values
  */
-async function safeExec(query) {
-  const db = await dbModule.getDb();
-  
+async function safeExec(query, params = []) {
   // Validate query doesn't contain dangerous patterns
   const dangerousPatterns = [
     /;\s*drop\s+table/i,
-    /;\s*delete\s+from/i,
     /;\s*truncate/i,
     /;\s*exec/i,
     /;\s*execute/i
@@ -250,7 +226,8 @@ async function safeExec(query) {
   }
   
   try {
-    return db.exec(query);
+    const result = await dbPostgres.query(query, params);
+    return result.rows;
   } catch (error) {
     console.error('Safe exec error:', error);
     throw error;
@@ -259,8 +236,15 @@ async function safeExec(query) {
 
 /**
  * Helper to parse result rows into objects
+ * For PostgreSQL, results are already in the correct format (array of objects)
  */
 function parseResult(result) {
+  // If result is already an array of objects (PostgreSQL format), return as-is
+  if (Array.isArray(result)) {
+    return result;
+  }
+  
+  // Legacy SQLite format support (should not be needed, but kept for compatibility)
   if (!result || result.length === 0 || result[0].values.length === 0) {
     return [];
   }
@@ -278,9 +262,7 @@ function parseResult(result) {
 }
 
 module.exports = {
-  escapeSQL,
   escapeIdentifier,
-  escapeValue,
   safeSelect,
   safeInsert,
   safeUpdate,
@@ -288,4 +270,3 @@ module.exports = {
   safeExec,
   parseResult
 };
-

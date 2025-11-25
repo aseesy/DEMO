@@ -1,43 +1,30 @@
 require('dotenv').config();
 
-// PostgreSQL-First Database Initialization
-// In production: DATABASE_URL must be set (PostgreSQL required)
-// In development: If DATABASE_URL not set, fallback to SQLite
+// PostgreSQL-Only Database Initialization
+// DATABASE_URL must be set (PostgreSQL required in all environments)
 
-if (process.env.DATABASE_URL) {
-  // PRODUCTION MODE: PostgreSQL
-  console.log('🐘 PostgreSQL mode: DATABASE_URL detected');
-  console.log('📊 Using PostgreSQL database (production)');
-  
-  // Initialize PostgreSQL client (non-blocking)
-  require('./dbPostgres');
-  
-  // Run PostgreSQL migration in background (non-blocking, async)
-  // Migration runs after server starts - won't block startup
-  setTimeout(() => {
-    const { runMigration } = require('./run-migration');
-    runMigration().catch(err => {
-      console.error('⚠️  Migration error (non-blocking):', err.message);
-      console.log('⚠️  Server will continue running - migration can be retried');
-    });
-  }, 2000); // Wait 2 seconds for server to start
-  
-} else {
-  // DEVELOPMENT MODE: SQLite fallback
-  if (process.env.NODE_ENV === 'production') {
-    console.error('❌ ERROR: DATABASE_URL not set in production!');
-    console.error('❌ PostgreSQL is required in production.');
-    console.error('❌ Add PostgreSQL service in Railway dashboard.');
-    process.exit(1);
-  }
-  
-  console.log('💾 SQLite mode: DATABASE_URL not set (development only)');
-  console.log('📊 Using SQLite database (local development)');
-  console.log('⚠️  WARNING: SQLite is for development only. Use PostgreSQL in production.');
-  
-  // Initialize SQLite (dev only)
-  require('./db');
+if (!process.env.DATABASE_URL) {
+  console.error('❌ ERROR: DATABASE_URL not set!');
+  console.error('❌ PostgreSQL is required in all environments.');
+  console.error('❌ Set DATABASE_URL environment variable.');
+  process.exit(1);
 }
+
+console.log('🐘 PostgreSQL mode: DATABASE_URL detected');
+console.log('📊 Using PostgreSQL database');
+
+// Initialize PostgreSQL client (non-blocking)
+require('./dbPostgres');
+
+// Run PostgreSQL migration in background (non-blocking, async)
+// Migration runs after server starts - won't block startup
+setTimeout(() => {
+  const { runMigration } = require('./run-migration');
+  runMigration().catch(err => {
+    console.error('⚠️  Migration error (non-blocking):', err.message);
+    console.log('⚠️  Server will continue running - migration can be retried');
+  });
+}, 2000); // Wait 2 seconds for server to start
 
 const express = require('express');
 const http = require('http');
@@ -354,11 +341,8 @@ const MAX_MESSAGE_LENGTH = 500;
  */
 async function autoCompleteOnboardingTasks(userId) {
   try {
-    const db = await require('./db').getDb();
-
     // Get user profile to check if profile is complete
-    const userResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
-    const users = dbSafe.parseResult(userResult);
+    const users = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
 
     if (users.length === 0) return;
 
@@ -592,19 +576,19 @@ io.on('connection', (socket) => {
         await roomManager.ensureContactsForRoomMembers(roomId);
       }
 
-      // Load room message history from database using safe query
-      const db = await require('./db').getDb();
+      // Load room message history from database using PostgreSQL
+      const dbPostgres = require('./dbPostgres');
       const historyQuery = `
         SELECT * FROM messages
-        WHERE room_id = ${dbSafe.escapeSQL(roomId)}
-        AND private = 0
-        AND flagged = 0
-        AND (deleted = 0 OR deleted IS NULL)
+        WHERE room_id = $1
+        AND (private = false OR private IS NULL)
+        AND (flagged = false OR flagged IS NULL)
+        AND (deleted = false OR deleted IS NULL)
         ORDER BY timestamp ASC
         LIMIT 500
       `;
-      const historyResult = db.exec(historyQuery);
-      const messages = dbSafe.parseResult(historyResult);
+      const result = await dbPostgres.query(historyQuery, [roomId]);
+      const messages = result.rows;
 
       console.log(`📜 Loading ${messages.length} messages for room ${roomId}`);
 
@@ -734,20 +718,20 @@ io.on('connection', (socket) => {
       const proactiveCoach = require('./proactiveCoach');
       const db = await require('./db').getDb();
       const dbSafe = require('./dbSafe');
+      const dbPostgres = require('./dbPostgres');
 
       // Get recent messages for context from database
       const messagesQuery = `
         SELECT * FROM messages
-        WHERE room_id = ${dbSafe.escapeSQL(user.roomId)}
+        WHERE room_id = $1
         ORDER BY timestamp DESC
         LIMIT 10
       `;
-      const messagesResult = db.exec(messagesQuery);
-      const recentMessages = messagesResult.length > 0 ? dbSafe.parseResult(messagesResult).reverse() : [];
+      const messagesResult = await dbPostgres.query(messagesQuery, [user.roomId]);
+      const recentMessages = messagesResult.rows.length > 0 ? messagesResult.rows.reverse() : [];
 
       // Get user context
-      const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
-      const users = dbSafe.parseResult(userResult);
+      const users = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
       const userContext = users.length > 0 ? users[0] : {};
 
       // Get flagged messages for learning
@@ -898,17 +882,17 @@ io.on('connection', (socket) => {
 
       // Get recent messages from database for AI analysis
       const dbModule = require('./db');
-      const db = await dbModule.getDb();
       const dbSafe = require('./dbSafe');
+      const dbPostgres = require('./dbPostgres');
 
       const messagesQuery = `
         SELECT * FROM messages
-        WHERE room_id = ${dbSafe.escapeSQL(user.roomId)}
+        WHERE room_id = $1
         ORDER BY timestamp DESC
         LIMIT 20
       `;
-      const messagesResult = db.exec(messagesQuery);
-      const recentMessages = messagesResult.length > 0 ? dbSafe.parseResult(messagesResult).reverse() : [];
+      const messagesResult = await dbPostgres.query(messagesQuery, [user.roomId]);
+      const recentMessages = messagesResult.rows.length > 0 ? messagesResult.rows.reverse() : [];
 
       // Check if AI mediator should intervene (async, non-blocking)
       // We analyze BEFORE broadcasting to decide if message should be shown to others
@@ -927,12 +911,10 @@ io.on('connection', (socket) => {
           let existingContacts = [];
           let contactContextForAI = null;
           try {
-            const db = await require('./db').getDb();
             const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
-            const users = dbSafe.parseResult(userResult);
+            const users = userResult;
             if (users.length > 0) {
-              const contactsResult = await dbSafe.safeSelect('contacts', { user_id: users[0].id });
-              const fullContacts = dbSafe.parseResult(contactsResult);
+              const fullContacts = await dbSafe.safeSelect('contacts', { user_id: users[0].id });
               existingContacts = fullContacts.map(c => c.contact_name);
 
               // Get contacts for all participants to identify shared children
@@ -1525,15 +1507,16 @@ io.on('connection', (socket) => {
 
       // Get message from database
       const db = await require('./db').getDb();
+      const dbPostgres = require('./dbPostgres');
       const messageQuery = `
         SELECT * FROM messages
-        WHERE id = ${dbSafe.escapeSQL(messageId)}
-        AND username = ${dbSafe.escapeSQL(user.username)}
-        AND room_id = ${dbSafe.escapeSQL(user.roomId)}
+        WHERE id = $1
+        AND username = $2
+        AND room_id = $3
         LIMIT 1
       `;
-      const messageResult = db.exec(messageQuery);
-      const messages = dbSafe.parseResult(messageResult);
+      const messageResult = await dbPostgres.query(messageQuery, [messageId, user.username, user.roomId]);
+      const messages = messageResult.rows;
 
       if (messages.length === 0) {
         socket.emit('error', { message: 'Message not found or you do not have permission to edit it.' });
@@ -1582,15 +1565,16 @@ io.on('connection', (socket) => {
 
       // Get message from database
       const db = await require('./db').getDb();
+      const dbPostgres = require('./dbPostgres');
       const messageQuery = `
         SELECT * FROM messages
-        WHERE id = ${dbSafe.escapeSQL(messageId)}
-        AND username = ${dbSafe.escapeSQL(user.username)}
-        AND room_id = ${dbSafe.escapeSQL(user.roomId)}
+        WHERE id = $1
+        AND username = $2
+        AND room_id = $3
         LIMIT 1
       `;
-      const messageResult = db.exec(messageQuery);
-      const messages = dbSafe.parseResult(messageResult);
+      const messageResult = await dbPostgres.query(messageQuery, [messageId, user.username, user.roomId]);
+      const messages = messageResult.rows;
 
       if (messages.length === 0) {
         socket.emit('error', { message: 'Message not found or you do not have permission to delete it.' });
@@ -1634,16 +1618,16 @@ io.on('connection', (socket) => {
       }
 
       // Get message from database to verify it exists in this room
-      const db = await require('./db').getDb();
+      const dbPostgres = require('./dbPostgres');
       const messageQuery = `
         SELECT * FROM messages
-        WHERE id = ${dbSafe.escapeSQL(messageId)}
-        AND room_id = ${dbSafe.escapeSQL(user.roomId)}
-        AND deleted = 0
+        WHERE id = $1
+        AND room_id = $2
+        AND (deleted = false OR deleted IS NULL)
         LIMIT 1
       `;
-      const messageResult = db.exec(messageQuery);
-      const messages = dbSafe.parseResult(messageResult);
+      const messageResult = await dbPostgres.query(messageQuery, [messageId, user.roomId]);
+      const messages = messageResult.rows;
 
       if (messages.length === 0) {
         socket.emit('error', { message: 'Message not found.' });
@@ -1653,11 +1637,11 @@ io.on('connection', (socket) => {
       // Get existing reactions for this message
       const reactionsQuery = `
         SELECT reactions FROM messages
-        WHERE id = ${dbSafe.escapeSQL(messageId)}
+        WHERE id = $1
         LIMIT 1
       `;
-      const reactionsResult = db.exec(reactionsQuery);
-      const reactionsData = dbSafe.parseResult(reactionsResult);
+      const reactionsResult = await dbPostgres.query(reactionsQuery, [messageId]);
+      const reactionsData = reactionsResult.rows;
 
       let reactions = {};
       if (reactionsData.length > 0 && reactionsData[0].reactions) {
@@ -1922,16 +1906,16 @@ io.on('connection', (socket) => {
       }
 
       // Get message from database to verify it exists in this room
-      const db = await require('./db').getDb();
+      const dbPostgres = require('./dbPostgres');
       const messageQuery = `
         SELECT * FROM messages
-        WHERE id = ${dbSafe.escapeSQL(messageId)}
-        AND room_id = ${dbSafe.escapeSQL(user.roomId)}
-        AND deleted = 0
+        WHERE id = $1
+        AND room_id = $2
+        AND (deleted = false OR deleted IS NULL)
         LIMIT 1
       `;
-      const messageResult = db.exec(messageQuery);
-      const messages = dbSafe.parseResult(messageResult);
+      const messageResult = await dbPostgres.query(messageQuery, [messageId, user.roomId]);
+      const messages = messageResult.rows;
 
       if (messages.length === 0) {
         socket.emit('error', { message: 'Message not found.' });
@@ -2335,12 +2319,11 @@ io.on('connection', (socket) => {
 
       // Save to database
       try {
-        const db = await require('./db').getDb();
-        db.run(`
+        const dbPostgres = require('./dbPostgres');
+        await dbPostgres.query(`
           INSERT INTO messages (id, type, username, text, timestamp, socket_id, room_id)
-          VALUES ('${systemMessage.id}', '${systemMessage.type}', '${systemMessage.username}', '${systemMessage.text.replace(/'/g, "''")}', '${systemMessage.timestamp}', '${socket.id}', '${roomId.replace(/'/g, "''")}')
-        `);
-        require('./db').saveDatabase();
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `, [systemMessage.id, systemMessage.type, systemMessage.username, systemMessage.text, systemMessage.timestamp, socket.id, roomId]);
       } catch (err) {
         console.error('Error saving system message:', err);
       }
@@ -2387,8 +2370,8 @@ app.get('/admin', (req, res) => {
 // Debug endpoint: List all users (for development/debugging)
 app.get('/api/debug/users', async (req, res) => {
   try {
-    const db = await require('./db').getDb();
-    const result = db.exec(`
+    const dbPostgres = require('./dbPostgres');
+    const result = await dbPostgres.query(`
       SELECT 
         id, 
         username, 
@@ -2399,29 +2382,19 @@ app.get('/api/debug/users', async (req, res) => {
       ORDER BY created_at DESC
     `);
 
-    if (result.length === 0 || result[0].values.length === 0) {
-      return res.json({ users: [], count: 0 });
-    }
-
-    const row = result[0];
-    const columns = row.columns;
-    const users = row.values.map(values => {
-      const user = {};
-      values.forEach((value, index) => {
-        user[columns[index]] = value;
-      });
-      return {
-        id: user.id,
-        username: user.username,
-        email: user.email || null,
-        created_at: user.created_at,
-        last_login: user.last_login || null
-      };
-    });
+    const users = result.rows || [];
+    
+    const formattedUsers = users.map(user => ({
+      id: user.id,
+      username: user.username,
+      email: user.email || null,
+      created_at: user.created_at,
+      last_login: user.last_login || null
+    }));
 
     res.json({
-      users,
-      count: users.length
+      users: formattedUsers,
+      count: formattedUsers.length
     });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -2441,13 +2414,10 @@ app.get('/api/stats/user-count', async (req, res) => {
       const result = await dbPostgres.query('SELECT COUNT(*) as count FROM users');
       count = parseInt(result.rows[0]?.count || 0, 10);
     } else {
-      // SQLite
-      const db = await require('./db').getDb();
-      const result = db.exec('SELECT COUNT(*) as count FROM users');
-
-      if (result.length > 0 && result[0].values.length > 0) {
-        count = result[0].values[0][0] || 0;
-      }
+      // PostgreSQL (should always be this path now)
+      const dbPostgres = require('./dbPostgres');
+      const result = await dbPostgres.query('SELECT COUNT(*) as count FROM users');
+      count = parseInt(result.rows[0]?.count || 0, 10);
     }
 
     res.json({ count });
@@ -3177,14 +3147,11 @@ app.get('/api/tasks', async (req, res) => {
       return res.status(400).json({ error: 'Email or username is required' });
     }
 
-    const db = await require('./db').getDb();
-
     // Get user by email OR username
     const isEmail = identifier.includes('@');
-    const userResult = isEmail
+    const users = isEmail
       ? await dbSafe.safeSelect('users', { email: identifier.toLowerCase() }, { limit: 1 })
       : await dbSafe.safeSelect('users', { username: identifier.toLowerCase() }, { limit: 1 });
-    const users = dbSafe.parseResult(userResult);
 
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -3214,7 +3181,7 @@ app.get('/api/tasks', async (req, res) => {
       orderDirection: 'DESC'
     });
 
-    let tasks = dbSafe.parseResult(tasksResult);
+    let tasks = tasksResult;
 
     // Auto-complete onboarding tasks if conditions are met (check on load)
     try {
@@ -3224,7 +3191,7 @@ app.get('/api/tasks', async (req, res) => {
         orderBy: 'created_at',
         orderDirection: 'DESC'
       });
-      tasks = dbSafe.parseResult(updatedTasksResult);
+      tasks = updatedTasksResult;
     } catch (error) {
       console.error('Error auto-completing onboarding tasks on load:', error);
       // Continue with original tasks if auto-complete fails
@@ -4386,8 +4353,6 @@ app.get('/api/contacts', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
-
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
@@ -4399,14 +4364,12 @@ app.get('/api/contacts', async (req, res) => {
     const userId = users[0].id;
 
     // Get contacts
-    const contactsResult = await dbSafe.safeSelect('contacts', { user_id: userId }, { orderBy: 'created_at', orderDirection: 'DESC' });
-    let contacts = dbSafe.parseResult(contactsResult);
+    let contacts = await dbSafe.safeSelect('contacts', { user_id: userId }, { orderBy: 'created_at', orderDirection: 'DESC' });
 
     // Enrich contacts with linked contact information
     for (let contact of contacts) {
       if (contact.linked_contact_id) {
-        const linkedContactResult = await dbSafe.safeSelect('contacts', { id: contact.linked_contact_id }, { limit: 1 });
-        const linkedContacts = dbSafe.parseResult(linkedContactResult);
+        const linkedContacts = await dbSafe.safeSelect('contacts', { id: contact.linked_contact_id }, { limit: 1 });
         if (linkedContacts.length > 0) {
           contact.linked_contact_name = linkedContacts[0].contact_name;
           contact.linked_contact_relationship = linkedContacts[0].relationship;
