@@ -66,24 +66,62 @@ async function createPrivateRoom(userId, username) {
  * Prioritizes rooms with multiple members (shared rooms) over solo rooms
  */
 async function getUserRoom(userId) {
-  // First, try to find a room with multiple members (shared room)
-  // This ensures co-parents end up in the same room after connection
-  const sharedRoomQuery = `
-    SELECT r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role, COUNT(rm2.user_id) as member_count
-    FROM rooms r
-    INNER JOIN room_members rm ON r.id = rm.room_id
-    LEFT JOIN room_members rm2 ON r.id = rm2.room_id
-    WHERE rm.user_id = $1
-    GROUP BY r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role
-    HAVING COUNT(rm2.user_id) > 1
-    ORDER BY MAX(rm.joined_at) DESC
-    LIMIT 1
-  `;
+  try {
+    console.log(`🔵 getUserRoom called for userId: ${userId} (type: ${typeof userId})`);
+    
+    // First, try to find a room with multiple members (shared room)
+    // This ensures co-parents end up in the same room after connection
+    const sharedRoomQuery = `
+      SELECT r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role, COUNT(rm2.user_id) as member_count
+      FROM rooms r
+      INNER JOIN room_members rm ON r.id = rm.room_id
+      LEFT JOIN room_members rm2 ON r.id = rm2.room_id
+      WHERE rm.user_id = $1
+      GROUP BY r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role
+      HAVING COUNT(rm2.user_id) > 1
+      ORDER BY MAX(rm.joined_at) DESC
+      LIMIT 1
+    `;
 
-  const sharedRoomResult = await dbPostgres.query(sharedRoomQuery, [userId]);
+    console.log(`🔵 Querying for shared rooms for user ${userId}`);
+    const sharedRoomResult = await dbPostgres.query(sharedRoomQuery, [userId]);
+    console.log(`🔵 Shared room query returned ${sharedRoomResult.rows.length} results`);
 
-  if (sharedRoomResult.rows.length > 0) {
-    const room = sharedRoomResult.rows[0];
+    if (sharedRoomResult.rows.length > 0) {
+      const room = sharedRoomResult.rows[0];
+      console.log(`✅ Found shared room: ${room.id}`);
+
+      return {
+        roomId: room.id,
+        roomName: room.name,
+        createdBy: room.created_by,
+        isPrivate: room.is_private === 1 || room.is_private === true,
+        role: room.role,
+        createdAt: room.created_at
+      };
+    }
+
+    // Fallback: return any room the user belongs to (for solo users)
+    const fallbackQuery = `
+      SELECT r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role
+      FROM rooms r
+      INNER JOIN room_members rm ON r.id = rm.room_id
+      WHERE rm.user_id = $1
+      ORDER BY rm.joined_at DESC
+      LIMIT 1
+    `;
+
+    console.log(`🔵 Querying for any room for user ${userId}`);
+    const result = await dbPostgres.query(fallbackQuery, [userId]);
+    console.log(`🔵 Fallback query returned ${result.rows.length} results`);
+
+    if (result.rows.length === 0) {
+      console.log(`⚠️ No room found for user ${userId}`);
+      return null;
+    }
+
+    const room = result.rows[0];
+    console.log(`✅ Found room: ${room.id} for user ${userId}`);
 
     return {
       roomId: room.id,
@@ -93,34 +131,11 @@ async function getUserRoom(userId) {
       role: room.role,
       createdAt: room.created_at
     };
+  } catch (error) {
+    console.error(`❌ Error in getUserRoom for userId ${userId}:`, error);
+    console.error(`❌ Error stack:`, error.stack);
+    throw error;
   }
-
-  // Fallback: return any room the user belongs to (for solo users)
-  const fallbackQuery = `
-    SELECT r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role
-    FROM rooms r
-    INNER JOIN room_members rm ON r.id = rm.room_id
-    WHERE rm.user_id = $1
-    ORDER BY rm.joined_at DESC
-    LIMIT 1
-  `;
-
-  const result = await dbPostgres.query(fallbackQuery, [userId]);
-
-  if (result.rows.length === 0) {
-    return null;
-  }
-
-  const room = result.rows[0];
-
-  return {
-    roomId: room.id,
-    roomName: room.name,
-    createdBy: room.created_by,
-    isPrivate: room.is_private === 1 || room.is_private === true,
-    role: room.role,
-    createdAt: room.created_at
-  };
 }
 
 /**
