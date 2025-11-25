@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
 
+// Global state to track Google Maps script loading (singleton pattern)
+let googleMapsLoadingState = {
+  isLoading: false,
+  isLoaded: false,
+  error: null,
+  script: null,
+  listeners: new Set()
+};
+
 /**
  * Custom hook to load Google Places API and initialize autocomplete
  * @param {Object} inputRef - React ref to the input element
@@ -7,45 +16,101 @@ import { useEffect, useState } from 'react';
  * @returns {Object} - Loading state and error state
  */
 export function useGooglePlaces(inputRef, onPlaceSelected) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState(null);
+  const [isLoaded, setIsLoaded] = useState(googleMapsLoadingState.isLoaded);
+  const [error, setError] = useState(googleMapsLoadingState.error);
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY;
 
-    if (!apiKey) {
-      setError('Google Places API key not configured');
+    // Debug logging to help diagnose configuration issues
+    if (import.meta.env.DEV) {
+      console.log('Google Places API Key check:', {
+        hasKey: !!apiKey,
+        keyLength: apiKey?.length || 0,
+        keyPrefix: apiKey?.substring(0, 10) || 'none',
+        allEnvKeys: Object.keys(import.meta.env).filter(k => k.includes('GOOGLE'))
+      });
+    }
+
+    if (!apiKey || apiKey.trim() === '') {
+      // Only show error in development - in production, this is an optional feature
+      if (import.meta.env.DEV) {
+        console.warn('Google Places API key not configured - address autocomplete will be unavailable');
+        console.warn('To configure: Set VITE_GOOGLE_PLACES_API_KEY in Vercel environment variables and redeploy');
+        setError('Google Places API key not configured');
+      }
       return;
     }
 
     // Check if Google Maps is already loaded
     if (window.google && window.google.maps && window.google.maps.places) {
+      googleMapsLoadingState.isLoaded = true;
       setIsLoaded(true);
       return;
     }
 
+    // Check if script is already being loaded or already exists
+    const scriptSrc = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    const existingScript = document.querySelector(`script[src="${scriptSrc}"]`);
+    
+    if (existingScript) {
+      // Script already exists, wait for it to load
+      if (googleMapsLoadingState.isLoaded) {
+        setIsLoaded(true);
+      } else if (googleMapsLoadingState.isLoading) {
+        // Script is loading, add this component to listeners
+        googleMapsLoadingState.listeners.add(() => {
+          setIsLoaded(true);
+        });
+      }
+      return;
+    }
+
+    // Start loading the script (only once)
+    if (googleMapsLoadingState.isLoading) {
+      // Already loading, just add listener
+      googleMapsLoadingState.listeners.add(() => {
+        setIsLoaded(true);
+      });
+      return;
+    }
+
+    googleMapsLoadingState.isLoading = true;
+
     // Load Google Maps JavaScript API
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = scriptSrc;
     script.async = true;
     script.defer = true;
 
     script.onload = () => {
+      googleMapsLoadingState.isLoaded = true;
+      googleMapsLoadingState.isLoading = false;
+      googleMapsLoadingState.script = script;
+      
+      // Notify all listeners
+      googleMapsLoadingState.listeners.forEach(listener => listener());
+      googleMapsLoadingState.listeners.clear();
+      
       setIsLoaded(true);
     };
 
     script.onerror = () => {
-      setError('Failed to load Google Places API');
+      const errorMsg = 'Failed to load Google Places API';
+      googleMapsLoadingState.error = errorMsg;
+      googleMapsLoadingState.isLoading = false;
+      setError(errorMsg);
+      
+      // Notify all listeners of error
+      googleMapsLoadingState.listeners.forEach(listener => listener());
+      googleMapsLoadingState.listeners.clear();
     };
 
     document.head.appendChild(script);
+    googleMapsLoadingState.script = script;
 
-    return () => {
-      // Cleanup: remove script if component unmounts during loading
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-    };
+    // Note: We don't remove the script on cleanup because other components might be using it
+    // The script will remain in the DOM for the lifetime of the app
   }, []);
 
   useEffect(() => {
