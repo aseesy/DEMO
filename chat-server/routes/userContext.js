@@ -5,12 +5,20 @@ const router = express.Router();
 
 // Get user context
 router.get('/', async (req, res) => {
-    const userId = req.query.user;
-    if (!userId) return res.status(400).json({ error: 'user query param required' });
+    const username = req.query.user;
+    if (!username) {
+        return res.status(400).json({ error: 'user query param required' });
+    }
     try {
-        const context = await userContext.getUserContext(userId);
+        // userContext.getUserContext expects username (TEXT in PostgreSQL)
+        const context = await userContext.getUserContext(username);
         if (!context) {
-            return res.json({ userId, co_parent: null, children: [], contacts: [] });
+            return res.json({ 
+                userId: username, 
+                co_parent: null, 
+                children: [], 
+                contacts: [] 
+            });
         }
         res.json({
             userId: context.username,
@@ -19,8 +27,12 @@ router.get('/', async (req, res) => {
             contacts: context.contacts || [],
         });
     } catch (err) {
-        console.error('Error fetching user context', err);
-        res.status(500).json({ error: 'internal server error' });
+        console.error('Error fetching user context:', err);
+        // Make sure we always return JSON, not HTML
+        res.status(500).json({ 
+            error: 'internal server error',
+            message: err.message 
+        });
     }
 });
 
