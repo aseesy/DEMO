@@ -364,9 +364,17 @@ async function authenticateUserByEmail(email, password) {
   // Get user's room
   let room = null;
   try {
+    console.log(`🔵 getUser: Fetching room for user ${user.id} (${user.username})`);
     room = await roomManager.getUserRoom(user.id);
+    if (room) {
+      console.log(`✅ getUser: Found room ${room.roomId} for user ${user.username}`);
+    } else {
+      console.log(`⚠️ getUser: No room found for user ${user.username}`);
+    }
   } catch (error) {
-    console.error('Error getting user room:', error);
+    console.error(`❌ Error getting user room for ${user.username}:`, error);
+    console.error(`❌ Error stack:`, error.stack);
+    // Don't throw - return user without room
   }
 
   return {
@@ -454,9 +462,17 @@ async function authenticateUser(username, password) {
   // Get user's room
   let room = null;
   try {
+    console.log(`🔵 getUser: Fetching room for user ${user.id} (${user.username})`);
     room = await roomManager.getUserRoom(user.id);
+    if (room) {
+      console.log(`✅ getUser: Found room ${room.roomId} for user ${user.username}`);
+    } else {
+      console.log(`⚠️ getUser: No room found for user ${user.username}`);
+    }
   } catch (error) {
-    console.error('Error getting user room:', error);
+    console.error(`❌ Error getting user room for ${user.username}:`, error);
+    console.error(`❌ Error stack:`, error.stack);
+    // Don't throw - return user without room
   }
 
   return {
