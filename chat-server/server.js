@@ -2337,10 +2337,11 @@ io.on('connection', (socket) => {
       // Save to database
       try {
         const dbPostgres = require('./dbPostgres');
+        // Note: messages table doesn't have socket_id column in PostgreSQL
         await dbPostgres.query(`
-          INSERT INTO messages (id, type, username, text, timestamp, socket_id, room_id)
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
-        `, [systemMessage.id, systemMessage.type, systemMessage.username, systemMessage.text, systemMessage.timestamp, socket.id, roomId]);
+          INSERT INTO messages (id, type, username, text, timestamp, room_id)
+          VALUES ($1, $2, $3, $4, $5, $6)
+        `, [systemMessage.id, systemMessage.type, systemMessage.username, systemMessage.text, systemMessage.timestamp, roomId]);
       } catch (err) {
         console.error('Error saving system message:', err);
       }
