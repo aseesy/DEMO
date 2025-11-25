@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import initialRelationships from './relationships.json'; // default map
 import { useAuth } from '../hooks/useAuth.js'; // to get current user
+import { API_BASE_URL } from '../config.js';
 
 // ---------------------------------------------------------------------------
 // Mediator Context – tracks participants in a chat and provides a simple
@@ -28,8 +29,13 @@ export const MediatorProvider = ({ children }) => {
     // Load user context from backend when username becomes available
     useEffect(() => {
         if (!username) return;
-        fetch(`/api/userContext?user=${encodeURIComponent(username)}`)
-            .then((res) => res.json())
+        fetch(`${API_BASE_URL}/api/userContext?user=${encodeURIComponent(username)}`)
+            .then((res) => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
             .then((data) => {
                 setUserContext({
                     co_parent: data.co_parent || null,
