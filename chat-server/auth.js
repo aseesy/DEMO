@@ -277,18 +277,23 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
 async function authenticateUserByEmail(email, password) {
   const emailLower = email.trim().toLowerCase();
   
+  console.log(`🔐 Attempting login for email: ${emailLower}`);
+  
   // Use safe select to get user by email
   const result = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
   const users = result;
   
   if (users.length === 0) {
+    console.log(`❌ No user found with email: ${emailLower}`);
     return null;
   }
 
   const user = users[0];
+  console.log(`✅ User found: ${user.username} (id: ${user.id})`);
   
   // Check if user has a password (OAuth users might not)
   if (!user.password_hash) {
+    console.log(`❌ User ${user.username} has no password_hash (OAuth user?)`);
     return null;
   }
 
@@ -297,10 +302,12 @@ async function authenticateUserByEmail(email, password) {
   
   // Check if password hash is bcrypt (starts with $2a$, $2b$, or $2y$)
   const isBcryptHash = /^\$2[ayb]\$/.test(user.password_hash);
+  console.log(`🔑 Password hash type: ${isBcryptHash ? 'bcrypt' : 'legacy SHA-256'}`);
   
   if (isBcryptHash) {
     // Use bcrypt comparison
     isValid = await comparePassword(password, user.password_hash);
+    console.log(`🔐 Bcrypt password comparison: ${isValid ? '✅ Valid' : '❌ Invalid'}`);
   } else {
     // Legacy SHA-256 hash - verify and migrate to bcrypt
     const crypto = require('crypto');
@@ -311,12 +318,17 @@ async function authenticateUserByEmail(email, password) {
       const newBcryptHash = await hashPassword(password);
       await dbSafe.safeUpdate('users', { password_hash: newBcryptHash }, { id: user.id });
       console.log(`✅ Migrated password for user: ${user.username}`);
+    } else {
+      console.log(`❌ Legacy SHA-256 password comparison failed`);
     }
   }
   
   if (!isValid) {
+    console.log(`❌ Authentication failed for user: ${user.username}`);
     return null;
   }
+  
+  console.log(`✅ Authentication successful for user: ${user.username}`);
 
   // Update last login using safe update
   await dbSafe.safeUpdate('users', { last_login: new Date().toISOString() }, { id: user.id });
