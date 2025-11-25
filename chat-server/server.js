@@ -504,42 +504,52 @@ io.on('connection', (socket) => {
   // Handle user joining
   socket.on('join', async ({ username }) => {
     try {
+      console.log(`🔵 Join request received for username: ${username}`);
       const cleanUsername = sanitizeInput(username);
+      console.log(`🔵 Cleaned username: ${cleanUsername}`);
 
       // Validate username
       if (!validateUsername(cleanUsername)) {
+        console.log(`❌ Username validation failed: ${cleanUsername}`);
         socket.emit('error', { message: 'Invalid username. Must be 2-20 characters.' });
         return;
       }
 
       // Get user and their room
+      console.log(`🔵 Looking up user: ${cleanUsername}`);
       const user = await auth.getUser(cleanUsername);
       if (!user) {
+        console.log(`❌ User not found: ${cleanUsername}`);
         socket.emit('error', { message: 'User not found.' });
         return;
       }
+      console.log(`✅ User found: ${user.username} (id: ${user.id})`);
 
       // If user doesn't have a room (old user from before rooms were added), create one
       let roomId;
       if (!user.room) {
-        console.log(`User ${cleanUsername} has no room, creating one...`);
+        console.log(`🔵 User ${cleanUsername} has no room, creating one...`);
         try {
           if (!user.id) {
+            console.log(`❌ User missing ID: ${JSON.stringify(user)}`);
             socket.emit('error', { message: 'User not found.' });
             return;
           }
 
+          console.log(`🔵 Creating private room for user ${user.id} (${cleanUsername})`);
           const newRoom = await roomManager.createPrivateRoom(user.id, cleanUsername);
           roomId = newRoom.roomId;
           user.room = newRoom;
-          console.log(`Created room ${roomId} for user ${cleanUsername}`);
+          console.log(`✅ Created room ${roomId} for user ${cleanUsername}`);
         } catch (err) {
-          console.error('Error creating room:', err);
+          console.error('❌ Error creating room:', err);
+          console.error('❌ Error stack:', err.stack);
           socket.emit('error', { message: 'Failed to create chat room.' });
           return;
         }
       } else {
         roomId = user.room.roomId;
+        console.log(`✅ User has existing room: ${roomId}`);
       }
 
       // Check if username is taken in this room
@@ -568,7 +578,9 @@ io.on('connection', (socket) => {
       });
 
       // Get room members
+      console.log(`🔵 Getting room members for room: ${roomId}`);
       const members = await roomManager.getRoomMembers(roomId);
+      console.log(`✅ Found ${members.length} room members`);
 
       // Ensure contacts exist for all users in shared rooms
       if (members.length > 1) {
@@ -587,8 +599,10 @@ io.on('connection', (socket) => {
         ORDER BY timestamp ASC
         LIMIT 500
       `;
+      console.log(`🔵 Loading message history for room: ${roomId}`);
       const result = await dbPostgres.query(historyQuery, [roomId]);
       const messages = result.rows;
+      console.log(`✅ Loaded ${messages.length} messages from history`);
 
       console.log(`📜 Loading ${messages.length} messages for room ${roomId}`);
 
@@ -701,7 +715,13 @@ io.on('connection', (socket) => {
 
       console.log(`User joined room: ${cleanUsername} → ${roomId} (${socket.id})`);
     } catch (error) {
-      console.error('Error in join handler:', error);
+      console.error('❌ Error in join handler:', error);
+      console.error('❌ Error stack:', error.stack);
+      console.error('❌ Error details:', {
+        message: error.message,
+        name: error.name,
+        username: username
+      });
       socket.emit('error', { message: 'Failed to join chat room.' });
     }
   });
@@ -2845,6 +2865,8 @@ app.post('/api/auth/login', async (req, res) => {
 
     const user = await auth.authenticateUserByEmail(email, password);
     if (!user) {
+      // Log the attempt for debugging
+      console.log(`❌ Login failed for email: ${email.trim().toLowerCase()}`);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
