@@ -3515,7 +3515,7 @@ app.get('/api/dashboard/updates', async (req, res) => {
     // Get user's room to find co-parent
     const userRoom = await roomManager.getUserRoom(userId);
     if (userRoom) {
-      const roomMembers = await roomManager.getRoomMembers(userRoom.id);
+      const roomMembers = await roomManager.getRoomMembers(userRoom.roomId);
       const coparentMember = roomMembers.find(m => m.user_id !== userId);
 
       if (coparentMember) {
@@ -3573,32 +3573,32 @@ app.get('/api/dashboard/updates', async (req, res) => {
     }
 
     // Get children contacts and their activity
-    const childrenContactsResult = await dbSafe.safeSelect('contacts', {
+    const childrenContacts = await dbSafe.safeSelect('contacts', {
       user_id: userId,
       relationship: 'My Child'
     }, {});
-    const childrenContacts = dbSafe.parseResult(childrenContactsResult);
 
     // Also check for "My Partner's Child" relationship
     const partnerChildrenResult = await dbSafe.safeSelect('contacts', {
       user_id: userId
     }, {});
-    const allChildren = dbSafe.parseResult(partnerChildrenResult).filter(
+    const allChildren = partnerChildrenResult.filter(
       c => c.relationship === 'My Child' || c.relationship === "My Partner's Child"
     );
 
     // Get recent tasks related to children (could be enhanced with child-specific task tracking)
     const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const dbPostgres = require('./dbPostgres');
     const recentTasksQuery = `
       SELECT * FROM tasks
-      WHERE user_id = ${userId}
-      AND created_at > ${dbSafe.escapeSQL(twoDaysAgo)}
-      AND (title LIKE '%child%' OR title LIKE '%children%' OR description LIKE '%child%' OR description LIKE '%children%')
+      WHERE user_id = $1
+      AND created_at > $2
+      AND (title ILIKE $3 OR title ILIKE $4 OR description ILIKE $3 OR description ILIKE $4)
       ORDER BY created_at DESC
       LIMIT 3
     `;
-    const childTasksResult = db.exec(recentTasksQuery);
-    const childTasks = dbSafe.parseResult(childTasksResult);
+    const childTasksResult = await dbPostgres.query(recentTasksQuery, [userId, twoDaysAgo, '%child%', '%children%']);
+    const childTasks = childTasksResult.rows;
 
     childTasks.forEach(task => {
       // Try to match to a child contact
