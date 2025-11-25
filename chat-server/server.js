@@ -590,12 +590,10 @@ io.on('connection', (socket) => {
 
       // Load room message history from database using PostgreSQL
       const dbPostgres = require('./dbPostgres');
+      // Note: messages table doesn't have private/flagged/deleted columns in PostgreSQL schema
       const historyQuery = `
         SELECT * FROM messages
         WHERE room_id = $1
-        AND (private = false OR private IS NULL)
-        AND (flagged = false OR flagged IS NULL)
-        AND (deleted = false OR deleted IS NULL)
         ORDER BY timestamp ASC
         LIMIT 500
       `;
