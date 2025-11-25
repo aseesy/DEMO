@@ -338,11 +338,11 @@ async function authenticateUserByEmail(email, password) {
     const contextData = contextRows[0];
     try {
       context = {
-        coParentName: contextData.co_parent_name || '',
-        separationDate: contextData.separation_date || '',
-        children: contextData.children ? JSON.parse(contextData.children) : [],
-        concerns: contextData.concerns ? JSON.parse(contextData.concerns) : [],
-        newPartner: contextData.new_partner ? JSON.parse(contextData.new_partner) : { name: '', livesWith: false }
+        coParentName: contextData.co_parent || '',
+        separationDate: '',
+        children: typeof contextData.children === 'string' ? JSON.parse(contextData.children) : (contextData.children || []),
+        concerns: typeof contextData.contacts === 'string' ? JSON.parse(contextData.contacts) : (contextData.contacts || []),
+        newPartner: { name: '', livesWith: false }
       };
     } catch (err) {
       console.error('Error parsing user context:', err);
@@ -428,11 +428,11 @@ async function authenticateUser(username, password) {
     const contextData = contextRows[0];
     try {
       context = {
-        coParentName: contextData.co_parent_name || '',
-        separationDate: contextData.separation_date || '',
-        children: contextData.children ? JSON.parse(contextData.children) : [],
-        concerns: contextData.concerns ? JSON.parse(contextData.concerns) : [],
-        newPartner: contextData.new_partner ? JSON.parse(contextData.new_partner) : { name: '', livesWith: false }
+        coParentName: contextData.co_parent || '',
+        separationDate: '',
+        children: typeof contextData.children === 'string' ? JSON.parse(contextData.children) : (contextData.children || []),
+        concerns: typeof contextData.contacts === 'string' ? JSON.parse(contextData.contacts) : (contextData.contacts || []),
+        newPartner: { name: '', livesWith: false }
       };
     } catch (err) {
       console.error('Error parsing user context:', err);
@@ -545,11 +545,11 @@ async function getUser(username) {
     const contextData = contextRows[0];
     try {
       context = {
-        coParentName: contextData.co_parent_name || '',
-        separationDate: contextData.separation_date || '',
-        children: contextData.children ? JSON.parse(contextData.children) : [],
-        concerns: contextData.concerns ? JSON.parse(contextData.concerns) : [],
-        newPartner: contextData.new_partner ? JSON.parse(contextData.new_partner) : { name: '', livesWith: false }
+        coParentName: contextData.co_parent || '',
+        separationDate: '',
+        children: typeof contextData.children === 'string' ? JSON.parse(contextData.children) : (contextData.children || []),
+        concerns: typeof contextData.contacts === 'string' ? JSON.parse(contextData.contacts) : (contextData.contacts || []),
+        newPartner: { name: '', livesWith: false }
       };
     } catch (err) {
       console.error('Error parsing user context:', err);
