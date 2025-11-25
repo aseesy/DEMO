@@ -3528,17 +3528,17 @@ app.get('/api/dashboard/updates', async (req, res) => {
 
           // Get recent messages from co-parent (last 48 hours)
           const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+          const dbPostgres = require('./dbPostgres');
           const messagesQuery = `
             SELECT * FROM messages
-            WHERE room_id = ${dbSafe.escapeSQL(userRoom.id)}
-            AND username = ${dbSafe.escapeSQL(coparentUsername)}
-            AND timestamp > ${dbSafe.escapeSQL(twoDaysAgo)}
-            -- Note: private and flagged columns don't exist in PostgreSQL messages table
+            WHERE room_id = $1
+            AND username = $2
+            AND timestamp > $3
             ORDER BY timestamp DESC
             LIMIT 5
           `;
-          const messagesResult = db.exec(messagesQuery);
-          const messages = dbSafe.parseResult(messagesResult);
+          const messagesResult = await dbPostgres.query(messagesQuery, [userRoom.id, coparentUsername, twoDaysAgo]);
+          const messages = messagesResult.rows;
 
           messages.forEach(msg => {
             updates.push({
