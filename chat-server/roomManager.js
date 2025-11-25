@@ -69,14 +69,14 @@ async function getUserRoom(userId) {
   // First, try to find a room with multiple members (shared room)
   // This ensures co-parents end up in the same room after connection
   const sharedRoomQuery = `
-    SELECT r.*, rm.role, COUNT(rm2.user_id) as member_count
+    SELECT r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role, COUNT(rm2.user_id) as member_count
     FROM rooms r
     INNER JOIN room_members rm ON r.id = rm.room_id
     LEFT JOIN room_members rm2 ON r.id = rm2.room_id
     WHERE rm.user_id = $1
-    GROUP BY r.id, rm.role, r.name, r.created_by, r.is_private, r.created_at
+    GROUP BY r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role
     HAVING COUNT(rm2.user_id) > 1
-    ORDER BY rm.joined_at DESC
+    ORDER BY MAX(rm.joined_at) DESC
     LIMIT 1
   `;
 
@@ -97,7 +97,7 @@ async function getUserRoom(userId) {
 
   // Fallback: return any room the user belongs to (for solo users)
   const fallbackQuery = `
-    SELECT r.*, rm.role
+    SELECT r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role
     FROM rooms r
     INNER JOIN room_members rm ON r.id = rm.room_id
     WHERE rm.user_id = $1
