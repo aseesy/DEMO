@@ -21,6 +21,7 @@ export function PrivacyPage() {
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
           <p className="text-gray-600">Last updated: <span>January 2025</span></p>
+          {/* Privacy page route configured in App.jsx */}
         </header>
 
         {/* Content */}

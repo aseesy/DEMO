@@ -6,6 +6,7 @@ import { LoginSignup } from './components/LoginSignup.jsx';
 import { GoogleOAuthCallback } from './components/GoogleOAuthCallback.jsx';
 import { UIShowcase } from './components/UIShowcase.jsx'; // Design system showcase
 import { PrivacyPage } from './components/PrivacyPage.jsx';
+import { TermsPage } from './components/TermsPage.jsx';
 import { usePWA } from './hooks/usePWA.js';
 import { MediatorProvider } from './context/MediatorContext.jsx';
 
@@ -36,6 +37,9 @@ function App() {
 
           {/* Privacy Policy Page */}
           <Route path="/privacy" element={<PrivacyPage />} />
+
+          {/* Terms of Service Page */}
+          <Route path="/terms" element={<TermsPage />} />
         </Routes>
       </BrowserRouter>
     </MediatorProvider>
