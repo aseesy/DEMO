@@ -3533,8 +3533,7 @@ app.get('/api/dashboard/updates', async (req, res) => {
             WHERE room_id = ${dbSafe.escapeSQL(userRoom.id)}
             AND username = ${dbSafe.escapeSQL(coparentUsername)}
             AND timestamp > ${dbSafe.escapeSQL(twoDaysAgo)}
-            AND private = 0
-            AND flagged = 0
+            -- Note: private and flagged columns don't exist in PostgreSQL messages table
             ORDER BY timestamp DESC
             LIMIT 5
           `;
