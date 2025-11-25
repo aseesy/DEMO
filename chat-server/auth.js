@@ -222,7 +222,7 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
     const onboardingTasks = [
       {
         title: 'Complete Your Profile',
-        description: 'Add your profile information to help LiaiZen understand your situation better. Go to Profile to add your name, email, and other details.',
+        description: 'Help LiaiZen understand the dynamics of your co-parenting situation.\n\nThe more context you provide—your details, your children, your schedule—the better LiaiZen can guide your communication and tailor support to your needs.\n\n\n\nUpdate your profile to get the most accurate, personalized mediation.',
         priority: 'high'
       },
       {
