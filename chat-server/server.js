@@ -3499,11 +3499,8 @@ app.get('/api/dashboard/updates', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
-
     // Get user
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
-    const users = dbSafe.parseResult(userResult);
+    const users = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
 
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
