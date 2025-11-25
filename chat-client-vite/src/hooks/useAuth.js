@@ -232,6 +232,9 @@ export function useAuth() {
       localStorage.setItem('chatUser', JSON.stringify(data.user));
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('userEmail', cleanEmail);
+      if (data.token) {
+        localStorage.setItem('auth_token_backup', data.token);
+      }
       return data;
     } catch (err) {
       console.error('Signup error (Vite):', err);
