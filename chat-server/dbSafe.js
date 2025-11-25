@@ -90,7 +90,7 @@ async function safeSelect(table, conditions = {}, options = {}) {
  * Build a safe INSERT query using PostgreSQL parameterized queries
  * @param {string} table - Table name
  * @param {Object} data - Data object {column: value}
- * @returns {Promise<number>} - The inserted row ID
+ * @returns {Promise<number|string|null>} - The inserted row ID or primary key value
  */
 async function safeInsert(table, data) {
   const safeTable = escapeIdentifier(table);
@@ -99,24 +99,44 @@ async function safeInsert(table, data) {
   const params = Object.values(data);
   const placeholders = params.map((_, index) => `$${index + 1}`);
   
-  // Use RETURNING to get the inserted ID
-  const query = `INSERT INTO ${safeTable} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING id`;
+  // Determine primary key column name based on table
+  // Some tables use 'id' (SERIAL), others use different primary keys
+  let primaryKeyColumn = 'id';
+  if (table === 'user_context') {
+    primaryKeyColumn = 'user_id'; // user_context uses user_id (TEXT) as primary key
+  } else if (table === 'rooms') {
+    primaryKeyColumn = 'id'; // rooms uses id (TEXT)
+  } else if (table === 'room_invites') {
+    primaryKeyColumn = 'id'; // room_invites uses id (TEXT)
+  }
+  
+  // Use RETURNING to get the inserted primary key
+  const query = `INSERT INTO ${safeTable} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING ${escapeIdentifier(primaryKeyColumn)}`;
   
   try {
     const result = await dbPostgres.query(query, params);
     
     if (result.rows.length === 0) {
-      throw new Error('INSERT did not return an ID');
+      // Some tables might not have a primary key to return, that's okay
+      console.warn(`Warning: INSERT did not return a primary key for table ${table}`);
+      return null;
     }
     
-    const insertedId = result.rows[0].id;
+    const insertedId = result.rows[0][primaryKeyColumn];
     
-    if (!insertedId) {
-      console.warn(`Warning: INSERT did not return a valid ID for table ${table}`);
+    if (insertedId === null || insertedId === undefined) {
+      console.warn(`Warning: INSERT did not return a valid primary key for table ${table}`);
     }
     
     return insertedId;
   } catch (error) {
+    // If RETURNING fails (e.g., column doesn't exist), try without RETURNING
+    if (error.message && error.message.includes('does not exist')) {
+      console.warn(`Warning: Primary key column '${primaryKeyColumn}' does not exist for table ${table}, inserting without RETURNING`);
+      const queryWithoutReturning = `INSERT INTO ${safeTable} (${columns.join(', ')}) VALUES (${placeholders.join(', ')})`;
+      await dbPostgres.query(queryWithoutReturning, params);
+      return null;
+    }
     console.error('Safe insert error:', error);
     console.error('Query:', query);
     console.error('Params:', params);
