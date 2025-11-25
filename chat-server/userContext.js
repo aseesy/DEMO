@@ -1,23 +1,11 @@
 // User Context Management
 // Stores personal information about users for AI mediator context
-// PostgreSQL-first: Uses PostgreSQL in production, SQLite only in development
+// PostgreSQL-only
 
 const dbPostgres = require('./dbPostgres');
-const dbSqlite = require('./db');
 const dbSafe = require('./dbSafe');
 
-// Check if PostgreSQL is configured (production mode)
-const usePostgres = !!process.env.DATABASE_URL;
-
-if (usePostgres) {
-  console.log('📊 UserContext: Using PostgreSQL');
-} else {
-  if (process.env.NODE_ENV === 'production') {
-    console.error('❌ UserContext: DATABASE_URL not set in production!');
-  } else {
-    console.log('📊 UserContext: Using SQLite (development mode)');
-  }
-}
+console.log('📊 UserContext: Using PostgreSQL');
 
 /**
  * Get user context by username
@@ -26,38 +14,21 @@ if (usePostgres) {
  */
 async function getUserContext(username) {
   try {
-    if (usePostgres) {
-      const result = await dbPostgres.query('SELECT * FROM user_context WHERE user_id = $1', [username]);
-      if (result.rowCount === 0) return null;
+    // PostgreSQL-only: user_context.user_id is TEXT (username)
+    const result = await dbPostgres.query('SELECT * FROM user_context WHERE user_id = $1', [username.toLowerCase()]);
+    if (result.rowCount === 0) return null;
 
-      const row = result.rows[0];
-      return {
-        username: row.user_id,
-        co_parent: row.co_parent,
-        children: row.children || [],
-        contacts: row.contacts || []
-      };
-    } else {
-      // SQLite fallback
-      // Need to get user ID from username first
-      const userResult = await dbSafe.safeSelect('users', { username }, { limit: 1 });
-      const users = dbSafe.parseResult(userResult);
-      if (users.length === 0) return null;
-
-      const userId = users[0].id;
-      const contextResult = await dbSafe.safeSelect('user_context', { user_id: userId }, { limit: 1 });
-      const contexts = dbSafe.parseResult(contextResult);
-
-      if (contexts.length === 0) return null;
-
-      const row = contexts[0];
-      return {
-        username: username,
-        co_parent: row.co_parent_name,
-        children: row.children ? JSON.parse(row.children) : [],
-        contacts: row.contacts ? JSON.parse(row.contacts) : []
-      };
-    }
+    const row = result.rows[0];
+    // Handle JSONB fields that may be parsed or string
+    const children = typeof row.children === 'string' ? JSON.parse(row.children) : (row.children || []);
+    const contacts = typeof row.contacts === 'string' ? JSON.parse(row.contacts) : (row.contacts || []);
+    
+    return {
+      username: row.user_id,
+      co_parent: row.co_parent || null,
+      children: children,
+      contacts: contacts
+    };
   } catch (err) {
     console.error('Error getting user context:', err);
     return null;
@@ -76,68 +47,17 @@ async function setUserContext(username, context) {
   const contacts = context.contacts || [];
 
   try {
-    if (usePostgres) {
-      await dbPostgres.query(
-        `INSERT INTO user_context (user_id, co_parent, children, contacts)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (user_id) DO UPDATE SET
-           co_parent = EXCLUDED.co_parent,
-           children = EXCLUDED.children,
-           contacts = EXCLUDED.contacts,
-           updated_at = NOW()`,
-        [username, coParent || null, children, contacts]
-      );
-    } else {
-      // SQLite fallback
-      const db = await dbSqlite.getDb();
-
-      // Get user ID
-      const userResult = await dbSafe.safeSelect('users', { username }, { limit: 1 });
-      let users = dbSafe.parseResult(userResult);
-      let userId;
-
-      if (users.length === 0) {
-        // Create user if not exists (might happen if context is set before login? unlikely but possible in dev)
-        // Actually, we should probably error if user doesn't exist, but for now let's assume they do or we can't link.
-        console.error(`User ${username} not found for setting context`);
-        throw new Error('User not found');
-      } else {
-        userId = users[0].id;
-      }
-
-      // Check if context exists
-      const contextResult = await dbSafe.safeSelect('user_context', { user_id: userId }, { limit: 1 });
-      const contexts = dbSafe.parseResult(contextResult);
-
-      const childrenJson = JSON.stringify(children);
-      const contactsJson = JSON.stringify(contacts);
-      const now = new Date().toISOString();
-
-      if (contexts.length > 0) {
-        // Update
-        await dbSafe.safeUpdate('user_context',
-          { user_id: userId },
-          {
-            co_parent_name: coParent,
-            children: childrenJson,
-            contacts: contactsJson,
-            updated_at: now
-          }
-        );
-      } else {
-        // Insert
-        await dbSafe.safeInsert('user_context', {
-          user_id: userId,
-          co_parent_name: coParent,
-          children: childrenJson,
-          contacts: contactsJson,
-          updated_at: now
-        });
-      }
-
-      // Save DB to file
-      dbSqlite.saveDatabase();
-    }
+    // PostgreSQL-only: user_context.user_id is TEXT (username)
+    await dbPostgres.query(
+      `INSERT INTO user_context (user_id, co_parent, children, contacts)
+       VALUES ($1, $2, $3::jsonb, $4::jsonb)
+       ON CONFLICT (user_id) DO UPDATE SET
+         co_parent = EXCLUDED.co_parent,
+         children = EXCLUDED.children,
+         contacts = EXCLUDED.contacts,
+         updated_at = NOW()`,
+      [username.toLowerCase(), coParent || null, JSON.stringify(children), JSON.stringify(contacts)]
+    );
 
     return { username, co_parent: coParent, children, contacts };
   } catch (err) {
@@ -171,9 +91,8 @@ async function formatContextForAI(username, profileData = null) {
   let userProfile = profileData;
   if (!userProfile) {
     try {
-      const db = await dbSqlite.getDb();
-      const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
-      const users = dbSafe.parseResult(userResult);
+      // PostgreSQL-only: use dbSafe to get user
+      const users = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
       if (users.length > 0) {
         userProfile = users[0];
       }
