@@ -51,17 +51,27 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
 
     // Check if script is already being loaded or already exists
     const scriptSrc = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    const existingScript = document.querySelector(`script[src="${scriptSrc}"]`);
+    
+    // Check if script with this src already exists in DOM
+    const existingScript = Array.from(document.querySelectorAll('script')).find(
+      s => s.src && s.src.includes('maps.googleapis.com/maps/api/js')
+    );
     
     if (existingScript) {
-      // Script already exists, wait for it to load
+      // Script already exists in DOM, wait for it to load
       if (googleMapsLoadingState.isLoaded) {
         setIsLoaded(true);
       } else if (googleMapsLoadingState.isLoading) {
         // Script is loading, add this component to listeners
-        googleMapsLoadingState.listeners.add(() => {
+        const listener = () => setIsLoaded(true);
+        googleMapsLoadingState.listeners.add(listener);
+        return () => googleMapsLoadingState.listeners.delete(listener);
+      } else {
+        // Script exists but we don't know its state, check if it's loaded
+        if (window.google && window.google.maps && window.google.maps.places) {
+          googleMapsLoadingState.isLoaded = true;
           setIsLoaded(true);
-        });
+        }
       }
       return;
     }
@@ -69,10 +79,9 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
     // Start loading the script (only once)
     if (googleMapsLoadingState.isLoading) {
       // Already loading, just add listener
-      googleMapsLoadingState.listeners.add(() => {
-        setIsLoaded(true);
-      });
-      return;
+      const listener = () => setIsLoaded(true);
+      googleMapsLoadingState.listeners.add(listener);
+      return () => googleMapsLoadingState.listeners.delete(listener);
     }
 
     googleMapsLoadingState.isLoading = true;
