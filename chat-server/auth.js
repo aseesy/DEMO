@@ -150,33 +150,32 @@ async function createUser(username, password, context = {}, email = null, google
   };
 
   // Check if context already exists (shouldn't happen, but handle it)
-  const existingContext = await dbSafe.safeSelect('user_context', { user_id: actualUserId }, { limit: 1 });
+  // Note: user_context.user_id is TEXT (username) in PostgreSQL, not INTEGER
+  const existingContext = await dbSafe.safeSelect('user_context', { user_id: usernameLower }, { limit: 1 });
   const contexts = existingContext;
   
   if (contexts.length > 0) {
     // Update existing context
+    // Note: user_context.user_id is TEXT (username) in PostgreSQL
     await dbSafe.safeUpdate('user_context', {
-      co_parent_name: contextData.coParentName,
-      separation_date: contextData.separationDate,
+      co_parent: contextData.coParentName,
       children: JSON.stringify(contextData.children),
-      concerns: JSON.stringify(contextData.concerns),
-      new_partner: JSON.stringify(contextData.newPartner),
+      contacts: JSON.stringify(contextData.concerns),
       updated_at: now
-    }, { user_id: actualUserId });
+    }, { user_id: usernameLower });
   } else {
     // Insert new context using safe insert
+    // Note: user_context.user_id is TEXT (username) in PostgreSQL
     await dbSafe.safeInsert('user_context', {
-      user_id: actualUserId,
-      co_parent_name: contextData.coParentName,
-      separation_date: contextData.separationDate,
+      user_id: usernameLower,
+      co_parent: contextData.coParentName,
       children: JSON.stringify(contextData.children),
-      concerns: JSON.stringify(contextData.concerns),
-      new_partner: JSON.stringify(contextData.newPartner),
+      contacts: JSON.stringify(contextData.concerns),
       updated_at: now
     });
   }
 
-  dbModule.saveDatabase();
+  // PostgreSQL doesn't need saveDatabase() - changes are automatically persisted
 
   // Create a private room for the user
   let room = null;
@@ -261,7 +260,7 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
     // Don't fail user creation if onboarding tasks creation fails
   }
 
-  dbModule.saveDatabase();
+  // PostgreSQL doesn't need saveDatabase() - changes are automatically persisted
 
   return {
     id: actualUserId,
@@ -323,7 +322,8 @@ async function authenticateUserByEmail(email, password) {
   await dbSafe.safeUpdate('users', { last_login: new Date().toISOString() }, { id: user.id });
 
   // Get context using safe select
-  const contextResult = await dbSafe.safeSelect('user_context', { user_id: user.id }, { limit: 1 });
+  // Note: user_context.user_id is TEXT (username) in PostgreSQL
+  const contextResult = await dbSafe.safeSelect('user_context', { user_id: user.username }, { limit: 1 });
   const contextRows = contextResult;
   
   let context = {
@@ -412,7 +412,8 @@ async function authenticateUser(username, password) {
   await dbSafe.safeUpdate('users', { last_login: new Date().toISOString() }, { id: user.id });
 
   // Get context using safe select
-  const contextResult = await dbSafe.safeSelect('user_context', { user_id: user.id }, { limit: 1 });
+  // Note: user_context.user_id is TEXT (username) in PostgreSQL
+  const contextResult = await dbSafe.safeSelect('user_context', { user_id: user.username }, { limit: 1 });
   const contextRows = contextResult;
   
   let context = {
@@ -472,7 +473,8 @@ async function updateUserContext(username, context) {
   const userId = users[0].id;
 
   // Get existing context or create new
-  const existingResult = await dbSafe.safeSelect('user_context', { user_id: userId }, { limit: 1 });
+    // Note: user_context.user_id is TEXT (username) in PostgreSQL
+    const existingResult = await dbSafe.safeSelect('user_context', { user_id: usernameLower }, { limit: 1 });
   const existingRows = existingResult;
 
   const contextData = {
@@ -484,27 +486,28 @@ async function updateUserContext(username, context) {
   };
 
   const now = new Date().toISOString();
+  // PostgreSQL schema: co_parent (TEXT), children (JSONB), contacts (JSONB)
   const contextUpdateData = {
-    co_parent_name: contextData.coParentName,
-    separation_date: contextData.separationDate,
+    co_parent: contextData.coParentName,
     children: JSON.stringify(contextData.children),
-    concerns: JSON.stringify(contextData.concerns),
-    new_partner: JSON.stringify(contextData.newPartner),
+    contacts: JSON.stringify(contextData.concerns),
     updated_at: now
   };
 
   if (existingRows.length > 0) {
     // Update existing using safe update
-    await dbSafe.safeUpdate('user_context', contextUpdateData, { user_id: userId });
+    // Note: user_context.user_id is TEXT (username) in PostgreSQL
+    await dbSafe.safeUpdate('user_context', contextUpdateData, { user_id: usernameLower });
   } else {
     // Insert new using safe insert
+    // Note: user_context.user_id is TEXT (username) in PostgreSQL
     await dbSafe.safeInsert('user_context', {
-      user_id: userId,
+      user_id: usernameLower,
       ...contextUpdateData
     });
   }
 
-  dbModule.saveDatabase();
+  // PostgreSQL doesn't need saveDatabase() - changes are automatically persisted
 
   return contextData;
 }
@@ -526,7 +529,8 @@ async function getUser(username) {
   const user = users[0];
 
   // Get context using safe select
-  const contextResult = await dbSafe.safeSelect('user_context', { user_id: user.id }, { limit: 1 });
+  // Note: user_context.user_id is TEXT (username) in PostgreSQL
+  const contextResult = await dbSafe.safeSelect('user_context', { user_id: user.username }, { limit: 1 });
   const contextRows = contextResult;
   
   let context = {
