@@ -25,6 +25,7 @@ export function LoginSignup() {
     error,
     setEmail,
     setPassword,
+    setUsername,
     setError,
     handleLogin,
     handleSignup,
@@ -48,30 +49,33 @@ export function LoginSignup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-medium to-teal-medium flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
-        <div className="flex flex-col items-center mb-6">
-          <div className="flex items-center gap-2 mb-2">
+    <div className="min-h-screen bg-gradient-to-b from-white via-teal-lightest/30 to-white flex items-center justify-center px-4 py-6 sm:py-8">
+      <div className="max-w-md w-full">
+        {/* Header */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center gap-2 sm:gap-3 mb-1">
             <img
-              src="/assets/TransB.svg"
-              alt="@TransB"
-              className="h-12 sm:h-14 w-auto"
+              src="/assets/Logo.svg"
+              alt="LiaiZen Logo"
+              className="h-12 sm:h-14 w-auto transition-transform hover:scale-105"
             />
             <img
-              src="/assets/LZlogo.svg"
+              src="/assets/wordmark.svg"
               alt="LiaiZen"
               className="h-14 sm:h-16 w-auto"
             />
           </div>
-          <p className="text-sm sm:text-base text-gray-600 font-medium">
+          
+          <p className="text-sm sm:text-base text-gray-600 font-medium mb-3">
             Collaborative Parenting
           </p>
+          
         </div>
 
         {pendingInviteCode && (
-          <div className="mb-4 rounded-lg bg-emerald-50 border-2 border-emerald-200 px-4 py-3 text-sm text-emerald-800">
+          <div className="mb-6 rounded-xl bg-emerald-50 border-2 border-emerald-200 px-4 py-3 text-sm text-emerald-800 transition-all duration-300">
             <div className="font-semibold mb-1">You've been invited to a co-parent mediation room!</div>
-            <div>
+            <div className="text-emerald-700">
               {isLoginMode
                 ? 'Log in to join your co-parent in this mediation room.'
                 : 'Create an account to join your co-parent in this mediation room. Already have an account? Switch to log in above.'}
@@ -80,12 +84,29 @@ export function LoginSignup() {
         )}
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 border-2 border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="mb-6 rounded-xl bg-red-50 border-2 border-red-200 px-4 py-3 text-sm text-red-700 transition-all duration-300">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Page Title with Serif Typography */}
+        <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-teal-dark text-center mb-6">
+          {isLoginMode ? 'Welcome back' : 'Create your account'}
+        </h1>
+
+        <form onSubmit={handleSubmit} className="space-y-5 mb-8">
+          {!isLoginMode && (
+            <Input
+              label="Name"
+              type="text"
+              value={username}
+              onChange={setUsername}
+              placeholder="John Doe"
+              required
+              autoComplete="name"
+            />
+          )}
+
           <Input
             label="Email"
             type="email"
@@ -113,19 +134,19 @@ export function LoginSignup() {
             fullWidth
             disabled={isLoggingIn || isSigningUp || isGoogleLoggingIn}
             loading={isLoggingIn || isSigningUp}
-            className="mt-2"
+            className="mt-6 transition-all hover:shadow-lg"
           >
             {isLoginMode ? 'Log in' : 'Create account'}
           </Button>
         </form>
 
-        <div className="mt-6">
+        <div className="mt-8">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+              <div className="w-full border-t border-gray-200"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              <span className="px-3 bg-transparent text-gray-500 font-medium">Or</span>
             </div>
           </div>
 
@@ -136,7 +157,7 @@ export function LoginSignup() {
             loading={isGoogleLoggingIn}
             fullWidth
             size="medium"
-            className="mt-4 bg-white border-2 border-gray-300 text-black hover:bg-gray-50 hover:border-gray-400 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400"
+            className="mt-6 bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 [&>span]:!text-gray-900 [&>span]:font-semibold"
             icon={!isGoogleLoggingIn && (
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -162,36 +183,38 @@ export function LoginSignup() {
           </Button>
         </div>
 
-        <div className="mt-4 text-center text-sm text-gray-600">
-          {isLoginMode ? (
-            <>
-              Don&apos;t have an account?{' '}
-              <button
-                type="button"
-                className="text-teal-medium font-semibold hover:underline"
-                onClick={() => {
-                  setError('');
-                  setIsLoginMode(false);
-                }}
-              >
-                Sign up
-              </button>
-            </>
-          ) : (
-            <>
-              Already have an account?{' '}
-              <button
-                type="button"
-                className="text-teal-medium font-semibold hover:underline"
-                onClick={() => {
-                  setError('');
-                  setIsLoginMode(true);
-                }}
-              >
-                Log in
-              </button>
-            </>
-          )}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            {isLoginMode ? (
+              <>
+                Don&apos;t have an account?{' '}
+                <button
+                  type="button"
+                  className="text-teal-medium font-semibold hover:text-teal-dark transition-colors"
+                  onClick={() => {
+                    setError('');
+                    setIsLoginMode(false);
+                  }}
+                >
+                  Sign up
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  className="text-teal-medium font-semibold hover:text-teal-dark transition-colors"
+                  onClick={() => {
+                    setError('');
+                    setIsLoginMode(true);
+                  }}
+                >
+                  Log in
+                </button>
+              </>
+            )}
+          </p>
         </div>
       </div>
     </div>

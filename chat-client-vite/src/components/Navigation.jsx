@@ -192,7 +192,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             isMenuOpen ? 'rotate-90' : ''
           }`}>
               <img
-              src="/assets/TransB.svg"
+              src="/assets/Logo.svg"
                 alt="LiaiZen menu"
               className={`object-contain ${
                 isMobile ? 'w-6 h-6' : 'w-6 h-6'
@@ -270,15 +270,6 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-10">
-            {/* Logo */}
-            <div className="flex items-center cursor-pointer" onClick={() => setCurrentView('dashboard')}>
-              <img
-                src="/assets/LZlogo.svg"
-                alt="LiaiZen"
-                className="logo-image h-7 w-auto transition-opacity hover:opacity-80"
-              />
-            </div>
-
             {/* Navigation Items */}
             <div className="flex items-center gap-3">
               {navItems.map((item) => {
@@ -308,8 +299,10 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                 </button>
                 );
               })}
-              {renderMenuButton(0)}
             </div>
+
+            {/* Logo as Menu Button */}
+            {renderMenuButton(0, { placement: 'bottom' })}
           </div>
         </div>
       </nav>
@@ -348,7 +341,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             aria-haspopup="true"
           >
             <img
-              src="/assets/TransB.svg"
+              src="/assets/Logo.svg"
               alt="Menu"
               className="w-6 h-6 object-contain"
             />

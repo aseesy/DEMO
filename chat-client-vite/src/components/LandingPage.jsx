@@ -74,7 +74,7 @@ export function LandingPage({ onGetStarted }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Intersection Observer for section views
+  // Intersection Observer for section views AND fade-in animations
   React.useEffect(() => {
     const observerOptions = {
       root: null,
@@ -89,6 +89,12 @@ export function LandingPage({ onGetStarted }) {
           if (sectionName) {
             trackSectionView(sectionName);
           }
+
+          // Handle fade-in animations
+          if (entry.target.dataset.animate === 'fade-in') {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+          }
         }
       });
     }, observerOptions);
@@ -97,8 +103,13 @@ export function LandingPage({ onGetStarted }) {
     const sections = document.querySelectorAll('[data-section]');
     sections.forEach((section) => observer.observe(section));
 
+    // Observe all elements with fade-in animation
+    const animateElements = document.querySelectorAll('[data-animate=\"fade-in\"]');
+    animateElements.forEach((element) => observer.observe(element));
+
     return () => {
       sections.forEach((section) => observer.unobserve(section));
+      animateElements.forEach((element) => observer.unobserve(element));
     };
   }, []);
 
@@ -172,18 +183,21 @@ export function LandingPage({ onGetStarted }) {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Logo */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div 
+              className="flex items-center gap-2 sm:gap-3 cursor-pointer"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
               <img
-                src="/assets/TransB.svg"
-                alt="@TransB"
+                src="/assets/Logo.svg"
+                alt="LiaiZen Logo"
                 className="h-6 sm:h-7 w-auto"
               />
               <img
-                src="/assets/LZlogo.svg"
+                src="/assets/wordmark.svg"
                 alt="LiaiZen"
                 className="h-7 sm:h-8 w-auto"
               />
@@ -217,8 +231,8 @@ export function LandingPage({ onGetStarted }) {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <div className="pt-32 pb-24 px-4 sm:px-6 lg:px-8">
+      {/* Hero Section - Enhanced background */}
+      <div className="pt-32 pb-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-teal-lightest/30 to-white">
         <div className="max-w-7xl mx-auto">
           <div className="mb-20" style={{ overflowX: 'visible' }}>
             {/* Top Label - Design System SectionHeader */}
@@ -239,15 +253,19 @@ export function LandingPage({ onGetStarted }) {
 
             {/* Description Text */}
             <p className="text-lg sm:text-xl text-gray-700 mb-6 max-w-3xl leading-relaxed">
-              LiaiZen prevents conflict in real time—so every message moves the conversation forward, not backward.
+              LiaiZen prevents conflict in real time—so every message moves the conversation forward.
             </p>
 
-            {/* Beta Notice - Subtle text element */}
-            <div className="mb-8 flex items-center gap-2">
+            {/* Beta Notice - Enhanced urgency */}
+            <div className="mb-8 inline-flex items-center gap-3 bg-gradient-to-r from-teal-lightest to-white px-4 py-2 rounded-full border-2 border-teal-light shadow-sm">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-medium opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-teal-medium"></span>
+              </span>
               <span className="text-sm text-gray-600">
                 Join Our Beta.
               </span>
-              <span className="text-sm font-semibold text-teal-medium">
+              <span className="text-sm font-bold text-teal-medium">
                 {remainingSpots !== null ? (
                   `Only ${remainingSpots} spot${remainingSpots !== 1 ? 's' : ''} left!`
                 ) : (
@@ -256,7 +274,7 @@ export function LandingPage({ onGetStarted }) {
               </span>
             </div>
 
-            {/* Dual CTAs - Design System Buttons */}
+            {/* Dual CTAs - Enhanced with gradients */}
             <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-4">
               <Button
                 onClick={() => {
@@ -265,7 +283,7 @@ export function LandingPage({ onGetStarted }) {
                 }}
                 variant="teal-solid"
                 size="large"
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto bg-gradient-to-r from-teal-medium to-teal-dark hover:from-teal-dark hover:to-teal-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 Get Early Access
               </Button>
@@ -276,47 +294,48 @@ export function LandingPage({ onGetStarted }) {
                 }}
                 variant="teal-outline"
                 size="large"
-                className="w-full sm:w-auto"
-                style={{ borderWidth: '1px' }}
+                className="w-full sm:w-auto border-2 hover:bg-teal-lightest transition-all duration-300"
               >
                 Learn More
               </Button>
             </div>
           </div>
 
-          {/* The Real Problem Section - NEW */}
-          <div className="mt-32 mb-32 bg-white rounded-2xl p-8 sm:p-10 border border-gray-200">
+          {/* The Real Problem Section - Enhanced with fade-in */}
+          <div className="mt-32 mb-32 bg-white rounded-2xl p-8 sm:p-10 border border-gray-200 shadow-sm opacity-0 translate-y-4 transition-all duration-700 ease-out" data-animate="fade-in">
             <div className="max-w-4xl mx-auto">
-              <Heading variant="medium" color="dark" as="h2" className="mb-8 text-center">
-                Finally, you can look at messages from your co-parent{' '}
-                <span className="block sm:inline text-teal-medium">without feeling sick to your stomach.</span>
+              <Heading variant="medium" color="dark" as="h2" className="mb-8 text-center leading-tight">
+                <span className="block text-2xl sm:text-3xl font-light text-gray-700 mb-3">Finally, you can open a message from your co-parent and</span>
+                <span className="block text-3xl sm:text-5xl font-medium text-teal-medium pb-2">
+                  feel at ease.
+                </span>
               </Heading>
 
               <div className="grid md:grid-cols-2 gap-6 mb-10">
                 <div className="bg-white rounded-xl p-6 border border-red-100">
-                  <Heading variant="small" color="dark" as="h3" className="mb-5">What Doesn't Work:</Heading>
+                  <Heading variant="small" color="dark" as="h3" className="mb-5">Not This</Heading>
                   <ul className="space-y-4 text-gray-700">
                     <li className="flex items-start gap-3">
                       <span className="text-red-500 font-bold text-lg">✗</span>
-                      <span className="leading-relaxed">Telling your lawyer what they did retrospectively</span>
+                      <span className="leading-relaxed">Reactively seeking expert intervention after conflict</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-red-500 font-bold text-lg">✗</span>
-                      <span className="leading-relaxed">Telling your therapist your frustration a week or 2 later</span>
+                      <span className="leading-relaxed">Waiting until therapy to unpack conflict</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-red-500 font-bold text-lg">✗</span>
-                      <span className="leading-relaxed">Documenting all the ways you have been treated unfairly and then trying to present them in court</span>
+                      <span className="leading-relaxed">Building a case against the other parent</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-red-500 font-bold text-lg">✗</span>
-                      <span className="leading-relaxed">Court orders that can't be enforced in the heat of the moment</span>
+                      <span className="leading-relaxed">Relying on the court to decide what's best for your children</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                  <Heading variant="small" color="dark" as="h3" className="mb-5">What Actually Works:</Heading>
+                  <Heading variant="small" color="dark" as="h3" className="mb-5">This</Heading>
                   <ul className="space-y-4 text-gray-700">
                     <li className="flex items-start gap-3">
                       <span className="text-teal-medium font-bold text-lg">✓</span>
@@ -332,7 +351,7 @@ export function LandingPage({ onGetStarted }) {
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-teal-medium font-bold text-lg">✓</span>
-                      <span className="leading-relaxed"><strong>Focusing on the child's best interest</strong> even when emotions run hot</span>
+                      <span className="leading-relaxed"><strong>Staying calm and professional</strong> even when emotions run hot</span>
                     </li>
                   </ul>
                 </div>
@@ -342,22 +361,22 @@ export function LandingPage({ onGetStarted }) {
                 <p className="text-gray-800 italic leading-relaxed text-lg">
                   "The conflict isn't happening in court—it's happening in the messages. And nothing we tried changed the way we talk to each other."
                 </p>
-                <p className="text-sm text-gray-600 mt-3 font-medium">— High-conflict co-parent, Reddit</p>
+
               </div>
             </div>
           </div>
 
-          {/* User Wish-List Section - Interview Quotes */}
-          <div className="mt-32 mb-32 bg-white rounded-2xl p-8 sm:p-10 text-gray-900 border border-gray-200">
+          {/* User Wish-List Section - Enhanced background pattern */}
+          <div className="mt-32 mb-32 bg-gradient-to-br from-white via-gray-50 to-white rounded-2xl p-8 sm:p-10 text-gray-900 border border-gray-200 shadow-sm opacity-0 translate-y-4 transition-all duration-700 ease-out" data-animate="fade-in" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%)' }}>
             <div className="max-w-5xl mx-auto">
               <Heading variant="medium" color="dark" as="h2" className="mb-8 text-center">
-                After conducting several user interviews, the wish-list is clear:
+                After talking to real co-parents, their needs couldn’t be clearer:
               </Heading>
 
               <div className="grid md:grid-cols-2 gap-5 sm:gap-6 mt-10 mb-10">
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
+                <div className="group bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all duration-300 hover:shadow-md hover:-translate-y-1">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-teal-light to-teal-medium rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
@@ -368,9 +387,9 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
+                <div className="group bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all duration-300 hover:shadow-md hover:-translate-y-1">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-teal-light to-teal-medium rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                       </svg>
@@ -381,9 +400,9 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
+                <div className="group bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all duration-300 hover:shadow-md hover:-translate-y-1">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-teal-light to-teal-medium rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -394,9 +413,9 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
+                <div className="group bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all duration-300 hover:shadow-md hover:-translate-y-1">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-teal-light to-teal-medium rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
@@ -407,9 +426,9 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
+                <div className="group bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all duration-300 hover:shadow-md hover:-translate-y-1">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-teal-light to-teal-medium rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
@@ -420,9 +439,9 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all">
+                <div className="group bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all duration-300 hover:shadow-md hover:-translate-y-1">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-teal-medium rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-teal-light to-teal-medium rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                       </svg>
@@ -435,33 +454,36 @@ export function LandingPage({ onGetStarted }) {
               </div>
 
               <div className="text-center mt-10">
-                <p className="text-2xl sm:text-3xl font-semibold text-teal-medium mb-4">
-                  Your wishes have been granted!
+                <p className="text-2xl sm:text-3xl font-semibold mb-4">
+                  <span className="bg-gradient-to-r from-teal-medium via-teal-dark to-teal-medium bg-clip-text text-transparent">And that's exactly what LiaiZen was built for.</span>
                 </p>
                 <p className="text-xl text-gray-600">
-                  LiaiZen takes care of this.
+
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Visual Separator */}
+          {/* Visual Separator - Enhanced */}
           <div className="my-24 flex items-center justify-center">
             <div className="flex items-center gap-3 max-w-md w-full">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-teal-medium to-transparent"></div>
-              <div className="w-3 h-3 rounded-full bg-teal-medium"></div>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-teal-medium to-transparent"></div>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-teal-medium to-transparent opacity-50"></div>
+              <div className="relative">
+                <div className="absolute inset-0 w-3 h-3 rounded-full bg-teal-medium animate-ping opacity-20"></div>
+                <div className="w-3 h-3 rounded-full bg-gradient-to-br from-teal-medium to-teal-dark shadow-lg"></div>
+              </div>
+              <div className="flex-1 h-px bg-gradient-to-r from-teal-medium via-teal-medium to-transparent opacity-50"></div>
             </div>
           </div>
 
-          {/* Product Screenshot/Mockup Section */}
-          <div className="mt-32 mb-32">
+          {/* Product Screenshot/Mockup Section - Fade-in animation */}
+          <div className="mt-32 mb-32 opacity-0 translate-y-4 transition-all duration-700 ease-out" data-animate="fade-in">
             <div className="max-w-5xl mx-auto">
               <Heading variant="medium" color="dark" as="h2" className="mb-4 text-center">
-                See How It Works
+                Become a stronger communicator
               </Heading>
               <p className="text-xl text-gray-600 mb-12 text-center max-w-2xl mx-auto">
-                Real-time AI assistance before you hit send
+                Real-time guidance that helps you find the right words — even when emotions are high.
               </p>
 
               {/* Product Mockup - Before/After Message Example */}
@@ -502,14 +524,14 @@ export function LandingPage({ onGetStarted }) {
                     </div>
                     <div className="bg-gradient-to-br from-teal-lightest to-white rounded-xl p-6 border-2 border-teal-light shadow-sm">
                       <p className="text-gray-900 leading-relaxed">
-                        "I noticed the schedule changed. For planning purposes, could we aim for 48-hour notice when possible? It helps me coordinate childcare. What works best for you?"
+                        "I noticed the schedule changed. For planning purposes, could we aim for 48-hour notice when possible?"
                       </p>
                     </div>
                     <div className="flex items-start gap-2 text-sm text-teal-medium bg-teal-lightest p-3 rounded-lg">
                       <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
-                      <span><strong>Child-focused:</strong> Neutral tone, focuses on problem-solving, invites collaboration</span>
+                      <span><strong>Flexible &amp; collaborative:</strong> Neutral tone, focuses on problem-solving, invites collaboration</span>
                     </div>
                   </div>
                 </div>
@@ -525,169 +547,156 @@ export function LandingPage({ onGetStarted }) {
             </div>
           </div>
 
-          {/* Visual Separator */}
+          {/* Visual Separator - Subtle diamond pattern */}
           <div className="my-32 flex items-center justify-center">
-            <div className="flex items-center gap-3 max-w-md w-full">
-              <div className="flex-1 h-px bg-gray-200"></div>
-              <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-              <div className="flex-1 h-px bg-gray-200"></div>
+            <div className="flex items-center gap-4 max-w-md w-full">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-gray-300"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+                <div className="w-2 h-2 rounded-sm bg-gradient-to-br from-gray-300 to-gray-400 transform rotate-45"></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+              </div>
+              <div className="flex-1 h-px bg-gradient-to-r from-gray-300 via-gray-300 to-transparent"></div>
             </div>
           </div>
 
-          {/* Value Proposition Section */}
+          {/* Value Proposition Cards - streamlined */}
           <div className="mt-24 mb-24" data-section="value_proposition">
-            <Heading variant="medium" color="dark" as="h2" className="mb-12 text-center">
-              Finally, you can look at messages from your co-parent{' '}
-              <span className="block sm:inline text-teal-medium">without feeling sick to your stomach.</span>
-            </Heading>
-            <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
               {/* Value Prop 1 */}
-              <div className="bg-white rounded-xl p-6 sm:p-8 border border-gray-200 hover:border-gray-300 transition-all">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-teal-medium rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+              <div className="group bg-white rounded-xl p-6 sm:p-8 border-2 border-gray-200 hover:border-teal-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-teal-medium to-teal-dark rounded-xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
-                <Heading variant="small" color="dark" as="h3" className="mb-3">Prevents Hostile Exchanges</Heading>
-                <p className="text-gray-600 leading-relaxed">
-                  AI-powered mediation stops hostile exchanges before they damage your co-parenting relationship
-                </p>
+                <Heading variant="small" color="dark" as="h3" className="mb-3">Pro-active</Heading>
+                <p className="text-gray-600 leading-relaxed">develop a forward-thinking mindset</p>
               </div>
 
               {/* Value Prop 2 */}
-              <div className="bg-gradient-to-br from-[#D4F0EC] to-white rounded-xl p-6 sm:p-8 border-2 border-[#A8D9D3] hover:border-teal-medium transition-all shadow-sm hover:shadow-md">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-[#3d8a92] to-[#4DA8B0] rounded-xl flex items-center justify-center mb-4 sm:mb-6 shadow-sm">
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                </div>
-                <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Protects Children</Heading>
-                <p className="text-teal-medium leading-relaxed">
-                  Keep your children safe from parental conflict with child-focused communication
-                </p>
-              </div>
-
-              {/* Value Prop 3 */}
-              <div className="bg-gradient-to-br from-[#C0E9E3] to-white rounded-xl p-6 sm:p-8 border-2 border-[#8BCAC1] hover:border-teal-medium transition-all shadow-sm hover:shadow-md">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-[#2d6d75] to-[#3d8a92] rounded-xl flex items-center justify-center mb-4 sm:mb-6 shadow-sm">
+              <div className="group bg-white rounded-xl p-6 sm:p-8 border-2 border-gray-200 hover:border-teal-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-teal-medium to-teal-dark rounded-xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Promotes Collaboration</Heading>
-                <p className="text-teal-medium leading-relaxed">
-                  Smart tools help you solve problems together, not against each other
+                <Heading variant="small" color="dark" as="h3" className="mb-3">Removes Bias</Heading>
+                <p className="text-gray-600 leading-relaxed">
+                  Stay centered in the current conversation.
                 </p>
               </div>
 
-              {/* Value Prop 4 */}
-              <div className="bg-gradient-to-br from-[#A8D9D3] to-white rounded-xl p-6 sm:p-8 border-2 border-[#6EBBB0] hover:border-teal-medium transition-all shadow-sm hover:shadow-md">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-[#1f4447] to-[#4DA8B0] rounded-xl flex items-center justify-center mb-4 sm:mb-6 shadow-sm">
+              {/* Value Prop 3 */}
+              <div className="group bg-white rounded-xl p-6 sm:p-8 border-2 border-gray-200 hover:border-teal-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-teal-medium to-teal-dark rounded-xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
-                <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Educational Support</Heading>
-                <p className="text-teal-medium leading-relaxed">
-                  Learn about child psychology and healthy communication patterns that work
+                <Heading variant="small" color="dark" as="h3" className="mb-3">Break Patterns</Heading>
+                <p className="text-gray-600 leading-relaxed">
+                  Form healthier communication habits
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Features Grid */}
+          {/* Features Grid - Enhanced hover effects */}
           <div className="grid md:grid-cols-3 gap-6 sm:gap-8 mt-20">
             {/* Feature 1 */}
-            <div className="bg-white rounded-xl p-6 sm:p-8 border-2 border-gray-200 hover:border-teal-light transition-all shadow-sm hover:shadow-md">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-teal-lightest to-teal-light rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+            <div className="group bg-white rounded-xl p-6 sm:p-8 border-2 border-gray-200 hover:border-teal-light transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-2">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-teal-lightest to-teal-light rounded-xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
                 <svg className="w-8 h-8 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
-              <Heading variant="small" color="teal-medium" as="h3" className="mb-3">AI-Mediated Chat</Heading>
+              <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Instant Mediation</Heading>
               <p className="text-gray-600 leading-relaxed">
-                Real-time message filtering and tone adjustment to keep conversations respectful and child-focused
+                Real-time message filtering and tone adjustment to keep conversations respectful and productive
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className="bg-white rounded-xl p-6 sm:p-8 border-2 border-gray-200 hover:border-[#A8D9D3] transition-all shadow-sm hover:shadow-md">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-[#D4F0EC] to-[#A8D9D3] rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+            <div className="group bg-white rounded-xl p-6 sm:p-8 border-2 border-gray-200 hover:border-[#A8D9D3] transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-2">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-[#D4F0EC] to-[#A8D9D3] rounded-xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
                 <svg className="w-8 h-8 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
               </div>
-              <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Smart Task Manager</Heading>
+              <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Keep Organized</Heading>
               <p className="text-gray-600 leading-relaxed">
-                Organize schedules, custody arrangements, and shared responsibilities in one place
+                Reduce confusion with automated updates.
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className="bg-white rounded-xl p-6 sm:p-8 border-2 border-gray-200 hover:border-[#8BCAC1] transition-all shadow-sm hover:shadow-md">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-[#C0E9E3] to-[#8BCAC1] rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+            <div className="group bg-white rounded-xl p-6 sm:p-8 border-2 border-gray-200 hover:border-[#8BCAC1] transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-2">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-[#C0E9E3] to-[#8BCAC1] rounded-xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
                 <svg className="w-8 h-8 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Contact Hub</Heading>
+              <Heading variant="small" color="teal-medium" as="h3" className="mb-3">Adaptive Learning</Heading>
               <p className="text-gray-600 leading-relaxed">
-                Keep track of teachers, doctors, and everyone important in your child's life
+                Get relative insights based on your unique situation.
               </p>
             </div>
           </div>
 
-          {/* Parallel Parenting / Emotional Toll Section - NEW */}
-          <div className="mt-24 mb-24 bg-gradient-to-br from-teal-dark to-teal-medium rounded-2xl p-8 sm:p-10 border-2 border-teal-dark shadow-lg">
-            <div className="max-w-4xl mx-auto">
+          {/* Parallel Parenting / Emotional Toll Section - Enhanced depth */}
+          <div className="mt-24 mb-24 bg-gradient-to-br from-teal-dark to-teal-medium rounded-2xl p-8 sm:p-10 border-2 border-teal-dark shadow-xl relative overflow-hidden opacity-0 translate-y-4 transition-all duration-700 ease-out" data-animate="fade-in">
+            {/* Background pattern overlay */}
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.3) 0%, transparent 40%), radial-gradient(circle at 70% 60%, rgba(255,255,255,0.2) 0%, transparent 40%)' }}></div>
+            <div className="max-w-4xl mx-auto relative z-10">
               <Heading variant="medium" color="white" as="h2" className="mb-6 text-center text-white">
-                Stuck in Parallel Parenting? You're Not Alone.
+                Parallel parenting avoids conflict — it doesn't dissolve it.
               </Heading>
               <p className="text-xl text-white/95 mb-10 text-center max-w-2xl mx-auto leading-relaxed">
-                You didn't want it this way. You wanted to co-parent as a team. But here you are—limiting contact just to protect your sanity.
+                When communication and expectations differ between households, kids feel the instability — and it shows up in their emotions and behavior.
               </p>
 
               <div className="grid md:grid-cols-2 gap-6 mb-8">
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border-2 border-white/20 shadow-sm">
-                  <Heading variant="small" color="white" as="h3" className="mb-4 text-white">You Know This Feeling:</Heading>
+                  <Heading variant="small" color="white" as="h3" className="mb-4 text-white">Avoidance</Heading>
                   <ul className="space-y-3 text-white/95">
                     <li className="flex items-start gap-3">
                       <span className="text-white font-semibold">•</span>
-                      <span className="leading-relaxed">That split-second dread when you see their name on your phone</span>
+                      <span className="leading-relaxed">Limits contact to prevent flare-ups</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-white font-semibold">•</span>
-                      <span className="leading-relaxed">Walking on eggshells with every word, knowing anything can explode</span>
+                      <span className="leading-relaxed">Focuses on separation instead of collaboration</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-white font-semibold">•</span>
-                      <span className="leading-relaxed">Feeling triggered and hating yourself for reacting</span>
+                      <span className="leading-relaxed">Creates two distinct parenting environments</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-white font-semibold">•</span>
-                      <span className="leading-relaxed">Lying awake replaying conversations, crafting perfect responses you'll never send</span>
+                      <span className="leading-relaxed">Avoids triggers rather than resolving them</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border-2 border-white/20 shadow-sm">
-                  <Heading variant="small" color="white" as="h3" className="mb-4 text-white">What You Actually Need:</Heading>
+                  <Heading variant="small" color="white" as="h3" className="mb-4 text-white">Prevention (LiaiZen Approach)</Heading>
                   <ul className="space-y-3 text-white/95">
                     <li className="flex items-start gap-3">
                       <span className="text-white font-semibold">✓</span>
-                      <span className="leading-relaxed">A buffer between you and the chaos</span>
+                      <span className="leading-relaxed">Builds healthier communication habits in real time</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-white font-semibold">✓</span>
-                      <span className="leading-relaxed">Help staying calm when they know exactly how to push your buttons</span>
+                      <span className="leading-relaxed">Encourages clarity, respect, and shared understanding</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-white font-semibold">✓</span>
-                      <span className="leading-relaxed">Messages that say what you mean without handing them ammunition</span>
+                      <span className="leading-relaxed">Creates consistent expectations across both homes</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-white font-semibold">✓</span>
-                      <span className="leading-relaxed">To stop feeling crazy, overwhelmed, and alone in this</span>
+                      <span className="leading-relaxed">Stops conflict at the language level before it escalates</span>
                     </li>
                   </ul>
                 </div>
@@ -697,13 +706,13 @@ export function LandingPage({ onGetStarted }) {
                 <p className="text-lg font-semibold mb-3 text-white leading-relaxed">
                   "I don't need a perfect co-parent. I just need peace, consistency, and the strength to raise my child with love—even when the drama tries to step in."
                 </p>
-                <p className="text-sm text-white/90 font-medium">— Co-parent, Facebook support group</p>
+
               </div>
             </div>
           </div>
 
-          {/* How It Works */}
-          <div className="mt-24 mb-24">
+          {/* How It Works - With subtle background */}
+          <div className="mt-24 mb-24 opacity-0 translate-y-4 transition-all duration-700 ease-out" data-animate="fade-in">
             <Heading variant="medium" color="teal-medium" as="h2" className="mb-4 text-center">
               How It Works
             </Heading>
@@ -744,31 +753,22 @@ export function LandingPage({ onGetStarted }) {
                 </p>
               </div>
             </div>
-          </div>
-
-          {/* Social Proof Section - Beta Community */}
-          <div className="mt-24 mb-24" data-section="social_proof">
-            <div className="text-center mb-12">
-              <Heading variant="medium" color="teal-medium" as="h2" className="mb-4">
-                Join Our Growing Beta Community
-              </Heading>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Be part of building the future of respectful co-parenting communication
-              </p>
-            </div>
-
-            {/* Beta Benefits */}
-            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-16">
-              <div className="bg-white rounded-xl p-6 border-2 border-teal-light text-center shadow-sm">
-                <div className="font-semibold text-teal-medium mb-2">Early Access</div>
-                <div className="text-sm text-gray-600">Be among the first to experience real-time AI mediation</div>
-              </div>
-              <div className="bg-white rounded-xl p-6 border-2 border-teal-light text-center shadow-sm">
-                <div className="font-semibold text-teal-medium mb-2">Shape the Future</div>
-                <div className="text-sm text-gray-600">Your feedback directly influences how we build LiaiZen</div>
-              </div>
+            <div className="mt-12 text-center">
+              <Button
+                onClick={() => {
+                  trackCTAClick('how_it_works', 'Get Started', 'middle');
+                  navigate('/signin');
+                }}
+                variant="teal-solid"
+                size="large"
+                className="bg-gradient-to-r from-teal-medium to-teal-dark hover:from-teal-dark hover:to-teal-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                Get Started
+              </Button>
             </div>
           </div>
+
+
 
           {/* Testimonials */}
           <div className="mt-24 mb-24 bg-gradient-to-br from-teal-lightest to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light" data-section="testimonials">
@@ -923,7 +923,7 @@ export function LandingPage({ onGetStarted }) {
                   How does the AI mediation work?
                 </summary>
                 <p className="mt-4 text-gray-600 leading-relaxed">
-                  Our AI helps by suggesting alternative phrasing for messages that might escalate conflict, providing neutral perspectives, and keeping conversations focused on children's well-being. It's designed to help both parents communicate respectfully and find common ground - no one is wrong, we treat everyone equal.
+                  Our AI analyzes tone and suggests alternative phrasing for messages that might escalate conflict. It provides neutral perspectives and keeps conversations productive and solution-focused, treating both parents equally.
                 </p>
               </details>
 
@@ -967,15 +967,7 @@ export function LandingPage({ onGetStarted }) {
                 </p>
               </details>
 
-              {/* FAQ 8 - Beta Specific */}
-              <details className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all">
-                <summary className="font-semibold text-lg text-teal-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2">
-                  Is the beta program really free?
-                </summary>
-                <p className="mt-4 text-gray-600 leading-relaxed">
-                  Yes! Beta access is 100% free with no credit card required. We're looking for families to help us test and improve LiaiZen. Your feedback is invaluable, and beta testers will receive special benefits when we launch publicly.
-                </p>
-              </details>
+
 
               {/* FAQ 9 - Beta Specific */}
               <details className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-light transition-all">
@@ -1059,13 +1051,14 @@ export function LandingPage({ onGetStarted }) {
                   </div>
                 </div>
                 <div>
-                  <Heading variant="small" color="teal-medium" as="h3" className="mb-2">Preventative Approach</Heading>
+                  <Heading variant="small" color="teal-medium" as="h3" className="mb-2">Preserve Dignity</Heading>
                   <p className="text-gray-600 leading-relaxed">
-                    Stop conflicts before they start. Our AI helps you communicate in ways that prevent escalation and protect your family.
+                    Feel proud of how you responded — not ashamed of how you reacted.
                   </p>
                 </div>
               </div>
             </div>
+
           </div>
 
           {/* Newsletter Signup */}
@@ -1103,122 +1096,10 @@ export function LandingPage({ onGetStarted }) {
             </div>
           </div>
 
-          {/* Product Preview Section */}
-          <div className="mt-24 mb-24" data-section="product_preview">
-            <div className="text-center mb-12">
-              <Heading variant="medium" color="teal-medium" as="h2" className="mb-4">
-                See LiaiZen in Action
-              </Heading>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Experience how AI mediation helps you communicate more effectively
-              </p>
-            </div>
-            <div className="max-w-4xl mx-auto bg-gradient-to-br from-teal-lightest to-white rounded-xl p-6 sm:p-8 border-2 border-teal-light">
-              <div className="grid md:grid-cols-2 gap-8 items-center">
-                <div>
-                  <Heading variant="small" color="teal-medium" as="h3" className="mb-4">
-                    Real-Time AI Mediation
-                  </Heading>
-                  <ul className="space-y-3 text-teal-medium">
-                    <li className="flex items-start gap-2">
-                      <svg className="w-5 h-5 text-teal-medium flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>AI analyzes messages before sending to prevent conflict</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-5 h-5 text-teal-medium flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>Get helpful rewrite suggestions that keep conversations respectful</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-5 h-5 text-teal-medium flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>Track tasks, contacts, and schedules all in one place</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-5 h-5 text-teal-medium flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>End-to-end encryption keeps your conversations private</span>
-                    </li>
-                  </ul>
-                </div>
-                <div className="bg-white rounded-xl p-6 border-2 border-teal-light shadow-sm">
-                  <div className="space-y-4">
-                    <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
-                      <div className="text-xs text-red-600 mb-1">You</div>
-                      <div className="text-sm text-red-800">You always ask me this last minute</div>
-                    </div>
-                    <div className="bg-teal-50 border-2 border-teal-200 rounded-xl p-4">
-                      <div className="text-xs text-teal-700 font-semibold mb-1">💡 Liaizen</div>
-                      <div className="text-sm text-teal-800 font-semibold mb-2">Try this message:</div>
-                      <div className="bg-white border border-teal-300 rounded-lg p-3 mt-2">
-                        <div className="text-xs text-gray-500 mb-1">Suggested message</div>
-                        <div className="text-sm text-gray-800">Can you pick up the kids tomorrow? I know it's short notice, but I'd really appreciate it if you're available.</div>
-                      </div>
-                    </div>
-                    <div className="bg-teal-lightest border-2 border-teal-light rounded-xl p-4">
-                      <div className="text-xs text-teal-dark font-semibold mb-1">✓ Result</div>
-                      <div className="text-sm text-teal-dark">Everybody's Happy! Conflict avoided.</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Final CTA */}
-          <div className="mt-32 mb-24 text-center bg-gradient-to-br from-teal-lightest to-white rounded-2xl p-8 sm:p-12 border-2 border-teal-light shadow-lg relative overflow-hidden" data-section="final_cta">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-teal-medium opacity-5 rounded-full -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-medium opacity-5 rounded-full -ml-32 -mb-32"></div>
-            <div className="relative">
-              <Heading variant="medium" color="teal-dark" as="h2" className="mb-6">
-                Ready to Transform Your Co-Parenting?
-              </Heading>
-              <p className="text-xl text-teal-dark mb-3 max-w-2xl mx-auto font-medium">
-                Join beta families who are finding peace and clarity through LiaiZen
-              </p>
-              <p className="text-lg text-gray-700 mb-10 max-w-xl mx-auto leading-relaxed">
-                Limited beta spots available. Start your free account today—no credit card required.
-              </p>
-              <Button
-                onClick={() => {
-                  trackCTAClick('final_cta', 'Start Free Beta Access Now', 'bottom');
-                  navigate('/signin');
-                }}
-                variant="teal-solid"
-                size="xl"
-                className="mb-6"
-              >
-                Start Free Beta Access Now
-              </Button>
-              <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-700">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-teal-medium flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>No credit card required</span>
-                </div>
-                <span className="text-gray-400">•</span>
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-teal-medium flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>Set up in 2 minutes</span>
-                </div>
-                <span className="text-gray-400">•</span>
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-teal-medium flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>Free forever for beta testers</span>
-                </div>
-              </div>
-            </div>
-          </div>
+
+
+
         </div>
       </div>
 
@@ -1420,12 +1301,12 @@ export function LandingPage({ onGetStarted }) {
             {/* Logo */}
             <div className="flex items-center gap-2">
               <img
-                src="/assets/TransB.svg"
-                alt="@TransB"
+                src="/assets/Logo.svg"
+                alt="LiaiZen Logo"
                 className="h-8 w-auto"
               />
               <img
-                src="/assets/LZlogo.svg"
+                src="/assets/wordmark.svg"
                 alt="LiaiZen"
                 className="h-10 w-auto"
               />

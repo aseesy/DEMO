@@ -6,18 +6,22 @@ let db;
 let connectionReady = false;
 
 if (!DATABASE_URL) {
-    console.error('❌ DATABASE_URL is not set. PostgreSQL client cannot be initialized.');
-    // Dummy client that throws on queries
+    console.error('❌ DATABASE_URL is not set. PostgreSQL is required in production.');
+    console.error('💡 In production: Add PostgreSQL service in Railway dashboard');
+    console.error('💡 In development: Set DATABASE_URL or use SQLite (db.js)');
+    // Dummy client that throws on queries with clear error
     db = {
         query: async () => {
-            throw new Error('DATABASE_URL not configured');
+            throw new Error('DATABASE_URL not configured. PostgreSQL is required in production.');
         },
     };
 } else {
+    console.log('🔄 Initializing PostgreSQL connection pool...');
+    
     // Create pool with connection timeout and retry settings
     const pool = new pg.Pool({ 
         connectionString: DATABASE_URL,
-        connectionTimeoutMillis: 5000, // 5 second timeout
+        connectionTimeoutMillis: 10000, // 10 second timeout
         idleTimeoutMillis: 30000,
         max: 10,
         // Don't fail on startup if connection is slow

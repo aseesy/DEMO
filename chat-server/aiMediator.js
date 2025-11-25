@@ -320,7 +320,7 @@ Analyze this message and provide a response that makes ${message.username} feel:
 
 🚨 CRITICAL REQUIREMENT: If you choose ACTION=INTERVENE, you MUST provide ALL of these fields:
    - personalMessage
-   - tip1, tip2, tip3
+   - tip1
    - rewrite1, rewrite2 (complete rewrites of their entire message)
 
    If ANY field is missing, the intervention will FAIL and their hurtful message will be sent!
@@ -346,13 +346,9 @@ RESPOND WITH JSON:
   },
 
   "intervention": {
-    "personalMessage": "REQUIRED if ACTION=INTERVENE. A tactical insight (NOT emotional validation) explaining the communication pattern. 1-2 sentences maximum. BE SPECIFIC TO THE MESSAGE CONTENT - analyze WHAT they're actually doing wrong (name-calling? blaming? contempt? demanding?). AVOID GENERIC PHRASES like 'focus on the child's needs' - be precise about the actual problem. Examples: 'Name-calling shuts down any chance of being heard.' or 'Blaming someone for past behavior doesn't create space for change.' or 'Character attacks make it impossible to discuss the real issue.' CRITICAL: Address ONLY the sender using 'you/your' - NEVER use 'we/us/our/both'.",
+    "personalMessage": "REQUIRED if ACTION=INTERVENE. Indirectly explain why the sender would NOT want to say what they said - focus on the negative consequences their message will have for THEM (not the recipient). 1-2 sentences maximum. BE SPECIFIC TO THE MESSAGE CONTENT - explain how their approach will backfire, make things worse, or prevent them from getting what they want. Examples: 'Name-calling shuts down any chance of being heard, so your concerns won't get addressed.' or 'Blaming someone for past behavior makes them defensive, which means they won't listen to what you actually need.' or 'Character attacks make it impossible to discuss the real issue, so the problem will continue.' CRITICAL: Address ONLY the sender using 'you/your' - NEVER use 'we/us/our/both'. Frame it as: 'This approach will prevent you from...' or 'This will make it harder for you to...'",
 
     "tip1": "REQUIRED if ACTION=INTERVENE. Ultra-short skill-building cue (max 10 words). MUST BE DIRECTLY RELEVANT TO THIS SPECIFIC MESSAGE. For insults: 'Name the feeling, not the person.' For blame: 'Describe the impact, not their intent.' For demands: 'Make a request, not a command.' For contempt: 'Express your need, not your judgment.' AVOID GENERIC CHILD-FOCUSED TIPS. NEVER use 'we/us/our/both'.",
-
-    "tip2": "REQUIRED if ACTION=INTERVENE. Ultra-short skill-building cue (max 10 words). COMPLETELY DIFFERENT from tip1. Match the message type: For rage/hostility: 'Take a breath before hitting send.' For accusations: 'Ask questions instead of making assumptions.' For dismissiveness: 'Acknowledge their role before stating yours.' NEVER use 'we/us/our/both'.",
-
-    "tip3": "REQUIRED if ACTION=INTERVENE. Ultra-short skill-building cue (max 10 words). DIFFERENT from tip1/tip2. Focus on forward movement: 'What outcome do you actually want here?' or 'What would help solve this problem?' or 'State what you need, not what you blame.' NEVER use 'we/us/our/both'.",
 
     "rewrite1": "REQUIRED if ACTION=INTERVENE. Rewrite their ENTIRE message using 'I feel' or 'I need' statements. For hostile/attacking messages: Transform into emotion + need. Example: 'you're a bitch' → 'I feel really frustrated right now and I need us to communicate more respectfully.' For blame messages: Shift to impact statement. Example: 'you never help' → 'When pickup responsibilities fall on me, I feel overwhelmed and I need more consistency.' PRESERVE THEIR UNDERLYING EMOTION but express it constructively. NO CHILD-CENTRIC REWRITES for personal attacks - they need to express THEIR feelings. Complete message ready to send.",
 
@@ -520,14 +516,11 @@ EXAMPLES:
       const intervention = result.intervention || {};
 
       // Validate required fields
-      if (!intervention.personalMessage || !intervention.tip1 || !intervention.tip2 ||
-          !intervention.tip3 || !intervention.rewrite1 || !intervention.rewrite2) {
+      if (!intervention.personalMessage || !intervention.tip1 || !intervention.rewrite1 || !intervention.rewrite2) {
         console.error('❌ INTERVENE action missing required fields - ALLOWING message (safety fallback)');
         console.error('Missing fields:', {
           personalMessage: !intervention.personalMessage,
           tip1: !intervention.tip1,
-          tip2: !intervention.tip2,
-          tip3: !intervention.tip3,
           rewrite1: !intervention.rewrite1,
           rewrite2: !intervention.rewrite2
         });
@@ -564,8 +557,6 @@ EXAMPLES:
         action: 'INTERVENE',
         personalMessage: intervention.personalMessage,
         tip1: intervention.tip1,
-        tip2: intervention.tip2,
-        tip3: intervention.tip3,
         rewrite1: intervention.rewrite1,
         rewrite2: intervention.rewrite2,
         originalMessage: message,

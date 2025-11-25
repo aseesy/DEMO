@@ -1,13 +1,23 @@
 // User Context Management
 // Stores personal information about users for AI mediator context
-// Supports both PostgreSQL (production) and SQLite (dev/fallback)
+// PostgreSQL-first: Uses PostgreSQL in production, SQLite only in development
 
 const dbPostgres = require('./dbPostgres');
 const dbSqlite = require('./db');
 const dbSafe = require('./dbSafe');
 
-// Check if Postgres is configured
+// Check if PostgreSQL is configured (production mode)
 const usePostgres = !!process.env.DATABASE_URL;
+
+if (usePostgres) {
+  console.log('📊 UserContext: Using PostgreSQL');
+} else {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ UserContext: DATABASE_URL not set in production!');
+  } else {
+    console.log('📊 UserContext: Using SQLite (development mode)');
+  }
+}
 
 /**
  * Get user context by username

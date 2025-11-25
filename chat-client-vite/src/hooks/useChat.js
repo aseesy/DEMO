@@ -8,6 +8,8 @@ import { trackConnectionError } from '../utils/analyticsEnhancements.js';
 
 export function useChat({ username, isAuthenticated, currentView, onNewMessage }) {
   const [messages, setMessages] = React.useState([]);
+  // Track the timestamp of the last message seen when user was viewing chat
+  const lastSeenTimestampRef = React.useRef(null);
   const [inputMessage, setInputMessage] = React.useState('');
   const [isConnected, setIsConnected] = React.useState(false);
   const [isJoined, setIsJoined] = React.useState(false);
@@ -104,12 +106,18 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
         return true;
       });
 
-      setMessages(
-        filtered.map((msg) => ({
-          ...msg,
-          timestamp: msg.timestamp,
-        })),
-      );
+      const processedMessages = filtered.map((msg) => ({
+        ...msg,
+        timestamp: msg.timestamp,
+      }));
+
+      setMessages(processedMessages);
+      
+      // Mark all historical messages as seen
+      if (processedMessages.length > 0) {
+        const lastMessage = processedMessages[processedMessages.length - 1];
+        lastSeenTimestampRef.current = lastMessage.timestamp || new Date().toISOString();
+      }
     });
 
     socket.on('new_message', (message) => {
@@ -130,9 +138,20 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
         messageWithTimestamp,
       ]);
 
-      // Trigger notification callback if provided
-      if (onNewMessage && typeof onNewMessage === 'function') {
+      // Only trigger notification if this is a truly new message (not already seen)
+      // Check if message timestamp is after the last seen timestamp
+      const isNewUnseenMessage = !lastSeenTimestampRef.current || 
+        (messageWithTimestamp.timestamp && 
+         new Date(messageWithTimestamp.timestamp) > new Date(lastSeenTimestampRef.current));
+
+      // Trigger notification callback only for new unseen messages
+      if (onNewMessage && typeof onNewMessage === 'function' && isNewUnseenMessage) {
         onNewMessage(messageWithTimestamp);
+      }
+
+      // Update last seen timestamp if user is currently viewing chat
+      if (currentView === 'chat' && !document.hidden) {
+        lastSeenTimestampRef.current = messageWithTimestamp.timestamp;
       }
     });
 
@@ -213,6 +232,16 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
       socketRef.current.emit('join', { username });
     }
   }, [currentView, isAuthenticated, username, isJoined]);
+
+  // Mark all messages as seen when user is viewing chat and page is visible
+  React.useEffect(() => {
+    if (currentView === 'chat' && !document.hidden && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.timestamp) {
+        lastSeenTimestampRef.current = lastMessage.timestamp;
+      }
+    }
+  }, [currentView, messages]);
 
   const sendMessage = (e) => {
     if (e?.preventDefault) e.preventDefault();

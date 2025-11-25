@@ -1,7 +1,6 @@
 import React from 'react';
 import { useContacts } from '../hooks/useContacts.js';
 import { apiGet } from '../apiClient.js';
-import { CommunicationStatsWidget } from './CommunicationStatsWidget.jsx';
 
 export function UpdatesPanel({ username, onContactClick }) {
   const { contacts } = useContacts(username);
@@ -103,15 +102,12 @@ export function UpdatesPanel({ username, onContactClick }) {
 
   if (isLoadingUpdates) {
     return (
-      <div className="space-y-6">
-        {/* Communication Stats Widget */}
-        <CommunicationStatsWidget username={username} />
-
+      <div>
         {/* Updates Loading */}
         <div>
-          <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
-          <div className="text-center py-6">
-            <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-teal-light border-t-[#4DA8B0]" />
+          <h2 className="text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
+          <div className="text-center py-4">
+            <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-teal-light border-t-[#4DA8B0]" />
           </div>
         </div>
       </div>
@@ -120,15 +116,12 @@ export function UpdatesPanel({ username, onContactClick }) {
 
   if (updates.length === 0) {
     return (
-      <div className="space-y-6">
-        {/* Communication Stats Widget */}
-        <CommunicationStatsWidget username={username} />
-
+      <div>
         {/* No Updates */}
         <div>
-          <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
-          <div className="text-center py-6">
-            <p className="text-gray-600 text-xs sm:text-sm">No recent updates</p>
+          <h2 className="text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
+          <div className="text-center py-4">
+            <p className="text-gray-600 text-xs">No recent updates</p>
           </div>
         </div>
       </div>
@@ -136,10 +129,7 @@ export function UpdatesPanel({ username, onContactClick }) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Communication Stats Widget */}
-      <CommunicationStatsWidget username={username} />
-
+    <div>
       {/* Updates Section */}
       <div>
         <h2 className="text-base sm:text-lg md:text-xl font-bold text-teal-medium mb-3 sm:mb-4">Updates</h2>
@@ -148,25 +138,25 @@ export function UpdatesPanel({ username, onContactClick }) {
           <div
             key={index}
             onClick={() => handlePersonClick(update.personName)}
-            className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all bg-white border-2 border-teal-light hover:border-teal-medium hover:shadow-sm touch-manipulation active:scale-[0.98]"
+            className="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all bg-white border-2 border-teal-light hover:border-teal-medium hover:shadow-sm touch-manipulation active:scale-[0.98]"
           >
             <div className="flex-shrink-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-teal-medium text-white flex items-center justify-center text-xs sm:text-sm font-semibold">
+              <div className="w-8 h-8 rounded-full bg-teal-medium text-white flex items-center justify-center text-xs font-semibold">
                 {update.personName?.charAt(0).toUpperCase() || '?'}
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-                <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <div className="w-3.5 h-3.5 flex-shrink-0">
                   {getUpdateIcon(update.type)}
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-teal-medium hover:text-teal-medium transition-colors truncate">
+                <span className="text-xs font-semibold text-teal-medium hover:text-teal-medium transition-colors truncate">
                   {update.personName}
                 </span>
               </div>
-              <p className="text-[10px] sm:text-xs text-gray-600 truncate">{update.description}</p>
+              <p className="text-[10px] text-gray-600 truncate">{update.description}</p>
             </div>
-            <div className="flex-shrink-0 text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
+            <div className="flex-shrink-0 text-[10px] text-gray-500 whitespace-nowrap">
               {formatTimeAgo(update.timestamp)}
             </div>
           </div>

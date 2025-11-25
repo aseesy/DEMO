@@ -2,11 +2,19 @@ const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
 
-// Support environment variable for Railway volumes or custom paths
+// SQLite is for LOCAL DEVELOPMENT ONLY
+// In production, use PostgreSQL (DATABASE_URL must be set)
+if (process.env.DATABASE_URL) {
+  console.log('⚠️  WARNING: DATABASE_URL is set, but SQLite (db.js) is being loaded.');
+  console.log('⚠️  This should not happen in production. PostgreSQL should be used instead.');
+  console.log('⚠️  If you see this in production, check your server.js initialization order.');
+}
+
+// Support environment variable for Railway volumes or custom paths (dev only)
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'chat.db');
 
 // Log database path configuration
-console.log(`📁 Database path: ${DB_PATH}`);
+console.log(`📁 SQLite database path: ${DB_PATH} (DEV MODE ONLY)`);
 console.log(`📁 DB_PATH env var: ${process.env.DB_PATH || 'NOT SET (using default)'}`);
 
 // Ensure directory exists if using custom path
@@ -70,8 +78,13 @@ async function initDatabase() {
   } catch (err) {
     // Database doesn't exist, create new one
     db = new SQL.Database();
-    console.log(`✅ Database created (new file): ${DB_PATH}`);
-    console.log(`⚠️  WARNING: Database file is ephemeral on Railway/Vercel unless DB_PATH points to a volume!`);
+    console.log(`✅ SQLite database created (new file): ${DB_PATH}`);
+    if (process.env.NODE_ENV === 'production') {
+      console.error(`❌ ERROR: SQLite should NOT be used in production!`);
+      console.error(`❌ Use PostgreSQL instead. Set DATABASE_URL in Railway.`);
+    } else {
+      console.log(`💡 SQLite is for local development only. Use PostgreSQL in production.`);
+    }
   }
 
   // Enable foreign key constraints (required for CASCADE to work)

@@ -10,6 +10,7 @@ import { useNotifications } from './hooks/useNotifications.js';
 import { ContactsPanel } from './components/ContactsPanel.jsx';
 import { ProfilePanel } from './components/ProfilePanel.jsx';
 import { UpdatesPanel } from './components/UpdatesPanel.jsx';
+import { CommunicationStatsWidget } from './components/CommunicationStatsWidget.jsx';
 import { Navigation } from './components/Navigation.jsx';
 import { LandingPage } from './components/LandingPage.jsx';
 import { PWAInstallButton } from './components/PWAInstallButton.jsx';
@@ -318,12 +319,14 @@ function ChatRoom() {
     }
   }, [isCheckingAuth, isAuthenticated, showLanding, navigate, searchParams]);
 
-  // Reset unread count when navigating to chat view
+  // Reset unread count when navigating to chat view and mark all messages as seen
   React.useEffect(() => {
-    if (currentView === 'chat') {
+    if (currentView === 'chat' && messages.length > 0) {
       setUnreadCount(0);
+      // Mark all current messages as seen by updating the last seen timestamp
+      // This is handled by useChat hook when viewing chat
     }
-  }, [currentView]);
+  }, [currentView, messages.length]);
 
   React.useEffect(() => {
     if (isAuthenticated) {
@@ -380,14 +383,24 @@ function ChatRoom() {
 
   // Callback for new messages - Device notifications only (no in-browser toast)
   const handleNewMessage = React.useCallback((message) => {
-    // Increment unread count if not on chat screen
-    if (currentView !== 'chat') {
+    // Only process notifications for messages from other users
+    if (message.username === username) {
+      return; // Don't notify for own messages
+    }
+
+    // Increment unread count if not on chat screen or page is hidden
+    if (currentView !== 'chat' || document.hidden) {
       setUnreadCount(prev => prev + 1);
+      
+      // Show browser notification if permission granted and page is hidden
+      if (document.hidden && notifications.permission === 'granted') {
+        notifications.showNotification(message);
+      }
     }
 
     // Device notifications are handled by PWA Service Worker
     // No in-browser toast pop-ups - only native device notifications
-  }, [username, currentView]);
+  }, [username, currentView, notifications]);
 
   const chatState = useChat({
     username: showLanding ? null : username,
@@ -879,45 +892,27 @@ function ChatRoom() {
                   </div>
                 )}
 
-                {/* Dashboard Grid: Tasks and Updates */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                {/* Dashboard Grid: Updates and Tasks */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                  {/* Updates Section */}
+                  <UpdatesPanel
+                    username={username}
+                    onContactClick={(contactName) => {
+                      // Navigate to contacts view when clicking on a person
+                      setCurrentView('contacts');
+                    }}
+                  />
+
                   {/* Tasks Section */}
-                  <div className="bg-white rounded-2xl border-2 border-teal-light p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                      <div>
-                        <h2 className="text-2xl font-semibold text-teal-dark mb-1">
-                          Your Tasks
-                        </h2>
-                        <p className="text-sm text-gray-600">Manage your co-parenting tasks</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setEditingTask(null);
-                          setTaskFormMode('manual');
-                          setAiTaskDetails('');
-                          setIsGeneratingTask(false);
-                          setTaskFormData({
-                            title: '',
-                            description: '',
-                            status: 'open',
-                            priority: 'medium',
-                            due_date: '',
-                            assigned_to: 'self',
-                            related_people: [],
-                          });
-                          setShowTaskForm(true);
-                        }}
-                        className="px-6 py-3 bg-teal-dark text-white rounded-lg text-sm font-semibold hover:bg-teal-darkest transition-all shadow-sm hover:shadow-md flex items-center gap-2 min-h-[44px] whitespace-nowrap"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Add Task
-                      </button>
+                  <div className="bg-white rounded-xl border-2 border-teal-light p-4 md:p-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="mb-4">
+                      <h2 className="text-lg md:text-xl font-semibold text-teal-dark">
+                        Your Tasks
+                      </h2>
                     </div>
                     
                     {/* Search and Filter Controls */}
-                    <div className="mb-6 space-y-4">
+                    <div className="mb-4 space-y-3">
                       {/* Search Input */}
                       <div className="relative">
                         <input
@@ -925,18 +920,18 @@ function ChatRoom() {
                           value={taskSearch}
                           onChange={(e) => setTaskSearch(e.target.value)}
                           placeholder="Search tasks..."
-                          className="w-full px-5 py-3.5 pl-11 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 text-base bg-white min-h-[44px] transition-all"
+                          className="w-full px-3 py-2 pl-9 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 text-sm bg-white min-h-[36px] transition-all"
                         />
-                        <svg className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         {taskSearch && (
                           <button
                             onClick={() => setTaskSearch('')}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-medium p-1.5 rounded-lg hover:bg-gray-50 transition-all touch-manipulation"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-medium p-1 rounded-lg hover:bg-gray-50 transition-all touch-manipulation"
                             aria-label="Clear search"
                           >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </button>
@@ -944,10 +939,10 @@ function ChatRoom() {
                       </div>
                       
                       {/* Filter Buttons */}
-                      <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <button
                           onClick={() => setTaskFilter('open')}
-                          className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all min-h-[44px] touch-manipulation ${
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[32px] touch-manipulation ${
                             taskFilter === 'open'
                               ? 'bg-teal-dark text-white shadow-sm hover:shadow-md'
                               : 'bg-white border-2 border-teal-light text-teal-medium hover:border-teal-medium hover:bg-teal-lightest'
@@ -957,7 +952,7 @@ function ChatRoom() {
                         </button>
                         <button
                           onClick={() => setTaskFilter('completed')}
-                          className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all min-h-[44px] touch-manipulation ${
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[32px] touch-manipulation ${
                             taskFilter === 'completed'
                               ? 'bg-teal-medium text-white shadow-sm hover:shadow-md'
                               : 'bg-white border-2 border-teal-light text-teal-medium hover:border-teal-medium hover:bg-teal-lightest'
@@ -967,7 +962,7 @@ function ChatRoom() {
                         </button>
                         <button
                           onClick={() => setTaskFilter('all')}
-                          className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all min-h-[44px] touch-manipulation ${
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[32px] touch-manipulation ${
                             taskFilter === 'all'
                               ? 'bg-teal-medium text-white shadow-sm hover:shadow-md'
                               : 'bg-white border-2 border-teal-light text-teal-medium hover:border-teal-medium hover:bg-teal-lightest'
@@ -975,22 +970,46 @@ function ChatRoom() {
                         >
                           All
                         </button>
+                        <button
+                          onClick={() => {
+                            setEditingTask(null);
+                            setTaskFormMode('manual');
+                            setAiTaskDetails('');
+                            setIsGeneratingTask(false);
+                            setTaskFormData({
+                              title: '',
+                              description: '',
+                              status: 'open',
+                              priority: 'medium',
+                              due_date: '',
+                              assigned_to: 'self',
+                              related_people: [],
+                            });
+                            setShowTaskForm(true);
+                          }}
+                          className="px-3 py-1.5 bg-teal-dark text-white rounded-lg text-xs font-semibold hover:bg-teal-darkest transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 min-h-[32px] whitespace-nowrap"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                          </svg>
+                          Add Task
+                        </button>
                       </div>
                     </div>
                   {isLoadingTasks ? (
-                    <div className="text-center py-12">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-teal-light border-t-teal-medium" />
+                    <div className="text-center py-8">
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-teal-light border-t-teal-medium" />
                     </div>
                   ) : tasks.length === 0 ? (
-                    <div className="text-center py-12">
-                      <p className="text-gray-600 text-base">
+                    <div className="text-center py-8">
+                      <p className="text-gray-600 text-sm">
                         {taskSearch || taskFilter !== 'open'
                           ? 'No tasks match your search or filter criteria.'
                           : 'No open tasks found. Create your first task to get started!'}
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {tasks.map((task) => {
                         const titleLower = (task.title || '').toLowerCase().trim();
                         const isCoparentTask =
@@ -1087,7 +1106,7 @@ function ChatRoom() {
                               });
                               setShowTaskForm(true);
                             }}
-                            className={`flex items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-xl cursor-pointer transition-all touch-manipulation ${
+                            className={`flex items-start sm:items-center gap-2.5 sm:gap-3 p-3 sm:p-3.5 rounded-lg cursor-pointer transition-all touch-manipulation ${
                               task.status === 'completed'
                                 ? 'bg-gray-50 opacity-70 border-2 border-gray-200'
                                 : 'bg-white hover:shadow-md active:scale-[0.98] border-2 border-teal-light hover:border-teal-medium shadow-sm'
@@ -1100,13 +1119,13 @@ function ChatRoom() {
                                   e.stopPropagation();
                                   toggleTaskStatus(task);
                                 }}
-                                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all touch-manipulation shadow-sm hover:shadow-md ${
+                                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all touch-manipulation shadow-sm hover:shadow-md ${
                                   task.status === 'completed' ? 'bg-teal-medium' : 'bg-teal-medium'
                                 }`}
                               >
                                 {task.status === 'completed' ? (
                                   <svg
-                                    className="w-5 h-5 sm:w-6 sm:h-6 text-white"
+                                    className="w-4 h-4 sm:w-5 sm:h-5 text-white"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -1119,7 +1138,7 @@ function ChatRoom() {
                                     />
                                   </svg>
                                 ) : (
-                                  <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center">
+                                  <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
                                     {getTaskIcon()}
                                   </div>
                                 )}
@@ -1128,9 +1147,9 @@ function ChatRoom() {
 
                             {/* Task Content */}
                             <div className="flex-1 min-w-0 overflow-hidden">
-                              <div className="flex items-center gap-2 sm:gap-3 min-w-0 mb-1">
+                              <div className="flex items-center gap-2 min-w-0 mb-0.5">
                                 <h3
-                                  className={`text-sm sm:text-base font-semibold text-teal-dark truncate ${
+                                  className={`text-xs sm:text-sm font-semibold text-teal-dark truncate ${
                                     task.status === 'completed'
                                       ? 'line-through text-gray-400'
                                       : ''
@@ -1148,7 +1167,7 @@ function ChatRoom() {
                                 </h3>
                                 {isSmartTask && (
                                   <svg
-                                    className="w-4 h-4 sm:w-5 sm:h-5 text-teal-medium flex-shrink-0"
+                                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-medium flex-shrink-0"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -1164,7 +1183,7 @@ function ChatRoom() {
                               </div>
                               {task.description && (
                                 <p
-                                  className={`text-sm text-gray-600 line-clamp-2 break-words leading-relaxed ${
+                                  className={`text-xs text-gray-600 line-clamp-2 break-words leading-relaxed ${
                                     task.status === 'completed'
                                       ? 'line-through text-gray-400'
                                       : ''
@@ -1175,23 +1194,23 @@ function ChatRoom() {
                               )}
                               {/* Assigned and Related People */}
                               {(task.assigned_to || (Array.isArray(task.related_people) && task.related_people.length > 0)) && (
-                                <div className="flex items-center gap-2 sm:gap-3 mt-3 flex-wrap">
+                                <div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
                                   {task.assigned_to && (() => {
                                     if (task.assigned_to === 'self') {
                                       return (
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white text-teal-medium rounded-lg text-xs font-medium border-2 border-teal-light shadow-sm">
-                                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-white text-teal-medium rounded text-[10px] font-medium border border-teal-light">
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                           </svg>
                                           <span className="hidden sm:inline">Assigned: </span>
-                                          Self (me)
+                                          Self
                                         </span>
                                       );
                                     }
                                     const assignedContact = contacts.find(c => c.id.toString() === task.assigned_to.toString());
                                     return assignedContact ? (
-                                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white text-teal-medium rounded-lg text-xs font-medium border-2 border-teal-light shadow-sm">
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-white text-teal-medium rounded text-[10px] font-medium border border-teal-light">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                         <span className="hidden sm:inline">Assigned: </span>
@@ -1200,12 +1219,11 @@ function ChatRoom() {
                                     ) : null;
                                   })()}
                                   {Array.isArray(task.related_people) && task.related_people.length > 0 && (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white text-teal-medium rounded-lg text-xs font-medium border-2 border-teal-light shadow-sm">
-                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-white text-teal-medium rounded text-[10px] font-medium border border-teal-light">
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                       </svg>
                                       {task.related_people.length} {task.related_people.length === 1 ? 'person' : 'people'}
-                                      <span className="hidden sm:inline"> for context</span>
                                     </span>
                                   )}
                                 </div>
@@ -1218,14 +1236,10 @@ function ChatRoom() {
                   )}
                   </div>
 
-                  {/* Updates Section */}
-                  <UpdatesPanel
-                    username={username}
-                    onContactClick={(contactName) => {
-                      // Navigate to contacts view when clicking on a person
-                      setCurrentView('contacts');
-                    }}
-                  />
+                  {/* Communication Stats Widget */}
+                  <div className="mt-4">
+                    <CommunicationStatsWidget username={username} />
+                  </div>
 
                   {/* Threads Section */}
                   <div className="bg-white rounded-2xl border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow overflow-hidden mt-6 md:mt-8">
@@ -1510,6 +1524,9 @@ function ChatRoom() {
                     // Only show badge for current user's messages
                     if (message.username !== username) return null;
 
+                    // Don't show badge for revisions/rewrites
+                    if (message.isRevision) return null;
+
                     // Check if message is flagged (needs moderation)
                     const isFlagged = message.user_flagged_by &&
                                      Array.isArray(message.user_flagged_by) &&
@@ -1668,14 +1685,10 @@ function ChatRoom() {
                                       {msg.personalMessage && (
                                         <p className="text-sm text-gray-900 leading-relaxed mb-3">{msg.personalMessage}</p>
                                       )}
-                                      {(msg.tip1 || msg.tip2 || msg.tip3) && (
+                                      {msg.tip1 && (
                                         <div className="mb-3">
-                                          <p className="text-xs font-semibold text-gray-700 mb-2">Communication Tips:</p>
-                                          <ul className="space-y-1.5 text-sm text-gray-700">
-                                            {msg.tip1 && <li className="leading-relaxed">• {msg.tip1}</li>}
-                                            {msg.tip2 && <li className="leading-relaxed">• {msg.tip2}</li>}
-                                            {msg.tip3 && <li className="leading-relaxed">• {msg.tip3}</li>}
-                                          </ul>
+                                          <p className="text-xs font-semibold text-gray-700 mb-2">Communication Tip:</p>
+                                          <p className="text-sm text-gray-700 leading-relaxed">• {msg.tip1}</p>
                                         </div>
                                       )}
                                       {(msg.rewrite1 || msg.rewrite2) && (
@@ -1903,37 +1916,21 @@ function ChatRoom() {
                                   </div>
                                 )}
 
-                                {/* Communication Tips (3 tips) */}
-                                {(msg.tip1 || msg.tip2 || msg.tip3) && (
+                                {/* Communication Tip */}
+                                {msg.tip1 && (
                                   <div>
                                     <div className="flex items-center gap-3 mb-4">
                                       <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                       </svg>
                                       <p className="text-base font-semibold text-teal-dark">
-                                        Communication Tips:
+                                        Communication Tip:
                                       </p>
                                     </div>
-                                    <ul className="space-y-3 list-none pl-0">
-                                      {msg.tip1 && (
-                                        <li className="text-sm text-gray-700 leading-relaxed pl-7 relative">
-                                          <span className="absolute left-0 top-0.5 text-teal-medium text-lg">•</span>
-                                          {msg.tip1}
-                                        </li>
-                                      )}
-                                      {msg.tip2 && (
-                                        <li className="text-sm text-gray-700 leading-relaxed pl-7 relative">
-                                          <span className="absolute left-0 top-0.5 text-teal-medium text-lg">•</span>
-                                          {msg.tip2}
-                                        </li>
-                                      )}
-                                      {msg.tip3 && (
-                                        <li className="text-sm text-gray-700 leading-relaxed pl-7 relative">
-                                          <span className="absolute left-0 top-0.5 text-teal-medium text-lg">•</span>
-                                          {msg.tip3}
-                                        </li>
-                                      )}
-                                    </ul>
+                                    <p className="text-sm text-gray-700 leading-relaxed pl-7 relative">
+                                      <span className="absolute left-0 top-0.5 text-teal-medium text-lg">•</span>
+                                      {msg.tip1}
+                                    </p>
                                   </div>
                                 )}
 

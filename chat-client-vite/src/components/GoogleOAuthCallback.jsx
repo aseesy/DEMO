@@ -57,29 +57,19 @@ export function GoogleOAuthCallback() {
   }, [searchParams, handleGoogleCallback, navigate, setError]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#4DA8B0] to-[#4DA8B0] flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white/95 rounded-3xl shadow-2xl p-6 sm:p-8 text-center">
-        <div className="flex flex-col items-center mb-6">
-          <img
-            src="/assets/TransB.svg"
-            alt="@TransB"
-            className="logo-image"
-            style={{ height: '64px', width: 'auto', marginBottom: '0', display: 'block' }}
-          />
-          <div style={{ marginTop: '-32px', marginBottom: '-32px', lineHeight: 0, overflow: 'hidden' }}>
+    <div className="min-h-screen bg-gradient-to-b from-white via-teal-lightest/30 to-white flex items-center justify-center px-4 py-12 sm:py-16">
+      <div className="max-w-md w-full text-center">
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center gap-2 sm:gap-3 mb-6">
             <img
-              src="/assets/LZlogo.svg"
+              src="/assets/Logo.svg"
+              alt="LiaiZen Logo"
+              className="h-12 sm:h-14 w-auto"
+            />
+            <img
+              src="/assets/wordmark.svg"
               alt="LiaiZen"
-              className="logo-image"
-              style={{
-                height: '96px',
-                width: 'auto',
-                display: 'block',
-                lineHeight: 0,
-                verticalAlign: 'top',
-                margin: 0,
-                padding: 0
-              }}
+              className="h-14 sm:h-16 w-auto"
             />
           </div>
         </div>
@@ -89,20 +79,20 @@ export function GoogleOAuthCallback() {
             <div className="mb-4">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-teal-medium border-t-transparent"></div>
             </div>
-            <p className="text-slate-700 font-medium">Completing Google login...</p>
+            <p className="text-gray-900 font-medium">Completing Google login...</p>
           </>
         ) : error ? (
           <>
-            <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-xl bg-red-50 border-2 border-red-200 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
-            <p className="text-slate-600 text-sm">Redirecting to sign in page...</p>
+            <p className="text-gray-600 text-sm">Redirecting to sign in page...</p>
           </>
         ) : (
           <>
             <div className="mb-4 text-green-600 text-2xl">✓</div>
-            <p className="text-slate-700 font-medium">Login successful!</p>
-            <p className="text-slate-600 text-sm mt-2">Redirecting...</p>
+            <p className="text-gray-900 font-medium">Login successful!</p>
+            <p className="text-gray-600 text-sm mt-2">Redirecting...</p>
           </>
         )}
       </div>

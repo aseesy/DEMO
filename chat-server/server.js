@@ -1,13 +1,19 @@
 require('dotenv').config();
 
-// Initialize database (must be before other imports that might use it)
-require('./db');
+// PostgreSQL-First Database Initialization
+// In production: DATABASE_URL must be set (PostgreSQL required)
+// In development: If DATABASE_URL not set, fallback to SQLite
 
-// Run PostgreSQL migration if DATABASE_URL is set (non-blocking, async)
-// Migration runs in background - server starts immediately
 if (process.env.DATABASE_URL) {
-  console.log('🔄 PostgreSQL detected - migration will run in background');
-  // Delay migration slightly to let server start first
+  // PRODUCTION MODE: PostgreSQL
+  console.log('🐘 PostgreSQL mode: DATABASE_URL detected');
+  console.log('📊 Using PostgreSQL database (production)');
+  
+  // Initialize PostgreSQL client (non-blocking)
+  require('./dbPostgres');
+  
+  // Run PostgreSQL migration in background (non-blocking, async)
+  // Migration runs after server starts - won't block startup
   setTimeout(() => {
     const { runMigration } = require('./run-migration');
     runMigration().catch(err => {
@@ -15,6 +21,22 @@ if (process.env.DATABASE_URL) {
       console.log('⚠️  Server will continue running - migration can be retried');
     });
   }, 2000); // Wait 2 seconds for server to start
+  
+} else {
+  // DEVELOPMENT MODE: SQLite fallback
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ ERROR: DATABASE_URL not set in production!');
+    console.error('❌ PostgreSQL is required in production.');
+    console.error('❌ Add PostgreSQL service in Railway dashboard.');
+    process.exit(1);
+  }
+  
+  console.log('💾 SQLite mode: DATABASE_URL not set (development only)');
+  console.log('📊 Using SQLite database (local development)');
+  console.log('⚠️  WARNING: SQLite is for development only. Use PostgreSQL in production.');
+  
+  // Initialize SQLite (dev only)
+  require('./db');
 }
 
 const express = require('express');
@@ -861,6 +883,9 @@ io.on('connection', (socket) => {
             console.error('Error saving pre-approved rewrite to database:', err);
           });
 
+          // Mark as revision/rewrite
+          message.isRevision = true;
+
           // Broadcast to all users in the room
           io.to(user.roomId).emit('new_message', message);
           return; // Exit early - no AI mediation needed
@@ -1321,8 +1346,6 @@ io.on('connection', (socket) => {
                 type: 'ai_intervention',
                 personalMessage: intervention.personalMessage,
                 tip1: intervention.tip1,
-                tip2: intervention.tip2,
-                tip3: intervention.tip3,
                 rewrite1: intervention.rewrite1,
                 rewrite2: intervention.rewrite2,
                 originalMessage: message,
