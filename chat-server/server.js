@@ -666,6 +666,7 @@ io.on('connection', (socket) => {
       };
 
       // Save to database using safe insert
+      // Note: messages table doesn't have socket_id or private columns in PostgreSQL
       try {
         await dbSafe.safeInsert('messages', {
           id: systemMessage.id,
@@ -673,9 +674,7 @@ io.on('connection', (socket) => {
           username: systemMessage.username,
           text: systemMessage.text,
           timestamp: systemMessage.timestamp,
-          socket_id: socket.id,
-          room_id: roomId,
-          private: 0
+          room_id: roomId
         });
       } catch (err) {
         console.error('Error saving system message:', err);
@@ -3520,8 +3519,7 @@ app.get('/api/dashboard/updates', async (req, res) => {
 
       if (coparentMember) {
         // Get co-parent user info
-        const coparentUserResult = await dbSafe.safeSelect('users', { id: coparentMember.user_id }, { limit: 1 });
-        const coparentUsers = dbSafe.parseResult(coparentUserResult);
+        const coparentUsers = await dbSafe.safeSelect('users', { id: coparentMember.user_id }, { limit: 1 });
 
         if (coparentUsers.length > 0) {
           const coparentUsername = coparentUsers[0].username;
