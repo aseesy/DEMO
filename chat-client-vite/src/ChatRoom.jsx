@@ -319,15 +319,6 @@ function ChatRoom() {
     }
   }, [isCheckingAuth, isAuthenticated, showLanding, navigate, searchParams]);
 
-  // Reset unread count when navigating to chat view and mark all messages as seen
-  React.useEffect(() => {
-    if (currentView === 'chat' && messages.length > 0) {
-      setUnreadCount(0);
-      // Mark all current messages as seen by updating the last seen timestamp
-      // This is handled by useChat hook when viewing chat
-    }
-  }, [currentView, messages.length]);
-
   React.useEffect(() => {
     if (isAuthenticated) {
       localStorage.setItem('currentView', currentView);
@@ -435,6 +426,15 @@ function ChatRoom() {
     removeFromThread,
     socket,
   } = chatState;
+
+  // Reset unread count when navigating to chat view and mark all messages as seen
+  React.useEffect(() => {
+    if (currentView === 'chat' && messages.length > 0) {
+      setUnreadCount(0);
+      // Mark all current messages as seen by updating the last seen timestamp
+      // This is handled by useChat hook when viewing chat
+    }
+  }, [currentView, messages.length]);
 
   // Wrap sendMessage to track analytics
   const sendMessage = React.useCallback((e) => {
