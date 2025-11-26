@@ -10,10 +10,43 @@
  * - Relationship insights learning
  *
  * OPTIMIZED: Single API call instead of 4-5 separate calls
+ *
+ * ENHANCED (002-sender-profile-mediation):
+ * - Role-aware mediation: distinguishes sender from receiver
+ * - Individual communication profiles per user
+ * - Sender-focused coaching with receiver context awareness
+ *
+ * CONSTITUTION REFERENCE (004-ai-mediation-constitution):
+ * All AI interventions MUST comply with: ./ai-mediation-constitution.md
+ * Core principles:
+ *   1. Language, Not Emotions - describe phrasing, not emotional states
+ *   2. No Diagnostics - no psychological labels or character assessments
+ *   3. Child-Centric - frame around child wellbeing when applicable
+ *   4. 1-2-3 Framework - ADDRESS + ONE TIP + TWO REWRITES
  */
 
 const openaiClient = require('./openaiClient');
 const userContext = require('./userContext');
+
+// Language Analyzer Library (Feature 005)
+let languageAnalyzer;
+try {
+  languageAnalyzer = require('./libs/language-analyzer');
+  console.log('✅ AI Mediator: Language analyzer library loaded');
+} catch (err) {
+  console.warn('⚠️ AI Mediator: Language analyzer library not available, using legacy mode');
+  languageAnalyzer = null;
+}
+
+// Communication profile library for sender/receiver distinction
+let communicationProfile;
+try {
+  communicationProfile = require('./libs/communication-profile');
+  console.log('✅ AI Mediator: Communication profile library loaded');
+} catch (err) {
+  console.warn('⚠️ AI Mediator: Communication profile library not available, using legacy mode');
+  communicationProfile = null;
+}
 
 // Conversation context tracker (unified state management)
 const conversationContext = {
@@ -146,9 +179,10 @@ function updateEscalationScore(roomId, patterns) {
  * @param {string} roomId - Room ID for tracking insights and comment frequency
  * @param {string} taskContextForAI - Formatted task context string
  * @param {string} flaggedMessagesContext - Context from previously flagged messages
+ * @param {Object} roleContext - Optional sender/receiver context {senderId, receiverId}
  * @returns {Promise<Object>} - Unified mediation result
  */
-async function analyzeMessage(message, recentMessages, participantUsernames = [], existingContacts = [], contactContextForAI = null, roomId = null, taskContextForAI = null, flaggedMessagesContext = null) {
+async function analyzeMessage(message, recentMessages, participantUsernames = [], existingContacts = [], contactContextForAI = null, roomId = null, taskContextForAI = null, flaggedMessagesContext = null, roleContext = null) {
   // Check if OpenAI is configured
   if (!openaiClient.isConfigured()) {
     console.log('⚠️  AI Mediator: OpenAI not configured - allowing all messages through');
@@ -168,13 +202,75 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
   try {
     console.log('🤖 AI Mediator: Analyzing message from', message.username);
 
-    // Local pattern detection (no API call)
+    // === LANGUAGE ANALYSIS (Feature 005) ===
+    // Run structured language analysis before AI call
+    let languageAnalysis = null;
+    let languageAnalysisContext = '';
+    if (languageAnalyzer) {
+      const childNames = existingContacts
+        .filter(c => c.relationship === 'child')
+        .map(c => c.name);
+
+      languageAnalysis = languageAnalyzer.analyze(message.text, { childNames });
+      languageAnalysisContext = languageAnalyzer.formatForPrompt(languageAnalysis);
+
+      console.log(`📊 Language Analysis: ${languageAnalysis.summary.length} observations, ${languageAnalysis.meta.processing_time_ms}ms`);
+
+      // Quick optimization: if no issues detected and confidence is high, consider skipping AI
+      if (languageAnalysis.meta.confidence > 80 &&
+          !languageAnalysis.patterns.global_negative &&
+          !languageAnalysis.patterns.evaluative_character &&
+          !languageAnalysis.patterns.child_as_weapon &&
+          !languageAnalysis.patterns.child_triangulation &&
+          languageAnalysis.structure.sentence_type !== 'threat' &&
+          languageAnalysis.structure.sentence_type !== 'accusation') {
+        // Low-risk message - could skip AI, but let's still run for now
+        console.log('📊 Language Analysis: Low-risk message detected');
+      }
+    }
+    // === END LANGUAGE ANALYSIS ===
+
+    // Local pattern detection (no API call) - legacy, kept for escalation tracking
     const patterns = detectConflictPatterns(message.text);
     const escalationState = updateEscalationScore(roomId, patterns);
 
     // Initialize states
     const emotionalState = initializeEmotionalState(roomId);
     const policyState = initializePolicyState(roomId);
+
+    // === ROLE-AWARE MEDIATION (002-sender-profile-mediation) ===
+    // Load sender and receiver profiles if roleContext is provided
+    let roleAwareContext = null;
+    if (communicationProfile && roleContext?.senderId && roleContext?.receiverId) {
+      try {
+        const dbPostgres = require('./dbPostgres');
+
+        // Load both profiles efficiently
+        const profiles = await communicationProfile.loadProfiles(
+          [roleContext.senderId, roleContext.receiverId],
+          dbPostgres
+        );
+
+        const senderProfile = profiles.get(roleContext.senderId.toLowerCase());
+        const receiverProfile = profiles.get(roleContext.receiverId.toLowerCase());
+
+        // Build role-aware mediation context
+        roleAwareContext = communicationProfile.buildMediationContext({
+          senderId: roleContext.senderId,
+          receiverId: roleContext.receiverId,
+          senderProfile,
+          receiverProfile,
+          messageText: message.text,
+          recentMessages,
+        });
+
+        console.log(`🎯 AI Mediator: Role-aware mode - Sender: ${roleContext.senderId}, Receiver: ${roleContext.receiverId}`);
+      } catch (err) {
+        console.warn('⚠️ AI Mediator: Failed to load role-aware context, using legacy mode:', err.message);
+        roleAwareContext = null;
+      }
+    }
+    // === END ROLE-AWARE MEDIATION ===
 
     // Get user contexts for all participants
     const userContexts = [];
@@ -287,45 +383,96 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
       ? `\n\nRELATIONSHIP CONTEXT:\n${contactContextForAI}\n\nThese two people are co-parents who share children but are no longer together. They need to communicate about shared children while navigating their separated relationship.${insightsString}${taskContextString}${flaggedContextString}`
       : `\n\nRELATIONSHIP CONTEXT:\nThese are co-parents sharing children but no longer together.${insightsString}${taskContextString}${flaggedContextString}`;
 
+    // === ROLE-AWARE CONTEXT (002-sender-profile-mediation) ===
+    // Build sender/receiver specific context if available
+    let roleAwarePromptSection = '';
+    let senderDisplayName = message.username;
+    let receiverDisplayName = 'the other co-parent';
+
+    if (roleAwareContext && communicationProfile) {
+      const mediationContext = require('./libs/communication-profile/mediationContext');
+      roleAwarePromptSection = mediationContext.formatFullContext(roleAwareContext);
+      senderDisplayName = roleAwareContext.roles?.sender?.display_name || message.username;
+      receiverDisplayName = roleAwareContext.roles?.receiver?.display_name || 'the other co-parent';
+    }
+    // === END ROLE-AWARE CONTEXT ===
+
     // UNIFIED PROMPT: Get ALL information in ONE API call
-    const prompt = `You are LiaiZen's AI mediator - a neutral, unbiased third party helping co-parents communicate effectively. Your expertise includes:
-- Nonviolent Communication (Marshall Rosenberg)
-- Gottman Method relationship dynamics
-- Trauma-informed communication
-- Motivational interviewing
+    // CONSTITUTION: ./ai-mediation-constitution.md defines all rules
+    const prompt = `You are LiaiZen - a COMMUNICATION COACH helping co-parents communicate effectively.
 
-CRITICAL: You are NOT part of either parent's "team" or relationship. You are a neutral mediator.
+=== CONSTITUTION (IMMUTABLE RULES) ===
 
-Your role is to help ${message.username} communicate more effectively while maintaining complete neutrality between co-parents.
+PRINCIPLE I: LANGUAGE, NOT EMOTIONS
+- Talk about PHRASING and LANGUAGE, never emotional states
+- CORRECT: "This phrasing implies blame", "This word choice sounds accusatory"
+- PROHIBITED: "You're angry", "You're frustrated", "You're being defensive"
+- We describe what words DO, not what people FEEL
 
-${relationshipContext}
+PRINCIPLE II: NO DIAGNOSTICS
+- NEVER apply psychological labels or character assessments
+- PROHIBITED: narcissist, insecure, manipulative, gaslighting, controlling, toxic, abusive, passive-aggressive
+- ALLOWED: "This approach may backfire", "This phrasing might not achieve your goal"
 
-Recent conversation (last 15 messages):
+PRINCIPLE III: CHILD-CENTRIC WHEN APPLICABLE
+- When a child is mentioned, frame feedback around child wellbeing
+- Flag triangulation (using child as messenger/weapon)
+- Consider: "Would I be okay if my child read this?"
+
+=== YOUR IDENTITY ===
+- Communication COACH (not therapist)
+- Neutral third party (not on either "team")
+- Skill-builder (not judge)
+- You are NOT part of their relationship - NEVER use "we/us/our/both"
+- Address ONLY the sender using "you/your"
+
+=== 1-2-3 COACHING FRAMEWORK ===
+
+When you INTERVENE, you MUST provide ALL THREE:
+
+1. ADDRESS (personalMessage): Describe what the message is DOING mechanically
+   - Focus on: structure, word choice, phrasing, implications
+   - Explain why this approach will backfire for THE SENDER
+   - Max 2 sentences
+   - Format: "[Observation about phrasing] + [consequence for sender's goals]"
+   - Examples:
+     * "Name-calling shuts down any chance of being heard, so your concerns won't get addressed."
+     * "Absolute statements like 'never' trigger defensiveness, which means the help you need won't happen."
+     * "Blaming language makes people defensive rather than collaborative, so solving the problem becomes impossible."
+
+2. ONE TIP (tip1): Single, precise adjustment (max 10 words)
+   - Must be specific to THIS message
+   - Actionable immediately
+   - Examples:
+     * For insults: "Name the feeling, not the person."
+     * For blame: "Describe the impact, not their intent."
+     * For demands: "Make a request, not a command."
+     * For absolutes: "Replace 'always' with 'recently' or 'often'."
+     * For triangulation: "Speak directly, not through your child."
+
+3. TWO REWRITES (rewrite1, rewrite2): Complete message alternatives
+   - Preserve sender's underlying intent/concern
+   - Improve clarity and dignity
+   - Ready to send as-is
+   - Use DIFFERENT approaches:
+     * Rewrite 1: I-statement (feeling + need) - "I feel... when... I need..."
+     * Rewrite 2: Observation + request - "I've noticed... Can we..."
+
+=== CONTEXT ===
+
+${roleAwarePromptSection ? roleAwarePromptSection + '\n' : ''}${relationshipContext}
+
+Recent conversation:
 ${messageHistory}${userContextString}
 
-Current message from ${message.username}: "${message.text}"
+Current message from ${senderDisplayName}: "${message.text}"
 
-CONTEXT:
-- Conflict patterns detected: ${patternSummary || 'none'}
+${languageAnalysisContext ? languageAnalysisContext + '\n' : ''}
+Analysis context:
 - Escalation score: ${escalationState.escalationScore}/100
-- ${message.username}'s emotional state: ${participantState.currentEmotion} (stress: ${participantState.stressLevel}/100)
-- Emotional trajectory: ${participantState.stressTrajectory}
-- Recent triggers: ${participantState.recentTriggers.slice(-3).join(', ') || 'none'}${commentFrequencyNote}
+- Conversation state: ${emotionalState.conversationEmotion}${commentFrequencyNote}
 
-YOUR TASK:
-Analyze this message and provide a response that makes ${message.username} feel:
-1. SAFE - you understand their feelings and perspective
-2. EMPOWERED - they can communicate effectively
-3. SUPPORTED - you're on their team, helping them succeed
-
-🚨 CRITICAL REQUIREMENT: If you choose ACTION=INTERVENE, you MUST provide ALL of these fields:
-   - personalMessage
-   - tip1
-   - rewrite1, rewrite2 (complete rewrites of their entire message)
-
-   If ANY field is missing, the intervention will FAIL and their hurtful message will be sent!
-
-RESPOND WITH JSON:
+=== RESPOND WITH JSON ===
 
 {
   "action": "STAY_SILENT|INTERVENE|COMMENT",
@@ -333,7 +480,7 @@ RESPOND WITH JSON:
   "escalation": {
     "riskLevel": "low|medium|high|critical",
     "confidence": 0-100,
-    "reasons": ["specific reason 1", "reason 2"]
+    "reasons": ["specific phrasing issue 1", "phrasing issue 2"]
   },
 
   "emotion": {
@@ -346,64 +493,39 @@ RESPOND WITH JSON:
   },
 
   "intervention": {
-    "personalMessage": "REQUIRED if ACTION=INTERVENE. Indirectly explain why the sender would NOT want to say what they said - focus on the negative consequences their message will have for THEM (not the recipient). 1-2 sentences maximum. BE SPECIFIC TO THE MESSAGE CONTENT - explain how their approach will backfire, make things worse, or prevent them from getting what they want. Examples: 'Name-calling shuts down any chance of being heard, so your concerns won't get addressed.' or 'Blaming someone for past behavior makes them defensive, which means they won't listen to what you actually need.' or 'Character attacks make it impossible to discuss the real issue, so the problem will continue.' CRITICAL: Address ONLY the sender using 'you/your' - NEVER use 'we/us/our/both'. Frame it as: 'This approach will prevent you from...' or 'This will make it harder for you to...'",
-
-    "tip1": "REQUIRED if ACTION=INTERVENE. Ultra-short skill-building cue (max 10 words). MUST BE DIRECTLY RELEVANT TO THIS SPECIFIC MESSAGE. For insults: 'Name the feeling, not the person.' For blame: 'Describe the impact, not their intent.' For demands: 'Make a request, not a command.' For contempt: 'Express your need, not your judgment.' AVOID GENERIC CHILD-FOCUSED TIPS. NEVER use 'we/us/our/both'.",
-
-    "rewrite1": "REQUIRED if ACTION=INTERVENE. Rewrite their ENTIRE message using 'I feel' or 'I need' statements. For hostile/attacking messages: Transform into emotion + need. Example: 'you're a bitch' → 'I feel really frustrated right now and I need us to communicate more respectfully.' For blame messages: Shift to impact statement. Example: 'you never help' → 'When pickup responsibilities fall on me, I feel overwhelmed and I need more consistency.' PRESERVE THEIR UNDERLYING EMOTION but express it constructively. NO CHILD-CENTRIC REWRITES for personal attacks - they need to express THEIR feelings. Complete message ready to send.",
-
-    "rewrite2": "REQUIRED if ACTION=INTERVENE. Rewrite with a COMPLETELY DIFFERENT approach from rewrite1. For personal attacks: Use observation + request. Example: 'you're a bitch' → 'When you [specific behavior], it bothers me. Can we find a better way to handle [specific issue]?' For general hostility: Name the pattern + suggest change. Example: 'I notice we're both getting frustrated. Can we start over and focus on [specific issue]?' BE CONCRETE AND SPECIFIC TO THEIR ACTUAL MESSAGE. Complete message ready to send.",
-
-    "comment": "REQUIRED if ACTION=COMMENT. Brief tactical observation about communication dynamic. NEVER use 'we/us/our/both'."
+    "personalMessage": "ADDRESS: Describe what the phrasing is DOING and why it will backfire. Max 2 sentences. NO emotional diagnoses.",
+    "tip1": "ONE TIP: Max 10 words. Specific to THIS message. Actionable skill.",
+    "rewrite1": "I-statement rewrite preserving their intent. Complete message.",
+    "rewrite2": "Observation+request rewrite. Different approach. Complete message.",
+    "comment": "For COMMENT action only. Brief tactical observation."
   }
 }
 
-LIAIZEN'S ROLE: COMMUNICATION COACH, NOT THERAPIST
-- You are teaching communication SKILLS, not providing emotional support
-- Focus on PATTERNS and DYNAMICS, not feelings
-- Help the sender become a MORE EFFECTIVE communicator
-- Address ONLY the sender - NEVER use "we/us/our/both" (they are NOT a team you're part of)
-- Tips are TOOLS, not empathy - short, tactical, immediately actionable
-- Rewrites should model collaborative, child-focused communication
-- NO therapeutic language - be direct about what works and what doesn't
+=== DECISION CRITERIA ===
 
-CRITICAL: BE DYNAMIC AND CONTEXT-SPECIFIC
-- ANALYZE THE ACTUAL MESSAGE: What exactly are they doing wrong? (insulting? blaming? threatening? dismissing?)
-- AVOID REPETITIVE LANGUAGE: Don't default to "focus on the child" for every message
-- MATCH YOUR RESPONSE TO THE PROBLEM: Personal attacks need emotion work, blame needs perspective shifts, demands need softening
-- VARY YOUR APPROACH: Use different frameworks (I-statements, observations, requests, questions)
-- NO GENERIC TEMPLATES: "You're a bitch" needs emotional translation ("I feel frustrated"), not child-focus
-- PRESERVE THEIR EMOTION: If they're angry, help them express anger constructively, don't suppress it
-- BE PRACTICAL: Give them words they can actually use in THIS situation
+STAY_SILENT (80-90%): Any respectful communication
+- "I'm concerned about...", "Can we discuss...", "The teacher said..."
+- Even imperfect phrasing if not hostile
 
-IMPORTANT CONTEXT RULES:
-- If the message is expressing a genuine concern about the child (e.g., "I'm concerned about..."), this is HEALTHY communication and should be STAY_SILENT unless it contains blame/attacks
-- Partial/incomplete messages (ending mid-word) should be given benefit of the doubt - assume positive intent
-- Focus on TONE and INTENT, not just trigger words
+INTERVENE (5-15%): Clear conflict escalation only
+- Direct blame/attacks, name-calling, insults
+- Threats, ultimatums, contemptuous language
+- Triangulation (using child against other parent)
 
-DECISION CRITERIA:
-- **STAY_SILENT**: Use this for 80-90% of messages. Any respectful communication, including:
-  - Expressing concerns about the child ("I'm concerned about...", "I'm worried that...")
-  - Asking questions ("Can we discuss...", "What do you think about...")
-  - Sharing information ("She mentioned...", "The teacher said...")
-  - Stating boundaries ("I need...", "I would prefer...")
-  - Incomplete messages (give benefit of the doubt)
+COMMENT (1-5%): Rare, helpful observation only
 
-- **INTERVENE**: ONLY for clear conflict escalation:
-  - Direct blame/attacks ("It's YOUR fault", "YOU never...")
-  - Name-calling or insults
-  - Threats or ultimatums
-  - Contemptuous language ("stupid", "pathetic", "worthless")
-  - Triangulation attempts that pit child against other parent
+=== VALIDATION REMINDERS ===
 
-- **COMMENT**: RARE - only if a gentle observation would significantly help (max 1-2 per conversation)
+🚨 If ACTION=INTERVENE, ALL fields are REQUIRED:
+   - personalMessage (describes phrasing, not emotions)
+   - tip1 (max 10 words, specific)
+   - rewrite1 (I-statement approach)
+   - rewrite2 (observation+request approach)
 
-EXAMPLES:
-✅ STAY_SILENT: "I'm concerned about our daughter's behavior at school"
-✅ STAY_SILENT: "Can we talk about the pickup schedule this weekend?"
-✅ STAY_SILENT: "She seemed upset after the visit"
-❌ INTERVENE: "It's all your fault that she's failing"
-❌ INTERVENE: "You're a terrible parent and you never listen"`;
+🚨 NEVER diagnose emotions ("You're angry")
+🚨 NEVER use labels ("manipulative", "narcissistic")
+🚨 NEVER use "we/us/our/both"
+🚨 ALWAYS describe PHRASING, not FEELINGS`;
 
     // Make single unified API call
     const completion = await openaiClient.createChatCompletion({
@@ -411,7 +533,7 @@ EXAMPLES:
       messages: [
         {
           role: 'system',
-          content: 'You are LiaiZen - a tactical communication coach for co-parents. Your job: teach effective communication SKILLS, not provide therapy. Focus on PATTERNS and DYNAMICS, not feelings. Be direct about what works and what doesn\'t. CRITICAL: Address ONLY the sender using "you/your" - NEVER use "we/us/our/both". Tips must be ultra-short (max 10 words), tactical, and immediately actionable. Rewrites must model collaborative, child-focused language. Respond ONLY with valid JSON in the exact format specified.'
+          content: 'You are LiaiZen - a communication COACH (not therapist) for co-parents. CONSTITUTION RULES: 1) Talk about LANGUAGE/PHRASING, never emotions ("this phrasing implies blame" not "you\'re angry"). 2) NO psychological labels (narcissist, manipulative, insecure - PROHIBITED). 3) Child-centric when child mentioned. 4) Use 1-2-3 framework: ADDRESS (what phrasing does) + ONE TIP (max 10 words) + TWO REWRITES (different approaches). CRITICAL: Only use "you/your" - NEVER "we/us/our/both". Respond ONLY with valid JSON.'
         },
         {
           role: 'user',
@@ -551,6 +673,27 @@ EXAMPLES:
       if (policyState.interventionHistory.length > 20) {
         policyState.interventionHistory.shift();
       }
+
+      // === RECORD TO SENDER'S PROFILE (002-sender-profile-mediation) ===
+      // Persist intervention to sender's communication profile for future personalization
+      if (communicationProfile && roleContext?.senderId) {
+        try {
+          const dbPostgres = require('./dbPostgres');
+          await communicationProfile.recordIntervention(
+            roleContext.senderId,
+            {
+              type: 'intervene',
+              escalation_level: result.escalation?.riskLevel,
+              original_message: message.text,
+            },
+            dbPostgres
+          );
+        } catch (err) {
+          console.warn('⚠️ AI Mediator: Failed to record intervention to profile:', err.message);
+          // Non-fatal - don't block the intervention
+        }
+      }
+      // === END PROFILE RECORDING ===
 
       return {
         type: 'ai_intervention',
@@ -846,6 +989,49 @@ function getPolicyState(roomId) {
   return conversationContext.policyState.get(roomId) || null;
 }
 
+/**
+ * Record when a user accepts an AI rewrite suggestion
+ * Updates the sender's communication profile for future personalization
+ *
+ * @param {string} senderId - The sender's user ID
+ * @param {Object} rewriteData - {original, rewrite, tip}
+ * @returns {Promise<boolean>} - Success status
+ */
+async function recordAcceptedRewrite(senderId, rewriteData) {
+  if (!communicationProfile || !senderId) {
+    return false;
+  }
+
+  try {
+    const dbPostgres = require('./dbPostgres');
+    await communicationProfile.recordAcceptedRewrite(senderId, rewriteData, dbPostgres);
+    console.log(`✅ AI Mediator: Recorded accepted rewrite for ${senderId}`);
+    return true;
+  } catch (err) {
+    console.error(`❌ AI Mediator: Failed to record accepted rewrite:`, err.message);
+    return false;
+  }
+}
+
+/**
+ * Get a user's communication profile
+ * @param {string} userId - The user's ID
+ * @returns {Promise<Object|null>} - User's profile or null
+ */
+async function getUserProfile(userId) {
+  if (!communicationProfile || !userId) {
+    return null;
+  }
+
+  try {
+    const dbPostgres = require('./dbPostgres');
+    return await communicationProfile.loadProfile(userId, dbPostgres);
+  } catch (err) {
+    console.error(`❌ AI Mediator: Failed to load user profile:`, err.message);
+    return null;
+  }
+}
+
 module.exports = {
   // Main unified function (replaces 4-5 separate calls)
   analyzeMessage,
@@ -859,6 +1045,10 @@ module.exports = {
   recordInterventionFeedback,
   resetEscalation,
   getPolicyState,
+
+  // Communication profile functions (Feature 002)
+  recordAcceptedRewrite,
+  getUserProfile,
 
   // Legacy function name for backwards compatibility
   analyzeAndIntervene: analyzeMessage

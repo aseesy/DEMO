@@ -1,8 +1,8 @@
-const dbModule = require('./db');
 const dbSafe = require('./dbSafe');
+const dbPostgres = require('./dbPostgres');
 
 /**
- * Save a message to the database
+ * Save a message to the database (PostgreSQL)
  */
 async function saveMessage(message) {
   // Don't save private or flagged messages to database
@@ -11,58 +11,89 @@ async function saveMessage(message) {
   }
 
   const id = message.id || `${Date.now()}-${message.socketId}`;
-  const messageData = {
+
+  // Core fields that always exist in the messages table
+  const coreData = {
     id: id,
     type: message.type || 'user',
     username: message.username,
     text: message.text || '',
     timestamp: message.timestamp || new Date().toISOString(),
-    socket_id: message.socketId || '',
-    room_id: message.roomId || message.room_id || null, // Include room_id for persistence
-    thread_id: message.threadId || message.thread_id || null, // Include thread_id for threading
+    room_id: message.roomId || message.room_id || null,
+    thread_id: message.threadId || message.thread_id || null
+  };
+
+  // Extended fields (added in migration 006)
+  const extendedData = {
+    socket_id: message.socketId || null,
     private: message.private ? 1 : 0,
     flagged: message.flagged ? 1 : 0,
-    validation: message.validation || '',
-    tip1: message.tip1 || '',
-    tip2: message.tip2 || '',
-    rewrite: message.rewrite || '',
-    original_message: message.originalMessage ? JSON.stringify(message.originalMessage) : ''
+    validation: message.validation || null,
+    tip1: message.tip1 || null,
+    tip2: message.tip2 || null,
+    rewrite: message.rewrite || null,
+    original_message: message.originalMessage ? JSON.stringify(message.originalMessage) : null,
+    edited: message.edited ? 1 : 0,
+    edited_at: message.editedAt || null,
+    reactions: message.reactions ? JSON.stringify(message.reactions) : '{}',
+    user_flagged_by: message.user_flagged_by ? JSON.stringify(message.user_flagged_by) : '[]'
   };
 
   try {
-    // Use safe insert - INSERT OR REPLACE requires a different approach
-    // First check if exists, then insert or update
+    // Try with all fields first (after migration 006)
+    const fullData = { ...coreData, ...extendedData };
+
+    // Check if message exists
     const existing = await dbSafe.safeSelect('messages', { id: id }, { limit: 1 });
     if (dbSafe.parseResult(existing).length > 0) {
-      await dbSafe.safeUpdate('messages', messageData, { id: id });
-      console.log(`💾 Updated message ${id} in database (room: ${messageData.room_id || 'none'})`);
+      // Update existing message
+      await dbSafe.safeUpdate('messages', fullData, { id: id });
+      console.log(`💾 Updated message ${id} in database (room: ${coreData.room_id || 'none'})`);
     } else {
-      await dbSafe.safeInsert('messages', messageData);
-      console.log(`💾 Saved new message ${id} to database (room: ${messageData.room_id || 'none'})`);
+      // Insert new message
+      await dbSafe.safeInsert('messages', fullData);
+      console.log(`💾 Saved new message ${id} to database (room: ${coreData.room_id || 'none'})`);
     }
   } catch (err) {
+    // If extended columns don't exist, try with just core data
+    if (err.message && err.message.includes('does not exist')) {
+      console.warn('⚠️ Extended message columns not available, saving core data only');
+      try {
+        const existing = await dbSafe.safeSelect('messages', { id: id }, { limit: 1 });
+        if (dbSafe.parseResult(existing).length > 0) {
+          await dbSafe.safeUpdate('messages', coreData, { id: id });
+          console.log(`💾 Updated message ${id} with core data only`);
+        } else {
+          await dbSafe.safeInsert('messages', coreData);
+          console.log(`💾 Saved new message ${id} with core data only`);
+        }
+        return;
+      } catch (fallbackErr) {
+        console.error('❌ Error saving message (fallback):', fallbackErr);
+      }
+    }
     console.error('❌ Error saving message to database:', err);
-    console.error('Message data:', JSON.stringify(messageData, null, 2));
+    console.error('Message ID:', id);
   }
 }
 
 /**
- * Get recent messages from database (last N messages)
+ * Get recent messages from database (last N messages) - PostgreSQL
  */
 async function getRecentMessages(limit = 50) {
   try {
-    // Use safeExec for query with ORDER BY and LIMIT (limit is integer, safe)
-    const db = await dbModule.getDb();
     const limitInt = parseInt(limit) || 50;
+
+    // Use PostgreSQL query with parameterized limit
     const query = `
-      SELECT * FROM messages 
-      WHERE private = 0 AND flagged = 0 
-      ORDER BY timestamp DESC 
-      LIMIT ${limitInt}
+      SELECT * FROM messages
+      WHERE (private IS NULL OR private = 0) AND (flagged IS NULL OR flagged = 0)
+      ORDER BY timestamp DESC
+      LIMIT $1
     `;
-    
-    const result = db.exec(query);
-    const messages = dbSafe.parseResult(result);
+
+    const result = await dbPostgres.query(query, [limitInt]);
+    const messages = result.rows;
 
     // Convert to message format
     return messages.map(message => {
@@ -100,24 +131,77 @@ async function getRecentMessages(limit = 50) {
 }
 
 /**
- * Clean old messages (keep only last N messages)
+ * Get messages for a specific room - PostgreSQL
+ */
+async function getMessagesByRoom(roomId, limit = 500) {
+  try {
+    const limitInt = parseInt(limit) || 500;
+
+    const query = `
+      SELECT * FROM messages
+      WHERE room_id = $1
+      ORDER BY timestamp ASC
+      LIMIT $2
+    `;
+
+    const result = await dbPostgres.query(query, [roomId, limitInt]);
+    return result.rows.map(message => {
+      const msg = {
+        id: message.id,
+        type: message.type,
+        username: message.username,
+        text: message.text,
+        timestamp: message.timestamp,
+        socketId: message.socket_id,
+        threadId: message.thread_id || null,
+        roomId: message.room_id
+      };
+
+      // Add extended fields if present
+      if (message.validation) msg.validation = message.validation;
+      if (message.tip1) msg.tip1 = message.tip1;
+      if (message.tip2) msg.tip2 = message.tip2;
+      if (message.rewrite) msg.rewrite = message.rewrite;
+      if (message.edited) msg.edited = message.edited === 1;
+      if (message.edited_at) msg.editedAt = message.edited_at;
+      if (message.reactions) {
+        try { msg.reactions = JSON.parse(message.reactions); } catch (e) { msg.reactions = {}; }
+      }
+      if (message.user_flagged_by) {
+        try { msg.user_flagged_by = JSON.parse(message.user_flagged_by); } catch (e) { msg.user_flagged_by = []; }
+      }
+      if (message.original_message) {
+        try { msg.originalMessage = JSON.parse(message.original_message); } catch (e) { /* ignore */ }
+      }
+
+      return msg;
+    });
+  } catch (err) {
+    console.error('Error loading room messages from database:', err);
+    return [];
+  }
+}
+
+/**
+ * Clean old messages (keep only last N messages) - PostgreSQL
  */
 async function cleanOldMessages(keepCount = 1000) {
   try {
-    // Use safeExec for complex DELETE query (keepCount is integer, safe)
-    const db = await dbModule.getDb();
     const keepCountInt = parseInt(keepCount) || 1000;
+
+    // PostgreSQL version of the cleanup query
     const query = `
-      DELETE FROM messages 
+      DELETE FROM messages
       WHERE id NOT IN (
-        SELECT id FROM messages 
-        WHERE private = 0 AND flagged = 0 
-        ORDER BY timestamp DESC 
-        LIMIT ${keepCountInt}
+        SELECT id FROM messages
+        WHERE (private IS NULL OR private = 0) AND (flagged IS NULL OR flagged = 0)
+        ORDER BY timestamp DESC
+        LIMIT $1
       )
     `;
-    db.exec(query);
-    dbModule.saveDatabase();
+
+    await dbPostgres.query(query, [keepCountInt]);
+    console.log(`🧹 Cleaned old messages, keeping last ${keepCountInt}`);
   } catch (err) {
     console.error('Error cleaning old messages:', err);
   }
@@ -126,6 +210,7 @@ async function cleanOldMessages(keepCount = 1000) {
 module.exports = {
   saveMessage,
   getRecentMessages,
+  getMessagesByRoom,
   cleanOldMessages
 };
 
