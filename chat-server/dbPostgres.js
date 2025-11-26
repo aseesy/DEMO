@@ -28,11 +28,7 @@ if (!DATABASE_URL) {
         allowExitOnIdle: true
     });
     
-    pool.on('connect', () => {
-        console.log('✅ PostgreSQL pool connected');
-        connectionReady = true;
-    });
-    
+    // Only log errors, not every connection (connect event fires for every new connection)
     pool.on('error', (err) => {
         console.error('❌ PostgreSQL pool error:', err.message);
         // Don't crash - just log the error
@@ -40,6 +36,7 @@ if (!DATABASE_URL) {
     });
     
     // Test connection in background (non-blocking)
+    // This will log once when the pool is ready
     pool.query('SELECT 1').then(() => {
         console.log('✅ PostgreSQL connection test passed');
         connectionReady = true;
