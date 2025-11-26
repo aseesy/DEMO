@@ -1,16 +1,14 @@
 {
-  "name": "liaizen-chat",
+  "name": "liaizen",
   "version": "1.0.0",
-  "description": "LiaiZen - Co-Parenting Chat Application",
-  "private": true,
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "description": "LiaiZen - Collaborative Parenting Platform",
   "scripts": {
-    "start": "cd chat-server && node server.js"
+    "restart": "./restart-servers.sh",
+    "restart:backend": "./restart-servers.sh backend",
+    "restart:frontend": "./restart-servers.sh frontend",
+    "start": "./start-dev.sh",
+    "stop": "./stop-dev.sh",
+    "dev": "./start-dev.sh"
   },
-  "devDependencies": {
-    "@playwright/test": "^1.56.1",
-    "playwright": "^1.56.1"
-  }
+  "private": true
 }

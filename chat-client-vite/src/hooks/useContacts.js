@@ -1,7 +1,7 @@
 import React from 'react';
 import { apiGet, apiPost, apiPut } from '../apiClient.js';
 
-export function useContacts(username) {
+export function useContacts(username, isAuthenticated = true) {
   const [contacts, setContacts] = React.useState([]);
   const [isLoadingContacts, setIsLoadingContacts] = React.useState(false);
   const [showContactForm, setShowContactForm] = React.useState(false);
@@ -74,9 +74,11 @@ export function useContacts(username) {
     localStorage.removeItem('liaizen_add_contact');
   }, []);
 
-  const loadContacts = React.useCallback(async () => {
-    if (!username) {
-      // Silently skip if no username (e.g., on landing page)
+  const loadContacts = React.useCallback(async (isAuthenticated = true) => {
+    if (!username || !isAuthenticated) {
+      // Silently skip if no username or not authenticated (e.g., on landing page)
+      // This prevents race conditions during auth verification
+      setContacts([]);
       return;
     }
     setIsLoadingContacts(true);
@@ -87,6 +89,9 @@ export function useContacts(username) {
         const contactsList = data.contacts || [];
         console.log('Contacts loaded:', contactsList.length, 'contacts for', username);
         setContacts(contactsList);
+      } else if (response.status === 401) {
+        // User not authenticated - silently ignore
+        setContacts([]);
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Failed to load contacts:', response.status, errorData);
@@ -98,11 +103,11 @@ export function useContacts(username) {
     } finally {
       setIsLoadingContacts(false);
     }
-  }, [username]);
+  }, [username, isAuthenticated]);
 
   React.useEffect(() => {
-    loadContacts();
-  }, [loadContacts]);
+    loadContacts(isAuthenticated);
+  }, [loadContacts, isAuthenticated]);
 
   // Reload contacts when a co-parent joins the room
   React.useEffect(() => {
@@ -110,7 +115,7 @@ export function useContacts(username) {
       console.log('Co-parent joined event received, reloading contacts...', event.detail);
       // Reload contacts after a short delay to ensure backend has created them
       setTimeout(() => {
-        loadContacts();
+        loadContacts(isAuthenticated);
       }, 1000);
     };
 

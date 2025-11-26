@@ -51,19 +51,22 @@ Transform high-tension co-parenting exchanges into respectful, child-centered di
 - Private room-based messaging between co-parents
 - WebSocket-powered instant message delivery
 - Message history and search
-- Typing indicators and read receipts
+- Typing indicators (no read receipts to prevent conflict)
 
 ### **AI-Powered Message Mediation**
-- Automatic tone analysis and conflict detection
-- Real-time message rewriting suggestions
-- De-escalation prompts for high-tension exchanges
-- Child-focused communication recommendations
+- Real-time message blocking prevents hostile communication
+- AI conversationally explains why you wouldn't want to send that message
+- Provides 1 personalized communication tip relative to your situation
+- Offers 2 rewrite options preserving your core message
+- Users can select a rewrite or write a new message from scratch
+- Adaptive learning personalizes to each user's communication style
+- Feels like a supportive friend, not clinical therapy
 
 ### **Contact Management**
 - Shared contact lists for co-parents, children, and professionals
-- Role-based contact types (teacher, doctor, family)
+- Comprehensive relationship context tracking for AI personalization
+- Role-based contact types (teacher, doctor, family, partner)
 - Emergency contact protocols
-- Professional referral network
 
 ### **Task Management**
 - Shared to-do lists for parenting responsibilities
@@ -75,7 +78,7 @@ Transform high-tension co-parenting exchanges into respectful, child-centered di
 - Secure invitation system for co-parents
 - Member status tracking (pending, accepted, rejected)
 - Privacy controls and access management
-- Audit trail for legal/custody purposes
+- Message history maintained for reference and accountability
 
 ---
 
@@ -225,6 +228,8 @@ npm test
 - **Config**: `vercel.json`
 
 ### **Backend (Railway)**
+- **Project**: LiaiZen Demo
+- **Service**: positive-recreation
 - **URL**: https://demo-production-6dcd.up.railway.app
 - **Deployment**: Automatic on push to `main`
 - **Config**: Railway dashboard
@@ -246,7 +251,7 @@ npm test
 ### **Privacy Compliance**
 - COPPA compliant (children's data protection)
 - GDPR adherent (EU privacy regulations)
-- Audit trails for legal/custody purposes
+- Communication history for accountability and reference
 - Selective information sharing controls
 
 ### **Best Practices**

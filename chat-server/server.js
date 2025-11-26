@@ -49,6 +49,9 @@ const FigmaService = require('./figmaService');
 const ComponentScanner = require('./componentScanner');
 const FigmaGenerator = require('./figmaGenerator');
 const communicationStats = require('./communicationStats');
+const invitationManager = require('./libs/invitation-manager');
+const notificationManager = require('./libs/notification-manager');
+const db = require('./dbPostgres'); // Database pool for invitation/notification libraries
 
 // Initialize Figma service if API token is provided
 let figmaService = null;
@@ -224,13 +227,14 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Figma-Token', 'X-Requested-With'],
   exposedHeaders: ['Content-Type'],
+  optionsSuccessStatus: 200, // Some legacy browsers (IE11) choke on 204
   optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 }));
 
 // Rate limiting - general API protection (exclude auth endpoints)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Much higher limit for development
+  max: process.env.NODE_ENV === 'production' ? 500 : 1000, // 500 requests per 15 min in production
   skip: (req) => {
     // Skip rate limiting for auth endpoints (they have their own limits)
     return req.path.startsWith('/api/auth/');
@@ -356,8 +360,9 @@ async function autoCompleteOnboardingTasks(userId) {
       user.last_name,
       user.address,
       user.occupation,
-      user.parenting_philosophy,
-      user.personal_growth,
+      user.communication_style,
+      user.communication_triggers,
+      user.communication_goals,
       user.email
     ].filter(field => field && field.trim().length > 0).length;
 
@@ -552,18 +557,26 @@ io.on('connection', (socket) => {
         console.log(`✅ User has existing room: ${roomId}`);
       }
 
-      // Check if username is taken in this room
-      let isUserInRoom = false;
+      // Check if user is already connected in another tab/socket
+      // If so, disconnect the old connection to allow the new one
+      const existingSocketIds = [];
       for (const [socketId, userData] of activeUsers.entries()) {
         if (userData.roomId === roomId && userData.username.toLowerCase() === cleanUsername.toLowerCase() && socketId !== socket.id) {
-          isUserInRoom = true;
-          break;
+          existingSocketIds.push(socketId);
         }
       }
 
-      if (isUserInRoom) {
-        socket.emit('error', { message: 'You are already connected in another tab.' });
-        return;
+      // Disconnect old connections to allow new tab/connection
+      if (existingSocketIds.length > 0) {
+        console.log(`🔄 User ${cleanUsername} reconnecting - disconnecting ${existingSocketIds.length} old connection(s)`);
+        for (const oldSocketId of existingSocketIds) {
+          const oldSocket = io.sockets.sockets.get(oldSocketId);
+          if (oldSocket) {
+            oldSocket.emit('replaced_by_new_connection', { message: 'You opened this chat in another tab. This tab is now disconnected.' });
+            oldSocket.disconnect(true);
+          }
+          activeUsers.delete(oldSocketId);
+        }
       }
 
       // Join the Socket.io room
@@ -1212,6 +1225,16 @@ io.on('connection', (socket) => {
           // - aiMediator.analyzeAndIntervene()
           // All in ONE API call!
 
+          // Build role context for sender/receiver distinction (Feature 002)
+          // In a co-parenting room, the receiver is the other participant
+          const otherParticipants = participantUsernames.filter(
+            u => u.toLowerCase() !== user.username.toLowerCase()
+          );
+          const roleContext = {
+            senderId: user.username.toLowerCase(),
+            receiverId: otherParticipants.length > 0 ? otherParticipants[0].toLowerCase() : null
+          };
+
           const intervention = await aiMediator.analyzeMessage(
             message,
             recentMessages,  // Use recentMessages from database query above
@@ -1220,7 +1243,8 @@ io.on('connection', (socket) => {
             contactContextForAI,
             user.roomId,
             taskContextForAI,
-            flaggedMessagesContext
+            flaggedMessagesContext,
+            roleContext  // NEW: Role-aware context for sender/receiver distinction
           );
 
           // Check for names in message (only if message passed moderation)
@@ -1734,6 +1758,36 @@ io.on('connection', (socket) => {
     } catch (error) {
       console.error('Error recording intervention feedback:', error);
       socket.emit('error', { message: 'Failed to record feedback.' });
+    }
+  });
+
+  // Handle accepted rewrite (Feature 002: Sender Profile Mediation)
+  // Called when user clicks to use a suggested rewrite
+  socket.on('accept_rewrite', async ({ original, rewrite, tip }) => {
+    try {
+      const user = activeUsers.get(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before accepting rewrites.' });
+        return;
+      }
+
+      // Record the accepted rewrite in the sender's profile
+      const success = await aiMediator.recordAcceptedRewrite(user.username, {
+        original,
+        rewrite,
+        tip
+      });
+
+      if (success) {
+        socket.emit('rewrite_recorded', { success: true });
+        console.log(`📝 Accepted rewrite recorded for ${user.username}`);
+      } else {
+        console.log(`⚠️ Could not record accepted rewrite for ${user.username} (profile library not available)`);
+      }
+
+    } catch (error) {
+      console.error('Error recording accepted rewrite:', error);
+      // Non-critical - don't emit error to user
     }
   });
 
@@ -2401,7 +2455,7 @@ app.get('/api/debug/users', async (req, res) => {
     `);
 
     const users = result.rows || [];
-    
+
     const formattedUsers = users.map(user => ({
       id: user.id,
       username: user.username,
@@ -2846,6 +2900,858 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
+// ========================================
+// New Registration Flow with Required Co-Parent Invitation
+// Feature 003: Account Creation with Co-Parent Invitation
+// ========================================
+
+/**
+ * POST /api/auth/register
+ * New user registration with REQUIRED co-parent invitation
+ * This is the new primary signup flow that requires inviting a co-parent.
+ *
+ * Request body:
+ * - email: User's email (required)
+ * - password: User's password (required, min 4 chars)
+ * - displayName: User's display name (optional)
+ * - coParentEmail: Co-parent's email to invite (required)
+ * - context: Additional user context (optional)
+ *
+ * Response:
+ * - user: Created user object
+ * - invitation: Invitation details including token for email
+ * - token: JWT auth token
+ */
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, displayName, coParentEmail, context } = req.body;
+
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    if (!coParentEmail) {
+      return res.status(400).json({ error: 'Co-parent email is required to register' });
+    }
+
+    // Validate email formats
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanCoParentEmail = coParentEmail.trim().toLowerCase();
+
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    if (!emailRegex.test(cleanCoParentEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid co-parent email address' });
+    }
+
+    if (cleanEmail === cleanCoParentEmail) {
+      return res.status(400).json({ error: 'You cannot invite yourself as a co-parent' });
+    }
+
+    if (password.length < 4) {
+      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    }
+
+    // Register user with invitation
+    const result = await auth.registerWithInvitation({
+      email: cleanEmail,
+      password,
+      displayName,
+      coParentEmail: cleanCoParentEmail,
+      context: context || {}
+    }, db);
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        userId: result.user.id,
+        username: result.user.username,
+        email: result.user.email
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '90d' }
+    );
+
+    // Set httpOnly cookie
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 90 * 24 * 60 * 60 * 1000
+    });
+
+    // Send invitation email to co-parent (if not an existing user)
+    if (!result.invitation.isExistingUser) {
+      try {
+        const inviteUrl = `${process.env.APP_URL || 'https://coparentliaizen.com'}/accept-invite?token=${result.invitation.token}`;
+        await emailService.sendNewUserInvite(
+          result.invitation.inviteeEmail,
+          result.user.displayName || result.user.username,
+          inviteUrl,
+          'LiaiZen'
+        );
+        console.log(`✅ Invitation email sent to: ${result.invitation.inviteeEmail}`);
+      } catch (emailError) {
+        console.error('Error sending invitation email:', emailError);
+        // Don't fail registration if email fails - user can resend later
+      }
+    }
+
+    res.json({
+      success: true,
+      user: result.user,
+      invitation: {
+        id: result.invitation.id,
+        inviteeEmail: result.invitation.inviteeEmail,
+        isExistingUser: result.invitation.isExistingUser,
+        expiresAt: result.invitation.expiresAt
+      },
+      token
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+
+    if (error.message === 'Email already exists') {
+      return res.status(409).json({ error: 'An account with this email already exists' });
+    }
+    if (error.message.includes('Co-parent limit reached')) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.message.includes('active invitation already exists')) {
+      return res.status(409).json({ error: 'An invitation has already been sent to this email' });
+    }
+
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/auth/register-from-invite
+ * Register a new user from an invitation token
+ * Used when an invited person creates their account
+ */
+app.post('/api/auth/register-from-invite', async (req, res) => {
+  try {
+    const { token: inviteToken, email, password, displayName, context } = req.body;
+
+    // Validation
+    if (!inviteToken) {
+      return res.status(400).json({ error: 'Invitation token is required' });
+    }
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    if (password.length < 4) {
+      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    }
+
+    // Register from invitation
+    const result = await auth.registerFromInvitation({
+      token: inviteToken,
+      email: cleanEmail,
+      password,
+      displayName,
+      context: context || {}
+    }, db);
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        userId: result.user.id,
+        username: result.user.username,
+        email: result.user.email
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '90d' }
+    );
+
+    // Set httpOnly cookie
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 90 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({
+      success: true,
+      user: result.user,
+      coParent: result.coParent,
+      sharedRoom: result.sharedRoom,
+      token
+    });
+
+  } catch (error) {
+    console.error('Register from invite error:', error);
+
+    if (error.message === 'Email already exists') {
+      return res.status(409).json({ error: 'An account with this email already exists' });
+    }
+    if (error.message.includes('Invalid') || error.message.includes('expired')) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.message.includes('does not match')) {
+      return res.status(400).json({ error: 'Email does not match the invitation' });
+    }
+
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/auth/register-with-invite
+ * Unified endpoint that handles both token and short code registration
+ * Used by AcceptInvitationPage for new user registration
+ *
+ * Body parameters:
+ * - email: User's email (required)
+ * - password: User's password (required)
+ * - username: User's display name (required)
+ * - inviteToken: Invitation token (optional, provide either this or inviteCode)
+ * - inviteCode: Short invite code e.g., LZ-ABC123 (optional, provide either this or inviteToken)
+ */
+app.post('/api/auth/register-with-invite', async (req, res) => {
+  try {
+    const { email, password, username, inviteToken, inviteCode } = req.body;
+
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    if (!inviteToken && !inviteCode) {
+      return res.status(400).json({ error: 'Either inviteToken or inviteCode is required' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    if (password.length < 4) {
+      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    }
+
+    let result;
+
+    if (inviteCode) {
+      // Register using short code (no email matching required)
+      result = await auth.registerFromShortCode({
+        shortCode: inviteCode,
+        email: cleanEmail,
+        password,
+        displayName: username,
+        context: {}
+      }, db);
+    } else {
+      // Register using token (requires email matching)
+      result = await auth.registerFromInvitation({
+        token: inviteToken,
+        email: cleanEmail,
+        password,
+        displayName: username,
+        context: {}
+      }, db);
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        userId: result.user.id,
+        username: result.user.username,
+        email: result.user.email
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '90d' }
+    );
+
+    // Set httpOnly cookie
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 90 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({
+      success: true,
+      user: result.user,
+      coParent: result.coParent,
+      sharedRoom: result.sharedRoom,
+      token
+    });
+
+  } catch (error) {
+    console.error('Register with invite error:', error);
+
+    if (error.message === 'Email already exists') {
+      return res.status(409).json({ error: 'An account with this email already exists' });
+    }
+    if (error.message.includes('Invalid') || error.message.includes('expired')) {
+      return res.status(400).json({ error: error.message, code: 'INVALID_TOKEN' });
+    }
+    if (error.message.includes('does not match')) {
+      return res.status(400).json({ error: 'Email does not match the invitation', code: 'EMAIL_MISMATCH' });
+    }
+
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/invitations/validate/:token
+ * Validate an invitation token (check if valid, expired, etc.)
+ */
+app.get('/api/invitations/validate/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+
+    const validation = await invitationManager.validateToken(token, db);
+
+    if (!validation.valid) {
+      return res.status(400).json({
+        valid: false,
+        error: validation.error,
+        code: validation.code
+      });
+    }
+
+    res.json({
+      valid: true,
+      inviterName: validation.inviterName,
+      inviterEmail: validation.inviterEmail,
+      inviteeEmail: validation.invitation.invitee_email,
+      expiresAt: validation.invitation.expires_at
+    });
+
+  } catch (error) {
+    console.error('Validate invitation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/invitations/accept
+ * Accept an invitation (for existing users)
+ * Requires authentication
+ */
+app.post('/api/invitations/accept', verifyAuth, async (req, res) => {
+  try {
+    const { token } = req.body;
+    const userId = req.user.userId;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Invitation token is required' });
+    }
+
+    const result = await auth.acceptCoParentInvitation(token, userId, db);
+
+    res.json({
+      success: true,
+      ...result
+    });
+
+  } catch (error) {
+    console.error('Accept invitation error:', error);
+
+    if (error.message.includes('Invalid') || error.message.includes('expired')) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.message.includes('limit reached')) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/invitations/decline
+ * Decline an invitation (for existing users)
+ * Requires authentication
+ */
+app.post('/api/invitations/decline', verifyAuth, async (req, res) => {
+  try {
+    const { token } = req.body;
+    const userId = req.user.userId;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Invitation token is required' });
+    }
+
+    const result = await auth.declineCoParentInvitation(token, userId, db);
+
+    res.json({
+      success: true,
+      ...result
+    });
+
+  } catch (error) {
+    console.error('Decline invitation error:', error);
+
+    if (error.message.includes('Invalid') || error.message.includes('expired')) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/invitations
+ * Get user's sent and received invitations
+ * Requires authentication
+ */
+app.get('/api/invitations', verifyAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { status } = req.query;
+
+    const invitations = await invitationManager.getUserInvitations(userId, db, {
+      status: status || null
+    });
+
+    res.json(invitations);
+
+  } catch (error) {
+    console.error('Get invitations error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/invitations/resend/:id
+ * Resend an invitation (generates new token)
+ * Requires authentication
+ */
+app.post('/api/invitations/resend/:id', verifyAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    const result = await invitationManager.resendInvitation(parseInt(id, 10), userId, db);
+
+    // Get invitation details for email
+    const invitation = await invitationManager.getInvitationById(parseInt(id, 10), db);
+
+    // Send new invitation email
+    if (invitation && !invitation.invitee_id) {
+      try {
+        const inviteUrl = `${process.env.APP_URL || 'https://coparentliaizen.com'}/accept-invite?token=${result.token}`;
+        await emailService.sendNewUserInvite(
+          invitation.invitee_email,
+          invitation.inviter_name || 'Your co-parent',
+          inviteUrl,
+          'LiaiZen'
+        );
+        console.log(`✅ Invitation email resent to: ${invitation.invitee_email}`);
+      } catch (emailError) {
+        console.error('Error resending invitation email:', emailError);
+      }
+    }
+
+    res.json({
+      success: true,
+      invitation: result.invitation,
+      expiresAt: result.invitation.expires_at
+    });
+
+  } catch (error) {
+    console.error('Resend invitation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/invitations/:id
+ * Cancel an invitation
+ * Requires authentication
+ */
+app.delete('/api/invitations/:id', verifyAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    await invitationManager.cancelInvitation(parseInt(id, 10), userId, db);
+
+    res.json({
+      success: true,
+      message: 'Invitation cancelled'
+    });
+
+  } catch (error) {
+    console.error('Cancel invitation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/invitations/create
+ * Create a new invitation and get shareable link + short code
+ * User can share these themselves (SMS, WhatsApp, email, etc.)
+ * Requires authentication
+ */
+app.post('/api/invitations/create', verifyAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { inviteeEmail } = req.body;
+
+    // Email is optional for creating an invitation
+    // If not provided, we create a generic invite that anyone can use
+    const result = await invitationManager.createInvitation({
+      inviterId: userId,
+      inviteeEmail: inviteeEmail || `pending-${Date.now()}@placeholder.local`,
+    }, db);
+
+    const frontendUrl = process.env.APP_URL || 'https://coparentliaizen.com';
+    const inviteUrl = `${frontendUrl}/accept-invite?token=${result.token}`;
+
+    // Get inviter name for the shareable message
+    const inviterResult = await db.query('SELECT username, email, first_name, last_name, display_name FROM users WHERE id = $1', [userId]);
+    const inviterUser = inviterResult.rows[0];
+    const inviterName = inviterUser?.display_name ||
+      (inviterUser?.first_name ? `${inviterUser.first_name} ${inviterUser.last_name || ''}`.trim() : null) ||
+      inviterUser?.username ||
+      'Your co-parent';
+
+    // Send email if address was provided
+    let emailSent = false;
+    if (inviteeEmail && inviteeEmail.includes('@')) {
+      try {
+        await emailService.sendNewUserInvite(
+          inviteeEmail,
+          inviterName,
+          result.token, // Pass token directly, emailService constructs URL
+          'LiaiZen'
+        );
+        emailSent = true;
+        console.log(`✅ Invitation email sent to: ${inviteeEmail}`);
+      } catch (emailError) {
+        console.error('Error sending invitation email:', emailError);
+        // Don't fail the request, just note that email failed
+      }
+    }
+
+    res.json({
+      success: true,
+      inviteUrl,
+      shortCode: result.shortCode,
+      token: result.token,
+      expiresAt: result.invitation.expires_at,
+      invitationId: result.invitation.id,
+      emailSent,
+      // Pre-built shareable message
+      shareableMessage: `Hi! I'm using LiaiZen to help us communicate better for our kids. Join me using this link: ${inviteUrl}\n\nOr if you already have an account, use invite code: ${result.shortCode}`,
+      inviterName,
+    });
+
+  } catch (error) {
+    console.error('Create invitation error:', error);
+
+    if (error.message.includes('limit reached')) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.message.includes('already exists')) {
+      return res.status(409).json({ error: error.message });
+    }
+
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/invitations/validate-code/:code
+ * Validate a short invite code (e.g., LZ-ABC123)
+ */
+app.get('/api/invitations/validate-code/:code', async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    if (!code) {
+      return res.status(400).json({ error: 'Invite code is required' });
+    }
+
+    const validation = await invitationManager.validateByShortCode(code, db);
+
+    if (!validation.valid) {
+      return res.status(400).json({
+        valid: false,
+        error: validation.error,
+        code: validation.code
+      });
+    }
+
+    res.json({
+      valid: true,
+      inviterName: validation.inviterName,
+      inviterEmail: validation.inviterEmail,
+      inviteeEmail: validation.invitation.invitee_email,
+      expiresAt: validation.invitation.expires_at
+    });
+
+  } catch (error) {
+    console.error('Validate short code error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/invitations/accept-code
+ * Accept an invitation by short code (for existing users)
+ * Requires authentication
+ */
+app.post('/api/invitations/accept-code', verifyAuth, async (req, res) => {
+  try {
+    const { code } = req.body;
+    const userId = req.user.userId;
+
+    if (!code) {
+      return res.status(400).json({ error: 'Invite code is required' });
+    }
+
+    const result = await invitationManager.acceptByShortCode(code, userId, db);
+
+    // Create shared room if not exists
+    let sharedRoom = null;
+    if (result.roomId) {
+      sharedRoom = { id: result.roomId };
+    } else {
+      // Create a new shared room for the co-parents
+      const roomId = `room_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      await db.query(
+        'INSERT INTO rooms (id, name, created_by, is_private) VALUES ($1, $2, $3, 1)',
+        [roomId, 'Co-Parent Chat', result.inviterId]
+      );
+
+      // Add both users as members
+      await db.query(
+        'INSERT INTO room_members (room_id, user_id, role) VALUES ($1, $2, $3), ($1, $4, $3)',
+        [roomId, result.inviterId, 'coparent', userId]
+      );
+
+      sharedRoom = { id: roomId, name: 'Co-Parent Chat' };
+    }
+
+    res.json({
+      success: true,
+      invitation: result.invitation,
+      sharedRoom
+    });
+
+  } catch (error) {
+    console.error('Accept by short code error:', error);
+
+    if (error.message.includes('limit reached')) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/invitations/my-invite
+ * Get the current user's active outgoing invitation (if any)
+ * Requires authentication
+ */
+app.get('/api/invitations/my-invite', verifyAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Get user's active pending invitation
+    const result = await db.query(
+      `SELECT i.*, u.username as invitee_name, u.email as invitee_email_user
+       FROM invitations i
+       LEFT JOIN users u ON i.invitee_id = u.id
+       WHERE i.inviter_id = $1 AND i.status = 'pending'
+       ORDER BY i.created_at DESC
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ hasInvite: false });
+    }
+
+    const invitation = result.rows[0];
+    const frontendUrl = process.env.APP_URL || 'https://coparentliaizen.com';
+
+    res.json({
+      hasInvite: true,
+      invitation: {
+        id: invitation.id,
+        shortCode: invitation.short_code,
+        inviteeEmail: invitation.invitee_email,
+        status: invitation.status,
+        expiresAt: invitation.expires_at,
+        createdAt: invitation.created_at,
+      },
+      inviteUrl: `${frontendUrl}/accept-invite?token=${invitation.token_hash}`, // Note: this won't work - need actual token
+    });
+
+  } catch (error) {
+    console.error('Get my invite error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// In-App Notifications API
+// Feature 003: Notifications for existing users
+// ========================================
+
+/**
+ * GET /api/notifications
+ * Get user's notifications
+ * Requires authentication
+ */
+app.get('/api/notifications', verifyAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { unreadOnly, type, limit, offset } = req.query;
+
+    const notifications = await notificationManager.getNotifications(userId, db, {
+      unreadOnly: unreadOnly === 'true',
+      type: type || null,
+      limit: parseInt(limit, 10) || 50,
+      offset: parseInt(offset, 10) || 0
+    });
+
+    res.json(notifications);
+
+  } catch (error) {
+    console.error('Get notifications error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/notifications/unread-count
+ * Get unread notification count
+ * Requires authentication
+ */
+app.get('/api/notifications/unread-count', verifyAuth, async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    
+    // Validate userId
+    if (!userId) {
+      console.error('Get unread count: userId not found in request');
+      return res.status(200).json({ count: 0 });
+    }
+    
+    // Validate db
+    if (!db || typeof db.query !== 'function') {
+      console.error('Get unread count: Database not available');
+      return res.status(200).json({ count: 0 });
+    }
+    
+    const count = await notificationManager.getUnreadCount(userId, db);
+    res.json({ count });
+
+  } catch (error) {
+    console.error('Get unread count error:', error);
+    // Always return 200 with count 0 to prevent UI issues
+    res.status(200).json({ count: 0 });
+  }
+});
+
+/**
+ * PATCH /api/notifications/:id/read
+ * Mark a notification as read
+ * Requires authentication
+ */
+app.patch('/api/notifications/:id/read', verifyAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    const notification = await notificationManager.markAsRead(parseInt(id, 10), userId, db);
+
+    res.json(notification);
+
+  } catch (error) {
+    console.error('Mark notification read error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/notifications/mark-all-read
+ * Mark all notifications as read
+ * Requires authentication
+ */
+app.post('/api/notifications/mark-all-read', verifyAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const count = await notificationManager.markAllAsRead(userId, db);
+
+    res.json({
+      success: true,
+      markedCount: count
+    });
+
+  } catch (error) {
+    console.error('Mark all read error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/notifications/:id/action
+ * Record action taken on a notification
+ * Requires authentication
+ */
+app.post('/api/notifications/:id/action', verifyAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action } = req.body;
+    const userId = req.user.userId;
+
+    if (!action) {
+      return res.status(400).json({ error: 'Action is required' });
+    }
+
+    const notification = await notificationManager.recordAction(
+      parseInt(id, 10),
+      userId,
+      action,
+      db
+    );
+
+    res.json(notification);
+
+  } catch (error) {
+    console.error('Record action error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Duplicate signup endpoint removed - using the one at line 2847 instead
+
 // Login
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -2861,19 +3767,38 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
-    const user = await auth.authenticateUserByEmail(email, password);
-    if (!user) {
-      // Log the attempt for debugging
-      console.log(`❌ Login failed for email: ${email.trim().toLowerCase()}`);
+    let user;
+    try {
+      user = await auth.authenticateUserByEmail(email, password);
+    } catch (authError) {
+      // Handle specific authentication errors
+      if (authError.code === 'ACCOUNT_NOT_FOUND') {
+        return res.status(404).json({ 
+          error: 'No account found with this email',
+          code: 'ACCOUNT_NOT_FOUND'
+        });
+      }
+      if (authError.code === 'OAUTH_ONLY_ACCOUNT') {
+        return res.status(403).json({ 
+          error: authError.message,
+          code: 'OAUTH_ONLY_ACCOUNT'
+        });
+      }
+      if (authError.code === 'INVALID_PASSWORD') {
+        return res.status(401).json({ 
+          error: 'Incorrect password',
+          code: 'INVALID_PASSWORD'
+        });
+      }
+      // Generic authentication failure
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     // Generate JWT token with 30-day expiration for persistent sessions
     const token = jwt.sign(
       {
-        userId: user.id,
-        username: user.username,
-        email: user.email
+        id: user.id,
+        username: user.username
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '30d' }
@@ -2890,11 +3815,44 @@ app.post('/api/auth/login', async (req, res) => {
     // Also return token in response for compatibility (frontend can use this if cookies don't work)
     res.json({
       success: true,
-      user,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        displayName: user.displayName
+      },
       token // Include token in response for backward compatibility
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Error logging in' });
+  }
+});
+
+// Get current user
+app.get('/api/auth/user', verifyAuth, async (req, res) => {
+  try {
+    // Get fresh user data
+    const user = await auth.getUser(req.user.username);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName, // Ensure these are returned by auth.getUser
+      lastName: user.lastName,
+      displayName: user.displayName,
+      context: user.context
+    });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Error fetching user data' });
   }
 });
 
@@ -2960,15 +3918,24 @@ app.get('/api/auth/google', (req, res) => {
     return res.status(500).json({ error: 'Google OAuth not configured' });
   }
 
+  // Get state parameter from query (for CSRF protection)
+  const state = req.query.state;
+
   // Use frontend URL for redirect (Google redirects to frontend, frontend sends code to backend)
   const frontendUrl = getFrontendUrl(req);
   const redirectUri = `${frontendUrl}/auth/google/callback`;
   const scope = 'openid email profile';
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+  
+  // Build auth URL with state parameter if provided
+  let authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
     `redirect_uri=${encodeURIComponent(redirectUri)}&` +
     `response_type=code&` +
     `scope=${encodeURIComponent(scope)}`;
+  
+  if (state) {
+    authUrl += `&state=${encodeURIComponent(state)}`;
+  }
 
   res.json({ authUrl });
 });
@@ -2997,6 +3964,13 @@ app.post('/api/auth/google/callback', async (req, res) => {
       return res.status(500).json({ error: 'Google OAuth not configured' });
     }
 
+    // Log OAuth configuration for debugging (without exposing secrets)
+    console.log('🔐 Google OAuth callback - Configuration:');
+    console.log(`   Client ID: ${GOOGLE_CLIENT_ID.substring(0, 20)}...`);
+    console.log(`   Redirect URI: ${redirectUri}`);
+    console.log(`   Frontend URL: ${frontendUrl}`);
+    console.log(`   Code received: ${code.substring(0, 20)}...`);
+
     // Exchange authorization code for tokens
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -3014,12 +3988,27 @@ app.post('/api/auth/google/callback', async (req, res) => {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json();
-      console.error('Token exchange error:', errorData);
-      return res.status(401).json({ error: 'Failed to exchange authorization code' });
+      console.error('❌ Google token exchange failed:');
+      console.error('   Status:', tokenResponse.status, tokenResponse.statusText);
+      console.error('   Error details:', JSON.stringify(errorData, null, 2));
+      console.error('   Redirect URI used:', redirectUri);
+      console.error('   This usually means:');
+      console.error('   1. Authorization code was already used (codes are single-use)');
+      console.error('   2. Redirect URI mismatch between auth request and token exchange');
+      console.error('   3. Authorization code expired (they expire in ~10 minutes)');
+
+      // Return more specific error to frontend
+      const errorMessage = errorData.error_description || errorData.error || 'Failed to exchange authorization code';
+      return res.status(401).json({
+        error: 'Google authentication failed',
+        details: errorMessage,
+        hint: 'Please try signing in again. If the problem persists, check that the redirect URI is configured correctly in Google Cloud Console.'
+      });
     }
 
     const tokenData = await tokenResponse.json();
     const { access_token } = tokenData;
+    console.log('✅ Google token exchange successful');
 
     // Get user info from Google
     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -3029,14 +4018,17 @@ app.post('/api/auth/google/callback', async (req, res) => {
     });
 
     if (!userInfoResponse.ok) {
+      console.error('❌ Failed to get user info from Google:', userInfoResponse.status);
       return res.status(401).json({ error: 'Failed to get user info from Google' });
     }
 
     const googleUser = await userInfoResponse.json();
     const { id: googleId, email, name, picture } = googleUser;
+    console.log(`✅ Google user info retrieved: ${email}`);
 
     // Get or create user
     const user = await auth.getOrCreateGoogleUser(googleId, email, name, picture);
+    console.log(`✅ User authenticated: ${user.username} (${user.email})`);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -3054,16 +4046,18 @@ app.post('/api/auth/google/callback', async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 90 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days
     });
 
+    console.log('✅ Google OAuth login complete - redirecting to dashboard');
     res.json({
       success: true,
       user,
       token,
     });
   } catch (error) {
-    console.error('Google OAuth callback error:', error);
+    console.error('❌ Google OAuth callback error:', error);
+    console.error('   Stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -3490,7 +4484,7 @@ app.post('/api/tasks/:taskId/duplicate', async (req, res) => {
   }
 });
 
-// Get dashboard updates (recent activity from co-parent and children)
+// Get dashboard updates (aggregated activity: messages, expenses, agreements, invites)
 app.get('/api/dashboard/updates', async (req, res) => {
   try {
     const username = req.query.username;
@@ -3508,118 +4502,197 @@ app.get('/api/dashboard/updates', async (req, res) => {
 
     const userId = users[0].id;
     const updates = [];
+    const dbPostgres = require('./dbPostgres');
 
     // Get user's room to find co-parent
     const userRoom = await roomManager.getUserRoom(userId);
     if (userRoom) {
-      const roomMembers = await roomManager.getRoomMembers(userRoom.roomId);
-      const coparentMember = roomMembers.find(m => m.user_id !== userId);
+      const userEmail = users[0].email;
+      const dbPostgres = require('./dbPostgres'); // Assuming dbPostgres is used for these queries
 
-      if (coparentMember) {
-        // Get co-parent user info
-        const coparentUsers = await dbSafe.safeSelect('users', { id: coparentMember.user_id }, { limit: 1 });
-
-        if (coparentUsers.length > 0) {
-          const coparentUsername = coparentUsers[0].username;
-
-          // Get recent messages from co-parent (last 48 hours)
-          const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-          const dbPostgres = require('./dbPostgres');
-          const messagesQuery = `
-            SELECT * FROM messages
-            WHERE room_id = $1
-            AND username = $2
-            AND timestamp > $3
-            ORDER BY timestamp DESC
-            LIMIT 5
-          `;
-          const messagesResult = await dbPostgres.query(messagesQuery, [userRoom.roomId, coparentUsername, twoDaysAgo]);
-          const messages = messagesResult.rows;
-
-          messages.forEach(msg => {
-            updates.push({
-              personName: coparentUsername,
-              type: 'message',
-              description: msg.text || 'Sent a message',
-              timestamp: msg.timestamp
-            });
-          });
-
-          // Get recent task completions by co-parent
-          const coparentTasksQuery = `
-            SELECT * FROM tasks
-            WHERE user_id = $1
-            AND status = 'completed'
-            AND completed_at > $2
-            ORDER BY completed_at DESC
-            LIMIT 3
-          `;
-          const tasksResult = await dbPostgres.query(coparentTasksQuery, [coparentMember.user_id, twoDaysAgo]);
-          const completedTasks = tasksResult.rows;
-
-          completedTasks.forEach(task => {
-            updates.push({
-              personName: coparentUsername,
-              type: 'task',
-              description: `Completed: ${task.title}`,
-              timestamp: task.completed_at || task.updated_at
-            });
-          });
-        }
-      }
-    }
-
-    // Get children contacts and their activity
-    const childrenContacts = await dbSafe.safeSelect('contacts', {
-      user_id: userId,
-      relationship: 'My Child'
-    }, {});
-
-    // Also check for "My Partner's Child" relationship
-    const partnerChildrenResult = await dbSafe.safeSelect('contacts', {
-      user_id: userId
-    }, {});
-    const allChildren = partnerChildrenResult.filter(
-      c => c.relationship === 'My Child' || c.relationship === "My Partner's Child"
-    );
-
-    // Get recent tasks related to children (could be enhanced with child-specific task tracking)
-    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    const dbPostgres = require('./dbPostgres');
-    const recentTasksQuery = `
-      SELECT * FROM tasks
-      WHERE user_id = $1
-      AND created_at > $2
-      AND (title ILIKE $3 OR title ILIKE $4 OR description ILIKE $3 OR description ILIKE $4)
-      ORDER BY created_at DESC
-      LIMIT 3
+      // Fetch recent messages (limit 5)
+      // Join with users table to get sender name
+      const messagesQuery = `
+      SELECT m.*, u.username as sender_name, u.first_name, u.last_name, u.display_name
+      FROM messages m
+      JOIN users u ON m.sender_id = u.id
+      WHERE m.room_id IN (SELECT room_id FROM room_members WHERE user_id = $1)
+      AND m.sender_id != $1
+      ORDER BY m.timestamp DESC
+      LIMIT 5
     `;
-    const childTasksResult = await dbPostgres.query(recentTasksQuery, [userId, twoDaysAgo, '%child%', '%children%']);
-    const childTasks = childTasksResult.rows;
+      const messagesRes = await dbPostgres.query(messagesQuery, [userId]);
 
-    childTasks.forEach(task => {
-      // Try to match to a child contact
-      const relatedChild = allChildren.find(c =>
-        task.title.toLowerCase().includes(c.contact_name?.toLowerCase() || '') ||
-        task.description?.toLowerCase().includes(c.contact_name?.toLowerCase() || '')
-      );
+      const messageUpdates = messagesRes.rows.map(msg => ({
+        type: 'message',
+        description: msg.content,
+        timestamp: msg.timestamp,
+        personName: msg.display_name || (msg.first_name ? `${msg.first_name} ${msg.last_name || ''}`.trim() : msg.sender_name),
+        id: msg.id
+      }));
 
-      updates.push({
-        personName: relatedChild?.contact_name || 'Your Child',
-        type: 'task',
-        description: `New task: ${task.title}`,
-        timestamp: task.created_at
-      });
-    });
+      // Fetch recent expenses (limit 3)
+      let expenseUpdates = [];
+      try {
+        const expensesQuery = `
+        SELECT e.*, u.username as requester_name, u.first_name, u.last_name, u.display_name
+        FROM expenses e
+        JOIN users u ON e.requested_by = u.id
+        WHERE e.room_id IN (SELECT room_id FROM room_members WHERE user_id = $1)
+        ORDER BY e.updated_at DESC
+        LIMIT 3
+      `;
+        const expensesRes = await dbPostgres.query(expensesQuery, [userId]);
 
-    // Sort updates by timestamp (most recent first) and limit to 10
-    updates.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    const limitedUpdates = updates.slice(0, 10);
+        expenseUpdates = expensesRes.rows.map(exp => {
+          const isMe = exp.requested_by === userId;
+          const personName = exp.display_name || (exp.first_name ? `${exp.first_name} ${exp.last_name || ''}`.trim() : exp.requester_name);
+          let description = '';
 
-    res.json({
-      success: true,
-      updates: limitedUpdates
-    });
+          if (exp.status === 'pending') {
+            description = isMe ? `You requested $${exp.amount} for ${exp.description}` : `${personName} requested $${exp.amount} for ${exp.description}`;
+          } else if (exp.status === 'approved') {
+            description = `Expense for ${exp.description} was approved`;
+          } else if (exp.status === 'declined') {
+            description = `Expense for ${exp.description} was declined`;
+          }
+
+          return {
+            type: 'expense',
+            description,
+            timestamp: exp.updated_at,
+            personName: isMe ? 'You' : personName,
+            id: exp.id,
+            status: exp.status
+          };
+        });
+      } catch (err) {
+        console.warn('Could not fetch expenses:', err.message);
+      }
+
+      // Fetch recent agreements (limit 3)
+      let agreementUpdates = [];
+      try {
+        const agreementsQuery = `
+        SELECT a.*, u.username as proposer_name, u.first_name, u.last_name, u.display_name
+        FROM agreements a
+        JOIN users u ON a.proposed_by = u.id
+        WHERE a.room_id IN (SELECT room_id FROM room_members WHERE user_id = $1)
+        ORDER BY a.updated_at DESC
+        LIMIT 3
+      `;
+        const agreementsRes = await dbPostgres.query(agreementsQuery, [userId]);
+
+        agreementUpdates = agreementsRes.rows.map(agr => {
+          const isMe = agr.proposed_by === userId;
+          const personName = agr.display_name || (agr.first_name ? `${agr.first_name} ${agr.last_name || ''}`.trim() : agr.proposer_name);
+          let description = '';
+
+          if (agr.status === 'proposed') {
+            description = isMe ? `You proposed: ${agr.title}` : `${personName} proposed: ${agr.title}`;
+          } else if (agr.status === 'agreed') {
+            description = `Agreement reached: ${agr.title}`;
+          } else if (agr.status === 'rejected') {
+            description = `Agreement declined: ${agr.title}`;
+          }
+
+          return {
+            type: 'agreement',
+            description,
+            timestamp: agr.updated_at,
+            personName: isMe ? 'You' : personName,
+            id: agr.id,
+            status: agr.status
+          };
+        });
+      } catch (err) {
+        console.warn('Could not fetch agreements:', err.message);
+      }
+
+      // Fetch invitation status changes (limit 3)
+      let inviteUpdates = [];
+      try {
+        // Check for invites sent by me that were accepted/declined
+        const sentInvitesQuery = `
+        SELECT i.*, u.username as invitee_name, u.first_name, u.last_name, u.display_name
+        FROM invitations i
+        LEFT JOIN users u ON i.invitee_email = u.email
+        WHERE i.inviter_id = $1 AND i.status IN ('accepted', 'declined')
+        ORDER BY i.updated_at DESC
+        LIMIT 3
+      `;
+        const sentInvitesRes = await dbPostgres.query(sentInvitesQuery, [userId]);
+        sentInvitesRes.rows.forEach(inv => {
+          let desc = '';
+          const person = inv.display_name || (inv.first_name ? `${inv.first_name} ${inv.last_name || ''}`.trim() : inv.invitee_name || inv.invitee_email);
+          if (inv.status === 'accepted') {
+            desc = `${person} accepted your invitation.`;
+          } else if (inv.status === 'declined') {
+            desc = `${person} declined your invitation.`;
+          }
+
+          if (desc) {
+            inviteUpdates.push({
+              type: 'invite',
+              personName: person,
+              description: desc,
+              timestamp: inv.updated_at || inv.created_at,
+              status: inv.status,
+              id: inv.id
+            });
+          }
+        });
+
+        // Check for invites received by me that were accepted/declined by me
+        const receivedInvitesQuery = `
+        SELECT i.*, u.username as inviter_name, u.first_name, u.last_name, u.display_name
+        FROM invitations i
+        JOIN users u ON i.inviter_id = u.id
+        WHERE i.invitee_email = $1 AND i.status IN ('accepted', 'declined')
+        ORDER BY i.updated_at DESC
+        LIMIT 3
+      `;
+        const receivedInvitesRes = await dbPostgres.query(receivedInvitesQuery, [userEmail]);
+        receivedInvitesRes.rows.forEach(inv => {
+          let desc = '';
+          const person = inv.display_name || (inv.first_name ? `${inv.first_name} ${inv.last_name || ''}`.trim() : inv.inviter_name);
+          if (inv.status === 'accepted') {
+            desc = `You accepted ${person}'s invitation.`;
+          } else if (inv.status === 'declined') {
+            desc = `You declined ${person}'s invitation.`;
+          }
+
+          if (desc) {
+            inviteUpdates.push({
+              type: 'invite',
+              personName: person,
+              description: desc,
+              timestamp: inv.updated_at || inv.created_at,
+              status: inv.status,
+              id: inv.id
+            });
+          }
+        });
+      } catch (err) {
+        console.warn('Invitations query failed:', err.message);
+      }
+
+      // Aggregate all updates
+      const allUpdates = [
+        ...messageUpdates,
+        ...expenseUpdates,
+        ...agreementUpdates,
+        ...inviteUpdates
+      ];
+
+      // Sort by timestamp (newest first)
+      allUpdates.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      // Limit to top 15
+      const limitedUpdates = allUpdates.slice(0, 15);
+
+      res.json({ updates: limitedUpdates });
+    }
   } catch (error) {
     console.error('Error fetching dashboard updates:', error);
     res.status(500).json({ error: error.message });
@@ -4130,8 +5203,9 @@ app.get('/api/user/profile', async (req, res) => {
       address: user.address || null,
       household_members: user.household_members || null,
       occupation: user.occupation || null,
-      parenting_philosophy: user.parenting_philosophy || null,
-      personal_growth: user.personal_growth || null
+      communication_style: user.communication_style || null,
+      communication_triggers: user.communication_triggers || null,
+      communication_goals: user.communication_goals || null
     });
   } catch (error) {
     console.error('Error fetching profile:', error);
@@ -4147,13 +5221,14 @@ app.put('/api/user/profile', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body. Request may be too large.' });
     }
 
-    const { currentUsername, username, email, first_name, last_name, address, household_members, occupation, parenting_philosophy, personal_growth } = req.body;
+    const { currentUsername, username, email, first_name, last_name, address, household_members, occupation, communication_style, communication_triggers, communication_goals } = req.body;
 
     // Debug logging
     console.log('Profile update request:', {
       currentUsername,
-      hasPersonalGrowth: personal_growth !== undefined,
-      personalGrowthLength: personal_growth ? personal_growth.length : 0,
+      hasCommunicationStyle: communication_style !== undefined,
+      hasCommunicationTriggers: communication_triggers !== undefined,
+      hasCommunicationGoals: communication_goals !== undefined,
       requestBodySize: JSON.stringify(req.body).length
     });
 
@@ -4216,8 +5291,9 @@ app.put('/api/user/profile', async (req, res) => {
       address: 500,
       household_members: 1000,
       occupation: 200,
-      parenting_philosophy: 5000,
-      personal_growth: 10000
+      communication_style: 1000,
+      communication_triggers: 1000,
+      communication_goals: 1000
     };
 
     if (first_name !== undefined) {
@@ -4255,25 +5331,26 @@ app.put('/api/user/profile', async (req, res) => {
       }
       updateData.occupation = trimmed;
     }
-    if (parenting_philosophy !== undefined) {
-      const trimmed = parenting_philosophy != null ? String(parenting_philosophy).trim() : null;
-      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.parenting_philosophy) {
-        return res.status(400).json({ error: `Parenting philosophy must be ${MAX_FIELD_LENGTHS.parenting_philosophy} characters or less` });
+    if (communication_style !== undefined) {
+      const trimmed = communication_style != null ? String(communication_style).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.communication_style) {
+        return res.status(400).json({ error: `Communication style must be ${MAX_FIELD_LENGTHS.communication_style} characters or less` });
       }
-      updateData.parenting_philosophy = trimmed;
+      updateData.communication_style = trimmed;
     }
-    if (personal_growth !== undefined) {
-      // Handle personal_growth - preserve empty strings
-      const trimmed = personal_growth != null ? String(personal_growth).trim() : null;
-      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.personal_growth) {
-        return res.status(400).json({ error: `Personal growth must be ${MAX_FIELD_LENGTHS.personal_growth} characters or less` });
+    if (communication_triggers !== undefined) {
+      const trimmed = communication_triggers != null ? String(communication_triggers).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.communication_triggers) {
+        return res.status(400).json({ error: `Communication triggers must be ${MAX_FIELD_LENGTHS.communication_triggers} characters or less` });
       }
-      updateData.personal_growth = trimmed;
-      console.log('Updating personal_growth:', {
-        original: personal_growth,
-        processed: updateData.personal_growth,
-        length: updateData.personal_growth ? updateData.personal_growth.length : 0
-      });
+      updateData.communication_triggers = trimmed;
+    }
+    if (communication_goals !== undefined) {
+      const trimmed = communication_goals != null ? String(communication_goals).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.communication_goals) {
+        return res.status(400).json({ error: `Communication goals must be ${MAX_FIELD_LENGTHS.communication_goals} characters or less` });
+      }
+      updateData.communication_goals = trimmed;
     }
 
     // Check email uniqueness if email is being updated
@@ -5241,27 +6318,46 @@ app.get('/api/room/members/check', verifyAuth, async (req, res) => {
 
     const user = await auth.getUser(username);
     if (!user || !user.id) {
+      console.log(`[room/members/check] User not found: ${username}`);
       return res.status(404).json({ error: 'User not found' });
     }
 
-    let room = user.room;
-    if (!room) {
-      room = await roomManager.getUserRoom(user.id);
-    }
-    if (!room) {
+    // Try to get user's room
+    let room = null;
+    try {
+      room = user.room || await roomManager.getUserRoom(user.id);
+    } catch (roomError) {
+      console.error(`[room/members/check] Error getting user room for ${user.id}:`, roomError);
+      // If user has no room, that's okay - return default response
       return res.json({ hasMultipleMembers: false, memberCount: 0 });
     }
 
-    const members = await roomManager.getRoomMembers(room.roomId);
-    const hasMultipleMembers = members.length >= 2;
+    if (!room || !room.roomId) {
+      // User has no room - this is normal for new users
+      return res.json({ hasMultipleMembers: false, memberCount: 0 });
+    }
+
+    // Get room members
+    let members = [];
+    try {
+      members = await roomManager.getRoomMembers(room.roomId);
+    } catch (membersError) {
+      console.error(`[room/members/check] Error getting room members for room ${room.roomId}:`, membersError);
+      // If we can't get members, assume no multiple members
+      return res.json({ hasMultipleMembers: false, memberCount: 0 });
+    }
+
+    const hasMultipleMembers = members && members.length >= 2;
 
     res.json({
       hasMultipleMembers,
-      memberCount: members.length,
+      memberCount: members ? members.length : 0,
     });
   } catch (error) {
-    console.error('Error checking room members:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[room/members/check] Unexpected error:', error);
+    console.error('[room/members/check] Error stack:', error.stack);
+    // Return safe default instead of 500 error
+    res.json({ hasMultipleMembers: false, memberCount: 0 });
   }
 });
 

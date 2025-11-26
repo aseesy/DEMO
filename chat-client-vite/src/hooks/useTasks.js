@@ -5,7 +5,7 @@ import { apiGet, apiPost, apiPut } from '../apiClient.js';
 // This focuses on loading tasks, limiting to 5, toggling status,
 // and creating/updating tasks.
 
-export function useTasks(username) {
+export function useTasks(username, isAuthenticated = true) {
   const [tasks, setTasks] = React.useState([]);
   const [isLoadingTasks, setIsLoadingTasks] = React.useState(false);
   const [taskSearch, setTaskSearch] = React.useState('');
@@ -23,7 +23,10 @@ export function useTasks(username) {
   });
 
   const loadTasks = React.useCallback(async () => {
-    if (!username) return;
+    if (!username || !isAuthenticated) {
+      setTasks([]);
+      return;
+    }
     setIsLoadingTasks(true);
     try {
       const params = new URLSearchParams({
@@ -56,17 +59,26 @@ export function useTasks(username) {
             setTasks(sorted);
           }
         }
+      } else if (response.status === 401) {
+        // User not authenticated - silently ignore
+        setTasks([]);
       }
     } catch (err) {
       console.error('Error loading tasks (Vite):', err);
     } finally {
       setIsLoadingTasks(false);
     }
-  }, [username, taskFilter, taskSearch]);
+  }, [username, taskFilter, taskSearch, isAuthenticated]);
 
   React.useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
+    // Only load tasks if authenticated and username is available
+    // This prevents race conditions during auth verification
+    if (isAuthenticated && username) {
+      loadTasks();
+    } else {
+      setTasks([]);
+    }
+  }, [loadTasks, isAuthenticated, username]);
 
   const toggleTaskStatus = async (task) => {
     if (!task?.id || !username) return;

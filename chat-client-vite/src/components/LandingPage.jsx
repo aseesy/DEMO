@@ -294,7 +294,7 @@ export function LandingPage({ onGetStarted }) {
                 }}
                 variant="teal-outline"
                 size="large"
-                className="w-full sm:w-auto border-2 hover:bg-teal-lightest transition-all duration-300"
+                className="w-full sm:w-auto border hover:bg-teal-lightest transition-all duration-300"
               >
                 Learn More
               </Button>
@@ -753,7 +753,7 @@ export function LandingPage({ onGetStarted }) {
                 </p>
               </div>
             </div>
-            <div className="mt-12 text-center">
+            <div className="mt-12 flex justify-center">
               <Button
                 onClick={() => {
                   trackCTAClick('how_it_works', 'Get Started', 'middle');
@@ -1314,10 +1314,10 @@ export function LandingPage({ onGetStarted }) {
 
             {/* Links */}
             <div className="flex gap-6 text-sm">
-              <a href="/privacy.html" className="text-gray-600 hover:text-teal-medium transition-colors">
+              <a href="/privacy" className="text-gray-600 hover:text-teal-medium transition-colors">
                 Privacy Policy
               </a>
-              <a href="/terms.html" className="text-gray-600 hover:text-teal-medium transition-colors">
+              <a href="/terms" className="text-gray-600 hover:text-teal-medium transition-colors">
                 Terms of Service
               </a>
               <a href="/contact.html" className="text-gray-600 hover:text-teal-medium transition-colors">

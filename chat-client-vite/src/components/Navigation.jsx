@@ -1,7 +1,9 @@
 import React from 'react';
 import { Button } from './ui';
+import { NotificationBell } from './NotificationBell.jsx';
+import { NotificationsPanel } from './NotificationsPanel.jsx';
 
-export function Navigation({ currentView, setCurrentView, onLogout, unreadCount = 0, hasMeanMessage = false }) {
+export function Navigation({ currentView, setCurrentView, onLogout, unreadCount = 0, hasMeanMessage = false, notificationCount = 0, onInvitationAccepted }) {
   const navItems = [
     {
       id: 'dashboard',
@@ -24,6 +26,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
   ];
 
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const menuRefs = React.useRef([]);
   const menuButtonRef = React.useRef(null);
   const menuItemRefs = React.useRef([]);
@@ -267,7 +270,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
   return (
     <>
       {/* Top Navigation - Desktop Only */}
-      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-10">
             {/* Navigation Items */}
@@ -301,20 +304,42 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
               })}
             </div>
 
-            {/* Logo as Menu Button */}
-            {renderMenuButton(0, { placement: 'bottom' })}
+            {/* Right side: Notifications + Menu */}
+            <div className="flex items-center gap-2">
+              {/* Notification Bell */}
+              <div className="relative">
+                <NotificationBell
+                  unreadCount={notificationCount}
+                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                  isOpen={isNotificationsOpen}
+                />
+                <NotificationsPanel
+                  isOpen={isNotificationsOpen}
+                  onClose={() => setIsNotificationsOpen(false)}
+                  onInvitationAccepted={(result) => {
+                    setIsNotificationsOpen(false);
+                    if (onInvitationAccepted) {
+                      onInvitationAccepted(result);
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Logo as Menu Button */}
+              {renderMenuButton(0, { placement: 'bottom' })}
+            </div>
           </div>
         </div>
       </nav>
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t-2 border-teal-light shadow-lg safe-area-inset-bottom" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-lg safe-area-inset-bottom" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
         <div className="flex items-center justify-around h-12 px-2 py-1">
           {/* Dashboard button */}
           <button
             type="button"
             onClick={() => setCurrentView('dashboard')}
-            className={`relative flex items-center justify-center w-14 h-12 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 min-h-[44px] ${
+            className={`relative flex items-center justify-center w-12 h-12 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 min-h-[44px] ${
               currentView === 'dashboard'
                 ? 'bg-teal-lightest text-teal-medium border-2 border-teal-light'
                 : 'text-teal-medium active:bg-teal-lightest'
@@ -327,11 +352,48 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             </span>
           </button>
 
+          {/* Notifications button - Mobile */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsNotificationsOpen((prev) => !prev)}
+              className={`relative flex items-center justify-center w-12 h-12 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 min-h-[44px] ${
+                isNotificationsOpen
+                  ? 'bg-teal-lightest text-teal-medium border-2 border-teal-light'
+                  : 'text-teal-medium active:bg-teal-lightest'
+              }`}
+              aria-label={`Notifications${notificationCount > 0 ? `, ${notificationCount} unread` : ''}`}
+              aria-expanded={isNotificationsOpen}
+              aria-haspopup="true"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              {/* Notification badge */}
+              {notificationCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-md">
+                  {notificationCount > 99 ? '99+' : notificationCount}
+                </span>
+              )}
+            </button>
+            {/* Mobile notifications panel */}
+            <NotificationsPanel
+              isOpen={isNotificationsOpen}
+              onClose={() => setIsNotificationsOpen(false)}
+              onInvitationAccepted={(result) => {
+                setIsNotificationsOpen(false);
+                if (onInvitationAccepted) {
+                  onInvitationAccepted(result);
+                }
+              }}
+            />
+          </div>
+
           {/* Menu button - in the middle */}
           <button
             type="button"
             onClick={() => setIsMenuOpen((prev) => !prev)}
-            className={`relative flex items-center justify-center w-14 h-12 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 min-h-[44px] ${
+            className={`relative flex items-center justify-center w-12 h-12 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 min-h-[44px] ${
               isMenuOpen
                 ? 'bg-teal-lightest text-teal-medium border-2 border-teal-light'
                 : 'text-teal-medium active:bg-teal-lightest'

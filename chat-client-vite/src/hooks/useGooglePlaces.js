@@ -37,7 +37,7 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
       if (import.meta.env.DEV) {
         console.warn('Google Places API key not configured - address autocomplete will be unavailable');
         console.warn('To configure: Set VITE_GOOGLE_PLACES_API_KEY in Vercel environment variables and redeploy');
-        setError('Google Places API key not configured');
+      setError('Google Places API key not configured');
       }
       return;
     }

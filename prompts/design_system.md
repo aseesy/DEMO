@@ -65,35 +65,92 @@
 - Borders are subtle (grey-200), not harsh
 - Hover states darken by ~10-15%
 
-## Acceptable Fonts
+## Typography System
 
-**Primary Font Stack:**
+### Font Families
+
+**Sans-Serif (Primary - Body & UI):**
 ```css
 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif
 ```
+- **Usage**: Body text, UI elements, labels, buttons, navigation
+- **When to use**: All interface elements, forms, buttons, body paragraphs
+- **Tailwind class**: `font-sans` (default)
 
-**Font Sizes:**
-- **xs**: 12px (0.75rem) - Labels, captions
-- **sm**: 14px (0.875rem) - Secondary text, small buttons
-- **base**: 16px (1rem) - Body text, inputs (prevents iOS zoom)
-- **lg**: 18px (1.125rem) - Emphasized body
-- **xl**: 20px (1.25rem) - Section headers
-- **2xl**: 24px (1.5rem) - Page titles
-- **3xl**: 30px (1.875rem) - Hero text
-- **4xl**: 36px (2.25rem) - Landing page headlines
+**Serif (Headings & Display):**
+```css
+'Georgia', 'Cambria', 'Times New Roman', 'Times', serif
+```
+- **Usage**: Headings, display text, impactful statements, hero sections
+- **When to use**: Page titles, section headers, hero headlines, emphasis
+- **Tailwind class**: `font-serif`
+- **Style variations**: Regular (400), italic, semibold (600), bold (700)
 
-**Font Weights:**
-- **400 (normal)**: Body text
-- **500 (medium)**: Labels, emphasis
-- **600 (semibold)**: Headings, buttons
-- **700 (bold)**: Strong emphasis, page titles
+**Typography Hierarchy:**
+- **Serif (Georgia)**: For headings and display text that needs emphasis
+- **Sans-serif (Inter)**: For all body text, UI elements, and functional text
+
+### Font Sizes
+
+| Size | Pixels | Rem | Usage |
+|------|--------|-----|-------|
+| **xs** | 12px | 0.75rem | Labels, captions, timestamps |
+| **sm** | 14px | 0.875rem | Secondary text, small buttons |
+| **base** | 16px | 1rem | Body text, inputs (prevents iOS zoom) |
+| **lg** | 18px | 1.125rem | Emphasized body text |
+| **xl** | 20px | 1.25rem | Section headers |
+| **2xl** | 24px | 1.5rem | Page titles |
+| **3xl** | 30px | 1.875rem | Hero text |
+| **4xl** | 36px | 2.25rem | Landing page headlines |
+
+### Font Weights
+
+| Weight | Value | Usage | Font Family |
+|-------|-------|-------|-------------|
+| **Normal** | 400 | Body text, default | Inter (sans-serif) |
+| **Medium** | 500 | Labels, emphasis | Inter (sans-serif) |
+| **Semibold** | 600 | Headings, buttons | Inter (sans-serif) or Georgia (serif) |
+| **Bold** | 700 | Strong emphasis, page titles | Inter (sans-serif) or Georgia (serif) |
+
+### Typography Usage Guidelines
+
+**Font Selection:**
+- ✅ **Use serif (Georgia)** for: Headings, hero text, display statements, page titles
+- ✅ **Use sans-serif (Inter)** for: Body text, UI elements, buttons, forms, labels
+- ❌ **Don't mix serif in body paragraphs** - Keep body text in sans-serif
+- ❌ **Don't use sans-serif for headings** - Use serif for visual hierarchy
+
+**Font Weight Guidelines:**
+- Body text: Normal (400)
+- Labels and emphasis: Medium (500)
+- Headings: Semibold (600) - preferred over bold for softer feel
+- Strong emphasis: Bold (700) - use sparingly for page titles
 
 **Typography Rules:**
 - Base font size is 16px to prevent iOS zoom on input focus
-- Line height: 1.5 for body, 1.4 for compact text
+- Line height: 1.5 for body text, 1.4 for compact text
 - Use `-webkit-font-smoothing: antialiased` for crisp rendering
 - Never use emojis in UI text unless user-requested
 - Headings use semibold (600), not bold (700) for softer feel
+- Serif headings create visual contrast with sans-serif body text
+
+**Examples:**
+```jsx
+// Serif heading
+<h1 className="font-serif text-4xl font-semibold text-teal-dark">
+  Page Title
+</h1>
+
+// Sans-serif body
+<p className="font-sans text-base text-gray-900">
+  Body text content goes here.
+</p>
+
+// Serif display text with italic
+<div className="font-serif text-3xl italic text-gray-900">
+  Impactful statement
+</div>
+```
 
 ## What "Clean" and "Modern" Means
 

@@ -8,9 +8,26 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE,
   password_hash TEXT,
   google_id TEXT UNIQUE,
+  first_name TEXT,
+  last_name TEXT,
+  display_name TEXT,
+  address TEXT,
+  household_members TEXT,
+  occupation TEXT,
+  communication_style TEXT,
+  communication_triggers TEXT,
+  communication_goals TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   last_login TIMESTAMP WITH TIME ZONE
 );
+
+-- Add display_name column to users if it doesn't exist (for existing databases)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'display_name') THEN
+    ALTER TABLE users ADD COLUMN display_name TEXT;
+  END IF;
+END $$;
 
 -- User context table
 CREATE TABLE IF NOT EXISTS user_context (
@@ -98,10 +115,19 @@ CREATE TABLE IF NOT EXISTS tasks (
   due_date TIMESTAMP WITH TIME ZONE,
   completed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   assigned_to TEXT,
   related_people TEXT,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Add updated_at column to tasks if it doesn't exist (for existing databases)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'updated_at') THEN
+    ALTER TABLE tasks ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+  END IF;
+END $$;
 
 -- Messages table
 CREATE TABLE IF NOT EXISTS messages (

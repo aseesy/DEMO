@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
+import { parseOAuthError, clearOAuthState } from '../utils/oauthHelper.js';
+import { getErrorMessage, logError } from '../utils/errorHandler.jsx';
 
 /**
  * Component to handle Google OAuth callback
@@ -16,10 +18,28 @@ export function GoogleOAuthCallback() {
     const processCallback = async () => {
       const code = searchParams.get('code');
       const errorParam = searchParams.get('error');
+      const errorDescription = searchParams.get('error_description');
+      const state = searchParams.get('state');
 
       // Handle OAuth error from Google
       if (errorParam) {
-        setError('Google login was cancelled or failed. Please try again.');
+        const oauthError = parseOAuthError(errorParam, errorDescription);
+        logError(new Error(oauthError.message), { 
+          endpoint: 'google_oauth_callback', 
+          operation: 'oauth_callback', 
+          code: errorParam 
+        });
+        
+        // Special handling for access_denied (user cancelled)
+        if (errorParam === 'access_denied') {
+          // Silently handle cancellation - no error message needed
+          clearOAuthState();
+          navigate('/signin', { replace: true });
+          return;
+        }
+        
+        setError(oauthError.userMessage);
+        clearOAuthState();
         setIsProcessing(false);
         setTimeout(() => {
           navigate('/signin');
@@ -29,7 +49,10 @@ export function GoogleOAuthCallback() {
 
       // Handle missing code
       if (!code) {
-        setError('Invalid Google login response. Please try again.');
+        const errorInfo = getErrorMessage({ code: 'INVALID_OAUTH_RESPONSE' }, { endpoint: 'google_oauth_callback' });
+        logError(new Error('Missing OAuth code'), { endpoint: 'google_oauth_callback', operation: 'oauth_callback' });
+        setError(errorInfo.userMessage);
+        clearOAuthState();
         setIsProcessing(false);
         setTimeout(() => {
           navigate('/signin');
@@ -37,19 +60,41 @@ export function GoogleOAuthCallback() {
         return;
       }
 
-      // Send code to backend
-      const success = await handleGoogleCallback(code);
-      
-      if (success) {
-        // Redirect to dashboard on success
-        navigate('/');
-      } else {
-        // Redirect to signin on error (error message already set)
+      // Prevent code reuse - check if this code has already been processed
+      const processedCode = sessionStorage.getItem('oauth_processed_code');
+      if (processedCode === code) {
+        console.warn('⚠️ OAuth code already processed, skipping to prevent reuse');
+        const errorInfo = getErrorMessage({ code: 'CODE_ALREADY_USED' }, { endpoint: 'google_oauth_callback' });
+        setError(errorInfo.userMessage);
+        clearOAuthState();
+        setIsProcessing(false);
         setTimeout(() => {
           navigate('/signin');
         }, 3000);
+        return;
       }
-      
+
+      // Mark code as being processed
+      sessionStorage.setItem('oauth_processed_code', code);
+
+      // Send code and state to backend
+      const success = await handleGoogleCallback(code, state);
+
+      if (success) {
+        // Clear the processed code and OAuth state on success
+        sessionStorage.removeItem('oauth_processed_code');
+        clearOAuthState();
+        // Redirect to dashboard on success
+        navigate('/', { replace: true });
+      } else {
+        // Keep the processed code marker to prevent retries with same code
+        // Redirect to signin on error (error message already set)
+        clearOAuthState();
+        setTimeout(() => {
+          navigate('/signin', { replace: true });
+        }, 3000);
+      }
+
       setIsProcessing(false);
     };
 

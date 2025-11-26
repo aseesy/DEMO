@@ -26,24 +26,49 @@ async function runMigration() {
             await dbPostgres.query('SELECT 1');
             console.log('✅ PostgreSQL connection verified');
 
-        // Try multiple possible paths for the migration file
-        const possiblePaths = [
-            path.join(__dirname, 'migrations/001_initial_schema.sql'),
-            path.join(__dirname, '../chat-client-vite/scripts/migrate_user_context.sql'),
-            path.join(__dirname, './scripts/migrate_user_context.sql'),
-            path.join(__dirname, 'migrate_user_context.sql'),
-        ];
+        // Find all migration files in order
+        const migrationsDir = path.join(__dirname, 'migrations');
+        let migrationFiles = [];
+
+        if (fs.existsSync(migrationsDir)) {
+            migrationFiles = fs.readdirSync(migrationsDir)
+                .filter(f => f.endsWith('.sql'))
+                .sort(); // Sorts alphabetically: 001_, 002_, etc.
+            console.log(`📄 Found ${migrationFiles.length} migration files`);
+        }
+
+        // Fallback to legacy paths if no migrations folder
+        if (migrationFiles.length === 0) {
+            const possiblePaths = [
+                path.join(__dirname, '../chat-client-vite/scripts/migrate_user_context.sql'),
+                path.join(__dirname, './scripts/migrate_user_context.sql'),
+                path.join(__dirname, 'migrate_user_context.sql'),
+            ];
+            for (const migrationPath of possiblePaths) {
+                if (fs.existsSync(migrationPath)) {
+                    migrationFiles = [migrationPath];
+                    console.log(`📄 Using legacy migration file: ${migrationPath}`);
+                    break;
+                }
+            }
+        }
 
         let sql = null;
         let foundPath = null;
 
-        for (const migrationPath of possiblePaths) {
-            if (fs.existsSync(migrationPath)) {
-                sql = fs.readFileSync(migrationPath, 'utf8');
-                foundPath = migrationPath;
-                console.log(`📄 Using migration file: ${foundPath}`);
-                break;
+        // Combine all migration files
+        if (migrationFiles.length > 0) {
+            const sqlParts = [];
+            for (const file of migrationFiles) {
+                const filePath = file.includes('/') ? file : path.join(migrationsDir, file);
+                if (fs.existsSync(filePath)) {
+                    console.log(`  📄 Loading: ${path.basename(filePath)}`);
+                    sqlParts.push(`-- Migration: ${path.basename(filePath)}`);
+                    sqlParts.push(fs.readFileSync(filePath, 'utf8'));
+                }
             }
+            sql = sqlParts.join('\n\n');
+            foundPath = migrationsDir;
         }
 
         if (!sql) {

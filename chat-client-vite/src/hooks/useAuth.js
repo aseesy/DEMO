@@ -1,6 +1,15 @@
 import React from 'react';
 import { apiGet, apiPost } from '../apiClient.js';
 import { setUserProperties, setUserID } from '../utils/analyticsEnhancements.js';
+import { getErrorMessage, logError, retryWithBackoff, isRetryableError } from '../utils/errorHandler.jsx';
+import {
+  generateOAuthState,
+  storeOAuthState,
+  validateOAuthState,
+  clearOAuthState,
+  detectPopupBlocker,
+  parseOAuthError,
+} from '../utils/oauthHelper.js';
 
 // Helper function to calculate user properties for analytics
 function calculateUserProperties(user, isNewUser = false) {
@@ -15,7 +24,7 @@ function calculateUserProperties(user, isNewUser = false) {
     const now = new Date();
     const daysSinceSignup = Math.floor((now - signupDate) / (1000 * 60 * 60 * 24));
     properties.days_since_signup = daysSinceSignup;
-    
+
     // Determine user type based on days since signup
     if (daysSinceSignup < 7) {
       properties.user_type = 'new_user';
@@ -65,17 +74,17 @@ export function useAuth() {
 
         if (response.ok) {
           const data = await response.json();
-        if (data.authenticated && data.user) {
-          setUsername(data.user.username);
-          setIsAuthenticated(true);
-          // Keep localStorage in sync
-          localStorage.setItem('username', data.user.username);
-          localStorage.setItem('isAuthenticated', 'true');
-          
-          // Set User ID and properties for analytics
-          setUserID(data.user.username);
-          const userProperties = calculateUserProperties(data.user, false);
-          setUserProperties(userProperties);
+          if (data.authenticated && data.user) {
+            setUsername(data.user.username);
+            setIsAuthenticated(true);
+            // Keep localStorage in sync
+            localStorage.setItem('username', data.user.username);
+            localStorage.setItem('isAuthenticated', 'true');
+
+            // Set User ID and properties for analytics
+            setUserID(data.user.username);
+            const userProperties = calculateUserProperties(data.user, false);
+            setUserProperties(userProperties);
           } else {
             // Session invalid - clear everything
             localStorage.removeItem('username');
@@ -152,25 +161,63 @@ export function useAuth() {
     }
 
     try {
-      const response = await apiPost('/api/auth/login', {
-        email: cleanEmail,
-        password: cleanPassword,
-      });
+      const response = await retryWithBackoff(
+        () => apiPost('/api/auth/login', {
+          email: cleanEmail,
+          password: cleanPassword,
+        }),
+        {
+          maxRetries: 3,
+          shouldRetry: (error, statusCode) => {
+            // Don't retry 4xx errors (except 429 rate limit)
+            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
+              return false;
+            }
+            return isRetryableError(error, statusCode);
+          },
+        }
+      );
+
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Login failed');
-        return;
+        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/auth/login' });
+        logError(data, { endpoint: '/api/auth/login', operation: 'login', email: cleanEmail });
+        
+        // Handle specific error codes from backend
+        if (data.code === 'ACCOUNT_NOT_FOUND' || response.status === 404) {
+          errorInfo.userMessage = 'No account found with this email. Would you like to create an account?';
+          errorInfo.action = 'create_account';
+          setError(errorInfo.userMessage);
+          return { success: false, error: errorInfo, action: 'create_account' };
+        }
+        
+        if (data.code === 'OAUTH_ONLY_ACCOUNT' || response.status === 403) {
+          errorInfo.userMessage = data.error || 'This account uses Google sign-in. Please sign in with Google.';
+          errorInfo.action = 'use_google';
+          setError(errorInfo.userMessage);
+          return { success: false, error: errorInfo, action: 'use_google' };
+        }
+        
+        if (data.code === 'INVALID_PASSWORD' || (response.status === 401 && data.error?.includes('password'))) {
+          errorInfo.userMessage = 'Incorrect password. Please try again.';
+          setError(errorInfo.userMessage);
+          return { success: false, error: errorInfo };
+        }
+        
+        // Generic error handling
+        setError(errorInfo.userMessage);
+        return { success: false, error: errorInfo };
       }
 
       setIsAuthenticated(true);
       if (data.user?.username) {
         setUsername(data.user.username);
         localStorage.setItem('username', data.user.username);
-        
+
         // Set User ID for analytics
         setUserID(data.user.username);
-        
+
         // Set user properties for analytics
         const userProperties = calculateUserProperties(data.user, false);
         setUserProperties(userProperties);
@@ -183,15 +230,21 @@ export function useAuth() {
       if (data.user) {
         localStorage.setItem('chatUser', JSON.stringify(data.user));
       }
-      return data;
+      return { success: true, user: data.user };
     } catch (err) {
-      console.error('Login error (Vite):', err);
-      setError('Unable to connect to server. Please try again.');
+      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/auth/login' });
+      logError(err, { endpoint: '/api/auth/login', operation: 'login', email: cleanEmail });
+      setError(errorInfo.userMessage);
+      return { success: false, error: errorInfo };
     } finally {
       setIsLoggingIn(false);
     }
   };
 
+  /**
+   * Legacy signup function - kept for backward compatibility
+   * Use handleRegister for new registrations with co-parent invitation
+   */
   const handleSignup = async (e) => {
     if (e?.preventDefault) e.preventDefault();
     setError('');
@@ -218,26 +271,48 @@ export function useAuth() {
     }
 
     try {
-      const response = await apiPost('/api/auth/signup', {
-        email: cleanEmail,
-        password: cleanPassword,
-        context: {},
-      });
+      const response = await retryWithBackoff(
+        () => apiPost('/api/auth/signup', {
+          email: cleanEmail,
+          password: cleanPassword,
+          context: {},
+        }),
+        {
+          maxRetries: 3,
+          shouldRetry: (error, statusCode) => {
+            // Don't retry 4xx errors (except 429 rate limit)
+            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
+              return false;
+            }
+            return isRetryableError(error, statusCode);
+          },
+        }
+      );
+
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Signup failed');
-        return;
+        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/auth/signup' });
+        logError(data, { endpoint: '/api/auth/signup', operation: 'signup', email: cleanEmail });
+        
+        // Special handling for REG_001 (email exists)
+        if (data.code === 'REG_001' || data.error?.includes('already') || data.error?.includes('exists')) {
+          setError(errorInfo.userMessage);
+          return { success: false, error: errorInfo, action: 'sign_in' };
+        }
+        
+        setError(errorInfo.userMessage);
+        return { success: false, error: errorInfo };
       }
 
       setIsAuthenticated(true);
       if (data.user?.username) {
         setUsername(data.user.username);
         localStorage.setItem('username', data.user.username);
-        
+
         // Set User ID for analytics
         setUserID(data.user.username);
-        
+
         // Set user properties for analytics (new user)
         const userProperties = calculateUserProperties(data.user, true);
         setUserProperties(userProperties);
@@ -248,10 +323,143 @@ export function useAuth() {
       if (data.token) {
         localStorage.setItem('auth_token_backup', data.token);
       }
-      return data;
+      return { success: true, user: data.user };
     } catch (err) {
-      console.error('Signup error (Vite):', err);
-      setError('Unable to connect to server. Please try again.');
+      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/auth/signup' });
+      logError(err, { endpoint: '/api/auth/signup', operation: 'signup', email: cleanEmail });
+      setError(errorInfo.userMessage);
+      return { success: false, error: errorInfo };
+    } finally {
+      setIsSigningUp(false);
+    }
+  };
+
+  /**
+   * Register new user with co-parent invitation
+   * This is the primary registration method that creates user AND sends invitation
+   * @param {Event} e - Form submit event
+   * @param {string} coParentEmail - Email address of the co-parent to invite
+   */
+  const handleRegister = async (e, coParentEmail) => {
+    if (e?.preventDefault) e.preventDefault();
+    setError('');
+    setIsSigningUp(true);
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+    const cleanUsername = username.trim();
+    const cleanCoParentEmail = coParentEmail?.trim().toLowerCase();
+
+    // Validation
+    if (!cleanUsername) {
+      setError('Name is required');
+      setIsSigningUp(false);
+      return;
+    }
+    if (!cleanEmail) {
+      setError('Email is required');
+      setIsSigningUp(false);
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setError('Please enter a valid email address');
+      setIsSigningUp(false);
+      return;
+    }
+    if (cleanPassword.length < 4) {
+      setError('Password must be at least 4 characters');
+      setIsSigningUp(false);
+      return;
+    }
+    if (!cleanCoParentEmail) {
+      setError('Co-parent email is required');
+      setIsSigningUp(false);
+      return;
+    }
+    if (!emailRegex.test(cleanCoParentEmail)) {
+      setError('Please enter a valid email for your co-parent');
+      setIsSigningUp(false);
+      return;
+    }
+    if (cleanCoParentEmail === cleanEmail) {
+      setError('You cannot invite yourself as a co-parent');
+      setIsSigningUp(false);
+      return;
+    }
+
+    try {
+      // Use the /api/auth/register endpoint which creates user AND sends invitation
+      const response = await retryWithBackoff(
+        () => apiPost('/api/auth/register', {
+          email: cleanEmail,
+          password: cleanPassword,
+          username: cleanUsername,
+          coParentEmail: cleanCoParentEmail,
+          context: {},
+        }),
+        {
+          maxRetries: 3,
+          shouldRetry: (error, statusCode) => {
+            // Don't retry 4xx errors (except 429 rate limit)
+            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
+              return false;
+            }
+            return isRetryableError(error, statusCode);
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/auth/register' });
+        logError(data, { endpoint: '/api/auth/register', operation: 'register', email: cleanEmail });
+        
+        // Special handling for REG_001 (email exists)
+        if (data.code === 'REG_001' || data.error?.includes('already') || data.error?.includes('exists')) {
+          setError(errorInfo.userMessage);
+          return { success: false, error: errorInfo, action: 'sign_in' };
+        }
+        
+        setError(errorInfo.userMessage);
+        return { success: false, error: errorInfo };
+      }
+
+      // Set authentication state
+      setIsAuthenticated(true);
+      if (data.user?.username) {
+        setUsername(data.user.username);
+        localStorage.setItem('username', data.user.username);
+
+        // Set User ID for analytics
+        setUserID(data.user.username);
+
+        // Set user properties for analytics (new user)
+        const userProperties = calculateUserProperties(data.user, true);
+        setUserProperties(userProperties);
+      }
+      localStorage.setItem('chatUser', JSON.stringify(data.user));
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('userEmail', cleanEmail);
+      if (data.token) {
+        localStorage.setItem('auth_token_backup', data.token);
+      }
+
+      // Store invitation info for displaying confirmation
+      if (data.invitation) {
+        localStorage.setItem('pending_sent_invitation', JSON.stringify({
+          inviteeEmail: data.invitation.inviteeEmail,
+          isExistingUser: data.invitation.isExistingUser,
+        }));
+      }
+
+      return { success: true, user: data.user, invitation: data.invitation };
+    } catch (err) {
+      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/auth/register' });
+      logError(err, { endpoint: '/api/auth/register', operation: 'register', email: cleanEmail });
+      setError(errorInfo.userMessage);
+      return { success: false, error: errorInfo };
     } finally {
       setIsSigningUp(false);
     }
@@ -260,49 +468,125 @@ export function useAuth() {
   const handleGoogleLogin = async () => {
     setError('');
     setIsGoogleLoggingIn(true);
-    
+
     try {
-      const response = await apiGet('/api/auth/google');
-      const data = await response.json();
-      
-      if (!response.ok) {
-        setError(data.error || 'Failed to initiate Google login');
+      // Check for popup blocker before initiating OAuth
+      const isBlocked = await detectPopupBlocker();
+      if (isBlocked) {
+        const errorInfo = getErrorMessage({ code: 'popup_blocked' });
+        setError(errorInfo.userMessage);
         setIsGoogleLoggingIn(false);
-        return;
+        return { success: false, error: errorInfo, action: 'allow_popups' };
       }
+
+      // Generate and store state parameter for CSRF protection
+      const state = generateOAuthState();
+      storeOAuthState(state);
+
+      const response = await retryWithBackoff(
+        () => apiGet(`/api/auth/google?state=${encodeURIComponent(state)}`),
+        {
+          maxRetries: 2,
+          shouldRetry: (error, statusCode) => {
+            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
+              return false;
+            }
+            return isRetryableError(error, statusCode);
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/auth/google' });
+        logError(data, { endpoint: '/api/auth/google', operation: 'initiate_oauth' });
+        clearOAuthState();
+        setError(errorInfo.userMessage);
+        setIsGoogleLoggingIn(false);
+        return { success: false, error: errorInfo };
+      }
+
+      // Redirect to Google OAuth page with state parameter
+      const authUrlWithState = data.authUrl.includes('state=')
+        ? data.authUrl
+        : `${data.authUrl}&state=${encodeURIComponent(state)}`;
       
-      // Redirect to Google OAuth page
-      window.location.href = data.authUrl;
+      window.location.href = authUrlWithState;
+      
+      // Return success (redirect will happen)
+      return { success: true, redirecting: true };
     } catch (err) {
-      console.error('Google login error:', err);
-      setError('Unable to connect to server. Please try again.');
+      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/auth/google' });
+      logError(err, { endpoint: '/api/auth/google', operation: 'initiate_oauth' });
+      clearOAuthState();
+      setError(errorInfo.userMessage);
       setIsGoogleLoggingIn(false);
+      return { success: false, error: errorInfo };
     }
   };
 
-  const handleGoogleCallback = async (code) => {
+  const handleGoogleCallback = async (code, state = null) => {
     setIsGoogleLoggingIn(true);
     setError('');
-    
+
     try {
-      const response = await apiPost('/api/auth/google/callback', { code });
+      // Validate state parameter if provided (CSRF protection)
+      if (state) {
+        if (!validateOAuthState(state)) {
+          const errorInfo = getErrorMessage({ code: 'invalid_state' }, { endpoint: '/api/auth/google/callback' });
+          logError(new Error('OAuth state mismatch'), { endpoint: '/api/auth/google/callback', operation: 'oauth_callback', security: true });
+          setError('Security validation failed. Please try signing in again.');
+          clearOAuthState();
+          setIsGoogleLoggingIn(false);
+          return false;
+        }
+        // Clear state after validation
+        clearOAuthState();
+      }
+
+      const response = await retryWithBackoff(
+        () => apiPost('/api/auth/google/callback', { code }),
+        {
+          maxRetries: 2,
+          shouldRetry: (error, statusCode) => {
+            // Don't retry 4xx errors (except 429 rate limit)
+            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
+              return false;
+            }
+            return isRetryableError(error, statusCode);
+          },
+        }
+      );
+
       const data = await response.json();
-      
+
       if (!response.ok) {
-        setError(data.error || 'Google login failed');
+        // Use error handler for consistent error messages
+        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/auth/google/callback' });
+        logError(data, { endpoint: '/api/auth/google/callback', operation: 'oauth_callback' });
+        
+        // Check for specific OAuth errors
+        if (data.error && data.error.includes('already used')) {
+          errorInfo.userMessage = 'This sign-in link has already been used. Please try signing in again.';
+        } else if (data.error && data.error.includes('expired')) {
+          errorInfo.userMessage = 'The sign-in session expired. Please try again.';
+        }
+        
+        setError(errorInfo.userMessage);
         setIsGoogleLoggingIn(false);
         return false;
       }
-      
+
       // Success - set authentication state
       setIsAuthenticated(true);
       if (data.user?.username) {
         setUsername(data.user.username);
         localStorage.setItem('username', data.user.username);
-        
+
         // Set User ID for analytics
         setUserID(data.user.username);
-        
+
         // Set user properties for analytics
         const userProperties = calculateUserProperties(data.user, false);
         setUserProperties(userProperties);
@@ -317,12 +601,13 @@ export function useAuth() {
       if (data.user) {
         localStorage.setItem('chatUser', JSON.stringify(data.user));
       }
-      
+
       setIsGoogleLoggingIn(false);
       return true;
     } catch (err) {
-      console.error('Google callback error:', err);
-      setError('Unable to complete Google login. Please try again.');
+      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/auth/google/callback' });
+      logError(err, { endpoint: '/api/auth/google/callback', operation: 'oauth_callback' });
+      setError(errorInfo.userMessage);
       setIsGoogleLoggingIn(false);
       return false;
     }
@@ -342,11 +627,11 @@ export function useAuth() {
       localStorage.removeItem('auth_token_backup');
       localStorage.removeItem('chatUser');
       localStorage.removeItem('userEmail');
-      
+
       // Clear analytics user data
       setUserID(null);
       setUserProperties({});
-      
+
       // Reset state
       setIsAuthenticated(false);
       setUsername('');
@@ -375,6 +660,7 @@ export function useAuth() {
     // actions
     handleLogin,
     handleSignup,
+    handleRegister, // New: registration with co-parent invitation
     handleGoogleLogin,
     handleGoogleCallback,
     handleLogout,

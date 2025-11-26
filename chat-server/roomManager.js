@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const dbPostgres = require('./dbPostgres');
 const dbSafe = require('./dbSafe');
 
+const LIAIZEN_WELCOME_MESSAGE = "Hello, I am LiaiZen - your personal communication coach. I am here to help you improve your interpersonal skills through personalized guidance, feedback, and practice. Try saying something rude to your co-parent to see how it works.";
+
 /**
  * Generate a unique room ID
  */
@@ -25,8 +27,11 @@ function generateInviteCode() {
 
 /**
  * Create a private room for a user (called during signup)
+ * @param {number} userId - User ID
+ * @param {string} username - Username
+ * @param {boolean} sendWelcome - Whether to send welcome message (default: true for new users)
  */
-async function createPrivateRoom(userId, username) {
+async function createPrivateRoom(userId, username, sendWelcome = true) {
   const roomId = generateRoomId();
   const roomName = `${username}'s Co-Parenting Room`;
   const now = new Date().toISOString();
@@ -49,6 +54,29 @@ async function createPrivateRoom(userId, username) {
       joined_at: now
     });
 
+    // Send welcome message to new users (backwards compatible - only if sendWelcome is true)
+    if (sendWelcome) {
+      // Check if welcome message already exists (backwards compatibility)
+      try {
+        const existingWelcome = await dbSafe.safeSelect('messages', {
+          room_id: roomId,
+          username: 'LiaiZen',
+          type: 'ai_comment'
+        }, { limit: 1 });
+
+        // Only send if no welcome message exists yet
+        if (existingWelcome.length === 0) {
+          await sendWelcomeMessage(roomId);
+        } else {
+          console.log(`ℹ️  Welcome message already exists for room ${roomId}, skipping`);
+        }
+      } catch (welcomeErr) {
+        // If check fails, try to send anyway (backwards compatible)
+        console.warn('⚠️  Could not check for existing welcome message, sending anyway:', welcomeErr.message);
+        await sendWelcomeMessage(roomId);
+      }
+    }
+
     return {
       roomId,
       roomName,
@@ -68,20 +96,20 @@ async function createPrivateRoom(userId, username) {
 async function getUserRoom(userId) {
   try {
     console.log(`🔵 getUserRoom called for userId: ${userId} (type: ${typeof userId})`);
-    
-    // First, try to find a room with multiple members (shared room)
-    // This ensures co-parents end up in the same room after connection
-    const sharedRoomQuery = `
+
+  // First, try to find a room with multiple members (shared room)
+  // This ensures co-parents end up in the same room after connection
+  const sharedRoomQuery = `
       SELECT r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role, COUNT(rm2.user_id) as member_count
-      FROM rooms r
-      INNER JOIN room_members rm ON r.id = rm.room_id
-      LEFT JOIN room_members rm2 ON r.id = rm2.room_id
+    FROM rooms r
+    INNER JOIN room_members rm ON r.id = rm.room_id
+    LEFT JOIN room_members rm2 ON r.id = rm2.room_id
       WHERE rm.user_id = $1
       GROUP BY r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role
       HAVING COUNT(rm2.user_id) > 1
       ORDER BY MAX(rm.joined_at) DESC
-      LIMIT 1
-    `;
+    LIMIT 1
+  `;
 
     console.log(`🔵 Querying for shared rooms for user ${userId}`);
     const sharedRoomResult = await dbPostgres.query(sharedRoomQuery, [userId]);
@@ -91,25 +119,25 @@ async function getUserRoom(userId) {
       const room = sharedRoomResult.rows[0];
       console.log(`✅ Found shared room: ${room.id}`);
 
-      return {
-        roomId: room.id,
-        roomName: room.name,
-        createdBy: room.created_by,
+    return {
+      roomId: room.id,
+      roomName: room.name,
+      createdBy: room.created_by,
         isPrivate: room.is_private === 1 || room.is_private === true,
-        role: room.role,
-        createdAt: room.created_at
-      };
-    }
+      role: room.role,
+      createdAt: room.created_at
+    };
+  }
 
-    // Fallback: return any room the user belongs to (for solo users)
-    const fallbackQuery = `
+  // Fallback: return any room the user belongs to (for solo users)
+  const fallbackQuery = `
       SELECT r.id, r.name, r.created_by, r.is_private, r.created_at, rm.role
-      FROM rooms r
-      INNER JOIN room_members rm ON r.id = rm.room_id
+    FROM rooms r
+    INNER JOIN room_members rm ON r.id = rm.room_id
       WHERE rm.user_id = $1
       ORDER BY rm.joined_at DESC
-      LIMIT 1
-    `;
+    LIMIT 1
+  `;
 
     console.log(`🔵 Querying for any room for user ${userId}`);
     const result = await dbPostgres.query(fallbackQuery, [userId]);
@@ -117,20 +145,20 @@ async function getUserRoom(userId) {
 
     if (result.rows.length === 0) {
       console.log(`⚠️ No room found for user ${userId}`);
-      return null;
-    }
+    return null;
+  }
 
     const room = result.rows[0];
     console.log(`✅ Found room: ${room.id} for user ${userId}`);
 
-    return {
-      roomId: room.id,
-      roomName: room.name,
-      createdBy: room.created_by,
+  return {
+    roomId: room.id,
+    roomName: room.name,
+    createdBy: room.created_by,
       isPrivate: room.is_private === 1 || room.is_private === true,
-      role: room.role,
-      createdAt: room.created_at
-    };
+    role: room.role,
+    createdAt: room.created_at
+  };
   } catch (error) {
     console.error(`❌ Error in getUserRoom for userId ${userId}:`, error);
     console.error(`❌ Error stack:`, error.stack);
@@ -602,6 +630,154 @@ async function getRoomInvites(roomId) {
   }));
 }
 
+/**
+ * Send LiaiZen welcome message to a room
+ * @param {string} roomId - Room ID
+ */
+async function sendWelcomeMessage(roomId) {
+  const now = new Date().toISOString();
+  const messageId = `liaizen_welcome_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+  console.log(`🤖 Sending LiaiZen welcome message to room ${roomId}`);
+
+  try {
+    // Use ai_comment type so the text property is displayed
+    await dbSafe.safeInsert('messages', {
+      id: messageId,
+      type: 'ai_comment',
+      username: 'LiaiZen',
+      text: LIAIZEN_WELCOME_MESSAGE,
+      timestamp: now,
+      room_id: roomId
+    });
+
+    console.log(`✅ LiaiZen welcome message sent to room ${roomId}`);
+    return { id: messageId, roomId };
+  } catch (error) {
+    console.error(`❌ Error sending welcome message:`, error);
+    return null;
+  }
+}
+
+/**
+ * Add a user to an existing room
+ * @param {string} roomId - Room ID
+ * @param {number} userId - User ID to add
+ * @param {string} role - Role in the room (default: 'member')
+ */
+async function addUserToRoom(roomId, userId, role = 'member') {
+  const now = new Date().toISOString();
+
+  console.log(`🔵 addUserToRoom: Adding user ${userId} to room ${roomId} as ${role}`);
+
+  // Check if user is already a member
+  const existingMember = await dbSafe.safeSelect('room_members', {
+    room_id: roomId,
+    user_id: userId
+  }, { limit: 1 });
+
+  if (existingMember.length > 0) {
+    console.log(`⚠️ User ${userId} is already a member of room ${roomId}`);
+    return existingMember[0];
+  }
+
+  // Get current member count before adding
+  const currentMembers = await getRoomMembers(roomId);
+  const memberCountBefore = currentMembers ? currentMembers.length : 0;
+
+  // Add user to room
+  await dbSafe.safeInsert('room_members', {
+    room_id: roomId,
+    user_id: userId,
+    role: role,
+    joined_at: now
+  });
+
+  console.log(`✅ User ${userId} added to room ${roomId}`);
+
+  // If this is the second member (co-parent just connected), send welcome message
+  if (memberCountBefore === 1) {
+    console.log(`🎉 Co-parents connected! Sending LiaiZen welcome message...`);
+    await sendWelcomeMessage(roomId);
+  }
+
+  return { room_id: roomId, user_id: userId, role, joined_at: now };
+}
+
+/**
+ * Create a shared room for co-parents
+ * @param {number} inviterId - User ID of the inviter
+ * @param {number} inviteeId - User ID of the invitee
+ * @param {string} inviterName - Display name of inviter
+ * @param {string} inviteeName - Display name of invitee
+ */
+async function createCoParentRoom(inviterId, inviteeId, inviterName, inviteeName) {
+  const now = new Date().toISOString();
+  const roomId = `room_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  const roomName = `${inviterName} & ${inviteeName}`;
+
+  console.log(`🔵 createCoParentRoom: Creating room for ${inviterName} (${inviterId}) and ${inviteeName} (${inviteeId})`);
+
+  // Create the room
+  await dbSafe.safeInsert('rooms', {
+    id: roomId,
+    name: roomName,
+    created_by: inviterId,
+    is_private: 1,
+    created_at: now
+  });
+
+  // Add both users to the room
+  await dbSafe.safeInsert('room_members', {
+    room_id: roomId,
+    user_id: inviterId,
+    role: 'owner',
+    joined_at: now
+  });
+
+  await dbSafe.safeInsert('room_members', {
+    room_id: roomId,
+    user_id: inviteeId,
+    role: 'member',
+    joined_at: now
+  });
+
+  console.log(`✅ Created co-parent room ${roomId} with ${inviterName} and ${inviteeName}`);
+
+  // Send LiaiZen welcome message since co-parents are now connected
+  console.log(`🎉 Co-parents connected in new room! Sending LiaiZen welcome message...`);
+  await sendWelcomeMessage(roomId);
+
+  return {
+    roomId,
+    roomName,
+    createdBy: inviterId,
+    isPrivate: true,
+    createdAt: now
+  };
+}
+
+/**
+ * Get room by ID
+ * @param {string} roomId - Room ID
+ */
+async function getRoom(roomId) {
+  const result = await dbSafe.safeSelect('rooms', { id: roomId }, { limit: 1 });
+
+  if (result.length === 0) {
+    return null;
+  }
+
+  const room = result[0];
+  return {
+    roomId: room.id,
+    roomName: room.name,
+    createdBy: room.created_by,
+    isPrivate: room.is_private === 1 || room.is_private === true,
+    createdAt: room.created_at
+  };
+}
+
 module.exports = {
   createPrivateRoom,
   getUserRoom,
@@ -611,5 +787,9 @@ module.exports = {
   useInvite,
   hasRoomAccess,
   getRoomInvites,
-  ensureContactsForRoomMembers
+  ensureContactsForRoomMembers,
+  addUserToRoom,
+  createCoParentRoom,
+  getRoom,
+  sendWelcomeMessage
 };

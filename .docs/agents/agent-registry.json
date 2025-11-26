@@ -1,7 +1,28 @@
 {
   "version": "1.0.0",
-  "agents": [],
-  "lastUpdated": "2025-11-24T22:02:44Z",
+  "agents": {
+    "product-manager": {
+      "department": "product",
+      "description": "Product Manager who deeply understands co-parents challenges and how to solve them. Expert in user insight and empathy for complex human contexts, product strategy and roadmapping, AI-native product thinking, cross-functional leadership, systems thinking and requirements clarity, design sensibility, data-informed decision-making, and conflict navigation. Specializes in LiaiZen co-parenting platform product decisions.",
+      "created": "2025-11-26T00:00:00Z",
+      "tools": "Read, Grep, Glob, WebFetch, WebSearch, AskUserQuestion, TodoWrite",
+      "mcp_access": "mcp__ref-tools, mcp__browsermcp, mcp__perplexity",
+      "status": "active",
+      "file": ".claude/agents/product/product-manager.md",
+      "memory": ".docs/agents/product/product-manager/"
+    },
+    "engineering-diagnostic-agent": {
+      "department": "quality",
+      "description": "Specializes in interpreting system errors, identifying root causes, classifying failures by technical domain, assigning responsibility to the appropriate engineering role, and providing specific next-step guidance for resolving issues. Expert in error interpretation, pattern recognition, root cause analysis, functional classification, ownership assignment, and diagnostic communication.",
+      "created": "2025-11-26T00:00:00Z",
+      "tools": "Read, Grep, Glob, Bash, WebFetch",
+      "mcp_access": "mcp__ref-tools, mcp__perplexity",
+      "status": "active",
+      "file": ".claude/agents/quality/engineering-diagnostic-agent.md",
+      "memory": ".docs/agents/quality/engineering-diagnostic-agent/"
+    }
+  },
+  "lastUpdated": "2025-11-26T00:00:00Z",
   "departments": [
     "architecture",
     "engineering",
@@ -12,5 +33,9 @@
   ],
   "customDepartments": [
     "domain"
-  ]
+  ],
+  "departmentCounts": {
+    "product": 1,
+    "quality": 1
+  }
 }

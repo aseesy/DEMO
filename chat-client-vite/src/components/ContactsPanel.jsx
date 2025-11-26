@@ -6,6 +6,44 @@ import { ActivityCard } from './ActivityCard.jsx';
 import { AddActivityModal } from './modals/AddActivityModal.jsx';
 import { Button } from './ui';
 
+/**
+ * Disambiguate contacts with the same name by adding email domain
+ * @param {Array} contacts - Array of contact objects
+ * @returns {Array} Contacts with disambiguated displayName property
+ */
+function disambiguateContacts(contacts) {
+  if (!Array.isArray(contacts) || contacts.length === 0) {
+    return contacts;
+  }
+
+  // Group contacts by name
+  const nameGroups = contacts.reduce((acc, contact) => {
+    const name = contact.contact_name || 'Unknown';
+    if (!acc[name]) acc[name] = [];
+    acc[name].push(contact);
+    return acc;
+  }, {});
+
+  // Add disambiguation for duplicates
+  return contacts.map(contact => {
+    const name = contact.contact_name || 'Unknown';
+    const group = nameGroups[name];
+
+    if (group.length > 1 && contact.contact_email) {
+      const domain = contact.contact_email.split('@')[1]?.split('.')[0];
+      return {
+        ...contact,
+        displayName: domain ? `${name} (${domain})` : name
+      };
+    }
+
+    return {
+      ...contact,
+      displayName: name
+    };
+  });
+}
+
 export function ContactsPanel({ username }) {
   // Address autocomplete ref
   const addressInputRef = React.useRef(null);
@@ -60,11 +98,13 @@ export function ContactsPanel({ username }) {
     username
   );
 
+  // Apply disambiguation to contacts, then filter
   const filteredContacts = React.useMemo(() => {
+    const disambiguated = disambiguateContacts(contacts);
     const q = contactSearch.trim().toLowerCase();
-    if (!q) return contacts;
-    return contacts.filter((c) =>
-      `${c.contact_name || ''} ${c.relationship || ''} ${c.contact_email || ''}`
+    if (!q) return disambiguated;
+    return disambiguated.filter((c) =>
+      `${c.contact_name || ''} ${c.displayName || ''} ${c.relationship || ''} ${c.contact_email || ''}`
         .toLowerCase()
         .includes(q),
     );
@@ -184,12 +224,13 @@ export function ContactsPanel({ username }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-sm sm:text-base text-teal-medium truncate">
-                    {contact.contact_name || 'Unnamed'}
+                    {contact.displayName || contact.contact_name || 'Unnamed'}
                   </div>
                   <div className="text-xs sm:text-sm text-teal-medium truncate">
                     {contact.relationship || 'Relationship not set'}
                   </div>
-                  {contact.contact_email && (
+                  {/* Show email only if not already shown in displayName */}
+                  {contact.contact_email && !contact.displayName?.includes('(') && (
                     <div className="text-xs text-gray-500 truncate">{contact.contact_email}</div>
                   )}
                 </div>

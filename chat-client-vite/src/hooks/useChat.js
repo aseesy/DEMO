@@ -107,8 +107,8 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
       });
 
       const processedMessages = filtered.map((msg) => ({
-        ...msg,
-        timestamp: msg.timestamp,
+          ...msg,
+          timestamp: msg.timestamp,
       }));
 
       setMessages(processedMessages);
@@ -153,6 +153,15 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
       if (currentView === 'chat' && !document.hidden) {
         lastSeenTimestampRef.current = messageWithTimestamp.timestamp;
       }
+
+      // If this is a rewrite message (sent by current user), trigger removal of original
+      // This is handled by the effect in ChatRoom.jsx that watches for new messages
+      if (message.username === username && message.isPreApprovedRewrite) {
+        // Dispatch event to notify ChatRoom that rewrite was sent
+        window.dispatchEvent(new CustomEvent('rewrite-sent', { 
+          detail: { message: messageWithTimestamp } 
+        }));
+      }
     });
 
     socket.on('user_typing', ({ username: typingName, isTyping }) => {
@@ -189,6 +198,14 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
       trackConnectionError('socket_error', message || 'Unknown socket error');
       console.error('Socket error:', message);
       setError(message);
+    });
+
+    socket.on('replaced_by_new_connection', ({ message }) => {
+      // User opened chat in another tab - this tab is now disconnected
+      console.log('Connection replaced:', message);
+      setError(message || 'You opened this chat in another tab. This tab is now disconnected.');
+      // Optionally disconnect this socket
+      socket.disconnect();
     });
 
     socket.on('draft_analysis', (coaching) => {

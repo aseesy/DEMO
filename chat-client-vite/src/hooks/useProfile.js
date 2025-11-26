@@ -10,8 +10,9 @@ export function useProfile(username) {
     address: '',
     household_members: '',
     occupation: '',
-    parenting_philosophy: '',
-    personal_growth: '',
+    communication_style: '',
+    communication_triggers: '',
+    communication_goals: '',
   });
   const [isLoadingProfile, setIsLoadingProfile] = React.useState(false);
   const [isSavingProfile, setIsSavingProfile] = React.useState(false);
@@ -42,8 +43,9 @@ export function useProfile(username) {
             address: data.address || '',
             household_members: data.household_members || '',
             occupation: data.occupation || '',
-            parenting_philosophy: data.parenting_philosophy || '',
-            personal_growth: data.personal_growth || '',
+            communication_style: data.communication_style || '',
+            communication_triggers: data.communication_triggers || '',
+            communication_goals: data.communication_goals || '',
           });
         }
       } catch (err) {
@@ -99,13 +101,17 @@ export function useProfile(username) {
           profileDataWithoutUsername.occupation !== undefined
             ? profileDataWithoutUsername.occupation
             : null,
-        parenting_philosophy:
-          profileDataWithoutUsername.parenting_philosophy !== undefined
-            ? profileDataWithoutUsername.parenting_philosophy
+        communication_style:
+          profileDataWithoutUsername.communication_style !== undefined
+            ? profileDataWithoutUsername.communication_style
             : null,
-        personal_growth:
-          profileDataWithoutUsername.personal_growth !== undefined
-            ? profileDataWithoutUsername.personal_growth
+        communication_triggers:
+          profileDataWithoutUsername.communication_triggers !== undefined
+            ? profileDataWithoutUsername.communication_triggers
+            : null,
+        communication_goals:
+          profileDataWithoutUsername.communication_goals !== undefined
+            ? profileDataWithoutUsername.communication_goals
             : null,
       };
 
@@ -137,8 +143,9 @@ export function useProfile(username) {
             address: reloadData.address || '',
             household_members: reloadData.household_members || '',
             occupation: reloadData.occupation || '',
-            parenting_philosophy: reloadData.parenting_philosophy || '',
-            personal_growth: reloadData.personal_growth || '',
+            communication_style: reloadData.communication_style || '',
+            communication_triggers: reloadData.communication_triggers || '',
+            communication_goals: reloadData.communication_goals || '',
           });
         }
         

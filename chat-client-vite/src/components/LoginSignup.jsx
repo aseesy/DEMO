@@ -5,14 +5,30 @@ import { Button, Input } from './ui';
 
 /**
  * Dedicated login/signup page at /signin
- * Handles both login and signup flows with invite code support
+ * Handles both login and signup flows
+ *
+ * Signup flow:
+ * - If user has invite token: redirects to /accept-invite for proper flow
+ * - After signup (no invite): redirects to /invite-coparent page where user can generate invite
  */
 export function LoginSignup() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const pendingInviteCode = searchParams.get('invite');
+  const inviteCodeFromUrl = searchParams.get('invite');
+
+  // Store invite code in localStorage when detected in URL
+  React.useEffect(() => {
+    if (inviteCodeFromUrl) {
+      console.log('Storing invite code in localStorage:', inviteCodeFromUrl);
+      localStorage.setItem('pending_invite_code', inviteCodeFromUrl);
+    }
+  }, [inviteCodeFromUrl]);
+
+  // Get invite code from URL or localStorage
+  const pendingInviteCode = inviteCodeFromUrl || localStorage.getItem('pending_invite_code');
 
   const [isLoginMode, setIsLoginMode] = React.useState(true);
+  const [isNewSignup, setIsNewSignup] = React.useState(false);
 
   const {
     email,
@@ -28,27 +44,57 @@ export function LoginSignup() {
     setUsername,
     setError,
     handleLogin,
-    handleSignup,
+    handleSignup, // Use standard signup (no co-parent email needed)
     handleGoogleLogin,
   } = useAuth();
 
-  // Redirect to dashboard after successful authentication
+  // Clear email and password when component mounts or mode changes
+  // This ensures forms are always empty and prevents auto-fill
+  React.useEffect(() => {
+    setEmail('');
+    setPassword('');
+    setUsername('');
+    setError('');
+  }, [isLoginMode, setEmail, setPassword, setUsername, setError]);
+
+  // Redirect users with invite token to dedicated accept-invite page
+  React.useEffect(() => {
+    if (pendingInviteCode && !isLoginMode) {
+      // If user is trying to sign up with an invite code, redirect to accept-invite page
+      navigate(`/accept-invite?token=${pendingInviteCode}`, { replace: true });
+    }
+  }, [pendingInviteCode, isLoginMode, navigate]);
+
+  // Redirect after successful authentication
   React.useEffect(() => {
     if (isAuthenticated) {
       // Small delay to ensure auth state is fully set before navigation
-      // This prevents race conditions with ChatRoom's auth verification
       const timer = setTimeout(() => {
-        navigate('/', { replace: true });
+        // Clear any pending invite code after login
+        localStorage.removeItem('pending_invite_code');
+
+        // If this was a new signup, redirect to invite co-parent page
+        if (isNewSignup) {
+          navigate('/invite-coparent', { replace: true });
+        } else {
+          // Existing user login - go to dashboard
+          navigate('/', { replace: true });
+        }
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isNewSignup, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     if (isLoginMode) {
       await handleLogin(e);
     } else {
+      // Mark this as a new signup so we redirect to invite page after
+      setIsNewSignup(true);
+      // Use standard signup - co-parent invite happens on next screen
       await handleSignup(e);
     }
   };
@@ -70,27 +116,60 @@ export function LoginSignup() {
               className="h-14 sm:h-16 w-auto"
             />
           </div>
-          
+
           <p className="text-sm sm:text-base text-gray-600 font-medium mb-3">
             Collaborative Parenting
           </p>
-          
+
         </div>
 
-        {pendingInviteCode && (
+        {pendingInviteCode && isLoginMode && (
           <div className="mb-6 rounded-xl bg-emerald-50 border-2 border-emerald-200 px-4 py-3 text-sm text-emerald-800 transition-all duration-300">
-            <div className="font-semibold mb-1">You've been invited to a co-parent mediation room!</div>
+            <div className="font-semibold mb-1">You've been invited to connect!</div>
             <div className="text-emerald-700">
-              {isLoginMode
-                ? 'Log in to join your co-parent in this mediation room.'
-                : 'Create an account to join your co-parent in this mediation room. Already have an account? Switch to log in above.'}
+              Log in to accept the invitation and connect with your co-parent.
             </div>
           </div>
         )}
 
         {error && (
           <div className="mb-6 rounded-xl bg-red-50 border-2 border-red-200 px-4 py-3 text-sm text-red-700 transition-all duration-300">
-            {error}
+            <div className="font-semibold mb-1">Error</div>
+            <div>{error}</div>
+            {/* Show action links for specific errors */}
+            {error.includes('already registered') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setError('');
+                  setIsLoginMode(true);
+                }}
+                className="mt-2 text-teal-medium font-semibold hover:text-teal-dark transition-colors underline"
+              >
+                Sign in instead
+              </button>
+            )}
+            {(error.includes('No account found') || error.includes('account found')) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setError('');
+                  setIsLoginMode(false);
+                }}
+                className="mt-2 text-teal-medium font-semibold hover:text-teal-dark transition-colors underline"
+              >
+                Create account
+              </button>
+            )}
+            {error.includes('Google sign-in') && (
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="mt-2 text-teal-medium font-semibold hover:text-teal-dark transition-colors underline"
+              >
+                Sign in with Google
+              </button>
+            )}
           </div>
         )}
 
@@ -102,13 +181,15 @@ export function LoginSignup() {
         <form onSubmit={handleSubmit} className="space-y-5 mb-8">
           {!isLoginMode && (
             <Input
-              label="Name"
+              label="Your Name"
               type="text"
               value={username}
               onChange={setUsername}
               placeholder="John Doe"
               required
-              autoComplete="name"
+              autoComplete="off"
+              data-lpignore="true"
+              data-form-type="other"
             />
           )}
 
@@ -119,7 +200,9 @@ export function LoginSignup() {
             onChange={setEmail}
             placeholder="you@example.com"
             required
-            autoComplete="email"
+            autoComplete="off"
+            data-lpignore="true"
+            data-form-type="other"
           />
 
           <Input
@@ -129,7 +212,10 @@ export function LoginSignup() {
             onChange={setPassword}
             placeholder="••••••••"
             required
-            autoComplete={isLoginMode ? "current-password" : "new-password"}
+            autoComplete="off"
+            data-lpignore="true"
+            data-form-type="other"
+            helperText={!isLoginMode ? "At least 4 characters" : undefined}
           />
 
           <Button
@@ -141,7 +227,7 @@ export function LoginSignup() {
             loading={isLoggingIn || isSigningUp}
             className="mt-6 transition-all hover:shadow-lg"
           >
-            {isLoginMode ? 'Log in' : 'Create account'}
+            {isLoginMode ? 'Log in' : 'Create Account'}
           </Button>
         </form>
 
@@ -190,37 +276,53 @@ export function LoginSignup() {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            {isLoginMode ? (
-              <>
-                Don&apos;t have an account?{' '}
-                <button
-                  type="button"
+          {isLoginMode ? (
+            <>
+              Don&apos;t have an account?{' '}
+              <button
+                type="button"
                   className="text-teal-medium font-semibold hover:text-teal-dark transition-colors"
-                  onClick={() => {
-                    setError('');
-                    setIsLoginMode(false);
-                  }}
-                >
-                  Sign up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{' '}
-                <button
-                  type="button"
+                onClick={() => {
+                  setError('');
+                  setIsLoginMode(false);
+                }}
+              >
+                Sign up
+              </button>
+            </>
+          ) : (
+            <>
+              Already have an account?{' '}
+              <button
+                type="button"
                   className="text-teal-medium font-semibold hover:text-teal-dark transition-colors"
-                  onClick={() => {
-                    setError('');
-                    setIsLoginMode(true);
-                  }}
-                >
-                  Log in
-                </button>
-              </>
-            )}
+                onClick={() => {
+                  setError('');
+                  setIsLoginMode(true);
+                }}
+              >
+                Log in
+              </button>
+            </>
+          )}
           </p>
         </div>
+
+        {/* Info about accepting invitation if has invite code */}
+        {pendingInviteCode && !isLoginMode && (
+          <div className="mt-4 text-center">
+            <p className="text-xs text-gray-500">
+              Have an invitation?{' '}
+              <button
+                type="button"
+                onClick={() => navigate(`/accept-invite?token=${pendingInviteCode}`)}
+                className="text-teal-medium hover:text-teal-dark font-medium"
+              >
+                Accept invitation here
+              </button>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

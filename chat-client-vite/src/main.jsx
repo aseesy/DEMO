@@ -6,6 +6,7 @@ import { injectGoogleTag } from './utils/injectGoogleTag.js'
 import { initAnalytics } from './utils/analytics.js'
 import { setupGlobalErrorHandler } from './utils/errorHandler.jsx'
 import { trackPagePerformance } from './utils/analyticsEnhancements.js'
+import './utils/errorMonitor.js'; // Initialize error monitoring
 
 // Inject Google Tag immediately (before React loads)
 // This runs synchronously to ensure tag is present before any other scripts
@@ -42,7 +43,7 @@ if ('serviceWorker' in navigator) {
   }).catch((err) => {
     console.error('Error getting service worker registrations:', err);
   });
-  
+
   // Also try to unregister by scope
   navigator.serviceWorker.ready.then((registration) => {
     registration.unregister().catch(() => {

@@ -86,6 +86,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 - **Note**: This command does NOT modify files - it only validates and reports recommendations
 
+## AI Mediation Constitution
+
+**Location**: `chat-server/ai-mediation-constitution.md`
+
+All AI-powered mediation in LiaiZen MUST follow the constitution. Key rules:
+
+### Core Immutable Principles
+
+1. **Language, Not Emotions**: Talk about phrasing, not emotional states
+   - CORRECT: "This phrasing implies blame"
+   - PROHIBITED: "You're angry", "You're frustrated"
+
+2. **No Diagnostics**: Never apply psychological labels
+   - PROHIBITED: narcissist, manipulative, insecure, gaslighting, toxic
+   - ALLOWED: "This approach may backfire", "This phrasing might not achieve your goal"
+
+3. **Child-Centric When Applicable**: Frame feedback around child wellbeing when children are mentioned
+
+### 1-2-3 Coaching Framework
+
+Every AI intervention MUST include:
+1. **ADDRESS**: Describe what the phrasing is doing (mechanics, not emotions)
+2. **ONE TIP**: Single adjustment, max 10 words, specific to this message
+3. **TWO REWRITES**: Complete alternatives using different approaches
+
+### Voice Rules
+- Use only "you/your" - NEVER "we/us/our/both"
+- Communication coach, not therapist
+- Describe phrasing mechanics, not feelings
+
 ## Co-Parenting Domain Principles
 
 When working on LiaiZen features, always consider:
@@ -174,6 +204,34 @@ chat-server/              # Node.js backend
 - **Backend**: Railway (demo-production-6dcd.up.railway.app)
 - **Database**: SQLite (local), PostgreSQL (production migration path)
 - **Environment Variables**: Managed via Railway and Vercel dashboards
+
+## Available Agents
+
+The following specialized agents are available for specific tasks:
+
+### product-manager (product)
+
+**Purpose**: Product Manager who deeply understands co-parents challenges and how to solve them. Expert in user insight and empathy for complex human contexts, product strategy and roadmapping, AI-native product thinking, cross-functional leadership, systems thinking and requirements clarity, design sensibility, data-informed decision-making, and conflict navigation.
+
+**Core Capabilities**:
+- **Deep User Insight**: Understanding co-parenting dynamics, conflict patterns, emotional safety principles, user psychology under stress
+- **Product Strategy**: Vision to strategy translation, hard prioritization decisions, roadmap creation, OKR definition
+- **AI-Native Thinking**: LLM capabilities/limitations, sender-first moderation design, multi-agent orchestration, bias monitoring
+- **Cross-Functional Leadership**: Engineering communication, design collaboration, marketing alignment, support synthesis
+- **Systems Thinking**: PRD excellence, edge case identification, user story precision, dependency mapping
+- **Design Sensibility**: UX quality assessment, friction identification, calm/dignity principles
+- **Data-Informed Decisions**: Hypothesis creation, success metrics, experiment design, analytics interpretation
+- **Conflict Navigation**: Internal mediation, diplomatic feedback, decision documentation
+
+**Brand Values Protected**: Dignity, Calm, Precision, Fairness, Neutrality, Respect
+
+**Usage**: `Use the product-manager agent to...`
+
+**Triggers**: Product strategy, user research, PRD review, feature prioritization, roadmap planning, stakeholder alignment, user persona development, AI feature design
+
+**Tools**: Read, Grep, Glob, WebFetch, WebSearch, AskUserQuestion, TodoWrite
+
+**Memory**: `.docs/agents/product/product-manager/`
 
 ---
 
