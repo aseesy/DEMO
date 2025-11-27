@@ -53,6 +53,7 @@ const invitationManager = require('./libs/invitation-manager');
 const notificationManager = require('./libs/notification-manager');
 const db = require('./dbPostgres'); // Database pool for invitation/notification libraries
 const { isValidEmail } = require('./src/utils/validators'); // Generic validation utilities
+const { ensureProfileColumnsExist } = require('./src/utils/schema'); // Schema utilities for runtime column checks
 
 // Initialize Figma service if API token is provided
 let figmaService = null;
@@ -74,6 +75,39 @@ app.get('/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString()
   });
+});
+
+// Schema health check endpoint
+app.get('/api/health/schema', async (req, res) => {
+  try {
+    const { getSchemaHealth } = require('./src/utils/schema');
+    const health = await getSchemaHealth();
+    
+    if (health.healthy) {
+      res.status(200).json({
+        status: 'healthy',
+        message: 'All required profile columns exist',
+        existing: health.existing,
+        timestamp: health.timestamp
+      });
+    } else {
+      res.status(503).json({
+        status: 'unhealthy',
+        message: 'Some required profile columns are missing',
+        missing: health.missing,
+        existing: health.existing,
+        timestamp: health.timestamp
+      });
+    }
+  } catch (error) {
+    console.error('Error checking schema health:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to check schema health',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Start server EARLY - before all routes are set up
@@ -5222,7 +5256,10 @@ app.get('/api/user/profile', async (req, res) => {
       email: user.email || null,
       first_name: user.first_name || null,
       last_name: user.last_name || null,
+      display_name: user.display_name || null,
       address: user.address || null,
+      additional_context: user.additional_context || null,
+      profile_picture: user.profile_picture || null,
       household_members: user.household_members || null,
       occupation: user.occupation || null,
       communication_style: user.communication_style || null,
@@ -5243,7 +5280,7 @@ app.put('/api/user/profile', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body. Request may be too large.' });
     }
 
-    const { currentUsername, username, email, first_name, last_name, address, household_members, occupation, communication_style, communication_triggers, communication_goals } = req.body;
+    const { currentUsername, username, email, first_name, last_name, display_name, address, additional_context, profile_picture, household_members, occupation, communication_style, communication_triggers, communication_goals } = req.body;
 
     // Debug logging
     console.log('Profile update request:', {
@@ -5309,7 +5346,10 @@ app.put('/api/user/profile', async (req, res) => {
     const MAX_FIELD_LENGTHS = {
       first_name: 100,
       last_name: 100,
+      display_name: 100,
       address: 500,
+      additional_context: 2000,
+      profile_picture: 500000, // base64 images can be large
       household_members: 1000,
       occupation: 200,
       communication_style: 1000,
@@ -5331,12 +5371,34 @@ app.put('/api/user/profile', async (req, res) => {
       }
       updateData.last_name = trimmed;
     }
+    if (display_name !== undefined) {
+      const trimmed = display_name != null ? String(display_name).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.display_name) {
+        return res.status(400).json({ error: `Display name must be ${MAX_FIELD_LENGTHS.display_name} characters or less` });
+      }
+      updateData.display_name = trimmed;
+    }
     if (address !== undefined) {
       const trimmed = address != null ? String(address).trim() : null;
       if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.address) {
         return res.status(400).json({ error: `Address must be ${MAX_FIELD_LENGTHS.address} characters or less` });
       }
       updateData.address = trimmed;
+    }
+    if (additional_context !== undefined) {
+      const trimmed = additional_context != null ? String(additional_context).trim() : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.additional_context) {
+        return res.status(400).json({ error: `Additional context must be ${MAX_FIELD_LENGTHS.additional_context} characters or less` });
+      }
+      updateData.additional_context = trimmed;
+    }
+    if (profile_picture !== undefined) {
+      // Profile picture can be null/empty to clear, or a base64 string/URL
+      const trimmed = profile_picture != null ? String(profile_picture) : null;
+      if (trimmed && trimmed.length > MAX_FIELD_LENGTHS.profile_picture) {
+        return res.status(400).json({ error: 'Profile picture is too large. Please use a smaller image.' });
+      }
+      updateData.profile_picture = trimmed;
     }
     if (household_members !== undefined) {
       const trimmed = household_members != null ? String(household_members).trim() : null;
@@ -5390,7 +5452,44 @@ app.put('/api/user/profile', async (req, res) => {
       updateData: updateData
     });
 
-    await dbSafe.safeUpdate('users', updateData, { id: userId });
+    // Runtime safety net: Ensure required columns exist before updating
+    // This prevents "column does not exist" errors even if migration hasn't run
+    try {
+      await ensureProfileColumnsExist();
+    } catch (schemaError) {
+      console.error('Error ensuring profile columns exist:', schemaError);
+      // Log but don't fail - migration should handle this, but we continue as safety net
+    }
+
+    try {
+      await dbSafe.safeUpdate('users', updateData, { id: userId });
+    } catch (updateError) {
+      // Check if error is due to missing column
+      if (updateError.message && updateError.message.includes('does not exist')) {
+        console.error('Database schema error detected:', updateError.message);
+        console.log('Attempting to create missing columns and retry...');
+        
+        // Try to ensure columns exist again (force refresh cache)
+        try {
+          const { clearColumnCache } = require('./src/utils/schema');
+          clearColumnCache();
+          await ensureProfileColumnsExist();
+          
+          // Retry the update
+          await dbSafe.safeUpdate('users', updateData, { id: userId });
+          console.log('Profile update succeeded after creating missing columns');
+        } catch (retryError) {
+          console.error('Failed to fix schema and retry:', retryError);
+          return res.status(500).json({ 
+            error: 'Profile save failed. Please refresh the page and try again. If the problem persists, contact support.',
+            details: process.env.NODE_ENV === 'development' ? retryError.message : undefined
+          });
+        }
+      } else {
+        // Re-throw if it's a different error
+        throw updateError;
+      }
+    }
     require('./db').saveDatabase();
 
     console.log('Profile updated successfully for user:', userId);
@@ -5414,6 +5513,15 @@ app.put('/api/user/profile', async (req, res) => {
   } catch (error) {
     console.error('Error updating profile:', error);
     console.error('Error stack:', error.stack);
+    
+    // Check if error is related to missing columns
+    if (error.message && error.message.includes('does not exist')) {
+      return res.status(500).json({
+        error: 'Profile save failed. Please refresh the page and try again. If the problem persists, contact support.',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+    
     // Return more detailed error for Safari
     res.status(500).json({
       error: error.message || 'Failed to update profile',
