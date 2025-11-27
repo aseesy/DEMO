@@ -46,6 +46,7 @@ export function useTasks(username, isAuthenticated = true) {
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data)) {
+          console.log(`[useTasks] Loaded ${data.length} tasks for user ${username}, filter: ${taskFilter}`);
           // Sort by creation date (oldest first for dashboard)
           const sorted = [...data].sort((a, b) => {
             const dateA = new Date(a.created_at || 0);
@@ -55,16 +56,28 @@ export function useTasks(username, isAuthenticated = true) {
           // Only limit to 5 if no search is active
           if (!taskSearch) {
             setTasks(sorted.slice(0, 5));
+            console.log(`[useTasks] Limited to 5 tasks for dashboard display`);
           } else {
             setTasks(sorted);
           }
+        } else {
+          console.warn('[useTasks] Response data is not an array:', data);
+          setTasks([]);
         }
-      } else if (response.status === 401) {
-        // User not authenticated - silently ignore
-        setTasks([]);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error(`[useTasks] API error (${response.status}):`, errorData);
+        if (response.status === 401) {
+          // User not authenticated - silently ignore
+          setTasks([]);
+        } else {
+          // Other errors - log but don't show to user
+          setTasks([]);
+        }
       }
     } catch (err) {
-      console.error('Error loading tasks (Vite):', err);
+      console.error('[useTasks] Error loading tasks:', err);
+      setTasks([]);
     } finally {
       setIsLoadingTasks(false);
     }

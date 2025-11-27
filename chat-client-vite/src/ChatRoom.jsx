@@ -1300,7 +1300,7 @@ function ChatRoom() {
                         <button
                           onClick={() => setTaskFilter('open')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[32px] touch-manipulation ${taskFilter === 'open'
-                            ? 'bg-teal-dark text-white shadow-sm hover:shadow-md'
+                            ? 'bg-teal-medium text-white shadow-sm hover:shadow-md'
                             : 'bg-white border-2 border-teal-light text-teal-medium hover:border-teal-medium hover:bg-teal-lightest'
                             }`}
                         >
