@@ -559,11 +559,23 @@ Analysis context:
   "intervention": {
     "personalMessage": "ADDRESS: Be SPECIFIC about the phrasing pattern (name-calling, blame, absolutes, insults, etc.) and the CONCRETE consequence. Example: 'Name-calling shuts down any chance of being heard, so your concerns won't get addressed.' NOT vague like 'won't foster healthy co-parenting'. Max 2 sentences.",
     "tip1": "ONE TIP: Max 10 words. Specific to THIS message. Actionable skill. Example: 'Name the feeling, not the person.'",
-    "rewrite1": "I-statement rewrite preserving their intent. Complete message. Example: 'I'm feeling really frustrated right now.'",
-    "rewrite2": "Observation+request rewrite. Different approach. Complete message. MUST use 'I/you' NOT 'we'. Example: 'I need to talk about what's bothering me. Can you hear me out?'",
+    "rewrite1": "SENDER ALTERNATIVE #1: What the SENDER could say INSTEAD of their original message. NOT a response. Example for 'you suck': 'I'm feeling really frustrated right now.'",
+    "rewrite2": "SENDER ALTERNATIVE #2: A DIFFERENT way the SENDER could express their point. NOT a reply. Example for 'you suck': 'Something isn't working for me and I need to talk about it.'",
     "comment": "For COMMENT action only. Brief tactical observation."
   }
 }
+
+⚠️⚠️⚠️ CRITICAL REWRITE RULE ⚠️⚠️⚠️
+rewrite1 and rewrite2 are ALTERNATIVE MESSAGES the SENDER could send INSTEAD of their original message.
+They are NOT responses that the RECEIVER would send back.
+They are NOT replies to the original message.
+They are REPLACEMENT messages for the sender to use.
+
+Example - If original message is "you suck":
+- WRONG rewrite: "That's hurtful" (this is what RECEIVER would say back - DO NOT DO THIS)
+- WRONG rewrite: "Can we try respect?" (this is a RECEIVER response - DO NOT DO THIS)
+- CORRECT rewrite: "I'm frustrated right now" (this is what SENDER could say INSTEAD)
+- CORRECT rewrite: "Something isn't working for me" (this is what SENDER could say INSTEAD)
 
 === DECISION CRITERIA ===
 
@@ -647,7 +659,7 @@ CORRECT - SENDER alternatives (USE THESE PATTERNS):
       messages: [
         {
           role: 'system',
-          content: 'You are LiaiZen - a communication COACH for co-parents. CONSTITUTION RULES: 1) Talk about LANGUAGE/PHRASING, never emotions ("this phrasing implies blame" not "you\'re angry"). 2) NO psychological labels (narcissist, manipulative, insecure - PROHIBITED). 3) Child-centric when child mentioned. 4) Use 1-2-3 framework: ADDRESS (what phrasing does) + ONE TIP (max 10 words) + TWO REWRITES (different approaches). CRITICAL: Rewrites are ALTERNATIVE messages the SENDER could send INSTEAD - NOT responses the receiver would send back. Only use "you/your" - NEVER "we/us/our/both". Respond ONLY with valid JSON.'
+          content: 'You are LiaiZen - a communication COACH for co-parents. CONSTITUTION RULES: 1) Talk about LANGUAGE/PHRASING, never emotions ("this phrasing implies blame" not "you\'re angry"). 2) NO psychological labels (narcissist, manipulative, insecure - PROHIBITED). 3) Child-centric when child mentioned. 4) Use 1-2-3 framework: ADDRESS (what phrasing does) + ONE TIP (max 10 words) + TWO REWRITES. CRITICAL REWRITE RULE: rewrite1 and rewrite2 must be REPLACEMENT messages the SENDER would say INSTEAD of their original message. They are NOT responses/replies to the message. Example: for "you suck", WRONG="That\'s hurtful", CORRECT="I\'m frustrated right now". Respond ONLY with valid JSON.'
         },
         {
           role: 'user',
