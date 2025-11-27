@@ -1129,54 +1129,57 @@ function ChatRoom() {
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
               <div className="space-y-6 md:space-y-8">
-                {/* Invite Co-Parent Card - Always visible at top when no co-parent */}
+                {/* Co-Parent Connection Cards - Always visible at top when no co-parent */}
                 {!hasCoParentConnected && (
-                  <div className="rounded-xl border-2 border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-5 shadow-md">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Send Invite Card */}
+                    <div className="rounded-xl border-2 border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50 px-5 py-4 shadow-md">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
                           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
                         </div>
                         <div>
-                          <h3 className="font-semibold text-emerald-800">Invite Your Co-Parent</h3>
-                          <p className="text-sm text-emerald-700">Share a link so they can join your mediation room</p>
+                          <h3 className="font-semibold text-emerald-800">Send Invite</h3>
+                          <p className="text-sm text-emerald-700">Generate a link to share</p>
                         </div>
                       </div>
                       {inviteLink ? (
-                        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                        <div className="space-y-2">
                           <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-emerald-200">
-                            <span className="font-mono font-bold text-emerald-800">{inviteCode}</span>
+                            <span className="font-mono font-bold text-emerald-800 text-lg">{inviteCode}</span>
                             <button
                               onClick={async () => {
                                 await navigator.clipboard.writeText(inviteCode);
                                 setInviteCopied(true);
                                 setTimeout(() => setInviteCopied(false), 2000);
                               }}
-                              className="text-emerald-600 hover:text-emerald-800 p-1"
+                              className="ml-auto text-emerald-600 hover:text-emerald-800 p-1"
                             >
                               {inviteCopied ? '✓' : '📋'}
                             </button>
                           </div>
-                          <button
-                            onClick={handleCopyInvite}
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
-                          >
-                            {inviteCopied ? 'Copied!' : 'Copy Link'}
-                          </button>
-                          <button
-                            onClick={() => { setInviteLink(''); setInviteCode(''); }}
-                            className="px-3 py-2 text-emerald-600 hover:text-emerald-800 font-medium"
-                          >
-                            ✕
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleCopyInvite}
+                              className="flex-1 px-3 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors text-sm"
+                            >
+                              {inviteCopied ? 'Copied!' : 'Copy Link'}
+                            </button>
+                            <button
+                              onClick={() => { setInviteLink(''); setInviteCode(''); }}
+                              className="px-3 py-2 text-emerald-600 hover:bg-emerald-100 rounded-lg font-medium transition-colors"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <button
                           onClick={handleLoadInvite}
                           disabled={isLoadingInvite}
-                          className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-60 transition-all flex items-center gap-2 shadow-sm"
+                          className="w-full px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
                         >
                           {isLoadingInvite ? (
                             <>
@@ -1189,11 +1192,49 @@ function ChatRoom() {
                         </button>
                       )}
                     </div>
-                    {inviteError && (
-                      <div className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
-                        {inviteError}
+
+                    {/* Enter Invite Code Card */}
+                    <div className="rounded-xl border-2 border-teal-400 bg-gradient-to-r from-teal-50 to-cyan-50 px-5 py-4 shadow-md">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-teal-800">Have a Code?</h3>
+                          <p className="text-sm text-teal-700">Enter code from your co-parent</p>
+                        </div>
                       </div>
-                    )}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={manualInviteCode}
+                          onChange={(e) => setManualInviteCode(e.target.value.toUpperCase())}
+                          placeholder="Enter code (e.g., LZ-ABC123)"
+                          className="flex-1 px-3 py-2.5 border-2 border-teal-200 rounded-lg focus:outline-none focus:border-teal-500 text-teal-900 font-mono bg-white"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleManualAcceptInvite();
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={handleManualAcceptInvite}
+                          disabled={isAcceptingInvite || !manualInviteCode.trim()}
+                          className="px-4 py-2.5 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 disabled:opacity-60 transition-all"
+                        >
+                          {isAcceptingInvite ? '...' : 'Join'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error message for invite operations */}
+                {inviteError && !hasCoParentConnected && (
+                  <div className="rounded-lg text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-3">
+                    {inviteError}
                   </div>
                 )}
 
