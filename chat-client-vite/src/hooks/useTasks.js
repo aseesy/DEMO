@@ -48,8 +48,10 @@ export function useTasks(username, isAuthenticated = true) {
       const url = `/api/tasks?${params.toString()}`;
       console.log('[useTasks] Making API request to:', url);
       const response = await apiGet(url);
+      console.log('[useTasks] API response status:', response.status, response.ok);
       if (response.ok) {
         const data = await response.json();
+        console.log('[useTasks] API response data:', data);
         if (Array.isArray(data)) {
           console.log(`[useTasks] Loaded ${data.length} tasks for user ${username}, filter: ${taskFilter}`);
           // Sort by creation date (oldest first for dashboard)
