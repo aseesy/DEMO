@@ -1129,6 +1129,74 @@ function ChatRoom() {
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
               <div className="space-y-6 md:space-y-8">
+                {/* Invite Co-Parent Card - Always visible at top when no co-parent */}
+                {!hasCoParentConnected && (
+                  <div className="rounded-xl border-2 border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-5 shadow-md">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-emerald-800">Invite Your Co-Parent</h3>
+                          <p className="text-sm text-emerald-700">Share a link so they can join your mediation room</p>
+                        </div>
+                      </div>
+                      {inviteLink ? (
+                        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                          <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-emerald-200">
+                            <span className="font-mono font-bold text-emerald-800">{inviteCode}</span>
+                            <button
+                              onClick={async () => {
+                                await navigator.clipboard.writeText(inviteCode);
+                                setInviteCopied(true);
+                                setTimeout(() => setInviteCopied(false), 2000);
+                              }}
+                              className="text-emerald-600 hover:text-emerald-800 p-1"
+                            >
+                              {inviteCopied ? '✓' : '📋'}
+                            </button>
+                          </div>
+                          <button
+                            onClick={handleCopyInvite}
+                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
+                          >
+                            {inviteCopied ? 'Copied!' : 'Copy Link'}
+                          </button>
+                          <button
+                            onClick={() => { setInviteLink(''); setInviteCode(''); }}
+                            className="px-3 py-2 text-emerald-600 hover:text-emerald-800 font-medium"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleLoadInvite}
+                          disabled={isLoadingInvite}
+                          className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-60 transition-all flex items-center gap-2 shadow-sm"
+                        >
+                          {isLoadingInvite ? (
+                            <>
+                              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              <span>Generating...</span>
+                            </>
+                          ) : (
+                            <span>Generate Invite Link</span>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    {inviteError && (
+                      <div className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        {inviteError}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Invite acceptance notification */}
                 {isAcceptingInvite && (
                   <div className="rounded-xl border-2 border-teal-light bg-white px-6 py-4 text-sm text-teal-medium mb-6 shadow-sm">
