@@ -3927,6 +3927,291 @@ app.post('/api/notifications/:id/action', verifyAuth, async (req, res) => {
   }
 });
 
+// ============================================================================
+// PAIRING API ENDPOINTS (Feature: 004-account-pairing-refactor)
+// ============================================================================
+
+/**
+ * Create a new pairing invitation
+ * POST /api/pairing/create
+ * Body: { type: 'email'|'link'|'code', inviteeEmail?: string }
+ */
+app.post('/api/pairing/create', authenticateToken, async (req, res) => {
+  try {
+    const { type, inviteeEmail } = req.body;
+    const userId = req.user.userId;
+
+    if (!type || !['email', 'link', 'code'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid invitation type. Must be email, link, or code.' });
+    }
+
+    // Get user info
+    const userResult = await db.query('SELECT username, email FROM users WHERE id = $1', [userId]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const user = userResult.rows[0];
+
+    // Check for mutual invitation if email type
+    if (type === 'email' && inviteeEmail) {
+      const mutualResult = await pairingManager.detectAndCompleteMutual({
+        initiatorId: userId,
+        initiatorEmail: user.email,
+        inviteeEmail: inviteeEmail,
+      }, db, roomManager);
+
+      if (mutualResult) {
+        // Mutual invitation detected and auto-completed!
+        return res.json({
+          success: true,
+          mutual: true,
+          message: 'Mutual invitation detected! You are now paired.',
+          pairing: mutualResult.pairing,
+          sharedRoomId: mutualResult.sharedRoomId,
+        });
+      }
+    }
+
+    let result;
+    switch (type) {
+      case 'email':
+        if (!inviteeEmail) {
+          return res.status(400).json({ error: 'inviteeEmail is required for email invitations' });
+        }
+        result = await pairingManager.createEmailPairing({
+          initiatorId: userId,
+          inviteeEmail,
+          initiatorUsername: user.username,
+        }, db);
+        break;
+
+      case 'link':
+        result = await pairingManager.createLinkPairing({
+          initiatorId: userId,
+          initiatorUsername: user.username,
+        }, db);
+        break;
+
+      case 'code':
+        result = await pairingManager.createCodePairing({
+          initiatorId: userId,
+          initiatorUsername: user.username,
+        }, db);
+        break;
+    }
+
+    res.json({
+      success: true,
+      pairingCode: result.pairingCode,
+      token: result.token, // Only present for email/link types
+      expiresAt: result.expiresAt,
+      inviteType: type,
+    });
+
+  } catch (error) {
+    console.error('Create pairing error:', error);
+    if (error.message.includes('already have an active')) {
+      return res.status(409).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Get current user's pairing status
+ * GET /api/pairing/status
+ */
+app.get('/api/pairing/status', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const status = await pairingManager.getPairingStatus(userId, db);
+    res.json(status);
+  } catch (error) {
+    console.error('Get pairing status error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Validate a pairing code (public endpoint for checking before login/signup)
+ * GET /api/pairing/validate/:code
+ */
+app.get('/api/pairing/validate/:code', async (req, res) => {
+  try {
+    const { code } = req.params;
+    const result = await pairingManager.validateCode(code, db);
+
+    if (!result.valid) {
+      return res.status(400).json({
+        valid: false,
+        error: result.error,
+        code: result.code,
+      });
+    }
+
+    res.json({
+      valid: true,
+      inviterUsername: result.pairing.invited_by_username,
+      inviteType: result.pairing.invite_type,
+      expiresAt: result.pairing.expires_at,
+    });
+  } catch (error) {
+    console.error('Validate code error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Validate a pairing token (for email/link invitations)
+ * GET /api/pairing/validate-token/:token
+ */
+app.get('/api/pairing/validate-token/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const result = await pairingManager.validateToken(token, db);
+
+    if (!result.valid) {
+      return res.status(400).json({
+        valid: false,
+        error: result.error,
+        code: result.code,
+      });
+    }
+
+    res.json({
+      valid: true,
+      inviterUsername: result.pairing.invited_by_username,
+      inviteType: result.pairing.invite_type,
+      expiresAt: result.pairing.expires_at,
+    });
+  } catch (error) {
+    console.error('Validate token error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Accept a pairing invitation
+ * POST /api/pairing/accept
+ * Body: { code?: string, token?: string }
+ */
+app.post('/api/pairing/accept', authenticateToken, async (req, res) => {
+  try {
+    const { code, token } = req.body;
+    const userId = req.user.userId;
+
+    if (!code && !token) {
+      return res.status(400).json({ error: 'Either code or token is required' });
+    }
+
+    let result;
+    if (code) {
+      result = await pairingManager.acceptByCode(code, userId, db, roomManager);
+    } else {
+      result = await pairingManager.acceptByToken(token, userId, db, roomManager);
+    }
+
+    res.json({
+      success: true,
+      message: 'Pairing accepted! You are now connected with your co-parent.',
+      pairing: result.pairing,
+      sharedRoomId: result.sharedRoomId,
+      partnerId: result.initiatorId,
+    });
+
+  } catch (error) {
+    console.error('Accept pairing error:', error);
+    if (error.message.includes('not found') || error.message.includes('expired')) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.message.includes('cannot accept your own')) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Decline a pairing invitation
+ * POST /api/pairing/decline/:id
+ */
+app.post('/api/pairing/decline/:id', authenticateToken, async (req, res) => {
+  try {
+    const pairingId = parseInt(req.params.id);
+    const userId = req.user.userId;
+
+    const result = await pairingManager.declinePairing(pairingId, userId, db);
+
+    res.json({
+      success: true,
+      message: 'Pairing invitation declined.',
+    });
+
+  } catch (error) {
+    console.error('Decline pairing error:', error);
+    if (error.message.includes('not found')) {
+      return res.status(404).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cancel a pending pairing (initiator only)
+ * DELETE /api/pairing/:id
+ */
+app.delete('/api/pairing/:id', authenticateToken, async (req, res) => {
+  try {
+    const pairingId = parseInt(req.params.id);
+    const userId = req.user.userId;
+
+    await pairingManager.cancelPairing(pairingId, userId, db);
+
+    res.json({
+      success: true,
+      message: 'Pairing invitation cancelled.',
+    });
+
+  } catch (error) {
+    console.error('Cancel pairing error:', error);
+    if (error.message.includes('not found')) {
+      return res.status(404).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Resend a pairing invitation (generates new token/expiration)
+ * POST /api/pairing/resend/:id
+ */
+app.post('/api/pairing/resend/:id', authenticateToken, async (req, res) => {
+  try {
+    const pairingId = parseInt(req.params.id);
+    const userId = req.user.userId;
+
+    const result = await pairingManager.resendPairing(pairingId, userId, db);
+
+    res.json({
+      success: true,
+      message: 'Invitation resent with new expiration.',
+      token: result.token,
+      expiresAt: result.expiresAt,
+    });
+
+  } catch (error) {
+    console.error('Resend pairing error:', error);
+    if (error.message.includes('not found')) {
+      return res.status(404).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// END PAIRING API ENDPOINTS
+// ============================================================================
+
 // Duplicate signup endpoint removed - using the one at line 2847 instead
 
 // Login
