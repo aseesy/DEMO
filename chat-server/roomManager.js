@@ -290,32 +290,32 @@ async function useInvite(inviteCode, userId) {
     try {
       // Get all members of the room
       const roomMembers = await getRoomMembers(invite.roomId);
-      
+
       if (roomMembers.length > 1) {
         // Get the user who just joined
         const newUsers = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
-        
+
         if (newUsers.length > 0) {
           const newUser = newUsers[0];
-          
+
           // Create contacts between the new user and all existing room members
           for (const member of roomMembers) {
             // Skip if it's the same user
             if (member.id === userId) continue;
-            
+
             // Get the other member's user info
             const otherUsers = await dbSafe.safeSelect('users', { id: member.id }, { limit: 1 });
-            
+
             if (otherUsers.length > 0) {
               const otherUser = otherUsers[0];
-              
+
               // Check if contact already exists for new user -> other user
               const existingContact1 = await dbSafe.safeSelect('contacts', {
                 user_id: userId,
                 contact_name: otherUser.username,
                 relationship: 'co-parent'
               }, { limit: 1 });
-              
+
               if (existingContact1.length === 0) {
                 await dbSafe.safeInsert('contacts', {
                   user_id: userId,
@@ -337,14 +337,14 @@ async function useInvite(inviteCode, userId) {
                 });
                 console.log(`✅ Created co-parent contact for ${newUser.username}: ${otherUser.username}`);
               }
-              
+
               // Check if contact already exists for other user -> new user
               const existingContact2 = await dbSafe.safeSelect('contacts', {
                 user_id: member.id,
                 contact_name: newUser.username,
                 relationship: 'co-parent'
               }, { limit: 1 });
-              
+
               if (existingContact2.length === 0) {
                 await dbSafe.safeInsert('contacts', {
                   user_id: member.id,
@@ -368,12 +368,12 @@ async function useInvite(inviteCode, userId) {
               }
             }
           }
-          
+
           // PostgreSQL automatically persists changes - no saveDatabase() needed
-          
+
           // Note: Auto-complete onboarding tasks will be called from the server endpoint
           // that calls useInvite, to avoid circular dependencies
-          
+
           // Share contacts (names only) between users
           // This allows each user to see the other's contacts but add their own context
           try {
@@ -384,7 +384,7 @@ async function useInvite(inviteCode, userId) {
             const newUserContactNames = newUserContacts
               .filter(c => c.relationship !== 'co-parent')
               .map(c => c.contact_name);
-            
+
             // Get other user's contacts (excluding co-parent contacts)
             const otherUserContacts = await dbSafe.safeSelect('contacts', {
               user_id: member.id
@@ -392,7 +392,7 @@ async function useInvite(inviteCode, userId) {
             const otherUserContactNames = otherUserContacts
               .filter(c => c.relationship !== 'co-parent')
               .map(c => c.contact_name);
-            
+
             // Share new user's contacts with other user (names only)
             for (const contactName of newUserContactNames) {
               // Check if other user already has this contact
@@ -400,7 +400,7 @@ async function useInvite(inviteCode, userId) {
                 user_id: member.id,
                 contact_name: contactName
               }, { limit: 1 });
-              
+
               if (existingCheck.length === 0) {
                 // Create contact with just the name - user can add their own context
                 await dbSafe.safeInsert('contacts', {
@@ -425,7 +425,7 @@ async function useInvite(inviteCode, userId) {
                 console.log(`📋 Shared contact "${contactName}" from ${newUser.username} to ${otherUser.username}`);
               }
             }
-            
+
             // Share other user's contacts with new user (names only)
             for (const contactName of otherUserContactNames) {
               // Check if new user already has this contact
@@ -433,7 +433,7 @@ async function useInvite(inviteCode, userId) {
                 user_id: userId,
                 contact_name: contactName
               }, { limit: 1 });
-              
+
               if (existingCheck.length === 0) {
                 // Create contact with just the name - user can add their own context
                 await dbSafe.safeInsert('contacts', {
@@ -458,7 +458,7 @@ async function useInvite(inviteCode, userId) {
                 console.log(`📋 Shared contact "${contactName}" from ${otherUser.username} to ${newUser.username}`);
               }
             }
-            
+
             // Save database after sharing contacts
             require('./db').saveDatabase();
           } catch (shareError) {
@@ -500,45 +500,45 @@ async function hasRoomAccess(userId, roomId) {
  */
 async function ensureContactsForRoomMembers(roomId) {
   const now = new Date().toISOString();
-  
+
   try {
     console.log(`🔍 ensureContactsForRoomMembers called for room: ${roomId}`);
     const roomMembers = await getRoomMembers(roomId);
     console.log(`📋 Room has ${roomMembers.length} members:`, roomMembers.map(m => ({ id: m.id, username: m.username })));
-    
+
     if (roomMembers.length < 2) {
       // Need at least 2 members to create contacts
       console.log(`⚠️ Room has less than 2 members, skipping contact creation`);
       return;
     }
-    
+
     // Create contacts for all pairs of users in the room
     for (let i = 0; i < roomMembers.length; i++) {
       for (let j = i + 1; j < roomMembers.length; j++) {
         const user1 = roomMembers[i];
         const user2 = roomMembers[j];
-        
+
         // Get user info for both
         const user1Data = await dbSafe.safeSelect('users', { id: user1.id }, { limit: 1 });
         const user2Data = await dbSafe.safeSelect('users', { id: user2.id }, { limit: 1 });
-        
+
         if (user1Data.length > 0 && user2Data.length > 0) {
           const u1 = user1Data[0];
           const u2 = user2Data[0];
-          
+
           console.log(`🔎 Checking contacts between ${u1.username} (${user1.id}) and ${u2.username} (${user2.id})`);
-          
+
           // Check if contact exists for user1 -> user2
           // Note: We check by contact_name (username) to avoid case sensitivity issues
           const existing1 = await dbSafe.safeSelect('contacts', {
             user_id: user1.id,
             relationship: 'co-parent'
           }, { limit: 100 }); // Get all co-parent contacts to check
-          
+
           // Check if contact with this name already exists
           const contactExists1 = existing1.some(c => c.contact_name && c.contact_name.toLowerCase() === u2.username.toLowerCase());
           console.log(`   ${u1.username} -> ${u2.username}: ${contactExists1 ? 'EXISTS' : 'NOT FOUND'} (checked ${existing1.length} contacts)`);
-          
+
           if (!contactExists1) {
             await dbSafe.safeInsert('contacts', {
               user_id: user1.id,
@@ -560,17 +560,17 @@ async function ensureContactsForRoomMembers(roomId) {
             });
             console.log(`✅ Created co-parent contact for ${u1.username}: ${u2.username}`);
           }
-          
+
           // Check if contact exists for user2 -> user1
           const existing2 = await dbSafe.safeSelect('contacts', {
             user_id: user2.id,
             relationship: 'co-parent'
           }, { limit: 100 }); // Get all co-parent contacts to check
-          
+
           // Check if contact with this name already exists
           const contactExists2 = existing2.some(c => c.contact_name && c.contact_name.toLowerCase() === u1.username.toLowerCase());
           console.log(`   ${u2.username} -> ${u1.username}: ${contactExists2 ? 'EXISTS' : 'NOT FOUND'} (checked ${existing2.length} contacts)`);
-          
+
           if (!contactExists2) {
             await dbSafe.safeInsert('contacts', {
               user_id: user2.id,
@@ -595,7 +595,7 @@ async function ensureContactsForRoomMembers(roomId) {
         }
       }
     }
-    
+
     // Save database after creating contacts
     require('./db').saveDatabase();
   } catch (error) {
@@ -633,25 +633,50 @@ async function getRoomInvites(roomId) {
 /**
  * Send LiaiZen welcome message to a room
  * @param {string} roomId - Room ID
+ *
+ * FIX: Ensure welcome message appears as the FIRST message chronologically
+ * by using a backdated timestamp (1 second after room creation)
  */
 async function sendWelcomeMessage(roomId) {
-  const now = new Date().toISOString();
-  const messageId = `liaizen_welcome_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-
   console.log(`🤖 Sending LiaiZen welcome message to room ${roomId}`);
 
   try {
+    // Get room creation time to backdate the welcome message
+    const roomResult = await dbSafe.safeSelect('rooms', { id: roomId }, { limit: 1 });
+
+    let welcomeTimestamp;
+    if (roomResult.length > 0) {
+      const roomCreatedAt = new Date(roomResult[0].created_at);
+      // Welcome message timestamp = 1 second after room creation
+      welcomeTimestamp = new Date(roomCreatedAt.getTime() + 1000).toISOString();
+    } else {
+      // Fallback: use current time if room not found
+      welcomeTimestamp = new Date().toISOString();
+    }
+
+    const messageId = `liaizen_welcome_${roomId}`;
+
+    // Check if welcome message already exists (prevent duplicates)
+    const existingWelcome = await dbSafe.safeSelect('messages', {
+      id: messageId
+    }, { limit: 1 });
+
+    if (existingWelcome.length > 0) {
+      console.log(`ℹ️  Welcome message already exists for room ${roomId}, skipping`);
+      return { id: messageId, roomId };
+    }
+
     // Use ai_comment type so the text property is displayed
     await dbSafe.safeInsert('messages', {
       id: messageId,
       type: 'ai_comment',
       username: 'LiaiZen',
       text: LIAIZEN_WELCOME_MESSAGE,
-      timestamp: now,
+      timestamp: welcomeTimestamp,
       room_id: roomId
     });
 
-    console.log(`✅ LiaiZen welcome message sent to room ${roomId}`);
+    console.log(`✅ LiaiZen welcome message sent to room ${roomId} with timestamp ${welcomeTimestamp}`);
     return { id: messageId, roomId };
   } catch (error) {
     console.error(`❌ Error sending welcome message:`, error);
