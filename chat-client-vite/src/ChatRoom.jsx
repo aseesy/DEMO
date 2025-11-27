@@ -337,7 +337,19 @@ function ChatRoom() {
     }
   }, [isAuthenticated, currentView]);
 
-  const tasksState = useTasks(username, isAuthenticated && !showLanding && !isCheckingAuth);
+  // Log task loading conditions
+  const shouldLoadTasks = isAuthenticated && !showLanding && !isCheckingAuth;
+  React.useEffect(() => {
+    console.log('[ChatRoom] Task loading conditions:', {
+      username,
+      isAuthenticated,
+      showLanding,
+      isCheckingAuth,
+      shouldLoadTasks
+    });
+  }, [username, isAuthenticated, showLanding, isCheckingAuth, shouldLoadTasks]);
+  
+  const tasksState = useTasks(username, shouldLoadTasks);
   const {
     tasks,
     isLoadingTasks,
