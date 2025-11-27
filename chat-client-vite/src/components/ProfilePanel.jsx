@@ -244,6 +244,13 @@ export function ProfilePanel({ username }) {
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-200 border-t-[#4DA8B0]" />
                   </div>
                 )}
+                {googleMapsError && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2" title={googleMapsError}>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                )}
               </div>
             </div>
           </div>
