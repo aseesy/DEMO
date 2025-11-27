@@ -30,6 +30,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **Email**: Nodemailer (Gmail integration)
 - **Deployment**: Railway
 
+### LiaiZen AI System (`chat-server/src/liaizen/`)
+The LiaiZen namespace contains the complete AI mediation intelligence system:
+- **Core** (`core/`): Main mediation pipeline and AI client
+- **Agents** (`agents/`): Specialized AI agents (proactive coaching, feedback learning)
+- **Policies** (`policies/`): Constitution rules and safety controls
+- **Context** (`context/`): Communication profiles and user context
+- **Analysis** (`analysis/`): Language analysis and rewrite validation
+- **Intelligence** (`intelligence/`): Contact detection
+- **Metrics** (`metrics/`): Communication statistics
+
+**Import examples:**
+- `const { mediator } = require('./src/liaizen')` - Main mediation system
+- `const { proactiveCoach } = require('./src/liaizen')` - Pre-send coaching
+- `const { languageAnalyzer } = require('./src/liaizen')` - Language analysis
+
 ### Key Features
 - User authentication (JWT, Google OAuth)
 - Real-time chat rooms
@@ -232,6 +247,37 @@ The following specialized agents are available for specific tasks:
 **Tools**: Read, Grep, Glob, WebFetch, WebSearch, AskUserQuestion, TodoWrite
 
 **Memory**: `.docs/agents/product/product-manager/`
+
+---
+
+### ui-designer (product)
+
+**Purpose**: Senior UI Designer and Design System Steward. Calm, confident, minimalist personality with refined visual sensitivity. Output is decisive, elegant, succinct.
+
+**Philosophy**: "Beauty emerges from restraint + clarity + consistency."
+
+**Operating Modes**:
+- **System Executor (default)**: Applies existing design tokens, components, spacing, and typography without deviation
+- **Design Evolution**: Proposes system-level changes only with explicit approval using "Recommendation: [change]. Approve?" format
+
+**Vague Direction Interpretation**:
+- "Friendlier buttons" -> larger radius, generous padding, softer shadows
+- "More premium feel" -> less color, more whitespace, refined weights
+- "More calm" -> reduced saturation, wider spacing, quieter typography
+
+**Memory**: Remembers approved decisions, rejected suggestions, user preferences, and brand tone
+
+**Canonical Requirements**: Uses design tokens, official component library, type scale, spacing scale, grid, brand palette, shadow radii, and iconography exclusively
+
+**Forbidden**: Introducing new colors without approval, changing typography stack, redefining tokens, non-system CSS, random shadows, copying external patterns, freestyle styling, excessive questions
+
+**Usage**: `Use the ui-designer agent to...`
+
+**Triggers**: UI design, component styling, design system, visual design, typography, spacing, color palette, button styles, card layouts, design tokens
+
+**Tools**: Read, Write, Edit, Grep, Glob, TodoWrite
+
+**Memory**: `.docs/agents/product/ui-designer/`
 
 ---
 

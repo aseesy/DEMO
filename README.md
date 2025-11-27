@@ -37,6 +37,15 @@ Transform high-tension co-parenting exchanges into respectful, child-centered di
 - **Email**: Nodemailer with Gmail integration
 - **Deployment**: Railway
 
+### **LiaiZen AI System** (`chat-server/src/liaizen/`)
+- **Core**: Main mediation pipeline (`core/mediator.js`) and AI client (`core/client.js`)
+- **Agents**: Specialized AI agents for proactive coaching and feedback learning
+- **Policies**: Constitution rules and safety controls
+- **Context**: Communication profiles and user context management
+- **Analysis**: Language analysis and rewrite validation
+- **Intelligence**: Contact detection and relationship insights
+- **Metrics**: Communication statistics and tracking
+
 ### **Development Framework** (NEW)
 - **SDD Agentic Framework v2.0.0**: Specification-driven development with constitutional AI
 - **DS-STAR Multi-Agent System**: Quality gates, intelligent routing, self-healing
@@ -108,6 +117,8 @@ npm install
 ```bash
 # Start all services (frontend + backend)
 npm run dev
+# Or use the new dev stack command:
+npm run dev:stack
 
 # Frontend only (port 5173)
 cd chat-client-vite && npm run dev
@@ -118,6 +129,27 @@ cd chat-server && node server.js
 # Run tests
 npm test
 ```
+
+### **Development Scripts** (Phase 1)
+
+LiaiZen includes development scripts for maintaining code quality:
+
+```bash
+# Database & Data Hygiene
+cd chat-server
+npm run db:validate      # Validate PostgreSQL schema
+npm run reset:data       # Safe data reset (dev only)
+
+# AI Pipeline Quality
+npm run prompts:lint     # Validate mediation prompts
+npm run ai:test          # AI regression tests
+
+# Developer Productivity
+npm run lint:fix         # Auto-fix code quality issues
+npm run dev:stack        # Start all dev services
+```
+
+See `chat-server/scripts/README.md` for detailed documentation.
 
 ### **Environment Variables**
 

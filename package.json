@@ -8,7 +8,9 @@
     "restart:frontend": "./restart-servers.sh frontend",
     "start": "./start-dev.sh",
     "stop": "./stop-dev.sh",
-    "dev": "./start-dev.sh"
+    "dev": "./start-dev.sh",
+    "dev:stack": "node chat-server/scripts/dev-stack.js",
+    "lint:fix": "node chat-server/scripts/lint-fix.js"
   },
   "private": true
 }

@@ -52,6 +52,7 @@ const communicationStats = require('./communicationStats');
 const invitationManager = require('./libs/invitation-manager');
 const notificationManager = require('./libs/notification-manager');
 const db = require('./dbPostgres'); // Database pool for invitation/notification libraries
+const { isValidEmail } = require('./src/utils/validators'); // Generic validation utilities
 
 // Initialize Figma service if API token is provided
 let figmaService = null;
@@ -448,6 +449,34 @@ async function verifyAuth(req, res, next) {
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+/**
+ * Optional authentication middleware
+ * Tries to authenticate but doesn't fail if token is missing or invalid
+ * Sets req.user if authenticated, otherwise req.user is undefined
+ */
+async function optionalAuth(req, res, next) {
+  try {
+    // Check for token in cookie or Authorization header
+    const token = req.cookies.auth_token ||
+      (req.headers.authorization && req.headers.authorization.replace('Bearer ', ''));
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        req.user = decoded; // Add user info to request
+      } catch (err) {
+        // Token invalid or expired - silently continue without auth
+        req.user = undefined;
+      }
+    }
+    // No token - continue without auth
+    next();
+  } catch (err) {
+    // Any other error - continue without auth
+    next();
   }
 }
 
@@ -2809,8 +2838,7 @@ app.post('/api/contact', async (req, res) => {
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
@@ -2854,9 +2882,8 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const cleanEmail = email.trim().toLowerCase();
-    if (!emailRegex.test(cleanEmail)) {
+    if (!isValidEmail(cleanEmail)) {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
@@ -2936,15 +2963,14 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Validate email formats
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const cleanEmail = email.trim().toLowerCase();
     const cleanCoParentEmail = coParentEmail.trim().toLowerCase();
 
-    if (!emailRegex.test(cleanEmail)) {
+    if (!isValidEmail(cleanEmail)) {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
-    if (!emailRegex.test(cleanCoParentEmail)) {
+    if (!isValidEmail(cleanCoParentEmail)) {
       return res.status(400).json({ error: 'Please enter a valid co-parent email address' });
     }
 
@@ -3047,10 +3073,9 @@ app.post('/api/auth/register-from-invite', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const cleanEmail = email.trim().toLowerCase();
 
-    if (!emailRegex.test(cleanEmail)) {
+    if (!isValidEmail(cleanEmail)) {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
@@ -3140,10 +3165,9 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
       return res.status(400).json({ error: 'Either inviteToken or inviteCode is required' });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const cleanEmail = email.trim().toLowerCase();
 
-    if (!emailRegex.test(cleanEmail)) {
+    if (!isValidEmail(cleanEmail)) {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
@@ -3651,15 +3675,14 @@ app.get('/api/notifications', verifyAuth, async (req, res) => {
 /**
  * GET /api/notifications/unread-count
  * Get unread notification count
- * Requires authentication
+ * Optional authentication - returns count 0 if not authenticated
  */
-app.get('/api/notifications/unread-count', verifyAuth, async (req, res) => {
+app.get('/api/notifications/unread-count', optionalAuth, async (req, res) => {
   try {
     const userId = req.user?.userId;
     
-    // Validate userId
+    // If not authenticated, return count 0
     if (!userId) {
-      console.error('Get unread count: userId not found in request');
       return res.status(200).json({ count: 0 });
     }
     
@@ -3762,8 +3785,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
@@ -5277,8 +5299,7 @@ app.put('/api/user/profile', async (req, res) => {
       const trimmedEmail = email ? email.trim().toLowerCase() : null;
       if (trimmedEmail) {
         // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(trimmedEmail)) {
+        if (!isValidEmail(trimmedEmail)) {
           return res.status(400).json({ error: 'Invalid email format' });
         }
       }

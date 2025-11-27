@@ -11,6 +11,16 @@
       "file": ".claude/agents/product/product-manager.md",
       "memory": ".docs/agents/product/product-manager/"
     },
+    "ui-designer": {
+      "department": "product",
+      "description": "Senior UI Designer and Design System Steward. Operates in System Executor mode (default) applying existing design tokens, components, spacing, and typography without deviation, or Design Evolution mode proposing system changes with explicit approval protocol. Interprets vague directions intelligently (friendlier, calmer, premium). Remembers approved decisions and user preferences. Enforces canonical tokens, component library, type scale, spacing scale, grid, brand palette, shadows, and iconography. Forbidden from introducing unapproved changes. Philosophy: Beauty emerges from restraint, clarity, and consistency. Output is decisive, elegant, succinct.",
+      "created": "2025-11-26T00:00:00Z",
+      "tools": "Read, Write, Edit, Grep, Glob, TodoWrite",
+      "mcp_access": "mcp__ref-tools, mcp__browsermcp, mcp__perplexity",
+      "status": "active",
+      "file": ".claude/agents/product/ui-designer.md",
+      "memory": ".docs/agents/product/ui-designer/"
+    },
     "engineering-diagnostic-agent": {
       "department": "quality",
       "description": "Specializes in interpreting system errors, identifying root causes, classifying failures by technical domain, assigning responsibility to the appropriate engineering role, and providing specific next-step guidance for resolving issues. Expert in error interpretation, pattern recognition, root cause analysis, functional classification, ownership assignment, and diagnostic communication.",
@@ -35,7 +45,7 @@
     "domain"
   ],
   "departmentCounts": {
-    "product": 1,
+    "product": 2,
     "quality": 1
   }
 }

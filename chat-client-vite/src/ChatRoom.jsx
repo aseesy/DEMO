@@ -466,9 +466,9 @@ function ChatRoom() {
           m.private === true &&
           m.username === pendingOriginalMessageToRemove.username &&
           m.text === pendingOriginalMessageToRemove.text &&
-          (m.timestamp === pendingOriginalMessageToRemove.timestamp || 
-           (m.timestamp && pendingOriginalMessageToRemove.timestamp &&
-            Math.abs(new Date(m.timestamp).getTime() - new Date(pendingOriginalMessageToRemove.timestamp).getTime()) < 2000))
+          (m.timestamp === pendingOriginalMessageToRemove.timestamp ||
+            (m.timestamp && pendingOriginalMessageToRemove.timestamp &&
+              Math.abs(new Date(m.timestamp).getTime() - new Date(pendingOriginalMessageToRemove.timestamp).getTime()) < 2000))
         );
         setPendingOriginalMessageToRemove(null);
       }
@@ -557,6 +557,8 @@ function ChatRoom() {
   const [pendingInviteCode, setPendingInviteCode] = React.useState(null);
   const [isAcceptingInvite, setIsAcceptingInvite] = React.useState(false);
   const [hasCoParentConnected, setHasCoParentConnected] = React.useState(false);
+  const [hasPendingInvitation, setHasPendingInvitation] = React.useState(false);
+  const [hasAcceptedInvitation, setHasAcceptedInvitation] = React.useState(false);
   const [manualInviteCode, setManualInviteCode] = React.useState('');
   const [showManualInvite, setShowManualInvite] = React.useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = React.useState(false);
@@ -933,6 +935,56 @@ function ChatRoom() {
     }
   }, [messages.length, isAuthenticated, hasCoParentConnected, checkRoomMembers]);
 
+  // Check for pending or accepted invitations
+  const checkInvitations = React.useCallback(async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      const token = localStorage.getItem('auth_token_backup');
+      const response = await fetch(
+        `${API_BASE_URL.replace(/\/+$/, '')}/api/invitations`,
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        },
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Check sent invitations (invitations user sent)
+        const hasPendingSent = data.sent?.some(inv => inv.status === 'pending') || false;
+        const hasAcceptedSent = data.sent?.some(inv => inv.status === 'accepted') || false;
+
+        // Check received invitations (invitations user received)
+        const hasPendingReceived = data.received?.some(inv => inv.status === 'pending') || false;
+        const hasAcceptedReceived = data.received?.some(inv => inv.status === 'accepted') || false;
+
+        // Set states
+        setHasPendingInvitation(hasPendingSent || hasPendingReceived);
+        setHasAcceptedInvitation(hasAcceptedSent || hasAcceptedReceived);
+      }
+    } catch (err) {
+      // Silently handle errors - don't block UI
+      console.log('[checkInvitations] Error checking invitations:', err.message);
+    }
+  }, [isAuthenticated]);
+
+  // Check invitations periodically and on mount
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      // Check immediately
+      checkInvitations();
+
+      // Check periodically (every 5 seconds)
+      const interval = setInterval(checkInvitations, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, checkInvitations]);
+
   // Load or get existing invite link (optimized - uses GET with session auth, falls back to POST)
   const handleLoadInvite = async () => {
     if (!isAuthenticated || isLoadingInvite) {
@@ -943,61 +995,45 @@ function ChatRoom() {
     setInviteCopied(false);
     setIsLoadingInvite(true);
 
-    // Use POST for now (GET endpoint requires server restart)
-    // TODO: Switch to GET once server is updated
     try {
-      const currentUsername = username || localStorage.getItem('username');
-      if (!currentUsername) {
-        setInviteError('Unable to determine username. Please log out and back in.');
-        setIsLoadingInvite(false);
-        return;
-      }
-
-      const response = await fetch(
-        `${API_BASE_URL.replace(/\/+$/, '')}/api/room/invite`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ username: currentUsername }),
-        },
-      );
-
-      // Parse response (handle both JSON and text errors)
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseErr) {
-        // If JSON parsing fails, try to get text
-        const text = await response.text();
-        console.error('Failed to parse response as JSON:', text);
-        setInviteError(`Server error: ${response.status} ${response.statusText}`);
-        return;
-      }
+      // Use the new co-parent invitation API
+      const response = await apiPost('/api/invitations/create', {});
 
       if (!response.ok) {
-        console.error('Invite API error:', data);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Invite API error:', errorData);
         if (response.status === 401) {
           setInviteError('Please log in again to create an invite.');
-        } else if (response.status === 404) {
-          setInviteError('Invite endpoint not found. The server may need to be restarted.');
         } else {
-          setInviteError(data.error || data.message || `Unable to get invite (${response.status}). Please try again.`);
+          setInviteError(errorData.error || errorData.message || `Unable to create invite (${response.status}). Please try again.`);
         }
         return;
       }
+
+      const data = await response.json();
+
       if (!data.success) {
-        setInviteError(data.error || data.message || 'Unable to get invite. Please try again.');
+        setInviteError(data.error || data.message || 'Unable to create invite. Please try again.');
         return;
       }
-      setInviteCode(data.inviteCode);
-      // Construct invite link using current window location (works for both dev and production)
-      const currentOrigin = window.location.origin;
-      const inviteLink = `${currentOrigin}${window.location.pathname}?invite=${data.inviteCode}`;
-      setInviteLink(inviteLink);
+
+      // Store the short code (LZ-XXXXXX format) for manual entry
+      if (data.shortCode) {
+        setInviteCode(data.shortCode);
+      }
+
+      // Use the inviteUrl from the API response (includes token for new users)
+      // For existing users, they can use the short code
+      if (data.inviteUrl) {
+        setInviteLink(data.inviteUrl);
+      } else {
+        // Fallback: construct link with short code if inviteUrl not provided
+        const currentOrigin = window.location.origin;
+        setInviteLink(`${currentOrigin}/accept-invite?code=${data.shortCode}`);
+      }
     } catch (err) {
-      console.error('Error loading invite (Vite):', err);
-      setInviteError('Unable to load invite. Please check your connection and try again.');
+      console.error('Error loading invite:', err);
+      setInviteError('Unable to create invite. Please check your connection and try again.');
     } finally {
       setIsLoadingInvite(false);
     }
@@ -1080,8 +1116,8 @@ function ChatRoom() {
         />
 
         {/* Main Content Area */}
-        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-16 md:pt-2 md:pb-4' : 'pt-10 md:pt-10 pb-20 md:pb-8 overflow-y-auto px-4 sm:px-6 md:px-8'} relative z-10`}>
-          <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : 'max-w-7xl mx-auto w-full'}`}>
+        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-16 md:pt-14 md:pb-4' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto' : 'pt-0 md:pt-14 pb-20 md:pb-8 overflow-y-auto px-4 sm:px-6 md:px-8'} relative z-10`}>
+          <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : currentView === 'profile' ? 'w-full' : 'max-w-7xl mx-auto w-full'}`}>
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
               <div className="space-y-6 md:space-y-8">
@@ -1532,15 +1568,31 @@ function ChatRoom() {
                     </button>
                   )}
                   {(() => {
-                    const shouldShowInvite = !inviteLink && !hasCoParentConnected;
+                    // Show invite button when:
+                    // 1. User is authenticated
+                    // 2. No invite link is currently displayed
+                    // 3. No co-parent is connected yet
+                    // 4. No pending invitation exists (user already sent one)
+                    // 5. No accepted invitation exists (user's invite was accepted)
+                    const shouldShowInvite = isAuthenticated &&
+                      !inviteLink &&
+                      !hasCoParentConnected &&
+                      !hasPendingInvitation &&
+                      !hasAcceptedInvitation;
                     if (process.env.NODE_ENV === 'development') {
-                      console.log('[Invite Button] shouldShowInvite:', shouldShowInvite, 'inviteLink:', inviteLink, 'hasCoParentConnected:', hasCoParentConnected);
+                      console.log('[Invite Button] shouldShowInvite:', shouldShowInvite, {
+                        isAuthenticated,
+                        inviteLink: !!inviteLink,
+                        hasCoParentConnected,
+                        hasPendingInvitation,
+                        hasAcceptedInvitation
+                      });
                     }
                     return shouldShowInvite ? (
                       <button
                         type="button"
                         onClick={handleLoadInvite}
-                        disabled={isLoadingInvite || !isAuthenticated}
+                        disabled={isLoadingInvite}
                         className="px-5 py-3 rounded-lg bg-teal-dark text-white text-sm font-semibold hover:bg-teal-darkest disabled:opacity-60 disabled:cursor-not-allowed transition-all border-2 border-teal-dark shadow-sm hover:shadow-md min-h-[44px] flex items-center gap-2"
                         title="Invite your co-parent to join this mediation room"
                       >
@@ -1702,19 +1754,67 @@ function ChatRoom() {
                         <div className="font-semibold mb-3 text-lg text-emerald-800">
                           Invite your co-parent
                         </div>
-                        <a
-                          href={inviteLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mb-4 block p-3 bg-white rounded-lg border-2 border-emerald-200 break-all text-emerald-800 font-mono text-xs hover:bg-emerald-100 transition-colors shadow-sm"
-                          onClick={(e) => {
-                            // Ensure link opens even if service worker tries to intercept
-                            e.preventDefault();
-                            window.location.href = inviteLink;
-                          }}
-                        >
-                          {inviteLink}
-                        </a>
+
+                        {/* Short Code (for existing users) */}
+                        {inviteCode && (
+                          <div className="mb-4">
+                            <label className="block text-xs font-medium text-emerald-800 mb-1">
+                              Invite Code (for existing LiaiZen users)
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-white border-2 border-emerald-200 rounded-lg p-3 text-center">
+                                <span className="text-xl font-mono font-bold text-emerald-800 tracking-wider">
+                                  {inviteCode}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    await navigator.clipboard.writeText(inviteCode);
+                                    setInviteCopied(true);
+                                    setTimeout(() => setInviteCopied(false), 2000);
+                                  } catch (err) {
+                                    console.error('Copy failed:', err);
+                                  }
+                                }}
+                                className="p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                                title="Copy code"
+                              >
+                                {inviteCopied ? (
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Invite Link (for new users) */}
+                        <div className="mb-4">
+                          <label className="block text-xs font-medium text-emerald-800 mb-1">
+                            Invite Link (for new users)
+                          </label>
+                          <a
+                            href={inviteLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block p-3 bg-white rounded-lg border-2 border-emerald-200 break-all text-emerald-800 font-mono text-xs hover:bg-emerald-100 transition-colors shadow-sm"
+                            onClick={(e) => {
+                              // Ensure link opens even if service worker tries to intercept
+                              e.preventDefault();
+                              window.location.href = inviteLink;
+                            }}
+                          >
+                            {inviteLink}
+                          </a>
+                        </div>
+
                         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
                           <button
                             type="button"
@@ -1750,7 +1850,7 @@ function ChatRoom() {
                           </button>
                         </div>
                         <div className="mt-4 text-xs text-emerald-700 leading-relaxed">
-                          Share this link with your co-parent. When they click it, they'll join this mediation room. This room is for co-parents only.
+                          Share the link with new users or the code with existing LiaiZen users. When they accept, they'll join this mediation room. This room is for co-parents only.
                         </div>
                       </div>
                     )}
@@ -1934,82 +2034,84 @@ function ChatRoom() {
                                         />
                                       </div>
                                       <div className="rounded-lg px-4 py-3 bg-teal-lightest/30 border border-teal-light/50">
-                                          {isComment && msg.text && (
-                                            <p className="text-base text-gray-900 leading-snug font-normal" style={{ fontSize: '15px' }}>{msg.text}</p>
-                                          )}
-                                          {!isComment && (
-                                            <>
-                                              {msg.explanation && (
-                                                <div className="mb-3 p-3 bg-blue-50/60 border border-blue-200/40 rounded-lg">
-                                                  <div className="flex items-start gap-2">
-                                                    <svg className="w-3.5 h-3.5 text-blue-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <p className="text-sm text-blue-900 leading-snug font-normal">
-                                                      {msg.explanation.replace(/^ADDRESS:\s*/i, '').replace(/^Address:\s*/i, '').replace(/^Address\s*/i, '').replace(/\bAddress\b/gi, '').trim()}
-                                                    </p>
-                                                  </div>
+                                        {isComment && msg.text && (
+                                          <p className="text-base text-gray-900 leading-snug font-medium" style={{ fontSize: '15px' }}>{msg.text}</p>
+                                        )}
+                                        {!isComment && (
+                                          <>
+                                            {msg.explanation && (
+                                              <div className="mb-3 p-3 bg-blue-50/60 border border-blue-200/40 rounded-lg">
+                                                <div className="flex items-start gap-2">
+                                                  <svg className="w-3.5 h-3.5 text-blue-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                  </svg>
+                                                  <p className="text-sm text-blue-900 leading-snug font-normal">
+                                                    {msg.explanation.replace(/^ADDRESS:\s*/i, '').replace(/^Address:\s*/i, '').replace(/^Address\s*/i, '').replace(/\bAddress\b/gi, '').trim()}
+                                                  </p>
                                                 </div>
-                                              )}
-                                              {msg.personalMessage && (
-                                                <p className="text-base text-gray-900 leading-snug mb-3 font-normal" style={{ fontSize: '15px' }}>{msg.personalMessage.replace(/^ADDRESS:\s*/i, '').replace(/^Address:\s*/i, '').replace(/^Address\s*/i, '').replace(/\bAddress\b/gi, '').trim()}</p>
-                                              )}
-                                              {msg.tip1 && (
-                                                <div className="mb-3">
-                                                  <div className="flex items-center gap-1.5 mb-1.5">
-                                                    <svg className="w-3.5 h-3.5 text-teal-dark shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                                                    </svg>
-                                                    <p className="text-xs font-semibold text-gray-600">Tip</p>
-                                                  </div>
-                                                  <p className="text-base text-gray-700 leading-snug font-normal ml-5" style={{ fontSize: '15px' }}>{msg.tip1}</p>
+                                              </div>
+                                            )}
+                                            {msg.personalMessage && (
+                                              <p className="text-base text-gray-900 leading-snug mb-3 font-normal" style={{ fontSize: '15px' }}>{msg.personalMessage.replace(/^ADDRESS:\s*/i, '').replace(/^Address:\s*/i, '').replace(/^Address\s*/i, '').replace(/\bAddress\b/gi, '').trim()}</p>
+                                            )}
+                                            {msg.tip1 && (
+                                              <div className="mb-3">
+                                                <div className="flex items-center gap-1.5 mb-1.5">
+                                                  <svg className="w-3.5 h-3.5 text-teal-dark shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                                  </svg>
+                                                  <p className="text-xs font-semibold text-gray-600">Tip</p>
                                                 </div>
-                                              )}
-                                              {(msg.rewrite1 || msg.rewrite2) && (
-                                                <div className="space-y-2.5 pt-3 border-t border-gray-200/40">
-                                                  <div className="flex items-center gap-1.5 mb-2">
-                                                    <svg className="w-3.5 h-3.5 text-teal-dark shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                    </svg>
-                                                    <p className="text-xs font-semibold text-gray-600">Suggestions</p>
-                                                  </div>
-                                                  {msg.rewrite1 && (
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => {
-                                                        const originalText = msg.originalMessage?.text || '';
-                                                        trackRewriteUsed('option_1', originalText.length, msg.rewrite1.length);
-                                                        handleRewriteSelected();
-                                                        setInputMessage(msg.rewrite1);
-                                                        setIsPreApprovedRewrite(true);
-                                                        setOriginalRewrite(msg.rewrite1);
-                                                      }}
-                                                      className="w-full text-left p-3 bg-teal-lightest/50 border border-teal-light/40 rounded-lg hover:bg-teal-lightest/70 transition-colors text-base text-teal-dark"
-                                                    >
-                                                      <p className="font-normal leading-snug" style={{ fontSize: '15px' }}>"{msg.rewrite1}"</p>
-                                                    </button>
-                                                  )}
-                                                  {msg.rewrite2 && (
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => {
-                                                        const originalText = msg.originalMessage?.text || '';
-                                                        trackRewriteUsed('option_2', originalText.length, msg.rewrite2.length);
-                                                        handleRewriteSelected();
-                                                        setInputMessage(msg.rewrite2);
-                                                        setIsPreApprovedRewrite(true);
-                                                        setOriginalRewrite(msg.rewrite2);
-                                                      }}
-                                                      className="w-full text-left p-3 bg-teal-lightest/50 border border-teal-light/40 rounded-lg hover:bg-teal-lightest/70 transition-colors text-base text-teal-dark"
-                                                    >
-                                                      <p className="font-normal leading-snug" style={{ fontSize: '15px' }}>"{msg.rewrite2}"</p>
-                                                    </button>
-                                                  )}
+                                                <p className="text-base text-gray-700 leading-snug font-normal ml-5" style={{ fontSize: '15px' }}>
+                                                  {msg.tip1.replace(/^ONE TIP:\s*/i, '').replace(/^one tip:\s*/i, '').trim()}
+                                                </p>
+                                              </div>
+                                            )}
+                                            {(msg.rewrite1 || msg.rewrite2) && (
+                                              <div className="space-y-2.5 pt-3 border-t border-gray-200/40">
+                                                <div className="flex items-center gap-1.5 mb-2">
+                                                  <svg className="w-3.5 h-3.5 text-teal-dark shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                  </svg>
+                                                  <p className="text-xs font-semibold text-gray-600">Suggestions</p>
                                                 </div>
-                                              )}
-                                            </>
-                                          )}
-                                        </div>
+                                                {msg.rewrite1 && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      const originalText = msg.originalMessage?.text || '';
+                                                      trackRewriteUsed('option_1', originalText.length, msg.rewrite1.length);
+                                                      handleRewriteSelected();
+                                                      setInputMessage(msg.rewrite1);
+                                                      setIsPreApprovedRewrite(true);
+                                                      setOriginalRewrite(msg.rewrite1);
+                                                    }}
+                                                    className="w-full text-left p-3 bg-teal-lightest/50 border border-teal-light/40 rounded-lg hover:bg-teal-lightest/70 transition-colors text-base text-teal-dark"
+                                                  >
+                                                    <p className="font-normal leading-snug" style={{ fontSize: '15px' }}>"{msg.rewrite1}"</p>
+                                                  </button>
+                                                )}
+                                                {msg.rewrite2 && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      const originalText = msg.originalMessage?.text || '';
+                                                      trackRewriteUsed('option_2', originalText.length, msg.rewrite2.length);
+                                                      handleRewriteSelected();
+                                                      setInputMessage(msg.rewrite2);
+                                                      setIsPreApprovedRewrite(true);
+                                                      setOriginalRewrite(msg.rewrite2);
+                                                    }}
+                                                    className="w-full text-left p-3 bg-teal-lightest/50 border border-teal-light/40 rounded-lg hover:bg-teal-lightest/70 transition-colors text-base text-teal-dark"
+                                                  >
+                                                    <p className="font-normal leading-snug" style={{ fontSize: '15px' }}>"{msg.rewrite2}"</p>
+                                                  </button>
+                                                )}
+                                              </div>
+                                            )}
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 );
@@ -2052,19 +2154,10 @@ function ChatRoom() {
                                         key={msg.id ?? `${msg.username}-${msg.timestamp}-${msg.text}-${msgIndex}`}
                                         className={`group relative ${isOwn ? 'flex justify-end' : 'flex justify-start'} w-full`}
                                       >
-                                        <div className={`relative flex items-start ${isOwn ? 'max-w-[75%] sm:max-w-[60%] md:max-w-[55%]' : 'max-w-[75%] sm:max-w-[60%] md:max-w-[55%]'} ${showAvatar ? 'gap-2' : ''}`}>
-                                          {/* Avatar - only show for first message in group from co-parent */}
-                                          {showAvatar && (
-                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 border border-gray-200 mt-0.5">
-                                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${getAvatarColor(msg.username)}`}>
-                                                {msg.username ? msg.username.charAt(0).toUpperCase() : '?'}
-                                              </div>
-                                            </div>
-                                          )}
-                                          
-                                          {/* Spacer for sequential messages to align with avatar */}
+                                        <div className={`relative flex flex-col ${isOwn ? 'max-w-[75%] sm:max-w-[60%] md:max-w-[55%]' : 'max-w-[75%] sm:max-w-[60%] md:max-w-[55%]'}`}>
+                                          {/* Spacer for sequential messages to align with name/avatar above */}
                                           {!isOwn && !isFirstInGroup && (
-                                            <div className="w-8 shrink-0" />
+                                            <div className="h-10 shrink-0" />
                                           )}
 
                                           <div className="flex-1 min-w-0">
@@ -2072,6 +2165,18 @@ function ChatRoom() {
                                             {isOwn && isLastInGroup && getStreakBadge(msg, originalIndex) && (
                                               <div className="absolute -top-2 -right-2 z-10">
                                                 {getStreakBadge(msg, originalIndex)}
+                                              </div>
+                                            )}
+
+                                            {/* Avatar and Username above bubble (like LiaiZen) - only for first message in group */}
+                                            {!isOwn && isFirstInGroup && (
+                                              <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 border border-gray-200 p-1">
+                                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${getAvatarColor(msg.username)}`}>
+                                                    {msg.username ? msg.username.charAt(0).toUpperCase() : '?'}
+                                                  </div>
+                                                </div>
+                                                <span className="text-sm font-semibold text-gray-700">{msg.username}</span>
                                               </div>
                                             )}
 
@@ -2092,89 +2197,82 @@ function ChatRoom() {
                                                 ...(isOwn && !isFlagged && { backgroundColor: '#4DA8B0' })
                                               }}
                                             >
-                                            {isInThread && thread && (
-                                              <div className="text-xs text-teal-dark font-bold mb-2 flex items-center gap-1.5">
-                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                </svg>
-                                                {thread.title}
-                                              </div>
-                                            )}
+                                              {isInThread && thread && (
+                                                <div className="text-xs text-teal-dark font-bold mb-2 flex items-center gap-1.5">
+                                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                  </svg>
+                                                  {thread.title}
+                                                </div>
+                                              )}
 
-                                            {/* Username - embedded in card for first message from co-parent */}
-                                            {!isOwn && isFirstInGroup && (
-                                              <div className="text-xs font-bold text-gray-600 mb-1.5">
-                                                {msg.username}
-                                              </div>
-                                            )}
+                                              <div className="text-base leading-snug whitespace-pre-wrap break-words text-left font-medium pr-12" style={{ fontSize: '15px' }}>{msg.text.trim()}</div>
 
-                                            <div className="text-base leading-snug whitespace-pre-wrap break-words text-left font-normal pr-12" style={{ fontSize: '15px' }}>{msg.text.trim()}</div>
+                                              {/* Timestamp - embedded in bubble, right-aligned */}
+                                              {isLastInGroup && (
+                                                <div className={`absolute bottom-2 right-3 text-[10px] font-medium leading-none ${isOwn ? 'text-white opacity-60' : 'text-gray-400'}`}>
+                                                  {(() => {
+                                                    const msgDate = new Date(msg.timestamp);
+                                                    return msgDate.toLocaleTimeString('en-US', {
+                                                      hour: 'numeric',
+                                                      minute: '2-digit',
+                                                      hour12: true,
+                                                    });
+                                                  })()}
+                                                </div>
+                                              )}
 
-                                            {/* Timestamp - embedded in bubble, right-aligned */}
-                                            {isLastInGroup && (
-                                              <div className={`absolute bottom-2 right-3 text-[10px] font-medium leading-none ${isOwn ? 'text-white opacity-60' : 'text-gray-400'}`}>
-                                                {(() => {
-                                                  const msgDate = new Date(msg.timestamp);
-                                                  return msgDate.toLocaleTimeString('en-US', {
-                                                    hour: 'numeric',
-                                                    minute: '2-digit',
-                                                    hour12: true,
-                                                  });
-                                                })()}
-                                              </div>
-                                            )}
+                                              {isFlagged && (
+                                                <div className="mt-3 flex items-center gap-2 text-xs text-orange-700 font-bold">
+                                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                  </svg>
+                                                  <span>Flagged as problematic</span>
+                                                </div>
+                                              )}
 
-                                            {isFlagged && (
-                                              <div className="mt-3 flex items-center gap-2 text-xs text-orange-700 font-bold">
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                </svg>
-                                                <span>Flagged as problematic</span>
-                                              </div>
-                                            )}
-
-                                            {/* Action buttons - only show on last message in group */}
-                                            {isLastInGroup && !isOwn && (
-                                              <div className="absolute -right-10 top-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {threads.length > 0 && !isInThread && (
+                                              {/* Action buttons - only show on last message in group */}
+                                              {isLastInGroup && !isOwn && (
+                                                <div className="absolute -right-10 top-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                  {threads.length > 0 && !isInThread && (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const threadId = prompt('Select thread ID (or leave empty to create new):');
+                                                        if (threadId) {
+                                                          addToThread(msg.id || msg.timestamp, threadId);
+                                                        }
+                                                      }}
+                                                      className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-teal-medium transition-colors"
+                                                      title="Add to thread"
+                                                    >
+                                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                      </svg>
+                                                    </button>
+                                                  )}
                                                   <button
                                                     type="button"
                                                     onClick={() => {
-                                                      const threadId = prompt('Select thread ID (or leave empty to create new):');
-                                                      if (threadId) {
-                                                        addToThread(msg.id || msg.timestamp, threadId);
+                                                      if (isFlaggedByMe) {
+                                                        flagMessage(msg.id || msg.timestamp);
+                                                      } else {
+                                                        setFlaggingMessage(msg);
+                                                        setFlagReason('');
                                                       }
                                                     }}
-                                                    className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-teal-medium transition-colors"
-                                                    title="Add to thread"
+                                                    className={`p-1.5 rounded-full transition-colors ${isFlaggedByMe
+                                                      ? 'text-orange-600 hover:bg-orange-100'
+                                                      : 'text-gray-400 hover:text-orange-600 hover:bg-gray-100'
+                                                      }`}
+                                                    title={isFlaggedByMe ? 'Unflag message' : 'Flag as problematic'}
                                                   >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                    <svg className="w-4 h-4" fill={isFlaggedByMe ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                                     </svg>
                                                   </button>
-                                                )}
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    if (isFlaggedByMe) {
-                                                      flagMessage(msg.id || msg.timestamp);
-                                                    } else {
-                                                      setFlaggingMessage(msg);
-                                                      setFlagReason('');
-                                                    }
-                                                  }}
-                                                  className={`p-1.5 rounded-full transition-colors ${isFlaggedByMe
-                                                    ? 'text-orange-600 hover:bg-orange-100'
-                                                    : 'text-gray-400 hover:text-orange-600 hover:bg-gray-100'
-                                                    }`}
-                                                  title={isFlaggedByMe ? 'Unflag message' : 'Flag as problematic'}
-                                                >
-                                                  <svg className="w-4 h-4" fill={isFlaggedByMe ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                                  </svg>
-                                                </button>
-                                              </div>
-                                            )}
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                         </div>
@@ -2310,14 +2408,12 @@ function ChatRoom() {
 
             {/* Profile View - Clean Style */}
             {currentView === 'profile' && (
-              <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden">
-                <div className="h-[calc(100vh-9rem)] sm:h-[calc(100vh-8rem)] md:h-[75vh] md:max-h-[800px] overflow-y-auto">
-                  <ProfilePanel
-                    username={username}
-                    onLogout={handleLogout}
-                    onNavigateToContacts={handleNavigateToContacts}
-                  />
-                </div>
+              <div className="pb-20 md:pb-8">
+                <ProfilePanel
+                  username={username}
+                  onLogout={handleLogout}
+                  onNavigateToContacts={handleNavigateToContacts}
+                />
               </div>
             )}
 

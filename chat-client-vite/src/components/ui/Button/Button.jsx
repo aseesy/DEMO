@@ -32,7 +32,7 @@ export const Button = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = 'font-semibold rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2';
+  const baseClasses = 'font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2';
 
   const variantClasses = variants[variant] || variants.primary;
   const sizeClasses = sizes[size] || sizes.medium;

@@ -1,7 +1,5 @@
 import React from 'react';
 import { Button } from './ui';
-import { NotificationBell } from './NotificationBell.jsx';
-import { NotificationsPanel } from './NotificationsPanel.jsx';
 
 export function Navigation({ currentView, setCurrentView, onLogout, unreadCount = 0, hasMeanMessage = false, notificationCount = 0, onInvitationAccepted }) {
   const navItems = [
@@ -26,7 +24,6 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
   ];
 
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const menuRefs = React.useRef([]);
   const menuButtonRef = React.useRef(null);
   const menuItemRefs = React.useRef([]);
@@ -270,63 +267,45 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
   return (
     <>
       {/* Top Navigation - Desktop Only */}
-      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-10">
-            {/* Navigation Items */}
-            <div className="flex items-center gap-3">
+      <nav className="hidden md:block fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto w-full px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14">
+            {/* Left side: Menu/Logo */}
+            <div className="flex items-center">
+              {renderMenuButton(0, { placement: 'bottom' })}
+            </div>
+
+            {/* Right side: Navigation Items */}
+            <div className="flex items-center gap-1">
               {navItems.map((item) => {
                 const isActive = currentView === item.id;
                 return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setCurrentView(item.id)}
-                    className={`relative px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 min-h-[44px] ${
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setCurrentView(item.id)}
+                    className={`relative px-4 py-2 text-sm font-medium flex items-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 rounded-lg ${
                       isActive
-                        ? 'bg-teal-lightest text-teal-medium shadow-md border-2 border-teal-light'
-                        : 'text-teal-medium hover:bg-teal-lightest hover:text-teal-medium hover:shadow-sm'
-                  }`}
+                        ? 'text-[#275559] bg-[#f0f9f9]'
+                        : 'text-gray-500 hover:text-[#275559] hover:bg-gray-50'
+                    }`}
                     aria-current={isActive ? 'page' : undefined}
-                >
-                    <span className="flex-shrink-0">
-                      {item.icon}
+                  >
+                    <span className="flex-shrink-0 relative">
+                      {React.cloneElement(item.icon, {
+                        className: `w-4 h-4 ${isActive ? 'text-[#4DA8B0]' : ''}`
+                      })}
+                      {item.id === 'chat' && unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+                      )}
+                      {item.id === 'dashboard' && notificationCount > 0 && (
+                        <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+                      )}
                     </span>
                     <span>{item.label}</span>
-                    {/* Unread count badge for chat */}
-                    {item.id === 'chat' && unreadCount > 0 && (
-                      <span className="min-w-[20px] h-[20px] px-1.5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow-md">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
-                    )}
-                </button>
+                  </button>
                 );
               })}
-            </div>
-
-            {/* Right side: Notifications + Menu */}
-            <div className="flex items-center gap-2">
-              {/* Notification Bell */}
-              <div className="relative">
-                <NotificationBell
-                  unreadCount={notificationCount}
-                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  isOpen={isNotificationsOpen}
-                />
-                <NotificationsPanel
-                  isOpen={isNotificationsOpen}
-                  onClose={() => setIsNotificationsOpen(false)}
-                  onInvitationAccepted={(result) => {
-                    setIsNotificationsOpen(false);
-                    if (onInvitationAccepted) {
-                      onInvitationAccepted(result);
-                    }
-                  }}
-                />
-              </div>
-
-              {/* Logo as Menu Button */}
-              {renderMenuButton(0, { placement: 'bottom' })}
             </div>
           </div>
         </div>
@@ -347,47 +326,14 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             aria-label="Dashboard"
             aria-current={currentView === 'dashboard' ? 'page' : undefined}
           >
-            <span className="flex-shrink-0">
+            <span className="flex-shrink-0 relative">
               {navItems[0].icon}
+              {/* Red dot indicator when notifications are unread */}
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-sm" />
+              )}
             </span>
           </button>
-
-          {/* Notifications button - Mobile */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsNotificationsOpen((prev) => !prev)}
-              className={`relative flex items-center justify-center w-12 h-12 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 min-h-[44px] ${
-                isNotificationsOpen
-                  ? 'bg-teal-lightest text-teal-medium border-2 border-teal-light'
-                  : 'text-teal-medium active:bg-teal-lightest'
-              }`}
-              aria-label={`Notifications${notificationCount > 0 ? `, ${notificationCount} unread` : ''}`}
-              aria-expanded={isNotificationsOpen}
-              aria-haspopup="true"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              {/* Notification badge */}
-              {notificationCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-md">
-                  {notificationCount > 99 ? '99+' : notificationCount}
-                </span>
-              )}
-            </button>
-            {/* Mobile notifications panel */}
-            <NotificationsPanel
-              isOpen={isNotificationsOpen}
-              onClose={() => setIsNotificationsOpen(false)}
-              onInvitationAccepted={(result) => {
-                setIsNotificationsOpen(false);
-                if (onInvitationAccepted) {
-                  onInvitationAccepted(result);
-                }
-              }}
-            />
-          </div>
 
           {/* Menu button - in the middle */}
           <button
@@ -421,15 +367,13 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             aria-label="Chat"
             aria-current={currentView === 'chat' ? 'page' : undefined}
           >
-            <span className="flex-shrink-0">
+            <span className="flex-shrink-0 relative">
               {navItems[1].icon}
+              {/* Red dot indicator when messages are unread */}
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-sm" />
+              )}
             </span>
-            {/* Unread count badge for chat */}
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-md">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
           </button>
           {/* Menu dropdown - positioned above */}
           {isMenuOpen && (
