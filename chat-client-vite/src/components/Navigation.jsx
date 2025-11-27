@@ -159,8 +159,8 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
     const { extraClasses = '', placement = 'bottom' } = options;
     const menuPositionClass =
       placement === 'top'
-        ? 'bottom-14 right-0 mb-2'
-        : 'right-0 mt-2';
+        ? 'bottom-14 left-0 mb-2'
+        : 'left-0 mt-2';
     const isMobile = extraClasses === '';
 
     return (
@@ -202,7 +202,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
         </button>
         {isMenuOpen && (
           <div
-            className={`absolute ${menuPositionClass} w-52 rounded-xl border-2 border-gray-200 bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100`}
+            className={`absolute ${menuPositionClass} w-52 rounded-xl border-2 border-gray-200 bg-white shadow-xl py-2 z-[100] transition-all duration-200 ease-out opacity-100`}
             role="menu"
             aria-label="User menu"
             style={{
@@ -383,7 +383,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                   menuRefs.current[1] = node; // Register mobile dropdown in refs array
                 }
               }}
-              className="absolute bottom-14 right-2 w-52 rounded-xl border-2 border-gray-200 bg-white shadow-xl py-2 z-50 transition-all duration-200 ease-out opacity-100"
+              className="absolute bottom-14 left-2 w-52 rounded-xl border-2 border-gray-200 bg-white shadow-xl py-2 z-[100] transition-all duration-200 ease-out opacity-100"
               role="menu"
               aria-label="User menu"
               style={{
