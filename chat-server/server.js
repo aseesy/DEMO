@@ -2747,6 +2747,104 @@ app.delete('/api/admin/users/:userId', async (req, res) => {
 });
 
 // Debug endpoint: List all pending connections
+/**
+ * GET /api/debug/tasks/:userId
+ * Diagnostic endpoint to check user's tasks
+ */
+app.get('/api/debug/tasks/:userId', verifyAuth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const requestingUserId = req.user.userId || req.user.id;
+    
+    // Only allow users to check their own tasks (or admin check could be added)
+    if (userId !== requestingUserId) {
+      return res.status(403).json({ error: 'You can only check your own tasks' });
+    }
+
+    const tasks = await dbSafe.safeSelect('tasks', { user_id: userId }, {
+      orderBy: 'created_at',
+      orderDirection: 'DESC'
+    });
+
+    const user = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
+    
+    res.json({
+      userId,
+      username: user[0]?.username || 'unknown',
+      totalTasks: tasks.length,
+      tasks: tasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        created_at: t.created_at,
+        completed_at: t.completed_at
+      })),
+      openTasks: tasks.filter(t => t.status === 'open').length,
+      completedTasks: tasks.filter(t => t.status === 'completed').length
+    });
+  } catch (error) {
+    console.error('Error in debug tasks endpoint:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/debug/messages/:roomId
+ * Diagnostic endpoint to check room's messages (especially LiaiZen welcome)
+ */
+app.get('/api/debug/messages/:roomId', verifyAuth, async (req, res) => {
+  try {
+    const roomId = req.params.roomId;
+    
+    // Check if user is a member of this room
+    const members = await roomManager.getRoomMembers(roomId);
+    const requestingUserId = req.user.userId || req.user.id;
+    const isMember = members.some(m => m.user_id === requestingUserId || m.id === requestingUserId);
+    
+    if (!isMember) {
+      return res.status(403).json({ error: 'You are not a member of this room' });
+    }
+
+    const messages = await dbSafe.safeSelect('messages', { room_id: roomId }, {
+      orderBy: 'timestamp',
+      orderDirection: 'ASC'
+    });
+
+    const welcomeMessages = messages.filter(m => 
+      m.type === 'ai_comment' && 
+      m.username === 'LiaiZen' &&
+      (m.id?.startsWith('liaizen_welcome_') || m.text?.includes('LiaiZen'))
+    );
+
+    const room = await dbSafe.safeSelect('rooms', { id: roomId }, { limit: 1 });
+    
+    res.json({
+      roomId,
+      roomName: room[0]?.name || 'unknown',
+      totalMessages: messages.length,
+      welcomeMessages: welcomeMessages.length,
+      messages: messages.map(m => ({
+        id: m.id,
+        type: m.type,
+        username: m.username,
+        text: m.text?.substring(0, 100) || '',
+        timestamp: m.timestamp,
+        isWelcome: m.type === 'ai_comment' && m.username === 'LiaiZen'
+      })),
+      welcomeMessageDetails: welcomeMessages.map(m => ({
+        id: m.id,
+        text: m.text,
+        timestamp: m.timestamp,
+        room_id: m.room_id
+      }))
+    });
+  } catch (error) {
+    console.error('Error in debug messages endpoint:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/debug/pending-connections', async (req, res) => {
   try {
     const db = await require('./db').getDb();

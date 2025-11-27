@@ -638,7 +638,7 @@ async function getRoomInvites(roomId) {
  * by using a backdated timestamp (1 second after room creation)
  */
 async function sendWelcomeMessage(roomId) {
-  console.log(`🤖 Sending LiaiZen welcome message to room ${roomId}`);
+  console.log(`🤖 [WELCOME MESSAGE] Sending LiaiZen welcome message to room ${roomId}`);
 
   try {
     // Get room creation time to backdate the welcome message
@@ -649,9 +649,11 @@ async function sendWelcomeMessage(roomId) {
       const roomCreatedAt = new Date(roomResult[0].created_at);
       // Welcome message timestamp = 1 second after room creation
       welcomeTimestamp = new Date(roomCreatedAt.getTime() + 1000).toISOString();
+      console.log(`📅 [WELCOME MESSAGE] Room ${roomId} created at ${roomResult[0].created_at}, welcome message timestamp: ${welcomeTimestamp}`);
     } else {
       // Fallback: use current time if room not found
       welcomeTimestamp = new Date().toISOString();
+      console.warn(`⚠️  [WELCOME MESSAGE] Room ${roomId} not found, using current timestamp: ${welcomeTimestamp}`);
     }
 
     const messageId = `liaizen_welcome_${roomId}`;
@@ -662,7 +664,7 @@ async function sendWelcomeMessage(roomId) {
     }, { limit: 1 });
 
     if (existingWelcome.length > 0) {
-      console.log(`ℹ️  Welcome message already exists for room ${roomId}, skipping`);
+      console.log(`ℹ️  [WELCOME MESSAGE] Welcome message already exists for room ${roomId} (ID: ${messageId}), skipping`);
       return { id: messageId, roomId };
     }
 
@@ -676,10 +678,12 @@ async function sendWelcomeMessage(roomId) {
       room_id: roomId
     });
 
-    console.log(`✅ LiaiZen welcome message sent to room ${roomId} with timestamp ${welcomeTimestamp}`);
+    console.log(`✅ [WELCOME MESSAGE] LiaiZen welcome message sent to room ${roomId} (ID: ${messageId}, timestamp: ${welcomeTimestamp})`);
+    console.log(`   Message text: "${LIAIZEN_WELCOME_MESSAGE.substring(0, 50)}..."`);
     return { id: messageId, roomId };
   } catch (error) {
-    console.error(`❌ Error sending welcome message:`, error);
+    console.error(`❌ [WELCOME MESSAGE] Error sending welcome message to room ${roomId}:`, error.message);
+    console.error(`   Error details:`, error);
     return null;
   }
 }

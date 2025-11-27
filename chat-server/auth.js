@@ -441,6 +441,7 @@ async function getOrCreateGoogleUser(googleId, email, name, picture = null) {
  */
 async function createWelcomeAndOnboardingTasks(userId, username) {
   const now = new Date().toISOString();
+  console.log(`📋 [TASK CREATION] Starting task creation for user ${userId} (${username})`);
 
   // Create welcome task
   try {
@@ -448,7 +449,7 @@ async function createWelcomeAndOnboardingTasks(userId, username) {
 
 We hope you enjoy the platform, but feedback is golden. Let us know what you like and don't like. Stay tuned for new features like calendar, expense sharing, and document sharing.`;
 
-    await dbSafe.safeInsert('tasks', {
+    const taskId = await dbSafe.safeInsert('tasks', {
       user_id: userId,
       title: 'Welcome to LiaiZen',
       description: welcomeTaskDescription,
@@ -459,9 +460,10 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
       updated_at: now,
       completed_at: null
     });
-    console.log(`✅ Created welcome task for user: ${username}`);
+    console.log(`✅ [TASK CREATION] Created welcome task (ID: ${taskId}) for user: ${username} (${userId})`);
   } catch (error) {
-    console.warn('⚠️ Could not create welcome task:', error.message);
+    console.error(`❌ [TASK CREATION] Could not create welcome task for user ${userId}:`, error.message);
+    console.error(`   Error details:`, error);
   }
 
   // Create onboarding tasks
@@ -484,6 +486,9 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
       }
     ];
 
+    let createdCount = 0;
+    let skippedCount = 0;
+    
     for (const task of onboardingTasks) {
       // Check if task already exists before creating
       const existingTasks = await dbSafe.safeSelect('tasks', {
@@ -492,7 +497,7 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
       }, { limit: 1 });
 
       if (existingTasks.length === 0) {
-        await dbSafe.safeInsert('tasks', {
+        const taskId = await dbSafe.safeInsert('tasks', {
           user_id: userId,
           title: task.title,
           description: task.description,
@@ -503,12 +508,18 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
           updated_at: now,
           completed_at: null
         });
+        console.log(`✅ [TASK CREATION] Created task "${task.title}" (ID: ${taskId}) for user ${userId}`);
+        createdCount++;
+      } else {
+        console.log(`ℹ️  [TASK CREATION] Task "${task.title}" already exists for user ${userId}, skipping`);
+        skippedCount++;
       }
     }
 
-    console.log(`✅ Created onboarding tasks for user: ${username}`);
+    console.log(`✅ [TASK CREATION] Completed onboarding tasks for user ${username} (${userId}): ${createdCount} created, ${skippedCount} skipped`);
   } catch (error) {
-    console.warn('⚠️ Could not create onboarding tasks:', error.message);
+    console.error(`❌ [TASK CREATION] Could not create onboarding tasks for user ${userId}:`, error.message);
+    console.error(`   Error details:`, error);
   }
 }
 
