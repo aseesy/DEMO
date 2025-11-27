@@ -1003,7 +1003,7 @@ function ChatRoom() {
         const errorData = await response.json().catch(() => ({}));
         console.error('Invite API error:', errorData);
         if (response.status === 401) {
-          setInviteError('Please log in again to create an invite.');
+          setInviteError('Your session has expired. Please refresh the page and try again.');
         } else {
           setInviteError(errorData.error || errorData.message || `Unable to create invite (${response.status}). Please try again.`);
         }
