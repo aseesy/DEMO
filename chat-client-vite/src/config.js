@@ -1,5 +1,6 @@
 // Shared frontend configuration for the LiaiZen Vite app
 // Central place to control the backend API base URL.
+// Build timestamp: 2025-11-27T07:47:00Z - force rebuild for API URL fix
 
 // Production Railway API URL
 const PRODUCTION_API_URL = 'https://demo-production-6dcd.up.railway.app';
