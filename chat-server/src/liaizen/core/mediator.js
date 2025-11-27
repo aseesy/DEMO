@@ -520,7 +520,7 @@ When you INTERVENE, you MUST provide ALL THREE:
    - Ready to send as-is
    - Use DIFFERENT approaches:
      * Rewrite 1: I-statement (feeling + need) - "I feel... when... I need..."
-     * Rewrite 2: Observation + request - "I've noticed... Can we..."
+     * Rewrite 2: Observation + request - "I've noticed... I'd like to..."
 
 === CONTEXT ===
 
@@ -559,8 +559,8 @@ Analysis context:
   "intervention": {
     "personalMessage": "ADDRESS: Be SPECIFIC about the phrasing pattern (name-calling, blame, absolutes, insults, etc.) and the CONCRETE consequence. Example: 'Name-calling shuts down any chance of being heard, so your concerns won't get addressed.' NOT vague like 'won't foster healthy co-parenting'. Max 2 sentences.",
     "tip1": "ONE TIP: Max 10 words. Specific to THIS message. Actionable skill. Example: 'Name the feeling, not the person.'",
-    "rewrite1": "I-statement rewrite preserving their intent. Complete message. Example: 'I'm feeling really frustrated right now and need us to communicate more respectfully.'",
-    "rewrite2": "Observation+request rewrite. Different approach. Complete message. Example: 'When we speak to each other this way, nothing gets resolved. Can we try a different approach?'",
+    "rewrite1": "I-statement rewrite preserving their intent. Complete message. Example: 'I'm feeling really frustrated right now.'",
+    "rewrite2": "Observation+request rewrite. Different approach. Complete message. MUST use 'I/you' NOT 'we'. Example: 'I need to talk about what's bothering me. Can you hear me out?'",
     "comment": "For COMMENT action only. Brief tactical observation."
   }
 }
@@ -623,8 +623,8 @@ WRONG - RECEIVER responses (DO NOT USE):
 - "Can you explain specifically what I did wrong?"
 
 CORRECT - SENDER alternatives (USE THESE PATTERNS):
-- "I'm worried about her grades and want to discuss how we can both support her."
-- "I've noticed she's struggling in school. Can we figure out a plan together?"
+- "I'm worried about her grades. I'd like to talk about how to help her."
+- "I've noticed she's struggling in school. I want to figure out how to support her."
 
 === END EXAMPLES ===
 
