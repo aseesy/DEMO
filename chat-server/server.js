@@ -2767,11 +2767,11 @@ app.get('/api/debug/tasks/:userId', verifyAuth, async (req, res) => {
       orderDirection: 'DESC'
     });
 
-    const user = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
+    const users = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
     
     res.json({
       userId,
-      username: user[0]?.username || 'unknown',
+      username: users[0]?.username || 'unknown',
       totalTasks: tasks.length,
       tasks: tasks.map(t => ({
         id: t.id,
@@ -2782,7 +2782,13 @@ app.get('/api/debug/tasks/:userId', verifyAuth, async (req, res) => {
         completed_at: t.completed_at
       })),
       openTasks: tasks.filter(t => t.status === 'open').length,
-      completedTasks: tasks.filter(t => t.status === 'completed').length
+      completedTasks: tasks.filter(t => t.status === 'completed').length,
+      welcomeTaskExists: tasks.some(t => t.title === 'Welcome to LiaiZen'),
+      onboardingTasksExist: {
+        'Complete Your Profile': tasks.some(t => t.title === 'Complete Your Profile'),
+        'Add Your Co-parent': tasks.some(t => t.title === 'Add Your Co-parent'),
+        'Add Your Children': tasks.some(t => t.title === 'Add Your Children')
+      }
     });
   } catch (error) {
     console.error('Error in debug tasks endpoint:', error);
