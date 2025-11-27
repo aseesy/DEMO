@@ -100,8 +100,8 @@ export function LoginSignup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-lightest via-teal-light/40 to-teal-lightest flex items-center justify-center px-4 py-6 sm:py-8">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-teal-light/30 p-6 sm:p-8">
+    <div className="min-h-screen bg-gradient-to-b from-white via-teal-lightest/20 to-white flex items-center justify-center px-4 py-6 sm:py-8">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-200/50 p-6 sm:p-8">
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-2 sm:gap-3 mb-1">
