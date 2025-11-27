@@ -2526,6 +2526,98 @@ function ChatRoom() {
                     </div>
                   </div>
 
+                  {/* Send Invite Section - Always visible when no co-parent connected */}
+                  {!hasCoParentConnected && (
+                    <div className="border-2 border-emerald-300 rounded-2xl p-8 bg-emerald-50 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-xl font-semibold text-emerald-800 mb-2">Invite Your Co-Parent</h3>
+                          <p className="text-base text-emerald-700 mb-4 leading-relaxed">
+                            Generate a link or code to share with your co-parent so they can join your mediation room.
+                          </p>
+                          {inviteLink ? (
+                            <div className="space-y-3">
+                              {inviteCode && (
+                                <div>
+                                  <label className="block text-xs font-medium text-emerald-800 mb-1">Invite Code</label>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 bg-white border-2 border-emerald-200 rounded-lg p-3 text-center">
+                                      <span className="text-xl font-mono font-bold text-emerald-800 tracking-wider">{inviteCode}</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        await navigator.clipboard.writeText(inviteCode);
+                                        setInviteCopied(true);
+                                        setTimeout(() => setInviteCopied(false), 2000);
+                                      }}
+                                      className="p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                                    >
+                                      {inviteCopied ? '✓' : 'Copy'}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <label className="block text-xs font-medium text-emerald-800 mb-1">Invite Link</label>
+                                <div className="p-3 bg-white rounded-lg border-2 border-emerald-200 break-all text-emerald-800 font-mono text-xs">
+                                  {inviteLink}
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={handleCopyInvite}
+                                  className="flex-1 px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-all"
+                                >
+                                  {inviteCopied ? 'Copied!' : 'Copy Link'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setInviteLink(''); setInviteCode(''); }}
+                                  className="px-4 py-3 rounded-lg border-2 border-emerald-300 text-emerald-700 font-semibold hover:bg-emerald-100 transition-colors"
+                                >
+                                  Close
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleLoadInvite}
+                              disabled={isLoadingInvite}
+                              className="w-full px-5 py-3 rounded-lg bg-emerald-600 text-white text-base font-semibold hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 min-h-[44px] shadow-sm hover:shadow-md"
+                            >
+                              {isLoadingInvite ? (
+                                <>
+                                  <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  <span>Generating...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                  </svg>
+                                  <span>Generate Invite Link</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                          {inviteError && (
+                            <div className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                              {inviteError}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Enter Invite Code Section */}
                   <div className="border-2 border-teal-light rounded-2xl p-8 bg-white shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-start gap-4">
