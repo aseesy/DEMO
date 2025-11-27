@@ -143,6 +143,15 @@ export function AcceptInvitationPage() {
         clearInvitationState();
 
         setSuccessMessage('Connected with your co-parent! Redirecting...');
+        
+        // Trigger contacts reload after invitation acceptance
+        window.dispatchEvent(new CustomEvent('coparent-joined', { 
+          detail: { 
+            coparentId: result?.coParent?.id,
+            coparentName: result?.coParent?.name 
+          } 
+        }));
+        
         setTimeout(() => navigate('/', { replace: true }), 1500);
       } catch (err) {
         const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: 'accept_invitation' });

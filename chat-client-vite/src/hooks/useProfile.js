@@ -7,7 +7,10 @@ export function useProfile(username) {
     email: '',
     first_name: '',
     last_name: '',
+    display_name: '',
     address: '',
+    additional_context: '',
+    profile_picture: '',
     household_members: '',
     occupation: '',
     communication_style: '',
@@ -40,7 +43,10 @@ export function useProfile(username) {
             email: data.email || '',
             first_name: data.first_name || '',
             last_name: data.last_name || '',
+            display_name: data.display_name || '',
             address: data.address || '',
+            additional_context: data.additional_context || '',
+            profile_picture: data.profile_picture || '',
             household_members: data.household_members || '',
             occupation: data.occupation || '',
             communication_style: data.communication_style || '',
@@ -89,9 +95,21 @@ export function useProfile(username) {
           profileDataWithoutUsername.last_name !== undefined
             ? profileDataWithoutUsername.last_name
             : null,
+        display_name:
+          profileDataWithoutUsername.display_name !== undefined
+            ? profileDataWithoutUsername.display_name
+            : null,
         address:
           profileDataWithoutUsername.address !== undefined
             ? profileDataWithoutUsername.address
+            : null,
+        additional_context:
+          profileDataWithoutUsername.additional_context !== undefined
+            ? profileDataWithoutUsername.additional_context
+            : null,
+        profile_picture:
+          profileDataWithoutUsername.profile_picture !== undefined
+            ? profileDataWithoutUsername.profile_picture
             : null,
         household_members:
           profileDataWithoutUsername.household_members !== undefined
@@ -140,7 +158,10 @@ export function useProfile(username) {
             email: reloadData.email || '',
             first_name: reloadData.first_name || '',
             last_name: reloadData.last_name || '',
+            display_name: reloadData.display_name || '',
             address: reloadData.address || '',
+            additional_context: reloadData.additional_context || '',
+            profile_picture: reloadData.profile_picture || '',
             household_members: reloadData.household_members || '',
             occupation: reloadData.occupation || '',
             communication_style: reloadData.communication_style || '',
@@ -149,7 +170,7 @@ export function useProfile(username) {
           });
         }
         
-        alert('Profile saved successfully!');
+        // Success - toast notification is handled by ProfilePanel component
       } else {
         const errorMessage =
           data.error || data.message || `Failed to save profile (Status: ${response.status})`;

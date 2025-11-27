@@ -1106,6 +1106,14 @@ function ChatRoom() {
               has_coparent: true,
               room_status: 'multi_user',
             });
+            // Trigger contacts reload after invitation acceptance
+            // Dispatch event to reload contacts (contacts hook listens for this)
+            window.dispatchEvent(new CustomEvent('coparent-joined', { 
+              detail: { 
+                coparentId: result?.coParent?.id,
+                coparentName: result?.coParent?.name 
+              } 
+            }));
           }}
           hasMeanMessage={messages.some(msg =>
             msg.username === username &&
