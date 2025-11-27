@@ -479,7 +479,12 @@ async function verifyAuth(req, res, next) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    req.user = decoded; // Add user info to request
+    // Set req.user with both id and userId for backward compatibility
+    // JWT token contains 'id', but some endpoints expect 'userId'
+    req.user = {
+      ...decoded,
+      userId: decoded.id, // Add userId alias for backward compatibility
+    };
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
@@ -500,7 +505,11 @@ async function optionalAuth(req, res, next) {
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-        req.user = decoded; // Add user info to request
+        // Set req.user with both id and userId for backward compatibility
+        req.user = {
+          ...decoded,
+          userId: decoded.id, // Add userId alias for backward compatibility
+        };
       } catch (err) {
         // Token invalid or expired - silently continue without auth
         req.user = undefined;
