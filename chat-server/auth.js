@@ -1247,7 +1247,7 @@ async function registerFromInvitation(params, db) {
     // Transaction will commit automatically after returning
     console.log(`✅ Transaction complete - registration successful`);
 
-    return {
+    const result = {
       success: true,
       user: {
         id: userId,
@@ -1270,6 +1270,17 @@ async function registerFromInvitation(params, db) {
         notificationSent: true
       }
     };
+
+    // Create welcome and onboarding tasks after transaction completes
+    // (createWelcomeAndOnboardingTasks uses non-transaction-safe dbSafe functions)
+    try {
+      await createWelcomeAndOnboardingTasks(userId, username);
+    } catch (taskError) {
+      // Log but don't fail registration if task creation fails
+      console.error(`⚠️ Could not create onboarding tasks for user ${userId}:`, taskError.message);
+    }
+
+    return result;
   });
 }
 
