@@ -4218,25 +4218,31 @@ app.get('/api/user-contexts', (req, res) => {
 
 // Tasks API endpoints
 // Get all tasks for a user
-app.get('/api/tasks', async (req, res) => {
+app.get('/api/tasks', verifyAuth, async (req, res) => {
   try {
+    // Use authenticated user's ID from token
+    const userId = req.user.userId || req.user.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Fallback: allow username/email lookup for backward compatibility
     const identifier = req.query.username || req.query.email || req.body.username || req.body.email;
+    let targetUserId = userId;
+    
+    if (identifier && identifier !== req.user.username && identifier !== req.user.email) {
+      // If identifier is provided and different from authenticated user, look it up
+      const isEmail = identifier.includes('@');
+      const users = isEmail
+        ? await dbSafe.safeSelect('users', { email: identifier.toLowerCase() }, { limit: 1 })
+        : await dbSafe.safeSelect('users', { username: identifier.toLowerCase() }, { limit: 1 });
 
-    if (!identifier) {
-      return res.status(400).json({ error: 'Email or username is required' });
+      if (users.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      targetUserId = users[0].id;
     }
-
-    // Get user by email OR username
-    const isEmail = identifier.includes('@');
-    const users = isEmail
-      ? await dbSafe.safeSelect('users', { email: identifier.toLowerCase() }, { limit: 1 })
-      : await dbSafe.safeSelect('users', { username: identifier.toLowerCase() }, { limit: 1 });
-
-    if (users.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const userId = users[0].id;
 
     // Get tasks with optional filtering
     const status = req.query.status || req.query.filter;
@@ -4245,7 +4251,7 @@ app.get('/api/tasks', async (req, res) => {
 
     let tasksResult;
     // Build filter conditions
-    const filterConditions = { user_id: userId };
+    const filterConditions = { user_id: targetUserId };
 
     if (status && status !== 'all') {
       filterConditions.status = status;
@@ -4264,7 +4270,7 @@ app.get('/api/tasks', async (req, res) => {
 
     // Auto-complete onboarding tasks if conditions are met (check on load)
     try {
-      await autoCompleteOnboardingTasks(userId);
+      await autoCompleteOnboardingTasks(targetUserId);
       // Reload tasks after auto-completion WITH THE SAME FILTERS to get updated status
       const updatedTasksResult = await dbSafe.safeSelect('tasks', filterConditions, {
         orderBy: 'created_at',
