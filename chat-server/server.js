@@ -3492,7 +3492,12 @@ app.post('/api/invitations/decline', verifyAuth, async (req, res) => {
  */
 app.get('/api/invitations', verifyAuth, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.userId || req.user.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
     const { status } = req.query;
 
     const invitations = await invitationManager.getUserInvitations(userId, db, {
@@ -3503,6 +3508,7 @@ app.get('/api/invitations', verifyAuth, async (req, res) => {
 
   } catch (error) {
     console.error('Get invitations error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -4681,12 +4687,13 @@ app.get('/api/dashboard/updates', async (req, res) => {
 
       // Fetch recent messages (limit 5)
       // Join with users table to get sender name
+      // Note: messages table uses 'username' not 'sender_id', and 'text' not 'content'
       const messagesQuery = `
       SELECT m.*, u.username as sender_name, u.first_name, u.last_name, u.display_name
       FROM messages m
-      JOIN users u ON m.sender_id = u.id
+      JOIN users u ON m.username = u.username
       WHERE m.room_id IN (SELECT room_id FROM room_members WHERE user_id = $1)
-      AND m.sender_id != $1
+      AND m.username != (SELECT username FROM users WHERE id = $1)
       ORDER BY m.timestamp DESC
       LIMIT 5
     `;
@@ -4694,9 +4701,9 @@ app.get('/api/dashboard/updates', async (req, res) => {
 
       const messageUpdates = messagesRes.rows.map(msg => ({
         type: 'message',
-        description: msg.content,
+        description: msg.text || msg.content || '',
         timestamp: msg.timestamp,
-        personName: msg.display_name || (msg.first_name ? `${msg.first_name} ${msg.last_name || ''}`.trim() : msg.sender_name),
+        personName: msg.display_name || (msg.first_name ? `${msg.first_name} ${msg.last_name || ''}`.trim() : msg.sender_name || msg.username),
         id: msg.id
       }));
 
