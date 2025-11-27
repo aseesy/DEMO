@@ -100,8 +100,8 @@ export function LoginSignup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-lightest/60 via-white to-teal-lightest/60 flex items-center justify-center px-4 py-6 sm:py-8">
-      <div className="max-w-md w-full bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-teal-light/40 p-6 sm:p-8">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-6 sm:py-8" style={{ backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)' }}>
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-200/50 p-6 sm:p-8">
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-2 sm:gap-3 mb-1">
