@@ -51,6 +51,7 @@ const FigmaGenerator = require('./figmaGenerator');
 const communicationStats = require('./communicationStats');
 const invitationManager = require('./libs/invitation-manager');
 const notificationManager = require('./libs/notification-manager');
+const pairingManager = require('./libs/pairing-manager');
 const db = require('./dbPostgres'); // Database pool for invitation/notification libraries
 const { isValidEmail } = require('./src/utils/validators'); // Generic validation utilities
 const { ensureProfileColumnsExist } = require('./src/utils/schema'); // Schema utilities for runtime column checks
@@ -4419,6 +4420,8 @@ app.get('/api/tasks', verifyAuth, async (req, res) => {
       console.log('[GET /api/tasks] After search filter:', tasks.length, 'tasks');
     }
 
+    // Log task titles for debugging
+    console.log('[GET /api/tasks] Task titles being returned:', tasks.map(t => ({ title: t.title, status: t.status })));
     console.log('[GET /api/tasks] Returning', tasks.length, 'tasks to client');
     res.json(tasks);
   } catch (error) {
