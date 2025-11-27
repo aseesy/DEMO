@@ -183,6 +183,9 @@ async function createUserWithEmail(email, password, context = {}, googleId = nul
   // Continue with context and room creation (non-atomic, but user exists)
   await setupUserContextAndRoom(userId, username, context);
 
+  // Create welcome and onboarding tasks
+  await createWelcomeAndOnboardingTasks(userId, username);
+
   return {
     id: userId,
     username: username,
