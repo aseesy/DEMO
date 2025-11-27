@@ -94,10 +94,11 @@ export function InvitationProvider({ children }) {
 
     try {
       const { apiGet } = await import('../apiClient.js');
-      
+
+      // Use new pairing API endpoints (Feature: 004-account-pairing-refactor)
       const endpoint = inviteCode
-        ? `/api/invitations/validate-code/${encodeURIComponent(inviteCode)}`
-        : `/api/invitations/validate/${encodeURIComponent(inviteToken)}`;
+        ? `/api/pairing/validate/${encodeURIComponent(inviteCode)}`
+        : `/api/pairing/validate-token/${encodeURIComponent(inviteToken)}`;
 
       const response = await retryWithBackoff(
         () => apiGet(endpoint),

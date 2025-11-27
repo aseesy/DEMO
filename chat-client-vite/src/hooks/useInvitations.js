@@ -24,6 +24,7 @@ export function useInvitations() {
    * @param {string} code - The short code to validate (e.g., LZ-ABC123)
    * @returns {Promise<Object>} Validation result with invitation details
    */
+  // Use new pairing API endpoints (Feature: 004-account-pairing-refactor)
   const validateCode = React.useCallback(async (code) => {
     if (!code) {
       const errorInfo = getErrorMessage({ code: 'CODE_REQUIRED' });
@@ -35,7 +36,7 @@ export function useInvitations() {
 
     try {
       const response = await retryWithBackoff(
-        () => apiGet(`/api/invitations/validate-code/${encodeURIComponent(code)}`),
+        () => apiGet(`/api/pairing/validate/${encodeURIComponent(code)}`),
         {
           maxRetries: 3,
           shouldRetry: (error, statusCode) => {
@@ -50,16 +51,16 @@ export function useInvitations() {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/invitations/validate-code' });
-        logError(data, { endpoint: '/api/invitations/validate-code', operation: 'validate_code', code });
+        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/validate' });
+        logError(data, { endpoint: '/api/pairing/validate', operation: 'validate_code', code });
         setError(errorInfo.userMessage);
         return { valid: false, code: data.code || 'ERROR', error: errorInfo.userMessage, errorInfo };
       }
 
       return data;
     } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/invitations/validate-code' });
-      logError(err, { endpoint: '/api/invitations/validate-code', operation: 'validate_code', code });
+      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/validate' });
+      logError(err, { endpoint: '/api/pairing/validate', operation: 'validate_code', code });
       setError(errorInfo.userMessage);
       return { valid: false, code: 'NETWORK_ERROR', error: errorInfo.userMessage, errorInfo };
     } finally {
@@ -67,6 +68,7 @@ export function useInvitations() {
     }
   }, []);
 
+  // Use new pairing API endpoints (Feature: 004-account-pairing-refactor)
   const validateToken = React.useCallback(async (token) => {
     if (!token) {
       const errorInfo = getErrorMessage({ code: 'TOKEN_REQUIRED' });
@@ -78,7 +80,7 @@ export function useInvitations() {
 
     try {
       const response = await retryWithBackoff(
-        () => apiGet(`/api/invitations/validate/${encodeURIComponent(token)}`),
+        () => apiGet(`/api/pairing/validate-token/${encodeURIComponent(token)}`),
         {
           maxRetries: 3,
           shouldRetry: (error, statusCode) => {
@@ -93,16 +95,16 @@ export function useInvitations() {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/invitations/validate' });
-        logError(data, { endpoint: '/api/invitations/validate', operation: 'validate_token', token });
+        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/validate-token' });
+        logError(data, { endpoint: '/api/pairing/validate-token', operation: 'validate_token', token });
         setError(errorInfo.userMessage);
         return { valid: false, code: data.code || 'ERROR', error: errorInfo.userMessage, errorInfo };
       }
 
       return data;
     } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/invitations/validate' });
-      logError(err, { endpoint: '/api/invitations/validate', operation: 'validate_token', token });
+      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/validate-token' });
+      logError(err, { endpoint: '/api/pairing/validate-token', operation: 'validate_token', token });
       setError(errorInfo.userMessage);
       return { valid: false, code: 'NETWORK_ERROR', error: errorInfo.userMessage, errorInfo };
     } finally {
@@ -117,6 +119,7 @@ export function useInvitations() {
    */
   /**
    * Accept an invitation by short code
+   * Use new pairing API (Feature: 004-account-pairing-refactor)
    * @param {string} code - The short code (e.g., LZ-ABC123)
    * @returns {Promise<Object>} Result with room and co-parent info
    */
@@ -132,7 +135,7 @@ export function useInvitations() {
 
     try {
       const response = await retryWithBackoff(
-        () => apiPost('/api/invitations/accept-code', { code }),
+        () => apiPost('/api/pairing/accept', { code }),
         {
           maxRetries: 3,
           shouldRetry: (error, statusCode) => {
@@ -147,16 +150,16 @@ export function useInvitations() {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/invitations/accept-code' });
-        logError(data, { endpoint: '/api/invitations/accept-code', operation: 'accept_code', code });
+        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/accept' });
+        logError(data, { endpoint: '/api/pairing/accept', operation: 'accept_code', code });
         setError(errorInfo.userMessage);
         return { success: false, error: errorInfo.userMessage, errorInfo, code: data.code };
       }
 
       return { success: true, ...data };
     } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/invitations/accept-code' });
-      logError(err, { endpoint: '/api/invitations/accept-code', operation: 'accept_code', code });
+      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/accept' });
+      logError(err, { endpoint: '/api/pairing/accept', operation: 'accept_code', code });
       setError(errorInfo.userMessage);
       return { success: false, error: errorInfo.userMessage, errorInfo };
     } finally {
@@ -164,6 +167,7 @@ export function useInvitations() {
     }
   }, []);
 
+  // Use new pairing API (Feature: 004-account-pairing-refactor)
   const acceptInvitation = React.useCallback(async (token) => {
     if (!token) {
       const errorInfo = getErrorMessage({ code: 'TOKEN_REQUIRED' });
@@ -176,7 +180,7 @@ export function useInvitations() {
 
     try {
       const response = await retryWithBackoff(
-        () => apiPost('/api/invitations/accept', { token }),
+        () => apiPost('/api/pairing/accept', { token }),
         {
           maxRetries: 3,
           shouldRetry: (error, statusCode) => {
@@ -191,16 +195,16 @@ export function useInvitations() {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/invitations/accept' });
-        logError(data, { endpoint: '/api/invitations/accept', operation: 'accept_invitation', token });
+        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/accept' });
+        logError(data, { endpoint: '/api/pairing/accept', operation: 'accept_invitation', token });
         setError(errorInfo.userMessage);
         return { success: false, error: errorInfo.userMessage, errorInfo, code: data.code };
       }
 
       return { success: true, ...data };
     } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/invitations/accept' });
-      logError(err, { endpoint: '/api/invitations/accept', operation: 'accept_invitation', token });
+      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/accept' });
+      logError(err, { endpoint: '/api/pairing/accept', operation: 'accept_invitation', token });
       setError(errorInfo.userMessage);
       return { success: false, error: errorInfo.userMessage, errorInfo };
     } finally {
