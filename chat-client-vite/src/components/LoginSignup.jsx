@@ -174,7 +174,7 @@ export function LoginSignup() {
         )}
 
         {/* Page Title with Serif Typography */}
-        <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-teal-dark text-center mb-6">
+        <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-teal-medium text-center mb-6">
           {isLoginMode ? 'Welcome back' : 'Create your account'}
         </h1>
 
@@ -220,7 +220,7 @@ export function LoginSignup() {
 
           <Button
             type="submit"
-            variant="primary"
+            variant="teal-solid"
             size="medium"
             fullWidth
             disabled={isLoggingIn || isSigningUp || isGoogleLoggingIn}
