@@ -23,10 +23,13 @@ export function useTasks(username, isAuthenticated = true) {
   });
 
   const loadTasks = React.useCallback(async () => {
+    console.log('[useTasks] loadTasks called', { username, isAuthenticated, taskFilter, taskSearch });
     if (!username || !isAuthenticated) {
+      console.log('[useTasks] Skipping load - missing username or not authenticated', { username, isAuthenticated });
       setTasks([]);
       return;
     }
+    console.log('[useTasks] Starting to load tasks...');
     setIsLoadingTasks(true);
     try {
       const params = new URLSearchParams({
@@ -42,7 +45,9 @@ export function useTasks(username, isAuthenticated = true) {
       }
       // 'all' filter doesn't need any params
 
-      const response = await apiGet(`/api/tasks?${params.toString()}`);
+      const url = `/api/tasks?${params.toString()}`;
+      console.log('[useTasks] Making API request to:', url);
+      const response = await apiGet(url);
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data)) {
@@ -86,9 +91,12 @@ export function useTasks(username, isAuthenticated = true) {
   React.useEffect(() => {
     // Only load tasks if authenticated and username is available
     // This prevents race conditions during auth verification
+    console.log('[useTasks] useEffect triggered', { isAuthenticated, username, hasLoadTasks: !!loadTasks });
     if (isAuthenticated && username) {
+      console.log('[useTasks] Conditions met, calling loadTasks');
       loadTasks();
     } else {
+      console.log('[useTasks] Conditions not met, clearing tasks', { isAuthenticated, username });
       setTasks([]);
     }
   }, [loadTasks, isAuthenticated, username]);

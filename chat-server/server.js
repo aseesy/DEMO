@@ -4327,7 +4327,10 @@ app.get('/api/tasks', verifyAuth, async (req, res) => {
     // Use authenticated user's ID from token
     const userId = req.user.userId || req.user.id;
     
+    console.log('[GET /api/tasks] Request received', { userId, user: req.user, query: req.query });
+    
     if (!userId) {
+      console.error('[GET /api/tasks] No userId found in request');
       return res.status(401).json({ error: 'Authentication required' });
     }
 
@@ -4343,9 +4346,13 @@ app.get('/api/tasks', verifyAuth, async (req, res) => {
         : await dbSafe.safeSelect('users', { username: identifier.toLowerCase() }, { limit: 1 });
 
       if (users.length === 0) {
+        console.warn('[GET /api/tasks] User not found for identifier:', identifier);
         return res.status(404).json({ error: 'User not found' });
       }
       targetUserId = users[0].id;
+      console.log('[GET /api/tasks] Using targetUserId from identifier lookup:', targetUserId);
+    } else {
+      console.log('[GET /api/tasks] Using authenticated userId:', targetUserId);
     }
 
     // Get tasks with optional filtering
@@ -4365,12 +4372,14 @@ app.get('/api/tasks', verifyAuth, async (req, res) => {
       filterConditions.priority = priority;
     }
 
+    console.log('[GET /api/tasks] Querying tasks with filterConditions:', filterConditions);
     tasksResult = await dbSafe.safeSelect('tasks', filterConditions, {
       orderBy: 'created_at',
       orderDirection: 'DESC'
     });
 
     let tasks = tasksResult;
+    console.log('[GET /api/tasks] Found', tasks.length, 'tasks before auto-complete');
 
     // Auto-complete onboarding tasks if conditions are met (check on load)
     try {
@@ -4407,8 +4416,10 @@ app.get('/api/tasks', verifyAuth, async (req, res) => {
         task.title.toLowerCase().includes(searchLower) ||
         (task.description && task.description.toLowerCase().includes(searchLower))
       );
+      console.log('[GET /api/tasks] After search filter:', tasks.length, 'tasks');
     }
 
+    console.log('[GET /api/tasks] Returning', tasks.length, 'tasks to client');
     res.json(tasks);
   } catch (error) {
     console.error('Error fetching tasks:', error);
