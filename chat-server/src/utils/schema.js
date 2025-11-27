@@ -5,7 +5,10 @@
  * Used as a safety net to ensure required columns exist even if migrations haven't run.
  */
 
-const dbPostgres = require('../../dbPostgres');
+// Lazy-load dbPostgres to avoid initialization issues
+function getDb() {
+  return require('../../dbPostgres');
+}
 
 // Cache column existence to avoid repeated database queries
 const columnCache = new Map();
@@ -25,6 +28,7 @@ async function columnExists(tableName, columnName) {
   }
   
   try {
+    const dbPostgres = getDb();
     const query = `
       SELECT 1 
       FROM information_schema.columns 
@@ -58,6 +62,7 @@ async function createColumnIfNotExists(tableName, columnName, columnType = 'TEXT
   }
   
   try {
+    const dbPostgres = getDb();
     // Escape identifiers to prevent SQL injection
     const safeTableName = `"${tableName}"`;
     const safeColumnName = `"${columnName}"`;
