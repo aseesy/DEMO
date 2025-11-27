@@ -466,17 +466,6 @@ export function LandingPage({ onGetStarted }) {
             </div>
           </div>
 
-          {/* Visual Separator - Enhanced */}
-          <div className="my-12 sm:my-16 md:my-24 flex items-center justify-center">
-            <div className="flex items-center gap-3 max-w-md w-full">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-teal-medium to-transparent opacity-50"></div>
-              <div className="relative">
-                <div className="absolute inset-0 w-3 h-3 rounded-full bg-teal-medium animate-ping opacity-20"></div>
-                <div className="w-3 h-3 rounded-full bg-gradient-to-br from-teal-medium to-teal-dark shadow-lg"></div>
-              </div>
-              <div className="flex-1 h-px bg-gradient-to-r from-teal-medium via-teal-medium to-transparent opacity-50"></div>
-            </div>
-          </div>
 
           {/* Product Screenshot/Mockup Section - Fade-in animation */}
           <div className="mt-16 sm:mt-24 md:mt-32 mb-16 sm:mb-24 md:mb-32 opacity-0 translate-y-4 transition-all duration-700 ease-out" data-animate="fade-in">
@@ -549,18 +538,6 @@ export function LandingPage({ onGetStarted }) {
             </div>
           </div>
 
-          {/* Visual Separator - Subtle diamond pattern */}
-          <div className="my-12 sm:my-16 md:my-32 flex items-center justify-center">
-            <div className="flex items-center gap-4 max-w-md w-full">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-gray-300"></div>
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
-                <div className="w-2 h-2 rounded-sm bg-gradient-to-br from-gray-300 to-gray-400 transform rotate-45"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
-              </div>
-              <div className="flex-1 h-px bg-gradient-to-r from-gray-300 via-gray-300 to-transparent"></div>
-            </div>
-          </div>
 
           {/* Value Proposition Cards - streamlined */}
           <div className="mt-12 sm:mt-16 md:mt-24 mb-12 sm:mb-16 md:mb-24" data-section="value_proposition">
