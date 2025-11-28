@@ -7831,6 +7831,97 @@ server.on('error', (error) => {
   }
 });
 
+// =============================================================================
+// TEMPORARY ADMIN ENDPOINT - REMOVE AFTER TESTING
+// =============================================================================
+
+/**
+ * POST /api/admin/cleanup-test-data
+ * Cleanup test user and reset pairing sessions for testing
+ * Protected by secret key
+ */
+app.post('/api/admin/cleanup-test-data', async (req, res) => {
+  const { secret } = req.body;
+  const ADMIN_SECRET = process.env.ADMIN_CLEANUP_SECRET || 'liaizen-test-cleanup-2024';
+
+  if (secret !== ADMIN_SECRET) {
+    return res.status(403).json({ error: 'Invalid secret' });
+  }
+
+  const results = {
+    usersDeleted: 0,
+    contactsDeleted: 0,
+    membershipsDeleted: 0,
+    tasksDeleted: 0,
+    pairingsReset: 0,
+    invitationsDeleted: 0
+  };
+
+  try {
+    // 1. Find test user
+    const testUserResult = await db.query(
+      "SELECT id, username, email FROM users WHERE email = 'testuser123@example.com'"
+    );
+
+    if (testUserResult.rows.length > 0) {
+      const testUser = testUserResult.rows[0];
+      console.log(`🧹 Cleaning up test user: ${testUser.email}`);
+
+      // Delete contacts
+      const contactsDeleted = await db.query(
+        'DELETE FROM contacts WHERE user_id = $1 OR contact_user_id = $1',
+        [testUser.id]
+      );
+      results.contactsDeleted = contactsDeleted.rowCount;
+
+      // Delete room memberships
+      const membershipsDeleted = await db.query(
+        'DELETE FROM room_members WHERE user_id = $1',
+        [testUser.id]
+      );
+      results.membershipsDeleted = membershipsDeleted.rowCount;
+
+      // Delete tasks
+      const tasksDeleted = await db.query(
+        'DELETE FROM tasks WHERE user_id = $1 OR assigned_to = $1',
+        [testUser.id]
+      );
+      results.tasksDeleted = tasksDeleted.rowCount;
+
+      // Delete invitations
+      const invitationsDeleted = await db.query(
+        'DELETE FROM invitations WHERE inviter_id = $1 OR invitee_id = $1',
+        [testUser.id]
+      );
+      results.invitationsDeleted = invitationsDeleted.rowCount;
+
+      // Delete user
+      await db.query('DELETE FROM users WHERE id = $1', [testUser.id]);
+      results.usersDeleted = 1;
+    }
+
+    // 2. Reset pairing sessions for user 1 (mom)
+    const pairingsReset = await db.query(`
+      UPDATE pairing_sessions
+      SET status = 'pending',
+          parent_b_id = NULL,
+          accepted_at = NULL
+      WHERE status = 'active'
+        AND parent_a_id = 1
+    `);
+    results.pairingsReset = pairingsReset.rowCount;
+
+    console.log('✅ Cleanup complete:', results);
+    res.json({ success: true, results });
+
+  } catch (error) {
+    console.error('❌ Cleanup error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =============================================================================
+
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
