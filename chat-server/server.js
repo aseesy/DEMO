@@ -3554,14 +3554,49 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
         context: {}
       }, db);
     } else {
-      // Register using token (requires email matching)
-      result = await auth.registerFromInvitation({
-        token: inviteToken,
-        email: cleanEmail,
-        password,
-        displayName: username,
-        context: {}
-      }, db);
+      // Register using token - DUAL-SYSTEM FALLBACK (Feature 009)
+      // Try invitations table first (old system)
+      console.log(`🔵 Checking invitation token in dual-system...`);
+      
+      let invitationValidation = await invitationManager.validateToken(inviteToken, db);
+      
+      if (!invitationValidation.valid && invitationValidation.code === 'INVALID_TOKEN') {
+        // Token not found in invitations table, try pairing_sessions table (new system)
+        console.log(`⚠️ Token not found in invitations table, checking pairing_sessions...`);
+        const pairingValidation = await pairingManager.validateToken(inviteToken, db);
+        
+        if (pairingValidation.valid) {
+          // Found in pairing_sessions - use pairing registration
+          console.log(`✅ Token found in pairing_sessions, using registerFromPairing`);
+          result = await auth.registerFromPairing({
+            token: inviteToken,
+            email: cleanEmail,
+            password,
+            displayName: username,
+            context: {}
+          }, db);
+        } else {
+          // Not found in either system
+          console.log(`❌ Token not found in either system`);
+          result = await auth.registerFromInvitation({
+            token: inviteToken,
+            email: cleanEmail,
+            password,
+            displayName: username,
+            context: {}
+          }, db);
+        }
+      } else {
+        // Found in invitations table - use invitation registration
+        console.log(`✅ Token found in invitations table, using registerFromInvitation`);
+        result = await auth.registerFromInvitation({
+          token: inviteToken,
+          email: cleanEmail,
+          password,
+          displayName: username,
+          context: {}
+        }, db);
+      }
     }
 
     // Generate JWT token
@@ -3594,11 +3629,18 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
   } catch (error) {
     console.error('Register with invite error:', error);
 
-    if (error.message === 'Email already exists') {
-      return res.status(409).json({ error: 'An account with this email already exists' });
+    // Handle registration errors with proper codes
+    if (error.code === 'REG_001' || error.message === 'Email already exists') {
+      return res.status(409).json({ error: 'An account with this email already exists', code: 'REG_001' });
     }
-    if (error.message.includes('Invalid') || error.message.includes('expired')) {
-      return res.status(400).json({ error: error.message, code: 'INVALID_TOKEN' });
+    if (error.code === 'REG_002' || error.message.includes('Invalid')) {
+      return res.status(400).json({ error: error.message, code: error.code || 'INVALID_TOKEN' });
+    }
+    if (error.code === 'REG_003' || error.message.includes('expired')) {
+      return res.status(400).json({ error: error.message, code: error.code || 'EXPIRED' });
+    }
+    if (error.code === 'REG_004' || error.message.includes('already accepted')) {
+      return res.status(400).json({ error: error.message, code: error.code || 'ALREADY_ACCEPTED' });
     }
     if (error.message.includes('does not match')) {
       return res.status(400).json({ error: 'Email does not match the invitation', code: 'EMAIL_MISMATCH' });
@@ -3608,11 +3650,6 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
   }
 });
 
-/**
- * GET /api/invitations/validate/:token
- * Validate an invitation token (check if valid, expired, etc.)
- * Tries both invitations table and pairing_sessions table for compatibility
- */
 app.get('/api/invitations/validate/:token', async (req, res) => {
   try {
     const { token } = req.params;

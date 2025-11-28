@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const roomManager = require('./roomManager');
 const dbSafe = require('./dbSafe');
 const invitationManager = require('./libs/invitation-manager');
+const pairingManager = require('./libs/pairing-manager');
 const notificationManager = require('./libs/notification-manager');
 
 // ============================================================================
@@ -487,7 +488,7 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
 
     let createdCount = 0;
     let skippedCount = 0;
-    
+
     for (const task of onboardingTasks) {
       // Check if task already exists before creating
       const existingTasks = await dbSafe.safeSelect('tasks', {
@@ -1450,6 +1451,122 @@ async function registerFromShortCode(params, db) {
 }
 
 /**
+ * Register a new user from a pairing session token
+ * Used when an invited person creates their account using a pairing system invitation
+ *
+ * Feature: 009-fix-invitation-flow
+ * Handles invitations from the pairing_sessions table (new system)
+ *
+ * @param {object} params - Registration parameters
+ * @param {string} params.token - Pairing invitation token
+ * @param {string} params.email - User's email
+ * @param {string} params.password - User's password
+ * @param {string} params.displayName - User's display name
+ * @param {object} [params.context] - Additional user context
+ * @param {object} db - Database connection
+ * @returns {Promise<object>} Registration result with user and room details
+ */
+async function registerFromPairing(params, db) {
+  const {
+    token,
+    email,
+    password,
+    displayName,
+    context = {}
+  } = params;
+
+  // ========== PRE-TRANSACTION VALIDATION ==========
+  if (!token) {
+    throw createRegistrationError(RegistrationError.INVALID_TOKEN, 'Token is required');
+  }
+  if (!email) {
+    throw new Error('Email is required');
+  }
+  if (!password) {
+    throw new Error('Password is required');
+  }
+  if (!db) {
+    throw new Error('Database connection is required');
+  }
+
+  const emailLower = email.trim().toLowerCase();
+
+  // Check if email already exists (fast fail before transaction)
+  const existingEmail = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
+  if (existingEmail.length > 0) {
+    throw createRegistrationError(RegistrationError.EMAIL_EXISTS);
+  }
+
+  // Validate the pairing token
+  const validation = await pairingManager.validateToken(token, db);
+  if (!validation.valid) {
+    // Map validation errors to registration error codes
+    if (validation.code === 'EXPIRED') {
+      throw createRegistrationError(RegistrationError.EXPIRED);
+    } else if (validation.code === 'ALREADY_ACCEPTED') {
+      throw createRegistrationError(RegistrationError.ALREADY_ACCEPTED);
+    }
+    throw createRegistrationError(RegistrationError.INVALID_TOKEN, validation.error);
+  }
+
+  const pairing = validation.pairing;
+
+  console.log(`🔵 Starting pairing-based registration for ${emailLower}`);
+
+  // Create the user account
+  const user = await createUserWithEmail(emailLower, password, context);
+
+  // Update display name if provided
+  if (displayName) {
+    await dbSafe.safeUpdate('users', {
+      display_name: displayName.trim()
+    }, { id: user.id });
+  }
+
+  console.log(`✅ Created user ${user.id} with username ${user.username}`);
+
+  // Accept the pairing using the pairing manager
+  // This creates the room and contacts atomically
+  let acceptResult;
+  try {
+    acceptResult = await pairingManager.acceptByToken(token, user.id, db, roomManager);
+    console.log(`✅ Accepted pairing ${pairing.id}`);
+  } catch (acceptError) {
+    console.error('Error accepting pairing:', acceptError);
+    throw new Error(`Failed to accept pairing: ${acceptError.message}`);
+  }
+
+  // Create welcome and onboarding tasks
+  try {
+    await createWelcomeAndOnboardingTasks(user.id, user.username);
+  } catch (taskError) {
+    console.error(`⚠️ Could not create onboarding tasks for user ${user.id}:`, taskError.message);
+  }
+
+  // Return result in consistent format
+  return {
+    success: true,
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      displayName: displayName || user.username,
+      context: user.context,
+      room: user.room
+    },
+    coParent: {
+      id: acceptResult.initiatorId,
+      displayName: validation.initiatorName,
+      emailDomain: validation.initiatorEmail?.split('@')[1]?.split('.')[0] || null
+    },
+    sharedRoom: acceptResult.sharedRoomId ? {
+      id: acceptResult.sharedRoomId,
+      name: `${validation.initiatorName || 'Co-Parent'} & ${displayName || user.username}`
+    } : null
+  };
+}
+
+/**
  * Accept a co-parent invitation for an EXISTING user
  * Used when an existing user receives an invitation
  *
@@ -1690,6 +1807,7 @@ module.exports = {
   registerWithInvitation,
   registerFromInvitation,
   registerFromShortCode,
+  registerFromPairing,  // NEW: Feature 009
   acceptCoParentInvitation,
   declineCoParentInvitation,
 
