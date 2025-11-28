@@ -68,13 +68,8 @@ export function useNotifications({ username, enabled = true }) {
       return; // Don't notify for own messages
     }
 
-    // Only show browser notification if page is hidden/not visible
-    // (Toast notifications will handle visible state)
-    if (!document.hidden) {
-      console.log('[useNotifications] Page visible, skipping browser notification (toast will show)');
-      return;
-    }
-
+    // Show native browser notification like SMS - always show, regardless of page visibility
+    // This provides immediate notification on computer/phone, similar to text messages
     try {
       const notification = new Notification('New message from ' + message.username, {
         body: message.text.length > 100

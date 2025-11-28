@@ -406,15 +406,13 @@ function ChatRoom() {
     // Increment unread count if not on chat screen or page is hidden
     if (currentView !== 'chat' || document.hidden) {
       setUnreadCount(prev => prev + 1);
-
-      // Show browser notification if permission granted and page is hidden
-      if (document.hidden && notifications.permission === 'granted') {
-        notifications.showNotification(message);
-      }
     }
 
-    // Device notifications are handled by PWA Service Worker
-    // No in-browser toast pop-ups - only native device notifications
+    // Show native browser notification like SMS - always show if permission granted
+    // This provides immediate notification on computer/phone, similar to text messages
+    if (notifications.permission === 'granted') {
+      notifications.showNotification(message);
+    }
   }, [username, currentView, notifications]);
 
   // Track original message to remove after rewrite is sent

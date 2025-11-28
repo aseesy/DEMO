@@ -5158,9 +5158,8 @@ app.get('/api/dashboard/updates', async (req, res) => {
         console.warn('Invitations query failed:', err.message);
       }
 
-      // Aggregate all updates
+      // Aggregate all updates (excluding messages - messages should not appear in dashboard updates)
       const allUpdates = [
-        ...messageUpdates,
         ...expenseUpdates,
         ...agreementUpdates,
         ...inviteUpdates
