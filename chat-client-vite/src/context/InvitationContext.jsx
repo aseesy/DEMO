@@ -95,10 +95,12 @@ export function InvitationProvider({ children }) {
     try {
       const { apiGet } = await import('../apiClient.js');
 
-      // Use new pairing API endpoints (Feature: 004-account-pairing-refactor)
+      // Use invitations API endpoints (matches how ChatRoom.jsx creates invitations)
+      // The /api/invitations/create creates entries in the invitations table,
+      // so we validate against the same table using these endpoints
       const endpoint = inviteCode
-        ? `/api/pairing/validate/${encodeURIComponent(inviteCode)}`
-        : `/api/pairing/validate-token/${encodeURIComponent(inviteToken)}`;
+        ? `/api/invitations/validate-code/${encodeURIComponent(inviteCode)}`
+        : `/api/invitations/validate/${encodeURIComponent(inviteToken)}`;
 
       const response = await retryWithBackoff(
         () => apiGet(endpoint),

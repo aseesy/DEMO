@@ -3630,10 +3630,14 @@ app.get('/api/invitations/validate/:token', async (req, res) => {
       });
     }
 
+    // Get inviter email domain for display
+    const inviterEmailDomain = validation.inviterEmail ? validation.inviterEmail.split('@')[1] || '' : '';
+
     res.json({
       valid: true,
       inviterName: validation.inviterName,
       inviterEmail: validation.inviterEmail,
+      inviterEmailDomain,
       inviteeEmail: validation.invitation.invitee_email,
       expiresAt: validation.invitation.expires_at
     });
@@ -3901,10 +3905,14 @@ app.get('/api/invitations/validate-code/:code', async (req, res) => {
       });
     }
 
+    // Get inviter email domain for display
+    const inviterEmailDomain = validation.inviterEmail ? validation.inviterEmail.split('@')[1] || '' : '';
+
     res.json({
       valid: true,
       inviterName: validation.inviterName,
       inviterEmail: validation.inviterEmail,
+      inviterEmailDomain,
       inviteeEmail: validation.invitation.invitee_email,
       expiresAt: validation.invitation.expires_at
     });
