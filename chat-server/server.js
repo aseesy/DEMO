@@ -3936,7 +3936,7 @@ app.post('/api/notifications/:id/action', verifyAuth, async (req, res) => {
  * POST /api/pairing/create
  * Body: { type: 'email'|'link'|'code', inviteeEmail?: string }
  */
-app.post('/api/pairing/create', authenticateToken, async (req, res) => {
+app.post('/api/pairing/create', verifyAuth, async (req, res) => {
   try {
     const { type, inviteeEmail } = req.body;
     const userId = req.user.userId;
@@ -4021,7 +4021,7 @@ app.post('/api/pairing/create', authenticateToken, async (req, res) => {
  * Get current user's pairing status
  * GET /api/pairing/status
  */
-app.get('/api/pairing/status', authenticateToken, async (req, res) => {
+app.get('/api/pairing/status', verifyAuth, async (req, res) => {
   try {
     const userId = req.user.userId;
     const status = await pairingManager.getPairingStatus(userId, db);
@@ -4095,7 +4095,7 @@ app.get('/api/pairing/validate-token/:token', async (req, res) => {
  * POST /api/pairing/accept
  * Body: { code?: string, token?: string }
  */
-app.post('/api/pairing/accept', authenticateToken, async (req, res) => {
+app.post('/api/pairing/accept', verifyAuth, async (req, res) => {
   try {
     const { code, token } = req.body;
     const userId = req.user.userId;
@@ -4135,7 +4135,7 @@ app.post('/api/pairing/accept', authenticateToken, async (req, res) => {
  * Decline a pairing invitation
  * POST /api/pairing/decline/:id
  */
-app.post('/api/pairing/decline/:id', authenticateToken, async (req, res) => {
+app.post('/api/pairing/decline/:id', verifyAuth, async (req, res) => {
   try {
     const pairingId = parseInt(req.params.id);
     const userId = req.user.userId;
@@ -4160,7 +4160,7 @@ app.post('/api/pairing/decline/:id', authenticateToken, async (req, res) => {
  * Cancel a pending pairing (initiator only)
  * DELETE /api/pairing/:id
  */
-app.delete('/api/pairing/:id', authenticateToken, async (req, res) => {
+app.delete('/api/pairing/:id', verifyAuth, async (req, res) => {
   try {
     const pairingId = parseInt(req.params.id);
     const userId = req.user.userId;
@@ -4185,7 +4185,7 @@ app.delete('/api/pairing/:id', authenticateToken, async (req, res) => {
  * Resend a pairing invitation (generates new token/expiration)
  * POST /api/pairing/resend/:id
  */
-app.post('/api/pairing/resend/:id', authenticateToken, async (req, res) => {
+app.post('/api/pairing/resend/:id', verifyAuth, async (req, res) => {
   try {
     const pairingId = parseInt(req.params.id);
     const userId = req.user.userId;
