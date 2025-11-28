@@ -7907,16 +7907,23 @@ app.post('/api/admin/cleanup-test-data', async (req, res) => {
       results.usersDeleted = 1;
     }
 
-    // 2. Reset pairing sessions for user 1 (mom)
-    const pairingsReset = await db.query(`
-      UPDATE pairing_sessions
-      SET status = 'pending',
-          parent_b_id = NULL,
-          accepted_at = NULL
-      WHERE status = 'active'
-        AND parent_a_id = 1
-    `);
-    results.pairingsReset = pairingsReset.rowCount;
+    // 2. Reset pairing sessions ONLY if they involved the deleted test user
+    // (NOT all pairings for user 1!)
+    if (testUserResult.rows.length > 0) {
+      const testUser = testUserResult.rows[0];
+      const pairingsReset = await db.query(`
+        UPDATE pairing_sessions
+        SET status = 'pending',
+            parent_b_id = NULL,
+            accepted_at = NULL,
+            shared_room_id = NULL
+        WHERE status = 'active'
+          AND parent_b_id = $1
+      `, [testUser.id]);
+      results.pairingsReset = pairingsReset.rowCount;
+    } else {
+      results.pairingsReset = 0;
+    }
 
     console.log('✅ Cleanup complete:', results);
     res.json({ success: true, results });
