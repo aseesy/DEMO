@@ -3611,6 +3611,7 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 /**
  * GET /api/invitations/validate/:token
  * Validate an invitation token (check if valid, expired, etc.)
+ * Tries both invitations table and pairing_sessions table for compatibility
  */
 app.get('/api/invitations/validate/:token', async (req, res) => {
   try {
@@ -3620,7 +3621,41 @@ app.get('/api/invitations/validate/:token', async (req, res) => {
       return res.status(400).json({ error: 'Token is required' });
     }
 
-    const validation = await invitationManager.validateToken(token, db);
+    // Try invitations table first (old system)
+    let validation = await invitationManager.validateToken(token, db);
+
+    // If not found in invitations, try pairing_sessions table (new system)
+    if (!validation.valid && validation.code === 'INVALID_TOKEN') {
+      console.log('Token not found in invitations table, trying pairing_sessions...');
+      const pairingValidation = await pairingManager.validateToken(token, db);
+
+      if (pairingValidation.valid) {
+        // Convert pairing response to invitation response format
+        const inviterEmail = pairingValidation.initiatorEmail || pairingValidation.pairing?.initiator_email || '';
+        const inviterEmailDomain = inviterEmail ? inviterEmail.split('@')[1] || '' : '';
+
+        return res.json({
+          valid: true,
+          inviterName: pairingValidation.initiatorName || pairingValidation.pairing?.invited_by_username,
+          inviterEmail,
+          inviterEmailDomain,
+          inviteeEmail: pairingValidation.pairing?.parent_b_email,
+          expiresAt: pairingValidation.pairing?.expires_at,
+          // Flag to indicate this is from pairing system
+          isPairing: true,
+          pairingId: pairingValidation.pairing?.id,
+        });
+      }
+
+      // Return the pairing validation error if it has a different code
+      if (pairingValidation.code !== 'INVALID_TOKEN') {
+        return res.status(400).json({
+          valid: false,
+          error: pairingValidation.error,
+          code: pairingValidation.code
+        });
+      }
+    }
 
     if (!validation.valid) {
       return res.status(400).json({
@@ -3886,6 +3921,7 @@ app.post('/api/invitations/create', verifyAuth, async (req, res) => {
 /**
  * GET /api/invitations/validate-code/:code
  * Validate a short invite code (e.g., LZ-ABC123)
+ * Tries both invitations table and pairing_sessions table for compatibility
  */
 app.get('/api/invitations/validate-code/:code', async (req, res) => {
   try {
@@ -3895,7 +3931,41 @@ app.get('/api/invitations/validate-code/:code', async (req, res) => {
       return res.status(400).json({ error: 'Invite code is required' });
     }
 
-    const validation = await invitationManager.validateByShortCode(code, db);
+    // Try invitations table first (old system)
+    let validation = await invitationManager.validateByShortCode(code, db);
+
+    // If not found in invitations, try pairing_sessions table (new system)
+    if (!validation.valid && validation.code === 'INVALID_CODE') {
+      console.log('Code not found in invitations table, trying pairing_sessions...');
+      const pairingValidation = await pairingManager.validateCode(code, db);
+
+      if (pairingValidation.valid) {
+        // Convert pairing response to invitation response format
+        const inviterEmail = pairingValidation.initiatorEmail || pairingValidation.pairing?.initiator_email || '';
+        const inviterEmailDomain = inviterEmail ? inviterEmail.split('@')[1] || '' : '';
+
+        return res.json({
+          valid: true,
+          inviterName: pairingValidation.initiatorName || pairingValidation.pairing?.invited_by_username,
+          inviterEmail,
+          inviterEmailDomain,
+          inviteeEmail: pairingValidation.pairing?.parent_b_email,
+          expiresAt: pairingValidation.pairing?.expires_at,
+          // Flag to indicate this is from pairing system
+          isPairing: true,
+          pairingId: pairingValidation.pairing?.id,
+        });
+      }
+
+      // Return the pairing validation error if it has a different code
+      if (pairingValidation.code !== 'INVALID_CODE') {
+        return res.status(400).json({
+          valid: false,
+          error: pairingValidation.error,
+          code: pairingValidation.code
+        });
+      }
+    }
 
     if (!validation.valid) {
       return res.status(400).json({
