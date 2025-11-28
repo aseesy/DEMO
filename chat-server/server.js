@@ -4268,9 +4268,15 @@ app.get('/api/pairing/validate/:code', async (req, res) => {
       });
     }
 
+    // Get inviter email domain for display
+    const inviterEmail = result.initiatorEmail || result.pairing.initiator_email || '';
+    const inviterEmailDomain = inviterEmail.split('@')[1] || '';
+
     res.json({
       valid: true,
-      inviterUsername: result.pairing.invited_by_username,
+      inviterName: result.initiatorName || result.pairing.invited_by_username || result.pairing.initiator_username,
+      inviterUsername: result.pairing.invited_by_username || result.pairing.initiator_username,
+      inviterEmailDomain,
       inviteType: result.pairing.invite_type,
       expiresAt: result.pairing.expires_at,
     });
@@ -4297,9 +4303,15 @@ app.get('/api/pairing/validate-token/:token', async (req, res) => {
       });
     }
 
+    // Get inviter email domain for display
+    const inviterEmail = result.initiatorEmail || result.pairing.initiator_email || '';
+    const inviterEmailDomain = inviterEmail.split('@')[1] || '';
+
     res.json({
       valid: true,
-      inviterUsername: result.pairing.invited_by_username,
+      inviterName: result.initiatorName || result.pairing.invited_by_username || result.pairing.initiator_username,
+      inviterUsername: result.pairing.invited_by_username || result.pairing.initiator_username,
+      inviterEmailDomain,
       inviteType: result.pairing.invite_type,
       expiresAt: result.pairing.expires_at,
     });
