@@ -7867,12 +7867,19 @@ app.post('/api/admin/cleanup-test-data', async (req, res) => {
       const testUser = testUserResult.rows[0];
       console.log(`🧹 Cleaning up test user: ${testUser.email}`);
 
-      // Delete contacts
+      // Delete contacts owned by test user
       const contactsDeleted = await db.query(
-        'DELETE FROM contacts WHERE user_id = $1 OR contact_user_id = $1',
+        'DELETE FROM contacts WHERE user_id = $1',
         [testUser.id]
       );
       results.contactsDeleted = contactsDeleted.rowCount;
+
+      // Also delete contacts where test user is the co-parent (by email match)
+      const coparentContactsDeleted = await db.query(
+        "DELETE FROM contacts WHERE contact_email = 'testuser123@example.com'",
+        []
+      );
+      results.coparentContactsDeleted = coparentContactsDeleted.rowCount;
 
       // Delete room memberships
       const membershipsDeleted = await db.query(
