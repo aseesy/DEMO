@@ -457,7 +457,6 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
       title: 'Welcome to LiaiZen',
       description: welcomeTaskDescription,
       status: 'open',
-      priority: 'medium',
       due_date: null,
       created_at: now,
       updated_at: now,
@@ -474,18 +473,15 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
     const onboardingTasks = [
       {
         title: 'Complete Your Profile',
-        description: 'Help LiaiZen understand the dynamics of your co-parenting situation.\n\nThe more context you provide—your details, your children, your schedule—the better LiaiZen can guide your communication and tailor support to your needs.\n\n\n\nUpdate your profile to get the most accurate, personalized mediation.',
-        priority: 'high'
+        description: 'Help LiaiZen understand the dynamics of your co-parenting situation.\n\nThe more context you provide—your details, your children, your schedule—the better LiaiZen can guide your communication and tailor support to your needs.\n\n\n\nUpdate your profile to get the most accurate, personalized mediation.'
       },
       {
         title: 'Add Your Co-parent',
-        description: 'Add your co-parent as a contact to enable communication and coordination features. Go to Contacts to add them.',
-        priority: 'high'
+        description: 'Add your co-parent as a contact to enable communication and coordination features. Go to Contacts to add them.'
       },
       {
         title: 'Add Your Children',
-        description: 'Add your children as contacts so LiaiZen can help you coordinate their care and activities.',
-        priority: 'high'
+        description: 'Add your children as contacts so LiaiZen can help you coordinate their care and activities.'
       }
     ];
 
@@ -505,7 +501,6 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
           title: task.title,
           description: task.description,
           status: 'open',
-          priority: task.priority,
           due_date: null,
           created_at: now,
           updated_at: now,
