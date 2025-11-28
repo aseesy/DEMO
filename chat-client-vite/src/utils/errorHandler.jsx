@@ -279,12 +279,14 @@ export function categorizeError(error, statusCode = null) {
   }
 
   // Registration/invitation errors are business logic
-  if (error.code?.startsWith('REG_') || error.code?.startsWith('INV_')) {
+  // Check if code is a string before calling startsWith
+  const errorCode = typeof error.code === 'string' ? error.code : null;
+  if (errorCode?.startsWith('REG_') || errorCode?.startsWith('INV_')) {
     return ErrorCategory.BUSINESS_LOGIC;
   }
 
   // OAuth errors are authentication
-  if (error.code && OAUTH_ERRORS[error.code]) {
+  if (errorCode && OAUTH_ERRORS[errorCode]) {
     return ErrorCategory.AUTHENTICATION;
   }
 
