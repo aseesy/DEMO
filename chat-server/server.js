@@ -7888,10 +7888,10 @@ app.post('/api/admin/cleanup-test-data', async (req, res) => {
       );
       results.membershipsDeleted = membershipsDeleted.rowCount;
 
-      // Delete tasks
+      // Delete tasks (user_id is INTEGER, assigned_to is TEXT so cast for comparison)
       const tasksDeleted = await db.query(
-        'DELETE FROM tasks WHERE user_id = $1 OR assigned_to = $1',
-        [testUser.id]
+        'DELETE FROM tasks WHERE user_id = $1 OR assigned_to = $2',
+        [testUser.id, String(testUser.id)]
       );
       results.tasksDeleted = tasksDeleted.rowCount;
 
