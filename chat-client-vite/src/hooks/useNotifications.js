@@ -72,9 +72,9 @@ export function useNotifications({ username, enabled = true }) {
     // This provides immediate notification on computer/phone, similar to text messages
     try {
       const notification = new Notification('New message from ' + message.username, {
-        body: message.text.length > 100
-          ? message.text.substring(0, 100) + '...'
-          : message.text,
+        body: (message.text || message.content || '').length > 100
+          ? (message.text || message.content || '').substring(0, 100) + '...'
+          : (message.text || message.content || ''),
         icon: '/flower-icon.svg', // Your app icon
         badge: '/flower-icon.svg',
         tag: 'chat-message-' + message.id, // Prevent duplicate notifications

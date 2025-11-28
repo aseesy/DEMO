@@ -422,10 +422,11 @@ async function autoCompleteOnboardingTasks(userId) {
       c.relationship === "My Partner's Child"
     );
 
-    // Get all onboarding tasks for this user
+    // Get all onboarding tasks for this user (including new "Invite Your Co-Parent" task)
     const onboardingTaskTitles = [
       'Complete Your Profile',
       'Add Your Co-parent',
+      'Invite Your Co-Parent', // New task title from Feature 005
       'Add Your Children'
     ];
 
@@ -445,6 +446,9 @@ async function autoCompleteOnboardingTasks(userId) {
         if (taskTitle === 'Complete Your Profile' && profileComplete) {
           shouldComplete = true;
         } else if (taskTitle === 'Add Your Co-parent' && hasCoparent) {
+          shouldComplete = true;
+        } else if (taskTitle === 'Invite Your Co-Parent' && hasCoparent) {
+          // New invite task - auto-completes when co-parent is connected
           shouldComplete = true;
         } else if (taskTitle === 'Add Your Children' && hasChildren) {
           shouldComplete = true;
@@ -466,6 +470,181 @@ async function autoCompleteOnboardingTasks(userId) {
   } catch (error) {
     console.error('Error in autoCompleteOnboardingTasks:', error);
     throw error;
+  }
+}
+
+/**
+ * Check if user has a connected co-parent
+ * Checks both pairing_sessions and room memberships
+ */
+async function checkUserHasCoParent(userId) {
+  try {
+    // Check pairing_sessions for completed pairing
+    const pairings = await dbSafe.safeSelect('pairing_sessions', {
+      status: 'completed'
+    });
+
+    for (const pairing of pairings) {
+      if (pairing.initiator_id === userId || pairing.invitee_id === userId) {
+        return true;
+      }
+    }
+
+    // Also check rooms for 2-member rooms (legacy pairings)
+    const roomMembers = await dbSafe.safeSelect('room_members', { user_id: userId });
+    for (const member of roomMembers) {
+      const otherMembers = await dbSafe.safeSelect('room_members', {
+        room_id: member.room_id
+      });
+      if (otherMembers.length === 2) {
+        return true;
+      }
+    }
+
+    // Also check contacts for co-parent relationship
+    const contacts = await dbSafe.safeSelect('contacts', { user_id: userId });
+    const hasCoparentContact = contacts.some(c =>
+      c.relationship === 'My Co-Parent' ||
+      c.relationship === 'co-parent' ||
+      c.relationship === "My Partner's Co-Parent"
+    );
+    if (hasCoparentContact) {
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Error checking co-parent status:', error);
+    return false;
+  }
+}
+
+/**
+ * Backfill onboarding tasks for users who don't have any
+ * This ensures users from migrations or failed task creation get their tasks
+ */
+async function backfillOnboardingTasks(userId) {
+  const now = new Date().toISOString();
+  console.log(`📋 [TASK BACKFILL] Starting backfill for user ${userId}`);
+
+  try {
+    // Get user details
+    const users = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
+    if (users.length === 0) {
+      console.warn(`[TASK BACKFILL] User ${userId} not found`);
+      return;
+    }
+    const user = users[0];
+
+    // Check current conditions
+    const hasCoParent = await checkUserHasCoParent(userId);
+
+    // Check if children exist
+    const contacts = await dbSafe.safeSelect('contacts', { user_id: userId });
+    const hasChildren = contacts.some(c =>
+      c.relationship === 'My Child' ||
+      c.relationship === "My Partner's Child"
+    );
+
+    // Check profile completeness
+    const filledFields = [
+      user.first_name,
+      user.last_name,
+      user.address,
+      user.occupation,
+      user.communication_style,
+      user.communication_triggers,
+      user.communication_goals,
+      user.email
+    ].filter(field => field && String(field).trim().length > 0).length;
+    const profileComplete = filledFields >= 2;
+
+    // Define onboarding tasks with auto-complete conditions
+    const welcomeDescription = `LiaiZen is contextual and adapts to your unique situation over time as it learns from your interactions.
+
+We hope you enjoy the platform, but feedback is golden. Let us know what you like and don't like. Stay tuned for new features like calendar, expense sharing, and document sharing.`;
+
+    const inviteDescription = `Connect with your co-parent to start communicating on LiaiZen.
+
+Click this task to send an invite link, generate a short code, or enter a code you received from your co-parent.`;
+
+    const onboardingTasks = [
+      {
+        title: 'Welcome to LiaiZen',
+        description: welcomeDescription,
+        priority: 'medium',
+        type: 'onboarding',
+        autoComplete: false // Manual completion only
+      },
+      {
+        title: 'Complete Your Profile',
+        description: 'Help LiaiZen understand the dynamics of your co-parenting situation.\n\nThe more context you provide—your details, your children, your schedule—the better LiaiZen can guide your communication and tailor support to your needs.\n\n\n\nUpdate your profile to get the most accurate, personalized mediation.',
+        priority: 'high',
+        type: 'onboarding',
+        autoComplete: profileComplete
+      },
+      {
+        title: 'Invite Your Co-Parent',
+        description: inviteDescription,
+        priority: 'high',
+        type: 'onboarding',
+        autoComplete: hasCoParent
+      },
+      {
+        title: 'Add Your Children',
+        description: 'Add your children as contacts so LiaiZen can help you coordinate their care and activities.',
+        priority: 'medium',
+        type: 'onboarding',
+        autoComplete: hasChildren
+      }
+    ];
+
+    let createdCount = 0;
+    let skippedCount = 0;
+
+    for (const task of onboardingTasks) {
+      // Check if task already exists (by title)
+      const existing = await dbSafe.safeSelect('tasks', {
+        user_id: userId,
+        title: task.title
+      }, { limit: 1 });
+
+      if (existing.length === 0) {
+        // Also check for old "Add Your Co-parent" task to avoid duplicate invite tasks
+        if (task.title === 'Invite Your Co-Parent') {
+          const oldCoparentTask = await dbSafe.safeSelect('tasks', {
+            user_id: userId,
+            title: 'Add Your Co-parent'
+          }, { limit: 1 });
+          if (oldCoparentTask.length > 0) {
+            console.log(`[TASK BACKFILL] User ${userId} already has "Add Your Co-parent" task, skipping invite task`);
+            skippedCount++;
+            continue;
+          }
+        }
+
+        const taskId = await dbSafe.safeInsert('tasks', {
+          user_id: userId,
+          title: task.title,
+          description: task.description,
+          priority: task.priority || 'medium',
+          type: task.type || 'onboarding',
+          status: task.autoComplete ? 'completed' : 'open',
+          created_at: now,
+          updated_at: now,
+          completed_at: task.autoComplete ? now : null
+        });
+        console.log(`✅ [TASK BACKFILL] Created task "${task.title}" (ID: ${taskId}) for user ${userId}, status: ${task.autoComplete ? 'completed' : 'open'}`);
+        createdCount++;
+      } else {
+        skippedCount++;
+      }
+    }
+
+    console.log(`✅ [TASK BACKFILL] Completed for user ${userId}: ${createdCount} created, ${skippedCount} skipped`);
+    require('./db').saveDatabase();
+  } catch (error) {
+    console.error(`❌ [TASK BACKFILL] Error for user ${userId}:`, error);
   }
 }
 
@@ -4647,6 +4826,13 @@ app.get('/api/tasks', verifyAuth, async (req, res) => {
       console.log('[GET /api/tasks] Using authenticated userId:', targetUserId);
     }
 
+    // Check if user has ANY tasks - if not, trigger backfill
+    const existingTasksCheck = await dbSafe.safeSelect('tasks', { user_id: targetUserId }, { limit: 1 });
+    if (existingTasksCheck.length === 0) {
+      console.log(`[GET /api/tasks] No tasks found for user ${targetUserId}, triggering backfill`);
+      await backfillOnboardingTasks(targetUserId);
+    }
+
     // Get tasks with optional filtering
     const status = req.query.status || req.query.filter;
     const search = req.query.search;
@@ -4990,27 +5176,8 @@ app.get('/api/dashboard/updates', async (req, res) => {
       const userEmail = users[0].email;
       const dbPostgres = require('./dbPostgres'); // Assuming dbPostgres is used for these queries
 
-      // Fetch recent messages (limit 5)
-      // Join with users table to get sender name
-      // Note: messages table uses 'username' not 'sender_id', and 'text' not 'content'
-      const messagesQuery = `
-      SELECT m.*, u.username as sender_name, u.first_name, u.last_name, u.display_name
-      FROM messages m
-      JOIN users u ON m.username = u.username
-      WHERE m.room_id IN (SELECT room_id FROM room_members WHERE user_id = $1)
-      AND m.username != (SELECT username FROM users WHERE id = $1)
-      ORDER BY m.timestamp DESC
-      LIMIT 5
-    `;
-      const messagesRes = await dbPostgres.query(messagesQuery, [userId]);
-
-      const messageUpdates = messagesRes.rows.map(msg => ({
-        type: 'message',
-        description: msg.text || msg.content || '',
-        timestamp: msg.timestamp,
-        personName: msg.display_name || (msg.first_name ? `${msg.first_name} ${msg.last_name || ''}`.trim() : msg.sender_name || msg.username),
-        id: msg.id
-      }));
+      // Messages are no longer included in dashboard updates
+      // (Notifications handle message alerts separately)
 
       // Fetch recent expenses (limit 3)
       let expenseUpdates = [];
