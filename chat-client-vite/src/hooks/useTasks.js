@@ -54,19 +54,24 @@ export function useTasks(username, isAuthenticated = true) {
         console.log('[useTasks] API response data:', data);
         if (Array.isArray(data)) {
           console.log(`[useTasks] Loaded ${data.length} tasks for user ${username}, filter: ${taskFilter}`);
-          // Sort by creation date (oldest first for dashboard)
+          // Sort by priority (high first) then by creation date (oldest first for dashboard)
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
           const sorted = [...data].sort((a, b) => {
+            // First sort by priority
+            const priorityA = priorityOrder[a.priority] ?? 1;
+            const priorityB = priorityOrder[b.priority] ?? 1;
+            if (priorityA !== priorityB) {
+              return priorityA - priorityB;
+            }
+            // Then by creation date (oldest first)
             const dateA = new Date(a.created_at || 0);
             const dateB = new Date(b.created_at || 0);
             return dateA - dateB;
           });
-          // Only limit to 5 if no search is active
-          if (!taskSearch) {
-            setTasks(sorted.slice(0, 5));
-            console.log(`[useTasks] Limited to 5 tasks for dashboard display`);
-          } else {
-            setTasks(sorted);
-          }
+          // Show all tasks (Feature 005: removed 5-task limit)
+          setTasks(sorted);
+          console.log(`[useTasks] Loaded ${sorted.length} tasks for user ${username}`);
+
         } else {
           console.warn('[useTasks] Response data is not an array:', data);
           setTasks([]);
@@ -118,6 +123,21 @@ export function useTasks(username, isAuthenticated = true) {
       console.error('Error updating task status (Vite):', err);
     }
   };
+
+  /**
+   * Get the action type for a task
+   * Some tasks (like "Invite Your Co-Parent") should open a modal instead of toggling status
+   * @param {Object} task - The task object
+   * @returns {Object} - { type: 'modal' | 'toggle', modal?: string }
+   */
+  const getTaskAction = React.useCallback((task) => {
+    // Special handling for invite task - opens InviteTaskModal
+    if ((task.title === 'Invite Your Co-Parent' || task.title === 'Add Your Co-parent') && task.status !== 'completed') {
+      return { type: 'modal', modal: 'invite' };
+    }
+    // Default action is to toggle status
+    return { type: 'toggle' };
+  }, []);
 
   const saveTask = async () => {
     if (!taskFormData.title.trim() || !username) return;

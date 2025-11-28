@@ -278,7 +278,7 @@ export function ContactsPanel({ username }) {
                     onChange={(e) =>
                       setContactFormData({ ...contactFormData, contact_name: e.target.value })
                     }
-                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm min-h-[44px]"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900 min-h-[44px]"
                     placeholder="Name"
                     required
                   />
@@ -292,7 +292,7 @@ export function ContactsPanel({ username }) {
                     onChange={(e) =>
                       setContactFormData({ ...contactFormData, relationship: e.target.value })
                     }
-                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm min-h-[44px]"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900 min-h-[44px]"
                     required
                   >
                     <option value="">Select relationship...</option>
@@ -429,7 +429,7 @@ export function ContactsPanel({ username }) {
                         contact_email: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm min-h-[44px]"
+                    className="w-full px-3 py-2.5 sm:py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900 min-h-[44px]"
                     placeholder="email@example.com"
                   />
                 </div>
@@ -448,7 +448,7 @@ export function ContactsPanel({ username }) {
                           onChange={(e) =>
                             setContactFormData({ ...contactFormData, child_age: e.target.value })
                           }
-                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                           placeholder="Age"
                           min="0"
                         />
@@ -463,7 +463,7 @@ export function ContactsPanel({ username }) {
                           onChange={(e) =>
                             setContactFormData({ ...contactFormData, child_birthdate: e.target.value })
                           }
-                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         />
                       </div>
                     </div>
@@ -477,7 +477,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, school: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         placeholder="School name"
                       />
                     </div>
@@ -490,7 +490,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, custody_arrangement: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         rows={2}
                         placeholder="Describe custody arrangement..."
                       />
@@ -505,7 +505,7 @@ export function ContactsPanel({ username }) {
                           onChange={(e) =>
                             setContactFormData({ ...contactFormData, linked_contact_id: e.target.value })
                           }
-                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
                         >
                           <option value="">Select other parent...</option>
                           {contacts
@@ -528,7 +528,7 @@ export function ContactsPanel({ username }) {
                           onChange={(e) =>
                             setContactFormData({ ...contactFormData, linked_contact_id: e.target.value })
                           }
-                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
                         >
                           <option value="">Select other parent...</option>
                           {contacts
@@ -621,7 +621,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, partner_duration: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         placeholder="e.g., 2 years, 6 months"
                       />
                     </div>
@@ -634,7 +634,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, has_children: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
                       >
                         <option value="">Select...</option>
                         <option value="yes">Yes</option>
@@ -656,7 +656,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, separation_date: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                       />
                     </div>
                     <div>
@@ -670,7 +670,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, address: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         placeholder="Start typing address..."
                       />
                     </div>
@@ -683,7 +683,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, difficult_aspects: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         rows={3}
                         placeholder="Describe challenges..."
                       />
@@ -697,7 +697,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, legal_matters: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         rows={2}
                         placeholder="Legal matters..."
                       />
@@ -711,7 +711,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, safety_concerns: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         rows={2}
                         placeholder="Safety concerns..."
                       />
@@ -725,7 +725,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, substance_mental_health: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         rows={2}
                         placeholder="Concerns..."
                       />
@@ -739,7 +739,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, neglect_abuse_concerns: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         rows={2}
                         placeholder="Concerns..."
                       />
@@ -753,7 +753,7 @@ export function ContactsPanel({ username }) {
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, additional_thoughts: e.target.value })
                         }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         rows={3}
                         placeholder="Anything else that would help..."
                       />
@@ -772,7 +772,7 @@ export function ContactsPanel({ username }) {
                       onChange={(e) =>
                         setContactFormData({ ...contactFormData, phone: e.target.value })
                       }
-                      className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                      className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                       placeholder="Phone number"
                     />
                   </div>
@@ -788,7 +788,7 @@ export function ContactsPanel({ username }) {
                     onChange={(e) =>
                       setContactFormData({ ...contactFormData, notes: e.target.value })
                     }
-                    className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm"
+                    className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                     rows={3}
                     placeholder="Any extra details"
                   />
