@@ -188,6 +188,7 @@ export function useTasks(username, isAuthenticated = true) {
     loadTasks,
     toggleTaskStatus,
     saveTask,
+    getTaskAction, // Feature 005: helper for special task actions
   };
 }
 

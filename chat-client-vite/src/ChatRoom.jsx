@@ -20,6 +20,7 @@ import { WelcomeModal } from './components/modals/WelcomeModal.jsx';
 import { ProfileTaskModal } from './components/modals/ProfileTaskModal.jsx';
 import { FlaggingModal } from './components/modals/FlaggingModal.jsx';
 import { ContactSuggestionModal } from './components/modals/ContactSuggestionModal.jsx';
+import { InviteTaskModal } from './components/InviteTaskModal.jsx';
 import { API_BASE_URL } from './config.js';
 import { apiPost } from './apiClient.js';
 import {
@@ -365,6 +366,8 @@ function ChatRoom() {
     setTaskFilter,
     toggleTaskStatus: originalToggleTaskStatus,
     saveTask: originalSaveTask,
+    loadTasks,
+    getTaskAction,
   } = tasksState;
 
   // Wrap toggleTaskStatus to track analytics
@@ -573,6 +576,7 @@ function ChatRoom() {
   const [showManualInvite, setShowManualInvite] = React.useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = React.useState(false);
   const [showProfileTaskModal, setShowProfileTaskModal] = React.useState(false);
+  const [showInviteModal, setShowInviteModal] = React.useState(false); // Feature 005: Invite task modal
   const [taskFormMode, setTaskFormMode] = React.useState('manual'); // 'manual' or 'ai'
   const [aiTaskDetails, setAiTaskDetails] = React.useState('');
   const [isGeneratingTask, setIsGeneratingTask] = React.useState(false);
@@ -1139,123 +1143,30 @@ function ChatRoom() {
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
               <div className="space-y-6 md:space-y-8">
-                {/* Co-Parent Connection Cards - Always visible at top when no co-parent */}
+                {/* Feature 005: Removed standalone invite cards - functionality now in tasks */}
+                {/* Co-parent connection prompt - subtle banner pointing to tasks */}
                 {!hasCoParentConnected && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Send Invite Card */}
-                    <div className="rounded-xl border-2 border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50 px-5 py-4 shadow-md">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-emerald-800">Send Invite</h3>
-                          <p className="text-sm text-emerald-700">Generate a link to share</p>
-                        </div>
-                      </div>
-                      {inviteLink ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-emerald-200">
-                            <span className="font-mono font-bold text-emerald-800 text-lg">{inviteCode}</span>
-                            <button
-                              onClick={async () => {
-                                await navigator.clipboard.writeText(inviteCode);
-                                setInviteCopied(true);
-                                setTimeout(() => setInviteCopied(false), 2000);
-                              }}
-                              className="ml-auto text-emerald-600 hover:text-emerald-800 p-1"
-                            >
-                              {inviteCopied ? '✓' : '📋'}
-                            </button>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={handleCopyInvite}
-                              className="flex-1 px-3 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors text-sm"
-                            >
-                              {inviteCopied ? 'Copied!' : 'Copy Link'}
-                            </button>
-                            <button
-                              onClick={() => { setInviteLink(''); setInviteCode(''); }}
-                              className="px-3 py-2 text-emerald-600 hover:bg-emerald-100 rounded-lg font-medium transition-colors"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={handleLoadInvite}
-                          disabled={isLoadingInvite}
-                          className="w-full px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
-                        >
-                          {isLoadingInvite ? (
-                            <>
-                              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              <span>Generating...</span>
-                            </>
-                          ) : (
-                            <span>Generate Invite Link</span>
-                          )}
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Enter Invite Code Card */}
-                    <div className="rounded-xl border-2 border-teal-400 bg-gradient-to-r from-teal-50 to-cyan-50 px-5 py-4 shadow-md">
-                      <div className="flex items-center gap-3 mb-3">
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="w-full rounded-xl border-2 border-teal-400 bg-gradient-to-r from-teal-50 to-emerald-50 px-5 py-4 shadow-sm hover:shadow-md transition-all text-left group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
                           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                         </div>
                         <div>
-                          <h3 className="font-semibold text-teal-800">Have a Code?</h3>
-                          <p className="text-sm text-teal-700">Enter code from your co-parent</p>
+                          <h3 className="font-semibold text-teal-800">Connect with Your Co-Parent</h3>
+                          <p className="text-sm text-teal-600">Send an invite or enter a code to start communicating</p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={manualInviteCode}
-                          onChange={(e) => setManualInviteCode(e.target.value.toUpperCase())}
-                          placeholder="Enter code (e.g., LZ-ABC123)"
-                          className="flex-1 px-3 py-2.5 border-2 border-teal-200 rounded-lg focus:outline-none focus:border-teal-500 text-teal-900 font-mono bg-white"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleManualAcceptInvite();
-                            }
-                          }}
-                        />
-                        <button
-                          onClick={handleManualAcceptInvite}
-                          disabled={isAcceptingInvite || !manualInviteCode.trim()}
-                          className="px-4 py-2.5 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 disabled:opacity-60 transition-all"
-                        >
-                          {isAcceptingInvite ? '...' : 'Join'}
-                        </button>
-                      </div>
+                      <svg className="w-5 h-5 text-teal-500 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
                     </div>
-                  </div>
-                )}
-
-                {/* Error message for invite operations */}
-                {inviteError && !hasCoParentConnected && (
-                  <div className="rounded-lg text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-3">
-                    {inviteError}
-                  </div>
-                )}
-
-                {/* Invite acceptance notification */}
-                {isAcceptingInvite && (
-                  <div className="rounded-xl border-2 border-teal-light bg-white px-6 py-4 text-sm text-teal-medium mb-6 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-teal-light border-t-teal-medium" />
-                      <span className="font-medium">Accepting invite and joining room…</span>
-                    </div>
-                  </div>
+                  </button>
                 )}
 
                 {/* Dashboard Grid: Updates and Tasks */}
@@ -1390,6 +1301,9 @@ function ChatRoom() {
                             task.status !== 'completed' &&
                             (isCoparentTask || isProfileTask || isChildrenTask);
 
+                          // Feature 005: Check for invite task
+                          const isInviteTask = titleLower.includes('invite your co-parent');
+
                           // Get icon based on task content
                           const getTaskIcon = () => {
                             const iconSize = "w-full h-full";
@@ -1404,6 +1318,14 @@ function ChatRoom() {
                               return (
                                 <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                              );
+                            }
+                            // Feature 005: Invite task icon (envelope with plus)
+                            if (isInviteTask) {
+                              return (
+                                <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
                               );
                             }
@@ -1447,11 +1369,15 @@ function ChatRoom() {
                                   return;
                                 }
 
+                                // Feature 005: Invite task opens InviteTaskModal
+                                const isInviteTask = titleLower.includes('invite your co-parent');
+                                if ((isCoparentTask || isInviteTask) && task.status !== 'completed') {
+                                  setShowInviteModal(true);
+                                  return;
+                                }
+
                                 if (isSmartTask) {
-                                  if (isCoparentTask) {
-                                    localStorage.setItem('liaizen_smart_task', 'add_coparent');
-                                    setCurrentView('contacts');
-                                  } else if (isChildrenTask) {
+                                  if (isChildrenTask) {
                                     setCurrentView('contacts');
                                   }
                                   return;
@@ -1516,17 +1442,22 @@ function ChatRoom() {
                                       : ''
                                       }`}
                                   >
-                                    {isSmartTask
-                                      ? isCoparentTask
-                                        ? 'Add Co-parent'
-                                        : isProfileTask
-                                          ? 'Complete Profile'
-                                          : isChildrenTask
-                                            ? 'Add Children'
-                                            : task.title
-                                      : task.title}
+                                    {(() => {
+                                      // Feature 005: Handle invite task title
+                                      const isInviteTask = titleLower.includes('invite your co-parent');
+                                      if (isInviteTask && task.status !== 'completed') {
+                                        return 'Invite Co-Parent';
+                                      }
+                                      if (isSmartTask) {
+                                        if (isCoparentTask) return 'Add Co-parent';
+                                        if (isProfileTask) return 'Complete Profile';
+                                        if (isChildrenTask) return 'Add Children';
+                                      }
+                                      return task.title;
+                                    })()}
                                   </h3>
-                                  {isSmartTask && (
+                                  {/* Show arrow for actionable tasks */}
+                                  {(isSmartTask || (titleLower.includes('invite your co-parent') && task.status !== 'completed')) && (
                                     <svg
                                       className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-medium flex-shrink-0"
                                       fill="none"
@@ -2166,6 +2097,22 @@ function ChatRoom() {
                                         )}
                                         {!isComment && (
                                           <>
+                                            {/* Feature 006: Show original message that triggered mediation */}
+                                            {msg.originalMessage?.text && (
+                                              <div className="mb-3 p-3 bg-orange-50/60 border border-orange-200/40 rounded-lg">
+                                                <div className="flex items-start gap-2">
+                                                  <div className="w-4 h-4 rounded-full bg-orange-400 flex items-center justify-center shrink-0 mt-0.5">
+                                                    <span className="text-white text-xs font-bold">!</span>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-xs font-semibold text-orange-700 mb-1">Your message (not sent):</p>
+                                                    <p className="text-sm text-orange-900 leading-snug font-normal italic">
+                                                      "{msg.originalMessage.text}"
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
                                             {msg.explanation && (
                                               <div className="mb-3 p-3 bg-blue-50/60 border border-blue-200/40 rounded-lg">
                                                 <div className="flex items-start gap-2">
@@ -2234,6 +2181,28 @@ function ChatRoom() {
                                                     <p className="font-normal leading-snug" style={{ fontSize: '15px' }}>"{msg.rewrite2}"</p>
                                                   </button>
                                                 )}
+
+                                                {/* Feature 006: Edit option - user can return original to input for manual editing */}
+                                                <div className="pt-3 mt-2 border-t border-gray-200/30">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      // Track that user chose to edit themselves
+                                                      const originalText = msg.originalMessage?.text || '';
+                                                      trackInterventionOverride('edit_myself', originalText.length);
+
+                                                      // Put original text back in input for manual editing
+                                                      setInputMessage(originalText);
+
+                                                      // Remove the intervention card
+                                                      removeMessages((m) => m.id === msg.id ||
+                                                        (m.type === 'ai_intervention' && m.timestamp === msg.timestamp));
+                                                    }}
+                                                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors min-h-[44px]"
+                                                  >
+                                                    Edit Myself
+                                                  </button>
+                                                </div>
                                               </div>
                                             )}
                                           </>
@@ -2851,6 +2820,19 @@ function ChatRoom() {
                 }}
               />
             )}
+
+            {/* Feature 005: Invite Co-Parent Task Modal */}
+            <InviteTaskModal
+              isOpen={showInviteModal}
+              onClose={() => setShowInviteModal(false)}
+              onSuccess={() => {
+                setShowInviteModal(false);
+                // Refresh tasks to update auto-completion status
+                if (loadTasks) loadTasks();
+                // Refresh the page data to get updated co-parent status
+                window.location.reload();
+              }}
+            />
 
             {/* Message Flagging Modal */}
             <FlaggingModal

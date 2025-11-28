@@ -130,12 +130,26 @@ function initializePolicyState(roomId) {
 
 /**
  * Detect conflict patterns in message (local analysis, no API call)
+ * Feature 006: Refined to exclude positive contexts from accusatory detection
  */
 function detectConflictPatterns(messageText) {
   const text = messageText.toLowerCase();
 
+  // Positive context words that indicate friendly intent (Feature 006)
+  const positiveContextWords = /\b(friend|best|great|awesome|amazing|wonderful|helpful|kind|love|appreciate|proud|happy|good|fantastic|incredible|well|person)\b/i;
+
+  // Check if "you're/you are" is in a positive context
+  const hasYouAre = /\b(you'?re|you are)\b/i.test(text);
+  const isPositiveContext = positiveContextWords.test(text);
+
+  // Negative words that make "you're/you are" accusatory
+  const negativeContextWords = /\b(wrong|bad|stupid|crazy|irresponsible|useless|terrible|awful|horrible|pathetic|lazy|selfish|rude|mean|inconsiderate|careless)\b/i;
+
   const patterns = {
-    hasAccusatory: /\b(you always|you never|you're|you are)\b/.test(text),
+    // Only flag "you're/you are" as accusatory if NOT in positive context
+    // AND either uses "always/never" OR has negative context words
+    hasAccusatory: /\b(you always|you never)\b/.test(text) ||
+      (hasYouAre && !isPositiveContext && negativeContextWords.test(text)),
     hasTriangulation: /\b(she told me|he said|the kids|child.*said)\b/.test(text),
     hasComparison: /\b(fine with me|never does that|at my house|at your house)\b/.test(text),
     hasBlaming: /\b(your fault|because of you|you made|you caused)\b/.test(text)
@@ -208,6 +222,45 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
     console.log('✅ AI Mediator: Pre-approved message (greeting/polite) - allowing without analysis');
     return null;
   }
+
+  // === NEUTRAL THIRD-PARTY STATEMENTS PRE-FILTER (Feature 006) ===
+  // Messages about third parties (not the co-parent) should NOT be mediated
+  // If the message doesn't mention "you" and talks about someone else, it's not conflict
+  const mentionsYou = /\b(you|your|you'?re|you'?ve|you'?d|you'?ll)\b/i.test(message.text);
+  const mentionsThirdParty = /\b(my\s+)?(friend|teacher|boss|neighbor|colleague|coworker|brother|sister|mother|father|parent|grandma|grandpa|aunt|uncle|cousin)\b/i.test(message.text);
+
+  // If talking about a third party (not "you") and no accusatory patterns, allow it
+  if (!mentionsYou && mentionsThirdParty) {
+    console.log('✅ AI Mediator: Pre-approved message (third-party statement) - allowing without analysis');
+    return null;
+  }
+
+  // === POSITIVE SENTIMENT PRE-FILTER (Feature 006) ===
+  // Friendly, positive messages should NEVER be mediated
+  const positivePatterns = [
+    /\b(you'?re|you are)\s+(my\s+)?(friend|best|great|awesome|amazing|wonderful|the best|so kind|so helpful|so great|incredible|fantastic)\b/i,
+    /\b(love|appreciate|thankful|grateful)\s+(you|that|this)\b/i,
+    /\b(thank|thanks)\s+(you|so much|for)\b/i,
+    /\b(good job|well done|nice work|great work|great job)\b/i,
+    /\bI\s+(love|appreciate|value|admire|respect)\s+(you|this|that|our)\b/i,
+    /\b(you'?re|you are)\s+(doing\s+)?(great|well|good|amazing|awesome)\b/i,
+    /\b(miss|missed)\s+you\b/i,
+    /\b(proud of|happy for)\s+you\b/i,
+    /\byou('?re| are)\s+a\s+(great|good|wonderful|amazing)\s+(parent|dad|mom|father|mother|person)\b/i,
+    // Additional positive patterns for compliments
+    /\b(I\s+)?love\s+(how|when|that)\s+you\b/i,  // "I love how you...", "love when you..."
+    /\b(I\s+)?love\s+(it|this)\s+when\s+you\b/i, // "I love it when you..."
+    /\byou\s+(make|made)\s+me\s+(happy|smile|laugh|feel\s+(good|better|loved|special))\b/i,
+    /\b(you'?re|you are)\s+(so\s+)?(sweet|kind|thoughtful|caring|supportive|helpful)\b/i,
+  ];
+
+  for (const pattern of positivePatterns) {
+    if (pattern.test(message.text)) {
+      console.log('✅ AI Mediator: Pre-approved message (positive sentiment) - allowing without analysis');
+      return null;
+    }
+  }
+  // === END POSITIVE SENTIMENT PRE-FILTER ===
 
   try {
     console.log('🤖 AI Mediator: Analyzing message from', message.username);
@@ -409,41 +462,46 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
 
     // UNIFIED PROMPT: Get ALL information in ONE API call
     // CONSTITUTION: ./ai-mediation-constitution.md defines all rules
-    const prompt = `You are LiaiZen - an EXPERT COMMUNICATION COACH with deep knowledge of:
-- Communication psychology and conflict resolution
-- How language triggers defensive responses
-- Why certain phrasing patterns backfire
-- The mechanisms of effective dialogue
-- Nonviolent communication principles
+    const prompt = `You are LiaiZen - a ZEN communication coach. Your name means "Liaison + Zen" - you facilitate peaceful communication with MINIMAL intervention.
 
-You help co-parents communicate effectively by providing EXPERT-level coaching that sounds like it comes from a professional who truly understands communication dynamics.
+=== MOST IMPORTANT: WHEN TO STAY SILENT ===
 
-=== CONSTITUTION (IMMUTABLE RULES) ===
+YOUR DEFAULT IS STAY_SILENT. You intervene RARELY - only for clear hostility toward the co-parent.
 
-PRINCIPLE I: LANGUAGE, NOT EMOTIONS
-- Talk about PHRASING and LANGUAGE, never emotional states
-- CORRECT: "This phrasing implies blame", "This word choice sounds accusatory"
-- PROHIBITED: "You're angry", "You're frustrated", "You're being defensive"
-- We describe what words DO, not what people FEEL
+STAY_SILENT for:
+- ANY message not directed AT the co-parent ("My friend hates pizza" = STAY_SILENT)
+- Positive/friendly messages ("I love how you..." = STAY_SILENT)
+- Questions, logistics, information sharing
+- Complaints about situations (not the person)
+- Imperfect phrasing that isn't hostile
 
-PRINCIPLE II: NO DIAGNOSTICS
-- NEVER apply psychological labels or character assessments
-- PROHIBITED: narcissist, insecure, manipulative, gaslighting, controlling, toxic, abusive, passive-aggressive
-- ALLOWED: "This approach may backfire", "This phrasing might not achieve your goal"
+ONLY INTERVENE for direct hostility TOWARD THE CO-PARENT:
+- Insults/name-calling directed at them: "you're an idiot"
+- Blame attacks: "It's YOUR fault"
+- Threats or ultimatums toward them
+- Using child as weapon against them
 
-PRINCIPLE III: CHILD-CENTRIC WHEN APPLICABLE
-- When a child is mentioned, frame feedback around child wellbeing
-- Flag triangulation (using child as messenger/weapon)
-- Consider: "Would I be okay if my child read this?"
+Ask yourself: "Is this message ATTACKING the co-parent directly?"
+- If NO → STAY_SILENT
+- If YES → Consider intervention
 
-=== YOUR IDENTITY ===
-- EXPERT Communication COACH (not therapist, not generic AI)
-- Professional who understands communication psychology deeply
-- Neutral third party (not on either "team")
-- Skill-builder (not judge)
-- You are NOT part of their relationship - NEVER use "we/us/our/both"
-- Address ONLY the sender using "you/your"
-- Your feedback should demonstrate EXPERTISE - use professional terminology, explain mechanisms, show deep understanding
+=== IDENTITY ===
+- ZEN coach: Calm, minimal, only intervene when truly needed
+- Expert in communication psychology
+- Neutral third party
+- NEVER use "we/us/our" - address sender with "you/your"
+
+=== PRINCIPLES (when you DO intervene) ===
+
+Talk about PHRASING, not emotions:
+- CORRECT: "This phrasing implies blame"
+- PROHIBITED: "You're angry"
+
+No psychological labels:
+- PROHIBITED: narcissist, manipulative, toxic
+- ALLOWED: "This approach may backfire"
+
+=== COACHING FRAMEWORK (only when you INTERVENE) ===
 
 === CRITICAL: REWRITE PERSPECTIVE ===
 

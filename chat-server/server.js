@@ -1072,7 +1072,7 @@ io.on('connection', (socket) => {
   });
 
   // Handle new messages
-  socket.on('send_message', async ({ text, isPreApprovedRewrite, originalRewrite }) => {
+  socket.on('send_message', async ({ text, isPreApprovedRewrite, originalRewrite, bypassMediation }) => {
     try {
       const user = activeUsers.get(socket.id);
 
@@ -1156,6 +1156,46 @@ io.on('connection', (socket) => {
           io.to(user.roomId).emit('new_message', message);
           return; // Exit early - no AI mediation needed
         }
+      }
+
+      // Feature 006: User chose "Send Original Anyway" - bypass mediation
+      if (bypassMediation) {
+        console.log(`⚠️ User bypassed mediation - sending original message`);
+
+        // Update communication stats - message sent despite intervention
+        try {
+          const db = await require('./db').getDb();
+          const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
+          const users = dbSafe.parseResult(userResult);
+          if (users.length > 0) {
+            // Record this as a message that bypassed mediation
+            await communicationStats.updateCommunicationStats(users[0].id, user.roomId, false);
+          }
+        } catch (statsErr) {
+          console.error('Error updating communication stats for bypassed message:', statsErr);
+        }
+
+        // Add to history
+        messageHistory.push(message);
+        if (messageHistory.length > 100) {
+          messageHistory.shift();
+        }
+
+        // Save to database
+        messageStore.saveMessage({
+          ...message,
+          roomId: user.roomId,
+          bypassedMediation: true
+        }).catch(err => {
+          console.error('Error saving bypassed message to database:', err);
+        });
+
+        // Mark as bypassed (for analytics)
+        message.bypassedMediation = true;
+
+        // Broadcast to all users in the room
+        io.to(user.roomId).emit('new_message', message);
+        return; // Exit early - skip AI mediation
       }
 
       // Don't add to history yet - wait for AI analysis
