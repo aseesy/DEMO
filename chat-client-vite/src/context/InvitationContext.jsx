@@ -3,7 +3,7 @@ import { getErrorMessage, logError, retryWithBackoff, isRetryableError } from '.
 
 /**
  * InvitationContext - Centralized invitation state management
- * 
+ *
  * Provides:
  * - Invitation token/code persistence in sessionStorage
  * - Token restoration on page load
@@ -29,7 +29,7 @@ export function InvitationProvider({ children }) {
   const loadInvitationState = React.useCallback(() => {
     const storedToken = sessionStorage.getItem('invitation_token');
     const storedCode = sessionStorage.getItem('invitation_code');
-    
+
     return {
       token: storedToken,
       shortCode: storedCode,
@@ -71,6 +71,8 @@ export function InvitationProvider({ children }) {
 
   /**
    * Validate invitation token or code
+   * IMPORTANT: Always uses the passed parameters, not stored state
+   * This ensures URL tokens take priority over cached values
    */
   const validateInvitation = React.useCallback(async (inviteToken, inviteCode) => {
     setIsValidating(true);
@@ -85,7 +87,22 @@ export function InvitationProvider({ children }) {
       return { valid: false, code: 'TOKEN_REQUIRED' };
     }
 
-    // Save to sessionStorage
+    // CRITICAL FIX: Clear stale sessionStorage if we're validating a new token/code
+    // This ensures URL parameters always take priority over cached values
+    const currentStoredToken = sessionStorage.getItem('invitation_token');
+    const currentStoredCode = sessionStorage.getItem('invitation_code');
+
+    if (inviteToken && currentStoredToken && currentStoredToken !== inviteToken) {
+      // New token from URL is different from cached token - clear the cache
+      sessionStorage.removeItem('invitation_token');
+      sessionStorage.removeItem('invitation_code');
+    } else if (inviteCode && currentStoredCode && currentStoredCode !== inviteCode) {
+      // New code from URL is different from cached code - clear the cache
+      sessionStorage.removeItem('invitation_token');
+      sessionStorage.removeItem('invitation_code');
+    }
+
+    // Save the current token/code to sessionStorage
     if (inviteToken) {
       saveInvitationState(inviteToken, null);
     } else if (inviteCode) {
@@ -141,16 +158,19 @@ export function InvitationProvider({ children }) {
 
   /**
    * Restore invitation state on mount
+   * REMOVED: This was causing stale tokens to override URL parameters
+   * The validateInvitation function now handles sessionStorage directly
+   * and ensures URL parameters always take priority
    */
-  React.useEffect(() => {
-    const state = loadInvitationState();
-    if (state.token) {
-      setToken(state.token);
-    }
-    if (state.shortCode) {
-      setShortCode(state.shortCode);
-    }
-  }, [loadInvitationState]);
+  // React.useEffect(() => {
+  //   const state = loadInvitationState();
+  //   if (state.token) {
+  //     setToken(state.token);
+  //   }
+  //   if (state.shortCode) {
+  //     setShortCode(state.shortCode);
+  //   }
+  // }, [loadInvitationState]);
 
   const value = {
     // State
@@ -159,7 +179,7 @@ export function InvitationProvider({ children }) {
     validationResult,
     isValidating,
     error,
-    
+
     // Actions
     setToken: (newToken) => saveInvitationState(newToken, null),
     setShortCode: (newCode) => saveInvitationState(null, newCode),
@@ -183,4 +203,3 @@ export function useInvitationContext() {
 }
 
 export default InvitationContext;
-
