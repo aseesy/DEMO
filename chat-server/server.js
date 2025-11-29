@@ -7934,6 +7934,51 @@ app.post('/api/admin/cleanup-test-data', async (req, res) => {
   }
 });
 
+// Debug endpoint to check pairing and room status
+app.post('/api/admin/debug-pairings', async (req, res) => {
+  const { secret } = req.body;
+
+  if (secret !== 'liaizen-test-cleanup-2024') {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    // Get all pairings for user 1 (mom)
+    const pairings = await db.query(`
+      SELECT ps.*,
+             ua.username as parent_a_username, ua.email as parent_a_email,
+             ub.username as parent_b_username, ub.email as parent_b_email
+      FROM pairing_sessions ps
+      JOIN users ua ON ps.parent_a_id = ua.id
+      LEFT JOIN users ub ON ps.parent_b_id = ub.id
+      WHERE ps.parent_a_id = 1 OR ps.parent_b_id = 1
+      ORDER BY ps.created_at DESC
+      LIMIT 5
+    `);
+
+    // Get room memberships for user 1
+    const rooms = await db.query(`
+      SELECT r.id, r.name, r.created_by, rm.user_id, rm.role, u.username
+      FROM rooms r
+      JOIN room_members rm ON r.id = rm.room_id
+      JOIN users u ON rm.user_id = u.id
+      WHERE r.id IN (SELECT room_id FROM room_members WHERE user_id = 1)
+    `);
+
+    // Get all users
+    const users = await db.query('SELECT id, username, email FROM users ORDER BY id LIMIT 10');
+
+    res.json({
+      pairings: pairings.rows,
+      rooms: rooms.rows,
+      users: users.rows
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Repair pairing - create missing room for active pairings
 app.post('/api/admin/repair-pairing', async (req, res) => {
   const { secret } = req.body;
