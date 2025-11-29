@@ -7934,6 +7934,96 @@ app.post('/api/admin/cleanup-test-data', async (req, res) => {
   }
 });
 
+// Force connect two users (for testing/repair)
+app.post('/api/admin/force-connect', async (req, res) => {
+  const { secret, userAId, userBId } = req.body;
+
+  if (secret !== 'liaizen-test-cleanup-2024') {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  if (!userAId || !userBId) {
+    return res.status(400).json({ error: 'userAId and userBId are required' });
+  }
+
+  try {
+    // Get user info
+    const userA = await db.query('SELECT id, username, email FROM users WHERE id = $1', [userAId]);
+    const userB = await db.query('SELECT id, username, email FROM users WHERE id = $1', [userBId]);
+
+    if (userA.rows.length === 0 || userB.rows.length === 0) {
+      return res.status(404).json({ error: 'One or both users not found' });
+    }
+
+    const parentA = userA.rows[0];
+    const parentB = userB.rows[0];
+
+    console.log(`🔧 Force connecting ${parentA.username} (${parentA.id}) and ${parentB.username} (${parentB.id})`);
+
+    // Create the shared room
+    const room = await roomManager.createCoParentRoom(
+      parentA.id,
+      parentB.id,
+      parentA.username,
+      parentB.username
+    );
+
+    // Create or update pairing session
+    const existingPairing = await db.query(
+      `SELECT id FROM pairing_sessions
+       WHERE (parent_a_id = $1 AND parent_b_id = $2) OR (parent_a_id = $2 AND parent_b_id = $1)
+       LIMIT 1`,
+      [parentA.id, parentB.id]
+    );
+
+    let pairingId;
+    if (existingPairing.rows.length > 0) {
+      pairingId = existingPairing.rows[0].id;
+      await db.query(
+        `UPDATE pairing_sessions SET status = 'active', shared_room_id = $1, accepted_at = CURRENT_TIMESTAMP WHERE id = $2`,
+        [room.roomId, pairingId]
+      );
+    } else {
+      const newPairing = await db.query(
+        `INSERT INTO pairing_sessions (parent_a_id, parent_b_id, status, shared_room_id, accepted_at, pairing_code, invite_type, invited_by_username, created_at, expires_at)
+         VALUES ($1, $2, 'active', $3, CURRENT_TIMESTAMP, $4, 'manual', $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '7 days')
+         RETURNING id`,
+        [parentA.id, parentB.id, room.roomId, `LZ-MANUAL-${Date.now()}`, parentA.username]
+      );
+      pairingId = newPairing.rows[0].id;
+    }
+
+    // Create mutual contacts
+    try {
+      await db.query(
+        `INSERT INTO contacts (user_id, contact_name, contact_email, relationship, created_at)
+         VALUES ($1, $2, $3, 'co-parent', CURRENT_TIMESTAMP)
+         ON CONFLICT DO NOTHING`,
+        [parentA.id, parentB.username, parentB.email]
+      );
+      await db.query(
+        `INSERT INTO contacts (user_id, contact_name, contact_email, relationship, created_at)
+         VALUES ($1, $2, $3, 'co-parent', CURRENT_TIMESTAMP)
+         ON CONFLICT DO NOTHING`,
+        [parentB.id, parentA.username, parentA.email]
+      );
+    } catch (contactErr) {
+      console.warn('Contact creation warning:', contactErr.message);
+    }
+
+    res.json({
+      success: true,
+      room: room,
+      pairingId,
+      parentA: { id: parentA.id, username: parentA.username },
+      parentB: { id: parentB.id, username: parentB.username }
+    });
+  } catch (error) {
+    console.error('Force connect error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Debug endpoint to check pairing and room status
 app.post('/api/admin/debug-pairings', async (req, res) => {
   const { secret } = req.body;
