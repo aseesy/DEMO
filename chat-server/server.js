@@ -7986,7 +7986,7 @@ app.post('/api/admin/force-connect', async (req, res) => {
     } else {
       const newPairing = await db.query(
         `INSERT INTO pairing_sessions (parent_a_id, parent_b_id, status, shared_room_id, accepted_at, pairing_code, invite_type, invited_by_username, created_at, expires_at)
-         VALUES ($1, $2, 'active', $3, CURRENT_TIMESTAMP, $4, 'manual', $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '7 days')
+         VALUES ($1, $2, 'active', $3, CURRENT_TIMESTAMP, $4, 'link', $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '7 days')
          RETURNING id`,
         [parentA.id, parentB.id, room.roomId, `LZ-${Math.floor(Math.random() * 900000) + 100000}`, parentA.username]
       );
