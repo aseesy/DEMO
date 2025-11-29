@@ -468,16 +468,19 @@ function ChatRoom() {
 
   React.useEffect(() => {
     const handleRewriteSent = () => {
-      if (pendingOriginalMessageToRemove && removeMessagesRef.current) {
-        // Remove the original blocked message
+      // Remove all pending original messages and interventions when a new message is sent
+      if (removeMessagesRef.current) {
         removeMessagesRef.current((m) =>
-          m.flagged === true &&
-          m.private === true &&
-          m.username === pendingOriginalMessageToRemove.username &&
-          m.text === pendingOriginalMessageToRemove.text &&
-          (m.timestamp === pendingOriginalMessageToRemove.timestamp ||
-            (m.timestamp && pendingOriginalMessageToRemove.timestamp &&
-              Math.abs(new Date(m.timestamp).getTime() - new Date(pendingOriginalMessageToRemove.timestamp).getTime()) < 2000))
+          m.type === 'pending_original' ||
+          m.type === 'ai_intervention' ||
+          (pendingOriginalMessageToRemove &&
+            m.flagged === true &&
+            m.private === true &&
+            m.username === pendingOriginalMessageToRemove.username &&
+            m.text === pendingOriginalMessageToRemove.text &&
+            (m.timestamp === pendingOriginalMessageToRemove.timestamp ||
+              (m.timestamp && pendingOriginalMessageToRemove.timestamp &&
+                Math.abs(new Date(m.timestamp).getTime() - new Date(pendingOriginalMessageToRemove.timestamp).getTime()) < 2000)))
         );
         setPendingOriginalMessageToRemove(null);
       }
@@ -487,12 +490,16 @@ function ChatRoom() {
     return () => window.removeEventListener('rewrite-sent', handleRewriteSent);
   }, [pendingOriginalMessageToRemove]);
 
-  // Wrap sendMessage to track analytics
+  // Wrap sendMessage to track analytics and clean up pending messages
   const sendMessage = React.useCallback((e) => {
     const clean = inputMessage.trim();
     if (clean) {
       // Track message sent before sending
       trackMessageSent(clean.length, isPreApprovedRewrite);
+
+      // Clear any pending original messages and interventions when any message is sent
+      // This ensures the "not sent yet" bubble disappears
+      window.dispatchEvent(new CustomEvent('rewrite-sent', { detail: { isNewMessage: true } }));
     }
     // Call original sendMessage (it handles validation)
     originalSendMessage(e);
@@ -1988,9 +1995,9 @@ function ChatRoom() {
 
                           filteredMessages.forEach((msg, index) => {
                             const isOwn = msg.username === username;
-                            const isAI = msg.type === 'ai_intervention' || msg.type === 'ai_comment';
+                            const isAI = msg.type === 'ai_intervention' || msg.type === 'ai_comment' || msg.type === 'pending_original';
                             const prevMsg = index > 0 ? filteredMessages[index - 1] : null;
-                            const prevIsAI = prevMsg && (prevMsg.type === 'ai_intervention' || prevMsg.type === 'ai_comment');
+                            const prevIsAI = prevMsg && (prevMsg.type === 'ai_intervention' || prevMsg.type === 'ai_comment' || prevMsg.type === 'pending_original');
                             const timeGap = prevMsg && msg.timestamp && prevMsg.timestamp
                               ? new Date(msg.timestamp).getTime() - new Date(prevMsg.timestamp).getTime() > 5 * 60 * 1000
                               : false;
@@ -2045,16 +2052,19 @@ function ChatRoom() {
                               }
                             })();
 
-                            // Handle AI messages separately
+                            // Handle AI messages and pending originals separately
                             if (isAI) {
                               return group.messages.map((msg) => {
                                 const isIntervention = msg.type === 'ai_intervention';
                                 const isComment = msg.type === 'ai_comment' && msg.text && !msg.personalMessage;
+                                const isPendingOriginal = msg.type === 'pending_original';
 
                                 const handleRewriteSelected = () => {
-                                  // Only remove the intervention message, keep original message visible
+                                  // Remove the intervention message AND the pending original message
                                   removeMessages((m) => m.id === msg.id ||
-                                    (m.type === 'ai_intervention' && m.timestamp === msg.timestamp));
+                                    (m.type === 'ai_intervention' && m.timestamp === msg.timestamp) ||
+                                    (msg.pendingOriginalId && m.id === msg.pendingOriginalId) ||
+                                    (m.type === 'pending_original' && m.interventionId === msg.id));
                                   // Store original message info to remove later when new message is sent
                                   if (msg.originalMessage) {
                                     setPendingOriginalMessageToRemove({
@@ -2064,6 +2074,24 @@ function ChatRoom() {
                                     });
                                   }
                                 };
+
+                                // Render pending original message as a "not sent" bubble
+                                if (isPendingOriginal) {
+                                  return (
+                                    <div key={msg.id} className="mb-4 first:mt-0 flex justify-end">
+                                      <div className="max-w-[75%] sm:max-w-[60%] md:max-w-[55%]">
+                                        <div className="flex items-center gap-2 mb-1 justify-end">
+                                          <span className="text-xs text-orange-600 font-medium">Not sent yet</span>
+                                        </div>
+                                        <div className="rounded-2xl px-4 py-2.5 bg-orange-100 border-2 border-orange-300 border-dashed">
+                                          <p className="text-base text-orange-800 leading-snug" style={{ fontSize: '15px' }}>
+                                            {msg.text}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                }
 
                                 return (
                                   <div key={msg.id ?? `ai-${msg.timestamp}`} className="mb-6 first:mt-0">

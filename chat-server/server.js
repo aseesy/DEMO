@@ -1655,15 +1655,30 @@ io.on('connection', (socket) => {
                 console.error('Error updating communication stats for intervention:', statsErr);
               }
 
-              // Send intervention UI ONLY to the sender (private message)
+              // First, send the original message as a "pending" message ONLY to the sender
+              // This allows the sender to see what they wrote while reviewing the intervention
+              const pendingOriginalMessage = {
+                id: `pending-original-${Date.now()}`,
+                type: 'pending_original',
+                username: message.username,
+                text: message.text,
+                timestamp: message.timestamp,
+                isPendingOriginal: true, // Flag to style differently and remove later
+                interventionId: `ai-intervention-${Date.now()}` // Link to the intervention
+              };
+
+              socket.emit('new_message', pendingOriginalMessage);
+
+              // Then send intervention UI ONLY to the sender (private message)
               const interventionMessage = {
-                id: `ai-intervention-${Date.now()}`,
+                id: pendingOriginalMessage.interventionId, // Use the same ID for linking
                 type: 'ai_intervention',
                 personalMessage: intervention.personalMessage,
                 tip1: intervention.tip1,
                 rewrite1: intervention.rewrite1,
                 rewrite2: intervention.rewrite2,
                 originalMessage: message,
+                pendingOriginalId: pendingOriginalMessage.id, // Link back to pending message for removal
                 escalation: intervention.escalation,
                 emotion: intervention.emotion,
                 timestamp: new Date().toISOString()
@@ -1672,7 +1687,7 @@ io.on('connection', (socket) => {
               // Send ONLY to the sender (not to the room)
               socket.emit('new_message', interventionMessage);
 
-              console.log(`✅ Intervention UI sent to ${user.username} privately - message NOT visible to others`);
+              console.log(`✅ Pending original + Intervention UI sent to ${user.username} privately - message NOT visible to others`);
             } else if (intervention.type === 'ai_comment') {
               // COMMENT: Helpful observation - show to everyone in room
               console.log(`💬 AI adding contextual comment - broadcasting to room`);
