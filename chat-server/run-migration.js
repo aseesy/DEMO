@@ -5,8 +5,9 @@ const path = require('path');
 
 async function runMigration() {
     if (!process.env.DATABASE_URL) {
-        console.log('ℹ️  DATABASE_URL not set - skipping PostgreSQL migration (using SQLite)');
-        return; // Return instead of exit
+        console.error('❌ DATABASE_URL not set - PostgreSQL is required');
+        console.error('💡 Set DATABASE_URL environment variable to run migrations');
+        process.exit(1);
     }
 
     // Retry connection up to 3 times with delays

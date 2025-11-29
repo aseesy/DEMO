@@ -6,7 +6,7 @@ const openaiClient = require('./openaiClient');
  */
 async function createThread(roomId, title, createdBy, initialMessageId = null) {
   try {
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
     const threadId = `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     await dbSafe.safeInsert('threads', {
@@ -26,7 +26,7 @@ async function createThread(roomId, title, createdBy, initialMessageId = null) {
       await dbSafe.safeUpdate('messages', { thread_id: threadId }, { id: initialMessageId });
     }
 
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
     return threadId;
   } catch (error) {
     console.error('Error creating thread:', error);
@@ -39,7 +39,7 @@ async function createThread(roomId, title, createdBy, initialMessageId = null) {
  */
 async function getThreadsForRoom(roomId, includeArchived = false) {
   try {
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
     const whereClause = includeArchived 
       ? { room_id: roomId }
       : { room_id: roomId, is_archived: 0 };
@@ -61,7 +61,7 @@ async function getThreadsForRoom(roomId, includeArchived = false) {
  */
 async function getThreadMessages(threadId, limit = 50) {
   try {
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
     const result = await dbSafe.safeSelect('messages', 
       { thread_id: threadId, private: 0, flagged: 0 },
       {
@@ -83,7 +83,7 @@ async function getThreadMessages(threadId, limit = 50) {
  */
 async function addMessageToThread(messageId, threadId) {
   try {
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
     
     // Update message
     await dbSafe.safeUpdate('messages', { thread_id: threadId }, { id: messageId });
@@ -104,7 +104,7 @@ async function addMessageToThread(messageId, threadId) {
       }, { id: threadId });
     }
 
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
     return true;
   } catch (error) {
     console.error('Error adding message to thread:', error);
@@ -136,7 +136,7 @@ async function removeMessageFromThread(messageId) {
       }
     }
 
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
     return true;
   } catch (error) {
     console.error('Error removing message from thread:', error);
@@ -154,7 +154,7 @@ async function updateThreadTitle(threadId, newTitle) {
       updated_at: new Date().toISOString()
     }, { id: threadId });
 
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
     return true;
   } catch (error) {
     console.error('Error updating thread title:', error);
@@ -172,7 +172,7 @@ async function archiveThread(threadId, archived = true) {
       updated_at: new Date().toISOString()
     }, { id: threadId });
 
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
     return true;
   } catch (error) {
     console.error('Error archiving thread:', error);

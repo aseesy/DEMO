@@ -6,25 +6,23 @@
 // Set user properties (persists across sessions)
 export function setUserProperties(properties) {
   if (!window.gtag) {
-    console.log('Analytics: setUserProperties - gtag not initialized');
+    // Silently return - gtag not initialized in development
     return;
   }
 
   window.gtag('set', 'user_properties', properties);
-  console.log('Analytics: User properties set', properties);
 }
 
 // Set user ID for cross-device tracking
 export function setUserID(userId) {
   if (!window.gtag) {
-    console.log('Analytics: setUserID - gtag not initialized');
+    // Silently return - gtag not initialized in development
     return;
   }
 
   window.gtag('config', import.meta.env.VITE_GA_MEASUREMENT_ID || '', {
     user_id: userId
   });
-  console.log('Analytics: User ID set', userId);
 }
 
 // Track errors and exceptions

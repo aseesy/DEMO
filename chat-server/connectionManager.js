@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const dbModule = require('./db');
+const dbModule = require('./dbPostgres');
 const dbSafe = require('./dbSafe');
 const roomManager = require('./roomManager');
 const auth = require('./auth');
@@ -314,7 +314,7 @@ async function acceptPendingConnection(token, userId) {
         }
         
         // Save database after creating contacts
-        require('./db').saveDatabase();
+        // PostgreSQL auto-commits, no manual save needed
         
         // Note: Auto-complete onboarding tasks will be called from the server endpoint
         // that calls this function, to avoid circular dependencies

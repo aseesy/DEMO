@@ -299,6 +299,7 @@ app.use(limiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/signup', authLimiter);
 app.use('/api/userContext', require('./routes/userContext'));
+app.use('/api/profile', require('./routes/profile'));
 
 const io = new Server(server, {
   cors: {
@@ -410,17 +411,21 @@ async function autoCompleteOnboardingTasks(userId) {
       user_id: userId
     }, {});
     const allContacts = dbSafe.parseResult(coparentResult);
-    const hasCoparent = allContacts.some(c =>
-      c.relationship === 'My Co-Parent' ||
-      c.relationship === 'co-parent' ||
-      c.relationship === "My Partner's Co-Parent"
-    );
 
-    // Check if children exist
-    const hasChildren = allContacts.some(c =>
-      c.relationship === 'My Child' ||
-      c.relationship === "My Partner's Child"
-    );
+    const hasCoparent = allContacts.some(c => {
+      const rel = (c.relationship || '').toLowerCase();
+      return rel === 'my co-parent' ||
+             rel === 'co-parent' ||
+             rel === "my partner's co-parent";
+    });
+
+    // Check if children exist (any child relationship type) - case insensitive
+    const hasChildren = allContacts.some(c => {
+      const rel = (c.relationship || '').toLowerCase();
+      return rel === 'my child' ||
+             rel === "my partner's child" ||
+             rel === "my co-parent's child";
+    });
 
     // Get all onboarding tasks for this user (including new "Invite Your Co-Parent" task)
     const onboardingTaskTitles = [
@@ -466,7 +471,7 @@ async function autoCompleteOnboardingTasks(userId) {
       }
     }
 
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
   } catch (error) {
     console.error('Error in autoCompleteOnboardingTasks:', error);
     throw error;
@@ -539,12 +544,14 @@ async function backfillOnboardingTasks(userId) {
     // Check current conditions
     const hasCoParent = await checkUserHasCoParent(userId);
 
-    // Check if children exist
+    // Check if children exist (any child relationship type) - case insensitive
     const contacts = await dbSafe.safeSelect('contacts', { user_id: userId });
-    const hasChildren = contacts.some(c =>
-      c.relationship === 'My Child' ||
-      c.relationship === "My Partner's Child"
-    );
+    const hasChildren = contacts.some(c => {
+      const rel = (c.relationship || '').toLowerCase();
+      return rel === 'my child' ||
+             rel === "my partner's child" ||
+             rel === "my co-parent's child";
+    });
 
     // Check profile completeness
     const filledFields = [
@@ -642,7 +649,7 @@ Click this task to send an invite link, generate a short code, or enter a code y
     }
 
     console.log(`✅ [TASK BACKFILL] Completed for user ${userId}: ${createdCount} created, ${skippedCount} skipped`);
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
   } catch (error) {
     console.error(`❌ [TASK BACKFILL] Error for user ${userId}:`, error);
   }
@@ -998,7 +1005,7 @@ io.on('connection', (socket) => {
       }
 
       const proactiveCoach = require('./proactiveCoach');
-      const db = await require('./db').getDb();
+      const db = require('./dbPostgres');
       const dbSafe = require('./dbSafe');
       const dbPostgres = require('./dbPostgres');
 
@@ -1125,7 +1132,7 @@ io.on('connection', (socket) => {
 
           // Update communication stats - successful message using pre-approved rewrite
           try {
-            const db = await require('./db').getDb();
+            const db = require('./dbPostgres');
             const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
             const users = dbSafe.parseResult(userResult);
             if (users.length > 0) {
@@ -1164,7 +1171,7 @@ io.on('connection', (socket) => {
 
         // Update communication stats - message sent despite intervention
         try {
-          const db = await require('./db').getDb();
+          const db = require('./dbPostgres');
           const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
           const users = dbSafe.parseResult(userResult);
           if (users.length > 0) {
@@ -1203,7 +1210,7 @@ io.on('connection', (socket) => {
       aiMediator.updateContext(message);
 
       // Get recent messages from database for AI analysis
-      const dbModule = require('./db');
+      const dbModule = require('./dbPostgres');
       const dbSafe = require('./dbSafe');
       const dbPostgres = require('./dbPostgres');
 
@@ -1380,7 +1387,7 @@ io.on('connection', (socket) => {
           // Get flagged message context for AI mediator (recent flags to learn from)
           let flaggedMessagesContext = null;
           try {
-            const db = await require('./db').getDb();
+            const db = require('./dbPostgres');
             const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
             const users = dbSafe.parseResult(userResult);
             if (users.length > 0) {
@@ -1438,7 +1445,7 @@ io.on('connection', (socket) => {
           // Get task context for AI mediator
           let taskContextForAI = null;
           try {
-            const db = await require('./db').getDb();
+            const db = require('./dbPostgres');
             const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
             const users = dbSafe.parseResult(userResult);
             if (users.length > 0) {
@@ -1645,7 +1652,7 @@ io.on('connection', (socket) => {
 
               // Update communication stats - streak broken by intervention
               try {
-                const db = await require('./db').getDb();
+                const db = require('./dbPostgres');
                 const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
                 const users = dbSafe.parseResult(userResult);
                 if (users.length > 0) {
@@ -1657,31 +1664,36 @@ io.on('connection', (socket) => {
 
               // First, send the original message as a "pending" message ONLY to the sender
               // This allows the sender to see what they wrote while reviewing the intervention
+              // Generate IDs atomically to prevent race conditions
+              const baseTimestamp = Date.now();
+              const interventionId = `ai-intervention-${baseTimestamp}`;
+              const pendingOriginalId = `pending-original-${baseTimestamp}`;
+
               const pendingOriginalMessage = {
-                id: `pending-original-${Date.now()}`,
+                id: pendingOriginalId,
                 type: 'pending_original',
                 username: message.username,
                 text: message.text,
                 timestamp: message.timestamp,
-                isPendingOriginal: true, // Flag to style differently and remove later
-                interventionId: `ai-intervention-${Date.now()}` // Link to the intervention
+                roomId: user.roomId, // Required for frontend filtering
+                interventionId: interventionId // Link to the intervention
               };
 
               socket.emit('new_message', pendingOriginalMessage);
 
               // Then send intervention UI ONLY to the sender (private message)
               const interventionMessage = {
-                id: pendingOriginalMessage.interventionId, // Use the same ID for linking
+                id: interventionId, // Use the same pre-generated ID
                 type: 'ai_intervention',
                 personalMessage: intervention.personalMessage,
                 tip1: intervention.tip1,
                 rewrite1: intervention.rewrite1,
                 rewrite2: intervention.rewrite2,
                 originalMessage: message,
-                pendingOriginalId: pendingOriginalMessage.id, // Link back to pending message for removal
+                pendingOriginalId: pendingOriginalId, // Link back to pending message for removal
                 escalation: intervention.escalation,
                 emotion: intervention.emotion,
-                timestamp: new Date().toISOString()
+                timestamp: message.timestamp // Use same timestamp source for consistency
               };
 
               // Send ONLY to the sender (not to the room)
@@ -1737,7 +1749,7 @@ io.on('connection', (socket) => {
 
             // Update communication stats - successful message, increment streak
             try {
-              const db = await require('./db').getDb();
+              const db = require('./dbPostgres');
               const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
               const users = dbSafe.parseResult(userResult);
               if (users.length > 0) {
@@ -1854,7 +1866,7 @@ io.on('connection', (socket) => {
       }
 
       // Get message from database
-      const db = await require('./db').getDb();
+      const db = require('./dbPostgres');
       const dbPostgres = require('./dbPostgres');
       const messageQuery = `
         SELECT * FROM messages
@@ -1880,7 +1892,7 @@ io.on('connection', (socket) => {
         edited_at: new Date().toISOString()
       }, { id: messageId });
 
-      require('./db').saveDatabase();
+      // PostgreSQL auto-commits, no manual save needed
 
       // Broadcast edited message to room
       const editedMessage = {
@@ -1912,7 +1924,7 @@ io.on('connection', (socket) => {
       }
 
       // Get message from database
-      const db = await require('./db').getDb();
+      const db = require('./dbPostgres');
       const dbPostgres = require('./dbPostgres');
       const messageQuery = `
         SELECT * FROM messages
@@ -1935,7 +1947,7 @@ io.on('connection', (socket) => {
         deleted_at: new Date().toISOString()
       }, { id: messageId });
 
-      require('./db').saveDatabase();
+      // PostgreSQL auto-commits, no manual save needed
 
       // Broadcast deletion to room
       io.to(user.roomId).emit('message_deleted', {
@@ -2021,7 +2033,7 @@ io.on('connection', (socket) => {
         reactions: JSON.stringify(reactions)
       }, { id: messageId });
 
-      require('./db').saveDatabase();
+      // PostgreSQL auto-commits, no manual save needed
 
       // Broadcast reaction update to room
       io.to(user.roomId).emit('reaction_updated', {
@@ -2241,7 +2253,7 @@ io.on('connection', (socket) => {
       );
 
       // Get the original message and send it anyway
-      const db = await require('./db').getDb();
+      const db = require('./dbPostgres');
       const dbSafe = require('./dbSafe');
       const messageResult = await dbSafe.safeSelect('messages', { id: messageId }, { limit: 1 });
       const messages = dbSafe.parseResult(messageResult);
@@ -2421,7 +2433,7 @@ io.on('connection', (socket) => {
         }
       }
 
-      require('./db').saveDatabase();
+      // PostgreSQL auto-commits, no manual save needed
 
       // Broadcast flag update to room
       io.to(user.roomId).emit('message_flagged', {
@@ -2481,7 +2493,7 @@ io.on('connection', (socket) => {
             userId: user.username
           });
 
-          const db = await require('./db').getDb();
+          const db = require('./dbPostgres');
           const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
           const users = dbSafe.parseResult(userResult);
 
@@ -2509,7 +2521,7 @@ io.on('connection', (socket) => {
             created_at: now,
             updated_at: now
           });
-          require('./db').saveDatabase();
+          // PostgreSQL auto-commits, no manual save needed
 
           console.log('✅ Contact created successfully:', {
             contactId,
@@ -2627,7 +2639,7 @@ io.on('connection', (socket) => {
 
       // Create the contact with relationship
       try {
-        const db = await require('./db').getDb();
+        const db = require('./dbPostgres');
         const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
         const users = dbSafe.parseResult(userResult);
 
@@ -2652,7 +2664,7 @@ io.on('connection', (socket) => {
             created_at: now,
             updated_at: now
           });
-          require('./db').saveDatabase();
+          // PostgreSQL auto-commits, no manual save needed
 
           const successMessage = {
             id: `contact-added-${Date.now()}`,
@@ -2810,7 +2822,7 @@ app.get('/api/stats/user-count', async (req, res) => {
 // Debug endpoint: List all rooms
 app.get('/api/debug/rooms', async (req, res) => {
   try {
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
     // Use safeExec for read-only query (no user input)
     const result = db.exec(`
       SELECT 
@@ -2864,7 +2876,7 @@ app.get('/api/debug/rooms', async (req, res) => {
 // Admin endpoint: Clean up orphaned data
 app.post('/api/admin/cleanup', async (req, res) => {
   try {
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Clean up orphaned room_members (entries referencing deleted users)
     const orphanedMembersQuery = `
@@ -2894,7 +2906,7 @@ app.post('/api/admin/cleanup', async (req, res) => {
     const messagesDeleted = db.exec(orphanedMessagesQuery);
 
     // Save database after cleanup
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     console.log('✅ Cleanup completed: orphaned data removed');
 
@@ -2922,7 +2934,7 @@ app.delete('/api/admin/users/:userId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid user ID' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Check if user exists
     const userResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
@@ -2967,7 +2979,7 @@ app.delete('/api/admin/users/:userId', async (req, res) => {
     db.exec(orphanedMessagesQuery);
 
     // Save database after cleanup
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     console.log(`User ${username} (ID: ${userId}) deleted by admin`);
 
@@ -3088,7 +3100,7 @@ app.get('/api/debug/messages/:roomId', verifyAuth, async (req, res) => {
 
 app.get('/api/debug/pending-connections', async (req, res) => {
   try {
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
     const result = db.exec(`
       SELECT 
         pc.id,
@@ -4617,10 +4629,13 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Generate JWT token with 30-day expiration for persistent sessions
+    // Include both 'id' and 'userId' for compatibility with all auth middleware
     const token = jwt.sign(
       {
         id: user.id,
-        username: user.username
+        userId: user.id,
+        username: user.username,
+        email: user.email
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '30d' }
@@ -5098,7 +5113,7 @@ app.post('/api/tasks', async (req, res) => {
       return res.status(400).json({ error: 'Username and title are required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -5154,7 +5169,7 @@ app.post('/api/tasks', async (req, res) => {
       completed_at: null
     });
 
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     res.json({
       success: true,
@@ -5177,7 +5192,7 @@ app.put('/api/tasks/:taskId', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -5218,7 +5233,7 @@ app.put('/api/tasks/:taskId', async (req, res) => {
     if (related_people !== undefined) updateData.related_people = related_people ? JSON.stringify(related_people) : null;
 
     await dbSafe.safeUpdate('tasks', updateData, { id: parseInt(taskId) });
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     res.json({
       success: true,
@@ -5240,7 +5255,7 @@ app.delete('/api/tasks/:taskId', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -5261,7 +5276,7 @@ app.delete('/api/tasks/:taskId', async (req, res) => {
     }
 
     await dbSafe.safeDelete('tasks', { id: parseInt(taskId) });
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     res.json({
       success: true,
@@ -5283,7 +5298,7 @@ app.post('/api/tasks/:taskId/duplicate', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -5319,7 +5334,7 @@ app.post('/api/tasks/:taskId/duplicate', async (req, res) => {
       completed_at: null
     });
 
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     res.json({
       success: true,
@@ -5537,7 +5552,7 @@ app.get('/api/dashboard/communication-stats', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -5660,7 +5675,7 @@ app.get('/api/user/onboarding-status', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -5734,7 +5749,7 @@ app.get('/api/activities/:contactId', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -5812,7 +5827,7 @@ app.post('/api/activities', async (req, res) => {
       return res.status(400).json({ error: 'Contact ID, activity name, recurrence, and start date are required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -5861,7 +5876,7 @@ app.post('/api/activities', async (req, res) => {
     };
 
     await dbSafe.safeInsert('child_activities', insertData);
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     res.json({
       success: true,
@@ -5901,7 +5916,7 @@ app.put('/api/activities/:activityId', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -5947,7 +5962,7 @@ app.put('/api/activities/:activityId', async (req, res) => {
     if (notes !== undefined) updateData.notes = notes || null;
 
     await dbSafe.safeUpdate('child_activities', updateData, { id: parseInt(activityId) });
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     res.json({
       success: true,
@@ -5969,7 +5984,7 @@ app.delete('/api/activities/:activityId', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -5993,7 +6008,7 @@ app.delete('/api/activities/:activityId', async (req, res) => {
     }
 
     await dbSafe.safeDelete('child_activities', { id: parseInt(activityId) });
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     res.json({
       success: true,
@@ -6006,16 +6021,34 @@ app.delete('/api/activities/:activityId', async (req, res) => {
 });
 
 // Profile API endpoints
-// Get current user's profile
+// Get current user's profile (with privacy filtering for co-parent views)
+// Feature 010: Comprehensive User Profile System
 app.get('/api/user/profile', async (req, res) => {
   try {
-    const username = req.query.username || req.body.username;
+    // Get username from JWT token if authenticated, otherwise from query/body
+    let username = req.query.username || req.body.username;
+    let requestingUsername = req.query.requestingUsername || req.body.requestingUsername;
 
+    // If no username provided, try to get from JWT token
     if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET);
+          username = decoded.username;
+          requestingUsername = decoded.username; // User viewing their own profile
+        } catch (err) {
+          // Token invalid, fall through to error
+        }
+      }
     }
 
-    const db = await require('./db').getDb();
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required or provide valid authorization token' });
+    }
+
+    const db = require('./dbPostgres');
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
 
@@ -6024,20 +6057,124 @@ app.get('/api/user/profile', async (req, res) => {
     }
 
     const user = users[0];
-    res.json({
+
+    // Determine if this is the user viewing their own profile
+    const isOwnProfile = !requestingUsername ||
+      requestingUsername.toLowerCase() === username.toLowerCase();
+
+    // Load privacy settings
+    const privacyResult = await dbSafe.safeSelect('user_profile_privacy', { user_id: user.id }, { limit: 1 });
+    const privacyRows = dbSafe.parseResult(privacyResult);
+
+    // Import profile helpers
+    const profileHelpers = require('./src/utils/profileHelpers');
+    const privacySettings = privacyRows[0] || profileHelpers.getDefaultPrivacySettings();
+
+    // Build base profile object with all fields
+    const baseProfile = {
+      // Core fields
       username: user.username,
       email: user.email || null,
+
+      // Personal information
       first_name: user.first_name || null,
       last_name: user.last_name || null,
       display_name: user.display_name || null,
+      preferred_name: user.preferred_name || null,
+      pronouns: user.pronouns || null,
+      birthdate: user.birthdate || null,
+      language: user.language || 'en',
+      timezone: user.timezone || null,
+      phone: user.phone || null,
+      city: user.city || null,
+      state: user.state || null,
+      zip: user.zip || null,
       address: user.address || null,
+
+      // Work & Schedule
+      employment_status: user.employment_status || null,
+      occupation: user.occupation || null,
+      employer: user.employer || null,
+      work_schedule: user.work_schedule || null,
+      schedule_flexibility: user.schedule_flexibility || null,
+      commute_time: user.commute_time || null,
+      travel_required: user.travel_required || null,
+
+      // Health & Wellbeing (encrypted in database)
+      health_physical_conditions: user.health_physical_conditions || null,
+      health_physical_limitations: user.health_physical_limitations || null,
+      health_mental_conditions: user.health_mental_conditions || null,
+      health_mental_treatment: user.health_mental_treatment || null,
+      health_mental_history: user.health_mental_history || null,
+      health_substance_history: user.health_substance_history || null,
+      health_in_recovery: user.health_in_recovery || null,
+      health_recovery_duration: user.health_recovery_duration || null,
+
+      // Financial Context (encrypted in database)
+      finance_income_level: user.finance_income_level || null,
+      finance_income_stability: user.finance_income_stability || null,
+      finance_employment_benefits: user.finance_employment_benefits || null,
+      finance_housing_status: user.finance_housing_status || null,
+      finance_housing_type: user.finance_housing_type || null,
+      finance_vehicles: user.finance_vehicles || null,
+      finance_debt_stress: user.finance_debt_stress || null,
+      finance_support_paying: user.finance_support_paying || null,
+      finance_support_receiving: user.finance_support_receiving || null,
+
+      // Background & Education
+      background_birthplace: user.background_birthplace || null,
+      background_raised: user.background_raised || null,
+      background_family_origin: user.background_family_origin || null,
+      background_culture: user.background_culture || null,
+      background_religion: user.background_religion || null,
+      background_military: user.background_military || null,
+      background_military_branch: user.background_military_branch || null,
+      background_military_status: user.background_military_status || null,
+      education_level: user.education_level || null,
+      education_field: user.education_field || null,
+
+      // Existing fields
       additional_context: user.additional_context || null,
       profile_picture: user.profile_picture || null,
       household_members: user.household_members || null,
-      occupation: user.occupation || null,
       communication_style: user.communication_style || null,
       communication_triggers: user.communication_triggers || null,
-      communication_goals: user.communication_goals || null
+      communication_goals: user.communication_goals || null,
+
+      // Profile metadata
+      profile_completion_percentage: user.profile_completion_percentage || 0,
+      profile_last_updated: user.profile_last_updated || null
+    };
+
+    // Apply privacy filtering
+    const filteredProfile = profileHelpers.filterProfileByPrivacy(
+      baseProfile,
+      privacySettings,
+      isOwnProfile
+    );
+
+    // Calculate completion if not set
+    if (!filteredProfile.profile_completion_percentage) {
+      filteredProfile.profile_completion_percentage = profileHelpers.calculateProfileCompletion(baseProfile);
+    }
+
+    // Log profile view if viewing co-parent's profile
+    if (!isOwnProfile && requestingUsername) {
+      const requestingUserResult = await dbSafe.safeSelect('users', { username: requestingUsername.toLowerCase() }, { limit: 1 });
+      const requestingUsers = dbSafe.parseResult(requestingUserResult);
+      if (requestingUsers.length > 0) {
+        await profileHelpers.logProfileView(user.id, requestingUsers[0].id, db, {
+          ip: req.ip,
+          userAgent: req.get('user-agent')
+        });
+      }
+    }
+
+    // Add isOwnProfile flag and privacy settings (only for own profile)
+    res.json({
+      ...filteredProfile,
+      isOwnProfile,
+      privacySettings: isOwnProfile ? privacySettings : null
     });
   } catch (error) {
     console.error('Error fetching profile:', error);
@@ -6064,14 +6201,28 @@ app.put('/api/user/profile', async (req, res) => {
       requestBodySize: JSON.stringify(req.body).length
     });
 
-    // Use currentUsername to find the user, fallback to username for backward compatibility
-    const lookupUsername = currentUsername || username;
+    // Use currentUsername to find the user, fallback to username, then JWT token
+    let lookupUsername = currentUsername || username;
 
+    // If no username provided, try to get from JWT token
     if (!lookupUsername) {
-      return res.status(400).json({ error: 'Username is required' });
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET);
+          lookupUsername = decoded.username;
+        } catch (err) {
+          // Token invalid, fall through to error
+        }
+      }
     }
 
-    const db = await require('./db').getDb();
+    if (!lookupUsername) {
+      return res.status(400).json({ error: 'Username is required or provide valid authorization token' });
+    }
+
+    const db = require('./dbPostgres');
 
     // Get user ID using current username (to find the user)
     const userResult = await dbSafe.safeSelect('users', { username: lookupUsername.toLowerCase() }, { limit: 1 });
@@ -6115,7 +6266,7 @@ app.put('/api/user/profile', async (req, res) => {
       }
       updateData.email = trimmedEmail;
     }
-    // Field length limits to prevent database issues (SQLite TEXT can be very large, but we'll set reasonable limits)
+    // Field length limits to prevent database issues (PostgreSQL TEXT can be very large, but we'll set reasonable limits)
     const MAX_FIELD_LENGTHS = {
       first_name: 100,
       last_name: 100,
@@ -6209,6 +6360,57 @@ app.put('/api/user/profile', async (req, res) => {
       updateData.communication_goals = trimmed;
     }
 
+    // =========================================================================
+    // Feature 010: Comprehensive User Profile System - Handle new profile fields
+    // =========================================================================
+    const profileHelpers = require('./src/utils/profileHelpers');
+
+    // Define all new profile fields from Feature 010
+    const newProfileFields = [
+      // Personal Information
+      'preferred_name', 'pronouns', 'birthdate', 'language', 'timezone',
+      'phone', 'city', 'state', 'zip',
+      // Work & Schedule
+      'employment_status', 'employer', 'work_schedule', 'schedule_flexibility',
+      'commute_time', 'travel_required',
+      // Health & Wellbeing
+      'health_physical_conditions', 'health_physical_limitations',
+      'health_mental_conditions', 'health_mental_treatment', 'health_mental_history',
+      'health_substance_history', 'health_in_recovery', 'health_recovery_duration',
+      // Financial Context
+      'finance_income_level', 'finance_income_stability', 'finance_employment_benefits',
+      'finance_housing_status', 'finance_housing_type', 'finance_vehicles',
+      'finance_debt_stress', 'finance_support_paying', 'finance_support_receiving',
+      // Background & Education
+      'background_birthplace', 'background_raised', 'background_family_origin',
+      'background_culture', 'background_religion', 'background_military',
+      'background_military_branch', 'background_military_status',
+      'education_level', 'education_field'
+    ];
+
+    // Extract new profile fields from request body
+    const newFieldData = {};
+    for (const field of newProfileFields) {
+      if (req.body[field] !== undefined) {
+        const value = req.body[field];
+        newFieldData[field] = value != null ? String(value).trim() : null;
+      }
+    }
+
+    // Validate new profile fields using profileHelpers
+    if (Object.keys(newFieldData).length > 0) {
+      const validation = profileHelpers.validateProfileFields(newFieldData);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      // Encrypt sensitive fields before adding to updateData
+      const encryptedData = profileHelpers.encryptSensitiveFields(newFieldData);
+
+      // Add all new fields to updateData
+      Object.assign(updateData, encryptedData);
+    }
+
     // Check email uniqueness if email is being updated
     if (updateData.email && updateData.email !== users[0].email) {
       const emailCheck = await dbSafe.safeSelect('users', { email: updateData.email }, { limit: 1 });
@@ -6263,7 +6465,7 @@ app.put('/api/user/profile', async (req, res) => {
         throw updateError;
       }
     }
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     console.log('Profile updated successfully for user:', userId);
 
@@ -6278,10 +6480,41 @@ app.put('/api/user/profile', async (req, res) => {
     // Return updated username if it was changed
     const updatedUsername = updateData.username || dbUsername;
 
+    // Feature 010: Calculate and update profile completion percentage
+    let completionPercentage = 0;
+    try {
+      // Fetch updated user profile for completion calculation
+      const updatedUserResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
+      const updatedUsers = dbSafe.parseResult(updatedUserResult);
+      if (updatedUsers.length > 0) {
+        completionPercentage = profileHelpers.calculateProfileCompletion(updatedUsers[0]);
+
+        // Update completion percentage in database
+        await dbSafe.safeUpdate('users', {
+          profile_completion_percentage: completionPercentage,
+          profile_last_updated: new Date().toISOString()
+        }, { id: userId });
+
+        // Log profile changes to audit log (async, don't wait)
+        if (Object.keys(newFieldData).length > 0) {
+          profileHelpers.logProfileChanges(userId, users[0], newFieldData, {
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+          }).catch(err => console.error('Audit log error:', err));
+        }
+
+        // PostgreSQL auto-commits, no manual save needed
+      }
+    } catch (completionError) {
+      console.error('Error calculating completion:', completionError);
+      // Don't fail the main update
+    }
+
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      username: updatedUsername
+      username: updatedUsername,
+      completionPercentage
     });
   } catch (error) {
     console.error('Error updating profile:', error);
@@ -6325,7 +6558,7 @@ app.put('/api/user/password', async (req, res) => {
     // Update password
     const newPasswordHash = await auth.hashPassword(newPassword);
     await dbSafe.safeUpdate('users', { password_hash: newPasswordHash }, { id: user.id });
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     res.json({
       success: true,
@@ -6337,7 +6570,313 @@ app.put('/api/user/password', async (req, res) => {
   }
 });
 
+// =============================================================================
+// Feature 010: Profile Privacy Settings Endpoints
+// =============================================================================
+
+// Get privacy settings for current user
+app.get('/api/user/profile/privacy', async (req, res) => {
+  try {
+    let username = req.query.username || req.body.username;
+
+    // If no username provided, try to get from JWT token
+    if (!username) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET);
+          username = decoded.username;
+        } catch (err) {
+          // Token invalid, fall through to error
+        }
+      }
+    }
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required or provide valid authorization token' });
+    }
+
+    // Get user
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // Get privacy settings
+    const privacyResult = await dbSafe.safeSelect('user_profile_privacy', { user_id: userId }, { limit: 1 });
+    const privacyRows = dbSafe.parseResult(privacyResult);
+
+    const profileHelpers = require('./src/utils/profileHelpers');
+    const settings = privacyRows[0] || profileHelpers.getDefaultPrivacySettings();
+
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching privacy settings:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update privacy settings for current user
+app.put('/api/user/profile/privacy', async (req, res) => {
+  try {
+    let { username, personal_visibility, work_visibility, background_visibility, health_visibility, financial_visibility, field_overrides } = req.body;
+
+    // If no username provided, try to get from JWT token
+    if (!username) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET);
+          username = decoded.username;
+        } catch (err) {
+          // Token invalid, fall through to error
+        }
+      }
+    }
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required or provide valid authorization token' });
+    }
+
+    // Get user
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // SECURITY: Prevent changing health/financial visibility (always private)
+    if (health_visibility === 'shared' || financial_visibility === 'shared') {
+      return res.status(400).json({
+        error: 'Health and financial information must remain private for your safety'
+      });
+    }
+
+    // Build settings update
+    const settingsData = {
+      personal_visibility: personal_visibility || 'shared',
+      work_visibility: work_visibility || 'private',
+      health_visibility: 'private', // Force private - immutable
+      financial_visibility: 'private', // Force private - immutable
+      background_visibility: background_visibility || 'shared',
+      field_overrides: field_overrides ? JSON.stringify(field_overrides) : '{}',
+      updated_at: new Date().toISOString()
+    };
+
+    // Check if settings exist
+    const existingResult = await dbSafe.safeSelect('user_profile_privacy', { user_id: userId }, { limit: 1 });
+    const existing = dbSafe.parseResult(existingResult);
+
+    const profileHelpers = require('./src/utils/profileHelpers');
+
+    if (existing.length > 0) {
+      // Update existing settings
+      await dbSafe.safeUpdate('user_profile_privacy', settingsData, { user_id: userId });
+
+      // Log privacy change
+      await profileHelpers.logPrivacyChange(userId, existing[0], settingsData, {
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+      });
+    } else {
+      // Insert new settings
+      await dbSafe.safeInsert('user_profile_privacy', {
+        user_id: userId,
+        ...settingsData,
+        created_at: new Date().toISOString()
+      });
+    }
+
+    // PostgreSQL auto-commits, no manual save needed
+
+    res.json({
+      success: true,
+      message: 'Privacy settings updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating privacy settings:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Preview how profile appears to co-parent (privacy-filtered view)
+app.get('/api/user/profile/preview-coparent-view', async (req, res) => {
+  try {
+    let username = req.query.username || req.body.username;
+
+    // If no username provided, try to get from JWT token
+    if (!username) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET);
+          username = decoded.username;
+        } catch (err) {
+          // Token invalid, fall through to error
+        }
+      }
+    }
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required or provide valid authorization token' });
+    }
+
+    // Get user
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[0];
+
+    // Get privacy settings
+    const privacyResult = await dbSafe.safeSelect('user_profile_privacy', { user_id: user.id }, { limit: 1 });
+    const privacyRows = dbSafe.parseResult(privacyResult);
+
+    const profileHelpers = require('./src/utils/profileHelpers');
+    const privacySettings = privacyRows[0] || profileHelpers.getDefaultPrivacySettings();
+
+    // Build full profile
+    const baseProfile = {
+      username: user.username,
+      first_name: user.first_name || null,
+      last_name: user.last_name || null,
+      display_name: user.display_name || null,
+      preferred_name: user.preferred_name || null,
+      pronouns: user.pronouns || null,
+      birthdate: user.birthdate || null,
+      language: user.language || 'en',
+      timezone: user.timezone || null,
+      phone: user.phone || null,
+      city: user.city || null,
+      state: user.state || null,
+      zip: user.zip || null,
+      address: user.address || null,
+      employment_status: user.employment_status || null,
+      occupation: user.occupation || null,
+      employer: user.employer || null,
+      work_schedule: user.work_schedule || null,
+      schedule_flexibility: user.schedule_flexibility || null,
+      commute_time: user.commute_time || null,
+      travel_required: user.travel_required || null,
+      health_physical_conditions: user.health_physical_conditions || null,
+      health_physical_limitations: user.health_physical_limitations || null,
+      health_mental_conditions: user.health_mental_conditions || null,
+      health_mental_treatment: user.health_mental_treatment || null,
+      health_mental_history: user.health_mental_history || null,
+      health_substance_history: user.health_substance_history || null,
+      health_in_recovery: user.health_in_recovery || null,
+      health_recovery_duration: user.health_recovery_duration || null,
+      finance_income_level: user.finance_income_level || null,
+      finance_income_stability: user.finance_income_stability || null,
+      finance_employment_benefits: user.finance_employment_benefits || null,
+      finance_housing_status: user.finance_housing_status || null,
+      finance_housing_type: user.finance_housing_type || null,
+      finance_vehicles: user.finance_vehicles || null,
+      finance_debt_stress: user.finance_debt_stress || null,
+      finance_support_paying: user.finance_support_paying || null,
+      finance_support_receiving: user.finance_support_receiving || null,
+      background_birthplace: user.background_birthplace || null,
+      background_raised: user.background_raised || null,
+      background_family_origin: user.background_family_origin || null,
+      background_culture: user.background_culture || null,
+      background_religion: user.background_religion || null,
+      background_military: user.background_military || null,
+      background_military_branch: user.background_military_branch || null,
+      background_military_status: user.background_military_status || null,
+      education_level: user.education_level || null,
+      education_field: user.education_field || null,
+      profile_picture: user.profile_picture || null
+    };
+
+    // Apply privacy filtering as if viewing as co-parent (isOwnProfile = false)
+    const filteredProfile = profileHelpers.filterProfileByPrivacy(
+      baseProfile,
+      privacySettings,
+      false // This is a preview of co-parent view
+    );
+
+    res.json({
+      ...filteredProfile,
+      _preview_notice: 'This is how your co-parent sees your profile'
+    });
+  } catch (error) {
+    console.error('Error generating profile preview:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get profile completion status with section breakdown
+app.get('/api/user/profile/completion', async (req, res) => {
+  try {
+    let username = req.query.username || req.body.username;
+
+    // If no username provided, try to get from JWT token
+    if (!username) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET);
+          username = decoded.username;
+        } catch (err) {
+          // Token invalid, fall through to error
+        }
+      }
+    }
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required or provide valid authorization token' });
+    }
+
+    // Get user
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[0];
+    const profileHelpers = require('./src/utils/profileHelpers');
+
+    // Get section-by-section completion
+    const sectionCompletion = profileHelpers.getSectionCompletion(user);
+    const nextSuggestion = profileHelpers.getNextSuggestedSection(user);
+
+    res.json({
+      overall: sectionCompletion.overall,
+      sections: {
+        personal: sectionCompletion.personal,
+        work: sectionCompletion.work,
+        health: sectionCompletion.health,
+        financial: sectionCompletion.financial,
+        background: sectionCompletion.background
+      },
+      nextSuggestedSection: nextSuggestion,
+      isComplete: sectionCompletion.overall >= 100
+    });
+  } catch (error) {
+    console.error('Error fetching completion status:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =============================================================================
 // Contacts API endpoints
+// =============================================================================
 // Get all contacts for current user
 app.get('/api/contacts', async (req, res) => {
   try {
@@ -6406,7 +6945,7 @@ app.post('/api/contacts', async (req, res) => {
       return res.status(400).json({ error: 'Username and contact name are required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -6448,7 +6987,7 @@ app.post('/api/contacts', async (req, res) => {
       updated_at: now
     });
 
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     console.log('Contact created successfully:', {
       contactId,
@@ -6497,7 +7036,7 @@ app.put('/api/contacts/:contactId', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -6551,7 +7090,7 @@ app.put('/api/contacts/:contactId', async (req, res) => {
     if (linked_contact_id !== undefined) updateData.linked_contact_id = linked_contact_id || null;
 
     await dbSafe.safeUpdate('contacts', updateData, { id: contactId });
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     // Auto-complete onboarding tasks if conditions are met
     try {
@@ -6585,7 +7124,7 @@ app.delete('/api/contacts/:contactId', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -6611,7 +7150,7 @@ app.delete('/api/contacts/:contactId', async (req, res) => {
 
     // Delete contact
     await dbSafe.safeDelete('contacts', { id: contactId });
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     res.json({
       success: true,
@@ -6619,6 +7158,154 @@ app.delete('/api/contacts/:contactId', async (req, res) => {
     });
   } catch (error) {
     console.error('Error deleting contact:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ======================================
+// Observer/Mediator Analysis Endpoint
+// ======================================
+app.post('/api/mediate/analyze', verifyAuth, async (req, res) => {
+  try {
+    const { text, senderProfile = {}, receiverProfile = {} } = req.body;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: 'Message text is required' });
+    }
+
+    const user = req.user;
+    const db = require('./dbPostgres');
+    const dbSafe = require('./dbSafe');
+
+    // Get recent messages for context
+    const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+    const roomId = user.roomId || null;
+
+    // Get recent messages
+    let recentMessages = [];
+    if (roomId) {
+      const messagesQuery = `
+        SELECT * FROM messages
+        WHERE room_id = $1
+        ORDER BY timestamp DESC
+        LIMIT 15
+      `;
+      const messagesResult = await db.query(messagesQuery, [roomId]);
+      recentMessages = messagesResult.rows.length > 0 ? messagesResult.rows.reverse() : [];
+    }
+
+    // Get participant usernames
+    const participantUsernames = roomId 
+      ? await dbSafe.safeSelect('room_members', { room_id: roomId })
+          .then(result => dbSafe.parseResult(result).map(m => m.username))
+      : [user.username];
+
+    // Get contacts for context
+    // Mediator expects: array of objects with { name, relationship } OR array of strings (contact names)
+    // For language analyzer, it needs objects with name/relationship
+    // For contact context string, we format it separately
+    const contactsResult = await dbSafe.safeSelect('contacts', { user_id: userId });
+    const contactsData = dbSafe.parseResult(contactsResult);
+    
+    // Format as objects for mediator (used by language analyzer for child detection)
+    const existingContacts = contactsData.map(c => ({
+      name: c.contact_name,
+      relationship: c.relationship || 'contact',
+    }));
+    
+    // Format contact context string for AI prompt
+    const contactContextForAI = contactsData.length > 0
+      ? contactsData.map(c => `${c.contact_name} (${c.relationship || 'contact'})`).join(', ')
+      : null;
+
+    // Create message object for analysis
+    const message = {
+      text: text.trim(),
+      username: user.username,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Analyze using the Observer/Mediator framework
+    const analysis = await aiMediator.analyzeMessage(
+      message,
+      recentMessages,
+      participantUsernames,
+      existingContacts,
+      contactContextForAI,
+      roomId,
+      null, // taskContextForAI
+      null, // flaggedMessagesContext
+      null  // roleContext (can be enhanced with senderProfile/receiverProfile)
+    );
+
+    if (!analysis) {
+      // No intervention needed (STAY_SILENT)
+      return res.json({
+        action: 'STAY_SILENT',
+        escalation: { riskLevel: 'low', confidence: 0, reasons: [] },
+        emotion: {
+          currentEmotion: 'neutral',
+          stressLevel: 0,
+          stressTrajectory: 'stable',
+          emotionalMomentum: 0,
+          triggers: [],
+          conversationEmotion: 'neutral',
+        },
+        intervention: null,
+        originalText: text.trim(),
+      });
+    }
+
+    // Map the mediator's return format to the expected API format
+    // Mediator returns: { type: 'ai_intervention'|'ai_comment', action: 'INTERVENE'|'COMMENT', ... }
+    const result = {
+      action: analysis.action || 'STAY_SILENT',
+      escalation: analysis.escalation || {
+        riskLevel: 'low',
+        confidence: 0,
+        reasons: [],
+      },
+      emotion: analysis.emotion || {
+        currentEmotion: 'neutral',
+        stressLevel: 0,
+        stressTrajectory: 'stable',
+        emotionalMomentum: 0,
+        triggers: [],
+        conversationEmotion: 'neutral',
+      },
+      intervention: null,
+      originalText: text.trim(),
+    };
+
+    // Map intervention data based on type
+    if (analysis.type === 'ai_intervention' && analysis.action === 'INTERVENE') {
+      result.intervention = {
+        personalMessage: analysis.personalMessage || '',
+        tip1: analysis.tip1 || '',
+        rewrite1: analysis.rewrite1 || '',
+        rewrite2: analysis.rewrite2 || '',
+        comment: null,
+      };
+    } else if (analysis.type === 'ai_comment' && analysis.action === 'COMMENT') {
+      result.intervention = {
+        personalMessage: null,
+        tip1: null,
+        rewrite1: null,
+        rewrite2: null,
+        comment: analysis.text || '',
+      };
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error analyzing message:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -6637,7 +7324,7 @@ app.post('/api/contacts/detect-mentions', async (req, res) => {
       return res.status(400).json({ error: 'Message text and username are required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -6691,7 +7378,7 @@ app.post('/api/contacts/generate-profile', async (req, res) => {
       return res.status(400).json({ error: 'Contact data (name, relationship) and username are required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -6750,7 +7437,7 @@ app.get('/api/contacts/relationship-map', async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -6782,7 +7469,7 @@ app.post('/api/contacts/:contactId/enrich', async (req, res) => {
       return res.status(400).json({ error: 'Contact ID and username are required' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Get user ID
     const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
@@ -6826,7 +7513,7 @@ app.post('/api/contacts/:contactId/enrich', async (req, res) => {
 // Backfill co-parent contacts for existing shared rooms
 app.post('/api/admin/backfill-contacts', async (req, res) => {
   try {
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
 
     // Find all shared rooms (rooms with more than one member)
     const sharedRoomsQuery = `
@@ -6922,7 +7609,7 @@ app.post('/api/admin/backfill-contacts', async (req, res) => {
       }
     }
 
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
 
     res.json({
       success: true,
@@ -6972,7 +7659,7 @@ app.get('/api/room/shared-check/:username', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const db = await require('./db').getDb();
+    const db = require('./dbPostgres');
     // Check if user is in a room with more than one member
     const query = `
       SELECT COUNT(rm2.user_id) as member_count
@@ -7403,7 +8090,7 @@ app.post('/api/join/accept', async (req, res) => {
 
     // If user doesn't have email set, set it now (from invitation)
     if (!user.email) {
-      const db = await require('./db').getDb();
+      const db = require('./dbPostgres');
       // Update user email using safe update
       await dbSafe.safeUpdate('users', { email: connection.inviteeEmail }, { id: user.id });
     }
@@ -7829,7 +8516,7 @@ console.log(`🔒 CORS enabled for: ${allowedOrigins.join(', ')}`);
 console.log(`   Press Ctrl+C to stop`);
 
 // Log database initialization status (non-blocking)
-const dbModule = require('./db');
+const dbModule = require('./dbPostgres');
 dbModule.getDb().then(() => {
   console.log('✅ Database initialization completed');
 }).catch(err => {

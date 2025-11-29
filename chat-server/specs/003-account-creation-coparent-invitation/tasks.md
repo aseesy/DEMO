@@ -108,7 +108,7 @@ Create standalone library for invitation management with functions:
 
 **Technical Notes**:
 - Reference: `/Users/athenasees/Desktop/chat/chat-server/specs/003-account-creation-coparent-invitation/research.md` (Decisions 2, 3, 7)
-- Use existing db.js for database operations
+- Use PostgreSQL via dbPostgres.js and dbSafe.js for database operations
 - Token format: `crypto.randomBytes(32).toString('base64url')`
 - Hash format: `crypto.createHash('sha256').update(token).digest('hex')`
 
@@ -149,7 +149,7 @@ Create standalone library for in-app notification management with functions:
 **Technical Notes**:
 - Reference: data-model.md section 3 (InAppNotification entity)
 - JSONB data structure: `{invitation_id, inviter_id, inviter_name, room_id, action_url}`
-- Use existing db.js for database operations
+- Use PostgreSQL via dbPostgres.js and dbSafe.js for database operations
 
 **Dependencies**: T001 (database migration must run first)
 
@@ -263,7 +263,7 @@ Write comprehensive unit tests for invitationManager library:
 **Acceptance Criteria**:
 - [ ] Test file uses Jest framework (existing setup)
 - [ ] All 7 functions have test coverage
-- [ ] Tests use in-memory SQLite database (not production DB)
+- [ ] Tests use test PostgreSQL database (not production DB)
 - [ ] Tests clean up data after each test (afterEach hook)
 - [ ] Edge cases tested: duplicate tokens, expired tokens, missing data
 - [ ] Security tests: token length, randomness, hash consistency

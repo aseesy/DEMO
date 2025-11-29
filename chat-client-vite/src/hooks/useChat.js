@@ -178,7 +178,6 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
 
     // Listen for when a user joins the room (e.g., co-parent accepts invite)
     socket.on('user_joined', (data) => {
-      console.log('User joined room:', data);
       // Trigger a custom event that can be listened to by other components
       window.dispatchEvent(new CustomEvent('coparent-joined', { detail: data }));
     });
@@ -260,22 +259,85 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     }
   }, [currentView, messages]);
 
-  const sendMessage = (e) => {
+  const sendMessage = async (e) => {
     if (e?.preventDefault) e.preventDefault();
     const clean = inputMessage.trim();
     if (!clean || !socketRef.current) return;
-    socketRef.current.emit('send_message', {
-      text: clean,
-      isPreApprovedRewrite: isPreApprovedRewrite,
-      originalRewrite: originalRewrite
-    });
-    setInputMessage('');
-    setIsPreApprovedRewrite(false); // Reset the flag after sending
-    setOriginalRewrite(''); // Reset the original rewrite after sending
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+
+    // OBSERVER/MEDIATOR FRAMEWORK: Analyze message before sending
+    // Import dynamically to avoid circular dependencies
+    const { analyzeMessage, shouldSendMessage } = await import('../utils/messageAnalyzer.js');
+    
+    try {
+      // 1. Show "Analyzing..." state
+      setDraftCoaching({ 
+        analyzing: true, 
+        riskLevel: 'low',
+        shouldSend: false 
+      });
+
+      // 2. Analyze the message (get sender/receiver profiles from context if available)
+      // TODO: Get actual profiles from user context/contacts
+      const senderProfile = {
+        role: 'Parent',
+        position: 'unknown',
+        resources: 'unknown',
+        conflict_level: 'unknown',
+        abuse_history: 'None',
+      };
+      
+      const receiverProfile = {
+        has_new_partner: false, // TODO: Get from contacts/context
+        income_disparity: 'unknown',
+        distance: 'unknown',
+      };
+
+      const analysis = await analyzeMessage(clean, senderProfile, receiverProfile);
+
+      // 3. Traffic Control
+      const decision = shouldSendMessage(analysis);
+
+      if (decision.shouldSend) {
+        // SCENARIO A: CLEAN - Send the message
+        socketRef.current.emit('send_message', {
+          text: clean,
+          isPreApprovedRewrite: isPreApprovedRewrite,
+          originalRewrite: originalRewrite
+        });
+        setInputMessage('');
+        setIsPreApprovedRewrite(false);
+        setOriginalRewrite('');
+        setDraftCoaching(null); // Clear analysis
+      } else {
+        // SCENARIO B: CONFLICT DETECTED - Show Observer Card, don't send
+        setDraftCoaching({
+          analyzing: false,
+          riskLevel: analysis.escalation?.riskLevel || 'medium',
+          shouldSend: false,
+          observerData: decision.observerData,
+          originalText: clean,
+          analysis: analysis, // Store full analysis for UI
+        });
+        // Don't clear input - user can edit or use rewrite
+      }
+
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      socketRef.current.emit('typing', { isTyping: false });
+    } catch (error) {
+      console.error('Error analyzing message:', error);
+      // On error, allow message through (fail open)
+      socketRef.current.emit('send_message', {
+        text: clean,
+        isPreApprovedRewrite: isPreApprovedRewrite,
+        originalRewrite: originalRewrite
+      });
+      setInputMessage('');
+      setIsPreApprovedRewrite(false);
+      setOriginalRewrite('');
+      setDraftCoaching(null);
     }
-    socketRef.current.emit('typing', { isTyping: false });
   };
 
   const draftAnalysisTimeoutRef = React.useRef(null);
@@ -355,14 +417,6 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     socketRef.current.emit('add_to_thread', { messageId, threadId });
   }, []);
 
-  const removeFromThread = React.useCallback((messageId) => {
-    if (!socketRef.current || !socketRef.current.connected) {
-      setError('Not connected to chat server.');
-      return;
-    }
-    socketRef.current.emit('remove_from_thread', { messageId });
-  }, []);
-
   return {
     messages,
     inputMessage,
@@ -389,7 +443,6 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     getThreads,
     getThreadMessages,
     addToThread,
-    removeFromThread,
     socket: socketRef.current,
   };
 }

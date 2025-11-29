@@ -1,5 +1,6 @@
 import React from 'react';
 import { apiGet, apiPost, apiPut } from '../apiClient.js';
+import { logger } from '../utils/logger.js';
 
 // Minimal tasks hook to mirror the existing dashboard task behavior.
 // This focuses on loading tasks, limiting to 5, toggling status,
@@ -23,20 +24,17 @@ export function useTasks(username, isAuthenticated = true) {
   });
 
   const loadTasks = React.useCallback(async () => {
-    console.log('[useTasks] loadTasks called', { username, isAuthenticated, taskFilter, taskSearch });
     if (!username || !isAuthenticated) {
-      console.log('[useTasks] Skipping load - missing username or not authenticated', { username, isAuthenticated });
       setTasks([]);
       return;
     }
-    console.log('[useTasks] Starting to load tasks...');
     setIsLoadingTasks(true);
     try {
       const params = new URLSearchParams({
         username,
         search: taskSearch,
       });
-      
+
       // Handle different filter types
       if (taskFilter === 'open' || taskFilter === 'completed') {
         params.append('status', taskFilter);
@@ -46,14 +44,10 @@ export function useTasks(username, isAuthenticated = true) {
       // 'all' filter doesn't need any params
 
       const url = `/api/tasks?${params.toString()}`;
-      console.log('[useTasks] Making API request to:', url);
       const response = await apiGet(url);
-      console.log('[useTasks] API response status:', response.status, response.ok);
       if (response.ok) {
         const data = await response.json();
-        console.log('[useTasks] API response data:', data);
         if (Array.isArray(data)) {
-          console.log(`[useTasks] Loaded ${data.length} tasks for user ${username}, filter: ${taskFilter}`);
           // Sort by priority (high first) then by creation date (oldest first for dashboard)
           const priorityOrder = { high: 0, medium: 1, low: 2 };
           const sorted = [...data].sort((a, b) => {
@@ -70,15 +64,14 @@ export function useTasks(username, isAuthenticated = true) {
           });
           // Show all tasks (Feature 005: removed 5-task limit)
           setTasks(sorted);
-          console.log(`[useTasks] Loaded ${sorted.length} tasks for user ${username}`);
 
         } else {
-          console.warn('[useTasks] Response data is not an array:', data);
+          logger.warn('[useTasks] Response data is not an array:', data);
           setTasks([]);
         }
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error(`[useTasks] API error (${response.status}):`, errorData);
+        logger.apiError(`/api/tasks`, response.status, errorData.error || 'Unknown error');
         if (response.status === 401) {
           // User not authenticated - silently ignore
           setTasks([]);
@@ -88,7 +81,7 @@ export function useTasks(username, isAuthenticated = true) {
         }
       }
     } catch (err) {
-      console.error('[useTasks] Error loading tasks:', err);
+      logger.error('[useTasks] Error loading tasks', err);
       setTasks([]);
     } finally {
       setIsLoadingTasks(false);
@@ -98,12 +91,9 @@ export function useTasks(username, isAuthenticated = true) {
   React.useEffect(() => {
     // Only load tasks if authenticated and username is available
     // This prevents race conditions during auth verification
-    console.log('[useTasks] useEffect triggered', { isAuthenticated, username, hasLoadTasks: !!loadTasks });
     if (isAuthenticated && username) {
-      console.log('[useTasks] Conditions met, calling loadTasks');
       loadTasks();
     } else {
-      console.log('[useTasks] Conditions not met, clearing tasks', { isAuthenticated, username });
       setTasks([]);
     }
   }, [loadTasks, isAuthenticated, username]);
@@ -120,7 +110,7 @@ export function useTasks(username, isAuthenticated = true) {
         loadTasks();
       }
     } catch (err) {
-      console.error('Error updating task status (Vite):', err);
+      logger.error('Error updating task status', err);
     }
   };
 
@@ -167,7 +157,7 @@ export function useTasks(username, isAuthenticated = true) {
         alert(data.error || 'Failed to save task');
       }
     } catch (err) {
-      console.error('Error saving task (Vite):', err);
+      logger.error('Error saving task', err);
       alert('Failed to save task. Please try again.');
     }
   };

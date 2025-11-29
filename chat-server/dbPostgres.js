@@ -6,13 +6,14 @@ let db;
 let connectionReady = false;
 
 if (!DATABASE_URL) {
-    console.error('❌ DATABASE_URL is not set. PostgreSQL is required in production.');
+    console.error('❌ DATABASE_URL is not set. PostgreSQL is required in all environments.');
     console.error('💡 In production: Add PostgreSQL service in Railway dashboard');
-    console.error('💡 In development: Set DATABASE_URL or use SQLite (db.js)');
+    console.error('💡 In development: Set DATABASE_URL environment variable');
+    console.error('💡 Example: DATABASE_URL=postgresql://user:password@localhost:5432/dbname');
     // Dummy client that throws on queries with clear error
     db = {
         query: async () => {
-            throw new Error('DATABASE_URL not configured. PostgreSQL is required in production.');
+            throw new Error('DATABASE_URL not configured. PostgreSQL is required in all environments.');
         },
     };
 } else {
@@ -48,7 +49,7 @@ if (!DATABASE_URL) {
     db = pool;
 }
 
-// Export with connection status
+// Export with connection status and compatibility functions
 module.exports = Object.assign(db, {
     isReady: () => connectionReady,
     testConnection: async () => {
@@ -59,5 +60,12 @@ module.exports = Object.assign(db, {
         } catch (err) {
             return false;
         }
+    },
+    // Compatibility functions for migration from SQLite
+    getDb: async () => db, // Return the PostgreSQL pool
+    saveDatabase: () => {
+        // PostgreSQL auto-commits transactions, no manual save needed
+        // This is a no-op for compatibility with old SQLite code
+        return Promise.resolve();
     }
 });

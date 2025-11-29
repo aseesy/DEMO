@@ -52,7 +52,7 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
       created_at: new Date().toISOString()
     });
 
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
     console.log(`📝 Recorded ${feedbackType} feedback from ${username}`);
 
   } catch (error) {

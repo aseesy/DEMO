@@ -1,42 +1,40 @@
 # Database Persistence Issue
 
-## Problem
-Messages are not persisting because the database file (`chat.db`) is stored in an ephemeral filesystem on Railway/Vercel. Every time the server restarts or redeploys, the database file is wiped.
+## ✅ RESOLVED: Migrated to PostgreSQL
+
+**Status:** This issue has been resolved. The application now uses PostgreSQL exclusively.
 
 ## Current Setup
-- Using SQL.js (in-memory SQLite database)
-- Database file saved to: `process.env.DB_PATH || ./chat.db`
-- Database IS being saved correctly, but file is lost on restart
+- **Database:** PostgreSQL (required in all environments)
+- **Connection:** Via `DATABASE_URL` environment variable
+- **Persistence:** Automatic - PostgreSQL handles persistence
+- **Scalability:** Supports multiple servers and concurrent connections
 
-## Solutions
+## PostgreSQL Configuration
 
-### Option 1: Railway Volumes (Quick Fix)
-Configure Railway to use a persistent volume:
+### Required Environment Variable
+```bash
+DATABASE_URL=postgresql://user:password@host:port/database
+```
 
-1. In Railway dashboard, go to your service
-2. Add a volume mount (e.g., `/data`)
-3. Set environment variable: `DB_PATH=/data/chat.db`
-4. Redeploy
+### Setup Options
 
-**Pros:** Quick fix, minimal code changes
-**Cons:** Still using SQLite, not scalable, single-server only
-
-### Option 2: Migrate to PostgreSQL (Recommended)
-Use Railway Postgres or another managed database:
-
+#### Option 1: Railway Postgres (Recommended for Production)
 1. Add Railway Postgres plugin to your project
-2. Get connection string from Railway
-3. Replace SQL.js with `pg` (PostgreSQL client)
-4. Update all database queries to use PostgreSQL syntax
+2. Railway automatically provides `DATABASE_URL`
+3. No additional configuration needed
 
-**Pros:** Persistent, scalable, production-ready, supports multiple servers
-**Cons:** Requires code migration
+#### Option 2: Local PostgreSQL (Development)
+1. Install PostgreSQL locally
+2. Create a database: `createdb liaizen`
+3. Set `DATABASE_URL` in `.env` file
+4. Run migrations: `npm run migrate`
 
-### Option 3: Use Cloud Database Service
+#### Option 3: Other Cloud Providers
 - Supabase (PostgreSQL)
-- PlanetScale (MySQL)
-- MongoDB Atlas
-- Railway Postgres
+- Neon (PostgreSQL)
+- AWS RDS (PostgreSQL)
+- Google Cloud SQL (PostgreSQL)
 
 ## Current Database Schema
 The `messages` table includes:
@@ -48,15 +46,15 @@ The `messages` table includes:
 - Reactions and flagging
 
 ## Verification
-To check if database is persisting:
-1. Check server logs for: `✅ Database saved to: /path/to/chat.db`
-2. Check if `DB_PATH` environment variable is set
-3. Verify Railway volume is mounted (if using volumes)
-4. Check if database file exists after restart
+To check if database is working:
+1. Check server logs for: `✅ PostgreSQL connection test passed`
+2. Verify `DATABASE_URL` environment variable is set
+3. Test connection: `node test-postgres-connection.js`
+4. Check that tables exist: Run migrations if needed
 
-## Immediate Action
-Check Railway/Vercel environment variables:
-- Is `DB_PATH` set?
-- Is it pointing to a persistent volume?
-- Check server logs for database save errors
+## Migration Notes
+- All SQLite code has been removed
+- All database operations use PostgreSQL via `dbPostgres.js`
+- `dbSafe.js` provides safe query builders for PostgreSQL
+- Transactions are handled automatically by PostgreSQL
 

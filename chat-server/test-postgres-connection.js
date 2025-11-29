@@ -17,7 +17,7 @@ if (!DATABASE_URL) {
   console.error('\n💡 To set it up:');
   console.error('   1. Create a .env file in chat-server/ directory');
   console.error('   2. Add: DATABASE_URL=postgresql://user:password@localhost:5432/dbname');
-  console.error('\n💡 Or use SQLite for local dev (don\'t set DATABASE_URL)');
+  console.error('\n💡 PostgreSQL is required in all environments (development and production)');
   process.exit(1);
 }
 
@@ -130,6 +130,8 @@ pool.query('SELECT NOW() as current_time, version() as pg_version')
     pool.end();
     process.exit(1);
   });
+
+
 
 
 

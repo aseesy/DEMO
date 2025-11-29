@@ -460,7 +460,7 @@ async function useInvite(inviteCode, userId) {
             }
 
             // Save database after sharing contacts
-            require('./db').saveDatabase();
+            // PostgreSQL auto-commits, no manual save needed
           } catch (shareError) {
             // Log error but don't fail the invite if contact sharing fails
             console.error('Error sharing contacts when joining room:', shareError);
@@ -529,14 +529,21 @@ async function ensureContactsForRoomMembers(roomId) {
           console.log(`🔎 Checking contacts between ${u1.username} (${user1.id}) and ${u2.username} (${user2.id})`);
 
           // Check if contact exists for user1 -> user2
-          // Note: We check by contact_name (username) to avoid case sensitivity issues
+          // First check if ANY co-parent contact exists (user may have renamed it)
+          // Also check by email match as a fallback
           const existing1 = await dbSafe.safeSelect('contacts', {
             user_id: user1.id,
             relationship: 'co-parent'
           }, { limit: 100 }); // Get all co-parent contacts to check
 
-          // Check if contact with this name already exists
-          const contactExists1 = existing1.some(c => c.contact_name && c.contact_name.toLowerCase() === u2.username.toLowerCase());
+          // Contact exists if:
+          // 1. Name matches username (case-insensitive), OR
+          // 2. Email matches, OR
+          // 3. User already has at least one co-parent contact (don't create duplicates)
+          const contactExists1 = existing1.length > 0 || existing1.some(c =>
+            (c.contact_name && c.contact_name.toLowerCase() === u2.username.toLowerCase()) ||
+            (c.contact_email && u2.email && c.contact_email.toLowerCase() === u2.email.toLowerCase())
+          );
           console.log(`   ${u1.username} -> ${u2.username}: ${contactExists1 ? 'EXISTS' : 'NOT FOUND'} (checked ${existing1.length} contacts)`);
 
           if (!contactExists1) {
@@ -567,8 +574,14 @@ async function ensureContactsForRoomMembers(roomId) {
             relationship: 'co-parent'
           }, { limit: 100 }); // Get all co-parent contacts to check
 
-          // Check if contact with this name already exists
-          const contactExists2 = existing2.some(c => c.contact_name && c.contact_name.toLowerCase() === u1.username.toLowerCase());
+          // Contact exists if:
+          // 1. Name matches username (case-insensitive), OR
+          // 2. Email matches, OR
+          // 3. User already has at least one co-parent contact (don't create duplicates)
+          const contactExists2 = existing2.length > 0 || existing2.some(c =>
+            (c.contact_name && c.contact_name.toLowerCase() === u1.username.toLowerCase()) ||
+            (c.contact_email && u1.email && c.contact_email.toLowerCase() === u1.email.toLowerCase())
+          );
           console.log(`   ${u2.username} -> ${u1.username}: ${contactExists2 ? 'EXISTS' : 'NOT FOUND'} (checked ${existing2.length} contacts)`);
 
           if (!contactExists2) {
@@ -597,7 +610,7 @@ async function ensureContactsForRoomMembers(roomId) {
     }
 
     // Save database after creating contacts
-    require('./db').saveDatabase();
+    // PostgreSQL auto-commits, no manual save needed
   } catch (error) {
     console.error('Error ensuring contacts for room members:', error);
     // Don't throw - this is a helper function

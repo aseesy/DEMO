@@ -19,7 +19,7 @@
  */
 
 require('dotenv').config();
-const dbModule = require('./db');
+const db = require('./dbPostgres');
 const auth = require('./auth');
 const dbSafe = require('./dbSafe');
 
@@ -28,11 +28,9 @@ async function migratePasswords() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   try {
-    const db = await dbModule.getDb();
-    
-    // Get all users
-    const result = db.exec('SELECT id, username, password_hash FROM users');
-    const users = dbSafe.parseResult(result);
+    // Get all users from PostgreSQL
+    const usersResult = await dbSafe.safeSelect('users', {}, {});
+    const users = dbSafe.parseResult(usersResult);
 
     console.log(`Found ${users.length} users in database\n`);
 

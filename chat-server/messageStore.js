@@ -5,8 +5,9 @@ const dbPostgres = require('./dbPostgres');
  * Save a message to the database (PostgreSQL)
  */
 async function saveMessage(message) {
-  // Don't save private or flagged messages to database
-  if (message.private || message.flagged) {
+  // Don't save private, flagged, or pending_original messages to database
+  // pending_original messages are temporary UI-only messages that should never be persisted
+  if (message.private || message.flagged || message.type === 'pending_original') {
     return;
   }
 

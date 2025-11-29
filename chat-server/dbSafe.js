@@ -259,26 +259,19 @@ async function safeExec(query, params = []) {
  * For PostgreSQL, results are already in the correct format (array of objects)
  */
 function parseResult(result) {
-  // If result is already an array of objects (PostgreSQL format), return as-is
+  // PostgreSQL always returns an array of objects
   if (Array.isArray(result)) {
     return result;
   }
 
-  // Legacy SQLite format support (should not be needed, but kept for compatibility)
-  if (!result || result.length === 0 || result[0].values.length === 0) {
+  // If result is null/undefined or empty, return empty array
+  if (!result) {
     return [];
   }
 
-  const row = result[0];
-  const columns = row.columns;
-
-  return row.values.map(values => {
-    const obj = {};
-    values.forEach((value, index) => {
-      obj[columns[index]] = value;
-    });
-    return obj;
-  });
+  // Unexpected format - log warning and return empty array
+  console.warn('⚠️  Unexpected database result format:', typeof result);
+  return [];
 }
 
 // ============================================================================

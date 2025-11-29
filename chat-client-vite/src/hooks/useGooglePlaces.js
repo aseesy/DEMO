@@ -33,15 +33,15 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
     }
 
     if (!apiKey || apiKey.trim() === '') {
-      // Set error state in both dev and production to prevent infinite loading
-      const errorMsg = 'Google Places API key not configured';
-      googleMapsLoadingState.error = errorMsg;
-      setError(errorMsg);
-      
+      // Use specific error code for easier handling in UI components
+      const errorCode = 'GOOGLE_PLACES_NOT_CONFIGURED';
+      googleMapsLoadingState.error = errorCode;
+      setError(errorCode);
+
       // Log warning in development
       if (import.meta.env.DEV) {
         console.warn('Google Places API key not configured - address autocomplete will be unavailable');
-        console.warn('To configure: Set VITE_GOOGLE_PLACES_API_KEY in Vercel environment variables and redeploy');
+        console.warn('To configure: Set VITE_GOOGLE_PLACES_API_KEY in your .env file or Vercel environment variables');
       }
       return;
     }

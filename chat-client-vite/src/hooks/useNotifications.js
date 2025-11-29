@@ -41,17 +41,18 @@ export function useNotifications({ username, enabled = true }) {
     }
   }, [isSupported, permission]);
 
-  // Option C: No auto-request for browser notifications (toast handles everything)
-  // Browser notifications are now only used for PWA when app is closed
-  // React.useEffect(() => {
-  //   if (enabled && isSupported && permission === 'default' && !hasRequestedPermission) {
-  //     const timer = setTimeout(() => {
-  //       console.log('[useNotifications] Auto-requesting browser notification permission...');
-  //       requestPermission();
-  //     }, 2000);
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [enabled, isSupported, permission, hasRequestedPermission, requestPermission]);
+  // Auto-request notification permission when user first enters chat view
+  // Only request once, and only if permission hasn't been set yet
+  React.useEffect(() => {
+    if (enabled && isSupported && permission === 'default' && !hasRequestedPermission && username) {
+      // Wait a moment for the user to see the chat interface first
+      const timer = setTimeout(() => {
+        console.log('[useNotifications] Auto-requesting notification permission for new user...');
+        requestPermission();
+      }, 3000); // 3 second delay - gives user time to see the chat interface
+      return () => clearTimeout(timer);
+    }
+  }, [enabled, isSupported, permission, hasRequestedPermission, username, requestPermission]);
 
   // Show notification for a new message
   const showNotification = React.useCallback((message) => {
@@ -60,7 +61,13 @@ export function useNotifications({ username, enabled = true }) {
     // - Not supported
     // - Permission not granted
     // - Message is from current user
-    if (!enabled || !isSupported || permission !== 'granted') {
+    if (!enabled || !isSupported) {
+      console.debug('[useNotifications] Notifications disabled or not supported');
+      return;
+    }
+
+    if (permission !== 'granted') {
+      console.debug('[useNotifications] Permission not granted:', permission);
       return;
     }
 
@@ -71,33 +78,114 @@ export function useNotifications({ username, enabled = true }) {
     // Show native browser notification like SMS - always show, regardless of page visibility
     // This provides immediate notification on computer/phone, similar to text messages
     try {
-      const notification = new Notification('New message from ' + message.username, {
-        body: (message.text || message.content || '').length > 100
-          ? (message.text || message.content || '').substring(0, 100) + '...'
-          : (message.text || message.content || ''),
+      const messageText = (message.text || message.content || '').trim();
+      const truncatedText = messageText.length > 100
+        ? messageText.substring(0, 100) + '...'
+        : messageText;
+
+      // Ensure we have permission before creating notification
+      if (Notification.permission !== 'granted') {
+        console.warn('[useNotifications] Permission not granted, cannot show notification');
+        return;
+      }
+
+      // Create the notification with all options to ensure it shows visually
+      // CRITICAL: requireInteraction: true makes notification stay visible until user interacts
+      const notificationOptions = {
+        body: truncatedText || 'You have a new message',
         icon: '/flower-icon.svg', // Your app icon
         badge: '/flower-icon.svg',
-        tag: 'chat-message-' + message.id, // Prevent duplicate notifications
-        requireInteraction: false,
-        silent: false,
+        tag: 'chat-message-' + (message.id || Date.now()), // Prevent duplicate notifications
+        requireInteraction: true, // CRITICAL: Keep notification visible until user clicks/dismisses
+        silent: false, // Ensure sound plays AND visual notification shows
+        timestamp: Date.now(),
+        // Add vibrate pattern for mobile devices (if supported)
+        vibrate: [200, 100, 200],
+        // Add data for notification click handling
+        data: {
+          url: window.location.href,
+          messageId: message.id,
+          username: message.username,
+        },
+      };
+
+      console.log('[useNotifications] Creating notification:', {
+        title: 'New message from ' + message.username,
+        body: truncatedText,
+        permission: Notification.permission,
       });
+
+      const notification = new Notification('New message from ' + message.username, notificationOptions);
+
+      // Verify notification was created
+      if (!notification) {
+        console.error('[useNotifications] Notification object is null');
+        return;
+      }
+
+      console.log('[useNotifications] Notification created successfully');
 
       // Click notification to focus window
       notification.onclick = () => {
+        console.log('[useNotifications] Notification clicked');
         window.focus();
         notification.close();
+        // Optionally navigate to chat view
+        if (window.location.hash !== '#chat') {
+          window.location.hash = 'chat';
+        }
       };
 
-      // Auto-close after 5 seconds
-      setTimeout(() => {
-        notification.close();
-      }, 5000);
+      // Handle notification close
+      notification.onclose = () => {
+        console.log('[useNotifications] Notification closed');
+      };
 
-      // Play notification sound (optional)
+      // Handle notification error
+      notification.onerror = (error) => {
+        console.error('[useNotifications] Notification error:', error);
+      };
+
+      // Handle notification show - verify it's actually visible
+      notification.onshow = () => {
+        console.log('[useNotifications] Notification shown - should be visible on screen');
+        // If notification is shown but user can't see it, it might be:
+        // 1. In Notification Center (macOS) - check System Preferences > Notifications
+        // 2. Do Not Disturb is enabled
+        // 3. Browser is suppressing notifications when window is focused
+        // 4. Notification banner style is set to "None" in system settings
+      };
+
+      // Don't auto-close if requireInteraction is true - let user dismiss manually
+      // Only auto-close after 30 seconds as a fallback
+      setTimeout(() => {
+        if (notification) {
+          try {
+            notification.close();
+          } catch (e) {
+            // Notification may already be closed
+          }
+        }
+      }, 30000);
+
+      // Play notification sound
       playNotificationSound();
 
     } catch (error) {
-      console.error('Error showing notification:', error);
+      console.error('[useNotifications] Error showing notification:', error);
+      // Fallback: try to show a simpler notification
+      try {
+        console.log('[useNotifications] Attempting fallback notification');
+        const fallbackNotification = new Notification('LiaiZen', {
+          body: 'You have a new message',
+          icon: '/flower-icon.svg',
+          silent: false,
+        });
+        setTimeout(() => fallbackNotification.close(), 5000);
+        playNotificationSound();
+      } catch (fallbackError) {
+        console.error('[useNotifications] Fallback notification also failed:', fallbackError);
+      }
     }
   }, [enabled, isSupported, permission, username]);
 

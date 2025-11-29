@@ -42,7 +42,7 @@ This feature extends the existing authentication system to **require** new users
 
 **Language/Version**: Node.js 18+ (JavaScript ES6+)
 **Primary Dependencies**: Express.js 4.18.2, PostgreSQL 8.16.3, bcrypt 6.0.0, nodemailer 6.9.7, Socket.io 4.6.1
-**Storage**: PostgreSQL (production), SQLite (local development only)
+**Storage**: PostgreSQL (all environments - development and production)
 **Testing**: Jest 30.2.0 (existing test framework)
 **Target Platform**: Linux server (Railway production), macOS (local development)
 **Project Type**: web (backend at `/Users/athenasees/Desktop/chat/chat-server/`, frontend at `/Users/athenasees/Desktop/chat/chat-client-vite/`)

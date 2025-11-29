@@ -45,13 +45,13 @@ export function UpdatesPanel({ username, onContactClick, setCurrentView }) {
         );
       case 'agreement':
         return (
-          <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
       case 'invite':
         return (
-          <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         );
@@ -135,10 +135,10 @@ export function UpdatesPanel({ username, onContactClick, setCurrentView }) {
             onClick={() => handlePersonClick(update.personName)}
             className="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all bg-white border-2 border-teal-light hover:border-teal-medium hover:shadow-sm touch-manipulation active:scale-[0.98]"
           >
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white ${update.type === 'expense' ? 'bg-amber-500' :
-                  update.type === 'agreement' ? 'bg-indigo-500' :
-                    update.type === 'invite' ? 'bg-purple-500' :
+                  update.type === 'agreement' ? 'bg-teal-medium' :
+                    update.type === 'invite' ? 'bg-teal-medium' :
                       'bg-teal-medium'
                 }`}>
                 {update.type === 'expense' ? '$' :
@@ -149,12 +149,12 @@ export function UpdatesPanel({ username, onContactClick, setCurrentView }) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
-                <div className="w-3.5 h-3.5 flex-shrink-0">
+                <div className="w-3.5 h-3.5 shrink-0">
                   {getUpdateIcon(update.type)}
                 </div>
                 <span className={`text-xs font-semibold transition-colors truncate ${update.type === 'expense' ? 'text-amber-600' :
-                    update.type === 'agreement' ? 'text-indigo-600' :
-                      update.type === 'invite' ? 'text-purple-600' :
+                    update.type === 'agreement' ? 'text-teal-medium' :
+                      update.type === 'invite' ? 'text-teal-medium' :
                         'text-teal-medium'
                   }`}>
                   {update.type === 'message' ? update.personName :
@@ -167,7 +167,7 @@ export function UpdatesPanel({ username, onContactClick, setCurrentView }) {
                   : update.description}
               </p>
             </div>
-            <div className="flex-shrink-0 text-[10px] text-gray-500 whitespace-nowrap">
+            <div className="shrink-0 text-[10px] text-gray-500 whitespace-nowrap">
               {formatTimeAgo(update.timestamp)}
             </div>
           </div>

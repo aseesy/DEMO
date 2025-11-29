@@ -15,6 +15,7 @@ import { CommunicationStatsWidget } from './components/CommunicationStatsWidget.
 import { Navigation } from './components/Navigation.jsx';
 import { LandingPage } from './components/LandingPage.jsx';
 import { PWAInstallButton } from './components/PWAInstallButton.jsx';
+import { ObserverCard } from './components/ObserverCard.jsx';
 import { TaskFormModal } from './components/modals/TaskFormModal.jsx';
 import { WelcomeModal } from './components/modals/WelcomeModal.jsx';
 import { ProfileTaskModal } from './components/modals/ProfileTaskModal.jsx';
@@ -36,10 +37,10 @@ import {
   trackThreadCreated,
 } from './utils/analytics.js';
 import { setUserProperties } from './utils/analyticsEnhancements.js';
+import { logger } from './utils/logger.js';
 
-// Vite-migrated shell for the main LiaiZen app.
-// Currently focuses on login/signup; chat, tasks, contacts, and profile
-// will be brought over next.
+// Main LiaiZen chat room component
+// Handles chat, tasks, contacts, profile, and all core app functionality
 
 function AccountView({ username }) {
   const {
@@ -337,17 +338,8 @@ function ChatRoom() {
     }
   }, [isAuthenticated, currentView]);
 
-  // Log task loading conditions
+  // Task loading conditions
   const shouldLoadTasks = isAuthenticated && !showLanding && !isCheckingAuth;
-  React.useEffect(() => {
-    console.log('[ChatRoom] Task loading conditions:', {
-      username,
-      isAuthenticated,
-      showLanding,
-      isCheckingAuth,
-      shouldLoadTasks
-    });
-  }, [username, isAuthenticated, showLanding, isCheckingAuth, shouldLoadTasks]);
   
   const tasksState = useTasks(username, shouldLoadTasks);
   const {
@@ -460,35 +452,46 @@ function ChatRoom() {
     }
   }, [currentView, messages.length]);
 
-  // Listen for rewrite-sent event to remove original message
-  const removeMessagesRef = React.useRef(removeMessages);
-  React.useEffect(() => {
-    removeMessagesRef.current = removeMessages;
-  }, [removeMessages]);
+  // Helper function to determine if a message should be removed when rewrite is sent
+  const shouldRemoveMessageOnRewrite = React.useCallback((message, pendingOriginal) => {
+    // Always remove pending_original and ai_intervention messages
+    if (message.type === 'pending_original' || message.type === 'ai_intervention') {
+      return true;
+    }
 
+    // If we have a pending original message to remove, check if this message matches it
+    if (!pendingOriginal) {
+      return false;
+    }
+
+    // Match flagged/private messages that match the pending original
+    const isFlaggedPrivate = message.flagged === true && message.private === true;
+    const matchesUsername = message.username === pendingOriginal.username;
+    const matchesText = message.text === pendingOriginal.text;
+    
+    // Match by exact timestamp or within 2 seconds (handles timing differences)
+    const matchesTimestamp = 
+      message.timestamp === pendingOriginal.timestamp ||
+      (message.timestamp && pendingOriginal.timestamp &&
+        Math.abs(
+          new Date(message.timestamp).getTime() - 
+          new Date(pendingOriginal.timestamp).getTime()
+        ) < 2000);
+
+    return isFlaggedPrivate && matchesUsername && matchesText && matchesTimestamp;
+  }, []);
+
+  // Listen for rewrite-sent event to remove original message
   React.useEffect(() => {
     const handleRewriteSent = () => {
       // Remove all pending original messages and interventions when a new message is sent
-      if (removeMessagesRef.current) {
-        removeMessagesRef.current((m) =>
-          m.type === 'pending_original' ||
-          m.type === 'ai_intervention' ||
-          (pendingOriginalMessageToRemove &&
-            m.flagged === true &&
-            m.private === true &&
-            m.username === pendingOriginalMessageToRemove.username &&
-            m.text === pendingOriginalMessageToRemove.text &&
-            (m.timestamp === pendingOriginalMessageToRemove.timestamp ||
-              (m.timestamp && pendingOriginalMessageToRemove.timestamp &&
-                Math.abs(new Date(m.timestamp).getTime() - new Date(pendingOriginalMessageToRemove.timestamp).getTime()) < 2000)))
-        );
-        setPendingOriginalMessageToRemove(null);
-      }
+      removeMessages((m) => shouldRemoveMessageOnRewrite(m, pendingOriginalMessageToRemove));
+      setPendingOriginalMessageToRemove(null);
     };
 
     window.addEventListener('rewrite-sent', handleRewriteSent);
     return () => window.removeEventListener('rewrite-sent', handleRewriteSent);
-  }, [pendingOriginalMessageToRemove]);
+  }, [pendingOriginalMessageToRemove, removeMessages, shouldRemoveMessageOnRewrite]);
 
   // Wrap sendMessage to track analytics and clean up pending messages
   const sendMessage = React.useCallback((e) => {
@@ -612,7 +615,7 @@ function ChatRoom() {
     setCurrentView('contacts');
     // TODO: In future, can add search/filter functionality to ContactsPanel
     // and pass memberName as a filter prop
-    console.log('Navigating to contacts for:', memberName);
+    logger.debug('Navigating to contacts for:', memberName);
   };
 
   // Detect contact suggestions in messages and show modal
@@ -639,7 +642,7 @@ function ChatRoom() {
     const inviteCode = inviteCodeFromUrl || inviteCodeFromStorage;
 
     if (inviteCode) {
-      console.log('Invite code detected:', inviteCode, inviteCodeFromUrl ? 'from URL' : 'from localStorage');
+      logger.debug('Invite code detected:', { inviteCode, source: inviteCodeFromUrl ? 'URL' : 'localStorage' });
       setPendingInviteCode(inviteCode);
 
       // Store in localStorage if from URL
@@ -674,7 +677,7 @@ function ChatRoom() {
 
         const data = await response.json();
         if (response.ok && data.success) {
-          console.log('Successfully accepted invite, joined room:', data.roomId);
+          logger.debug('Successfully accepted invite, joined room:', data.roomId);
           setPendingInviteCode(null);
           // Clear invite code from localStorage after successful acceptance
           localStorage.removeItem('pending_invite_code');
@@ -694,10 +697,10 @@ function ChatRoom() {
           setInviteError(errorMsg);
           // Show manual invite UI if auto-accept failed
           setShowManualInvite(true);
-          console.error('Invite acceptance failed:', errorMsg);
+          logger.error('Invite acceptance failed', errorMsg);
         }
       } catch (err) {
-        console.error('Error accepting invite (Vite):', err);
+        logger.error('Error accepting invite', err);
         const errorMsg = err.message || 'Failed to accept invite. Please check your connection and try again.';
         setInviteError(errorMsg);
         // Show manual invite UI if auto-accept failed
@@ -750,7 +753,7 @@ function ChatRoom() {
         data = await response.json();
 
         if (response.ok && data.success) {
-          console.log('Successfully accepted co-parent invite:', data);
+          logger.debug('Successfully accepted co-parent invite:', data);
           setPendingInviteCode(null);
           setManualInviteCode('');
           setShowManualInvite(false);
@@ -778,7 +781,7 @@ function ChatRoom() {
         data = await response.json();
 
         if (response.ok && data.success) {
-          console.log('Successfully accepted room invite:', data.roomId);
+          logger.debug('Successfully accepted room invite:', data.roomId);
           setPendingInviteCode(null);
           setManualInviteCode('');
           setShowManualInvite(false);
@@ -801,7 +804,7 @@ function ChatRoom() {
         setInviteError(data?.error || 'Failed to accept invite. Please check the code and try again.');
       }
     } catch (err) {
-      console.error('Error manually accepting invite:', err);
+      logger.error('Error manually accepting invite', err);
       setInviteError('Failed to accept invite. Please check your connection and try again.');
     } finally {
       setIsAcceptingInvite(false);
@@ -837,7 +840,7 @@ function ChatRoom() {
       if (response.ok) {
         const data = await response.json();
         const hasMultiple = data.hasMultipleMembers === true;
-        console.log(`[checkRoomMembers] API response: hasMultipleMembers=${hasMultiple}`);
+        // Only log when status changes to reduce noise (logging removed to prevent re-renders)
         setHasCoParentConnected(hasMultiple);
 
         // Update user properties when co-parent connects
@@ -849,7 +852,6 @@ function ChatRoom() {
         }
       } else if (response.status === 404) {
         // Endpoint doesn't exist yet (server not restarted) - fallback to message-based detection
-        console.log('[checkRoomMembers] API endpoint not found, using message-based detection');
         if (messages.length > 0 && username) {
           const uniqueUsernames = new Set(
             messages
@@ -857,17 +859,12 @@ function ChatRoom() {
               .map((msg) => msg.username),
           );
           const hasMultiple = uniqueUsernames.size >= 2;
-          console.log(`[checkRoomMembers] Message-based: ${uniqueUsernames.size} unique users, hasMultiple=${hasMultiple}`);
           setHasCoParentConnected(hasMultiple);
         } else {
           setHasCoParentConnected(false);
         }
       } else {
-        // Other error - try message-based detection
-        // Don't log 401/500 errors - these are handled gracefully
-        if (response.status !== 401 && response.status !== 500) {
-          console.log(`[checkRoomMembers] API error ${response.status}, using message-based detection`);
-        }
+        // Other error - try message-based detection silently
         if (messages.length > 0 && username) {
           const uniqueUsernames = new Set(
             messages
@@ -875,7 +872,6 @@ function ChatRoom() {
               .map((msg) => msg.username),
           );
           const hasMultiple = uniqueUsernames.size >= 2;
-          console.log(`[checkRoomMembers] Message-based: ${uniqueUsernames.size} unique users, hasMultiple=${hasMultiple}`);
           setHasCoParentConnected(hasMultiple);
         } else {
           setHasCoParentConnected(false);
@@ -898,8 +894,8 @@ function ChatRoom() {
         return; // Exit early, don't update state on network errors
       }
 
-      // Only log non-network errors
-      console.error('Error checking room members (Vite):', err);
+      // Only log non-network errors (but silently - don't spam console)
+      // logger.error('Error checking room members', err);
 
       // Fallback to message-based detection if API fails (only for non-network errors)
       if (messages.length > 0 && username) {
@@ -909,7 +905,6 @@ function ChatRoom() {
             .map((msg) => msg.username),
         );
         const hasMultiple = uniqueUsernames.size >= 2;
-        console.log(`[checkRoomMembers] Error fallback: ${uniqueUsernames.size} unique users, hasMultiple=${hasMultiple}`);
         setHasCoParentConnected(hasMultiple);
       } else {
         setHasCoParentConnected(false);
@@ -918,39 +913,41 @@ function ChatRoom() {
   }, [isAuthenticated, messages, username]);
 
   React.useEffect(() => {
-    // Check immediately when authenticated and in chat view
-    if (currentView === 'chat' && isAuthenticated) {
+    // Check immediately when authenticated and in chat view (only if not already connected)
+    if (currentView === 'chat' && isAuthenticated && !hasCoParentConnected) {
       checkRoomMembers();
     }
 
-    // Also check periodically while in chat view (every 3 seconds)
+    // Poll periodically - faster when waiting for co-parent, slower once connected
     let interval;
     if (currentView === 'chat' && isAuthenticated) {
-      interval = setInterval(checkRoomMembers, 3000);
+      // 5 seconds when waiting for co-parent, 60 seconds once connected
+      const pollInterval = hasCoParentConnected ? 60000 : 5000;
+      interval = setInterval(checkRoomMembers, pollInterval);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [currentView, isAuthenticated, checkRoomMembers]);
+  }, [currentView, isAuthenticated, hasCoParentConnected, checkRoomMembers]);
 
   // Check once when user first authenticates (in case they're already in a room)
   React.useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !hasCoParentConnected) {
       // Small delay to ensure user data is loaded
       const timer = setTimeout(() => {
         checkRoomMembers();
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, checkRoomMembers]);
+  }, [isAuthenticated]); // Intentionally minimal deps - only run once on auth
 
   // Also check when new messages arrive (indicates someone else might be in room)
   React.useEffect(() => {
     if (isAuthenticated && messages.length > 0 && !hasCoParentConnected) {
       checkRoomMembers();
     }
-  }, [messages.length, isAuthenticated, hasCoParentConnected, checkRoomMembers]);
+  }, [messages.length]); // Intentionally minimal deps - only trigger on new messages
 
   // Check for pending or accepted invitations
   const checkInvitations = React.useCallback(async () => {
@@ -986,7 +983,7 @@ function ChatRoom() {
       }
     } catch (err) {
       // Silently handle errors - don't block UI
-      console.log('[checkInvitations] Error checking invitations:', err.message);
+      logger.error('[checkInvitations] Error checking invitations', err);
     }
   }, [isAuthenticated]);
 
@@ -1018,7 +1015,7 @@ function ChatRoom() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Invite API error:', errorData);
+        logger.apiError('/api/invitations', response.status, errorData.error || 'Unknown error');
         if (response.status === 401) {
           setInviteError('Your session has expired. Please refresh the page and try again.');
         } else {
@@ -1049,7 +1046,7 @@ function ChatRoom() {
         setInviteLink(`${currentOrigin}/accept-invite?code=${data.shortCode}`);
       }
     } catch (err) {
-      console.error('Error loading invite:', err);
+      logger.error('Error loading invite', err);
       setInviteError('Unable to create invite. Please check your connection and try again.');
     } finally {
       setIsLoadingInvite(false);
@@ -1072,13 +1069,8 @@ function ChatRoom() {
     navigate('/signin');
   }, [navigate]);
 
-  // Debug logging
-  console.log('[ChatRoom] Render state:', {
-    isAuthenticated,
-    showLanding,
-    isCheckingAuth,
-    username
-  });
+  // Debug logging - commented out to reduce console noise
+  // logger.debug('[ChatRoom] Render state:', { isAuthenticated, showLanding, isCheckingAuth, username });
 
   // Show landing page for first-time visitors
   if (!isAuthenticated && showLanding) {
@@ -1640,15 +1632,8 @@ function ChatRoom() {
                       !hasCoParentConnected &&
                       !hasPendingInvitation &&
                       !hasAcceptedInvitation;
-                    if (process.env.NODE_ENV === 'development') {
-                      console.log('[Invite Button] shouldShowInvite:', shouldShowInvite, {
-                        isAuthenticated,
-                        inviteLink: !!inviteLink,
-                        hasCoParentConnected,
-                        hasPendingInvitation,
-                        hasAcceptedInvitation
-                      });
-                    }
+                    // Debug logging commented out to reduce console noise
+                    // logger.debug('[Invite Button] shouldShowInvite:', { shouldShowInvite, isAuthenticated, inviteLink: !!inviteLink, hasCoParentConnected, hasPendingInvitation, hasAcceptedInvitation });
                     return shouldShowInvite ? (
                       <button
                         type="button"
@@ -1836,7 +1821,7 @@ function ChatRoom() {
                                     setInviteCopied(true);
                                     setTimeout(() => setInviteCopied(false), 2000);
                                   } catch (err) {
-                                    console.error('Copy failed:', err);
+                                    logger.error('Copy failed', err);
                                   }
                                 }}
                                 className="p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
@@ -2075,12 +2060,15 @@ function ChatRoom() {
                                   }
                                 };
 
-                                // Render pending original message as a "not sent" bubble
+                                // Render pending original message as a "not sent" bubble with ! icon
                                 if (isPendingOriginal) {
                                   return (
                                     <div key={msg.id} className="mb-4 first:mt-0 flex justify-end">
                                       <div className="max-w-[75%] sm:max-w-[60%] md:max-w-[55%]">
                                         <div className="flex items-center gap-2 mb-1 justify-end">
+                                          <div className="w-4 h-4 rounded-full bg-orange-400 flex items-center justify-center shrink-0">
+                                            <span className="text-white text-xs font-bold">!</span>
+                                          </div>
                                           <span className="text-xs text-orange-600 font-medium">Not sent yet</span>
                                         </div>
                                         <div className="rounded-2xl px-4 py-2.5 bg-orange-100 border-2 border-orange-300 border-dashed">
@@ -2121,29 +2109,13 @@ function ChatRoom() {
                                         )}
                                         {!isComment && (
                                           <>
-                                            {/* Feature 006: Show original message that triggered mediation */}
-                                            {msg.originalMessage?.text && (
-                                              <div className="mb-3 p-3 bg-orange-50/60 border border-orange-200/40 rounded-lg">
-                                                <div className="flex items-start gap-2">
-                                                  <div className="w-4 h-4 rounded-full bg-orange-400 flex items-center justify-center shrink-0 mt-0.5">
-                                                    <span className="text-white text-xs font-bold">!</span>
-                                                  </div>
-                                                  <div>
-                                                    <p className="text-xs font-semibold text-orange-700 mb-1">Your message (not sent):</p>
-                                                    <p className="text-sm text-orange-900 leading-snug font-normal italic">
-                                                      "{msg.originalMessage.text}"
-                                                    </p>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            )}
                                             {msg.explanation && (
-                                              <div className="mb-3 p-3 bg-blue-50/60 border border-blue-200/40 rounded-lg">
+                                              <div className="mb-3 p-3 bg-teal-lightest/60 border border-teal-light/40 rounded-lg">
                                                 <div className="flex items-start gap-2">
-                                                  <svg className="w-3.5 h-3.5 text-blue-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                                  <svg className="w-3.5 h-3.5 text-teal-medium mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                   </svg>
-                                                  <p className="text-sm text-blue-900 leading-snug font-normal">
+                                                  <p className="text-sm text-teal-dark leading-snug font-normal">
                                                     {msg.explanation.replace(/^ADDRESS:\s*/i, '').replace(/^Address:\s*/i, '').replace(/^Address\s*/i, '').replace(/\bAddress\b/gi, '').trim()}
                                                   </p>
                                                 </div>
@@ -2153,14 +2125,14 @@ function ChatRoom() {
                                               <p className="text-base text-gray-900 leading-snug mb-3 font-normal" style={{ fontSize: '15px' }}>{msg.personalMessage.replace(/^ADDRESS:\s*/i, '').replace(/^Address:\s*/i, '').replace(/^Address\s*/i, '').replace(/\bAddress\b/gi, '').trim()}</p>
                                             )}
                                             {msg.tip1 && (
-                                              <div className="mb-3">
+                                              <div className="mb-3 p-2 bg-teal-lightest border border-teal-light rounded-lg">
                                                 <div className="flex items-center gap-1.5 mb-1.5">
-                                                  <svg className="w-3.5 h-3.5 text-teal-dark shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                                  <svg className="w-3.5 h-3.5 text-teal-medium shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                                   </svg>
-                                                  <p className="text-xs font-semibold text-gray-600">Tip</p>
+                                                  <p className="text-xs font-semibold text-teal-dark">Tip</p>
                                                 </div>
-                                                <p className="text-base text-gray-700 leading-snug font-normal ml-5" style={{ fontSize: '15px' }}>
+                                                <p className="text-sm text-teal-dark font-medium ml-5" style={{ fontSize: '15px' }}>
                                                   {msg.tip1.replace(/^ONE TIP:\s*/i, '').replace(/^one tip:\s*/i, '').trim()}
                                                 </p>
                                               </div>
@@ -2224,7 +2196,7 @@ function ChatRoom() {
                                                     }}
                                                     className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors min-h-[44px]"
                                                   >
-                                                    Edit Myself
+                                                    Edit Existing message
                                                   </button>
                                                 </div>
                                               </div>
@@ -2304,8 +2276,8 @@ function ChatRoom() {
                                             <div
                                               className={`relative py-3.5 px-4 rounded-lg text-base leading-snug ${isOwn
                                                 ? isLastInGroup
-                                                  ? 'text-white rounded-br-sm'
-                                                  : 'text-white'
+                                                  ? 'text-white rounded-br-sm bg-teal-medium'
+                                                  : 'text-white bg-teal-medium'
                                                 : isLastInGroup
                                                   ? 'bg-white border border-gray-200 text-gray-900 rounded-bl-sm'
                                                   : 'bg-white border border-gray-200 text-gray-900'
@@ -2314,7 +2286,6 @@ function ChatRoom() {
                                               style={{
                                                 fontFamily: "'Inter', sans-serif",
                                                 fontSize: '15px',
-                                                ...(isOwn && !isFlagged && { backgroundColor: '#4DA8B0' })
                                               }}
                                             >
                                               {isInThread && thread && (
@@ -2478,6 +2449,49 @@ function ChatRoom() {
                           </div>
                         </div>
                       )}
+
+                      {/* Observer Card - Shows when message triggers intervention */}
+                      {draftCoaching && draftCoaching.observerData && !draftCoaching.shouldSend && (
+                        <div className="px-4 sm:px-6 md:px-8 pb-3">
+                          <ObserverCard
+                            observerData={draftCoaching.observerData}
+                            originalText={draftCoaching.originalText || inputMessage}
+                            onUseRewrite={(rewrite) => {
+                              setInputMessage(rewrite);
+                              setIsPreApprovedRewrite(true);
+                              setOriginalRewrite(rewrite);
+                              setDraftCoaching(null);
+                            }}
+                            onEditMyself={() => {
+                              // Keep original text in input, clear observer card
+                              setDraftCoaching(null);
+                            }}
+                            onSendOriginal={() => {
+                              // Send original message anyway (bypass mediation)
+                              if (socket && socket.connected) {
+                                socket.emit('send_message', {
+                                  text: draftCoaching.originalText || inputMessage,
+                                  isPreApprovedRewrite: false,
+                                  bypassMediation: true,
+                                });
+                                setInputMessage('');
+                                setDraftCoaching(null);
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Loading state while analyzing */}
+                      {draftCoaching && draftCoaching.analyzing && (
+                        <div className="px-4 sm:px-6 md:px-8 pb-3">
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-teal-medium" />
+                            <span>Analyzing message...</span>
+                          </div>
+                        </div>
+                      )}
+
                       <form
                         onSubmit={sendMessage}
                         className="bg-white px-4 sm:px-6 md:px-8 py-3 flex items-end gap-3 safe-area-inset-bottom"
@@ -2489,7 +2503,7 @@ function ChatRoom() {
                             onChange={handleInputChange}
                             placeholder="Type a message..."
                             rows={1}
-                            className={`flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px] max-h-32 resize-none font-normal leading-snug ${draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend
+                            className={`flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px] max-h-32 resize-none font-normal leading-snug ${draftCoaching && draftCoaching.observerData && !draftCoaching.shouldSend
                               ? 'border-orange-300 placeholder-orange-400'
                               : ''
                               }`}
@@ -2600,17 +2614,34 @@ function ChatRoom() {
                                   <p className="text-xs">Please enable notifications in your browser settings</p>
                                 </div>
                               ) : (
-                                <button
-                                  onClick={notifications.requestPermission}
-                                  className="w-full px-5 py-3 bg-teal-medium text-white rounded-lg font-semibold hover:bg-teal-dark transition-all shadow-sm hover:shadow-md min-h-[44px]"
-                                >
-                                  Enable Notifications
-                                </button>
+                                <div className="space-y-3">
+                                  <div className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-lg">
+                                    <p className="font-medium mb-1">Get notified of new messages</p>
+                                    <p className="text-xs text-gray-600">Enable notifications to receive alerts when your co-parent sends a message, even when the app is closed.</p>
+                                  </div>
+                                  <button
+                                    onClick={notifications.requestPermission}
+                                    className="w-full px-5 py-3 bg-teal-medium text-white rounded-lg font-semibold hover:bg-teal-dark transition-all shadow-sm hover:shadow-md min-h-[44px]"
+                                  >
+                                    Enable Notifications
+                                  </button>
+                                </div>
                               )}
 
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-gray-500 mb-2">
                                 You'll get a notification every time your co-parent sends a message
                               </p>
+                              {notifications.permission === 'granted' && (
+                                <div className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg mt-2">
+                                  <p className="font-medium mb-1">Not seeing notifications?</p>
+                                  <ul className="text-xs space-y-1 list-disc list-inside">
+                                    <li>Check macOS: System Settings → Notifications → [Your Browser] → Allow Notifications & Banner style</li>
+                                    <li>Check Do Not Disturb / Focus mode is off</li>
+                                    <li>Notifications may appear in Notification Center (top-right corner)</li>
+                                    <li>Some browsers suppress notifications when the window is focused</li>
+                                  </ul>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">

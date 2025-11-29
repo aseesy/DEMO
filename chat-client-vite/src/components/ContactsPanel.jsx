@@ -1,6 +1,7 @@
 import React from 'react';
 import { useContacts } from '../hooks/useContacts.js';
 import { useGooglePlaces } from '../hooks/useGooglePlaces.js';
+import { useGooglePlacesSchool } from '../hooks/useGooglePlacesSchool.js';
 import { useActivities } from '../hooks/useActivities.js';
 import { ActivityCard } from './ActivityCard.jsx';
 import { AddActivityModal } from './modals/AddActivityModal.jsx';
@@ -47,6 +48,8 @@ function disambiguateContacts(contacts) {
 export function ContactsPanel({ username }) {
   // Address autocomplete ref
   const addressInputRef = React.useRef(null);
+  // School autocomplete ref
+  const schoolInputRef = React.useRef(null);
   const {
     contacts,
     isLoadingContacts,
@@ -74,6 +77,19 @@ export function ContactsPanel({ username }) {
   }, [contactFormData, setContactFormData]);
 
   useGooglePlaces(addressInputRef, handlePlaceSelected);
+
+  // School autocomplete callback
+  const handleSchoolSelected = React.useCallback((schoolInfo) => {
+    setContactFormData({
+      ...contactFormData,
+      school: schoolInfo.name,
+      school_address: schoolInfo.address,
+      school_lat: schoolInfo.lat,
+      school_lng: schoolInfo.lng,
+    });
+  }, [contactFormData, setContactFormData]);
+
+  useGooglePlacesSchool(schoolInputRef, handleSchoolSelected);
 
   // AI profile assistant state
   const [isGeneratingProfile, setIsGeneratingProfile] = React.useState(false);
@@ -435,50 +451,34 @@ export function ContactsPanel({ username }) {
                 </div>
 
                 {/* Relationship-specific fields */}
-                {(contactFormData.relationship === 'My Child' || contactFormData.relationship === "My Partner's Child") && (
+                {(contactFormData.relationship === 'My Child' || contactFormData.relationship === "My Partner's Child" || contactFormData.relationship === "My Co-Parent's Child") && (
                   <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-teal-medium mb-1">
-                          Age
-                        </label>
-                        <input
-                          type="number"
-                          value={contactFormData.child_age || ''}
-                          onChange={(e) =>
-                            setContactFormData({ ...contactFormData, child_age: e.target.value })
-                          }
-                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
-                          placeholder="Age"
-                          min="0"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-teal-medium mb-1">
-                          Birthdate
-                        </label>
-                        <input
-                          type="date"
-                          value={contactFormData.child_birthdate || ''}
-                          onChange={(e) =>
-                            setContactFormData({ ...contactFormData, child_birthdate: e.target.value })
-                          }
-                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
-                        />
-                      </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
+                        Birthdate
+                      </label>
+                      <input
+                        type="date"
+                        value={contactFormData.child_birthdate || ''}
+                        onChange={(e) =>
+                          setContactFormData({ ...contactFormData, child_birthdate: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-teal-medium mb-1">
                         School
                       </label>
                       <input
+                        ref={schoolInputRef}
                         type="text"
                         value={contactFormData.school || ''}
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, school: e.target.value })
                         }
                         className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
-                        placeholder="School name"
+                        placeholder="Start typing school name..."
                       />
                     </div>
                     <div>
@@ -606,6 +606,151 @@ export function ContactsPanel({ username }) {
                         )}
                       </div>
                     )}
+
+                    {/* Child Health Section */}
+                    <div className="bg-teal-lightest rounded-lg p-3 space-y-3 mt-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        <h4 className="font-semibold text-teal-medium text-sm">Health Information</h4>
+                      </div>
+
+                      {/* Physical Health */}
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-teal-medium border-b border-teal-light pb-1">Physical Health</p>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Conditions</label>
+                          <textarea
+                            value={contactFormData.child_health_physical_conditions || ''}
+                            onChange={(e) =>
+                              setContactFormData({ ...contactFormData, child_health_physical_conditions: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                            rows={2}
+                            placeholder="Any physical health conditions..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Allergies</label>
+                          <textarea
+                            value={contactFormData.child_health_allergies || ''}
+                            onChange={(e) =>
+                              setContactFormData({ ...contactFormData, child_health_allergies: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                            rows={2}
+                            placeholder="Food, environmental, medication allergies..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Medications</label>
+                          <textarea
+                            value={contactFormData.child_health_medications || ''}
+                            onChange={(e) =>
+                              setContactFormData({ ...contactFormData, child_health_medications: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                            rows={2}
+                            placeholder="Current medications and dosages..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Doctor/Pediatrician</label>
+                          <input
+                            type="text"
+                            value={contactFormData.child_health_doctor || ''}
+                            onChange={(e) =>
+                              setContactFormData({ ...contactFormData, child_health_doctor: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                            placeholder="Primary care doctor name and contact..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* Mental Health */}
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-teal-medium border-b border-teal-light pb-1">Mental Health</p>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Conditions</label>
+                          <textarea
+                            value={contactFormData.child_health_mental_conditions || ''}
+                            onChange={(e) =>
+                              setContactFormData({ ...contactFormData, child_health_mental_conditions: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                            rows={2}
+                            placeholder="Any mental health conditions..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Diagnosis</label>
+                          <textarea
+                            value={contactFormData.child_health_mental_diagnosis || ''}
+                            onChange={(e) =>
+                              setContactFormData({ ...contactFormData, child_health_mental_diagnosis: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                            rows={2}
+                            placeholder="Official diagnoses if any..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Treatment</label>
+                          <textarea
+                            value={contactFormData.child_health_mental_treatment || ''}
+                            onChange={(e) =>
+                              setContactFormData({ ...contactFormData, child_health_mental_treatment: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                            rows={2}
+                            placeholder="Current treatments or therapies..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Therapist</label>
+                          <input
+                            type="text"
+                            value={contactFormData.child_health_therapist || ''}
+                            onChange={(e) =>
+                              setContactFormData({ ...contactFormData, child_health_therapist: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                            placeholder="Therapist name and contact..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* Developmental */}
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-teal-medium border-b border-teal-light pb-1">Developmental</p>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Delays</label>
+                          <textarea
+                            value={contactFormData.child_health_developmental_delays || ''}
+                            onChange={(e) =>
+                              setContactFormData({ ...contactFormData, child_health_developmental_delays: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                            rows={2}
+                            placeholder="Any developmental delays or concerns..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Supports</label>
+                          <textarea
+                            value={contactFormData.child_health_developmental_supports || ''}
+                            onChange={(e) =>
+                              setContactFormData({ ...contactFormData, child_health_developmental_supports: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                            rows={2}
+                            placeholder="IEP, 504 plan, tutoring, speech therapy, etc..."
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </>
                 )}
 
@@ -613,16 +758,15 @@ export function ContactsPanel({ username }) {
                   <>
                     <div>
                       <label className="block text-xs font-semibold text-teal-medium mb-1">
-                        How long have you been together?
+                        When did you start dating?
                       </label>
                       <input
-                        type="text"
+                        type="date"
                         value={contactFormData.partner_duration || ''}
                         onChange={(e) =>
                           setContactFormData({ ...contactFormData, partner_duration: e.target.value })
                         }
                         className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
-                        placeholder="e.g., 2 years, 6 months"
                       />
                     </div>
                     <div>
@@ -674,6 +818,121 @@ export function ContactsPanel({ username }) {
                         placeholder="Start typing address..."
                       />
                     </div>
+
+                    {/* Financial Section */}
+                    <div className="bg-teal-lightest rounded-lg p-3 space-y-3 mt-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h4 className="font-semibold text-teal-medium text-sm">Financial</h4>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Do they pay child support?</label>
+                        <select
+                          value={contactFormData.coparent_pays_child_support || ''}
+                          onChange={(e) =>
+                            setContactFormData({ ...contactFormData, coparent_pays_child_support: e.target.value })
+                          }
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
+                        >
+                          <option value="">Select...</option>
+                          <option value="yes">Yes</option>
+                          <option value="no">No</option>
+                          <option value="sometimes">Sometimes/Inconsistent</option>
+                          <option value="pending">Pending court order</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Do they receive child support?</label>
+                        <select
+                          value={contactFormData.coparent_receives_child_support || ''}
+                          onChange={(e) =>
+                            setContactFormData({ ...contactFormData, coparent_receives_child_support: e.target.value })
+                          }
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
+                        >
+                          <option value="">Select...</option>
+                          <option value="yes">Yes</option>
+                          <option value="no">No</option>
+                          <option value="pending">Pending court order</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Their income compared to yours</label>
+                        <select
+                          value={contactFormData.coparent_income_comparison || ''}
+                          onChange={(e) =>
+                            setContactFormData({ ...contactFormData, coparent_income_comparison: e.target.value })
+                          }
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
+                        >
+                          <option value="">Select...</option>
+                          <option value="less">Less than mine</option>
+                          <option value="equal">About equal</option>
+                          <option value="more">More than mine</option>
+                          <option value="unknown">I don't know</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Work Section */}
+                    <div className="bg-teal-lightest rounded-lg p-3 space-y-3 mt-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <h4 className="font-semibold text-teal-medium text-sm">Work</h4>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Occupation</label>
+                        <input
+                          type="text"
+                          value={contactFormData.coparent_occupation || ''}
+                          onChange={(e) =>
+                            setContactFormData({ ...contactFormData, coparent_occupation: e.target.value })
+                          }
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                          placeholder="Their job or profession..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Work Schedule</label>
+                        <select
+                          value={contactFormData.coparent_work_schedule || ''}
+                          onChange={(e) =>
+                            setContactFormData({ ...contactFormData, coparent_work_schedule: e.target.value })
+                          }
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
+                        >
+                          <option value="">Select...</option>
+                          <option value="9to5">Standard 9-5</option>
+                          <option value="shift">Shift work</option>
+                          <option value="remote">Remote/Work from home</option>
+                          <option value="parttime">Part-time</option>
+                          <option value="irregular">Irregular hours</option>
+                          <option value="unemployed">Not currently working</option>
+                          <option value="unknown">I don't know</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Schedule Flexibility</label>
+                        <select
+                          value={contactFormData.coparent_work_flexibility || ''}
+                          onChange={(e) =>
+                            setContactFormData({ ...contactFormData, coparent_work_flexibility: e.target.value })
+                          }
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
+                        >
+                          <option value="">Select...</option>
+                          <option value="very_flexible">Very flexible</option>
+                          <option value="somewhat_flexible">Somewhat flexible</option>
+                          <option value="not_flexible">Not flexible</option>
+                          <option value="unknown">I don't know</option>
+                        </select>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-xs font-semibold text-teal-medium mb-1">
                         What aspects of co-parenting are most difficult?

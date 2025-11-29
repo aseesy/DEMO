@@ -1,25 +1,37 @@
 import { API_BASE_URL } from './config.js';
 import { trackAPIError, trackAPIResponseTime } from './utils/analyticsEnhancements.js';
+import { storageHelpers } from './utils/storageKeys.js';
 
 // Thin wrappers around fetch so we have a single place to adjust
 // base URLs, credentials, and common headers.
+
+/**
+ * Get authentication token from localStorage
+ * @returns {string|null} The auth token or null if not available
+ */
+function getAuthToken() {
+  return storageHelpers.getAuthToken();
+}
+
+/**
+ * Add Authorization header to headers object if token is available
+ * @param {Object} headers - Existing headers object
+ * @returns {Object} Headers with Authorization added if applicable
+ */
+function addAuthHeader(headers = {}) {
+  const token = getAuthToken();
+  if (token && !headers.Authorization && !headers.authorization) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 export async function apiGet(path, options = {}) {
   const endpoint = path;
   const startTime = performance.now();
   
-  // Get token from localStorage to include in Authorization header
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token_backup') : null;
-  
   try {
-    const headers = {
-      ...(options.headers || {}),
-    };
-    
-    // Add Authorization header if token is available and not already set
-    if (token && !headers.Authorization && !headers.authorization) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    const headers = addAuthHeader(options.headers || {});
     
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'GET',
@@ -51,20 +63,11 @@ export async function apiPost(path, body, options = {}) {
   const endpoint = path;
   const startTime = performance.now();
   
-  // Get token from localStorage to include in Authorization header
-  // This ensures authenticated requests work even if cookies aren't sent
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token_backup') : null;
-  
   try {
-    const headers = {
+    const headers = addAuthHeader({
       'Content-Type': 'application/json',
       ...(options.headers || {}),
-    };
-    
-    // Add Authorization header if token is available and not already set
-    if (token && !headers.Authorization && !headers.authorization) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    });
     
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'POST',
@@ -97,19 +100,11 @@ export async function apiPut(path, body, options = {}) {
   const endpoint = path;
   const startTime = performance.now();
   
-  // Get token from localStorage to include in Authorization header
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token_backup') : null;
-  
   try {
-    const headers = {
+    const headers = addAuthHeader({
       'Content-Type': 'application/json',
       ...(options.headers || {}),
-    };
-    
-    // Add Authorization header if token is available and not already set
-    if (token && !headers.Authorization && !headers.authorization) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    });
     
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'PUT',
@@ -144,16 +139,8 @@ export async function apiDelete(path, params = {}) {
   const queryString = new URLSearchParams(params).toString();
   const url = queryString ? `${API_BASE_URL}${path}?${queryString}` : `${API_BASE_URL}${path}`;
   
-  // Get token from localStorage to include in Authorization header
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token_backup') : null;
-  
   try {
-    const headers = {};
-    
-    // Add Authorization header if token is available
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    const headers = addAuthHeader({});
     
     const response = await fetch(url, {
       method: 'DELETE',

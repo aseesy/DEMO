@@ -1,5 +1,6 @@
 import React from 'react';
 import { apiGet, apiPost, apiPut } from '../apiClient.js';
+import { toBackendRelationship, toDisplayRelationship } from '../utils/relationshipMapping.js';
 
 export function useContacts(username, isAuthenticated = true) {
   const [contacts, setContacts] = React.useState([]);
@@ -30,6 +31,24 @@ export function useContacts(username, isAuthenticated = true) {
     has_children: '',
     custody_arrangement: '',
     linked_contact_id: '',
+    // Child health fields
+    child_health_physical_conditions: '',
+    child_health_allergies: '',
+    child_health_medications: '',
+    child_health_doctor: '',
+    child_health_mental_conditions: '',
+    child_health_mental_diagnosis: '',
+    child_health_mental_treatment: '',
+    child_health_therapist: '',
+    child_health_developmental_delays: '',
+    child_health_developmental_supports: '',
+    // Co-parent financial and work fields
+    coparent_pays_child_support: '',
+    coparent_receives_child_support: '',
+    coparent_income_comparison: '',
+    coparent_occupation: '',
+    coparent_work_schedule: '',
+    coparent_work_flexibility: '',
   });
   const [isSavingContact, setIsSavingContact] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -87,7 +106,8 @@ export function useContacts(username, isAuthenticated = true) {
       if (response.ok) {
         const data = await response.json();
         const contactsList = data.contacts || [];
-        console.log('Contacts loaded:', contactsList.length, 'contacts for', username);
+        // Debug log commented out to reduce console noise
+        // console.log('Contacts loaded:', contactsList.length, 'contacts for', username);
         setContacts(contactsList);
       } else if (response.status === 401) {
         // User not authenticated - silently ignore
@@ -111,8 +131,7 @@ export function useContacts(username, isAuthenticated = true) {
 
   // Reload contacts when a co-parent joins the room
   React.useEffect(() => {
-    const handleCoParentJoined = (event) => {
-      console.log('Co-parent joined event received, reloading contacts...', event.detail);
+    const handleCoParentJoined = () => {
       // Reload contacts after a short delay to ensure backend has created them
       setTimeout(() => {
         loadContacts(isAuthenticated);
@@ -151,6 +170,24 @@ export function useContacts(username, isAuthenticated = true) {
       has_children: '',
       custody_arrangement: '',
       linked_contact_id: '',
+      // Child health fields
+      child_health_physical_conditions: '',
+      child_health_allergies: '',
+      child_health_medications: '',
+      child_health_doctor: '',
+      child_health_mental_conditions: '',
+      child_health_mental_diagnosis: '',
+      child_health_mental_treatment: '',
+      child_health_therapist: '',
+      child_health_developmental_delays: '',
+      child_health_developmental_supports: '',
+      // Co-parent financial and work fields
+      coparent_pays_child_support: '',
+      coparent_receives_child_support: '',
+      coparent_income_comparison: '',
+      coparent_occupation: '',
+      coparent_work_schedule: '',
+      coparent_work_flexibility: '',
     });
   };
 
@@ -167,10 +204,8 @@ export function useContacts(username, isAuthenticated = true) {
     setIsSavingContact(true);
     setError('');
     try {
-      const relationshipValue =
-        contactFormData.relationship === 'My Co-Parent'
-          ? 'co-parent'
-          : contactFormData.relationship;
+      // Normalize relationship value for backend storage
+      const relationshipValue = toBackendRelationship(contactFormData.relationship);
 
       const path = editingContact ? `/api/contacts/${editingContact.id}` : '/api/contacts';
       const method = editingContact ? apiPut : apiPost;
@@ -248,16 +283,8 @@ export function useContacts(username, isAuthenticated = true) {
 
   const editContact = (contact) => {
     setEditingContact(contact);
-    // Normalize relationship values to match dropdown options
-    let relationshipDisplay = contact.relationship || '';
-    if (contact.relationship) {
-      // Convert lowercase to title case to match dropdown options
-      if (contact.relationship.toLowerCase() === 'co-parent' || contact.relationship.toLowerCase() === 'my co-parent') {
-        relationshipDisplay = 'My Co-Parent';
-      } else if (contact.relationship.toLowerCase() === 'my child') {
-        relationshipDisplay = 'My Child';
-      }
-    }
+    // Normalize relationship values to match dropdown options using utility
+    const relationshipDisplay = toDisplayRelationship(contact.relationship);
     setContactFormData({
       contact_name: contact.contact_name || '',
       contact_email: contact.contact_email || '',
@@ -281,6 +308,24 @@ export function useContacts(username, isAuthenticated = true) {
       has_children: contact.has_children || '',
       custody_arrangement: contact.custody_arrangement || '',
       linked_contact_id: contact.linked_contact_id || '',
+      // Child health fields
+      child_health_physical_conditions: contact.child_health_physical_conditions || '',
+      child_health_allergies: contact.child_health_allergies || '',
+      child_health_medications: contact.child_health_medications || '',
+      child_health_doctor: contact.child_health_doctor || '',
+      child_health_mental_conditions: contact.child_health_mental_conditions || '',
+      child_health_mental_diagnosis: contact.child_health_mental_diagnosis || '',
+      child_health_mental_treatment: contact.child_health_mental_treatment || '',
+      child_health_therapist: contact.child_health_therapist || '',
+      child_health_developmental_delays: contact.child_health_developmental_delays || '',
+      child_health_developmental_supports: contact.child_health_developmental_supports || '',
+      // Co-parent financial and work fields
+      coparent_pays_child_support: contact.coparent_pays_child_support || '',
+      coparent_receives_child_support: contact.coparent_receives_child_support || '',
+      coparent_income_comparison: contact.coparent_income_comparison || '',
+      coparent_occupation: contact.coparent_occupation || '',
+      coparent_work_schedule: contact.coparent_work_schedule || '',
+      coparent_work_flexibility: contact.coparent_work_flexibility || '',
     });
     setShowContactForm(true);
   };
