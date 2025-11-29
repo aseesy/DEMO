@@ -307,22 +307,24 @@ async function acceptPairing(params, db, roomManager) {
 
   const acceptor = acceptorResult.rows[0];
 
-  // Create shared room
+  // Create shared room using createCoParentRoom which properly adds both members
   let sharedRoomId = null;
-  if (roomManager) {
+  if (roomManager && roomManager.createCoParentRoom) {
     try {
-      const roomName = `${pairing.initiator_username} & ${acceptor.username}`;
-      const room = await roomManager.createRoom({
-        name: roomName,
-        createdBy: pairing.parent_a_id,
-        isPrivate: true,
-        members: [pairing.parent_a_id, acceptorId],
-      }, db);
-      sharedRoomId = room.id;
+      const room = await roomManager.createCoParentRoom(
+        pairing.parent_a_id,
+        acceptorId,
+        pairing.initiator_username,
+        acceptor.username
+      );
+      sharedRoomId = room.roomId;
+      console.log(`✅ Created shared room ${sharedRoomId} for pairing ${pairingId}`);
     } catch (error) {
       console.error('Failed to create shared room:', error);
       // Continue without room - can be created later
     }
+  } else {
+    console.warn('⚠️ roomManager.createCoParentRoom not available, skipping room creation');
   }
 
   // Update pairing to active

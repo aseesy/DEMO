@@ -7934,6 +7934,67 @@ app.post('/api/admin/cleanup-test-data', async (req, res) => {
   }
 });
 
+// Repair pairing - create missing room for active pairings
+app.post('/api/admin/repair-pairing', async (req, res) => {
+  const { secret } = req.body;
+
+  // Simple secret check for admin access
+  if (secret !== 'liaizen-test-cleanup-2024') {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    // Find active pairings without a shared room
+    const pairingsWithoutRoom = await db.query(`
+      SELECT ps.*,
+             ua.username as parent_a_username,
+             ub.username as parent_b_username
+      FROM pairing_sessions ps
+      JOIN users ua ON ps.parent_a_id = ua.id
+      JOIN users ub ON ps.parent_b_id = ub.id
+      WHERE ps.status = 'active'
+        AND (ps.shared_room_id IS NULL OR ps.shared_room_id = '')
+    `);
+
+    const results = {
+      pairingsFound: pairingsWithoutRoom.rows.length,
+      roomsCreated: 0,
+      errors: []
+    };
+
+    for (const pairing of pairingsWithoutRoom.rows) {
+      try {
+        console.log(`🔧 Repairing pairing ${pairing.id}: ${pairing.parent_a_username} & ${pairing.parent_b_username}`);
+
+        // Create the room
+        const room = await roomManager.createCoParentRoom(
+          pairing.parent_a_id,
+          pairing.parent_b_id,
+          pairing.parent_a_username,
+          pairing.parent_b_username
+        );
+
+        // Update the pairing with the room ID
+        await db.query(
+          'UPDATE pairing_sessions SET shared_room_id = $1 WHERE id = $2',
+          [room.roomId, pairing.id]
+        );
+
+        results.roomsCreated++;
+        console.log(`✅ Created room ${room.roomId} for pairing ${pairing.id}`);
+      } catch (error) {
+        console.error(`❌ Failed to repair pairing ${pairing.id}:`, error);
+        results.errors.push({ pairingId: pairing.id, error: error.message });
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (error) {
+    console.error('❌ Repair error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // =============================================================================
 
 // Graceful shutdown
