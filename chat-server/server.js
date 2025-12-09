@@ -319,8 +319,10 @@ const adminRoutes = require('./routes/admin');
 const figmaRoutes = require('./routes/figma');
 const aiRoutes = require('./routes/ai');
 const connectionsRoutes = require('./routes/connections');
+const waitlistRoutes = require('./routes/waitlist');
 
 app.use('/api/auth', authRoutes);
+app.use('/api/waitlist', waitlistRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/dashboard', dashboardRoutes);

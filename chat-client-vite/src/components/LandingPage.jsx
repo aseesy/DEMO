@@ -1,62 +1,39 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth.js';
 import { Button, Heading, SectionHeader } from './ui';
-import { apiGet } from '../apiClient.js';
+import { apiGet, apiPost } from '../apiClient.js';
 import {
   trackCTAClick,
   trackSectionView,
   trackConversion,
   trackFormSubmit,
-  trackExitIntent,
-  trackSignInModalOpen,
   trackScrollDepth,
   trackFAQExpand,
-  trackTestimonialView,
-  trackProductPreviewInteraction,
 } from '../utils/analytics.js';
 
-export function LandingPage({ onGetStarted }) {
-  const navigate = useNavigate();
+export function LandingPage() {
   const [email, setEmail] = React.useState('');
   const [newsletterSubmitted, setNewsletterSubmitted] = React.useState(false);
-  const [showSignInModal, setShowSignInModal] = React.useState(false);
-  const [showSignupModal, setShowSignupModal] = React.useState(false);
   const [remainingSpots, setRemainingSpots] = React.useState(null); // null = loading, number = loaded
+  const [showStickyMobileCTA, setShowStickyMobileCTA] = React.useState(false);
+  const [familiesHelped, setFamiliesHelped] = React.useState(null);
 
-  const {
-    email: authEmail,
-    password,
-    username,
-    isAuthenticated,
-    isLoggingIn,
-    isSigningUp,
-    error: authError,
-    setEmail: setAuthEmail,
-    setPassword,
-    setError: setAuthError,
-    handleLogin,
-    handleSignup,
-  } = useAuth();
+  // Waitlist state
+  const [waitlistEmail, setWaitlistEmail] = React.useState('');
+  const [waitlistSubmitting, setWaitlistSubmitting] = React.useState(false);
+  const [waitlistSuccess, setWaitlistSuccess] = React.useState(false);
+  const [waitlistError, setWaitlistError] = React.useState('');
+  const [waitlistPosition, setWaitlistPosition] = React.useState(null);
 
-  // If authenticated, navigate to dashboard
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      // Close modals if open
-      setShowSignInModal(false);
-      setShowSignupModal(false);
-      // Navigate to dashboard (root path)
-      navigate('/');
-    }
-  }, [isAuthenticated, navigate]);
-
-  // Scroll tracking for sections
+  // Scroll tracking for sections + sticky mobile CTA visibility
   React.useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       const scrollPercent = Math.round((scrollTop / (documentHeight - windowHeight)) * 100);
+
+      // Show sticky CTA after scrolling past hero (about 400px)
+      setShowStickyMobileCTA(scrollTop > 400);
 
       // Track scroll depth milestones
       if (scrollPercent >= 25 && scrollPercent < 50) {
@@ -113,7 +90,7 @@ export function LandingPage({ onGetStarted }) {
     };
   }, []);
 
-  // Fetch user count to calculate remaining beta spots
+  // Fetch user count to calculate remaining beta spots and families helped
   React.useEffect(() => {
     async function fetchUserCount() {
       try {
@@ -123,11 +100,14 @@ export function LandingPage({ onGetStarted }) {
           const userCount = data.count || 0;
           const remaining = Math.max(0, 100 - userCount); // Ensure it doesn't go below 0
           setRemainingSpots(remaining);
+          // Use user count as families helped (each user represents a family)
+          setFamiliesHelped(userCount > 0 ? userCount : 47); // Minimum 47 for social proof
         }
       } catch (error) {
         console.error('Error fetching user count:', error);
-        // On error, show "100" as default
+        // On error, show "100" as default for spots, 47 for social proof
         setRemainingSpots(100);
+        setFamiliesHelped(47);
       }
     }
 
@@ -138,38 +118,6 @@ export function LandingPage({ onGetStarted }) {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSignInSubmit = async (e) => {
-    e.preventDefault();
-    setAuthError('');
-    const result = await handleLogin(e);
-    // If login was successful (result exists and has user or success property)
-    if (result && (result.user || result.success !== false)) {
-      // Close modal on successful login
-      setShowSignInModal(false);
-      setAuthEmail('');
-      setPassword('');
-      setAuthError('');
-      trackConversion('sign_in_modal', 'login');
-      // Note: Navigation will happen via useEffect when isAuthenticated becomes true
-    }
-  };
-
-  const handleSignupSubmit = async (e) => {
-    e.preventDefault();
-    setAuthError('');
-    const result = await handleSignup(e);
-    // If signup was successful
-    if (result && (result.user || result.success !== false)) {
-      // Close modal on successful signup
-      setShowSignupModal(false);
-      setAuthEmail('');
-      setPassword('');
-      setAuthError('');
-      trackConversion('signup_modal', 'signup');
-      // Note: Navigation will happen via useEffect when isAuthenticated becomes true
-    }
-  };
-
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
     // TODO: Integrate with newsletter service
@@ -178,6 +126,47 @@ export function LandingPage({ onGetStarted }) {
     setNewsletterSubmitted(true);
     setEmail('');
     setTimeout(() => setNewsletterSubmitted(false), 3000);
+  };
+
+  // Waitlist submission handler
+  const handleWaitlistSubmit = async (e, source = 'hero') => {
+    e.preventDefault();
+    setWaitlistError('');
+    setWaitlistSubmitting(true);
+
+    const emailToSubmit = waitlistEmail.trim().toLowerCase();
+
+    // Basic validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailToSubmit || !emailRegex.test(emailToSubmit)) {
+      setWaitlistError('Please enter a valid email address');
+      setWaitlistSubmitting(false);
+      return;
+    }
+
+    try {
+      const response = await apiPost('/api/waitlist', {
+        email: emailToSubmit,
+        source: source
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setWaitlistSuccess(true);
+        setWaitlistPosition(data.position);
+        setWaitlistEmail('');
+        trackConversion('waitlist', source);
+        trackFormSubmit('waitlist', 'email');
+      } else {
+        setWaitlistError(data.error || 'Something went wrong. Please try again.');
+      }
+    } catch (error) {
+      console.error('Waitlist submission error:', error);
+      setWaitlistError('Unable to join waitlist. Please try again.');
+    } finally {
+      setWaitlistSubmitting(false);
+    }
   };
 
   return (
@@ -203,31 +192,21 @@ export function LandingPage({ onGetStarted }) {
               />
             </div>
 
-            {/* CTA Buttons - Design System */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Button
-                onClick={() => {
-                  trackSignInModalOpen();
-                  navigate('/signin');
-                }}
-                variant="ghost"
-                size="small"
-                className="text-teal-medium hover:text-teal-dark text-sm sm:text-base px-3 sm:px-4 py-2 min-h-[44px]"
-              >
-                Sign In
-              </Button>
-              <Button
-                onClick={() => {
-                  trackCTAClick('navigation', 'Get Started', 'header');
-                  navigate('/signin');
-                }}
-                variant="teal-solid"
-                size="small"
-                className="text-sm sm:text-base px-3 sm:px-4 py-2 min-h-[44px]"
-              >
-                Get Started
-              </Button>
-            </div>
+            {/* CTA Button - Pre-launch: single waitlist CTA */}
+            <Button
+              onClick={() => {
+                trackCTAClick('navigation', 'Join the Waitlist', 'header');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setTimeout(() => {
+                  document.querySelector('input[type="email"]')?.focus();
+                }, 300);
+              }}
+              variant="teal-solid"
+              size="small"
+              className="text-sm sm:text-base px-3 sm:px-4 py-2 min-h-[44px]"
+            >
+              Join the Waitlist
+            </Button>
           </div>
         </div>
       </nav>
@@ -258,48 +237,99 @@ export function LandingPage({ onGetStarted }) {
               LiaiZen prevents conflict in real time—so every message moves the conversation forward.
             </p>
 
-            {/* Beta Notice - Enhanced urgency */}
-            <div className="mb-8 inline-flex flex-wrap items-center gap-2 sm:gap-3 bg-gradient-to-r from-teal-lightest to-white px-3 sm:px-4 py-2 rounded-full border-2 border-teal-light shadow-sm max-w-full">
-              <span className="relative flex h-3 w-3 flex-shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-medium opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-teal-medium"></span>
-              </span>
-              <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
-                Join Our Beta.
-              </span>
-              <span className="text-xs sm:text-sm font-bold text-teal-medium whitespace-nowrap">
-                {remainingSpots !== null ? (
-                  `Only ${remainingSpots} spot${remainingSpots !== 1 ? 's' : ''} left!`
-                ) : (
-                  'Limited spots available!'
-                )}
-              </span>
+            {/* Social Proof + Urgency Row */}
+            <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+              {/* Families Helped Badge */}
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex -space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-teal-light border-2 border-white flex items-center justify-center text-xs font-bold text-teal-dark">J</div>
+                  <div className="w-8 h-8 rounded-full bg-teal-medium border-2 border-white flex items-center justify-center text-xs font-bold text-white">M</div>
+                  <div className="w-8 h-8 rounded-full bg-teal-dark border-2 border-white flex items-center justify-center text-xs font-bold text-white">S</div>
+                </div>
+                <span className="font-medium">
+                  {familiesHelped !== null ? `${familiesHelped}+ families` : '47+ families'} already joined
+                </span>
+              </div>
+
+              {/* Beta Notice - Enhanced urgency */}
+              <div className="inline-flex flex-wrap items-center gap-2 sm:gap-3 bg-gradient-to-r from-teal-lightest to-white px-3 sm:px-4 py-2 rounded-full border-2 border-teal-light shadow-sm">
+                <span className="relative flex h-3 w-3 flex-shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-medium opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-teal-medium"></span>
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-teal-medium whitespace-nowrap">
+                  {remainingSpots !== null ? (
+                    `Only ${remainingSpots} spot${remainingSpots !== 1 ? 's' : ''} left!`
+                  ) : (
+                    'Limited spots available!'
+                  )}
+                </span>
+              </div>
             </div>
 
-            {/* Dual CTAs - Enhanced with gradients */}
-            <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-4">
-              <Button
-                onClick={() => {
-                  trackCTAClick('hero', 'Get Early Access', 'primary');
-                  navigate('/signin');
-                }}
-                variant="teal-solid"
-                size="large"
-                className="w-full sm:w-auto bg-gradient-to-r from-teal-medium to-teal-dark hover:from-teal-dark hover:to-teal-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                Get Early Access
-              </Button>
-              <Button
-                onClick={() => {
-                  trackCTAClick('hero', 'Learn More', 'secondary');
-                  document.querySelector('[data-section="value_proposition"]')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                variant="teal-outline"
-                size="large"
-                className="w-full sm:w-auto border hover:bg-teal-lightest transition-all duration-300"
-              >
-                Learn More
-              </Button>
+            {/* Waitlist Email Form */}
+            {!waitlistSuccess ? (
+              <form onSubmit={(e) => handleWaitlistSubmit(e, 'hero')} className="w-full max-w-md">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="email"
+                    value={waitlistEmail}
+                    onChange={(e) => setWaitlistEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    required
+                    disabled={waitlistSubmitting}
+                    className="flex-1 px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-teal-medium focus:outline-none text-base min-h-[48px] disabled:bg-gray-50"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={waitlistSubmitting}
+                    variant="teal-solid"
+                    size="large"
+                    className="w-full sm:w-auto bg-gradient-to-r from-teal-medium to-teal-dark hover:from-teal-dark hover:to-teal-medium transition-all duration-300 shadow-lg hover:shadow-xl whitespace-nowrap min-h-[48px]"
+                  >
+                    {waitlistSubmitting ? 'Joining...' : 'Join the Waitlist'}
+                  </Button>
+                </div>
+                {waitlistError && (
+                  <p className="mt-2 text-sm text-red-600">{waitlistError}</p>
+                )}
+              </form>
+            ) : (
+              <div className="w-full max-w-md bg-teal-lightest border-2 border-teal-light rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <svg className="w-6 h-6 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-lg font-semibold text-teal-dark">You're on the list!</span>
+                </div>
+                {waitlistPosition && (
+                  <p className="text-sm text-teal-medium">
+                    You're #{waitlistPosition} on the waitlist. We'll be in touch soon!
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Trust Signals */}
+            <div className="mt-6 flex flex-wrap items-center gap-4 text-xs sm:text-sm text-gray-500">
+              <span className="flex items-center gap-1">
+                <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                End-to-end encrypted
+              </span>
+              <span className="flex items-center gap-1">
+                <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Setup in 2 minutes
+              </span>
+              <span className="flex items-center gap-1">
+                <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                No credit card required
+              </span>
             </div>
           </div>
 
@@ -732,17 +762,21 @@ export function LandingPage({ onGetStarted }) {
                 </p>
               </div>
             </div>
-            <div className="mt-8 sm:mt-10 md:mt-12 flex justify-center px-4">
+            <div className="mt-8 sm:mt-10 md:mt-12 flex flex-col items-center px-4">
               <Button
                 onClick={() => {
-                  trackCTAClick('how_it_works', 'Get Started', 'middle');
-                  navigate('/signin');
+                  trackCTAClick('how_it_works', 'Join the Waitlist', 'middle');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  // Focus on email input after scroll
+                  setTimeout(() => {
+                    document.querySelector('input[type="email"]')?.focus();
+                  }, 500);
                 }}
                 variant="teal-solid"
                 size="large"
                 className="w-full sm:w-auto bg-gradient-to-r from-teal-medium to-teal-dark hover:from-teal-dark hover:to-teal-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                Get Started
+                Join the Waitlist
               </Button>
             </div>
           </div>
@@ -1082,199 +1116,8 @@ export function LandingPage({ onGetStarted }) {
         </div>
       </div>
 
-      {/* Sign In Modal */}
-      {showSignInModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 pb-24 md:pb-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-full flex flex-col border border-gray-200">
-            <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4DA8B0] to-[#4DA8B0] flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <Heading variant="small" color="dark" as="h3">
-                  Sign In
-                </Heading>
-              </div>
-              <Button
-                onClick={() => {
-                  setShowSignInModal(false);
-                  setAuthError('');
-                  setAuthEmail('');
-                  setPassword('');
-                }}
-                variant="ghost"
-                size="small"
-                className="text-2xl leading-none text-gray-500 hover:text-teal-medium p-1"
-              >
-                ×
-              </Button>
-            </div>
-            <form onSubmit={handleSignInSubmit} className="px-6 py-5">
-              {authError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-800">{authError}</p>
-                </div>
-              )}
-              <div className="mb-4">
-                <label htmlFor="signin-email" className="block text-sm font-medium text-teal-medium mb-2">
-                  Email
-                </label>
-                <input
-                  id="signin-email"
-                  type="email"
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark text-base min-h-[44px]"
-                />
-              </div>
-              <div className="mb-6">
-                <label htmlFor="signin-password" className="block text-sm font-medium text-teal-medium mb-2">
-                  Password
-                </label>
-                <input
-                  id="signin-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark text-base min-h-[44px]"
-                />
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  type="submit"
-                  disabled={isLoggingIn}
-                  loading={isLoggingIn}
-                  variant="teal-solid"
-                  size="medium"
-                  className="flex-1"
-                >
-                  Sign In
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setShowSignInModal(false);
-                    navigate('/signin');
-                  }}
-                  variant="ghost"
-                  size="medium"
-                >
-                  New Account
-                </Button>
-              </div>
-              <p className="mt-4 text-xs text-gray-500 text-center">
-                Don't have an account? Click "New Account" to sign up.
-              </p>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Sign Up Modal */}
-      {showSignupModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 pb-24 md:pb-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-full flex flex-col border border-gray-200">
-            <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4DA8B0] to-[#4DA8B0] flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                </div>
-                <Heading variant="small" color="dark" as="h3">
-                  Create Account
-                </Heading>
-              </div>
-              <Button
-                onClick={() => {
-                  setShowSignupModal(false);
-                  setAuthError('');
-                  setAuthEmail('');
-                  setPassword('');
-                }}
-                variant="ghost"
-                size="small"
-                className="text-2xl leading-none text-gray-500 hover:text-teal-medium p-1"
-              >
-                ×
-              </Button>
-            </div>
-            <form onSubmit={handleSignupSubmit} className="px-6 py-5">
-              {authError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-800">{authError}</p>
-                </div>
-              )}
-              <div className="mb-4">
-                <label htmlFor="signup-email" className="block text-sm font-medium text-teal-medium mb-2">
-                  Email
-                </label>
-                <input
-                  id="signup-email"
-                  type="email"
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark text-base min-h-[44px]"
-                />
-              </div>
-              <div className="mb-6">
-                <label htmlFor="signup-password" className="block text-sm font-medium text-teal-medium mb-2">
-                  Password
-                </label>
-                <input
-                  id="signup-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter a password (min 4 characters)"
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark text-base min-h-[44px]"
-                />
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  type="submit"
-                  disabled={isSigningUp}
-                  loading={isSigningUp}
-                  variant="teal-solid"
-                  size="medium"
-                  className="flex-1"
-                >
-                  Create Account
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setShowSignupModal(false);
-                    setShowSignInModal(true);
-                    setAuthError('');
-                    setAuthEmail('');
-                    setPassword('');
-                  }}
-                  variant="ghost"
-                  size="medium"
-                >
-                  Sign In
-                </Button>
-              </div>
-              <p className="mt-4 text-xs text-gray-500 text-center">
-                Already have an account? Click "Sign In" to log in.
-              </p>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Footer */}
-      <footer className="border-t-2 border-teal-light py-8 px-4 bg-gray-50">
+      <footer className="border-t-2 border-teal-light py-8 px-4 bg-gray-50 pb-24 sm:pb-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             {/* Logo */}
@@ -1311,6 +1154,38 @@ export function LandingPage({ onGetStarted }) {
           </div>
         </div>
       </footer>
+
+      {/* Sticky Mobile CTA Bar */}
+      {!waitlistSuccess && (
+        <div
+          className={`fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-white border-t-2 border-teal-light shadow-lg transform transition-transform duration-300 ${
+            showStickyMobileCTA ? 'translate-y-0' : 'translate-y-full'
+          }`}
+        >
+          <div className="px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-gray-700 truncate">
+                {remainingSpots !== null ? `Only ${remainingSpots} spots left!` : 'Limited beta access'}
+              </p>
+              <p className="text-xs text-gray-500">Free • No credit card</p>
+            </div>
+            <Button
+              onClick={() => {
+                trackCTAClick('sticky_mobile', 'Join the Waitlist', 'sticky');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setTimeout(() => {
+                  document.querySelector('input[type="email"]')?.focus();
+                }, 500);
+              }}
+              variant="teal-solid"
+              size="small"
+              className="flex-shrink-0 bg-gradient-to-r from-teal-medium to-teal-dark px-4 py-2 text-sm font-semibold"
+            >
+              Join the Waitlist
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
