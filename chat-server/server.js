@@ -1,33 +1,91 @@
 require('dotenv').config();
 
+const express = require('express');
+const http = require('http');
+
+// Create app and server FIRST so health check can work even during startup issues
+const app = express();
+const server = http.createServer(app);
+
+// Track database connection status
+let dbConnected = false;
+let dbError = null;
+
+// Register health check IMMEDIATELY so Railway can verify server is starting
+// This must come BEFORE any database checks
+app.get('/health', (req, res) => {
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({
+      status: 'error',
+      error: 'DATABASE_URL not configured',
+      message: 'Add DATABASE_URL environment variable in Railway dashboard',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (dbError) {
+    return res.status(503).json({
+      status: 'error',
+      error: 'Database connection failed',
+      message: dbError,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  res.status(200).json({
+    status: 'ok',
+    database: dbConnected ? 'connected' : 'connecting',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Start server EARLY - before database initialization
+// This allows Railway's health check to get diagnostic info
+const PORT = process.env.PORT || 3001;
+const HOST = '0.0.0.0';
+
+server.listen(PORT, HOST, (error) => {
+  if (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+  console.log(`✅ Server listening on ${HOST}:${PORT}`);
+  console.log(`🏥 Health check ready at: http://${HOST}:${PORT}/health`);
+});
+
 // PostgreSQL-Only Database Initialization
 // DATABASE_URL must be set (PostgreSQL required in all environments)
 
 if (!process.env.DATABASE_URL) {
   console.error('❌ ERROR: DATABASE_URL not set!');
   console.error('❌ PostgreSQL is required in all environments.');
-  console.error('❌ Set DATABASE_URL environment variable.');
-  process.exit(1);
+  console.error('❌ Set DATABASE_URL environment variable in Railway dashboard.');
+  console.error('❌ Server will continue running but most endpoints will fail.');
+  // Don't exit - let health endpoint return diagnostic info
+} else {
+  console.log('🐘 PostgreSQL mode: DATABASE_URL detected');
+  console.log('📊 Using PostgreSQL database');
+
+  // Initialize PostgreSQL client (non-blocking)
+  try {
+    require('./dbPostgres');
+    dbConnected = true;
+  } catch (err) {
+    dbError = err.message;
+    console.error('❌ Database initialization error:', err.message);
+  }
+
+  // Run PostgreSQL migration in background (non-blocking, async)
+  // Migration runs after server starts - won't block startup
+  setTimeout(() => {
+    const { runMigration } = require('./run-migration');
+    runMigration().catch(err => {
+      console.error('⚠️  Migration error (non-blocking):', err.message);
+      console.log('⚠️  Server will continue running - migration can be retried');
+    });
+  }, 2000); // Wait 2 seconds for server to start
 }
 
-console.log('🐘 PostgreSQL mode: DATABASE_URL detected');
-console.log('📊 Using PostgreSQL database');
-
-// Initialize PostgreSQL client (non-blocking)
-require('./dbPostgres');
-
-// Run PostgreSQL migration in background (non-blocking, async)
-// Migration runs after server starts - won't block startup
-setTimeout(() => {
-  const { runMigration } = require('./run-migration');
-  runMigration().catch(err => {
-    console.error('⚠️  Migration error (non-blocking):', err.message);
-    console.log('⚠️  Server will continue running - migration can be retried');
-  });
-}, 2000); // Wait 2 seconds for server to start
-
-const express = require('express');
-const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -37,47 +95,45 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const { URL } = require('url');
-const aiMediator = require('./aiMediator');
-const userContext = require('./userContext');
-const auth = require('./auth');
-const messageStore = require('./messageStore');
-const roomManager = require('./roomManager');
-const connectionManager = require('./connectionManager');
-const emailService = require('./emailService');
-const dbSafe = require('./dbSafe');
-const FigmaService = require('./figmaService');
-const ComponentScanner = require('./componentScanner');
-const FigmaGenerator = require('./figmaGenerator');
-const communicationStats = require('./communicationStats');
-const invitationManager = require('./libs/invitation-manager');
-const notificationManager = require('./libs/notification-manager');
-const pairingManager = require('./libs/pairing-manager');
-const db = require('./dbPostgres'); // Database pool for invitation/notification libraries
-const contactIntelligence = require('./contactIntelligence'); // AI contact intelligence
-const { isValidEmail } = require('./src/utils/validators'); // Generic validation utilities
-const { ensureProfileColumnsExist } = require('./src/utils/schema'); // Schema utilities for runtime column checks
 
-// Initialize Figma service if API token is provided
-let figmaService = null;
-if (process.env.FIGMA_ACCESS_TOKEN) {
-  try {
-    figmaService = new FigmaService(process.env.FIGMA_ACCESS_TOKEN);
-    console.log('✅ Figma API service initialized');
-  } catch (error) {
-    console.warn('⚠️  Figma API service not available:', error.message);
+// Only load database-dependent modules if DATABASE_URL is set
+let aiMediator, userContext, auth, messageStore, roomManager, connectionManager;
+let emailService, dbSafe, communicationStats, invitationManager, notificationManager;
+let pairingManager, db, contactIntelligence, isValidEmail, ensureProfileColumnsExist;
+let FigmaService, ComponentScanner, FigmaGenerator, figmaService;
+
+if (process.env.DATABASE_URL) {
+  aiMediator = require('./aiMediator');
+  userContext = require('./userContext');
+  auth = require('./auth');
+  messageStore = require('./messageStore');
+  roomManager = require('./roomManager');
+  connectionManager = require('./connectionManager');
+  emailService = require('./emailService');
+  dbSafe = require('./dbSafe');
+  FigmaService = require('./figmaService');
+  ComponentScanner = require('./componentScanner');
+  FigmaGenerator = require('./figmaGenerator');
+  communicationStats = require('./communicationStats');
+  invitationManager = require('./libs/invitation-manager');
+  notificationManager = require('./libs/notification-manager');
+  pairingManager = require('./libs/pairing-manager');
+  db = require('./dbPostgres');
+  contactIntelligence = require('./contactIntelligence');
+  ({ isValidEmail } = require('./src/utils/validators'));
+  ({ ensureProfileColumnsExist } = require('./src/utils/schema'));
+
+  // Initialize Figma service if API token is provided
+  figmaService = null;
+  if (process.env.FIGMA_ACCESS_TOKEN) {
+    try {
+      figmaService = new FigmaService(process.env.FIGMA_ACCESS_TOKEN);
+      console.log('✅ Figma API service initialized');
+    } catch (error) {
+      console.warn('⚠️  Figma API service not available:', error.message);
+    }
   }
 }
-
-const app = express();
-const server = http.createServer(app);
-
-// Register health check IMMEDIATELY so Railway can verify server is starting
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  });
-});
 
 // Schema health check endpoint
 app.get('/api/health/schema', async (req, res) => {
@@ -110,21 +166,6 @@ app.get('/api/health/schema', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
-});
-
-// Start server EARLY - before all routes are set up
-// This allows Railway's health check to pass immediately
-const PORT = process.env.PORT || 3001;
-const HOST = '0.0.0.0';
-
-// Start listening immediately with minimal setup
-server.listen(PORT, HOST, (error) => {
-  if (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
-  }
-  console.log(`✅ Server listening on ${HOST}:${PORT}`);
-  console.log(`🏥 Health check ready at: http://${HOST}:${PORT}/health`);
 });
 
 // Trust proxy - required for Railway/Vercel deployment and rate limiting
