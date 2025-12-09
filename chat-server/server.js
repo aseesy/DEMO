@@ -301,6 +301,24 @@ app.use('/api/auth/signup', authLimiter);
 app.use('/api/userContext', require('./routes/userContext'));
 app.use('/api/profile', require('./routes/profile'));
 
+// ========================================
+// Route Modules (extracted from server.js)
+// ========================================
+const authRoutes = require('./routes/auth');
+const notificationsRoutes = require('./routes/notifications');
+const tasksRoutes = require('./routes/tasks');
+const dashboardRoutes = require('./routes/dashboard');
+const invitationsRoutes = require('./routes/invitations');
+const pairingRoutes = require('./routes/pairing');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/invitations', invitationsRoutes);
+app.use('/api/pairing', pairingRoutes);
+// ========================================
+
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
@@ -709,6 +727,18 @@ async function optionalAuth(req, res, next) {
     next();
   }
 }
+
+// ========================================
+// Initialize Route Module Helpers
+// ========================================
+tasksRoutes.setHelpers({
+  autoCompleteOnboardingTasks,
+  backfillOnboardingTasks
+});
+pairingRoutes.setHelpers({
+  roomManager
+});
+// ========================================
 
 // Utility functions
 function sanitizeInput(input) {
