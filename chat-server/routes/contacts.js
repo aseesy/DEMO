@@ -15,9 +15,11 @@ const { verifyAuth } = require('../middleware/auth');
 
 // Helper references - set from server.js
 let autoCompleteOnboardingTasks;
+let contactIntelligence;
 
 router.setHelpers = function(helpers) {
   autoCompleteOnboardingTasks = helpers.autoCompleteOnboardingTasks;
+  contactIntelligence = helpers.contactIntelligence;
 };
 
 /**
@@ -409,6 +411,259 @@ router.get('/relationship-map', async (req, res) => {
     });
   } catch (error) {
     console.error('Error building relationship map:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ======================================
+// AI Contact Intelligence Endpoints
+// ======================================
+
+/**
+ * POST /api/contacts/ai/detect-mentions
+ * AI-powered contact mention detection in messages
+ */
+router.post('/ai/detect-mentions', async (req, res) => {
+  try {
+    const { messageText, username, roomId } = req.body;
+
+    if (!messageText || !username) {
+      return res.status(400).json({ error: 'Message text and username are required' });
+    }
+
+    // Get user ID
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // Get user's contacts
+    const contactsResult = await dbSafe.safeSelect('contacts', { user_id: userId });
+    const userContacts = dbSafe.parseResult(contactsResult);
+
+    // Get recent messages for context
+    let recentMessages = [];
+    if (roomId) {
+      const messagesResult = await dbSafe.safeSelect('messages', { room_id: roomId }, {
+        orderBy: 'timestamp',
+        orderDirection: 'DESC',
+        limit: 20
+      });
+      recentMessages = dbSafe.parseResult(messagesResult);
+    }
+
+    // Use AI contact intelligence if available
+    if (contactIntelligence) {
+      const result = await contactIntelligence.detectContactMentions(
+        messageText,
+        userContacts,
+        recentMessages
+      );
+      return res.json(result || { mentions: [], suggestedContacts: [] });
+    }
+
+    // Fallback to simple detection
+    const mentions = [];
+    const lowerMessage = messageText.toLowerCase();
+
+    for (const contact of userContacts) {
+      const name = contact.contact_name.toLowerCase();
+      if (lowerMessage.includes(name)) {
+        mentions.push({
+          contactId: contact.id,
+          name: contact.contact_name,
+          relationship: contact.relationship
+        });
+      }
+    }
+
+    res.json({ mentions, suggestedContacts: [] });
+  } catch (error) {
+    console.error('Error detecting contact mentions:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/contacts/generate-profile
+ * Generate AI-assisted contact profile suggestions
+ */
+router.post('/generate-profile', async (req, res) => {
+  try {
+    const { contactData, username, roomId } = req.body;
+
+    if (!contactData || !contactData.contact_name || !contactData.relationship || !username) {
+      return res.status(400).json({ error: 'Contact data (name, relationship) and username are required' });
+    }
+
+    // Get user ID
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // Get user's existing contacts for relationship context
+    const contactsResult = await dbSafe.safeSelect('contacts', { user_id: userId });
+    const userContacts = dbSafe.parseResult(contactsResult);
+
+    // Get recent messages for context
+    let recentMessages = [];
+    if (roomId) {
+      const messagesResult = await dbSafe.safeSelect('messages', { room_id: roomId }, {
+        orderBy: 'timestamp',
+        orderDirection: 'DESC',
+        limit: 15
+      });
+      recentMessages = dbSafe.parseResult(messagesResult);
+    }
+
+    // Generate profile suggestions using AI
+    if (contactIntelligence) {
+      const suggestions = await contactIntelligence.generateContactProfile(
+        contactData,
+        userContacts,
+        recentMessages
+      );
+
+      if (suggestions) {
+        return res.json(suggestions);
+      }
+    }
+
+    // Fallback response
+    res.json({
+      suggestedFields: [],
+      helpfulQuestions: [],
+      linkedContactSuggestion: { shouldLink: false },
+      profileCompletionTips: 'Fill out the profile with as much detail as you feel comfortable sharing.'
+    });
+  } catch (error) {
+    console.error('Error generating contact profile:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/contacts/ai/relationship-map
+ * Get AI-enhanced relationship map with suggestions
+ */
+router.get('/ai/relationship-map', async (req, res) => {
+  try {
+    const username = req.query.username;
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    // Get user ID
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // Use AI contact intelligence if available
+    if (contactIntelligence) {
+      const relationshipMap = await contactIntelligence.mapContactRelationships(userId);
+      return res.json(relationshipMap);
+    }
+
+    // Fallback to simple relationship map
+    const contacts = await dbSafe.safeSelect('contacts', { user_id: userId });
+    const nodes = [{ id: 'user', name: username, type: 'user' }];
+    const edges = [];
+
+    for (const contact of contacts) {
+      nodes.push({
+        id: `contact_${contact.id}`,
+        name: contact.contact_name,
+        type: contact.relationship
+      });
+
+      edges.push({
+        source: 'user',
+        target: `contact_${contact.id}`,
+        relationship: contact.relationship
+      });
+    }
+
+    res.json({ nodes, edges });
+  } catch (error) {
+    console.error('Error mapping contact relationships:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/contacts/:contactId/enrich
+ * Enrich contact from conversation history using AI
+ */
+router.post('/:contactId/enrich', async (req, res) => {
+  try {
+    const contactId = parseInt(req.params.contactId);
+    const { username, roomId } = req.body;
+
+    if (!contactId || isNaN(contactId) || !username) {
+      return res.status(400).json({ error: 'Contact ID and username are required' });
+    }
+
+    // Get user ID
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // Verify contact belongs to user
+    const contactResult = await dbSafe.safeSelect('contacts', { id: contactId, user_id: userId }, { limit: 1 });
+    const contacts = dbSafe.parseResult(contactResult);
+
+    if (contacts.length === 0) {
+      return res.status(404).json({ error: 'Contact not found or access denied' });
+    }
+
+    // Get messages from room
+    let messages = [];
+    if (roomId) {
+      const messagesResult = await dbSafe.safeSelect('messages', { room_id: roomId }, {
+        orderBy: 'timestamp',
+        orderDirection: 'DESC',
+        limit: 100
+      });
+      messages = dbSafe.parseResult(messagesResult);
+    }
+
+    // Enrich contact using AI
+    if (contactIntelligence) {
+      const enrichment = await contactIntelligence.enrichContactFromMessages(
+        contactId,
+        userId,
+        messages
+      );
+
+      if (enrichment) {
+        return res.json(enrichment);
+      }
+    }
+
+    // Fallback response
+    res.json({ enrichments: [], newInsights: [], shouldUpdate: false });
+  } catch (error) {
+    console.error('Error enriching contact:', error);
     res.status(500).json({ error: error.message });
   }
 });
