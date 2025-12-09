@@ -3295,6 +3295,12 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
+// ========================================
+// DEPRECATED: These auth endpoints are now handled by routes/auth.js
+// The route modules registered at lines 314-319 take precedence.
+// These duplicates can be safely removed in a future cleanup.
+// ========================================
+
 // Authentication API endpoints
 // Sign up (create new account)
 app.post('/api/auth/signup', async (req, res) => {
@@ -3706,6 +3712,12 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ========================================
+// DEPRECATED: These invitation endpoints are now handled by routes/invitations.js
+// The route modules registered at lines 314-319 take precedence.
+// These duplicates can be safely removed in a future cleanup.
+// ========================================
 
 app.get('/api/invitations/validate/:token', async (req, res) => {
   try {
@@ -4188,6 +4200,10 @@ app.get('/api/invitations/my-invite', verifyAuth, async (req, res) => {
 });
 
 // ========================================
+// DEPRECATED: These notification endpoints are now handled by routes/notifications.js
+// The route modules registered at lines 314-319 take precedence.
+// These duplicates can be safely removed in a future cleanup.
+// ========================================
 // In-App Notifications API
 // Feature 003: Notifications for existing users
 // ========================================
@@ -4318,6 +4334,10 @@ app.post('/api/notifications/:id/action', verifyAuth, async (req, res) => {
   }
 });
 
+// ============================================================================
+// DEPRECATED: These pairing endpoints are now handled by routes/pairing.js
+// The route modules registered at lines 314-319 take precedence.
+// These duplicates can be safely removed in a future cleanup.
 // ============================================================================
 // PAIRING API ENDPOINTS (Feature: 004-account-pairing-refactor)
 // ============================================================================
@@ -5018,6 +5038,11 @@ app.get('/api/user-contexts', (req, res) => {
   }
 });
 
+// ========================================
+// DEPRECATED: These task endpoints are now handled by routes/tasks.js
+// The route modules registered at lines 314-319 take precedence.
+// These duplicates can be safely removed in a future cleanup.
+// ========================================
 // Tasks API endpoints
 // Get all tasks for a user
 app.get('/api/tasks', verifyAuth, async (req, res) => {
@@ -5377,6 +5402,11 @@ app.post('/api/tasks/:taskId/duplicate', async (req, res) => {
   }
 });
 
+// ========================================
+// DEPRECATED: These dashboard endpoints are now handled by routes/dashboard.js
+// The route modules registered at lines 314-319 take precedence.
+// These duplicates can be safely removed in a future cleanup.
+// ========================================
 // Get dashboard updates (aggregated activity: messages, expenses, agreements, invites)
 app.get('/api/dashboard/updates', async (req, res) => {
   try {
