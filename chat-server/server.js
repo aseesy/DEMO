@@ -310,6 +310,8 @@ const tasksRoutes = require('./routes/tasks');
 const dashboardRoutes = require('./routes/dashboard');
 const invitationsRoutes = require('./routes/invitations');
 const pairingRoutes = require('./routes/pairing');
+const contactsRoutes = require('./routes/contacts');
+const activitiesRoutes = require('./routes/activities');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationsRoutes);
@@ -317,6 +319,8 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/invitations', invitationsRoutes);
 app.use('/api/pairing', pairingRoutes);
+app.use('/api/contacts', contactsRoutes);
+app.use('/api/activities', activitiesRoutes);
 // ========================================
 
 const io = new Server(server, {
