@@ -381,4 +381,204 @@ router.get('/user/:username', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/auth/register-from-invite
+ * Register a new user from an invitation token
+ */
+router.post('/register-from-invite', async (req, res) => {
+  try {
+    const { token: inviteToken, email, password, displayName, context } = req.body;
+
+    // Validation
+    if (!inviteToken) {
+      return res.status(400).json({ error: 'Invitation token is required' });
+    }
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!isValidEmail(cleanEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    if (password.length < 4) {
+      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    }
+
+    // Register from invitation
+    const result = await auth.registerFromInvitation({
+      token: inviteToken,
+      email: cleanEmail,
+      password,
+      displayName,
+      context: context || {}
+    }, db);
+
+    // Generate JWT token
+    const token = generateToken(result.user);
+
+    // Set httpOnly cookie
+    setAuthCookie(res, token);
+
+    res.json({
+      success: true,
+      user: result.user,
+      coParent: result.coParent,
+      sharedRoom: result.sharedRoom,
+      token
+    });
+
+  } catch (error) {
+    console.error('Register from invite error:', error);
+
+    if (error.message === 'Email already exists') {
+      return res.status(409).json({ error: 'An account with this email already exists' });
+    }
+    if (error.message.includes('Invalid') || error.message.includes('expired')) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.message.includes('does not match')) {
+      return res.status(400).json({ error: 'Email does not match the invitation' });
+    }
+
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/auth/register-with-invite
+ * Unified endpoint that handles both token and short code registration
+ * Used by AcceptInvitationPage for new user registration
+ *
+ * Body parameters:
+ * - email: User's email (required)
+ * - password: User's password (required)
+ * - username: User's display name (required)
+ * - inviteToken: Invitation token (optional, provide either this or inviteCode)
+ * - inviteCode: Short invite code e.g., LZ-ABC123 (optional, provide either this or inviteToken)
+ */
+router.post('/register-with-invite', async (req, res) => {
+  try {
+    const { email, password, username, inviteToken, inviteCode } = req.body;
+
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    if (!inviteToken && !inviteCode) {
+      return res.status(400).json({ error: 'Either inviteToken or inviteCode is required' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!isValidEmail(cleanEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    if (password.length < 4) {
+      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    }
+
+    let result;
+
+    if (inviteCode) {
+      // Register using short code (no email matching required)
+      result = await auth.registerFromShortCode({
+        shortCode: inviteCode,
+        email: cleanEmail,
+        password,
+        displayName: username,
+        context: {}
+      }, db);
+    } else {
+      // Register using token - DUAL-SYSTEM FALLBACK (Feature 009)
+      // Try invitations table first (old system)
+      console.log(`🔵 Checking invitation token in dual-system...`);
+
+      let invitationValidation = await invitationManager.validateToken(inviteToken, db);
+
+      if (!invitationValidation.valid && invitationValidation.code === 'INVALID_TOKEN') {
+        // Token not found in invitations table, try pairing_sessions table (new system)
+        console.log(`⚠️ Token not found in invitations table, checking pairing_sessions...`);
+        const pairingValidation = await pairingManager.validateToken(inviteToken, db);
+
+        if (pairingValidation.valid) {
+          // Found in pairing_sessions - use pairing registration
+          console.log(`✅ Token found in pairing_sessions, using registerFromPairing`);
+          result = await auth.registerFromPairing({
+            token: inviteToken,
+            email: cleanEmail,
+            password,
+            displayName: username,
+            context: {}
+          }, db);
+        } else {
+          // Not found in either system
+          console.log(`❌ Token not found in either system`);
+          result = await auth.registerFromInvitation({
+            token: inviteToken,
+            email: cleanEmail,
+            password,
+            displayName: username,
+            context: {}
+          }, db);
+        }
+      } else {
+        // Found in invitations table - use invitation registration
+        console.log(`✅ Token found in invitations table, using registerFromInvitation`);
+        result = await auth.registerFromInvitation({
+          token: inviteToken,
+          email: cleanEmail,
+          password,
+          displayName: username,
+          context: {}
+        }, db);
+      }
+    }
+
+    // Generate JWT token
+    const token = generateToken(result.user);
+
+    // Set httpOnly cookie
+    setAuthCookie(res, token);
+
+    res.json({
+      success: true,
+      user: result.user,
+      coParent: result.coParent,
+      sharedRoom: result.sharedRoom,
+      token
+    });
+
+  } catch (error) {
+    console.error('Register with invite error:', error);
+
+    // Handle registration errors with proper codes
+    if (error.code === 'REG_001' || error.message === 'Email already exists') {
+      return res.status(409).json({ error: 'An account with this email already exists', code: 'REG_001' });
+    }
+    if (error.code === 'REG_002' || error.message.includes('Invalid')) {
+      return res.status(400).json({ error: error.message, code: error.code || 'INVALID_TOKEN' });
+    }
+    if (error.code === 'REG_003' || error.message.includes('expired')) {
+      return res.status(400).json({ error: error.message, code: error.code || 'EXPIRED' });
+    }
+    if (error.code === 'REG_004' || error.message.includes('already accepted')) {
+      return res.status(400).json({ error: error.message, code: error.code || 'ALREADY_ACCEPTED' });
+    }
+    if (error.message.includes('does not match')) {
+      return res.status(400).json({ error: 'Email does not match the invitation', code: 'EMAIL_MISMATCH' });
+    }
+
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
