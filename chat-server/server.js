@@ -312,6 +312,7 @@ const invitationsRoutes = require('./routes/invitations');
 const pairingRoutes = require('./routes/pairing');
 const contactsRoutes = require('./routes/contacts');
 const activitiesRoutes = require('./routes/activities');
+const userRoutes = require('./routes/user');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationsRoutes);
@@ -321,6 +322,7 @@ app.use('/api/invitations', invitationsRoutes);
 app.use('/api/pairing', pairingRoutes);
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/activities', activitiesRoutes);
+app.use('/api/user', userRoutes);
 // ========================================
 
 const io = new Server(server, {
@@ -499,6 +501,17 @@ async function autoCompleteOnboardingTasks(userId) {
     throw error;
   }
 }
+
+// Set helpers for user routes (after autoCompleteOnboardingTasks is defined)
+userRoutes.setHelpers({
+  JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key',
+  autoCompleteOnboardingTasks
+});
+
+// Set helpers for contacts routes
+contactsRoutes.setHelpers({
+  autoCompleteOnboardingTasks
+});
 
 /**
  * Check if user has a connected co-parent

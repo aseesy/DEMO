@@ -13,6 +13,13 @@ const dbSafe = require('../dbSafe');
 const db = require('../dbPostgres');
 const { verifyAuth } = require('../middleware/auth');
 
+// Helper references - set from server.js
+let autoCompleteOnboardingTasks;
+
+router.setHelpers = function(helpers) {
+  autoCompleteOnboardingTasks = helpers.autoCompleteOnboardingTasks;
+};
+
 /**
  * GET /api/contacts
  * Get all contacts for a user
@@ -70,19 +77,23 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body. Request may be too large.' });
     }
 
-    const { username, contact_name, relationship, notes, email, phone, linked_contact_id } = req.body;
+    const { username, contact_name, contact_email, relationship, notes, separation_date, address,
+      difficult_aspects, friction_situations, legal_matters, safety_concerns,
+      substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent,
+      child_age, child_birthdate, school, phone, partner_duration, has_children,
+      custody_arrangement, linked_contact_id } = req.body;
 
     // Debug logging
     console.log('Create contact request:', {
       username,
       contact_name,
       relationship,
-      hasLinkedContactId: linked_contact_id !== undefined,
+      hasNotes: !!notes,
       requestBodySize: JSON.stringify(req.body).length
     });
 
-    if (!username || !contact_name || !relationship) {
-      return res.status(400).json({ error: 'Username, contact name, and relationship are required' });
+    if (!username || !contact_name) {
+      return res.status(400).json({ error: 'Username and contact name are required' });
     }
 
     // Get user ID
@@ -94,27 +105,65 @@ router.post('/', async (req, res) => {
     }
 
     const userId = users[0].id;
+    const now = new Date().toISOString();
 
-    // Create contact using safeInsert
-    const contactData = {
+    // Create contact using safeInsert with all extended fields
+    const contactId = await dbSafe.safeInsert('contacts', {
       user_id: userId,
-      contact_name,
-      relationship,
+      contact_name: contact_name.trim(),
+      contact_email: contact_email ? contact_email.trim().toLowerCase() : null,
+      relationship: relationship || null,
       notes: notes || null,
-      email: email || null,
+      separation_date: separation_date || null,
+      address: address || null,
+      difficult_aspects: difficult_aspects || null,
+      friction_situations: friction_situations || null,
+      legal_matters: legal_matters || null,
+      safety_concerns: safety_concerns || null,
+      substance_mental_health: substance_mental_health || null,
+      neglect_abuse_concerns: neglect_abuse_concerns || null,
+      additional_thoughts: additional_thoughts || null,
+      other_parent: other_parent || null,
+      child_age: child_age || null,
+      child_birthdate: child_birthdate || null,
+      school: school || null,
       phone: phone || null,
-      linked_contact_id: linked_contact_id || null
-    };
+      partner_duration: partner_duration || null,
+      has_children: has_children || null,
+      custody_arrangement: custody_arrangement || null,
+      linked_contact_id: linked_contact_id || null,
+      created_at: now,
+      updated_at: now
+    });
 
-    const newContact = await dbSafe.safeInsert('contacts', contactData);
+    console.log('Contact created successfully:', {
+      contactId,
+      userId,
+      contact_name: contact_name.trim()
+    });
 
-    res.status(201).json({
+    // Auto-complete onboarding tasks if conditions are met
+    if (autoCompleteOnboardingTasks) {
+      try {
+        await autoCompleteOnboardingTasks(userId);
+      } catch (error) {
+        console.error('Error auto-completing onboarding tasks:', error);
+        // Don't fail contact creation if this fails
+      }
+    }
+
+    res.json({
       success: true,
-      contact: newContact
+      message: 'Contact created successfully',
+      contactId: contactId
     });
   } catch (error) {
     console.error('Error creating contact:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({
+      error: error.message || 'Failed to create contact',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -129,8 +178,16 @@ router.put('/:contactId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body. Request may be too large.' });
     }
 
-    const { contactId } = req.params;
-    const { username, contact_name, relationship, notes, email, phone, linked_contact_id } = req.body;
+    const contactId = parseInt(req.params.contactId);
+    const { username, contact_name, contact_email, relationship, notes, separation_date, address,
+      difficult_aspects, friction_situations, legal_matters, safety_concerns,
+      substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent,
+      child_age, child_birthdate, school, phone, partner_duration, has_children,
+      custody_arrangement, linked_contact_id } = req.body;
+
+    if (!contactId || isNaN(contactId)) {
+      return res.status(400).json({ error: 'Invalid contact ID' });
+    }
 
     if (!username) {
       return res.status(400).json({ error: 'Username is required' });
@@ -147,27 +204,52 @@ router.put('/:contactId', async (req, res) => {
     const userId = users[0].id;
 
     // Verify contact belongs to user
-    const contactResult = await dbSafe.safeSelect('contacts', { id: parseInt(contactId), user_id: userId }, { limit: 1 });
+    const contactResult = await dbSafe.safeSelect('contacts', { id: contactId }, { limit: 1 });
     const contacts = dbSafe.parseResult(contactResult);
 
     if (contacts.length === 0) {
       return res.status(404).json({ error: 'Contact not found' });
     }
 
-    // Update contact - only include fields that are provided
-    const updateData = {};
-    if (contact_name !== undefined) updateData.contact_name = contact_name;
-    if (relationship !== undefined) updateData.relationship = relationship;
-    if (notes !== undefined) updateData.notes = notes;
-    if (email !== undefined) updateData.email = email;
-    if (phone !== undefined) updateData.phone = phone;
-    if (linked_contact_id !== undefined) updateData.linked_contact_id = linked_contact_id;
+    if (contacts[0].user_id !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
-    const updatedContact = await dbSafe.safeUpdate('contacts', updateData, { id: parseInt(contactId) });
+    // Update contact - only include fields that are provided
+    const updateData = {
+      updated_at: new Date().toISOString()
+    };
+    if (contact_name !== undefined) updateData.contact_name = contact_name.trim();
+    if (contact_email !== undefined) updateData.contact_email = contact_email ? contact_email.trim().toLowerCase() : null;
+    if (relationship !== undefined) updateData.relationship = relationship || null;
+    if (notes !== undefined) updateData.notes = notes || null;
+    // Co-parent specific fields
+    if (separation_date !== undefined) updateData.separation_date = separation_date || null;
+    if (address !== undefined) updateData.address = address || null;
+    if (difficult_aspects !== undefined) updateData.difficult_aspects = difficult_aspects || null;
+    if (friction_situations !== undefined) updateData.friction_situations = friction_situations || null;
+    if (legal_matters !== undefined) updateData.legal_matters = legal_matters || null;
+    if (safety_concerns !== undefined) updateData.safety_concerns = safety_concerns || null;
+    if (substance_mental_health !== undefined) updateData.substance_mental_health = substance_mental_health || null;
+    if (neglect_abuse_concerns !== undefined) updateData.neglect_abuse_concerns = neglect_abuse_concerns || null;
+    if (additional_thoughts !== undefined) updateData.additional_thoughts = additional_thoughts || null;
+    if (other_parent !== undefined) updateData.other_parent = other_parent || null;
+    // Child-specific fields
+    if (child_age !== undefined) updateData.child_age = child_age || null;
+    if (child_birthdate !== undefined) updateData.child_birthdate = child_birthdate || null;
+    if (school !== undefined) updateData.school = school || null;
+    if (phone !== undefined) updateData.phone = phone || null;
+    // Partner-specific fields
+    if (partner_duration !== undefined) updateData.partner_duration = partner_duration || null;
+    if (has_children !== undefined) updateData.has_children = has_children || null;
+    if (custody_arrangement !== undefined) updateData.custody_arrangement = custody_arrangement || null;
+    if (linked_contact_id !== undefined) updateData.linked_contact_id = linked_contact_id || null;
+
+    await dbSafe.safeUpdate('contacts', updateData, { id: contactId });
 
     res.json({
       success: true,
-      contact: updatedContact
+      message: 'Contact updated successfully'
     });
   } catch (error) {
     console.error('Error updating contact:', error);
