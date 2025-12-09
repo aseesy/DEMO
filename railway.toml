@@ -10,9 +10,13 @@ watchPatterns = ["chat-server/**"]
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 healthcheckPath = "/health"
-healthcheckTimeout = 1000
+healthcheckTimeout = 300
 
-# Note: Start command is defined in nixpacks.toml
-# PostgreSQL service should be added separately in Railway dashboard
-# Railway will automatically inject DATABASE_URL when PostgreSQL is connected
+# IMPORTANT: DATABASE_URL MUST BE SET
+# 1. Add a PostgreSQL service in Railway dashboard
+# 2. In your app's Variables, add: DATABASE_URL=${{Postgres.DATABASE_URL}}
+# This links your app to the PostgreSQL service
+#
+# The server will NOT start without DATABASE_URL - it will exit with code 1
+#
 # Frontend is deployed on Vercel
