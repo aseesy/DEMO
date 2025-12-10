@@ -6,7 +6,9 @@ nixPkgs = ["nodejs_18"]
 
 [phases.install]
 # Use npm explicitly to avoid pnpm auto-detection issues
+# Remove pnpm-lock.yaml files to prevent auto-detection
 cmds = [
+  "rm -f pnpm-lock.yaml chat-server/pnpm-lock.yaml chat-client-vite/pnpm-lock.yaml || true",
   "cd chat-server",
   "npm install --legacy-peer-deps"
 ]

@@ -1,0 +1,18 @@
+# Nixpacks configuration for chat-server deployment
+# This file ensures Railway uses npm, not pnpm
+
+[phases.setup]
+nixPkgs = ["nodejs_18"]
+
+[phases.install]
+cmds = ["npm install --legacy-peer-deps"]
+
+[phases.build]
+cmds = ["echo 'No build step required'"]
+
+[start]
+cmd = "node server.js"
+
+[providers]
+node = "18"
+
