@@ -216,7 +216,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="relative mb-12 sm:mb-20 flex flex-col lg:flex-row lg:items-center lg:gap-6" style={{ overflowX: 'visible' }}>
             {/* Left Column - Text Content */}
-            <div className="flex-1 lg:max-w-xl">
+            <div className="flex-1 lg:max-w-xl pr-28 sm:pr-36 md:pr-44 lg:pr-0">
             {/* Top Label - Design System SectionHeader */}
             <div className="mb-6">
               <SectionHeader color="medium" size="base">
