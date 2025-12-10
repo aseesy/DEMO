@@ -331,7 +331,7 @@ export function LandingPage() {
           </div>
 
           {/* The Real Problem Section - Enhanced with fade-in */}
-          <div className="mt-16 sm:mt-24 md:mt-32 mb-16 sm:mb-24 md:mb-32 bg-white rounded-2xl p-4 sm:p-6 md:p-8 lg:p-10 border border-gray-200 shadow-sm opacity-0 translate-y-4 transition-all duration-700 ease-out" data-animate="fade-in">
+          <div className="mt-8 sm:mt-12 md:mt-16 mb-16 sm:mb-24 md:mb-32 bg-white rounded-2xl p-4 sm:p-6 md:p-8 lg:p-10 border border-gray-200 shadow-sm opacity-0 translate-y-4 transition-all duration-700 ease-out" data-animate="fade-in">
             <div className="max-w-4xl mx-auto">
               <Heading variant="medium" color="dark" as="h2" className="mb-6 sm:mb-8 text-center leading-tight">
                 <span className="block text-xl sm:text-2xl md:text-3xl font-light text-gray-700 mb-2 sm:mb-3">Finally, you can open a message from your co-parent and</span>
