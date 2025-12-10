@@ -224,13 +224,13 @@ export function LandingPage() {
               </SectionHeader>
             </div>
 
-            {/* Main Headline - Design System Heading with serif */}
+            {/* Main Headline */}
             <div className="mb-8">
-              <Heading variant="hero" color="dark" as="h1" className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-tight">
-                <span className="block sm:inline">Co-parenting,</span>
-                <br className="hidden sm:block" />
-                <em className="block sm:inline">without the cringe.</em>
-              </Heading>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-tight font-bold text-teal-dark">
+                <span className="font-sans whitespace-nowrap">Co-parenting,</span>
+                <br />
+                <em className="font-serif whitespace-nowrap">without the cringe.</em>
+              </h1>
             </div>
 
             {/* Description Text */}
