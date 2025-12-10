@@ -337,7 +337,7 @@ export function LandingPage() {
               <img
                 src="/assets/family-exchange.svg"
                 alt="Co-parents peacefully exchanging child during custody transition"
-                className="w-full max-w-md xl:max-w-lg scale-y-[-1]"
+                className="w-full max-w-md xl:max-w-lg scale-x-[-1]"
               />
             </div>
           </div>
