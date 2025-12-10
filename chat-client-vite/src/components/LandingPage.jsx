@@ -225,7 +225,7 @@ export function LandingPage() {
             </div>
 
             {/* Main Headline */}
-            <div className="mb-8">
+            <div className="mb-3 sm:mb-8">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-tight font-bold text-teal-dark">
                 <span className="font-sans whitespace-nowrap">Co-parenting,</span>
                 <br />
@@ -234,7 +234,7 @@ export function LandingPage() {
             </div>
 
             {/* Description Text */}
-            <p className="text-lg sm:text-xl text-gray-700 mb-6 max-w-3xl leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-gray-700 mb-4 sm:mb-6 max-w-3xl leading-relaxed">
               LiaiZen prevents conflict in real time—so every message moves the conversation forward.
             </p>
 
