@@ -193,7 +193,8 @@ describe('AI Mediator', () => {
               escalation: { riskLevel: 'high', confidence: 90 },
               emotion: { currentEmotion: 'frustrated', stressLevel: 80 },
               intervention: {
-                mirrorMessage: 'This message shows accusatory language.',
+                validation: 'This message shows accusatory language.',
+                insight: 'Accusatory language can escalate conflict.',
                 rewrite1: 'I feel frustrated about the schedule change.',
                 rewrite2: 'Can we discuss the schedule issue?',
               },
@@ -210,7 +211,8 @@ describe('AI Mediator', () => {
       expect(result).toBeDefined();
       expect(result.type).toBe('ai_intervention');
       expect(result.action).toBe('INTERVENE');
-      expect(result.mirrorMessage).toBeDefined();
+      expect(result.validation).toBeDefined();
+      expect(result.insight).toBeDefined();
       expect(result.rewrite1).toBeDefined();
       expect(result.rewrite2).toBeDefined();
     });
@@ -461,7 +463,8 @@ describe('AI Mediator', () => {
     });
 
     it('should limit recent messages to max', () => {
-      const maxMessages = 20;
+      const { MESSAGE } = require('../../../utils/constants');
+      const maxMessages = MESSAGE.MAX_RECENT_MESSAGES;
       
       // Add more than max messages
       for (let i = 0; i < maxMessages + 5; i++) {

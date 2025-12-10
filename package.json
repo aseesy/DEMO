@@ -12,5 +12,8 @@
     "dev:stack": "node chat-server/scripts/dev-stack.js",
     "lint:fix": "node chat-server/scripts/lint-fix.js"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0 <25.0.0"
+  }
 }

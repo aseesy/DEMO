@@ -5,10 +5,18 @@
 nixPkgs = ["nodejs_18"]
 
 [phases.install]
-cmds = ["cd chat-server && npm install --legacy-peer-deps"]
+# Use npm explicitly to avoid pnpm auto-detection issues
+cmds = [
+  "cd chat-server",
+  "npm install --legacy-peer-deps"
+]
 
 [phases.build]
 cmds = ["echo 'No build step required'"]
 
 [start]
 cmd = "cd chat-server && node server.js"
+
+# Explicitly set provider to avoid auto-detection issues
+[providers]
+node = "18"

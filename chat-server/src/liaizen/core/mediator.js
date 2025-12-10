@@ -702,6 +702,8 @@ COACHING GUIDANCE: Use this context to provide more understanding coaching. If a
     let senderDisplayName = message.username;
     let receiverDisplayName = 'the other co-parent';
     let voiceSignatureSection = '';
+    let conversationPatternsSection = '';
+    let interventionLearningSection = '';
 
     if (roleAwareContext && communicationProfile) {
       const mediationContext = require('../context/communication-profile/mediationContext');
@@ -747,7 +749,6 @@ COACHING GUIDANCE: Use this context to provide more understanding coaching. If a
       // === END VOICE SIGNATURE EXTRACTION ===
 
       // === CONVERSATION PATTERN ANALYSIS (Phase 1: Contextual Awareness) ===
-      let conversationPatternsSection = '';
       if (conversationPatterns && roleContext?.senderId && roleContext?.receiverId && recentMessages.length >= 2) {
         try {
           // Analyze conversation patterns from recent messages
@@ -768,7 +769,6 @@ COACHING GUIDANCE: Use this context to provide more understanding coaching. If a
       // === END CONVERSATION PATTERN ANALYSIS ===
 
       // === INTERVENTION LEARNING (Phase 2: Enhanced Context) ===
-      let interventionLearningSection = '';
       if (interventionLearning && roleContext?.senderId) {
         try {
           const dbPostgres = require('../../../dbPostgres');
