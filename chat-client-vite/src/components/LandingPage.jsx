@@ -23,6 +23,7 @@ export function LandingPage() {
   const [waitlistSuccess, setWaitlistSuccess] = React.useState(false);
   const [waitlistError, setWaitlistError] = React.useState('');
   const [waitlistPosition, setWaitlistPosition] = React.useState(null);
+  const heroFormRef = React.useRef(null);
 
   // Scroll tracking for sections + sticky mobile CTA visibility
   React.useEffect(() => {
@@ -32,8 +33,15 @@ export function LandingPage() {
       const documentHeight = document.documentElement.scrollHeight;
       const scrollPercent = Math.round((scrollTop / (documentHeight - windowHeight)) * 100);
 
-      // Show sticky CTA after scrolling past hero (about 400px)
-      setShowStickyMobileCTA(scrollTop > 400);
+      // Show sticky CTA after scrolling past the hero form
+      if (heroFormRef.current) {
+        const rect = heroFormRef.current.getBoundingClientRect();
+        // Show when the bottom of the form is above the top of the viewport (scrolled past)
+        setShowStickyMobileCTA(rect.bottom < 0);
+      } else {
+        // Fallback if ref not attached yet
+        setShowStickyMobileCTA(scrollTop > 600);
+      }
 
       // Track scroll depth milestones
       if (scrollPercent >= 25 && scrollPercent < 50) {
@@ -172,47 +180,11 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16">
-            {/* Logo */}
-            <div
-              className="flex items-center gap-2 sm:gap-3 cursor-pointer"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            >
-              <img
-                src="/assets/Logo.svg"
-                alt="LiaiZen Logo"
-                className="h-6 sm:h-7 w-auto"
-              />
-              <img
-                src="/assets/wordmark.svg"
-                alt="LiaiZen"
-                className="h-7 sm:h-8 w-auto"
-              />
-            </div>
 
-            {/* CTA Button - Pre-launch: single waitlist CTA */}
-            <Button
-              onClick={() => {
-                trackCTAClick('navigation', 'Join the Waitlist', 'header');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                setTimeout(() => {
-                  document.querySelector('input[type="email"]')?.focus();
-                }, 300);
-              }}
-              variant="teal-solid"
-              size="small"
-              className="text-sm sm:text-base px-3 sm:px-4 py-2 min-h-[44px]"
-            >
-              Join the Waitlist
-            </Button>
-          </div>
-        </div>
-      </nav>
 
       {/* Hero Section - Enhanced background */}
-      <div className="pt-24 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-teal-lightest/30 to-white overflow-hidden relative">
+      {/* Hero Section - Enhanced background */}
+      <div className="pt-6 sm:pt-12 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-teal-lightest/30 to-white overflow-hidden relative">
         {/* Background texture/pattern for better blending */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#0f766e 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
         <div className="max-w-7xl mx-auto">
@@ -221,7 +193,20 @@ export function LandingPage() {
             {/* Left Column - Text Content */}
             <div className="flex-1 lg:flex-[1.2] xl:flex-[1.3] relative z-10">
               {/* Top Label - Design System SectionHeader */}
+              {/* Top Label - Design System SectionHeader & Logo */}
               <div className="mb-6 sm:mb-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                <div className="flex items-center gap-2 sm:gap-3 mb-3">
+                  <img
+                    src="/assets/Logo.svg"
+                    alt="LiaiZen Logo"
+                    className="h-12 sm:h-14 w-auto"
+                  />
+                  <img
+                    src="/assets/wordmark.svg"
+                    alt="LiaiZen"
+                    className="h-12 sm:h-14 w-auto"
+                  />
+                </div>
                 <SectionHeader color="medium" size="base">
                   AI Mediation & Guidance
                 </SectionHeader>
@@ -229,10 +214,10 @@ export function LandingPage() {
 
               {/* Main Headline */}
               <div className="mb-6 sm:mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.1] font-bold text-teal-dark tracking-tight">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.1] font-medium text-teal-dark tracking-tight">
                   <span className="font-sans block sm:inline">Co-parenting,</span>
                   <br className="hidden sm:block" />
-                  <em className="font-serif block sm:inline text-teal-medium sm:text-teal-dark">without the cringe.</em>
+                  <em className="font-serif block sm:inline text-teal-medium">without the cringe.</em>
                 </h1>
               </div>
 
@@ -249,7 +234,7 @@ export function LandingPage() {
 
               {/* Description Text */}
               <p className="text-lg sm:text-xl text-gray-600 mb-8 sm:mb-10 max-w-xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                LiaiZen prevents conflict in real time—so every message moves the conversation forward, not backward.
+                LiaiZen prevents conflict in real time—so every message is constructive.
               </p>
 
               {/* Social Proof + Urgency Row */}
@@ -266,18 +251,14 @@ export function LandingPage() {
                   </span>
                 </div>
 
-                {/* Beta Notice - Enhanced urgency */}
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-100 text-red-700 shadow-sm">
+                {/* Beta Notice - Enhanced urgency - Brand Colors */}
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 border border-teal-100 text-teal-700 shadow-sm">
                   <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500"></span>
                   </span>
                   <span className="text-xs sm:text-sm font-bold whitespace-nowrap">
-                    {remainingSpots !== null ? (
-                      `Only ${remainingSpots} spot${remainingSpots !== 1 ? 's' : ''} left`
-                    ) : (
-                      'Limited spots available'
-                    )}
+                    Beta Access Starting Soon!
                   </span>
                 </div>
               </div>
@@ -285,7 +266,7 @@ export function LandingPage() {
               {/* Waitlist Email Form */}
               <div className="animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
                 {!waitlistSuccess ? (
-                  <form onSubmit={(e) => handleWaitlistSubmit(e, 'hero')} className="w-full max-w-md">
+                  <form onSubmit={(e) => handleWaitlistSubmit(e, 'hero')} className="w-full max-w-md" ref={heroFormRef}>
                     <div className="flex flex-col sm:flex-row gap-3">
                       <input
                         type="email"
@@ -301,7 +282,7 @@ export function LandingPage() {
                         disabled={waitlistSubmitting}
                         variant="teal-solid"
                         size="medium"
-                        className="w-full sm:w-auto bg-gradient-to-r from-teal-medium to-teal-dark hover:from-teal-dark hover:to-teal-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 whitespace-nowrap py-3 px-6 text-base font-semibold"
+                        className="w-full sm:w-auto bg-teal-medium hover:bg-teal-dark transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 whitespace-nowrap py-2 px-5 text-sm font-medium rounded-full border-none"
                       >
                         {waitlistSubmitting ? 'Joining...' : 'Join Waitlist'}
                       </Button>
@@ -331,21 +312,22 @@ export function LandingPage() {
               </div>
 
               {/* Trust Signals */}
-              <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-y-2 gap-x-6 text-sm text-gray-500 font-medium animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-                <span className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Trust Signals */}
+              <div className="mt-6 sm:mt-8 flex flex-nowrap items-center justify-between sm:justify-start gap-x-2 sm:gap-x-6 text-[10px] min-[380px]:text-xs sm:text-sm text-gray-500 font-medium animate-fade-in-up whitespace-nowrap" style={{ animationDelay: '0.6s' }}>
+                <span className="flex items-center gap-1 sm:gap-2">
+                  <svg className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-teal-medium flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  Any device
+                  Easy to Use
                 </span>
-                <span className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="flex items-center gap-1 sm:gap-2">
+                  <svg className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-teal-medium flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
-                  Parent-built
+                  Co-Parent Founder
                 </span>
-                <span className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="flex items-center gap-1 sm:gap-2">
+                  <svg className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-teal-medium flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                   Secure & Private
@@ -798,7 +780,7 @@ export function LandingPage() {
                 <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-gradient-to-br from-teal-medium to-teal-dark rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 md:mb-6 border-4 border-white shadow-md">
                   <span className="text-xl sm:text-2xl md:text-3xl font-semibold text-teal-medium">3</span>
                 </div>
-                <Heading variant="small" color="teal-medium" as="h3" className="mb-2 sm:mb-3 text-lg sm:text-xl">Communicate Peacefully</Heading>
+                <Heading variant="small" color="teal-medium" as="h3" className="mb-2 sm:mb-3 text-lg sm:text-xl">Communicate Respectfully</Heading>
                 <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   AI helps you find common ground, meet in the middle, and keep conversations productive.
                 </p>
@@ -1116,40 +1098,7 @@ export function LandingPage() {
 
           </div>
 
-          {/* Newsletter Signup */}
-          <div className="mt-24 mb-24">
-            <div className="max-w-2xl mx-auto text-center bg-white rounded-xl p-6 sm:p-8 border-2 border-teal-light shadow-sm">
-              <Heading variant="medium" color="teal-medium" as="h2" className="mb-4">
-                Stay Updated
-              </Heading>
-              <p className="text-lg text-gray-600 mb-8">
-                Get co-parenting tips, product updates, and early access to new features
-              </p>
-              <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  required
-                  className="flex-1 px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-teal-dark focus:outline-none text-base min-h-[44px]"
-                />
-                <Button
-                  type="submit"
-                  variant="teal-solid"
-                  size="large"
-                  className="whitespace-nowrap"
-                >
-                  Subscribe
-                </Button>
-              </form>
-              {newsletterSubmitted && (
-                <p className="mt-4 text-teal-medium font-semibold">
-                  ✓ Thank you for subscribing!
-                </p>
-              )}
-            </div>
-          </div>
+
 
 
 
@@ -1200,15 +1149,15 @@ export function LandingPage() {
       {/* Sticky Mobile CTA Bar */}
       {!waitlistSuccess && (
         <div
-          className={`fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-white border-t-2 border-teal-light shadow-lg transform transition-transform duration-300 ${showStickyMobileCTA ? 'translate-y-0' : 'translate-y-full'
+          className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-teal-light shadow-lg transform transition-transform duration-300 ${showStickyMobileCTA ? 'translate-y-0' : 'translate-y-full'
             }`}
         >
           <div className="px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-gray-700 truncate">
-                {remainingSpots !== null ? `Only ${remainingSpots} spots left!` : 'Limited beta access'}
+              <p className="text-xs font-bold text-teal-800 truncate">
+                Be the first to try LiaiZen
               </p>
-              <p className="text-xs text-gray-500">Free • No credit card</p>
+              <p className="text-xs text-teal-600">Official launch coming soon!</p>
             </div>
             <Button
               onClick={() => {
@@ -1220,7 +1169,7 @@ export function LandingPage() {
               }}
               variant="teal-solid"
               size="small"
-              className="flex-shrink-0 bg-gradient-to-r from-teal-medium to-teal-dark px-4 py-2 text-sm font-semibold"
+              className="flex-shrink-0 bg-teal-medium hover:bg-teal-dark border-none px-3 py-1.5 text-xs font-medium shadow-sm rounded-full tracking-normal"
             >
               Join the Waitlist
             </Button>
