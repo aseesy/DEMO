@@ -13,6 +13,3 @@ cmds = ["echo 'No build step required'"]
 [start]
 cmd = "node server.js"
 
-[providers]
-node = "18"
-

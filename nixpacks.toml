@@ -18,7 +18,3 @@ cmds = ["echo 'No build step required'"]
 
 [start]
 cmd = "cd chat-server && node server.js"
-
-# Explicitly set provider to avoid auto-detection issues
-[providers]
-node = "18"
