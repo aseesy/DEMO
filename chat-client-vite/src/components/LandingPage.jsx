@@ -225,8 +225,7 @@ export function LandingPage() {
             {/* Main Headline - Design System Heading with serif */}
             <div className="mb-8">
               <Heading variant="hero" color="dark" as="h1" className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-tight">
-                <span className="block sm:inline">Co-parenting</span>{' '}
-                <span className="block sm:inline">communication,</span>
+                <span className="block sm:inline">Co-parenting,</span>
                 <br className="hidden sm:block" />
                 <em className="block sm:inline">without the cringe.</em>
               </Heading>
