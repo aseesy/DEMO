@@ -37,7 +37,7 @@ function calculateUserProperties(user, isNewUser = false) {
 
   // Check if user has co-parent (will be updated when co-parent connects)
   // For now, default to false - will be updated in ChatRoom when connection is detected
-  properties.has_coparent = false;
+  properties.hasCoparent = false;
 
   // Features used (will be updated based on actual usage)
   properties.features_used = [];
@@ -140,13 +140,14 @@ export function useAuth() {
     }
   }, []);
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e, spamFields = {}) => {
     if (e?.preventDefault) e.preventDefault();
     setError('');
     setIsLoggingIn(true);
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
+    const honeypotValue = spamFields.website || '';
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(cleanEmail)) {
@@ -165,6 +166,7 @@ export function useAuth() {
         () => apiPost('/api/auth/login', {
           email: cleanEmail,
           password: cleanPassword,
+          website: honeypotValue, // Honeypot field for spam protection
         }),
         {
           maxRetries: 3,
@@ -245,13 +247,14 @@ export function useAuth() {
    * Legacy signup function - kept for backward compatibility
    * Use handleRegister for new registrations with co-parent invitation
    */
-  const handleSignup = async (e) => {
+  const handleSignup = async (e, spamFields = {}) => {
     if (e?.preventDefault) e.preventDefault();
     setError('');
     setIsSigningUp(true);
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
+    const honeypotValue = spamFields.website || '';
 
     if (!cleanEmail) {
       setError('Email is required');
@@ -276,6 +279,7 @@ export function useAuth() {
           email: cleanEmail,
           password: cleanPassword,
           context: {},
+          website: honeypotValue, // Honeypot field for spam protection
         }),
         {
           maxRetries: 3,
@@ -394,7 +398,7 @@ export function useAuth() {
         () => apiPost('/api/auth/register', {
           email: cleanEmail,
           password: cleanPassword,
-          username: cleanUsername,
+          displayName: cleanUsername, // Updated: use displayName instead of username
           coParentEmail: cleanCoParentEmail,
           context: {},
         }),

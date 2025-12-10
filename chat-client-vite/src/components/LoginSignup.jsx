@@ -89,13 +89,16 @@ export function LoginSignup() {
     e.preventDefault();
     setError('');
 
+    // Get honeypot field value for spam protection
+    const honeypotValue = e.target.elements.website?.value || '';
+
     if (isLoginMode) {
-      await handleLogin(e);
+      await handleLogin(e, { website: honeypotValue });
     } else {
       // Mark this as a new signup so we redirect to invite page after
       setIsNewSignup(true);
       // Use standard signup - co-parent invite happens on next screen
-      await handleSignup(e);
+      await handleSignup(e, { website: honeypotValue });
     }
   };
 
@@ -179,6 +182,19 @@ export function LoginSignup() {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-5 mb-8">
+          {/* Honeypot field - hidden from users, bots will fill it */}
+          <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+            <label htmlFor="website">Website (leave blank)</label>
+            <input
+              type="text"
+              id="website"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+            />
+          </div>
+
           {!isLoginMode && (
             <Input
               label="Your Name"

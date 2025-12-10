@@ -16,6 +16,12 @@ const emailService = require('../emailService');
 const invitationManager = require('../libs/invitation-manager');
 const pairingManager = require('../libs/pairing-manager');
 const { verifyAuth, optionalAuth, generateToken, setAuthCookie, clearAuthCookie, JWT_SECRET } = require('../middleware/auth');
+const {
+  honeypotCheck,
+  rateLimit,
+  recaptchaVerify,
+  rejectDisposableEmail
+} = require('../middleware/spamProtection');
 
 // Email validation helper
 function isValidEmail(email) {
@@ -23,11 +29,26 @@ function isValidEmail(email) {
   return emailRegex.test(email);
 }
 
+// Rate limiting for signup endpoints (3 signups per hour per IP)
+const signupRateLimit = rateLimit({
+  windowMs: 3600000, // 1 hour
+  maxRequests: 3,
+  message: 'Too many signup attempts. Please try again later.'
+});
+
+// Rate limiting for login (10 attempts per 15 minutes per IP)
+const loginRateLimit = rateLimit({
+  windowMs: 900000, // 15 minutes
+  maxRequests: 10,
+  message: 'Too many login attempts. Please try again in a few minutes.'
+});
+
 /**
  * POST /api/auth/signup
  * Sign up (create new account with email)
+ * Protected by rate limiting, honeypot, and disposable email check
  */
-router.post('/signup', async (req, res) => {
+router.post('/signup', signupRateLimit, honeypotCheck('website'), rejectDisposableEmail, async (req, res) => {
   try {
     const { email, password, context } = req.body;
 
@@ -65,8 +86,9 @@ router.post('/signup', async (req, res) => {
 /**
  * POST /api/auth/register
  * New user registration with required co-parent invitation
+ * Protected by rate limiting, honeypot, and disposable email check
  */
-router.post('/register', async (req, res) => {
+router.post('/register', signupRateLimit, honeypotCheck('website'), rejectDisposableEmail, async (req, res) => {
   try {
     const { email, password, displayName, coParentEmail, context } = req.body;
 
@@ -146,8 +168,9 @@ router.post('/register', async (req, res) => {
 /**
  * POST /api/auth/login
  * User login
+ * Protected by rate limiting to prevent brute force attacks
  */
-router.post('/login', async (req, res) => {
+router.post('/login', loginRateLimit, honeypotCheck('website'), async (req, res) => {
   try {
     const { email, password, username } = req.body;
 

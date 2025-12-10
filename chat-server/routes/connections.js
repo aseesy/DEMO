@@ -13,6 +13,12 @@ const router = express.Router();
 const dbSafe = require('../dbSafe');
 const connectionManager = require('../connectionManager');
 const emailService = require('../emailService');
+const {
+  honeypotCheck,
+  rateLimit,
+  recaptchaVerify,
+  rejectDisposableEmail
+} = require('../middleware/spamProtection');
 
 // Helper references - set from server.js
 let auth;
@@ -29,6 +35,18 @@ function isValidEmail(email) {
   return emailRegex.test(email);
 }
 
+// Spam protection middleware for contact form
+const contactFormProtection = [
+  honeypotCheck('website'),      // Honeypot field
+  rateLimit({                    // Rate limit: 5 submissions per hour per IP
+    windowMs: 3600000,
+    maxRequests: 5,
+    message: 'Too many contact form submissions. Please try again later.'
+  }),
+  rejectDisposableEmail,         // Block disposable emails
+  recaptchaVerify({ minScore: 0.5, action: 'contact' })  // reCAPTCHA v3
+];
+
 // ========================================
 // Contact Form
 // ========================================
@@ -36,8 +54,9 @@ function isValidEmail(email) {
 /**
  * POST /api/contact
  * Contact form endpoint (public - no authentication required)
+ * Protected by honeypot, rate limiting, disposable email check, and reCAPTCHA
  */
-router.post('/contact', async (req, res) => {
+router.post('/contact', contactFormProtection, async (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
 
