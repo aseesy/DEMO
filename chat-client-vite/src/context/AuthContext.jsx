@@ -41,7 +41,7 @@ function calculateUserProperties(user, isNewUser = false) {
     }
   }
 
-  properties.has_coparent = false;
+  properties.hasCoparent = false;
   properties.features_used = [];
 
   return properties;
@@ -390,35 +390,8 @@ export function useAuthContext() {
   return context;
 }
 
-/**
- * HOC to require authentication
- */
-export function requireAuth(Component) {
-  return function AuthenticatedComponent(props) {
-    const { isAuthenticated, isCheckingAuth } = useAuthContext();
-    const navigate = require('react-router-dom').useNavigate();
-
-    React.useEffect(() => {
-      if (!isCheckingAuth && !isAuthenticated) {
-        navigate('/signin', { replace: true });
-      }
-    }, [isAuthenticated, isCheckingAuth, navigate]);
-
-    if (isCheckingAuth) {
-      return (
-        <div className="min-h-screen bg-white flex items-center justify-center">
-          <div className="text-gray-600">Checking your session…</div>
-        </div>
-      );
-    }
-
-    if (!isAuthenticated) {
-      return null;
-    }
-
-    return <Component {...props} />;
-  };
-}
+// Note: requireAuth HOC removed - unused
+// React Router handles route protection via route configuration
 
 export default AuthContext;
 

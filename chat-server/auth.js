@@ -252,6 +252,14 @@ async function setupUserContextAndRoom(userId, username, context = {}) {
 /**
  * Create a new user account with explicit username
  *
+ * IMPORTANT: The "username" parameter here is the DATABASE username (unique identifier),
+ * NOT a display name. Database usernames are:
+ * - Unique identifiers (e.g., "alice123")
+ * - Lowercase, alphanumeric
+ * - Used for authentication and system lookups
+ * 
+ * Display names should be provided in nameData.displayName.
+ *
  * ATOMIC: Uses insert-with-retry to handle unique constraint violations safely.
  * For explicit usernames, it throws an error if the username already exists
  * (unlike createUserWithEmail which auto-generates alternatives).

@@ -335,7 +335,7 @@ function formatForPrompt(analysis) {
 module.exports = {
   analyze,
   quickCheck,
-  formatForPrompt,
+  formatForPrompt, // Used in mediator.js
   VERSION,
 
   // Export individual pattern modules for direct access if needed

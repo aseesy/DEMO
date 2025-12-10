@@ -142,39 +142,13 @@ function clearColumnCache() {
  * Get schema health status for the users table
  * @returns {Promise<Object>} Object with missing columns and status
  */
-async function getSchemaHealth() {
-  const requiredColumns = [
-    'first_name', 'last_name', 'display_name', 'address',
-    'additional_context', 'profile_picture', 'household_members',
-    'occupation', 'communication_style', 'communication_triggers',
-    'communication_goals', 'last_login',
-  ];
-  
-  const status = {
-    healthy: true,
-    missing: [],
-    existing: [],
-    timestamp: new Date().toISOString(),
-  };
-  
-  for (const columnName of requiredColumns) {
-    const exists = await columnExists('users', columnName);
-    if (exists) {
-      status.existing.push(columnName);
-    } else {
-      status.missing.push(columnName);
-      status.healthy = false;
-    }
-  }
-  
-  return status;
-}
+// Note: getSchemaHealth removed - unused
 
 module.exports = {
   columnExists,
   createColumnIfNotExists,
   ensureProfileColumnsExist,
   clearColumnCache,
-  getSchemaHealth,
+  // Note: getSchemaHealth removed - unused
 };
 

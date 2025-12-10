@@ -8,20 +8,36 @@
     "planning": {
       "enabled": true,
       "threshold": 0.85
+    },
+    "implementation": {
+      "enabled": true,
+      "threshold": 0.80
+    },
+    "testing": {
+      "enabled": true,
+      "threshold": 0.85
     }
   },
   "intelligentRouting": {
     "enabled": true,
-    "fallbackToManual": true
+    "fallbackToManual": true,
+    "preferredAgents": {
+      "specification": "specification-agent",
+      "planning": "planning-agent",
+      "testing": "testing-specialist",
+      "security": "security-specialist"
+    }
   },
   "selfHealing": {
     "enabled": false,
-    "requireApproval": true
+    "requireApproval": true,
+    "maxAttempts": 3
   },
   "refinementEngine": {
     "enabled": true,
     "maxRounds": 20,
-    "earlyStopThreshold": 0.95
+    "earlyStopThreshold": 0.95,
+    "minRounds": 1
   },
   "domainSpecific": {
     "coParenting": {
@@ -29,7 +45,18 @@
       "validationRequired": true,
       "childCenteredFocus": true,
       "conflictReduction": true,
-      "privacyFirst": true
+      "privacyFirst": true,
+      "constitutionPath": "chat-server/src/liaizen/policies/constitution.md",
+      "requiredValidations": [
+        "child-safety",
+        "privacy-compliance",
+        "conflict-reduction"
+      ]
     }
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "outputPath": ".logs/ds-star/"
   }
 }

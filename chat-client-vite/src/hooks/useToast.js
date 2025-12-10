@@ -61,7 +61,7 @@ export function useToast() {
     }
 
     // Create toast object
-    const toast = {
+    const newToast = {
       id: `toast-${Date.now()}-${Math.random()}`,
       sender: sender || 'Co-parent',
       message: message && message.length > 80
@@ -77,7 +77,7 @@ export function useToast() {
     // Add toast to queue
     setToasts((prev) => {
       // Limit to 3 toasts max to avoid clutter
-      const updated = [toast, ...prev];
+      const updated = [newToast, ...prev];
       return updated.slice(0, 3);
     });
 

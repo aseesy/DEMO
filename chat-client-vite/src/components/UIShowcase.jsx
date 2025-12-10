@@ -5,6 +5,9 @@ import { Button, Modal, Input, Textarea, Select, Heading, SectionHeader, Toast, 
 /**
  * UI Component Showcase
  * Interactive documentation and testing page for all design system components
+ * 
+ * @note This is an intentional dev tool for design system documentation
+ * Accessible via /ui-showcase route
  */
 export function UIShowcase() {
   const [showModal, setShowModal] = useState(false);

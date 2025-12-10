@@ -138,14 +138,9 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
         messageWithTimestamp,
       ]);
 
-      // Only trigger notification if this is a truly new message (not already seen)
-      // Check if message timestamp is after the last seen timestamp
-      const isNewUnseenMessage = !lastSeenTimestampRef.current || 
-        (messageWithTimestamp.timestamp && 
-         new Date(messageWithTimestamp.timestamp) > new Date(lastSeenTimestampRef.current));
-
-      // Trigger notification callback only for new unseen messages
-      if (onNewMessage && typeof onNewMessage === 'function' && isNewUnseenMessage) {
+      // ALWAYS trigger notification for new messages from other users (like SMS)
+      // The callback will filter out own messages
+      if (onNewMessage && typeof onNewMessage === 'function') {
         onNewMessage(messageWithTimestamp);
       }
 

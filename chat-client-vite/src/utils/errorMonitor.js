@@ -47,18 +47,59 @@ console.warn = function (...args) {
 };
 
 // Capture unhandled promise rejections
+// IMPORTANT: This must be set up BEFORE any service worker code runs
 window.addEventListener('unhandledrejection', (event) => {
+    const error = event.reason;
+    const errorMessage = error?.message || String(error);
+    const errorString = String(error);
+    
+    // Suppress Safari service worker errors - these are expected and handled
+    // Check for various forms of the error message (check both message and string representation)
+    const isSafariServiceWorkerError = 
+      errorMessage.includes('newestWorker is null') ||
+      errorString.includes('newestWorker is null') ||
+      errorMessage.includes('InvalidStateError') && (
+        errorMessage.includes('worker') ||
+        errorMessage.includes('newestWorker') ||
+        errorMessage.includes('installing') ||
+        errorMessage.includes('waiting') ||
+        errorMessage.includes('null')
+      ) ||
+      errorString.includes('InvalidStateError') && (
+        errorString.includes('worker') ||
+        errorString.includes('newestWorker') ||
+        errorString.includes('installing') ||
+        errorString.includes('waiting') ||
+        errorString.includes('null')
+      ) ||
+      (error?.name === 'InvalidStateError' && (
+        errorMessage.includes('null') ||
+        errorString.includes('null') ||
+        errorMessage.includes('worker') ||
+        errorString.includes('worker')
+      ));
+    
+    if (isSafariServiceWorkerError) {
+      // Prevent default error handling for Safari service worker errors
+      event.preventDefault();
+      // Silently suppress - don't even log in production
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[errorMonitor] Suppressed Safari service worker error (expected):', errorMessage);
+      }
+      return;
+    }
+
     console.error('🚨 Unhandled Promise Rejection:', event.reason);
 
     window.__errorLog.push({
         type: 'unhandledRejection',
         timestamp: new Date().toISOString(),
-        message: event.reason?.message || String(event.reason)
+        message: errorMessage
     });
 
     // Send to monitoring service if configured
     if (window.trackError) {
-        window.trackError(event.reason);
+        window.trackError(error);
     }
 });
 

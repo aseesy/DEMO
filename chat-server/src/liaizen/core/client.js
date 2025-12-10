@@ -10,12 +10,14 @@ const OpenAI = require('openai');
 // Singleton instance
 let openaiInstance = null;
 
+const { RATE_LIMIT, TIME } = require('../../utils/constants');
+
 // Rate limiting state
 const rateLimitState = {
   requestCount: 0,
   windowStart: Date.now(),
-  windowMs: 60000, // 1 minute window
-  maxRequestsPerWindow: 60 // Conservative limit
+  windowMs: RATE_LIMIT.WINDOW_MS,
+  maxRequestsPerWindow: RATE_LIMIT.MAX_REQUESTS_PER_WINDOW
 };
 
 /**
@@ -31,10 +33,11 @@ function getClient() {
       return null;
     }
 
+    const { AI } = require('../../utils/constants');
     openaiInstance = new OpenAI({
       apiKey: apiKey,
-      maxRetries: 2,
-      timeout: 30000 // 30 second timeout
+      maxRetries: RATE_LIMIT.MAX_RETRIES,
+      timeout: AI.TIMEOUT_MS
     });
 
     console.log('✅ OpenAI client initialized');

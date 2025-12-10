@@ -1,6 +1,6 @@
 import { API_BASE_URL } from './config.js';
 import { trackAPIError, trackAPIResponseTime } from './utils/analyticsEnhancements.js';
-import { storageHelpers } from './utils/storageKeys.js';
+import { STORAGE_KEYS } from './utils/storageKeys.js';
 
 // Thin wrappers around fetch so we have a single place to adjust
 // base URLs, credentials, and common headers.
@@ -10,7 +10,8 @@ import { storageHelpers } from './utils/storageKeys.js';
  * @returns {string|null} The auth token or null if not available
  */
 function getAuthToken() {
-  return storageHelpers.getAuthToken();
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
 }
 
 /**

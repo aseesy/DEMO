@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "node",
+      "args": ["-e", "console.log('Filesystem MCP - usually pre-configured in Cursor')"],
+      "description": "File system operations (usually pre-configured)"
+    },
+    "sqlite": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite"],
+      "env": {
+        "DATABASE_PATH": "./chat-server/chat.db"
+      },
+      "description": "SQLite database operations for LiaiZen chat database"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "env:GITHUB_TOKEN"
+      },
+      "description": "GitHub repository management and issue tracking"
+    }
+  }
+}

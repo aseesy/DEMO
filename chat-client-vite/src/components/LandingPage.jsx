@@ -176,7 +176,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Logo */}
-            <div 
+            <div
               className="flex items-center gap-2 sm:gap-3 cursor-pointer"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             >
@@ -212,134 +212,166 @@ export function LandingPage() {
       </nav>
 
       {/* Hero Section - Enhanced background */}
-      <div className="pt-24 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-teal-lightest/30 to-white">
+      <div className="pt-24 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-teal-lightest/30 to-white overflow-hidden relative">
+        {/* Background texture/pattern for better blending */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#0f766e 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
         <div className="max-w-7xl mx-auto">
-          <div className="relative mb-12 sm:mb-20 flex flex-col lg:flex-row lg:items-center lg:gap-6" style={{ overflowX: 'visible' }}>
+          {/* Reduced gap from 16/24 to 8/12 for tighter desktop layout */}
+          <div className="mb-0 sm:mb-8 lg:mb-0 flex flex-col lg:flex-row lg:items-center lg:gap-8 xl:gap-16">
             {/* Left Column - Text Content */}
-            <div className="flex-1 lg:max-w-xl pr-28 sm:pr-36 md:pr-44 lg:pr-0">
-            {/* Top Label - Design System SectionHeader */}
-            <div className="mb-6">
-              <SectionHeader color="medium" size="base">
-                AI Mediation & Guidance
-              </SectionHeader>
-            </div>
-
-            {/* Main Headline */}
-            <div className="mb-3 sm:mb-8">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-tight font-bold text-teal-dark">
-                <span className="font-sans whitespace-nowrap">Co-parenting,</span>
-                <br />
-                <em className="font-serif whitespace-nowrap">without the cringe.</em>
-              </h1>
-            </div>
-
-            {/* Social Proof + Urgency Row */}
-            <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-              {/* Families Helped Badge */}
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-teal-light border-2 border-white flex items-center justify-center text-xs font-bold text-teal-dark">J</div>
-                  <div className="w-8 h-8 rounded-full bg-teal-medium border-2 border-white flex items-center justify-center text-xs font-bold text-white">M</div>
-                  <div className="w-8 h-8 rounded-full bg-teal-dark border-2 border-white flex items-center justify-center text-xs font-bold text-white">S</div>
-                </div>
-                <span className="font-medium">
-                  {familiesHelped !== null ? `${familiesHelped}+ families` : '47+ families'} already joined
-                </span>
+            <div className="flex-1 lg:flex-[1.2] xl:flex-[1.3] relative z-10">
+              {/* Top Label - Design System SectionHeader */}
+              <div className="mb-6 sm:mb-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                <SectionHeader color="medium" size="base">
+                  AI Mediation & Guidance
+                </SectionHeader>
               </div>
 
-              {/* Beta Notice - Enhanced urgency */}
-              <div className="inline-flex flex-wrap items-center gap-2 sm:gap-3 bg-gradient-to-r from-teal-lightest to-white px-3 sm:px-4 py-2 rounded-full border-2 border-teal-light shadow-sm">
-                <span className="relative flex h-3 w-3 flex-shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-medium opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-teal-medium"></span>
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-teal-medium whitespace-nowrap">
-                  {remainingSpots !== null ? (
-                    `Only ${remainingSpots} spot${remainingSpots !== 1 ? 's' : ''} left!`
-                  ) : (
-                    'Limited spots available!'
-                  )}
-                </span>
+              {/* Main Headline */}
+              <div className="mb-6 sm:mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.1] font-bold text-teal-dark tracking-tight">
+                  <span className="font-sans block sm:inline">Co-parenting,</span>
+                  <br className="hidden sm:block" />
+                  <em className="font-serif block sm:inline text-teal-medium sm:text-teal-dark">without the cringe.</em>
+                </h1>
               </div>
-            </div>
 
-            {/* Waitlist Email Form */}
-            {!waitlistSuccess ? (
-              <form onSubmit={(e) => handleWaitlistSubmit(e, 'hero')} className="w-full max-w-md">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="email"
-                    value={waitlistEmail}
-                    onChange={(e) => setWaitlistEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    required
-                    disabled={waitlistSubmitting}
-                    className="flex-1 px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-teal-medium focus:outline-none text-base min-h-[48px] disabled:bg-gray-50"
-                  />
-                  <Button
-                    type="submit"
-                    disabled={waitlistSubmitting}
-                    variant="teal-solid"
-                    size="large"
-                    className="w-full sm:w-auto bg-gradient-to-r from-teal-medium to-teal-dark hover:from-teal-dark hover:to-teal-medium transition-all duration-300 shadow-lg hover:shadow-xl whitespace-nowrap min-h-[48px]"
-                  >
-                    {waitlistSubmitting ? 'Joining...' : 'Join the Waitlist'}
-                  </Button>
+              {/* Mobile/Tablet Image - Shows between headline and description on screens < 1024px */}
+              {/* Changed from md:hidden to lg:hidden to cover tablets, preventing image from dropping to bottom */}
+              <div className="flex lg:hidden justify-center my-8 md:my-10 animate-fade-in mx-auto w-full max-w-[280px] md:max-w-md">
+                <img
+                  src="/assets/family-exchange.svg"
+                  alt="Co-parents peacefully exchanging child during custody transition"
+                  className="w-full h-auto scale-x-[-1]"
+                  style={{ maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)' }}
+                />
+              </div>
+
+              {/* Description Text */}
+              <p className="text-lg sm:text-xl text-gray-600 mb-8 sm:mb-10 max-w-xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                LiaiZen prevents conflict in real time—so every message moves the conversation forward, not backward.
+              </p>
+
+              {/* Social Proof + Urgency Row */}
+              <div className="mb-8 sm:mb-10 flex flex-col sm:flex-row items-center sm:items-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                {/* Families Helped Badge */}
+                <div className="flex items-center gap-3 text-sm text-gray-600 bg-white/50 backdrop-blur-sm p-1.5 pr-4 rounded-full border border-gray-100 shadow-sm">
+                  <div className="flex -space-x-3">
+                    <div className="w-9 h-9 rounded-full bg-teal-light border-2 border-white flex items-center justify-center text-xs font-bold text-teal-dark shadow-sm">J</div>
+                    <div className="w-9 h-9 rounded-full bg-teal-medium border-2 border-white flex items-center justify-center text-xs font-bold text-white shadow-sm">M</div>
+                    <div className="w-9 h-9 rounded-full bg-teal-dark border-2 border-white flex items-center justify-center text-xs font-bold text-white shadow-sm">S</div>
+                  </div>
+                  <span className="font-medium">
+                    {familiesHelped !== null ? `${familiesHelped}+` : '47+'} families joined
+                  </span>
                 </div>
-                {waitlistError && (
-                  <p className="mt-2 text-sm text-red-600">{waitlistError}</p>
+
+                {/* Beta Notice - Enhanced urgency */}
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-100 text-red-700 shadow-sm">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold whitespace-nowrap">
+                    {remainingSpots !== null ? (
+                      `Only ${remainingSpots} spot${remainingSpots !== 1 ? 's' : ''} left`
+                    ) : (
+                      'Limited spots available'
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/* Waitlist Email Form */}
+              <div className="animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+                {!waitlistSuccess ? (
+                  <form onSubmit={(e) => handleWaitlistSubmit(e, 'hero')} className="w-full max-w-md">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="email"
+                        value={waitlistEmail}
+                        onChange={(e) => setWaitlistEmail(e.target.value)}
+                        placeholder="Enter your email"
+                        required
+                        disabled={waitlistSubmitting}
+                        className="flex-[2] min-w-0 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal-medium focus:ring-4 focus:ring-teal-light/20 focus:outline-none text-base transition-all bg-white shadow-sm disabled:bg-gray-50 placeholder:text-gray-400"
+                      />
+                      <Button
+                        type="submit"
+                        disabled={waitlistSubmitting}
+                        variant="teal-solid"
+                        size="medium"
+                        className="w-full sm:w-auto bg-gradient-to-r from-teal-medium to-teal-dark hover:from-teal-dark hover:to-teal-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 whitespace-nowrap py-3 px-6 text-base font-semibold"
+                      >
+                        {waitlistSubmitting ? 'Joining...' : 'Join Waitlist'}
+                      </Button>
+                    </div>
+                    {waitlistError && (
+                      <p className="mt-3 text-sm text-red-600 flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        {waitlistError}
+                      </p>
+                    )}
+                  </form>
+                ) : (
+                  <div className="w-full max-w-md bg-teal-50 border border-teal-100 rounded-xl p-5 text-center shadow-sm animate-fade-in">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
+                        <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-lg font-bold text-teal-800">You're on the list!</span>
+                    </div>
+                    <p className="text-sm text-teal-600">
+                      Watch your inbox. We'll be in touch soon with your invite.
+                    </p>
+                  </div>
                 )}
-              </form>
-            ) : (
-              <div className="w-full max-w-md bg-teal-lightest border-2 border-teal-light rounded-lg p-4 text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <svg className="w-6 h-6 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-lg font-semibold text-teal-dark">You're on the waitlist!</span>
-                </div>
-                <p className="text-sm text-teal-medium">
-                  We'll be in touch soon with early access.
-                </p>
               </div>
-            )}
 
-            {/* Description Text - moved below waitlist form */}
-            <p className="mt-3 text-base sm:text-lg md:text-xl text-gray-700 max-w-3xl leading-relaxed">
-              LiaiZen prevents conflict in real time—so every message moves the conversation forward.
-            </p>
-
-            {/* Trust Signals */}
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs sm:text-sm text-gray-500">
-              <span className="flex items-center gap-1">
-                <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                Works on any device
-              </span>
-              <span className="flex items-center gap-1">
-                <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                Built by a co-parent
-              </span>
-              <span className="flex items-center gap-1">
-                <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
-                Be the first to try it
-              </span>
-            </div>
+              {/* Trust Signals */}
+              <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-y-2 gap-x-6 text-sm text-gray-500 font-medium animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+                <span className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Any device
+                </span>
+                <span className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  Parent-built
+                </span>
+                <span className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Secure & Private
+                </span>
+              </div>
             </div>
 
-            {/* Right Column - Family Exchange Illustration */}
-            {/* On small screens: positioned top-right, smaller */}
-            {/* On large screens: flows with content, full size */}
-            <div className="absolute top-20 right-4 w-24 sm:w-32 md:w-40 opacity-60 lg:opacity-100 lg:static lg:flex lg:flex-1 lg:justify-center lg:items-center lg:mt-0 lg:w-auto">
+            {/* Right Column - Family Exchange Illustration (Desktop only) */}
+            {/* Changed hidden md:block to hidden lg:block so it's only side-by-side on large screens */}
+            <div className="hidden lg:block flex-1 ml-auto relative">
+              {/* Organic blob background instead of basic radial gradient */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] h-[130%] z-0 pointer-events-none opacity-60">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="#F0FDFA" d="M44.7,-76.4C58.9,-69.2,71.8,-59.1,81.6,-46.6C91.4,-34.1,98.1,-19.2,95.8,-5.5C93.5,8.2,82.2,20.7,71.5,31.7C60.9,42.7,50.9,52.2,39.9,59.3C28.9,66.4,16.9,71.1,3.4,65.2C-10.1,59.3,-25.1,42.8,-38.3,29.9C-51.5,17,-62.9,7.7,-64.8,-3.3C-66.7,-14.3,-59.1,-27,-49.6,-38.3C-40.1,-49.6,-28.7,-59.5,-16.4,-63.9C-4.1,-68.3,9.1,-67.2,22.4,-66.1L44.7,-76.4Z" transform="translate(100 100) scale(1.1)" />
+                </svg>
+              </div>
+
               <img
                 src="/assets/family-exchange.svg"
                 alt="Co-parents peacefully exchanging child during custody transition"
-                className="w-full lg:max-w-md xl:max-w-lg scale-x-[-1]"
+                className="relative z-10 w-full max-w-lg xl:max-w-xl scale-x-[-1] animate-float mx-auto mix-blend-multiply"
+                style={{
+                  animationDuration: '6s',
+                  maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)'
+                }}
               />
             </div>
           </div>
@@ -1168,9 +1200,8 @@ export function LandingPage() {
       {/* Sticky Mobile CTA Bar */}
       {!waitlistSuccess && (
         <div
-          className={`fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-white border-t-2 border-teal-light shadow-lg transform transition-transform duration-300 ${
-            showStickyMobileCTA ? 'translate-y-0' : 'translate-y-full'
-          }`}
+          className={`fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-white border-t-2 border-teal-light shadow-lg transform transition-transform duration-300 ${showStickyMobileCTA ? 'translate-y-0' : 'translate-y-full'
+            }`}
         >
           <div className="px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0">

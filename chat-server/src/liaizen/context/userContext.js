@@ -134,7 +134,16 @@ async function formatContextForAI(username, profileData = null) {
     parts.push(`Other contacts: ${contactsInfo}`);
   }
 
-  // Profile fields
+  // Profile fields - Enhanced for better contextual awareness
+  if (userProfile?.occupation) {
+    // Include work schedule if available for scheduling context
+    const workInfo = [userProfile.occupation];
+    if (userProfile.work_schedule) {
+      workInfo.push(`(${userProfile.work_schedule})`);
+    }
+    parts.push(`Occupation: ${workInfo.join(' ')}`);
+  }
+  
   if (userProfile?.communication_style) {
     parts.push(`Communication style: "${userProfile.communication_style}"`);
   }
@@ -144,11 +153,24 @@ async function formatContextForAI(username, profileData = null) {
   if (userProfile?.communication_goals) {
     parts.push(`Communication goals: "${userProfile.communication_goals}"`);
   }
-  if (userProfile?.occupation) {
-    parts.push(`Occupation: ${userProfile.occupation}`);
+  
+  // Additional context fields
+  if (userProfile?.additional_context) {
+    parts.push(`Additional context: "${userProfile.additional_context}"`);
   }
+  
   if (userProfile?.address) {
     parts.push(`Location: ${userProfile.address}`);
+  }
+  
+  // Household context (for understanding family dynamics)
+  if (userProfile?.household_members) {
+    parts.push(`Household: ${userProfile.household_members}`);
+  }
+  
+  // Timezone for temporal awareness
+  if (userProfile?.timezone) {
+    parts.push(`Timezone: ${userProfile.timezone}`);
   }
 
   return parts.length > 0

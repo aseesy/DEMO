@@ -8,6 +8,8 @@ import { useContacts } from './hooks/useContacts.js';
 import { useProfile } from './hooks/useProfile.js';
 import { useNotifications } from './hooks/useNotifications.js';
 import { useInAppNotifications } from './hooks/useInAppNotifications.js';
+import { useToast } from './hooks/useToast.js';
+import { ToastContainer } from './components/ui/Toast/Toast.jsx';
 import { ContactsPanel } from './components/ContactsPanel.jsx';
 import { ProfilePanel } from './components/ProfilePanel.jsx';
 import { UpdatesPanel } from './components/UpdatesPanel.jsx';
@@ -22,8 +24,10 @@ import { ProfileTaskModal } from './components/modals/ProfileTaskModal.jsx';
 import { FlaggingModal } from './components/modals/FlaggingModal.jsx';
 import { ContactSuggestionModal } from './components/modals/ContactSuggestionModal.jsx';
 import { InviteTaskModal } from './components/InviteTaskModal.jsx';
+import PrivacySettings from './components/profile/PrivacySettings.jsx';
 import { API_BASE_URL } from './config.js';
-import { apiPost } from './apiClient.js';
+import { apiPost, apiGet } from './apiClient.js';
+import { getWithMigration, setWithMigration, removeWithMigration } from './utils/storageMigration.js';
 import {
   trackMessageSent,
   trackAIIntervention,
@@ -41,6 +45,101 @@ import { logger } from './utils/logger.js';
 
 // Main LiaiZen chat room component
 // Handles chat, tasks, contacts, profile, and all core app functionality
+
+// Privacy Settings Wrapper Component
+function PrivacySettingsWrapper({ username }) {
+  const {
+    privacySettings,
+    loadPrivacySettings,
+    updatePrivacySettings,
+  } = useProfile(username);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const load = async () => {
+      setIsLoading(true);
+      await loadPrivacySettings();
+      setIsLoading(false);
+    };
+    if (username) {
+      load();
+    }
+  }, [username, loadPrivacySettings]);
+
+  const handleChange = React.useCallback(async (newSettings) => {
+    setIsSaving(true);
+    try {
+      const result = await updatePrivacySettings(newSettings);
+      if (!result?.success) {
+        console.error('Failed to update privacy settings:', result?.error);
+      }
+    } catch (error) {
+      console.error('Error updating privacy settings:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [updatePrivacySettings]);
+
+  const handlePreview = React.useCallback(async () => {
+    try {
+      const response = await apiGet('/api/user/profile/preview-coparent-view');
+      if (response.ok) {
+        return await response.json();
+      }
+      throw new Error('Failed to load preview');
+    } catch (error) {
+      console.error('Error loading preview:', error);
+      throw error;
+    }
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="border-2 border-teal-light rounded-2xl p-8 bg-white shadow-sm">
+        <div className="flex items-center justify-center py-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-teal-medium" />
+        </div>
+      </div>
+    );
+  }
+
+  // Default settings if none loaded
+  const defaultSettings = {
+    personal_visibility: 'shared',
+    work_visibility: 'private',
+    health_visibility: 'private',
+    financial_visibility: 'private',
+    background_visibility: 'shared',
+    field_overrides: '{}',
+  };
+
+  const currentSettings = privacySettings || defaultSettings;
+
+  return (
+    <div className="border-2 border-teal-light rounded-2xl p-8 bg-white shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-4 mb-6">
+        <div className="w-12 h-12 rounded-xl bg-teal-medium flex items-center justify-center shrink-0 shadow-md">
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <div className="flex-1">
+          <h3 className="text-xl font-semibold text-teal-dark mb-2">Privacy Settings</h3>
+          <p className="text-base text-gray-600 mb-4 leading-relaxed">
+            Control what information your co-parent can see about you
+          </p>
+        </div>
+      </div>
+      <PrivacySettings
+        settings={currentSettings}
+        onChange={handleChange}
+        onPreviewCoParentView={handlePreview}
+        isSaving={isSaving}
+      />
+    </div>
+  );
+}
 
 function AccountView({ username }) {
   const {
@@ -265,8 +364,8 @@ function ChatRoom() {
 
   const [showLanding, setShowLanding] = React.useState(() => {
     // Don't show landing if user is already authenticated
-    // Check both token keys for compatibility
-    return !localStorage.getItem('auth_token_backup') && !localStorage.getItem('token') && !localStorage.getItem('isAuthenticated');
+    // Check both token keys for compatibility (including old key for migration)
+    return !getWithMigration('authTokenBackup', 'auth_token_backup') && !localStorage.getItem('token') && !localStorage.getItem('isAuthenticated');
   });
 
   const {
@@ -286,7 +385,7 @@ function ChatRoom() {
 
   const availableViews = ['dashboard', 'chat', 'contacts', 'profile', 'settings', 'account'];
   const [currentView, setCurrentViewState] = React.useState(() => {
-    const stored = localStorage.getItem('currentView');
+    const stored = getWithMigration('currentView');
     return stored && availableViews.includes(stored)
       ? stored
       : 'dashboard';
@@ -302,6 +401,28 @@ function ChatRoom() {
 
   // Track unread message count for navigation badge
   const [unreadCount, setUnreadCount] = React.useState(0);
+
+  // Notification preferences
+  const [notificationPrefs, setNotificationPrefs] = React.useState(() => {
+    const stored = getWithMigration('notificationPreferences', 'notification_preferences');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        // Fallback to defaults
+      }
+    }
+    return {
+      newMessages: true,
+      taskReminders: false,
+      invitations: true
+    };
+  });
+
+  // Save notification preferences to localStorage
+  React.useEffect(() => {
+    setWithMigration('notificationPreferences', JSON.stringify(notificationPrefs));
+  }, [notificationPrefs]);
 
   // Hide landing page once authenticated
   React.useEffect(() => {
@@ -334,7 +455,7 @@ function ChatRoom() {
 
   React.useEffect(() => {
     if (isAuthenticated) {
-      localStorage.setItem('currentView', currentView);
+      setWithMigration('currentView', currentView);
     }
   }, [isAuthenticated, currentView]);
 
@@ -386,10 +507,27 @@ function ChatRoom() {
   // Notification system for new messages
   const notifications = useNotifications({
     username,
-    enabled: isAuthenticated && !showLanding
+    enabled: isAuthenticated && !showLanding && notificationPrefs.newMessages
   });
 
-  // Callback for new messages - Device notifications only (no in-browser toast)
+  // In-app toast notifications for visual alerts
+  const toast = useToast();
+
+  // Expose test function to window for debugging
+  React.useEffect(() => {
+    window.__testToast = () => {
+      console.log('[Test] Manually triggering toast...');
+      toast.show({
+        sender: 'Test User',
+        message: 'This is a test notification!',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        username: null, // Won't match current user
+      });
+    };
+    return () => { delete window.__testToast; };
+  }, [toast]);
+
+  // Callback for new messages - shows both browser notification and in-app toast
   const handleNewMessage = React.useCallback((message) => {
     // Only process notifications for messages from other users
     if (message.username === username) {
@@ -401,12 +539,24 @@ function ChatRoom() {
       setUnreadCount(prev => prev + 1);
     }
 
+    // Show in-app toast notification (visual popup like Google Calendar)
+    // Works without any browser permissions
+    toast.show({
+      sender: message.username,
+      message: message.text || message.content || '',
+      timestamp: message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : undefined,
+      username: username, // Current user to filter own messages
+    });
+
     // Show native browser notification like SMS - always show if permission granted
     // This provides immediate notification on computer/phone, similar to text messages
     if (notifications.permission === 'granted') {
       notifications.showNotification(message);
     }
-  }, [username, currentView, notifications]);
+  }, [username, currentView, notifications, toast]);
 
   // Track original message to remove after rewrite is sent
   const [pendingOriginalMessageToRemove, setPendingOriginalMessageToRemove] = React.useState(null);
@@ -600,7 +750,7 @@ function ChatRoom() {
     if (!pendingContactSuggestion) return;
     trackContactAdded('suggestion');
     setCurrentView('contacts');
-    localStorage.setItem('liaizen_add_contact', JSON.stringify({
+    setWithMigration('liaizenAddContact', JSON.stringify({
       name: pendingContactSuggestion.detectedName,
       context: pendingContactSuggestion.text
     }));
@@ -636,7 +786,7 @@ function ChatRoom() {
   // Check for invite code in URL or localStorage on mount
   React.useEffect(() => {
     const inviteCodeFromUrl = searchParams.get('invite');
-    const inviteCodeFromStorage = localStorage.getItem('pending_invite_code');
+    const inviteCodeFromStorage = getWithMigration('pendingInviteCode', 'pending_invite_code');
 
     // Prioritize URL, then localStorage
     const inviteCode = inviteCodeFromUrl || inviteCodeFromStorage;
@@ -647,7 +797,7 @@ function ChatRoom() {
 
       // Store in localStorage if from URL
       if (inviteCodeFromUrl) {
-        localStorage.setItem('pending_invite_code', inviteCodeFromUrl);
+        setWithMigration('pendingInviteCode', inviteCodeFromUrl);
       }
 
       // Clean up URL (remove invite param) but keep in localStorage
@@ -680,13 +830,13 @@ function ChatRoom() {
           logger.debug('Successfully accepted invite, joined room:', data.roomId);
           setPendingInviteCode(null);
           // Clear invite code from localStorage after successful acceptance
-          localStorage.removeItem('pending_invite_code');
+          removeWithMigration('pendingInviteCode');
           setHasCoParentConnected(true); // Co-parents are now connected
 
           // Update user properties when co-parent connects
           setUserProperties({
-            has_coparent: true,
-            room_status: 'multi_user',
+            hasCoparent: true,
+            roomStatus: 'multi_user',
           });
           // Show success message briefly
           setInviteError(''); // Clear errors
@@ -733,7 +883,7 @@ function ChatRoom() {
     try {
       // Check if it's a co-parent invitation code (LZ-XXXXXX format)
       const isCoParentInviteCode = /^LZ-[A-Z0-9]{6}$/i.test(codeToUse.toUpperCase());
-      const token = localStorage.getItem('auth_token_backup');
+      const token = getWithMigration('authTokenBackup', 'auth_token_backup');
 
       let response;
       let data;
@@ -757,11 +907,11 @@ function ChatRoom() {
           setPendingInviteCode(null);
           setManualInviteCode('');
           setShowManualInvite(false);
-          localStorage.removeItem('pending_invite_code');
+          removeWithMigration('pendingInviteCode');
           setHasCoParentConnected(true);
           setUserProperties({
-            has_coparent: true,
-            room_status: 'multi_user',
+            hasCoparent: true,
+            roomStatus: 'multi_user',
           });
           setInviteError('');
           return;
@@ -785,11 +935,11 @@ function ChatRoom() {
           setPendingInviteCode(null);
           setManualInviteCode('');
           setShowManualInvite(false);
-          localStorage.removeItem('pending_invite_code');
+          removeWithMigration('pendingInviteCode');
           setHasCoParentConnected(true);
           setUserProperties({
-            has_coparent: true,
-            room_status: 'multi_user',
+            hasCoparent: true,
+            roomStatus: 'multi_user',
           });
           setInviteError('');
           return;
@@ -816,7 +966,7 @@ function ChatRoom() {
     if (!isAuthenticated) return;
 
     try {
-      const token = localStorage.getItem('auth_token_backup');
+      const token = getWithMigration('authTokenBackup', 'auth_token_backup');
       const apiUrl = `${API_BASE_URL.replace(/\/+$/, '')}/api/room/members/check`;
 
       // Add timeout to prevent hanging requests
@@ -846,8 +996,8 @@ function ChatRoom() {
         // Update user properties when co-parent connects
         if (hasMultiple) {
           setUserProperties({
-            has_coparent: true,
-            room_status: 'multi_user',
+            hasCoparent: true,
+            roomStatus: 'multi_user',
           });
         }
       } else if (response.status === 404) {
@@ -954,7 +1104,7 @@ function ChatRoom() {
     if (!isAuthenticated) return;
 
     try {
-      const token = localStorage.getItem('auth_token_backup');
+      const token = getWithMigration('authTokenBackup', 'auth_token_backup');
       const response = await fetch(
         `${API_BASE_URL.replace(/\/+$/, '')}/api/invitations`,
         {
@@ -1097,7 +1247,16 @@ function ChatRoom() {
   if (isAuthenticated) {
     return (
       <div className="h-screen bg-white flex flex-col overflow-hidden">
-        {/* Device notifications handled by PWA Service Worker - no in-browser toasts */}
+        {/* In-app toast notifications for visual alerts */}
+        <ToastContainer
+          toasts={toast.toasts}
+          onDismiss={toast.dismiss}
+          onClick={(clickedToast) => {
+            // Navigate to chat when toast is clicked
+            setCurrentView('chat');
+            toast.dismiss(clickedToast.id);
+          }}
+        />
 
         {/* Navigation - Top for desktop, Bottom for mobile */}
         <Navigation
@@ -1112,8 +1271,8 @@ function ChatRoom() {
             // Mark co-parent as connected
             setHasCoParentConnected(true);
             setUserProperties({
-              has_coparent: true,
-              room_status: 'multi_user',
+              hasCoparent: true,
+              roomStatus: 'multi_user',
             });
             // Trigger contacts reload after invitation acceptance
             // Dispatch event to reload contacts (contacts hook listens for this)
@@ -1763,7 +1922,7 @@ function ChatRoom() {
                                 setShowManualInvite(false);
                                 setInviteError('');
                                 setPendingInviteCode(null);
-                                localStorage.removeItem('pending_invite_code');
+                                removeWithMigration('pendingInviteCode');
                               }}
                               className="px-4 py-2.5 rounded-lg bg-white border-2 border-amber-300 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-all min-h-[44px]"
                             >
@@ -2109,22 +2268,17 @@ function ChatRoom() {
                                         )}
                                         {!isComment && (
                                           <>
-                                            {msg.explanation && (
-                                              <div className="mb-3 p-3 bg-teal-lightest/60 border border-teal-light/40 rounded-lg">
-                                                <div className="flex items-start gap-2">
-                                                  <svg className="w-3.5 h-3.5 text-teal-medium mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                  </svg>
-                                                  <p className="text-sm text-teal-dark leading-snug font-normal">
-                                                    {msg.explanation.replace(/^ADDRESS:\s*/i, '').replace(/^Address:\s*/i, '').replace(/^Address\s*/i, '').replace(/\bAddress\b/gi, '').trim()}
-                                                  </p>
-                                                </div>
-                                              </div>
+                                            {/* Mirror Moment: Single message - acknowledge, validate, encourage enlightened approach */}
+                                            {msg.mirrorMessage && (
+                                              <p className="text-base text-gray-800 leading-relaxed font-medium" style={{ fontSize: '16px' }}>
+                                                {msg.mirrorMessage}
+                                              </p>
                                             )}
-                                            {msg.personalMessage && (
+                                            {/* Legacy support for old personalMessage/tip1 format - only show if NO mirrorMessage */}
+                                            {!msg.mirrorMessage && msg.personalMessage && (
                                               <p className="text-base text-gray-900 leading-snug mb-3 font-normal" style={{ fontSize: '15px' }}>{msg.personalMessage.replace(/^ADDRESS:\s*/i, '').replace(/^Address:\s*/i, '').replace(/^Address\s*/i, '').replace(/\bAddress\b/gi, '').trim()}</p>
                                             )}
-                                            {msg.tip1 && (
+                                            {!msg.mirrorMessage && msg.tip1 && (
                                               <div className="mb-3 p-2 bg-teal-lightest border border-teal-light rounded-lg">
                                                 <div className="flex items-center gap-1.5 mb-1.5">
                                                   <svg className="w-3.5 h-3.5 text-teal-medium shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -2137,7 +2291,8 @@ function ChatRoom() {
                                                 </p>
                                               </div>
                                             )}
-                                            {(msg.rewrite1 || msg.rewrite2) && (
+                                            {/* Only show rewrites if NO mirrorMessage (legacy mode) */}
+                                            {!msg.mirrorMessage && (msg.rewrite1 || msg.rewrite2) && (
                                               <div className="space-y-2.5 pt-3 border-t border-gray-200/40">
                                                 <div className="flex items-center gap-1.5 mb-2">
                                                   <svg className="w-3.5 h-3.5 text-teal-dark shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -2557,10 +2712,6 @@ function ChatRoom() {
                 <div className="p-8 sm:p-10 space-y-8">
                   <div>
                     <h2 className="text-3xl font-semibold text-teal-dark mb-3">Settings</h2>
-                    <p className="text-base text-gray-600 leading-relaxed">
-                      Customize notifications, privacy, and other preferences. Full controls are coming soon,
-                      but here you can preview the sections that will live here.
-                    </p>
                   </div>
 
                   {/* PWA Install Section */}
@@ -2578,7 +2729,7 @@ function ChatRoom() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-teal-dark mb-2">Desktop Notifications</h3>
+                          <h3 className="text-xl font-semibold text-teal-dark mb-2">Notifications</h3>
                           <p className="text-base text-gray-600 mb-6 leading-relaxed">
                             Get notified when your co-parent sends you a message
                           </p>
@@ -2628,18 +2779,38 @@ function ChatRoom() {
                                 </div>
                               )}
 
-                              <p className="text-xs text-gray-500 mb-2">
-                                You'll get a notification every time your co-parent sends a message
-                              </p>
                               {notifications.permission === 'granted' && (
-                                <div className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg mt-2">
-                                  <p className="font-medium mb-1">Not seeing notifications?</p>
-                                  <ul className="text-xs space-y-1 list-disc list-inside">
-                                    <li>Check macOS: System Settings → Notifications → [Your Browser] → Allow Notifications & Banner style</li>
-                                    <li>Check Do Not Disturb / Focus mode is off</li>
-                                    <li>Notifications may appear in Notification Center (top-right corner)</li>
-                                    <li>Some browsers suppress notifications when the window is focused</li>
-                                  </ul>
+                                <div className="space-y-3 pt-3 border-t border-teal-light">
+                                  <p className="text-sm font-medium text-teal-dark">Notification Preferences</p>
+                                  <div className="space-y-2">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={notificationPrefs.newMessages}
+                                        onChange={(e) => setNotificationPrefs(prev => ({ ...prev, newMessages: e.target.checked }))}
+                                        className="w-5 h-5 text-teal-medium border-teal-light rounded focus:ring-teal-medium focus:ring-2"
+                                      />
+                                      <span className="text-sm text-gray-700">New messages from co-parent</span>
+                                    </label>
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={notificationPrefs.taskReminders}
+                                        onChange={(e) => setNotificationPrefs(prev => ({ ...prev, taskReminders: e.target.checked }))}
+                                        className="w-5 h-5 text-teal-medium border-teal-light rounded focus:ring-teal-medium focus:ring-2"
+                                      />
+                                      <span className="text-sm text-gray-700">Task reminders</span>
+                                    </label>
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={notificationPrefs.invitations}
+                                        onChange={(e) => setNotificationPrefs(prev => ({ ...prev, invitations: e.target.checked }))}
+                                        className="w-5 h-5 text-teal-medium border-teal-light rounded focus:ring-teal-medium focus:ring-2"
+                                      />
+                                      <span className="text-sm text-gray-700">Invitation requests</span>
+                                    </label>
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -2653,20 +2824,7 @@ function ChatRoom() {
                     </div>
 
                     {/* Privacy Settings */}
-                    <div className="border-2 border-gray-200 rounded-2xl p-8 bg-white shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 shadow-sm">
-                          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                          </svg>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-teal-dark mb-2">Privacy</h3>
-                          <p className="text-base text-gray-600 mb-4 leading-relaxed">Control who can see activity within your room.</p>
-                          <p className="text-sm text-gray-500">More privacy controls coming soon</p>
-                        </div>
-                      </div>
-                    </div>
+                    <PrivacySettingsWrapper username={username} />
                   </div>
 
                   {/* Send Invite Section - Always visible when no co-parent connected */}

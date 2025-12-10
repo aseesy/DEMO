@@ -510,6 +510,45 @@ export function setupGlobalErrorHandler() {
   // Handle unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
+    const errorMessage = error?.message || String(error);
+    const errorString = String(error);
+    
+    // Suppress Safari service worker errors - these are expected and handled
+    // Check for various forms of the error message (check both message and string representation)
+    const isSafariServiceWorkerError = 
+      errorMessage.includes('newestWorker is null') ||
+      errorString.includes('newestWorker is null') ||
+      (errorMessage.includes('InvalidStateError') && (
+        errorMessage.includes('worker') ||
+        errorMessage.includes('newestWorker') ||
+        errorMessage.includes('installing') ||
+        errorMessage.includes('waiting') ||
+        errorMessage.includes('null')
+      )) ||
+      (errorString.includes('InvalidStateError') && (
+        errorString.includes('worker') ||
+        errorString.includes('newestWorker') ||
+        errorString.includes('installing') ||
+        errorString.includes('waiting') ||
+        errorString.includes('null')
+      )) ||
+      (error?.name === 'InvalidStateError' && (
+        errorMessage.includes('null') ||
+        errorString.includes('null') ||
+        errorMessage.includes('worker') ||
+        errorString.includes('worker')
+      ));
+    
+    if (isSafariServiceWorkerError) {
+      // Prevent default error handling for Safari service worker errors
+      event.preventDefault();
+      // Silently suppress - don't even log in production
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[errorHandler] Suppressed Safari service worker error (expected):', errorMessage);
+      }
+      return;
+    }
+    
     logError(error, { type: 'unhandled_promise_rejection' });
     trackError(error, 'unhandled_promise_rejection', false);
     console.error('Unhandled promise rejection:', error);

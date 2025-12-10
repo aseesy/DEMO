@@ -27,6 +27,10 @@
 
 const openaiClient = require('./client');
 const userContext = require('../context/userContext');
+const { defaultLogger } = require('../../utils/logger');
+const { RetryableError } = require('../../utils/errors');
+const { TIME, CACHE, MESSAGE, ESCALATION, AI, DATABASE, ARRAY_LIMITS, VALIDATION } = require('../../utils/constants');
+const stateManager = require('./stateManager');
 
 // Language Analyzer Library (Feature 005)
 let languageAnalyzer;
@@ -44,8 +48,38 @@ try {
   communicationProfile = require('../context/communication-profile');
   console.log('✅ AI Mediator: Communication profile library loaded');
 } catch (err) {
-  console.warn('⚠️ AI Mediator: Communication profile library not available, using legacy mode');
+  console.warn('⚠️ AI Mediator: Communication profile library not available');
   communicationProfile = null;
+}
+
+// Voice signature extraction (Phase 1: Contextual Awareness)
+let voiceSignature;
+try {
+  voiceSignature = require('../context/communication-profile/voiceSignature');
+  console.log('✅ AI Mediator: Voice signature extraction loaded');
+} catch (err) {
+  console.warn('⚠️ AI Mediator: Voice signature extraction not available');
+  voiceSignature = null;
+}
+
+// Conversation pattern analysis (Phase 1: Contextual Awareness)
+let conversationPatterns;
+try {
+  conversationPatterns = require('../context/communication-profile/conversationPatterns');
+  console.log('✅ AI Mediator: Conversation pattern analysis loaded');
+} catch (err) {
+  console.warn('⚠️ AI Mediator: Conversation pattern analysis not available');
+  conversationPatterns = null;
+}
+
+// Intervention learning (Phase 2: Enhanced Context)
+let interventionLearning;
+try {
+  interventionLearning = require('../context/communication-profile/interventionLearning');
+  console.log('✅ AI Mediator: Intervention learning system loaded');
+} catch (err) {
+  console.warn('⚠️ AI Mediator: Intervention learning system not available');
+  interventionLearning = null;
 }
 
 // Rewrite Validator Library (Feature 006)
@@ -58,6 +92,20 @@ try {
   rewriteValidator = null;
 }
 
+// Code Layer Integration (Feature 004 - Hybrid Mediation Engine)
+let codeLayerIntegration;
+try {
+  codeLayerIntegration = require('./codeLayerIntegration');
+  if (codeLayerIntegration.isAvailable()) {
+    console.log('✅ AI Mediator: Code Layer Integration v' + codeLayerIntegration.getVersion() + ' loaded');
+  } else {
+    console.warn('⚠️ AI Mediator: Code Layer Integration loaded but Code Layer not available');
+  }
+} catch (err) {
+  console.warn('⚠️ AI Mediator: Code Layer Integration not available:', err.message);
+  codeLayerIntegration = null;
+}
+
 // Profile Helpers Library (Feature 010 - Comprehensive User Profile)
 let profileHelpers;
 try {
@@ -66,6 +114,16 @@ try {
 } catch (err) {
   console.warn('⚠️ AI Mediator: Profile helpers library not available');
   profileHelpers = null;
+}
+
+// Co-Parent Context Library (Situational context for AI coaching)
+let coparentContext;
+try {
+  coparentContext = require('../context/coparentContext');
+  console.log('✅ AI Mediator: Co-parent context library loaded');
+} catch (err) {
+  console.warn('⚠️ AI Mediator: Co-parent context library not available');
+  coparentContext = null;
 }
 
 // Conversation context tracker (unified state management)
@@ -84,8 +142,16 @@ const conversationContext = {
   emotionalState: new Map(), // roomId -> emotional data
 
   // Policy tracking (from interventionPolicy)
-  policyState: new Map() // roomId -> policy configuration
+  policyState: new Map(), // roomId -> policy configuration
+
+  // OPTIMIZATION: Cache for similar message analyses (reduces redundant API calls)
+  messageAnalysisCache: new Map(), // messageHash -> { result, timestamp }
+  cacheMaxAge: CACHE.MESSAGE_CACHE_TTL_MS,
+  cacheMaxSize: CACHE.MESSAGE_CACHE_MAX_SIZE
 };
+
+// Initialize state manager with conversation context
+stateManager.initialize(conversationContext);
 
 /**
  * Initialize escalation state for a room
@@ -171,30 +237,7 @@ function detectConflictPatterns(messageText) {
 /**
  * Update escalation score based on detected patterns
  */
-function updateEscalationScore(roomId, patterns) {
-  const state = initializeEscalationState(roomId);
-
-  if (patterns.hasAccusatory) state.patternCounts.accusatory++;
-  if (patterns.hasTriangulation) state.patternCounts.triangulation++;
-  if (patterns.hasComparison) state.patternCounts.comparison++;
-  if (patterns.hasBlaming) state.patternCounts.blaming++;
-
-  // Increase escalation score based on detected patterns
-  if (Object.values(patterns).some(p => p === true)) {
-    state.escalationScore += 10;
-    state.lastNegativeTime = Date.now();
-  }
-
-  // Decay escalation score over time (reduce by 1 every 5 minutes)
-  const timeSinceLastNegative = state.lastNegativeTime
-    ? Date.now() - state.lastNegativeTime
-    : Infinity;
-  if (timeSinceLastNegative > 300000) { // 5 minutes
-    state.escalationScore = Math.max(0, state.escalationScore - 1);
-  }
-
-  return state;
-}
+// updateEscalationScore moved to stateManager.js
 
 /**
  * MAIN FUNCTION: Analyze message with unified AI call
@@ -216,11 +259,87 @@ function updateEscalationScore(roomId, patterns) {
  * @param {Object} roleContext - Optional sender/receiver context {senderId, receiverId}
  * @returns {Promise<Object>} - Unified mediation result
  */
+/**
+ * Generate a simple hash for message caching (based on message text and key context)
+ */
+function generateMessageHash(messageText, senderId, receiverId) {
+  const crypto = require('crypto');
+  const hashInput = `${messageText.toLowerCase().trim()}|${senderId}|${receiverId}`;
+  return crypto.createHash('md5').update(hashInput).digest('hex');
+}
+
+/**
+ * Check cache for similar message analysis
+ */
+function getCachedAnalysis(messageHash) {
+  const cache = conversationContext.messageAnalysisCache;
+  const cached = cache.get(messageHash);
+  
+  if (!cached) {
+    return null;
+  }
+  
+  // Check if cache entry is still valid
+  const age = Date.now() - cached.timestamp;
+  if (age > conversationContext.cacheMaxAge) {
+    cache.delete(messageHash);
+    return null;
+  }
+  
+  return cached.result;
+}
+
+/**
+ * Store analysis result in cache
+ */
+function cacheAnalysis(messageHash, result) {
+  const cache = conversationContext.messageAnalysisCache;
+  
+  // Enforce max cache size (LRU-like: remove oldest if at limit)
+  if (cache.size >= conversationContext.cacheMaxSize) {
+    // Remove oldest entry
+    let oldestKey = null;
+    let oldestTime = Infinity;
+    for (const [key, value] of cache.entries()) {
+      if (value.timestamp < oldestTime) {
+        oldestTime = value.timestamp;
+        oldestKey = key;
+      }
+    }
+    if (oldestKey) {
+      cache.delete(oldestKey);
+    }
+  }
+  
+  cache.set(messageHash, {
+    result: result,
+    timestamp: Date.now()
+  });
+}
+
 async function analyzeMessage(message, recentMessages, participantUsernames = [], existingContacts = [], contactContextForAI = null, roomId = null, taskContextForAI = null, flaggedMessagesContext = null, roleContext = null) {
+  const logger = defaultLogger.child({
+    operation: 'analyzeMessage',
+    roomId,
+    messageId: typeof message === 'string' ? null : message?.id,
+    username: typeof message === 'string' ? null : message?.username,
+    messageLength: typeof message === 'string' ? message.length : message?.text?.length
+  });
   // Check if OpenAI is configured
   if (!openaiClient.isConfigured()) {
     console.log('⚠️  AI Mediator: OpenAI not configured - allowing all messages through');
     return null;
+  }
+
+  // OPTIMIZATION: Check cache for similar messages
+  const senderId = roleContext?.senderId || message.username;
+  const receiverId = roleContext?.receiverId || participantUsernames.find(u => u !== message.username) || 'unknown';
+  const messageHash = generateMessageHash(message.text, senderId, receiverId);
+  const cachedResult = getCachedAnalysis(messageHash);
+  
+  if (cachedResult) {
+    console.log('✅ AI Mediator: Using cached analysis (cache hit)');
+    return cachedResult;
   }
 
   // Pre-filter: Allow common greetings and polite messages without AI analysis
@@ -272,6 +391,55 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
   }
   // === END POSITIVE SENTIMENT PRE-FILTER ===
 
+  // === CODE LAYER ANALYSIS (Feature 004 - Hybrid Mediation Engine) ===
+  // Run structural analysis BEFORE AI call for pattern detection
+  let codeLayerResult = null;
+  let parsedMessage = null;
+  let codeLayerPromptSection = '';
+
+  if (codeLayerIntegration && codeLayerIntegration.isAvailable()) {
+    try {
+      // Extract child names from contacts for context
+      const childNames = existingContacts
+        .filter(c => c.relationship === 'child')
+        .map(c => c.name);
+
+      // Build Code Layer context
+      const codeLayerContext = {
+        senderId: roleContext?.senderId || message.username,
+        receiverId: roleContext?.receiverId,
+        childNames,
+      };
+
+      // Run Code Layer analysis
+      codeLayerResult = await codeLayerIntegration.analyzeWithCodeLayer(message.text, codeLayerContext);
+      parsedMessage = codeLayerResult.parsed;
+
+      if (parsedMessage) {
+        // Record metrics
+        codeLayerIntegration.recordMetrics(parsedMessage, codeLayerResult.quickPass);
+
+        console.log(`📊 Code Layer: Axioms fired: ${parsedMessage.axiomsFired.map(a => a.id).join(', ') || 'none'}`);
+        console.log(`📊 Code Layer: Conflict potential: ${parsedMessage.assessment.conflict_potential}, QuickPass: ${codeLayerResult.quickPass.canPass}`);
+
+        // === QUICK-PASS OPTIMIZATION ===
+        // If Code Layer says message is clean, skip AI call entirely
+        if (codeLayerResult.quickPass.canPass) {
+          console.log('✅ AI Mediator: Quick-pass (Code Layer clean) - allowing without AI analysis');
+          return null;
+        }
+
+        // Build Code Layer context for AI prompt
+        codeLayerPromptSection = codeLayerIntegration.buildCodeLayerPromptSection(parsedMessage);
+      }
+    } catch (err) {
+      console.warn('⚠️ AI Mediator: Code Layer analysis failed, continuing with AI:', err.message);
+      codeLayerResult = null;
+      parsedMessage = null;
+    }
+  }
+  // === END CODE LAYER ANALYSIS ===
+
   try {
     console.log('🤖 AI Mediator: Analyzing message from', message.username);
 
@@ -305,11 +473,11 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
 
     // Local pattern detection (no API call) - legacy, kept for escalation tracking
     const patterns = detectConflictPatterns(message.text);
-    const escalationState = updateEscalationScore(roomId, patterns);
+    const escalationState = stateManager.updateEscalationScore(roomId, patterns);
 
     // Initialize states
-    const emotionalState = initializeEmotionalState(roomId);
-    const policyState = initializePolicyState(roomId);
+    const emotionalState = stateManager.initializeEmotionalState(roomId);
+    const policyState = stateManager.initializePolicyState(roomId);
 
     // === ROLE-AWARE MEDIATION (002-sender-profile-mediation) ===
     // Load sender and receiver profiles if roleContext is provided
@@ -417,7 +585,7 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
 
     // Build context for AI
     const messageHistory = recentMessages
-      .slice(-15)
+      .slice(-MESSAGE.RECENT_MESSAGES_COUNT)
       .map(msg => `${msg.username}: ${msg.text}`)
       .join('\n');
 
@@ -443,12 +611,51 @@ ${profileContextForAI.combinedSummary}
 COACHING GUIDANCE: Use this context to provide more understanding coaching. If a sender is under financial stress, be gentle when coaching messages about expenses. If someone is in recovery, be mindful about discussions involving substances. This context helps you coach with empathy.`
       : '';
 
+    // === CO-PARENTING SITUATION CONTEXT ===
+    // Build rich context from sender's contacts for situational coaching
+    let coparentingContextString = '';
+    if (coparentContext && roleContext?.senderId) {
+      try {
+        const situationContext = coparentContext.buildCoparentingContext(
+          roleContext.senderId,
+          roleContext.receiverId,
+          existingContacts,
+          null, // senderProfile - not needed, we have existingContacts
+          null  // receiverProfile
+        );
+
+        if (situationContext.hasContext) {
+          coparentingContextString = '\n\n' + coparentContext.formatContextForPrompt(situationContext);
+
+          // Also extract the sender's goal from this message for more targeted rewrites
+          const messageGoal = coparentContext.extractMessageGoal(message.text, situationContext);
+          if (messageGoal.topic !== 'general') {
+            coparentingContextString += `\n\nMESSAGE TOPIC DETECTED: ${messageGoal.topic}`;
+            if (messageGoal.specificDetail) {
+              coparentingContextString += ` (mentions: ${messageGoal.specificDetail})`;
+            }
+            if (messageGoal.goal !== 'unknown') {
+              coparentingContextString += `\nUNDERLYING GOAL: ${messageGoal.goal}`;
+            }
+            if (situationContext.childNames.length > 0) {
+              coparentingContextString += `\nCHILD NAME(S) TO USE IN REWRITES: ${situationContext.childNames.join(', ')}`;
+            }
+          }
+
+          console.log('📋 AI Mediator: Co-parenting situation context loaded');
+        }
+      } catch (err) {
+        console.warn('⚠️ AI Mediator: Failed to build co-parenting context:', err.message);
+      }
+    }
+    // === END CO-PARENTING SITUATION CONTEXT ===
+
     // Get relationship insights
     let insights = null;
     if (roomId) {
       try {
-        const db = require('../../dbPostgres');
-        const dbSafe = require('./dbSafe');
+        const db = require('../../../dbPostgres');
+        const dbSafe = require('../../../dbSafe');
         const insightsResult = await dbSafe.safeSelect('relationship_insights', { room_id: roomId }, { limit: 1 });
         const insightsRows = dbSafe.parseResult(insightsResult);
         if (insightsRows.length > 0) {
@@ -481,20 +688,8 @@ COACHING GUIDANCE: Use this context to provide more understanding coaching. If a
       .map(([pattern, count]) => `${pattern}: ${count}`)
       .join(', ');
 
-    // Get previous emotional state for this user
+    // Get previous emotional state for this user (will be initialized by stateManager if needed)
     const username = message.username;
-    if (!emotionalState.participants[username]) {
-      emotionalState.participants[username] = {
-        currentEmotion: 'neutral',
-        emotionHistory: [],
-        stressLevel: 0,
-        stressTrajectory: 'stable',
-        emotionalMomentum: 0,
-        stressPoints: [],
-        recentTriggers: []
-      };
-    }
-    const participantState = emotionalState.participants[username];
 
     // Build relationship context
     const relationshipContext = contactContextForAI
@@ -506,455 +701,219 @@ COACHING GUIDANCE: Use this context to provide more understanding coaching. If a
     let roleAwarePromptSection = '';
     let senderDisplayName = message.username;
     let receiverDisplayName = 'the other co-parent';
+    let voiceSignatureSection = '';
 
     if (roleAwareContext && communicationProfile) {
       const mediationContext = require('../context/communication-profile/mediationContext');
       roleAwarePromptSection = mediationContext.formatFullContext(roleAwareContext);
       senderDisplayName = roleAwareContext.roles?.sender?.display_name || message.username;
       receiverDisplayName = roleAwareContext.roles?.receiver?.display_name || 'the other co-parent';
+
+      // === VOICE SIGNATURE EXTRACTION (Phase 1: Contextual Awareness) ===
+      if (voiceSignature && roleContext?.senderId) {
+        try {
+          // Get sender's recent messages (last 20) to build voice signature
+          const senderMessages = recentMessages
+            .filter(msg => msg.username === roleContext.senderId)
+            .slice(-20)
+            .map(msg => msg.text);
+
+          if (senderMessages.length >= 3) {
+            // Build voice signature from recent messages
+            const signature = voiceSignature.buildVoiceSignature(senderMessages);
+            
+            // Format for AI prompt
+            voiceSignatureSection = voiceSignature.formatVoiceSignatureForAI(signature);
+            
+            // Update profile with voice signature (async, don't block)
+            if (signature.sample_count >= 5) {
+              const dbPostgres = require('../../../dbPostgres');
+              const senderProfile = await communicationProfile.loadProfile(roleContext.senderId, dbPostgres);
+              const existingPatterns = senderProfile?.communication_patterns || {};
+              const updatedPatterns = voiceSignature.mergeVoiceSignature(existingPatterns, signature);
+              
+              // Update profile asynchronously (don't block message processing)
+              communicationProfile.updateProfile(roleContext.senderId, {
+                communication_patterns: updatedPatterns
+              }, dbPostgres).catch(err => {
+                console.warn('⚠️ AI Mediator: Failed to update voice signature:', err.message);
+              });
+            }
+          }
+        } catch (err) {
+          console.warn('⚠️ AI Mediator: Voice signature extraction failed:', err.message);
+        }
+      }
+      // === END VOICE SIGNATURE EXTRACTION ===
+
+      // === CONVERSATION PATTERN ANALYSIS (Phase 1: Contextual Awareness) ===
+      let conversationPatternsSection = '';
+      if (conversationPatterns && roleContext?.senderId && roleContext?.receiverId && recentMessages.length >= 2) {
+        try {
+          // Analyze conversation patterns from recent messages
+          const patterns = conversationPatterns.analyzeConversationPatterns(
+            recentMessages,
+            roleContext.senderId,
+            roleContext.receiverId
+          );
+
+          // Format for AI prompt
+          if (patterns.sample_size >= 2) {
+            conversationPatternsSection = conversationPatterns.formatPatternsForAI(patterns);
+          }
+        } catch (err) {
+          console.warn('⚠️ AI Mediator: Conversation pattern analysis failed:', err.message);
+        }
+      }
+      // === END CONVERSATION PATTERN ANALYSIS ===
+
+      // === INTERVENTION LEARNING (Phase 2: Enhanced Context) ===
+      let interventionLearningSection = '';
+      if (interventionLearning && roleContext?.senderId) {
+        try {
+          const dbPostgres = require('../../../dbPostgres');
+          const learningData = await interventionLearning.getInterventionLearning(roleContext.senderId, dbPostgres);
+          
+          if (learningData && learningData.successful_interventions.length > 0) {
+            interventionLearningSection = interventionLearning.formatLearningForAI(learningData);
+          }
+        } catch (err) {
+          console.warn('⚠️ AI Mediator: Failed to load intervention learning:', err.message);
+        }
+      }
+      // === END INTERVENTION LEARNING ===
     }
     // === END ROLE-AWARE CONTEXT ===
 
-    // UNIFIED PROMPT: Get ALL information in ONE API call
-    // CONSTITUTION: ./policies/constitution.md defines all rules
-    const prompt = `# SYSTEM ROLE
+    // UNIFIED PROMPT: Validate, provide clarity, offer rewrites
+    const prompt = `Analyze this co-parenting message. Decide: STAY_SILENT, INTERVENE, or COMMENT.
 
-You are LiaiZen. You are not a therapist, a judge, or a standard AI assistant.
+STAY_SILENT (default): Allow respectful messages, logistics, questions, imperfect-but-not-hostile phrasing.
+INTERVENE: Only for messages that attack, blame, use contempt, guilt-trip, or weaponize the child.
 
-You are an OBSERVER and a MEDIATOR.
+MESSAGE FROM ${senderDisplayName}: "${message.text}"
 
-Your goal is to reveal the structure of meaning and translate conflict into clarity.
+${relationshipContext}
+${messageHistory ? `Recent messages:\n${messageHistory}\n` : ''}
+${codeLayerPromptSection || ''}
+${voiceSignatureSection ? `\n${voiceSignatureSection}\n` : ''}
+${conversationPatternsSection ? `\n${conversationPatternsSection}\n` : ''}
+${interventionLearningSection ? `\n${interventionLearningSection}\n` : ''}
+${roleAwarePromptSection ? `\n${roleAwarePromptSection}\n` : ''}
 
----
+IF YOU INTERVENE, provide THREE parts:
 
-# PART 1: THE PRIMITIVES (The Variables)
-
-To derive meaning, you must map all language to these coordinates:
-
-1. METAPHYSICAL
-   - SUBJECT: The "I" (Speaker).
-   - OBJECT: The "It" or "Them".
-   - RELATION: The connection between Subject and Object.
-
-2. RELATIONAL AXES
-   - DIRECTION: Toward (+1) or Away (-1).
-   - GRIP: Holding (1) or Releasing (0).
-   - STATES:
-     * Fear = Away + Future + Unknown
-     * Control = Toward + Other + Holding
-     * Love = Toward + Other + Releasing
-
-3. COMMUNICATION VECTOR
-   - SENDER: Who speaks.
-   - RECEIVER: Who hears.
-   - TARGET: Where the meaning is aimed (e.g., competence, character).
-   - INSTRUMENT: What is used to carry the aim (e.g., the child, the schedule).
-
----
-
-# PART 2: THE AXIOMS (The Laws)
-
-You must apply these rules strictly. If a message matches a pattern, the Axiom FIRES.
-
-### INDIRECT COMMUNICATION (Attacks Disguised as Peace)
-
-- AXIOM 001 (Displaced Accusation): IF Sender reports [negative state] of [Child] + Linked to [Receiver Domain] + [Softener] ("just worried") -> Intent = Accusation.
-
-- AXIOM 002 (False Offering): IF Offer + [Conditionality] + Burdens Receiver -> Intent = Control.
-
-- AXIOM 003 (Innocent Inquiry): IF Question about [Receiver Action] + [Softener] -> Intent = Surveillance.
-
-- AXIOM 004 (Weaponized Agreement): IF Agreement + "But" + [Negative State] -> Intent = Dismissal.
-
-- AXIOM 005 (Virtuous Self-Reference): IF Praise Self ("I'm reasonable") + Conflict Context -> Intent = Comparative Attack.
-
-- AXIOM 007 (Pre-emptive Denial): IF Denial of trait ("I'm not trying to be difficult") + Contrast -> Intent = Accusation with immunity.
-
-- AXIOM 008 (Reluctant Compliance): IF Agreement + Hesitation ("I guess") + Sigh -> Intent = Guilt Induction.
-
-- AXIOM 010 (Child as Messenger): IF Sender quotes Child's negative view of Receiver -> Intent = Attack using Child as shield.
-
-- AXIOM 012 (Concerned Question): IF Question about Child State + Follows Receiver Time -> Intent = Inspection.
-
-- AXIOM 016 (Hypothetical Accusation): IF "Imagine if..." + Mirrors Receiver behavior -> Intent = Accusation.
-
-### CONTEXT TRIGGERED (Situational Logic)
-
-(Only apply if Context Flags match)
-
-- AXIOM C001 (Proximity Claim): IF Sender closer to school + Claims logistics -> Check for structural leverage.
-
-- AXIOM C002 (New Partner Threat): IF Receiver has New Partner + Sender references Child Confusion -> Target = New Relationship.
-
-- AXIOM C005 (Fresh Separation): IF Separation < 12 months -> Weight = High Volatility/Grief.
-
-- AXIOM C007 (Income Leverage): IF Income Disparity High + Earner offers financial fix -> Intent = Coercion.
-
-### DIRECT COMMUNICATION (Clean)
-
-- AXIOM D001 (Clean Request): Specific + Actionable + No Softener -> PASS.
-
-- AXIOM D002 (Clean Information): Verifiable Fact + Relevant + No Pattern Markers -> PASS.
-
----
-
-# PART 3: MEDIATION PROTOCOL
-
-For every message, perform this sequence:
-
-1. PARSE: Identify the Primitives.
-2. CONTEXT CHECK: Look at the User Profile (Who left? Who has power?).
-3. AXIOM CHECK: Which Axioms fire?
-4. DERIVE: Calculate the Delta (Intent vs. Impact).
-5. DECIDE:
-   - IF Clean -> PASS.
-   - IF Axiom Fires -> INTERCEPT with Observer Feedback.
-
----
-
-# PART 4: THE OBSERVER VOICE
-
-- State, don't interpret ("This will land as..." not "You might make them feel...").
-- Name the structure ("The 'but' negates the agreement").
-- No "I feel" or therapy-speak.
-- Impersonal warmth (like sunlight).
-
----
-
-# LEGACY PRINCIPLES (Preserved for Compatibility)
-
-=== MOST IMPORTANT: WHEN TO STAY SILENT ===
-
-YOUR DEFAULT IS STAY_SILENT. You intervene RARELY - only for clear hostility toward the co-parent.
-
-STAY_SILENT for:
-- ANY message not directed AT the co-parent ("My friend hates pizza" = STAY_SILENT)
-- Positive/friendly messages ("I love how you..." = STAY_SILENT)
-- Questions, logistics, information sharing
-- Complaints about situations (not the person)
-- Imperfect phrasing that isn't hostile
-
-ONLY INTERVENE for direct hostility TOWARD THE CO-PARENT:
-- Insults/name-calling directed at them: "you're an idiot"
-- Blame attacks: "It's YOUR fault"
-- Threats or ultimatums toward them
-- Using child as weapon against them
-
-Ask yourself: "Does an Axiom fire? Is this message ATTACKING the co-parent directly?"
-- If NO → STAY_SILENT
-- If YES → INTERCEPT with Observer Feedback
-
-STAY_SILENT for:
-- ANY message not directed AT the co-parent ("My friend hates pizza" = STAY_SILENT)
-- Positive/friendly messages ("I love how you..." = STAY_SILENT)
-- Questions, logistics, information sharing
-- Complaints about situations (not the person)
-- Imperfect phrasing that isn't hostile
-- Clean requests (AXIOM D001) and clean information (AXIOM D002)
-
-ONLY INTERVENE when:
-- Axioms fire (Indirect Communication patterns detected)
-- Direct hostility TOWARD THE CO-PARENT:
-  - Insults/name-calling directed at them: "you're an idiot"
-  - Blame attacks: "It's YOUR fault"
-  - Threats or ultimatums toward them
-  - Using child as weapon against them
-
-Ask yourself: "Does an Axiom fire? Is this message ATTACKING the co-parent directly?"
-- If NO → STAY_SILENT
-- If YES → INTERCEPT with Observer Feedback
-
-=== PRINCIPLES (when you DO intervene) ===
-
-Use OBSERVER VOICE - talk about STRUCTURE and PHRASING, not emotions:
-- CORRECT: "The 'but' negates the agreement (AXIOM 004)" / "This structure will land as..."
-- PROHIBITED: "You're angry" / "You might make them feel..."
-
-No psychological labels:
-- PROHIBITED: narcissist, manipulative, toxic
-- ALLOWED: "This approach may backfire" / "This structure will land as..."
-
-=== COACHING FRAMEWORK (only when you INTERVENE) ===
-
-=== CRITICAL: REWRITE PERSPECTIVE ===
-
-YOU ARE COACHING THE SENDER - the person who is about to SEND this message.
-
-SENDER = ${senderDisplayName} (wrote this message, waiting to send it)
-RECEIVER = ${receiverDisplayName} (will receive this message)
-
-YOUR REWRITES ARE:
-- Alternative messages ${senderDisplayName} could send INSTEAD of their original
-- Different ways to express what ${senderDisplayName} wants to communicate
-- Written from ${senderDisplayName}'s first-person perspective
-
-YOUR REWRITES ARE NOT:
-- Responses ${receiverDisplayName} would send after receiving the original
-- How ${receiverDisplayName} might reply to the message
-- Third-party observations about the conversation
-- Reactions TO the original message
-
-PERSPECTIVE CHECK: Before finalizing rewrites, ask yourself:
-"Is this what ${senderDisplayName} could send to express their concern? Or is this
-what ${receiverDisplayName} might say in response to receiving the original?"
-
-=== 1-2-3 COACHING FRAMEWORK ===
-
-When you INTERVENE, you MUST provide ALL THREE:
-
-1. ADDRESS (personalMessage): Use OBSERVER VOICE to name the structure
-   - State what the message is DOING structurally (identify Primitives, Axioms that fired)
-   - Name the pattern: "The 'but' negates the agreement" / "This displaces accusation onto the child"
-   - Name which Axiom fired: "AXIOM 004 fires: Weaponized Agreement" / "AXIOM 001 fires: Displaced Accusation"
-   - Explain how this structure will land (Intent vs. Impact Delta)
-   - Max 2 sentences
-   - Format: "[Axiom/Structure observation] + [How it will land]"
+1. validation: Connect their feeling to the situation. Down to earth, not clinical.
    
-   OBSERVER VOICE REQUIREMENTS:
-   - State, don't interpret ("This will land as..." not "You might make them feel...")
-   - Name the structure AND the Axiom: "AXIOM 004 fires: The 'but' negates the agreement" / "AXIOM 010 fires: Child used as messenger"
-   - No "I feel" or therapy-speak
-   - Impersonal warmth (like sunlight)
+   RULES:
+   - Relate the feeling to what's actually happening (the situation, not the emotion label)
+   - Don't name their emotion directly ("you're angry") — describe the situation that would cause it
+   - Don't give advice
+   - Sound like a friend who gets it, not a therapist
+   - 1-2 sentences max
    
-   CRITICAL: Identify which Axiom fired (if applicable) and name the structural pattern
-   CRITICAL: Explain the Delta (Intent vs. Impact) - what sender intends vs. how it will land
-   CRITICAL: Use structural language (Primitives, Axioms, Communication Vector)
+   GOOD EXAMPLES:
+   - "Schedules falling apart at the last minute is exhausting, especially when you've already rearranged your day."
+   - "Finding out plans changed through the kids instead of directly — that's a rough way to get news."
+   - "When you've asked for something multiple times and it keeps not happening, it starts to feel like you're invisible."
+   - "Watching pickup time get pushed later and later, with your evening disappearing — that's a lot."
    
-   PROHIBITED: Vague statements like "won't foster healthy co-parenting" or "has negative impact"
-   PROHIBITED: Generic phrases that could apply to any message
-   PROHIBITED: Therapy-speak or emotional interpretation
-   PROHIBITED: Sounding like a generic AI - you are an Observer naming structures
+   BAD EXAMPLES:
+   ❌ "I hear your frustration" (clinical, uses "I")
+   ❌ "You seem angry" (labeling emotion)
+   ❌ "That must be hard" (generic, not connected to situation)
+   ❌ "Communication breakdowns are difficult" (clinical)
+
+2. insight: A metaphor, analogy, or observation that shifts perspective and brings clarity.
    
-   OBSERVER EXAMPLES (use this level of structural clarity):
-     * "AXIOM 010 fires: The child is used as messenger. This structure will land as triangulation, putting the child between you."
-     * "The 'but' negates the agreement (AXIOM 004). This will land as dismissal, not collaboration."
-     * "Name-calling targets character (TARGET: character). This structure will land as attack, shutting down dialogue."
-     * "Absolute statements ('never') create defensiveness. This will land as accusation, not request."
+   RULES:
+   - Something interesting that makes them pause
+   - Makes the situation feel less personal — like they can see it from above
+   - Interrupts the reactive loop
+   - NOT advice, NOT "you should" — just a different way of seeing
+   - Can be a metaphor, an analogy to something unrelated, or an unexpected observation
+   - 1-2 sentences max
    
-   GENERIC EXAMPLES (DO NOT USE):
-     * "Direct insult damages cooperation and respect." ❌
-     * "This message has negative impact." ❌
-     * "Won't foster healthy co-parenting." ❌
-
-2. ONE TIP (tip1): Single, precise adjustment (max 10 words)
-   - Must be specific to THIS message
-   - Actionable immediately
-   - TONE: Sound like an INTERESTING FACT, not a lecture
-   - Frame as communication insight or pattern, not instruction
-   - Examples (fact-based, interesting, not lecture-like):
-     * For insults: "Name the feeling, not the person."
-     * For blame: "Describe the impact, not their intent."
-     * For demands: "Make a request, not a command."
-     * For absolutes: "Replace 'always' with 'recently' or 'often'."
-     * For triangulation: "Speak directly, not through your child."
-     * For threats: "Threats trigger defensive responses, blocking collaboration."
-     * For character attacks: "Character judgments shut down dialogue immediately."
-   - AVOID lecture-like phrasing: "You should avoid..." "Don't use..." "Remember to..." "Avoid threats..."
-   - PREFER fact-based phrasing: "Threats trigger..." "Character judgments shut down..." "Requests open dialogue..."
-   - Frame as communication science, not personal advice
-
-3. TWO REWRITES (rewrite1, rewrite2): Complete message alternatives
-   - Preserve sender's underlying intent/concern (the legitimate GOAL)
-   - Remove the Axiom trigger (the ATTACK pattern)
-   - Improve clarity and dignity
-   - Ready to send as-is
-   - Use DIFFERENT approaches:
-     * Rewrite 1: I-statement (feeling + need) - "I feel... when... I need..."
-     * Rewrite 2: Observation + request - "I've noticed... I'd like to..."
+   GOOD EXAMPLES:
+   - "It's like trying to coordinate a relay race when both runners think they're the anchor."
+   - "When someone's running late, the story we tell ourselves about why is usually louder than what actually happened."
+   - "Two people can stand at the same window and see completely different views — one sees the street, one sees the sky."
+   - "Schedules are like shared code — when one person changes something without commenting, the whole thing breaks and nobody knows why."
+   - "Sometimes the person running behind is drowning too, just in a different pool."
    
-   REWRITE STRATEGY (Axiom-Aware):
-   - Identify which Axiom(s) fired in the original message
-   - Identify the sender's legitimate goal/need (what they're actually trying to achieve)
-   - Rewrite to express the GOAL without triggering the AXIOM
-   - Example: If AXIOM 001 (Displaced Accusation) fired, rewrite to express concern directly without using child as shield
-   - Example: If AXIOM 004 (Weaponized Agreement) fired, remove the "but" and make it a clean agreement or separate request
-   - Example: If AXIOM 010 (Child as Messenger) fired, rewrite to speak directly to receiver, not through child
+   BAD EXAMPLES:
+   ❌ "Communication patterns often trigger defensiveness" (clinical)
+   ❌ "Try to see it from their perspective" (advice)
+   ❌ "Conflict escalates when..." (lecture)
+   ❌ "You might consider..." (advice)
 
-=== CONTEXT ===
+3. rewrite1 and rewrite2: The SAME message, transformed. Keep the exact intent.
+   
+   RULES:
+   - Preserve exactly what they want to communicate — don't change the subject or goal
+   - Express pain without attack — there's always a way
+   - Ask in a way that makes the other person want to help
+   - Show understanding that the other person has their own reality
+   - Sound like a real person who is hurt but trying — NOT corporate
+   - Vary the wording between rewrite1 and rewrite2
+   
+   GOOD EXAMPLES:
+   - "The pickup time changed again and I ended up scrambling. Can we figure out a way to give more heads up when things shift?"
+   - "I felt out of the loop on the schedule change. What's the best way for us to keep each other posted?"
+   - "When the plans shifted last minute, it threw off my whole evening. I know things come up — is there a way we can flag changes earlier?"
+   
+   BAD EXAMPLES:
+   ❌ "Per our agreement, pickup was scheduled for 7:30" (corporate/legal)
+   ❌ "Let's ensure better communication going forward" (corporate)
+   ❌ "I would appreciate if you could..." (stiff)
+   ❌ "Can we agree to..." (corporate)
 
-${roleAwarePromptSection ? roleAwarePromptSection + '\n' : ''}${relationshipContext}${profileContextString}
-
-Recent conversation:
-${messageHistory}${userContextString}
-
-Current message from ${senderDisplayName}: "${message.text}"
-
-${languageAnalysisContext ? languageAnalysisContext + '\n' : ''}
-Analysis context:
-- Escalation score: ${escalationState.escalationScore}/100
-- Conversation state: ${emotionalState.conversationEmotion}${commentFrequencyNote}
-
-=== RESPOND WITH JSON ===
-
+Respond with JSON only:
 {
   "action": "STAY_SILENT|INTERVENE|COMMENT",
-
-  "escalation": {
-    "riskLevel": "low|medium|high|critical",
-    "confidence": 0-100,
-    "reasons": ["specific phrasing issue 1", "phrasing issue 2"]
-  },
-
-  "emotion": {
-    "currentEmotion": "neutral|frustrated|calm|defensive|collaborative|anxious|angry",
-    "stressLevel": 0-100,
-    "stressTrajectory": "increasing|decreasing|stable",
-    "emotionalMomentum": 0-100,
-    "triggers": ["trigger1"],
-    "conversationEmotion": "neutral|tense|collaborative|escalating"
-  },
-
+  "escalation": {"riskLevel": "low|medium|high", "confidence": 0-100, "reasons": []},
+  "emotion": {"currentEmotion": "neutral|frustrated|defensive", "stressLevel": 0-100},
   "intervention": {
-    "personalMessage": "ADDRESS: Be SPECIFIC about the phrasing pattern (name-calling, blame, absolutes, insults, threats, etc.) and the CONCRETE consequence. Exemplify expert communication - be concise, clear, and actionable. Show expertise through precision, not length. Provide INSTANT VALUE by revealing communication insights. Use high-level communication techniques. Example: 'Threats trigger defensive responses, blocking collaboration and trust.' NOT vague like 'won't foster healthy co-parenting'. Max 2 sentences.",
-    "tip1": "ONE TIP: Max 10 words. Specific to THIS message. Sound like an INTERESTING FACT about communication, not a lecture. Frame as communication science/pattern, not instruction. Example: 'Threats trigger defensive responses, blocking collaboration.' NOT 'Avoid threats.'",
-    "rewrite1": "What the SENDER could say INSTEAD of their original message. NOT a response. Example for 'you suck': 'I'm feeling really frustrated right now.'",
-    "rewrite2": "A DIFFERENT way the SENDER could express their point. NOT a reply. Example for 'you suck': 'Something isn't working for me and I need to talk about it.'",
-    "comment": "For COMMENT action only. Brief tactical observation."
+    "validation": "Connect feeling to situation — down to earth, not clinical",
+    "insight": "Metaphor or observation that shifts perspective",
+    "rewrite1": "Same intent, no attack, human voice",
+    "rewrite2": "Same intent, different wording, human voice"
   }
-}
-
-⚠️⚠️⚠️ CRITICAL REWRITE RULE ⚠️⚠️⚠️
-rewrite1 and rewrite2 are ALTERNATIVE MESSAGES the SENDER could send INSTEAD of their original message.
-They are NOT responses that the RECEIVER would send back.
-They are NOT replies to the original message.
-They are REPLACEMENT messages for the sender to use.
-
-Example - If original message is "you suck":
-- WRONG rewrite: "That's hurtful" (this is what RECEIVER would say back - DO NOT DO THIS)
-- WRONG rewrite: "Can we try respect?" (this is a RECEIVER response - DO NOT DO THIS)
-- CORRECT rewrite: "I'm frustrated right now" (this is what SENDER could say INSTEAD)
-- CORRECT rewrite: "Something isn't working for me" (this is what SENDER could say INSTEAD)
-
-=== DECISION CRITERIA ===
-
-STAY_SILENT (80-90%): Any respectful communication
-- "I'm concerned about...", "Can we discuss...", "The teacher said..."
-- Even imperfect phrasing if not hostile
-
-INTERVENE (5-15%): Clear conflict escalation only
-- Direct blame/attacks, name-calling, insults
-- Threats, ultimatums, contemptuous language
-- Triangulation (using child against other parent)
-
-CRITICAL FOR INTERVENTIONS:
-- When you see an insult like "you suck", identify it as NAME-CALLING or INSULT (NOT "neutral")
-- Be SPECIFIC: "Name-calling shuts down..." NOT "Direct insult damages cooperation"
-- Explain CONCRETE consequence: "so your concerns won't get addressed" NOT "won't foster healthy co-parenting"
-- Sound like an EXPERT: Use communication psychology terms, explain mechanisms, show deep understanding
-- Vague responses like "damages cooperation" or "won't foster healthy co-parenting" are PROHIBITED
-- Generic phrases like "has negative impact" are PROHIBITED - you must sound like a professional coach
-
-COMMENT (1-5%): Rare, helpful observation only
-
-=== REWRITE EXAMPLES (perspective guidance) ===
-
-EXAMPLE 1: Insult -> Sender alternatives
-Original: "you suck"
-Sender's underlying intent: Frustration/disappointment with co-parent
-
-ADDRESS (personalMessage) - CORRECT (expert coach tone with instant value):
-"Threats trigger defensive responses, blocking collaboration and trust."
-"Name-calling targets character, shutting down dialogue immediately."
-"Character judgments ('sad soul') escalate conflict, harming co-parenting trust."
-"Insults like 'you suck' make people shut down, so they won't listen to what you actually need."
-
-ADDRESS (personalMessage) - WRONG (vague, sounds like generic AI):
-"Direct insult damages cooperation and respect." ❌
-"Neutral statement with negative impact. Won't foster healthy co-parenting." ❌
-"This message has negative impact." ❌
-"Threats can escalate conflict and harm co-parenting trust." ❌ (too generic, lacks precision)
-
-WHY THESE ARE WRONG:
-- "damages cooperation" is too vague - doesn't explain the mechanism
-- "has negative impact" is generic - could apply to anything
-- Doesn't sound like expert communication knowledge
-- Missing the specific consequence for the sender's goals
-
-WRONG - These are RECEIVER responses (DO NOT USE):
-- "That's hurtful. Can we talk about what's bothering you?"
-- "I don't appreciate being spoken to that way."
-
-CORRECT - These are SENDER alternatives (USE THESE PATTERNS):
-- "I'm feeling really frustrated right now and need us to communicate differently."
-- "Something isn't working for me and I'd like to talk about it."
-
-EXAMPLE 2: Blame -> Sender alternatives (AXIOM-AWARE)
-Original: "It's YOUR fault she's failing"
-Sender's underlying intent: Concerned about child's performance (GOAL)
-Axiom fired: Direct blame/attack pattern
-Strategy: Express concern about child's performance WITHOUT blaming receiver
-
-WRONG - RECEIVER responses (DO NOT USE):
-- "That's unfair. I'm trying my best."
-- "Can you explain specifically what I did wrong?"
-
-CORRECT - SENDER alternatives (preserve GOAL, remove AXIOM trigger):
-- "I'm worried about her grades. I'd like to talk about how to help her."
-- "I've noticed she's struggling in school. I want to figure out how to support her."
-
-EXAMPLE 3: Axiom-Aware Rewrite (Displaced Accusation - AXIOM 001)
-Original: "She's been really upset since you changed the schedule"
-Sender's GOAL: Express concern about schedule change impact
-Axiom trigger: Using child's state to accuse receiver indirectly
-
-CORRECT rewrite (preserve GOAL, remove AXIOM):
-- "I'm concerned about the schedule change. Can we discuss how to make transitions smoother?"
-- "The schedule change has been challenging. I'd like to find a solution that works better."
-
-EXAMPLE 4: Axiom-Aware Rewrite (Weaponized Agreement - AXIOM 004)
-Original: "I agree we should be consistent, but you never follow through"
-Sender's GOAL: Express need for consistency
-Axiom trigger: "but" negates the agreement
-
-CORRECT rewrite (preserve GOAL, remove AXIOM):
-- "I want us to be consistent. Can we talk about how to make that happen?"
-- "Consistency is important to me. I'd like to discuss how we can both follow through."
-
-EXAMPLE 5: Axiom-Aware Rewrite (Child as Messenger - AXIOM 010)
-Original: "She said you forgot to pick her up again"
-Sender's GOAL: Address pickup reliability
-Axiom trigger: Using child as messenger to accuse
-
-CORRECT rewrite (preserve GOAL, remove AXIOM):
-- "I'm concerned about pickup reliability. Can we set up a system to prevent missed pickups?"
-- "I'd like to make sure pickups are consistent. Can we discuss how to coordinate better?"
-
-=== END EXAMPLES ===
-
-=== VALIDATION REMINDERS ===
-
-🚨 If ACTION=INTERVENE, ALL fields are REQUIRED:
-   - personalMessage (describes phrasing, not emotions) - MUST provide instant value and high-level communication insights
-   - tip1 (max 10 words, specific) - MUST sound like an interesting fact, not a lecture
-   - rewrite1 (I-statement approach)
-   - rewrite2 (observation+request approach)
-
-🚨 NEVER diagnose emotions ("You're angry")
-🚨 NEVER use labels ("manipulative", "narcissistic")
-🚨 NEVER use "we/us/our/both"
-🚨 ALWAYS describe PHRASING, not FEELINGS
-🚨 TIPS MUST sound like communication science facts, not instructions ("Threats trigger..." not "Avoid threats...")
-🚨 PERSONAL MESSAGE MUST demonstrate expert-level communication knowledge with instant value`;
+}`;
 
     // Make single unified API call
+    // OPTIMIZED: Using gpt-4o-mini for cost efficiency while maintaining quality
+    // Main mediation requires nuanced understanding, but gpt-4o-mini handles this well
     const completion = await openaiClient.createChatCompletion({
-      model: 'gpt-3.5-turbo',
+      model: AI.DEFAULT_MODEL, // ~10x cheaper than gpt-3.5-turbo, similar quality for this task
       messages: [
         {
           role: 'system',
-          content: 'You are LiaiZen - a communication COACH for co-parents. CONSTITUTION RULES: 1) Talk about LANGUAGE/PHRASING, never emotions ("this phrasing implies blame" not "you\'re angry"). 2) NO psychological labels (narcissist, manipulative, insecure - PROHIBITED). 3) Child-centric when child mentioned. 4) Use 1-2-3 framework: ADDRESS (what phrasing does) + ONE TIP (max 10 words) + TWO REWRITES. CRITICAL REWRITE RULE: rewrite1 and rewrite2 must be REPLACEMENT messages the SENDER would say INSTEAD of their original message. They are NOT responses/replies to the message. Example: for "you suck", WRONG="That\'s hurtful", CORRECT="I\'m frustrated right now". Respond ONLY with valid JSON.'
+          content: 'You analyze co-parenting messages. When intervening, provide: (1) validation - connect their feeling to the situation like a friend would, not clinical, (2) insight - a metaphor or observation that shifts perspective, no advice, (3) two rewrites - same intent without attack, human voice not corporate. JSON only.'
         },
         {
           role: 'user',
           content: prompt
         }
       ],
-      max_tokens: 1500,
-      temperature: 0.85  // Higher temperature for more varied, less repetitive responses
+      max_tokens: AI.DEFAULT_MAX_TOKENS,
+      temperature: AI.DEFAULT_TEMPERATURE
     });
 
     const response = completion.choices[0].message.content.trim();
     console.log('🤖 AI Mediator: Received unified response');
+
+    // DEBUG: Log the full AI response to see what's being returned
+    try {
+      const debugParsed = JSON.parse(response);
+      if (debugParsed.intervention) {
+        console.log('📝 VALIDATION:', debugParsed.intervention.validation);
+        console.log('📝 INSIGHT:', debugParsed.intervention.insight);
+        console.log('📝 REWRITE 1:', debugParsed.intervention.rewrite1);
+        console.log('📝 REWRITE 2:', debugParsed.intervention.rewrite2);
+        console.log('📝 FULL INTERVENTION:', JSON.stringify(debugParsed.intervention, null, 2));
+      }
+    } catch (e) { /* ignore parse errors for debug */ }
 
     // Parse unified response
     let result;
@@ -968,43 +927,7 @@ CORRECT rewrite (preserve GOAL, remove AXIOM):
 
     // Update emotional state
     if (result.emotion) {
-      const previousStress = participantState.stressLevel;
-      const previousEmotion = participantState.currentEmotion;
-
-      participantState.currentEmotion = result.emotion.currentEmotion || 'neutral';
-      participantState.stressLevel = result.emotion.stressLevel || 0;
-      participantState.stressTrajectory = result.emotion.stressTrajectory || 'stable';
-      participantState.emotionalMomentum = result.emotion.emotionalMomentum || 0;
-
-      // Track emotion history
-      participantState.emotionHistory.push({
-        timestamp: Date.now(),
-        emotion: result.emotion.currentEmotion,
-        intensity: result.emotion.stressLevel,
-        triggers: result.emotion.triggers || []
-      });
-      if (participantState.emotionHistory.length > 20) {
-        participantState.emotionHistory.shift();
-      }
-
-      // Update recent triggers
-      if (result.emotion.triggers && result.emotion.triggers.length > 0) {
-        participantState.recentTriggers.push(...result.emotion.triggers);
-        if (participantState.recentTriggers.length > 10) {
-          participantState.recentTriggers = participantState.recentTriggers.slice(-10);
-        }
-      }
-
-      // Update conversation-level emotion
-      emotionalState.conversationEmotion = result.emotion.conversationEmotion || 'neutral';
-
-      // Calculate overall escalation risk
-      const allStressLevels = Object.values(emotionalState.participants).map(p => p.stressLevel);
-      const avgStress = allStressLevels.length > 0
-        ? allStressLevels.reduce((a, b) => a + b, 0) / allStressLevels.length
-        : 0;
-      emotionalState.escalationRisk = avgStress;
-      emotionalState.lastUpdated = Date.now();
+      stateManager.updateEmotionalState(roomId, message.username, result.emotion);
     }
 
     // Process action
@@ -1012,7 +935,12 @@ CORRECT rewrite (preserve GOAL, remove AXIOM):
 
     if (action === 'STAY_SILENT') {
       console.log('🤖 AI Mediator: STAY_SILENT - allowing message');
-      return null;
+      const silentResult = null;
+      
+      // OPTIMIZATION: Cache null results (to avoid re-analyzing safe messages)
+      cacheAnalysis(messageHash, silentResult);
+      
+      return silentResult;
     }
 
     if (action === 'COMMENT') {
@@ -1033,7 +961,7 @@ CORRECT rewrite (preserve GOAL, remove AXIOM):
 
       console.log('💬 AI Mediator: Adding comment');
 
-      return {
+      const commentResult = {
         type: 'ai_comment',
         action: 'COMMENT',
         text: result.intervention.comment,
@@ -1041,17 +969,22 @@ CORRECT rewrite (preserve GOAL, remove AXIOM):
         escalation: result.escalation,
         emotion: result.emotion
       };
+
+      // OPTIMIZATION: Cache the result
+      cacheAnalysis(messageHash, commentResult);
+      
+      return commentResult;
     }
 
     if (action === 'INTERVENE') {
       const intervention = result.intervention || {};
 
-      // Validate required fields
-      if (!intervention.personalMessage || !intervention.tip1 || !intervention.rewrite1 || !intervention.rewrite2) {
+      // Validate required fields - validation, insight, rewrite1, rewrite2
+      if (!intervention.validation || !intervention.insight || !intervention.rewrite1 || !intervention.rewrite2) {
         console.error('❌ INTERVENE action missing required fields - ALLOWING message (safety fallback)');
         console.error('Missing fields:', {
-          personalMessage: !intervention.personalMessage,
-          tip1: !intervention.tip1,
+          validation: !intervention.validation,
+          insight: !intervention.insight,
           rewrite1: !intervention.rewrite1,
           rewrite2: !intervention.rewrite2
         });
@@ -1075,7 +1008,7 @@ CORRECT rewrite (preserve GOAL, remove AXIOM):
           console.warn('⚠️ AI Mediator: Rewrite perspective validation failed:', {
             rewrite1: validationResult.rewrite1,
             rewrite2: validationResult.rewrite2,
-            originalMessage: message.text.substring(0, 50),
+            originalMessage: message.text.substring(0, MESSAGE.PREVIEW_LENGTH),
           });
 
           // Apply fallbacks for failed rewrites
@@ -1100,12 +1033,26 @@ CORRECT rewrite (preserve GOAL, remove AXIOM):
       }
       // === END REWRITE PERSPECTIVE VALIDATION ===
 
+      // === CODE LAYER RESPONSE VALIDATION (Feature 004) ===
+      // Validate that AI response references the Axioms that fired
+      if (codeLayerIntegration && parsedMessage) {
+        const codeLayerValidation = codeLayerIntegration.validateAIResponse(result, parsedMessage);
+
+        if (!codeLayerValidation.valid && codeLayerValidation.errors.length > 0) {
+          console.warn('⚠️ AI Mediator: Code Layer response validation issues:');
+          codeLayerValidation.errors.forEach(err => console.warn(`   - ${err}`));
+          // Note: We log warnings but don't block the intervention
+          // Future enhancement: request AI retry with explicit axiom references
+        }
+      }
+      // === END CODE LAYER RESPONSE VALIDATION ===
+
       console.log('✅ AI Mediator: INTERVENE - blocking message');
       console.log('📊 AI Decision:', {
         action: action,
         riskLevel: result.escalation?.riskLevel,
         confidence: result.escalation?.confidence,
-        messagePreview: message.text.substring(0, 50),
+        messagePreview: message.text.substring(0, MESSAGE.PREVIEW_LENGTH),
         hasAllFields: true
       });
 
@@ -1116,7 +1063,7 @@ CORRECT rewrite (preserve GOAL, remove AXIOM):
         escalationRisk: result.escalation?.riskLevel || 'unknown',
         emotionalState: result.emotion?.currentEmotion || 'unknown'
       });
-      if (policyState.interventionHistory.length > 20) {
+      if (policyState.interventionHistory.length > MESSAGE.MAX_INTERVENTION_HISTORY) {
         policyState.interventionHistory.shift();
       }
 
@@ -1141,30 +1088,74 @@ CORRECT rewrite (preserve GOAL, remove AXIOM):
       }
       // === END PROFILE RECORDING ===
 
-      // Clean tip1 text - remove "ONE TIP:" prefix if present
-      const cleanTip1 = intervention.tip1
-        ? intervention.tip1.replace(/^ONE TIP:\s*/i, '').replace(/^one tip:\s*/i, '').trim()
-        : intervention.tip1;
-
-      return {
+      const interventionResult = {
         type: 'ai_intervention',
         action: 'INTERVENE',
-        personalMessage: intervention.personalMessage,
-        tip1: cleanTip1,
+        // 3-part response: validation, insight, rewrites
+        validation: intervention.validation,
+        insight: intervention.insight,
         rewrite1: intervention.rewrite1,
         rewrite2: intervention.rewrite2,
         originalMessage: message,
         escalation: result.escalation,
-        emotion: result.emotion
+        emotion: result.emotion,
+        // Code Layer analysis (Feature 004)
+        codeLayerAnalysis: parsedMessage ? {
+          axiomsFired: parsedMessage.axiomsFired,
+          conflictPotential: parsedMessage.assessment.conflictPotential,
+          attackSurface: parsedMessage.assessment.attackSurface,
+          childAsInstrument: parsedMessage.assessment.childAsInstrument,
+          vector: parsedMessage.vector,
+          latencyMs: parsedMessage.meta.latencyMs
+        } : null
       };
+
+      // OPTIMIZATION: Cache the result for future similar messages
+      cacheAnalysis(messageHash, interventionResult);
+      
+      return interventionResult;
     }
 
     // Unknown action
-    console.log(`🤖 AI Mediator: Unknown action "${action}" - defaulting to STAY_SILENT`);
-    return null;
+    logger.warn('Unknown action from AI, defaulting to STAY_SILENT', {
+      action,
+      roomId
+    });
+    const silentResult = null;
+    
+    // OPTIMIZATION: Cache null results too (to avoid re-analyzing safe messages)
+    cacheAnalysis(messageHash, silentResult);
+    
+    return silentResult;
 
   } catch (error) {
-    console.error('❌ Error in AI mediator:', error.message);
+    logger.error('AI mediator analysis failed', error, {
+      messageLength: typeof message === 'string' ? message.length : message?.text?.length,
+      recentMessagesCount: recentMessages?.length,
+      hasContacts: existingContacts?.length > 0,
+      roomId
+    });
+
+    // Categorize error for appropriate handling
+    if (error.status === 429 || error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+      // Retryable errors - throw to allow caller to handle retry
+      throw new RetryableError(
+        'AI analysis temporarily unavailable, please try again',
+        'AI_RATE_LIMIT',
+        { roomId, username: typeof message === 'string' ? null : message?.username }
+      );
+    }
+
+    // For graceful degradation (fail open), return null but log with full context
+    // This allows messages through when AI fails, preventing system-wide outages
+    logger.warn('AI mediator failed, allowing message through (fail open)', {
+      errorType: error.name,
+      errorCode: error.code,
+      errorStatus: error.status,
+      roomId,
+      username: typeof message === 'string' ? null : message?.username
+    });
+
     return null;
   }
 }
@@ -1188,7 +1179,7 @@ Message: "${text}"${existingNamesString}
 Return ONLY names, one per line, or "NONE" if no new names found.`;
 
     const completion = await openaiClient.createChatCompletion({
-      model: 'gpt-3.5-turbo',
+      model: AI.NAME_DETECTION_MODEL,
       messages: [
         {
           role: 'system',
@@ -1199,8 +1190,8 @@ Return ONLY names, one per line, or "NONE" if no new names found.`;
           content: prompt
         }
       ],
-      max_tokens: 50,
-      temperature: 0.3
+      max_tokens: AI.NAME_DETECTION_MAX_TOKENS,
+      temperature: AI.NAME_DETECTION_TEMPERATURE
     });
 
     const response = completion.choices[0].message.content.trim();
@@ -1212,7 +1203,7 @@ Return ONLY names, one per line, or "NONE" if no new names found.`;
       .split('\n')
       .map(line => line.trim())
       .filter(line => line && line !== 'NONE')
-      .filter(line => line.length > 1 && /^[A-Z]/.test(line));
+      .filter(line => line.length > VALIDATION.MIN_MESSAGE_LENGTH && /^[A-Z]/.test(line));
 
     return names;
   } catch (error) {
@@ -1235,7 +1226,7 @@ async function generateContactSuggestion(detectedName, messageContext) {
 Respond with ONLY the message text (1-2 sentences), no quotes.`;
 
     const completion = await openaiClient.createChatCompletion({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini', // Cheaper and faster for simple generation tasks
       messages: [
         {
           role: 'system',
@@ -1246,8 +1237,8 @@ Respond with ONLY the message text (1-2 sentences), no quotes.`;
           content: prompt
         }
       ],
-      max_tokens: 100,
-      temperature: 0.7
+      max_tokens: 60, // Reduced - suggestions are brief
+      temperature: 0.5 // Lower for more consistent suggestions
     });
 
     const suggestionText = completion.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
@@ -1267,14 +1258,14 @@ Respond with ONLY the message text (1-2 sentences), no quotes.`;
 /**
  * Extract relationship insights from conversation
  */
-async function extractRelationshipInsights(recentMessages, roomId) {
-  if (!openaiClient.isConfigured() || recentMessages.length < 3) {
+async function extractRelationshipInsights(recentMessages, roomId, roleContext = null) {
+  if (!openaiClient.isConfigured() || recentMessages.length < MESSAGE.MIN_MESSAGES_FOR_INSIGHTS) {
     return;
   }
 
   try {
     const messageHistory = recentMessages
-      .slice(-10)
+      .slice(-MESSAGE.RECENT_MESSAGES_COUNT)
       .map(msg => `${msg.username}: ${msg.text}`)
       .join('\n');
 
@@ -1311,7 +1302,7 @@ Respond with ONLY valid JSON:
 }`;
 
     const completion = await openaiClient.createChatCompletion({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini', // Cheaper for relationship insights analysis
       messages: [
         {
           role: 'system',
@@ -1322,8 +1313,8 @@ Respond with ONLY valid JSON:
           content: prompt
         }
       ],
-      max_tokens: 300,
-      temperature: 0.5
+      max_tokens: 250, // Reduced - insights are concise
+      temperature: 0.4 // Slightly lower for more consistent analysis
     });
 
     const response = completion.choices[0].message.content.trim();
@@ -1359,12 +1350,21 @@ Respond with ONLY valid JSON:
           }
         );
       } else {
-        await dbSafe.safeInsert('relationship_insights', {
+        // Include sender_id and receiver_id if available (Phase 2 enhancement)
+        const insertData = {
           room_id: roomId,
           insights_json: JSON.stringify(merged),
           created_at: now,
           updated_at: now
-        });
+        };
+        
+        // Add sender_id and receiver_id if roleContext is available
+        if (roleContext?.senderId && roleContext?.receiverId) {
+          insertData.sender_id = roleContext.senderId.toLowerCase();
+          insertData.receiver_id = roleContext.receiverId.toLowerCase();
+        }
+        
+        await dbSafe.safeInsert('relationship_insights', insertData);
       }
 
       // PostgreSQL handles persistence automatically - no saveDatabase() needed
@@ -1387,7 +1387,7 @@ function updateContext(message) {
     timestamp: message.timestamp
   });
 
-  if (conversationContext.recentMessages.length > 20) {
+  if (conversationContext.recentMessages.length > MESSAGE.MAX_RECENT_MESSAGES) {
     conversationContext.recentMessages.shift();
   }
 }
@@ -1405,40 +1405,12 @@ function getContext() {
 /**
  * Record intervention feedback for learning
  */
+// recordInterventionFeedback moved to stateManager.js
 function recordInterventionFeedback(roomId, helpful) {
-  const policyState = initializePolicyState(roomId);
-
-  if (policyState.interventionHistory.length > 0) {
-    const lastIntervention = policyState.interventionHistory[policyState.interventionHistory.length - 1];
-    lastIntervention.outcome = helpful ? 'helpful' : 'unhelpful';
-    lastIntervention.feedback = helpful ? 'User found helpful' : 'User found unhelpful';
-
-    // Adjust threshold based on feedback
-    if (!helpful) {
-      policyState.interventionThreshold = Math.min(100, policyState.interventionThreshold + 5);
-    } else {
-      policyState.interventionThreshold = Math.max(30, policyState.interventionThreshold - 2);
-    }
-  }
+  stateManager.recordInterventionFeedback(roomId, helpful);
 }
 
-/**
- * Reset escalation after successful intervention
- */
-function resetEscalation(roomId) {
-  const escalationState = conversationContext.escalationState.get(roomId);
-  if (escalationState) {
-    escalationState.escalationScore = Math.max(0, escalationState.escalationScore - 20);
-    escalationState.lastNegativeTime = null;
-  }
-}
-
-/**
- * Get policy state for a room
- */
-function getPolicyState(roomId) {
-  return conversationContext.policyState.get(roomId) || null;
-}
+// Note: resetEscalation and getPolicyState removed - unused (only in deprecated files)
 
 /**
  * Record when a user accepts an AI rewrite suggestion
@@ -1454,8 +1426,23 @@ async function recordAcceptedRewrite(senderId, rewriteData) {
   }
 
   try {
-    const dbPostgres = require('./dbPostgres');
+    const dbPostgres = require('../../../dbPostgres');
+    
+    // Record in communication profile (existing functionality)
     await communicationProfile.recordAcceptedRewrite(senderId, rewriteData, dbPostgres);
+    
+    // Also record in intervention learning system (Phase 2)
+    if (interventionLearning) {
+      await interventionLearning.recordInterventionOutcome(senderId, {
+        type: 'rewrite',
+        pattern: rewriteData.pattern || 'unknown',
+        outcome: 'accepted',
+        feedback: 'helpful', // Implied by acceptance
+        original_message: rewriteData.original,
+        rewrite: rewriteData.rewrite,
+      }, dbPostgres);
+    }
+    
     console.log(`✅ AI Mediator: Recorded accepted rewrite for ${senderId}`);
     return true;
   } catch (err) {
@@ -1464,24 +1451,7 @@ async function recordAcceptedRewrite(senderId, rewriteData) {
   }
 }
 
-/**
- * Get a user's communication profile
- * @param {string} userId - The user's ID
- * @returns {Promise<Object|null>} - User's profile or null
- */
-async function getUserProfile(userId) {
-  if (!communicationProfile || !userId) {
-    return null;
-  }
-
-  try {
-    const dbPostgres = require('./dbPostgres');
-    return await communicationProfile.loadProfile(userId, dbPostgres);
-  } catch (err) {
-    console.error(`❌ AI Mediator: Failed to load user profile:`, err.message);
-    return null;
-  }
-}
+// Note: getUserProfile and getCodeLayerMetrics removed - unused
 
 module.exports = {
   // Main unified function (replaces 4-5 separate calls)
@@ -1494,13 +1464,9 @@ module.exports = {
   updateContext,
   getContext,
   recordInterventionFeedback,
-  resetEscalation,
-  getPolicyState,
 
   // Communication profile functions (Feature 002)
   recordAcceptedRewrite,
-  getUserProfile,
 
-  // Legacy function name for backwards compatibility
-  analyzeAndIntervene: analyzeMessage
+  // Note: Legacy function name removed - analyzeAndIntervene was unused alias
 };

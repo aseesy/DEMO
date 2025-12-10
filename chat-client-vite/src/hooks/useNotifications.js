@@ -41,38 +41,31 @@ export function useNotifications({ username, enabled = true }) {
     }
   }, [isSupported, permission]);
 
-  // Auto-request notification permission when user first enters chat view
-  // Only request once, and only if permission hasn't been set yet
-  React.useEffect(() => {
-    if (enabled && isSupported && permission === 'default' && !hasRequestedPermission && username) {
-      // Wait a moment for the user to see the chat interface first
-      const timer = setTimeout(() => {
-        console.log('[useNotifications] Auto-requesting notification permission for new user...');
-        requestPermission();
-      }, 3000); // 3 second delay - gives user time to see the chat interface
-      return () => clearTimeout(timer);
-    }
-  }, [enabled, isSupported, permission, hasRequestedPermission, username, requestPermission]);
+  // NOTE: Safari requires notification permission requests to be triggered by user gesture
+  // We cannot auto-request - user must click the "Enable Notifications" button
+  // Removed auto-request to comply with Safari's security requirements
 
   // Show notification for a new message
   const showNotification = React.useCallback((message) => {
     // Don't show notification if:
     // - Not enabled
     // - Not supported
-    // - Permission not granted
     // - Message is from current user
     if (!enabled || !isSupported) {
       console.debug('[useNotifications] Notifications disabled or not supported');
       return;
     }
 
+    if (message.username === username) {
+      return; // Don't notify for own messages
+    }
+
+    // ALWAYS play sound for new messages - this works even if notifications are suppressed
+    playNotificationSound();
+
     if (permission !== 'granted') {
       console.debug('[useNotifications] Permission not granted:', permission);
       return;
-    }
-
-    if (message.username === username) {
-      return; // Don't notify for own messages
     }
 
     // Show native browser notification like SMS - always show, regardless of page visibility
@@ -199,25 +192,38 @@ export function useNotifications({ username, enabled = true }) {
     }
   }, [permission]);
 
-  // Play a subtle notification sound
+  // Play a noticeable notification sound - two-tone chime like Google Calendar
   const playNotificationSound = () => {
     try {
-      // Create a simple beep sound using Web Audio API
+      // Create a pleasant two-tone chime sound using Web Audio API
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
 
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      // First tone (higher)
+      const oscillator1 = audioContext.createOscillator();
+      const gainNode1 = audioContext.createGain();
+      oscillator1.connect(gainNode1);
+      gainNode1.connect(audioContext.destination);
+      oscillator1.frequency.value = 880; // A5 note
+      oscillator1.type = 'sine';
+      gainNode1.gain.setValueAtTime(0.5, audioContext.currentTime);
+      gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      oscillator1.start(audioContext.currentTime);
+      oscillator1.stop(audioContext.currentTime + 0.3);
 
-      oscillator.frequency.value = 800; // Frequency in Hz
-      oscillator.type = 'sine';
+      // Second tone (lower, slight delay) - creates pleasant chime effect
+      const oscillator2 = audioContext.createOscillator();
+      const gainNode2 = audioContext.createGain();
+      oscillator2.connect(gainNode2);
+      gainNode2.connect(audioContext.destination);
+      oscillator2.frequency.value = 660; // E5 note
+      oscillator2.type = 'sine';
+      gainNode2.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode2.gain.setValueAtTime(0.4, audioContext.currentTime + 0.15);
+      gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      oscillator2.start(audioContext.currentTime + 0.15);
+      oscillator2.stop(audioContext.currentTime + 0.5);
 
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.2);
+      console.log('[useNotifications] 🔔 Playing notification sound');
     } catch (error) {
       // Silently fail if audio doesn't work
       console.debug('Could not play notification sound:', error);

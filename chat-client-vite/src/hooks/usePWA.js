@@ -66,6 +66,19 @@ export function usePWA() {
       return null;
     }
 
+    // Detect Safari with multiple methods for reliability
+    const isSafari = 
+      /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
+      /^((?!chrome|android).)*safari/i.test(navigator.vendor) ||
+      (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome'));
+
+    // In Safari, completely skip service worker registration to avoid errors
+    // Safari's service worker implementation is buggy and causes InvalidStateError
+    if (isSafari) {
+      console.log('[usePWA] Safari detected - skipping service worker registration to prevent errors');
+      return null;
+    }
+
     try {
       console.log('[usePWA] Registering Service Worker...');
       const registration = await navigator.serviceWorker.register('/sw.js', {
@@ -75,23 +88,76 @@ export function usePWA() {
       console.log('[usePWA] Service Worker registered successfully:', registration);
       setSwRegistration(registration);
 
-      // Check for updates periodically
-      setInterval(() => {
-        registration.update();
-      }, 60000); // Check every minute
+      // For non-Safari browsers: Check for updates periodically
+      if (registration && typeof registration.update === 'function') {
+        const updateInterval = setInterval(() => {
+          try {
+            // Only call update if registration is still valid
+            if (registration && typeof registration.update === 'function') {
+              registration.update().catch((error) => {
+                // Catch promise rejections from update()
+                if (error.name === 'InvalidStateError') {
+                  console.debug('[usePWA] No service worker update available (expected)');
+                } else {
+                  console.debug('[usePWA] Service Worker update check failed:', error);
+                }
+              });
+            } else {
+              clearInterval(updateInterval);
+            }
+          } catch (error) {
+            // Catch synchronous errors
+            if (error.name === 'InvalidStateError') {
+              console.debug('[usePWA] No service worker update available (expected)');
+            } else {
+              console.debug('[usePWA] Service Worker update check failed:', error);
+            }
+          }
+        }, 60000); // Check every minute
+      }
 
-      // Listen for updates
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        console.log('[usePWA] New Service Worker found, installing...');
+      // Listen for updates (non-Safari only)
+      try {
+        registration.addEventListener('updatefound', () => {
+          try {
+            // Safely access installing/waiting with null checks
+            let newWorker = null;
+            try {
+              newWorker = registration.installing || registration.waiting;
+            } catch (error) {
+              console.debug('[usePWA] Error accessing registration.installing/waiting:', error);
+              return;
+            }
 
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('[usePWA] New Service Worker installed, update available');
-            // You can show an update notification here
+            if (!newWorker) {
+              console.warn('[usePWA] No new worker found in registration');
+              return;
+            }
+
+            console.log('[usePWA] New Service Worker found, installing...');
+
+            // Add statechange listener with error handling
+            try {
+              newWorker.addEventListener('statechange', () => {
+                try {
+                  if (newWorker && newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('[usePWA] New Service Worker installed, update available');
+                    // You can show an update notification here
+                  }
+                } catch (error) {
+                  console.debug('[usePWA] Error in statechange handler:', error);
+                }
+              });
+            } catch (error) {
+              console.debug('[usePWA] Error adding statechange listener:', error);
+            }
+          } catch (error) {
+            console.debug('[usePWA] Error in updatefound handler:', error);
           }
         });
-      });
+      } catch (error) {
+        console.debug('[usePWA] Error adding updatefound listener:', error);
+      }
 
       return registration;
     } catch (error) {

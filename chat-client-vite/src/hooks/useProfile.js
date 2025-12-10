@@ -82,12 +82,12 @@ export function useProfile(username) {
   });
 
   const [privacySettings, setPrivacySettings] = React.useState({
-    personal_visibility: 'shared',
-    work_visibility: 'private',
-    health_visibility: 'private',
-    financial_visibility: 'private',
-    background_visibility: 'shared',
-    field_overrides: {},
+    personalVisibility: 'shared',
+    workVisibility: 'private',
+    healthVisibility: 'private',
+    financialVisibility: 'private',
+    backgroundVisibility: 'shared',
+    fieldOverrides: {},
   });
 
   const [isLoadingProfile, setIsLoadingProfile] = React.useState(false);
@@ -337,10 +337,14 @@ const response = await apiPut('/api/profile/me', requestBody);
   };
 
   // Load privacy settings
-  const loadPrivacySettings = async () => {
-    if (!username) return;
+  const loadPrivacySettings = React.useCallback(async () => {
+    if (!username) return null;
     try {
-      const response = await apiGet('/api/profile/privacy/me');
+      // Try the profile route first, fallback to user route
+      let response = await apiGet('/api/profile/privacy/me');
+      if (!response.ok) {
+        response = await apiGet('/api/user/profile/privacy');
+      }
       if (response.ok) {
         const data = await response.json();
         setPrivacySettings(data);
@@ -350,13 +354,17 @@ const response = await apiPut('/api/profile/me', requestBody);
       console.error('Error loading privacy settings:', err);
     }
     return null;
-  };
+  }, [username]);
 
   // Update privacy settings
-  const updatePrivacySettings = async (newSettings) => {
-    if (!username) return;
+  const updatePrivacySettings = React.useCallback(async (newSettings) => {
+    if (!username) return { success: false, error: 'Username required' };
     try {
-      const response = await apiPut('/api/profile/privacy/me', newSettings);
+      // Try the profile route first, fallback to user route
+      let response = await apiPut('/api/profile/privacy/me', newSettings);
+      if (!response.ok) {
+        response = await apiPut('/api/user/profile/privacy', newSettings);
+      }
       if (response.ok) {
         setPrivacySettings(prev => ({ ...prev, ...newSettings }));
         return { success: true };
@@ -368,7 +376,7 @@ const response = await apiPut('/api/profile/me', requestBody);
       console.error('Error updating privacy settings:', err);
       return { success: false, error: err.message };
     }
-  };
+  }, [username]);
 
   // Get profile completion status
   const getCompletionStatus = async () => {

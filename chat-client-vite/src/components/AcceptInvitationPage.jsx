@@ -224,7 +224,7 @@ export function AcceptInvitationPage() {
         () => apiPost('/api/auth/register-with-invite', {
           email: formEmail.trim().toLowerCase(),
           password: formPassword,
-          username: displayName.trim(),
+          displayName: displayName.trim(), // Updated: use displayName instead of username
           inviteToken: token,
           inviteCode: shortCode,
         }),

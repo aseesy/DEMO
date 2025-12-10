@@ -1,0 +1,195 @@
+{
+  "../dbPostgres.js": [],
+  "../dbSafe.js": [
+    "../dbPostgres.js"
+  ],
+  "liaizen/agents/feedbackLearner.js": [
+    "../dbSafe.js",
+    "utils/constants.js",
+    "utils/errors.js",
+    "utils/logger.js"
+  ],
+  "liaizen/agents/proactiveCoach.js": [
+    "liaizen/core/client.js"
+  ],
+  "liaizen/analysis/language-analyzer/__tests__/integration.test.js": [
+    "liaizen/analysis/language-analyzer/index.js"
+  ],
+  "liaizen/analysis/language-analyzer/index.js": [
+    "liaizen/analysis/language-analyzer/patterns/childInvolvement.js",
+    "liaizen/analysis/language-analyzer/patterns/evaluative.js",
+    "liaizen/analysis/language-analyzer/patterns/focus.js",
+    "liaizen/analysis/language-analyzer/patterns/globalSpecific.js",
+    "liaizen/analysis/language-analyzer/patterns/hedging.js",
+    "liaizen/analysis/language-analyzer/patterns/specificity.js",
+    "liaizen/analysis/language-analyzer/patterns/structure.js"
+  ],
+  "liaizen/analysis/language-analyzer/patterns/childInvolvement.js": [],
+  "liaizen/analysis/language-analyzer/patterns/evaluative.js": [],
+  "liaizen/analysis/language-analyzer/patterns/focus.js": [],
+  "liaizen/analysis/language-analyzer/patterns/globalSpecific.js": [],
+  "liaizen/analysis/language-analyzer/patterns/hedging.js": [],
+  "liaizen/analysis/language-analyzer/patterns/specificity.js": [],
+  "liaizen/analysis/language-analyzer/patterns/structure.js": [],
+  "liaizen/analysis/rewrite-validator/__tests__/validator.test.js": [
+    "liaizen/analysis/rewrite-validator/fallbacks.js",
+    "liaizen/analysis/rewrite-validator/index.js"
+  ],
+  "liaizen/analysis/rewrite-validator/fallbacks.js": [],
+  "liaizen/analysis/rewrite-validator/index.js": [],
+  "liaizen/context/communication-profile/__tests__/mediationContext.test.js": [
+    "liaizen/context/communication-profile/mediationContext.js"
+  ],
+  "liaizen/context/communication-profile/__tests__/profileLoader.test.js": [
+    "liaizen/context/communication-profile/profileLoader.js"
+  ],
+  "liaizen/context/communication-profile/__tests__/profilePersister.test.js": [
+    "liaizen/context/communication-profile/profilePersister.js"
+  ],
+  "liaizen/context/communication-profile/__tests__/temporalDecay.test.js": [
+    "liaizen/context/communication-profile/temporalDecay.js"
+  ],
+  "liaizen/context/communication-profile/index.js": [
+    "liaizen/context/communication-profile/mediationContext.js",
+    "liaizen/context/communication-profile/profileLoader.js",
+    "liaizen/context/communication-profile/profilePersister.js",
+    "liaizen/context/communication-profile/temporalDecay.js"
+  ],
+  "liaizen/context/communication-profile/mediationContext.js": [
+    "liaizen/context/communication-profile/temporalDecay.js"
+  ],
+  "liaizen/context/communication-profile/profileLoader.js": [],
+  "liaizen/context/communication-profile/profilePersister.js": [],
+  "liaizen/context/communication-profile/temporalDecay.js": [],
+  "liaizen/context/coparentContext.js": [],
+  "liaizen/context/userContext.js": [
+    "../dbPostgres.js",
+    "../dbSafe.js"
+  ],
+  "liaizen/core/client.js": [
+    "utils/constants.js"
+  ],
+  "liaizen/core/codeLayer/assessmentGen.js": [
+    "liaizen/core/codeLayer/types.js"
+  ],
+  "liaizen/core/codeLayer/axioms/clean/cleanInformation.js": [
+    "liaizen/core/codeLayer/types.js"
+  ],
+  "liaizen/core/codeLayer/axioms/clean/cleanRequest.js": [
+    "liaizen/core/codeLayer/types.js"
+  ],
+  "liaizen/core/codeLayer/axioms/direct/directInsult.js": [
+    "liaizen/core/codeLayer/types.js"
+  ],
+  "liaizen/core/codeLayer/axioms/direct/threatUltimatum.js": [
+    "liaizen/core/codeLayer/types.js"
+  ],
+  "liaizen/core/codeLayer/axioms/index.js": [
+    "liaizen/core/codeLayer/axioms/clean/cleanInformation.js",
+    "liaizen/core/codeLayer/axioms/clean/cleanRequest.js",
+    "liaizen/core/codeLayer/axioms/direct/directInsult.js",
+    "liaizen/core/codeLayer/axioms/direct/threatUltimatum.js",
+    "liaizen/core/codeLayer/axioms/indirect/childAsMessenger.js",
+    "liaizen/core/codeLayer/axioms/indirect/displacedAccusation.js",
+    "liaizen/core/codeLayer/axioms/indirect/weaponizedAgreement.js",
+    "liaizen/core/codeLayer/types.js"
+  ],
+  "liaizen/core/codeLayer/axioms/indirect/childAsMessenger.js": [
+    "liaizen/core/codeLayer/types.js"
+  ],
+  "liaizen/core/codeLayer/axioms/indirect/displacedAccusation.js": [
+    "liaizen/core/codeLayer/types.js"
+  ],
+  "liaizen/core/codeLayer/axioms/indirect/weaponizedAgreement.js": [
+    "liaizen/core/codeLayer/types.js"
+  ],
+  "liaizen/core/codeLayer/index.js": [
+    "liaizen/core/codeLayer/assessmentGen.js",
+    "liaizen/core/codeLayer/axioms/index.js",
+    "liaizen/core/codeLayer/markerDetector.js",
+    "liaizen/core/codeLayer/primitiveMapper.js",
+    "liaizen/core/codeLayer/tokenizer.js",
+    "liaizen/core/codeLayer/types.js",
+    "liaizen/core/codeLayer/vectorIdentifier.js"
+  ],
+  "liaizen/core/codeLayer/markerDetector.js": [
+    "liaizen/core/codeLayer/tokenizer.js"
+  ],
+  "liaizen/core/codeLayer/primitiveMapper.js": [
+    "liaizen/core/codeLayer/types.js"
+  ],
+  "liaizen/core/codeLayer/tokenizer.js": [],
+  "liaizen/core/codeLayer/types.js": [],
+  "liaizen/core/codeLayer/vectorIdentifier.js": [
+    "liaizen/core/codeLayer/types.js"
+  ],
+  "liaizen/core/codeLayerIntegration.js": [
+    "liaizen/core/codeLayer/index.js"
+  ],
+  "liaizen/core/mediator.js": [
+    "../dbPostgres.js",
+    "../dbSafe.js",
+    "liaizen/analysis/language-analyzer/index.js",
+    "liaizen/analysis/rewrite-validator/fallbacks.js",
+    "liaizen/analysis/rewrite-validator/index.js",
+    "liaizen/context/communication-profile/index.js",
+    "liaizen/context/communication-profile/mediationContext.js",
+    "liaizen/context/coparentContext.js",
+    "liaizen/context/userContext.js",
+    "liaizen/core/client.js",
+    "liaizen/core/codeLayerIntegration.js",
+    "utils/constants.js",
+    "utils/errors.js",
+    "utils/logger.js",
+    "utils/profileHelpers.js"
+  ],
+  "liaizen/index.js": [
+    "liaizen/agents/feedbackLearner.js",
+    "liaizen/agents/proactiveCoach.js",
+    "liaizen/analysis/language-analyzer/index.js",
+    "liaizen/analysis/rewrite-validator/index.js",
+    "liaizen/context/communication-profile/index.js",
+    "liaizen/context/userContext.js",
+    "liaizen/core/client.js",
+    "liaizen/core/mediator.js",
+    "liaizen/intelligence/contactIntelligence.js",
+    "liaizen/metrics/communicationStats.js",
+    "liaizen/policies/safety.js"
+  ],
+  "liaizen/intelligence/contactIntelligence.js": [
+    "../dbSafe.js",
+    "liaizen/core/client.js"
+  ],
+  "liaizen/metrics/communicationStats.js": [
+    "../dbSafe.js"
+  ],
+  "liaizen/policies/safety.js": [],
+  "utils/__tests__/crypto.test.js": [
+    "utils/crypto.js"
+  ],
+  "utils/__tests__/dates.test.js": [
+    "utils/dates.js"
+  ],
+  "utils/__tests__/validators.test.js": [
+    "utils/validators.js"
+  ],
+  "utils/constants.js": [],
+  "utils/crypto.js": [],
+  "utils/dates.js": [],
+  "utils/errors.js": [
+    "utils/logger.js"
+  ],
+  "utils/index.js": [
+    "utils/crypto.js",
+    "utils/dates.js",
+    "utils/validators.js"
+  ],
+  "utils/logger.js": [],
+  "utils/profileHelpers.js": [
+    "../dbSafe.js"
+  ],
+  "utils/schema.js": [
+    "../dbPostgres.js"
+  ],
+  "utils/validators.js": []
+}
