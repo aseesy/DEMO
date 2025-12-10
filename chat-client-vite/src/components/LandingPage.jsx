@@ -300,13 +300,11 @@ export function LandingPage() {
                   <svg className="w-6 h-6 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-lg font-semibold text-teal-dark">You're on the list!</span>
+                  <span className="text-lg font-semibold text-teal-dark">You're on the waitlist!</span>
                 </div>
-                {waitlistPosition && (
-                  <p className="text-sm text-teal-medium">
-                    You're #{waitlistPosition} on the waitlist. We'll be in touch soon!
-                  </p>
-                )}
+                <p className="text-sm text-teal-medium">
+                  We'll be in touch soon with early access.
+                </p>
               </div>
             )}
 
