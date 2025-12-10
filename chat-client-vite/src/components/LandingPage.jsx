@@ -214,7 +214,7 @@ export function LandingPage() {
       {/* Hero Section - Enhanced background */}
       <div className="pt-24 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-teal-lightest/30 to-white">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-12 sm:mb-20 flex flex-col lg:flex-row lg:items-center lg:gap-12" style={{ overflowX: 'visible' }}>
+          <div className="mb-12 sm:mb-20 flex flex-col lg:flex-row lg:items-center lg:gap-6" style={{ overflowX: 'visible' }}>
             {/* Left Column - Text Content */}
             <div className="flex-1 lg:max-w-xl">
             {/* Top Label - Design System SectionHeader */}
@@ -337,7 +337,7 @@ export function LandingPage() {
               <img
                 src="/assets/family-exchange.svg"
                 alt="Co-parents peacefully exchanging child during custody transition"
-                className="w-full max-w-md xl:max-w-lg"
+                className="w-full max-w-md xl:max-w-lg scale-y-[-1]"
               />
             </div>
           </div>
