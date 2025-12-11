@@ -1,20 +1,5 @@
-# Nixpacks configuration for Railway deployment
-# Deploys only the chat-server (backend)
-# Updated 2025-12-11: Node.js 18 EOL, now using Node.js 20 LTS
+# Root nixpacks.toml - NOT USED by Railway
+# Railway uses chat-server/nixpacks.toml because root_dir=chat-server
+# This file is kept for reference only
 
-[phases.setup]
-nixPkgs = ["nodejs_20"]
-
-[phases.install]
-# Use npm explicitly to avoid pnpm auto-detection issues
-# Remove pnpm-lock.yaml files to prevent auto-detection
-cmds = [
-  "rm -f pnpm-lock.yaml chat-server/pnpm-lock.yaml chat-client-vite/pnpm-lock.yaml || true",
-  "cd chat-server && npm install --legacy-peer-deps"
-]
-
-[phases.build]
-cmds = ["cd chat-server && echo 'No build step required'"]
-
-[start]
-cmd = "cd chat-server && node server.js"
+# See chat-server/nixpacks.toml for the actual deployment config

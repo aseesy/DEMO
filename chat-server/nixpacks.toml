@@ -1,5 +1,6 @@
 # Nixpacks configuration for chat-server deployment
 # This file ensures Railway uses npm, not pnpm
+# Railway sets root_dir=chat-server, so all paths are relative to chat-server/
 
 [phases.setup]
 nixPkgs = ["nodejs_20"]
@@ -8,7 +9,7 @@ nixPkgs = ["nodejs_20"]
 cmds = ["npm install --legacy-peer-deps"]
 
 [phases.build]
-cmds = ["echo 'No build step required'"]
+cmds = ["echo 'Build complete'"]
 
 [start]
 cmd = "node server.js"
