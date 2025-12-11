@@ -10,12 +10,11 @@ nixPkgs = ["nodejs_20"]
 # Remove pnpm-lock.yaml files to prevent auto-detection
 cmds = [
   "rm -f pnpm-lock.yaml chat-server/pnpm-lock.yaml chat-client-vite/pnpm-lock.yaml || true",
-  "cd chat-server",
-  "npm install --legacy-peer-deps"
+  "cd chat-server && npm install --legacy-peer-deps"
 ]
 
 [phases.build]
-cmds = ["echo 'No build step required'"]
+cmds = ["cd chat-server && echo 'No build step required'"]
 
 [start]
 cmd = "cd chat-server && node server.js"
