@@ -5,15 +5,13 @@
 [build]
 builder = "nixpacks"
 watchPatterns = ["chat-server/**"]
-# Explicitly use npm, not pnpm
-buildCommand = "cd chat-server && npm install --legacy-peer-deps"
 
 [deploy]
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 healthcheckPath = "/health"
 healthcheckTimeout = 300
-startCommand = "cd chat-server && node server.js"
+startCommand = "node server.js"
 
 # IMPORTANT: DATABASE_URL MUST BE SET
 # 1. Add a PostgreSQL service in Railway dashboard
