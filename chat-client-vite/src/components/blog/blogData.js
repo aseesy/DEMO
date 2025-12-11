@@ -117,7 +117,7 @@ export const blogStructure = {
                     readTime: '7 min read'
                 },
                 {
-                    title: 'Stability vs. Stress: How Communication Shapes a Child's Home Environment',
+                    title: "Stability vs. Stress: How Communication Shapes a Child's Home Environment",
                     excerpt: 'Creating a sense of safety for your children through consistent communication styles.',
                     path: '/child-impact/stability-stress',
                     date: 'Dec 23, 2025',
