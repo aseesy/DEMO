@@ -18,31 +18,36 @@ export const blogStructure = {
                     title: 'Why Co-Parenting Messages Feel More Hurtful Than They Are',
                     excerpt: 'Understanding the psychology behind emotional triggers and why neutral texts can feel like attacks.',
                     path: '/co-parenting-communication/emotional-triggers',
-                    comingSoon: true
+                    date: 'Dec 11, 2025',
+                    readTime: '6 min read'
                 },
                 {
                     title: 'How Emotional Regulation Changes Co-Parenting Outcomes',
                     excerpt: 'Why managing your own nervous system is the most powerful move you can make in a co-parenting dynamic.',
                     path: '/co-parenting-communication/emotional-regulation',
-                    comingSoon: true
+                    date: 'Dec 12, 2025',
+                    readTime: '7 min read'
                 },
                 {
                     title: 'From Reaction to Response: The Most Important Co-Parenting Skill',
                     excerpt: 'Learn the pause technique that stops escalation in its tracks.',
                     path: '/co-parenting-communication/reaction-vs-response',
-                    comingSoon: true
+                    date: 'Dec 13, 2025',
+                    readTime: '6 min read'
                 },
                 {
                     title: 'How to Pause Before Sending a Heated Message',
                     excerpt: 'Practical strategies for hitting the brakes when you really want to hit send.',
                     path: '/co-parenting-communication/pause-before-reacting',
-                    comingSoon: true
+                    date: 'Dec 14, 2025',
+                    readTime: '5 min read'
                 },
                 {
                     title: 'How to Communicate With a Defensive Co-Parent',
                     excerpt: 'Strategies for getting your point across without triggering their defense mechanisms.',
                     path: '/co-parenting-communication/defensiveness-strategies',
-                    comingSoon: true
+                    date: 'Dec 15, 2025',
+                    readTime: '7 min read'
                 }
             ]
         },
@@ -56,31 +61,37 @@ export const blogStructure = {
                     title: 'Why High-Conflict Co-Parenting Feels Impossible to Fix',
                     excerpt: 'Understanding the dynamics of high-conflict relationships and why standard advice often fails.',
                     path: '/high-conflict/why-it-feels-impossible',
-                    comingSoon: true
+                    date: 'Dec 16, 2025',
+                    readTime: '8 min read',
+                    featured: true
                 },
                 {
                     title: 'How to De-escalate Communication With a High-Conflict Co-Parent',
                     excerpt: 'Specific phrases and techniques to lower the temperature of heated exchanges.',
                     path: '/high-conflict/de-escalation-techniques',
-                    comingSoon: true
+                    date: 'Dec 17, 2025',
+                    readTime: '8 min read'
                 },
                 {
                     title: 'Navigating Co-Parent Gaslighting, Guilt, and Blame',
                     excerpt: 'How to spot manipulation tactics and respond with factual neutrality.',
                     path: '/high-conflict/gaslighting-guilt-blame',
-                    comingSoon: true
+                    date: 'Dec 18, 2025',
+                    readTime: '9 min read'
                 },
                 {
                     title: 'How to Protect Your Mental Health While Co-Parenting',
                     excerpt: 'Essential self-care strategies for parents in high-stress co-parenting relationships.',
                     path: '/high-conflict/mental-health-protection',
-                    comingSoon: true
+                    date: 'Dec 19, 2025',
+                    readTime: '8 min read'
                 },
                 {
                     title: 'What to Do When Every Conversation Turns Into a Fight',
-                    excerpt: ' breaking the cycle of constant conflict even when your co-parent won\'t change.',
+                    excerpt: 'Breaking the cycle of constant conflict even when your co-parent won\'t change.',
                     path: '/high-conflict/every-conversation-fight',
-                    comingSoon: true
+                    date: 'Dec 20, 2025',
+                    readTime: '7 min read'
                 }
             ]
         },
@@ -94,25 +105,30 @@ export const blogStructure = {
                     title: 'How Repeated Parental Conflict Affects Children Long-Term',
                     excerpt: 'The evidence-based impact of conflict on child development and future relationships.',
                     path: '/child-impact/long-term-effects',
-                    comingSoon: true
+                    date: 'Dec 21, 2025',
+                    readTime: '9 min read',
+                    featured: true
                 },
                 {
                     title: 'What Children Need Most During High-Conflict Co-Parenting',
                     excerpt: 'It\'s not perfect parents—it\'s stability. Here\'s how to provide it.',
                     path: '/child-impact/what-kids-need',
-                    comingSoon: true
+                    date: 'Dec 22, 2025',
+                    readTime: '7 min read'
                 },
                 {
-                    title: 'Stability vs. Stress: How Communication Shapes a Child’s Home Environment',
+                    title: 'Stability vs. Stress: How Communication Shapes a Child's Home Environment',
                     excerpt: 'Creating a sense of safety for your children through consistent communication styles.',
                     path: '/child-impact/stability-stress',
-                    comingSoon: true
+                    date: 'Dec 23, 2025',
+                    readTime: '7 min read'
                 },
                 {
                     title: 'How to Model Healthy Communication for Your Kids',
                     excerpt: 'Your children are watching. Here\'s how to show them what healthy boundaries look like.',
                     path: '/child-impact/modeling-communication',
-                    comingSoon: true
+                    date: 'Dec 24, 2025',
+                    readTime: '7 min read'
                 }
             ]
         },

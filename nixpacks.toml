@@ -1,8 +1,9 @@
 # Nixpacks configuration for Railway deployment
 # Deploys only the chat-server (backend)
+# Updated 2025-12-11: Node.js 18 EOL, now using Node.js 20 LTS
 
 [phases.setup]
-nixPkgs = ["nodejs_18"]
+nixPkgs = ["nodejs_20"]
 
 [phases.install]
 # Use npm explicitly to avoid pnpm auto-detection issues

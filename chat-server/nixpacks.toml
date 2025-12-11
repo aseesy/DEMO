@@ -2,7 +2,7 @@
 # This file ensures Railway uses npm, not pnpm
 
 [phases.setup]
-nixPkgs = ["nodejs_18"]
+nixPkgs = ["nodejs_20"]
 
 [phases.install]
 cmds = ["npm install --legacy-peer-deps"]
