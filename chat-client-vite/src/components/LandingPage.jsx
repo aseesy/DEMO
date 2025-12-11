@@ -1117,7 +1117,6 @@ export function LandingPage() {
               { title: 'High-Conflict Co-Parenting', path: '/high-conflict-co-parenting/' },
               { title: 'Child-Centered Co-Parenting', path: '/child-centered-co-parenting/' },
               { title: 'AI + Co-Parenting Tools', path: '/liaizen-ai-co-parenting/' },
-              { title: 'Legal-Friendly Co-Parenting', path: '/court-safe-co-parenting-messages/' },
             ].map((item) => (
               <a
                 key={item.path}

@@ -175,38 +175,6 @@ export const blogStructure = {
                     readTime: "5 min read"
                 }
             ]
-        },
-        {
-            id: 'legal-friendly',
-            title: 'Legal-Friendly Co-Parenting',
-            slug: '/court-safe-co-parenting-messages',
-            description: 'Writing messages that are clear, documentable, and safe for legal review.',
-            articles: [
-                {
-                    title: 'What Courts Look For in Co-Parenting Communication',
-                    excerpt: 'Understanding the "BIFF" method and what judges actually care about in text messages.',
-                    path: '/court-safe/what-courts-look-for',
-                    comingSoon: true
-                },
-                {
-                    title: 'How to Keep Messages Clear, Neutral, and Documentable',
-                    excerpt: 'Writing for the permanent record: tips for bulletproof documentation.',
-                    path: '/court-safe/clear-neutral-messages',
-                    comingSoon: true
-                },
-                {
-                    title: 'How AI Helps Prevent Damaging Messages Before You Send Them',
-                    excerpt: 'Avoiding "hot" words and emotional outbursts that can be used against you.',
-                    path: '/court-safe/prevent-damaging-messages',
-                    comingSoon: true
-                },
-                {
-                    title: 'Best Practices for Co-Parenting Documentation',
-                    excerpt: 'How to organize and present your communication history effectively.',
-                    path: '/court-safe/documentation-best-practices',
-                    comingSoon: true
-                }
-            ]
         }
     ]
 };

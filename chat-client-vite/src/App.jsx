@@ -108,9 +108,6 @@ function App() {
                 <Route path="/liaizen/calm-communication-ai" element={<CalmCommunication />} />
                 <Route path="/liaizen/ai-safety-for-parents" element={<AiSafety />} />
                 <Route path="/liaizen/ai-vs-impulse" element={<AiVsImpulse />} />
-
-                {/* Pillar 5: Legal Friendly */}
-                <Route path="/court-safe-co-parenting-messages" element={<BlogPillarPage categoryId="legal-friendly" />} />
               </Routes>
             </BrowserRouter>
           </MediatorProvider>
