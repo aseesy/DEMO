@@ -155,7 +155,12 @@ export function ContactsPanel({ username }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { error: `Server error: ${response.status}` };
+        }
         throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 

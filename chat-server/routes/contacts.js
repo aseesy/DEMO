@@ -527,18 +527,25 @@ router.post('/generate-profile', async (req, res) => {
 
     // Generate profile suggestions using AI
     if (contactIntelligence) {
-      const suggestions = await contactIntelligence.generateContactProfile(
-        contactData,
-        userContacts,
-        recentMessages
-      );
+      try {
+        const suggestions = await contactIntelligence.generateContactProfile(
+          contactData,
+          userContacts,
+          recentMessages
+        );
 
-      if (suggestions) {
-        return res.json(suggestions);
+        if (suggestions) {
+          return res.json(suggestions);
+        }
+      } catch (aiError) {
+        console.error('AI profile generation error:', aiError);
+        // Continue to fallback - don't fail the request
       }
+    } else {
+      console.warn('Contact intelligence not available - returning fallback suggestions');
     }
 
-    // Fallback response
+    // Fallback response (when AI is not available or fails)
     res.json({
       suggestedFields: [],
       helpfulQuestions: [],
