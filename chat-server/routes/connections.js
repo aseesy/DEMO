@@ -13,6 +13,7 @@ const router = express.Router();
 const dbSafe = require('../dbSafe');
 const connectionManager = require('../connectionManager');
 const emailService = require('../emailService');
+const { getPasswordError, getPasswordRequirements } = require('../libs/password-validator');
 const {
   honeypotCheck,
   rateLimit,
@@ -288,8 +289,12 @@ router.post('/auth/signup-with-token', async (req, res) => {
       return res.status(400).json({ error: 'Username must be 2-20 characters' });
     }
 
-    if (password.length < 4) {
-      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    const passwordError = getPasswordError(password);
+    if (passwordError) {
+      return res.status(400).json({
+        error: passwordError,
+        requirements: getPasswordRequirements()
+      });
     }
 
     // Validate token

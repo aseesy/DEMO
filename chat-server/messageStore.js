@@ -54,6 +54,20 @@ async function saveMessage(message) {
       // Insert new message
       await dbSafe.safeInsert('messages', fullData);
       console.log(`💾 Saved new message ${id} to database (room: ${coreData.room_id || 'none'})`);
+      
+      // Sync relationship metadata to Neo4j (non-blocking, async)
+      if (coreData.room_id) {
+        setImmediate(() => {
+          try {
+            const relationshipSync = require('./src/utils/relationshipSync');
+            relationshipSync.syncRoomMetadata(coreData.room_id).catch(err => {
+              // Silently fail - sync is optional and will retry periodically
+            });
+          } catch (err) {
+            // relationshipSync not available or Neo4j not configured - that's okay
+          }
+        });
+      }
     }
   } catch (err) {
     // If extended columns don't exist, try with just core data

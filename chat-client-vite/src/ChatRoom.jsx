@@ -2426,10 +2426,10 @@ function ChatRoom() {
                                               <div className="flex items-center gap-2 mb-2">
                                                 <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 border border-gray-200 p-1">
                                                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${getAvatarColor(msg.username)}`}>
-                                                    {msg.username ? msg.username.charAt(0).toUpperCase() : '?'}
+                                                    {(msg.displayName || msg.username) ? (msg.displayName || msg.username).charAt(0).toUpperCase() : '?'}
                                                   </div>
                                                 </div>
-                                                <span className="text-sm font-semibold text-gray-700">{msg.username}</span>
+                                                <span className="text-sm font-semibold text-gray-700">{msg.displayName || msg.username}</span>
                                               </div>
                                             )}
 

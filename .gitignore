@@ -4,3 +4,4 @@
 # Naming convention validator output (if we add logging)
 *.naming-validation.log
 node_modules
+screenshots/*.webm

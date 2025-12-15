@@ -84,6 +84,40 @@ if (!process.env.DATABASE_URL) {
       console.log('⚠️  Server will continue running - migration can be retried');
     });
   }, 2000); // Wait 2 seconds for server to start
+
+  // Initialize Neo4j indexes and sync (non-blocking)
+  setTimeout(() => {
+    try {
+      const neo4jClient = require('./src/utils/neo4jClient');
+      if (neo4jClient.isAvailable()) {
+        console.log('🔄 Initializing Neo4j indexes...');
+        neo4jClient.initializeIndexes().catch(err => {
+          console.warn('⚠️  Neo4j index initialization failed (non-blocking):', err.message);
+        });
+
+        // Run initial sync validation after 5 seconds
+        setTimeout(() => {
+          const dbSyncValidator = require('./src/utils/dbSyncValidator');
+          dbSyncValidator.runFullValidation().catch(err => {
+            console.warn('⚠️  Database sync validation failed (non-blocking):', err.message);
+          });
+        }, 5000);
+
+        // Start periodic relationship metadata sync job (every 60 minutes)
+        setTimeout(() => {
+          try {
+            const relationshipSync = require('./src/utils/relationshipSync');
+            relationshipSync.startSyncJob(60); // Sync every 60 minutes
+          } catch (err) {
+            console.warn('⚠️  Failed to start relationship sync job:', err.message);
+          }
+        }, 10000); // Start after 10 seconds
+      }
+    } catch (err) {
+      // Neo4j not configured or error - that's okay, it's optional
+      console.log('ℹ️  Neo4j not configured or unavailable (optional)');
+    }
+  }, 3000); // Wait 3 seconds for database to be ready
 }
 
 const { Server } = require('socket.io');
@@ -884,6 +918,22 @@ function getUserList() {
   }));
 }
 
+// Helper function to get user display name
+async function getUserDisplayName(username) {
+  try {
+    const dbSafe = require('./dbSafe');
+    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = dbSafe.parseResult(userResult);
+    if (users.length > 0) {
+      const user = users[0];
+      return user.preferred_name || user.display_name || user.first_name || username;
+    }
+  } catch (err) {
+    console.error(`Error getting display name for ${username}:`, err);
+  }
+  return username;
+}
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log(`New connection: ${socket.id}`);
@@ -987,9 +1037,11 @@ io.on('connection', (socket) => {
       const dbPostgres = require('./dbPostgres');
       // Note: messages table doesn't have private/flagged/deleted columns in PostgreSQL schema
       const historyQuery = `
-        SELECT * FROM messages
-        WHERE room_id = $1
-        ORDER BY timestamp ASC
+        SELECT m.*, u.display_name, u.first_name, u.preferred_name
+        FROM messages m
+        LEFT JOIN users u ON m.username = u.username
+        WHERE m.room_id = $1
+        ORDER BY m.timestamp ASC
         LIMIT 500
       `;
       console.log(`🔵 Loading message history for room: ${roomId}`);
@@ -1028,10 +1080,14 @@ io.on('connection', (socket) => {
           }
         }
 
+        // Get display name: preferred_name > display_name > first_name > username
+        const displayName = msg.preferred_name || msg.display_name || msg.first_name || msg.username;
+
         roomHistory.push({
           id: msg.id,
           type: msg.type,
           username: msg.username,
+          displayName: displayName,
           text: msg.text,
           timestamp: msg.timestamp, // Preserve full ISO timestamp
           threadId: msg.thread_id || null,
@@ -1222,10 +1278,14 @@ io.on('connection', (socket) => {
         return;
       }
 
+      // Get display name for the message
+      const displayName = await getUserDisplayName(user.username);
+      
       const message = {
         id: `${Date.now()}-${socket.id}`,
         type: 'user',
         username: user.username,
+        displayName: displayName,
         text: cleanText,
         timestamp: new Date().toISOString(),
         socketId: socket.id,

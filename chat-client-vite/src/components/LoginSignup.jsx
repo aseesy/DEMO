@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { Button, Input } from './ui';
 
@@ -233,6 +233,18 @@ export function LoginSignup() {
             data-form-type="other"
             helperText={!isLoginMode ? "At least 4 characters" : undefined}
           />
+
+          {/* Forgot Password Link - only show in login mode */}
+          {isLoginMode && (
+            <div className="text-right -mt-2">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-teal-medium hover:text-teal-dark font-medium transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          )}
 
           <Button
             type="submit"

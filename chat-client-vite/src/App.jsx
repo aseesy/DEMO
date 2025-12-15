@@ -35,6 +35,8 @@ import { EscalationPrevention } from './components/blog/EscalationPrevention.jsx
 import { CalmCommunication } from './components/blog/CalmCommunication.jsx';
 import { AiSafety } from './components/blog/AiSafety.jsx';
 import { AiVsImpulse } from './components/blog/AiVsImpulse.jsx';
+import { ForgotPassword } from './components/ForgotPassword.jsx';
+import { ResetPassword } from './components/ResetPassword.jsx';
 
 function App() {
   // Initialize PWA - registers Service Worker and enables push notifications
@@ -66,6 +68,10 @@ function App() {
 
                 {/* Google OAuth callback route */}
                 <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
+
+                {/* Password reset routes */}
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
                 {/* UI Component Showcase - Design System Documentation */}
                 <Route path="/ui-showcase" element={<UIShowcase />} />

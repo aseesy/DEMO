@@ -20,14 +20,20 @@ export function InviteCoParentPage() {
     buildInviteUrl,
     buildShareableMessage,
     isCreating,
+    isAccepting,
+    acceptPairing,
+    validateCode,
+    isValidating,
     error: pairingError,
     clearError,
   } = usePairing();
 
   // Form state
   const [inviteeEmail, setInviteeEmail] = React.useState('');
-  const [inviteMethod, setInviteMethod] = React.useState('link'); // 'email', 'link', or 'code'
+  const [inviteMethod, setInviteMethod] = React.useState('link'); // 'email', 'link', 'code', or 'have-code'
   const [error, setError] = React.useState('');
+  const [enteredCode, setEnteredCode] = React.useState('');
+  const [codeValidation, setCodeValidation] = React.useState(null);
 
   // Result state
   const [inviteData, setInviteData] = React.useState(null);
@@ -183,6 +189,67 @@ export function InviteCoParentPage() {
     clearError();
   };
 
+  /**
+   * Validate a code entered by the user
+   */
+  const handleValidateCode = async () => {
+    if (!enteredCode.trim()) {
+      setError('Please enter a pairing code');
+      return;
+    }
+
+    const code = enteredCode.trim().toUpperCase();
+    setError('');
+    clearError();
+
+    const validation = await validateCode(code);
+    setCodeValidation(validation);
+
+    if (!validation.valid) {
+      setError(validation.error || 'Invalid code');
+    }
+  };
+
+  /**
+   * Accept a pairing code
+   */
+  const handleAcceptCode = async () => {
+    if (!enteredCode.trim()) {
+      setError('Please enter a pairing code');
+      return;
+    }
+
+    if (!codeValidation || !codeValidation.valid) {
+      await handleValidateCode();
+      return;
+    }
+
+    const code = enteredCode.trim().toUpperCase();
+    setError('');
+    clearError();
+
+    const result = await acceptPairing({ code });
+
+    if (!result.success) {
+      // Check for authentication errors
+      if (result.code === 'UNAUTHORIZED' || result.error?.includes('authentication') || result.error?.includes('Unauthorized')) {
+        setError('Please log in to accept the invitation. Redirecting to login...');
+        setTimeout(() => navigate('/login'), 2000);
+        return;
+      }
+      setError(result.error || 'Failed to accept invitation');
+      return;
+    }
+
+    // Success! Redirect to main app
+    navigate('/', {
+      state: {
+        message: 'You are now connected with your co-parent!',
+        roomId: result.sharedRoomId
+      }
+    });
+  };
+
   // Calculate expiration display
   const getExpirationText = () => {
     if (!inviteData?.inviteType) return 'This invite expires in 7 days';
@@ -248,7 +315,7 @@ export function InviteCoParentPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     How would you like to invite them?
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     <button
                       type="button"
                       onClick={() => setInviteMethod('email')}
@@ -291,11 +358,31 @@ export function InviteCoParentPage() {
                       </svg>
                       <span className="text-xs font-medium">Code</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInviteMethod('have-code');
+                        setInviteData(null);
+                        setError('');
+                        clearError();
+                      }}
+                      className={`p-3 rounded-lg border-2 transition-all text-center ${
+                        inviteMethod === 'have-code'
+                          ? 'border-[#275559] bg-[#E8F5F5] text-[#275559]'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                      }`}
+                    >
+                      <svg className="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      </svg>
+                      <span className="text-xs font-medium">I have a code</span>
+                    </button>
                   </div>
                   <p className="text-xs text-gray-500 mt-2 text-center">
                     {inviteMethod === 'email' && 'Send invitation directly to their email (7 days)'}
                     {inviteMethod === 'link' && 'Share a link via text or any app (7 days)'}
                     {inviteMethod === 'code' && 'Quick code for existing users (15 minutes)'}
+                    {inviteMethod === 'have-code' && 'Enter the code your co-parent shared with you'}
                   </p>
                 </div>
 
@@ -315,38 +402,103 @@ export function InviteCoParentPage() {
                   </div>
                 )}
 
-                {/* Generate Button */}
+                {/* Code Input (for have-code method) */}
+                {inviteMethod === 'have-code' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Enter the code from your co-parent
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="LZ-XXXXXX"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#275559] focus:border-transparent outline-none transition-all font-mono text-lg text-center tracking-wider"
+                      value={enteredCode}
+                      onChange={(e) => {
+                        setEnteredCode(e.target.value.toUpperCase());
+                        setCodeValidation(null);
+                        setError('');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          if (codeValidation && codeValidation.valid) {
+                            handleAcceptCode();
+                          } else {
+                            handleValidateCode();
+                          }
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-gray-500 mt-1 text-center">
+                      Format: LZ-XXXXXX (6 characters after LZ-)
+                    </p>
+                    {codeValidation && codeValidation.valid && (
+                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-700">
+                          ✓ Valid code from {codeValidation.inviterUsername}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Generate/Accept Button */}
                 <button
-                  onClick={handleGenerateInvite}
-                  disabled={isCreating}
+                  onClick={inviteMethod === 'have-code' ? (codeValidation && codeValidation.valid ? handleAcceptCode : handleValidateCode) : handleGenerateInvite}
+                  disabled={isCreating || isAccepting || isValidating || (inviteMethod === 'have-code' && !enteredCode.trim())}
                   className="w-full py-3 px-4 bg-[#275559] text-white font-medium rounded-lg hover:bg-[#1e4245] transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {isCreating ? (
+                  {isCreating || isAccepting || isValidating ? (
                     <>
                       <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      <span>Creating...</span>
+                      <span>
+                        {isValidating ? 'Validating...' : isAccepting ? 'Connecting...' : 'Creating...'}
+                      </span>
                     </>
                   ) : (
                     <>
-                      {inviteMethod === 'email' ? (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
+                      {inviteMethod === 'have-code' ? (
+                        <>
+                          {codeValidation && codeValidation.valid ? (
+                            <>
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span>Connect with Co-Parent</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>Validate Code</span>
+                            </>
+                          )}
+                        </>
+                      ) : inviteMethod === 'email' ? (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          <span>Send Invite</span>
+                        </>
                       ) : inviteMethod === 'code' ? (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                        </svg>
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                          </svg>
+                          <span>Generate Code</span>
+                        </>
                       ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                          <span>Generate Link</span>
+                        </>
                       )}
-                      <span>
-                        {inviteMethod === 'email' ? 'Send Invite' : inviteMethod === 'code' ? 'Generate Code' : 'Generate Link'}
-                      </span>
                     </>
                   )}
                 </button>

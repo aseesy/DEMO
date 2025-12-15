@@ -15,3 +15,9 @@ ALTER TABLE user_context ADD COLUMN IF NOT EXISTS intervention_learning JSONB DE
 COMMENT ON COLUMN user_context.intervention_learning IS 'Tracks intervention outcomes, user preferences, and pattern success rates for adaptive coaching';
 
 
+
+
+
+
+
+

@@ -1,3 +1,23 @@
+/**
+ * Authentication Module
+ *
+ * Handles all authentication operations for LiaiZen:
+ * - User registration (email/password and OAuth)
+ * - Login/logout
+ * - Password hashing (bcrypt) with legacy SHA-256 migration
+ * - JWT token generation and verification
+ * - Co-parent invitation registration flow
+ *
+ * Password Requirements (NIST SP 800-63B compliant):
+ * - Minimum 10 characters (length is the primary security factor)
+ * - NO complexity requirements (they frustrate users without improving security)
+ * - Blocklist of common/breached passwords
+ * - Passphrases encouraged ("correct horse battery staple")
+ *
+ * See libs/password-validator.js for validation utility
+ * See libs/auth-monitor.js for monitoring and alerting
+ */
+
 const bcrypt = require('bcrypt');
 const roomManager = require('./roomManager');
 const dbSafe = require('./dbSafe');
@@ -374,95 +394,7 @@ async function createUser(username, password, context = {}, email = null, google
   };
 }
 
-/**
- * Get or create user from Google OAuth
- */
-async function getOrCreateGoogleUser(googleId, email, name, picture = null) {
-  // First, try to find user by Google ID
-  const googleUserResult = await dbSafe.safeSelect('users', { google_id: googleId }, { limit: 1 });
-  const googleUsers = googleUserResult;
-
-  if (googleUsers.length > 0) {
-    // User exists with this Google ID - update last login and return
-    const user = googleUsers[0];
-    await dbSafe.safeUpdate('users', { last_login: new Date().toISOString() }, { id: user.id });
-
-    // Get full user data including context and room
-    // Assuming getUser function exists elsewhere or needs to be implemented
-    // For now, returning basic user info
-    return {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      firstName: user.first_name,
-      lastName: user.last_name,
-      displayName: user.display_name
-    };
-  }
-
-  // Check if email already exists (user might have signed up with email/password)
-  if (email) {
-    const emailLower = email.trim().toLowerCase();
-    const emailUserResult = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
-    const emailUsers = emailUserResult;
-
-    if (emailUsers.length > 0) {
-      // User exists with this email - link Google account
-      const user = emailUsers[0];
-      await dbSafe.safeUpdate('users', {
-        google_id: googleId,
-        oauth_provider: 'google',
-        last_login: new Date().toISOString()
-      }, { id: user.id });
-
-      // Get full user data including context and room
-      // For now, returning basic user info
-      return {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        displayName: user.display_name
-      };
-    }
-  }
-
-  // Create new user from Google account
-  // Generate username from email or name
-  let username = name || email?.split('@')[0] || `user${Date.now()}`;
-  username = username.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 20);
-
-  // Ensure username is unique
-  let uniqueUsername = username;
-  let counter = 1;
-  while (true) {
-    const existing = await dbSafe.safeSelect('users', { username: uniqueUsername }, { limit: 1 });
-    if (existing.length === 0) {
-      break;
-    }
-    uniqueUsername = `${username}${counter}`.substring(0, 20);
-    counter++;
-  }
-
-  // Parse name into first/last
-  let firstName = '';
-  let lastName = '';
-  if (name) {
-    const parts = name.split(' ');
-    firstName = parts[0];
-    if (parts.length > 1) {
-      lastName = parts.slice(1).join(' ');
-    }
-  }
-
-  // Create user with Google OAuth (no password)
-  return await createUser(uniqueUsername, null, {}, email, googleId, 'google', {
-    firstName,
-    lastName,
-    displayName: name
-  });
-}
+// Note: getOrCreateGoogleUser is defined later in this file after getUser is defined
 
 /**
  * Create welcome and onboarding tasks for new users

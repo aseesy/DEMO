@@ -378,6 +378,247 @@ async function getCoParentsSecure(authenticatedUserId) {
 }
 
 /**
+ * Initialize Neo4j indexes for optimal performance
+ * Should be called once on application startup
+ * @returns {Promise<boolean>} Success status
+ */
+async function initializeIndexes() {
+  if (!isNeo4jConfigured) {
+    console.log('⚠️  Neo4j not configured - skipping index initialization');
+    return false;
+  }
+
+  try {
+    // Create indexes for User nodes
+    const userIndexQuery = `
+      CREATE INDEX user_userId_index IF NOT EXISTS FOR (u:User) ON (u.userId);
+      CREATE INDEX user_username_index IF NOT EXISTS FOR (u:User) ON (u.username);
+    `;
+
+    // Create indexes for Room nodes
+    const roomIndexQuery = `
+      CREATE INDEX room_roomId_index IF NOT EXISTS FOR (r:Room) ON (r.roomId);
+    `;
+
+    await executeCypher(userIndexQuery);
+    await executeCypher(roomIndexQuery);
+
+    console.log('✅ Neo4j indexes initialized successfully');
+    return true;
+  } catch (error) {
+    // Indexes might already exist, which is fine
+    if (error.message.includes('already exists') || error.message.includes('equivalent')) {
+      console.log('ℹ️  Neo4j indexes already exist');
+      return true;
+    }
+    console.error(`❌ Failed to initialize Neo4j indexes:`, error.message);
+    return false;
+  }
+}
+
+/**
+ * Update relationship metadata from PostgreSQL
+ * Strengthens Neo4j with data from PostgreSQL (message counts, activity)
+ * 
+ * @param {number} userId1 - First user's PostgreSQL ID
+ * @param {number} userId2 - Second user's PostgreSQL ID
+ * @param {string} roomId - Room ID
+ * @param {Object} metadata - Relationship metadata from PostgreSQL
+ * @param {number} [metadata.messageCount] - Total messages in room
+ * @param {Date} [metadata.lastInteraction] - Last message timestamp
+ * @param {number} [metadata.interventionCount] - Number of AI interventions
+ * @returns {Promise<boolean>} Success status
+ */
+async function updateRelationshipMetadata(userId1, userId2, roomId, metadata = {}) {
+  if (!isNeo4jConfigured) {
+    return false;
+  }
+
+  try {
+    const query = `
+      MATCH (u1:User {userId: $userId1})-[r:CO_PARENT_WITH]->(u2:User {userId: $userId2})
+      WHERE r.roomId = $roomId AND r.active = true
+      SET r.messageCount = $messageCount,
+          r.lastInteraction = $lastInteraction,
+          r.interventionCount = $interventionCount,
+          r.updatedAt = datetime()
+      RETURN r
+    `;
+
+    const params = {
+      userId1,
+      userId2,
+      roomId,
+      messageCount: metadata.messageCount || 0,
+      lastInteraction: metadata.lastInteraction ? new Date(metadata.lastInteraction).toISOString() : null,
+      interventionCount: metadata.interventionCount || 0
+    };
+
+    const result = await executeCypher(query, params);
+    return result && result.data && result.data.length > 0;
+  } catch (error) {
+    console.error(`❌ Failed to update relationship metadata:`, error.message);
+    return false;
+  }
+}
+
+/**
+ * Get co-parents with relationship strength metrics
+ * Enhanced version that includes activity and interaction data
+ * 
+ * @param {number} userId - User's PostgreSQL ID
+ * @param {number} [authenticatedUserId] - Authenticated user's ID for privacy verification
+ * @returns {Promise<Array>} Array of co-parent info with metrics
+ */
+async function getCoParentsWithMetrics(userId, authenticatedUserId = null) {
+  if (!isNeo4jConfigured) {
+    return [];
+  }
+
+  // PRIVACY: Verify user can only query their own relationships
+  if (authenticatedUserId !== null && userId !== authenticatedUserId) {
+    console.error(`❌ PRIVACY VIOLATION: User ${authenticatedUserId} attempted to query relationships for user ${userId}`);
+    throw new Error('Unauthorized: Cannot query other users\' relationships');
+  }
+
+  try {
+    const query = `
+      MATCH (u:User {userId: $userId})-[r:CO_PARENT_WITH {active: true}]->(coParent:User)
+      RETURN coParent.userId as userId, 
+             coParent.username as username, 
+             r.roomId as roomId,
+             r.messageCount as messageCount,
+             r.lastInteraction as lastInteraction,
+             r.interventionCount as interventionCount,
+             r.createdAt as relationshipCreatedAt
+      ORDER BY r.lastInteraction DESC NULLS LAST
+    `;
+
+    const params = { userId };
+    const result = await executeCypher(query, params);
+
+    if (result && result.data) {
+      return result.data.map(row => ({
+        userId: row.row[0],
+        username: row.row[1],
+        roomId: row.row[2],
+        messageCount: row.row[3] || 0,
+        lastInteraction: row.row[4],
+        interventionCount: row.row[5] || 0,
+        relationshipCreatedAt: row.row[6]
+      }));
+    }
+
+    return [];
+  } catch (error) {
+    console.error(`❌ Failed to query co-parents with metrics for user ${userId}:`, error.message);
+    return [];
+  }
+}
+
+/**
+ * Get relationship network analysis
+ * Finds users connected through co-parent relationships (1-2 degrees)
+ * 
+ * @param {number} userId - User's PostgreSQL ID
+ * @param {number} [maxDepth=2] - Maximum relationship depth
+ * @param {number} [authenticatedUserId] - Authenticated user's ID for privacy verification
+ * @returns {Promise<Array>} Array of connected users with relationship paths
+ */
+async function getRelationshipNetwork(userId, maxDepth = 2, authenticatedUserId = null) {
+  if (!isNeo4jConfigured) {
+    return [];
+  }
+
+  // PRIVACY: Verify user can only query their own network
+  if (authenticatedUserId !== null && userId !== authenticatedUserId) {
+    throw new Error('Unauthorized: Cannot query other users\' networks');
+  }
+
+  try {
+    const query = `
+      MATCH path = (u:User {userId: $userId})-[r:CO_PARENT_WITH*1..${maxDepth}]-(other:User)
+      WHERE r.active = true AND other.userId <> $userId
+      WITH other, length(path) as distance, path
+      RETURN DISTINCT other.userId as userId, 
+             other.username as username,
+             distance,
+             [rel in relationships(path) | rel.roomId] as roomIds
+      ORDER BY distance, other.username
+      LIMIT 20
+    `;
+
+    const params = { userId };
+    const result = await executeCypher(query, params);
+
+    if (result && result.data) {
+      return result.data.map(row => ({
+        userId: row.row[0],
+        username: row.row[1],
+        distance: row.row[2],
+        roomIds: row.row[3] || []
+      }));
+    }
+
+    return [];
+  } catch (error) {
+    console.error(`❌ Failed to query relationship network for user ${userId}:`, error.message);
+    return [];
+  }
+}
+
+/**
+ * Get active relationships with high activity
+ * Useful for identifying most active co-parenting relationships
+ * 
+ * @param {number} userId - User's PostgreSQL ID
+ * @param {number} [minMessages=10] - Minimum message count threshold
+ * @param {number} [authenticatedUserId] - Authenticated user's ID for privacy verification
+ * @returns {Promise<Array>} Array of active relationships
+ */
+async function getActiveRelationships(userId, minMessages = 10, authenticatedUserId = null) {
+  if (!isNeo4jConfigured) {
+    return [];
+  }
+
+  // PRIVACY: Verify user can only query their own relationships
+  if (authenticatedUserId !== null && userId !== authenticatedUserId) {
+    throw new Error('Unauthorized: Cannot query other users\' relationships');
+  }
+
+  try {
+    const query = `
+      MATCH (u:User {userId: $userId})-[r:CO_PARENT_WITH {active: true}]->(coParent:User)
+      WHERE r.messageCount >= $minMessages
+      RETURN coParent.userId as userId,
+             coParent.username as username,
+             r.roomId as roomId,
+             r.messageCount as messageCount,
+             r.lastInteraction as lastInteraction
+      ORDER BY r.messageCount DESC, r.lastInteraction DESC NULLS LAST
+    `;
+
+    const params = { userId, minMessages };
+    const result = await executeCypher(query, params);
+
+    if (result && result.data) {
+      return result.data.map(row => ({
+        userId: row.row[0],
+        username: row.row[1],
+        roomId: row.row[2],
+        messageCount: row.row[3] || 0,
+        lastInteraction: row.row[4]
+      }));
+    }
+
+    return [];
+  } catch (error) {
+    console.error(`❌ Failed to query active relationships for user ${userId}:`, error.message);
+    return [];
+  }
+}
+
+/**
  * Check if Neo4j is available and configured
  * @returns {boolean}
  */
@@ -391,6 +632,11 @@ module.exports = {
   endCoParentRelationship,
   getCoParents,
   getCoParentsSecure, // Use this from API routes for automatic privacy enforcement
+  getCoParentsWithMetrics, // Enhanced version with relationship metrics
+  getRelationshipNetwork, // Network analysis
+  getActiveRelationships, // Active relationship queries
+  updateRelationshipMetadata, // Update relationship stats from PostgreSQL
+  initializeIndexes, // Initialize Neo4j indexes
   isAvailable,
   isNeo4jConfigured
 };

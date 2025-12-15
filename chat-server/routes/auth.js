@@ -887,5 +887,255 @@ router.post('/register-with-invite', async (req, res) => {
   }
 });
 
+// ============================================================
+// PASSWORD RESET ROUTES
+// ============================================================
+
+/**
+ * POST /api/auth/forgot-password
+ * Request a password reset email
+ *
+ * Security features:
+ * - Rate limited (handled by middleware)
+ * - Always returns success (prevents email enumeration)
+ * - Invalidates existing tokens for the user
+ * - Tokens expire in 1 hour
+ */
+router.post('/forgot-password', rateLimit('forgot-password', 5, 3600000), async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Normalize email
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Always respond with success to prevent email enumeration attacks
+    const successResponse = {
+      message: 'If an account exists with this email, you will receive a password reset link shortly.',
+      success: true
+    };
+
+    // Find user by email
+    const userResult = await db.query(
+      'SELECT id, username, email, google_id, password_hash FROM users WHERE LOWER(email) = $1',
+      [normalizedEmail]
+    );
+
+    if (userResult.rows.length === 0) {
+      // User not found - still return success to prevent enumeration
+      console.log(`[Password Reset] No account found for email: ${normalizedEmail}`);
+      return res.json(successResponse);
+    }
+
+    const user = userResult.rows[0];
+
+    // Check if this is a Google-only account (no password set)
+    if (user.google_id && !user.password_hash) {
+      console.log(`[Password Reset] Google-only account attempted reset: ${normalizedEmail}`);
+      // Still return success but don't send email (prevents enumeration)
+      // In production, you might want to send a different email explaining they should use Google
+      return res.json(successResponse);
+    }
+
+    // Invalidate any existing password reset tokens for this user
+    await db.query(
+      'UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND used_at IS NULL',
+      [user.id]
+    );
+
+    // Generate a secure random token
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // Token expires in 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    // Get request metadata for security logging
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+
+    // Store the token
+    await db.query(
+      `INSERT INTO password_reset_tokens (user_id, token, expires_at, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [user.id, resetToken, expiresAt, ipAddress, userAgent]
+    );
+
+    // Send password reset email
+    try {
+      await emailService.sendPasswordReset(user.email, resetToken, user.username);
+      console.log(`[Password Reset] Email sent successfully to: ${normalizedEmail}`);
+    } catch (emailError) {
+      console.error(`[Password Reset] Failed to send email:`, emailError);
+      // Don't expose email failures to the user
+    }
+
+    res.json(successResponse);
+
+  } catch (error) {
+    console.error('[Password Reset] Error:', error);
+    // Return generic error to prevent information leakage
+    res.status(500).json({ error: 'An error occurred. Please try again later.' });
+  }
+});
+
+/**
+ * POST /api/auth/reset-password
+ * Reset password using a valid token
+ *
+ * Security features:
+ * - Token can only be used once
+ * - Token expires after 1 hour
+ * - Password validation enforced
+ * - Token is invalidated after use
+ */
+router.post('/reset-password', rateLimit('reset-password', 10, 3600000), async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Reset token is required', code: 'MISSING_TOKEN' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ error: 'New password is required', code: 'MISSING_PASSWORD' });
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePasswordDetailed(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({
+        error: passwordValidation.errors[0] || 'Password does not meet requirements',
+        code: 'WEAK_PASSWORD',
+        requirements: getPasswordRequirements()
+      });
+    }
+
+    // Find the token and associated user
+    const tokenResult = await db.query(
+      `SELECT prt.*, u.email, u.username
+       FROM password_reset_tokens prt
+       JOIN users u ON prt.user_id = u.id
+       WHERE prt.token = $1`,
+      [token]
+    );
+
+    if (tokenResult.rows.length === 0) {
+      console.log(`[Password Reset] Invalid token attempted`);
+      return res.status(400).json({
+        error: 'Invalid or expired reset link. Please request a new password reset.',
+        code: 'INVALID_TOKEN'
+      });
+    }
+
+    const resetToken = tokenResult.rows[0];
+
+    // Check if token has already been used
+    if (resetToken.used_at) {
+      console.log(`[Password Reset] Already used token attempted for user: ${resetToken.user_id}`);
+      return res.status(400).json({
+        error: 'This reset link has already been used. Please request a new password reset.',
+        code: 'TOKEN_USED'
+      });
+    }
+
+    // Check if token has expired
+    if (new Date(resetToken.expires_at) < new Date()) {
+      console.log(`[Password Reset] Expired token attempted for user: ${resetToken.user_id}`);
+      return res.status(400).json({
+        error: 'This reset link has expired. Please request a new password reset.',
+        code: 'TOKEN_EXPIRED'
+      });
+    }
+
+    // Hash the new password
+    const bcrypt = require('bcrypt');
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Update the user's password
+    await db.query(
+      'UPDATE users SET password_hash = $1 WHERE id = $2',
+      [passwordHash, resetToken.user_id]
+    );
+
+    // Mark the token as used
+    await db.query(
+      'UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [resetToken.id]
+    );
+
+    // Invalidate all other tokens for this user (security measure)
+    await db.query(
+      'UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND id != $2 AND used_at IS NULL',
+      [resetToken.user_id, resetToken.id]
+    );
+
+    console.log(`[Password Reset] Password successfully reset for user: ${resetToken.user_id}`);
+
+    res.json({
+      message: 'Your password has been reset successfully. You can now log in with your new password.',
+      success: true
+    });
+
+  } catch (error) {
+    console.error('[Password Reset] Error:', error);
+    res.status(500).json({ error: 'An error occurred. Please try again later.' });
+  }
+});
+
+/**
+ * GET /api/auth/verify-reset-token/:token
+ * Verify if a reset token is valid (for frontend validation before showing form)
+ */
+router.get('/verify-reset-token/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({ valid: false, error: 'Token is required' });
+    }
+
+    const tokenResult = await db.query(
+      `SELECT prt.*, u.email
+       FROM password_reset_tokens prt
+       JOIN users u ON prt.user_id = u.id
+       WHERE prt.token = $1`,
+      [token]
+    );
+
+    if (tokenResult.rows.length === 0) {
+      return res.json({ valid: false, error: 'Invalid reset link', code: 'INVALID_TOKEN' });
+    }
+
+    const resetToken = tokenResult.rows[0];
+
+    if (resetToken.used_at) {
+      return res.json({ valid: false, error: 'This link has already been used', code: 'TOKEN_USED' });
+    }
+
+    if (new Date(resetToken.expires_at) < new Date()) {
+      return res.json({ valid: false, error: 'This link has expired', code: 'TOKEN_EXPIRED' });
+    }
+
+    // Return valid status with masked email for UX
+    const email = resetToken.email;
+    const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, '$1***$3');
+
+    res.json({
+      valid: true,
+      email: maskedEmail,
+      expiresAt: resetToken.expires_at
+    });
+
+  } catch (error) {
+    console.error('[Verify Reset Token] Error:', error);
+    res.status(500).json({ valid: false, error: 'An error occurred' });
+  }
+});
+
 module.exports = router;
 

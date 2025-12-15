@@ -1,12 +1,15 @@
 import React from 'react';
 import { BlogArticleLayout } from './BlogArticleLayout';
+import whyArgumentsRepeatImage from '../../assets/blog/why_arguments_repeat_vector.png';
 
 export function WhyArgumentsRepeat() {
     const meta = {
         title: <>Why Co-Parenting Arguments Repeat <span className="text-teal-600">(And How to Break the Cycle)</span></>,
         subtitle: "Stuck in the same fights? Learn why conflict patterns repeat and how to break the cycle with calmer, more effective tools.",
         date: "Dec 10, 2025",
-        readTime: "5 min read"
+        readTime: "5 min read",
+        heroImage: whyArgumentsRepeatImage,
+        heroImageAlt: "Infographic showing why co-parenting arguments repeat and how to break the communication cycle"
     };
 
     const breadcrumbs = [

@@ -373,10 +373,167 @@ Reply directly to this email to respond to ${email}
   }
 }
 
+/**
+ * Send verification code for step-up authentication
+ * Used when adaptive auth detects unusual login activity
+ */
+async function sendVerificationCode(email, code, context = {}) {
+  const { reason, ip, deviceInfo } = context;
+  const appName = process.env.APP_NAME || 'LiaiZen';
+
+  const subject = `Your ${appName} verification code: ${code}`;
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #275559; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+        .code-box { background-color: #275559; color: white; font-size: 32px; font-weight: bold; letter-spacing: 8px; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0; }
+        .warning { background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .details { background-color: white; padding: 15px; border-radius: 4px; margin: 15px 0; font-size: 14px; color: #666; }
+        .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Verification Required</h1>
+        </div>
+        <div class="content">
+          <p>Hi there,</p>
+          <p>We detected an unusual login attempt on your ${appName} account${reason ? `: <strong>${reason}</strong>` : '.'}. To continue, please enter this verification code:</p>
+          <div class="code-box">${code}</div>
+          <p>This code will expire in <strong>10 minutes</strong>.</p>
+          ${ip || deviceInfo ? `
+          <div class="details">
+            <strong>Login details:</strong><br>
+            ${ip ? `IP Address: ${ip}<br>` : ''}
+            ${deviceInfo ? `Device: ${deviceInfo}<br>` : ''}
+            Time: ${new Date().toLocaleString()}
+          </div>
+          ` : ''}
+          <div class="warning">
+            <strong>⚠️ Security Notice:</strong> If you didn't try to log in, someone may be attempting to access your account. Please change your password immediately.
+          </div>
+          <p>If you have any concerns about your account security, please contact our support team.</p>
+        </div>
+        <div class="footer">
+          <p>This is an automated security message from ${appName}.</p>
+          <p>Never share this code with anyone.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const textBody = `
+Verification Required
+
+Hi there,
+
+We detected an unusual login attempt on your ${appName} account${reason ? `: ${reason}` : '.'}.
+
+Your verification code is: ${code}
+
+This code will expire in 10 minutes.
+
+${ip || deviceInfo ? `Login details:
+${ip ? `IP Address: ${ip}` : ''}
+${deviceInfo ? `Device: ${deviceInfo}` : ''}
+Time: ${new Date().toLocaleString()}
+` : ''}
+⚠️ SECURITY NOTICE: If you didn't try to log in, someone may be attempting to access your account. Please change your password immediately.
+
+---
+This is an automated security message from ${appName}.
+Never share this code with anyone.
+  `;
+
+  return await sendEmail(email, subject, htmlBody, textBody);
+}
+
+/**
+ * Send password reset email
+ */
+async function sendPasswordReset(email, resetToken, userName = null) {
+  const frontendUrl = process.env.APP_URL || process.env.FRONTEND_URL || 'https://www.coparentliaizen.com';
+  const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+  const appName = process.env.APP_NAME || 'LiaiZen';
+
+  const subject = `Reset your ${appName} password`;
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #275559; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+        .button { display: inline-block; background-color: #275559; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+        .warning { background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Password Reset</h1>
+        </div>
+        <div class="content">
+          <p>Hi${userName ? ` ${userName}` : ' there'},</p>
+          <p>We received a request to reset your password for your ${appName} account.</p>
+          <p>Click the button below to choose a new password:</p>
+          <div style="text-align: center;">
+            <a href="${resetUrl}" class="button">Reset Password</a>
+          </div>
+          <p>Or copy and paste this link into your browser:</p>
+          <p style="word-break: break-all; color: #4DA8B0;">${resetUrl}</p>
+          <p>This link will expire in <strong>1 hour</strong>.</p>
+          <div class="warning">
+            <strong>⚠️ Didn't request this?</strong> If you didn't request a password reset, you can safely ignore this email. Your password won't be changed.
+          </div>
+        </div>
+        <div class="footer">
+          <p>This is an automated message from ${appName}.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const textBody = `
+Password Reset
+
+Hi${userName ? ` ${userName}` : ' there'},
+
+We received a request to reset your password for your ${appName} account.
+
+Reset your password by visiting:
+${resetUrl}
+
+This link will expire in 1 hour.
+
+⚠️ Didn't request this? If you didn't request a password reset, you can safely ignore this email. Your password won't be changed.
+
+---
+This is an automated message from ${appName}.
+  `;
+
+  return await sendEmail(email, subject, htmlBody, textBody);
+}
+
 module.exports = {
   sendNewUserInvite,
   sendExistingUserInvite,
   sendEmail,
-  sendContactForm
+  sendContactForm,
+  sendVerificationCode,
+  sendPasswordReset
 };
 
