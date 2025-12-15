@@ -431,25 +431,31 @@ function ChatRoom() {
     }
   }, [isAuthenticated]);
 
-  // Redirect to /signin if not authenticated and not checking auth
+  // Handle unauthenticated state - show landing page or redirect
   React.useEffect(() => {
     if (!isCheckingAuth && !isAuthenticated) {
-      // If on root path and not authenticated, show landing page first
-      if (showLanding) {
-        // Landing page will handle navigation to /signin via "Get Started" button
-        return;
-      }
-
-      // Otherwise redirect to signin
+      // Check if there's an invite code - always redirect to signin for invites
       const inviteCode = searchParams.get('invite');
       if (inviteCode) {
         navigate(`/signin?invite=${inviteCode}`);
-      } else {
-        // Don't redirect if already on landing
-        if (!showLanding) {
-          navigate('/signin');
-        }
+        return;
       }
+
+      // For users without invite code, show landing page on root path
+      // This also handles the case where auth verification failed (stale localStorage)
+      if (!showLanding && window.location.pathname === '/') {
+        // Show landing page for first-time/returning visitors at root
+        setShowLanding(true);
+        return;
+      }
+
+      // If showLanding is already true, LandingPage will handle navigation
+      if (showLanding) {
+        return;
+      }
+
+      // If not on root and not showing landing, redirect to signin
+      navigate('/signin');
     }
   }, [isCheckingAuth, isAuthenticated, showLanding, navigate, searchParams]);
 
