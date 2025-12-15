@@ -116,9 +116,9 @@ export function ResetPassword() {
       return;
     }
 
-    // Basic password validation
-    if (password.length < 4) {
-      setError('Password must be at least 4 characters long.');
+    // Basic password validation (matches server-side requirement)
+    if (password.length < 10) {
+      setError('Password must be at least 10 characters long.');
       return;
     }
 

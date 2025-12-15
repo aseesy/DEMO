@@ -1006,11 +1006,14 @@ router.post('/reset-password', rateLimit('reset-password', 10, 3600000), async (
 
     // Validate password strength
     const passwordValidation = validatePasswordDetailed(password);
-    if (!passwordValidation.isValid) {
+    if (!passwordValidation.valid) {
+      // Find the first unmet requirement for the error message
+      const unmetRequirement = passwordValidation.requirements.find(r => !r.met);
       return res.status(400).json({
-        error: passwordValidation.errors[0] || 'Password does not meet requirements',
+        error: unmetRequirement ? unmetRequirement.label : 'Password does not meet requirements',
         code: 'WEAK_PASSWORD',
-        requirements: getPasswordRequirements()
+        requirements: getPasswordRequirements(),
+        details: passwordValidation.requirements
       });
     }
 
