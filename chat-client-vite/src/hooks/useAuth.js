@@ -506,6 +506,13 @@ export function useAuth() {
         const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/auth/google' });
         logError(data, { endpoint: '/api/auth/google', operation: 'initiate_oauth' });
         clearOAuthState();
+        
+        // Handle OAuth configuration errors specifically
+        if (data.code === 'OAUTH_CONFIG_ERROR' || response.status === 500) {
+          errorInfo.userMessage = 'Google sign-in is not configured. Please contact support or use email/password sign-in.';
+          errorInfo.action = 'use_email_password';
+        }
+        
         setError(errorInfo.userMessage);
         setIsGoogleLoggingIn(false);
         return { success: false, error: errorInfo };
