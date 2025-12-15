@@ -90,7 +90,6 @@ router.post('/', async (req, res) => {
       username,
       contact_name,
       relationship,
-      hasNotes: !!notes,
       requestBodySize: JSON.stringify(req.body).length
     });
 
@@ -223,9 +222,9 @@ router.put('/:contactId', async (req, res) => {
     if (contact_name !== undefined) updateData.contact_name = contact_name.trim();
     if (contact_email !== undefined) updateData.contact_email = contact_email ? contact_email.trim().toLowerCase() : null;
     if (relationship !== undefined) updateData.relationship = relationship || null;
-    if (notes !== undefined) updateData.notes = notes || null;
     // Co-parent specific fields
     if (separation_date !== undefined) updateData.separation_date = separation_date || null;
+    if (separation_details !== undefined) updateData.separation_details = separation_details || null;
     if (address !== undefined) updateData.address = address || null;
     if (difficult_aspects !== undefined) updateData.difficult_aspects = difficult_aspects || null;
     if (friction_situations !== undefined) updateData.friction_situations = friction_situations || null;
