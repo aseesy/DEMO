@@ -377,16 +377,40 @@ router.post('/google/callback', async (req, res) => {
     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${tokens.access_token}` }
     });
+    
+    if (!userInfoResponse.ok) {
+      console.error('❌ Failed to get user info from Google:', userInfoResponse.status);
+      return res.status(500).json({ 
+        error: 'Failed to get user information from Google',
+        code: 'GOOGLE_USERINFO_ERROR'
+      });
+    }
+    
     const googleUser = await userInfoResponse.json();
+    
+    if (!googleUser.email || !googleUser.id) {
+      console.error('❌ Invalid Google user data:', googleUser);
+      return res.status(400).json({ 
+        error: 'Invalid user data from Google',
+        code: 'INVALID_GOOGLE_USER'
+      });
+    }
 
-    // Find or create user
-    let user = await auth.findOrCreateOAuthUser({
-      email: googleUser.email,
-      name: googleUser.name,
-      picture: googleUser.picture,
-      provider: 'google',
-      providerId: googleUser.id
-    });
+    // Find or create user using getOrCreateGoogleUser
+    let user = await auth.getOrCreateGoogleUser(
+      googleUser.id,
+      googleUser.email,
+      googleUser.name,
+      googleUser.picture
+    );
+    
+    if (!user) {
+      console.error('❌ Failed to create or find user');
+      return res.status(500).json({ 
+        error: 'Failed to create user account',
+        code: 'USER_CREATION_ERROR'
+      });
+    }
 
     // Handle invite token if provided
     if (inviteToken) {
@@ -411,8 +435,13 @@ router.post('/google/callback', async (req, res) => {
       token
     });
   } catch (error) {
-    console.error('Google OAuth error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('❌ Google OAuth error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: error.message || 'OAuth authentication failed',
+      code: 'OAUTH_ERROR',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
