@@ -91,10 +91,6 @@ export function ContactsPanel({ username }) {
 
   useGooglePlacesSchool(schoolInputRef, handleSchoolSelected);
 
-  // AI profile assistant state
-  const [isGeneratingProfile, setIsGeneratingProfile] = React.useState(false);
-  const [profileSuggestions, setProfileSuggestions] = React.useState(null);
-  const [showAiAssistant, setShowAiAssistant] = React.useState(false);
 
   // Activities modal state
   const [showActivityModal, setShowActivityModal] = React.useState(false);
@@ -129,8 +125,6 @@ export function ContactsPanel({ username }) {
   const startNewContact = () => {
     resetForm();
     setShowContactForm(true);
-    setShowAiAssistant(false);
-    setProfileSuggestions(null);
   };
 
   // Generate AI profile suggestions
@@ -351,107 +345,6 @@ export function ContactsPanel({ username }) {
                   </select>
                 </div>
 
-                {/* AI Profile Assistant Button */}
-                {contactFormData.contact_name.trim() && contactFormData.relationship && !editingContact && (
-                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-3 sm:p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0">
-                        <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-purple-900 mb-1">
-                          AI Profile Assistant
-                        </h4>
-                        <p className="text-xs text-purple-700 mb-3">
-                          Get intelligent suggestions for important fields based on the relationship type
-                        </p>
-                        <Button
-                          type="button"
-                          onClick={generateProfileSuggestions}
-                          disabled={isGeneratingProfile}
-                          loading={isGeneratingProfile}
-                          fullWidth
-                          size="small"
-                          className="bg-purple-600 hover:bg-purple-700"
-                          icon={!isGeneratingProfile && (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                          )}
-                        >
-                          Get AI Suggestions
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* AI Suggestions Display */}
-                {showAiAssistant && profileSuggestions && (
-                  <div className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-3 sm:p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-semibold text-indigo-900">
-                        AI Suggestions
-                      </h4>
-                      <Button
-                        type="button"
-                        onClick={() => setShowAiAssistant(false)}
-                        variant="ghost"
-                        size="small"
-                        className="text-indigo-600 hover:text-indigo-800 text-xs"
-                      >
-                        Hide
-                      </Button>
-                    </div>
-
-                    {profileSuggestions.profileCompletionTips && (
-                      <p className="text-xs text-indigo-700 mb-3 p-2 bg-indigo-100 rounded-lg">
-                        💡 {profileSuggestions.profileCompletionTips}
-                      </p>
-                    )}
-
-                    {profileSuggestions.helpfulQuestions && profileSuggestions.helpfulQuestions.length > 0 && (
-                      <div className="mb-3">
-                        <p className="text-xs font-semibold text-indigo-900 mb-1.5">Helpful questions to consider:</p>
-                        <ul className="space-y-1">
-                          {profileSuggestions.helpfulQuestions.slice(0, 3).map((q, i) => (
-                            <li key={i} className="text-xs text-indigo-700 pl-4 relative before:content-['•'] before:absolute before:left-0">
-                              {q}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {profileSuggestions.suggestedFields && profileSuggestions.suggestedFields.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold text-indigo-900">Quick suggestions:</p>
-                        {profileSuggestions.suggestedFields.filter(f => f.importance === 'required' || f.importance === 'recommended').slice(0, 3).map((field, i) => (
-                          <div key={i} className="bg-white rounded-lg p-2 border border-indigo-200">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-gray-900">{field.label}</p>
-                                <p className="text-xs text-gray-600 mt-0.5">{field.suggestion}</p>
-                              </div>
-                              {field.suggestion && field.fieldName && (
-                                <Button
-                                  type="button"
-                                  onClick={() => applySuggestion(field.fieldName, field.suggestion)}
-                                  size="small"
-                                  className="flex-shrink-0 px-2 py-1 bg-indigo-600 text-white text-xs hover:bg-indigo-700"
-                                >
-                                  Apply
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 <div>
                   <label className="block text-xs sm:text-sm font-semibold text-teal-medium mb-1.5">
