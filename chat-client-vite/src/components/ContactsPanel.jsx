@@ -826,6 +826,20 @@ export function ContactsPanel({ username }) {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-teal-medium mb-1">
+                        Separation Details
+                      </label>
+                      <textarea
+                        value={contactFormData.separation_details || ''}
+                        onChange={(e) =>
+                          setContactFormData({ ...contactFormData, separation_details: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+                        rows={3}
+                        placeholder="Additional details about the separation..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         Address
                       </label>
                       <input
@@ -906,18 +920,6 @@ export function ContactsPanel({ username }) {
                         <h4 className="font-semibold text-teal-medium text-sm">Work</h4>
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">Occupation</label>
-                        <input
-                          type="text"
-                          value={contactFormData.coparent_occupation || ''}
-                          onChange={(e) =>
-                            setContactFormData({ ...contactFormData, coparent_occupation: e.target.value })
-                          }
-                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
-                          placeholder="Their job or profession..."
-                        />
-                      </div>
-                      <div>
                         <label className="block text-xs text-gray-600 mb-1">Work Schedule</label>
                         <select
                           value={contactFormData.coparent_work_schedule || ''}
@@ -956,7 +958,7 @@ export function ContactsPanel({ username }) {
 
                     <div>
                       <label className="block text-xs font-semibold text-teal-medium mb-1">
-                        What aspects of co-parenting are most difficult?
+                        What aspects of co-parenting would you like to see improve?
                       </label>
                       <textarea
                         value={contactFormData.difficult_aspects || ''}
@@ -965,7 +967,7 @@ export function ContactsPanel({ username }) {
                         }
                         className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
                         rows={3}
-                        placeholder="Describe challenges..."
+                        placeholder="Describe areas for improvement..."
                       />
                     </div>
                     <div>
@@ -1012,20 +1014,6 @@ export function ContactsPanel({ username }) {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-teal-medium mb-1">
-                        Any neglect or abuse concerns?
-                      </label>
-                      <textarea
-                        value={contactFormData.neglect_abuse_concerns || ''}
-                        onChange={(e) =>
-                          setContactFormData({ ...contactFormData, neglect_abuse_concerns: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
-                        rows={2}
-                        placeholder="Concerns..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-teal-medium mb-1">
                         Additional thoughts or context
                       </label>
                       <textarea
@@ -1058,21 +1046,6 @@ export function ContactsPanel({ username }) {
                   </div>
                 )}
 
-                {/* Additional notes textarea */}
-                <div>
-                  <label className="block text-xs font-semibold text-teal-medium mb-1">
-                    Notes
-                  </label>
-                  <textarea
-                    value={contactFormData.notes}
-                    onChange={(e) =>
-                      setContactFormData({ ...contactFormData, notes: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
-                    rows={3}
-                    placeholder="Any extra details"
-                  />
-                </div>
               </div>
               <div className="px-3 sm:px-4 py-3 pb-4 border-t-2 border-teal-light flex gap-2 flex-wrap sm:flex-nowrap flex-shrink-0 bg-white">
                 {editingContact && (

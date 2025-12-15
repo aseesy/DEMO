@@ -12,15 +12,14 @@ export function useContacts(username, isAuthenticated = true) {
     contact_name: '',
     contact_email: '',
     relationship: '',
-    notes: '',
     separation_date: '',
+    separation_details: '',
     address: '',
     difficult_aspects: '',
     friction_situations: '',
     legal_matters: '',
     safety_concerns: '',
     substance_mental_health: '',
-    neglect_abuse_concerns: '',
     additional_thoughts: '',
     other_parent: '',
     child_age: '',
@@ -45,8 +44,6 @@ export function useContacts(username, isAuthenticated = true) {
     // Co-parent financial and work fields
     coparent_pays_child_support: '',
     coparent_receives_child_support: '',
-    coparent_income_comparison: '',
-    coparent_occupation: '',
     coparent_work_schedule: '',
     coparent_work_flexibility: '',
   });
@@ -159,7 +156,6 @@ export function useContacts(username, isAuthenticated = true) {
       legal_matters: '',
       safety_concerns: '',
       substance_mental_health: '',
-      neglect_abuse_concerns: '',
       additional_thoughts: '',
       other_parent: '',
       child_age: '',
@@ -184,8 +180,6 @@ export function useContacts(username, isAuthenticated = true) {
       // Co-parent financial and work fields
       coparent_pays_child_support: '',
       coparent_receives_child_support: '',
-      coparent_income_comparison: '',
-      coparent_occupation: '',
       coparent_work_schedule: '',
       coparent_work_flexibility: '',
     });
@@ -289,7 +283,7 @@ export function useContacts(username, isAuthenticated = true) {
       contact_name: contact.contact_name || '',
       contact_email: contact.contact_email || '',
       relationship: relationshipDisplay,
-      notes: contact.notes || '',
+      separation_details: contact.separation_details || '',
       separation_date: contact.separation_date || '',
       address: contact.address || '',
       difficult_aspects: contact.difficult_aspects || '',
@@ -297,7 +291,6 @@ export function useContacts(username, isAuthenticated = true) {
       legal_matters: contact.legal_matters || '',
       safety_concerns: contact.safety_concerns || '',
       substance_mental_health: contact.substance_mental_health || '',
-      neglect_abuse_concerns: contact.neglect_abuse_concerns || '',
       additional_thoughts: contact.additional_thoughts || '',
       other_parent: contact.other_parent || '',
       child_age: contact.child_age || '',
@@ -322,8 +315,6 @@ export function useContacts(username, isAuthenticated = true) {
       // Co-parent financial and work fields
       coparent_pays_child_support: contact.coparent_pays_child_support || '',
       coparent_receives_child_support: contact.coparent_receives_child_support || '',
-      coparent_income_comparison: contact.coparent_income_comparison || '',
-      coparent_occupation: contact.coparent_occupation || '',
       coparent_work_schedule: contact.coparent_work_schedule || '',
       coparent_work_flexibility: contact.coparent_work_flexibility || '',
     });

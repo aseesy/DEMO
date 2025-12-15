@@ -5,7 +5,7 @@ const variants = {
   secondary: 'bg-teal-medium text-white hover:bg-teal-dark disabled:bg-gray-400',
   tertiary: 'border-2 border-teal-dark text-teal-dark hover:bg-teal-lightest disabled:border-gray-400 disabled:text-gray-400',
   ghost: 'text-teal-dark hover:bg-teal-lightest disabled:text-gray-400',
-  danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400',
+  danger: 'bg-red-400 text-white hover:bg-red-500 disabled:bg-gray-400',
   // Professional mediation-style variants
   'teal-solid': 'bg-teal-medium text-white hover:bg-teal-dark disabled:bg-gray-400 shadow-md hover:shadow-lg',
   'teal-outline': 'border-2 border-gray-900 text-gray-900 bg-transparent hover:bg-gray-50 disabled:border-gray-400 disabled:text-gray-400',
