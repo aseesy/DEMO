@@ -852,9 +852,15 @@ export function ContactsPanel({ username }) {
                         <label className="block text-xs text-gray-600 mb-1">Do they pay child support?</label>
                         <select
                           value={contactFormData.coparent_pays_child_support || ''}
-                          onChange={(e) =>
-                            setContactFormData({ ...contactFormData, coparent_pays_child_support: e.target.value })
-                          }
+                          onChange={(e) => {
+                            const paysSupport = e.target.value;
+                            setContactFormData({ 
+                              ...contactFormData, 
+                              coparent_pays_child_support: paysSupport,
+                              // If they pay, they can't receive - automatically set to 'no'
+                              coparent_receives_child_support: (paysSupport === 'yes' || paysSupport === 'sometimes') ? 'no' : contactFormData.coparent_receives_child_support
+                            });
+                          }}
                           className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
                         >
                           <option value="">Select...</option>
@@ -868,16 +874,26 @@ export function ContactsPanel({ username }) {
                         <label className="block text-xs text-gray-600 mb-1">Do they receive child support?</label>
                         <select
                           value={contactFormData.coparent_receives_child_support || ''}
-                          onChange={(e) =>
-                            setContactFormData({ ...contactFormData, coparent_receives_child_support: e.target.value })
-                          }
-                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
+                          onChange={(e) => {
+                            const receivesSupport = e.target.value;
+                            setContactFormData({ 
+                              ...contactFormData, 
+                              coparent_receives_child_support: receivesSupport,
+                              // If they receive, they can't pay - automatically set to 'no'
+                              coparent_pays_child_support: receivesSupport === 'yes' ? 'no' : contactFormData.coparent_pays_child_support
+                            });
+                          }}
+                          disabled={contactFormData.coparent_pays_child_support === 'yes' || contactFormData.coparent_pays_child_support === 'sometimes'}
+                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="">Select...</option>
                           <option value="yes">Yes</option>
                           <option value="no">No</option>
                           <option value="pending">Pending court order</option>
                         </select>
+                        {(contactFormData.coparent_pays_child_support === 'yes' || contactFormData.coparent_pays_child_support === 'sometimes') && (
+                          <p className="text-xs text-gray-500 mt-1">If they pay child support, they don't receive it.</p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs text-gray-600 mb-1">Their income compared to yours</label>
