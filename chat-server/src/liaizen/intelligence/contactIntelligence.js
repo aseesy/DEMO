@@ -172,11 +172,36 @@ Respond in JSON format:
       max_tokens: 800
     });
 
-    const response = completion.choices[0].message.content.trim();
-    return JSON.parse(response);
+    let response = completion.choices[0].message.content.trim();
+    
+    // Remove markdown code blocks if present
+    if (response.startsWith('```')) {
+      const lines = response.split('\n');
+      // Remove first line (```json or ```)
+      lines.shift();
+      // Remove last line (```)
+      if (lines[lines.length - 1].trim() === '```') {
+        lines.pop();
+      }
+      response = lines.join('\n').trim();
+    }
+    
+    try {
+      return JSON.parse(response);
+    } catch (parseError) {
+      console.error('Error parsing AI response as JSON:', parseError.message);
+      console.error('AI response was:', response.substring(0, 500));
+      // Return null to trigger fallback
+      return null;
+    }
 
   } catch (error) {
     console.error('Error generating contact profile:', error.message);
+    console.error('Error stack:', error.stack);
+    // Check if it's an OpenAI API error
+    if (error.response) {
+      console.error('OpenAI API error:', error.response.status, error.response.data);
+    }
     return null;
   }
 }

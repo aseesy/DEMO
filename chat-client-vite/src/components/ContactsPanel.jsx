@@ -155,15 +155,31 @@ export function ContactsPanel({ username }) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate profile suggestions');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
       const data = await response.json();
+      
+      // Validate response structure
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response from server');
+      }
+      
       setProfileSuggestions(data);
       setShowAiAssistant(true);
     } catch (err) {
       console.error('Error generating profile suggestions:', err);
-      alert('Failed to generate AI suggestions. Please try again.');
+      const errorMessage = err.message || 'Failed to generate AI suggestions. Please try again.';
+      alert(errorMessage);
+      // Still show the assistant with empty suggestions so user can continue
+      setProfileSuggestions({
+        suggestedFields: [],
+        helpfulQuestions: [],
+        linkedContactSuggestion: { shouldLink: false },
+        profileCompletionTips: 'Fill out the profile with as much detail as you feel comfortable sharing.'
+      });
+      setShowAiAssistant(true);
     } finally {
       setIsGeneratingProfile(false);
     }
