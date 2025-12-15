@@ -180,9 +180,9 @@ router.put('/:contactId', async (req, res) => {
     }
 
     const contactId = parseInt(req.params.contactId);
-    const { username, contact_name, contact_email, relationship, notes, separation_date, address,
+    const { username, contact_name, contact_email, relationship, separation_date, separation_details, address,
       difficult_aspects, friction_situations, legal_matters, safety_concerns,
-      substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent,
+      substance_mental_health, additional_thoughts, other_parent,
       child_age, child_birthdate, school, phone, partner_duration, has_children,
       custody_arrangement, linked_contact_id } = req.body;
 
@@ -232,7 +232,6 @@ router.put('/:contactId', async (req, res) => {
     if (legal_matters !== undefined) updateData.legal_matters = legal_matters || null;
     if (safety_concerns !== undefined) updateData.safety_concerns = safety_concerns || null;
     if (substance_mental_health !== undefined) updateData.substance_mental_health = substance_mental_health || null;
-    if (neglect_abuse_concerns !== undefined) updateData.neglect_abuse_concerns = neglect_abuse_concerns || null;
     if (additional_thoughts !== undefined) updateData.additional_thoughts = additional_thoughts || null;
     if (other_parent !== undefined) updateData.other_parent = other_parent || null;
     // Child-specific fields
