@@ -4,6 +4,7 @@ const dbSafe = require('./dbSafe');
 const invitationManager = require('./libs/invitation-manager');
 const pairingManager = require('./libs/pairing-manager');
 const notificationManager = require('./libs/notification-manager');
+const neo4jClient = require('./src/utils/neo4jClient');
 
 // ============================================================================
 // ERROR CODES for Registration
@@ -187,6 +188,13 @@ async function createUserWithEmail(email, password, context = {}, googleId = nul
   // Create welcome and onboarding tasks
   await createWelcomeAndOnboardingTasks(userId, username);
 
+  // Create Neo4j graph node (non-blocking - user creation succeeds even if this fails)
+  neo4jClient.createUserNode(userId, username, emailLower, userData.display_name)
+    .catch(err => {
+      // Already logged in createUserNode, just ensure it doesn't break user creation
+      console.error(`⚠️  Neo4j user node creation failed for userId ${userId}, but user was created successfully`);
+    });
+
   return {
     id: userId,
     username: username,
@@ -346,10 +354,18 @@ async function createUser(username, password, context = {}, email = null, google
   // Create welcome and onboarding tasks
   await createWelcomeAndOnboardingTasks(userId, usernameLower);
 
+  // Create Neo4j graph node (non-blocking - user creation succeeds even if this fails)
+  const userEmail = email ? email.trim().toLowerCase() : null;
+  neo4jClient.createUserNode(userId, usernameLower, userEmail, userData.display_name)
+    .catch(err => {
+      // Already logged in createUserNode, just ensure it doesn't break user creation
+      console.error(`⚠️  Neo4j user node creation failed for userId ${userId}, but user was created successfully`);
+    });
+
   return {
     id: userId,
     username: usernameLower,
-    email: email ? email.trim().toLowerCase() : null,
+    email: userEmail,
     context: contextData,
     room,
     firstName: userData.first_name,
@@ -1206,6 +1222,12 @@ async function registerFromInvitation(params, db) {
 
     console.log(`✅ Created shared room ${roomId}`);
 
+    // Create Neo4j co-parent relationship (non-blocking, after transaction)
+    // Note: This happens after transaction commits, so we'll do it outside the transaction
+    const neo4jInviterId = invitation.inviter_id;
+    const neo4jRoomId = roomId;
+    const neo4jRoomName = roomName;
+
     // 4. Create bidirectional contacts
     // Add inviter to new user's contacts
     await dbSafe.safeInsertTx(client, 'contacts', {
@@ -1284,6 +1306,30 @@ async function registerFromInvitation(params, db) {
   } catch (taskError) {
     // Log but don't fail registration if task creation fails
     console.error(`⚠️ Could not create onboarding tasks for user ${result.user.id}:`, taskError.message);
+  }
+
+  // Create Neo4j graph node (non-blocking - user creation succeeds even if this fails)
+  neo4jClient.createUserNode(
+    result.user.id,
+    result.user.username,
+    result.user.email,
+    result.user.displayName
+  ).catch(err => {
+    // Already logged in createUserNode, just ensure it doesn't break user creation
+    console.error(`⚠️  Neo4j user node creation failed for userId ${result.user.id}, but user was created successfully`);
+  });
+
+  // Create Neo4j co-parent relationship (non-blocking - room creation succeeds even if this fails)
+  if (result.room && result.room.id && result.coParent && result.coParent.id) {
+    neo4jClient.createCoParentRelationship(
+      result.coParent.id,
+      result.user.id,
+      result.room.id,
+      result.room.name
+    ).catch(err => {
+      // Already logged in createCoParentRelationship, just ensure it doesn't break registration
+      console.error(`⚠️  Neo4j relationship creation failed for room ${result.room.id}, but registration was successful`);
+    });
   }
 
   return result;

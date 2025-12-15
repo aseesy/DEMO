@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const dbPostgres = require('./dbPostgres');
 const dbSafe = require('./dbSafe');
+const neo4jClient = require('./src/utils/neo4jClient');
 
 const LIAIZEN_WELCOME_MESSAGE = "Hello, I am LiaiZen - your personal communication coach. I am here to help you improve your interpersonal skills through personalized guidance, feedback, and practice. Try saying something rude to your co-parent to see how it works.";
 
@@ -737,9 +738,26 @@ async function addUserToRoom(roomId, userId, role = 'member') {
 
   console.log(`✅ User ${userId} added to room ${roomId}`);
 
-  // If this is the second member (co-parent just connected), send welcome message
+  // If this is the second member (co-parent just connected), create Neo4j relationship
   if (memberCountBefore === 1) {
-    console.log(`🎉 Co-parents connected! Sending LiaiZen welcome message...`);
+    console.log(`🎉 Co-parents connected! Creating Neo4j relationship...`);
+    
+    // Get the first member (the existing co-parent)
+    const firstMember = currentMembers[0];
+    if (firstMember && firstMember.user_id) {
+      // Get room info for relationship
+      const room = await getRoom(roomId);
+      const roomName = room ? room.name : `Room ${roomId}`;
+      
+      // Create Neo4j co-parent relationship (non-blocking)
+      neo4jClient.createCoParentRelationship(firstMember.user_id, userId, roomId, roomName)
+        .catch(err => {
+          // Already logged in createCoParentRelationship, just ensure it doesn't break room join
+          console.error(`⚠️  Neo4j relationship creation failed for room ${roomId}, but user was added successfully`);
+        });
+    }
+    
+    // Send welcome message
     await sendWelcomeMessage(roomId);
   }
 
@@ -785,6 +803,13 @@ async function createCoParentRoom(inviterId, inviteeId, inviterName, inviteeName
   });
 
   console.log(`✅ Created co-parent room ${roomId} with ${inviterName} and ${inviteeName}`);
+
+  // Create Neo4j co-parent relationship (non-blocking)
+  neo4jClient.createCoParentRelationship(inviterId, inviteeId, roomId, roomName)
+    .catch(err => {
+      // Already logged in createCoParentRelationship, just ensure it doesn't break room creation
+      console.error(`⚠️  Neo4j relationship creation failed for room ${roomId}, but room was created successfully`);
+    });
 
   // Send LiaiZen welcome message since co-parents are now connected
   console.log(`🎉 Co-parents connected in new room! Sending LiaiZen welcome message...`);
