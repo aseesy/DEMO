@@ -895,22 +895,6 @@ export function ContactsPanel({ username }) {
                           <p className="text-xs text-gray-500 mt-1">If they pay child support, they don't receive it.</p>
                         )}
                       </div>
-                      <div>
-                        <label className="block text-xs text-gray-600 mb-1">Their income compared to yours</label>
-                        <select
-                          value={contactFormData.coparent_income_comparison || ''}
-                          onChange={(e) =>
-                            setContactFormData({ ...contactFormData, coparent_income_comparison: e.target.value })
-                          }
-                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
-                        >
-                          <option value="">Select...</option>
-                          <option value="less">Less than mine</option>
-                          <option value="equal">About equal</option>
-                          <option value="more">More than mine</option>
-                          <option value="unknown">I don't know</option>
-                        </select>
-                      </div>
                     </div>
 
                     {/* Work Section */}
