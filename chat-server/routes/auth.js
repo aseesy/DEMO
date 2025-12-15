@@ -397,18 +397,40 @@ router.post('/google/callback', async (req, res) => {
     }
 
     // Find or create user using getOrCreateGoogleUser
-    let user = await auth.getOrCreateGoogleUser(
-      googleUser.id,
-      googleUser.email,
-      googleUser.name,
-      googleUser.picture
-    );
+    let user;
+    try {
+      user = await auth.getOrCreateGoogleUser(
+        googleUser.id,
+        googleUser.email,
+        googleUser.name,
+        googleUser.picture
+      );
+    } catch (userError) {
+      console.error('❌ Error in getOrCreateGoogleUser:', userError);
+      console.error('Error stack:', userError.stack);
+      return res.status(500).json({ 
+        error: 'Failed to create or find user account',
+        message: userError.message || 'User creation failed',
+        code: 'USER_CREATION_ERROR',
+        details: process.env.NODE_ENV === 'development' ? userError.stack : undefined
+      });
+    }
     
     if (!user) {
-      console.error('❌ Failed to create or find user');
+      console.error('❌ getOrCreateGoogleUser returned null/undefined');
       return res.status(500).json({ 
         error: 'Failed to create user account',
+        message: 'User creation returned no result',
         code: 'USER_CREATION_ERROR'
+      });
+    }
+    
+    if (!user.id || !user.username) {
+      console.error('❌ Invalid user object returned:', { hasId: !!user.id, hasUsername: !!user.username, user });
+      return res.status(500).json({ 
+        error: 'Invalid user data',
+        message: 'User creation succeeded but returned invalid data',
+        code: 'INVALID_USER_DATA'
       });
     }
 
@@ -418,10 +440,23 @@ router.post('/google/callback', async (req, res) => {
         await invitationManager.acceptInvitation(inviteToken, user.id);
       } catch (inviteError) {
         console.error('Failed to accept invitation:', inviteError);
+        // Don't fail the OAuth flow if invitation fails
       }
     }
 
-    const token = generateToken(user);
+    // Generate JWT token
+    let token;
+    try {
+      token = generateToken(user);
+    } catch (tokenError) {
+      console.error('❌ Error generating token:', tokenError);
+      return res.status(500).json({ 
+        error: 'Failed to generate authentication token',
+        message: tokenError.message || 'Token generation failed',
+        code: 'TOKEN_GENERATION_ERROR'
+      });
+    }
+    
     setAuthCookie(res, token);
 
     res.json({
@@ -675,3 +710,4 @@ router.post('/register-with-invite', async (req, res) => {
 });
 
 module.exports = router;
+

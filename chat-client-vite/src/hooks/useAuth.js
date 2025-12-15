@@ -570,15 +570,40 @@ export function useAuth() {
         }
       );
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        // Response is not valid JSON - log the raw response
+        const text = await response.text();
+        console.error('❌ Invalid JSON response from OAuth callback:', text);
+        logError(new Error('Invalid JSON response'), { endpoint: '/api/auth/google/callback', responseText: text });
+        setError('Server returned an invalid response. Please try again.');
+        setIsGoogleLoggingIn(false);
+        return false;
+      }
 
       if (!response.ok) {
         // Use error handler for consistent error messages
         const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/auth/google/callback' });
         logError(data, { endpoint: '/api/auth/google/callback', operation: 'oauth_callback' });
         
-        // Check for specific OAuth errors
-        if (data.error && data.error.includes('already used')) {
+        // Check for specific error codes from backend
+        if (data.code === 'OAUTH_CONFIG_ERROR') {
+          errorInfo.userMessage = 'Google sign-in is not configured. Please contact support or use email/password sign-in.';
+        } else if (data.code === 'OAUTH_INVALID_CLIENT') {
+          errorInfo.userMessage = 'OAuth configuration error. Please verify your Google OAuth credentials are correct.';
+        } else if (data.code === 'USER_CREATION_ERROR') {
+          errorInfo.userMessage = 'Failed to create your account. Please try again or contact support.';
+        } else if (data.code === 'INVALID_USER_DATA') {
+          errorInfo.userMessage = 'Account creation issue. Please try again or contact support.';
+        } else if (data.code === 'TOKEN_GENERATION_ERROR') {
+          errorInfo.userMessage = 'Authentication failed. Please try signing in again.';
+        } else if (data.code === 'GOOGLE_USERINFO_ERROR') {
+          errorInfo.userMessage = 'Failed to get your information from Google. Please try again.';
+        } else if (data.code === 'INVALID_GOOGLE_USER') {
+          errorInfo.userMessage = 'Invalid account information from Google. Please try again.';
+        } else if (data.error && data.error.includes('already used')) {
           errorInfo.userMessage = 'This sign-in link has already been used. Please try signing in again.';
         } else if (data.error && data.error.includes('expired')) {
           errorInfo.userMessage = 'The sign-in session expired. Please try again.';
