@@ -18,6 +18,38 @@ const crypto = require('crypto');
 const { PAIRING_STATUS, INVITE_TYPE, PAIRING_CONFIG, hashToken, logPairingAction } = require('./pairingCreator');
 
 /**
+ * Upsert a co-parent contact (insert or update if exists)
+ * Works regardless of whether unique constraint exists on contacts table
+ * @param {object} db - Database connection
+ * @param {number} userId - User who will have this contact
+ * @param {string} contactName - Name of the contact
+ * @param {string} contactEmail - Email of the contact
+ */
+async function upsertCoParentContact(db, userId, contactName, contactEmail) {
+  // First check if contact already exists
+  const existing = await db.query(
+    'SELECT id FROM contacts WHERE user_id = $1 AND LOWER(contact_email) = LOWER($2)',
+    [userId, contactEmail]
+  );
+
+  if (existing.rows.length > 0) {
+    // Update existing contact to co-parent
+    await db.query(
+      `UPDATE contacts SET relationship = 'co-parent', contact_name = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2`,
+      [contactName, existing.rows[0].id]
+    );
+  } else {
+    // Insert new contact
+    await db.query(
+      `INSERT INTO contacts (user_id, contact_name, contact_email, relationship, created_at)
+       VALUES ($1, $2, $3, 'co-parent', CURRENT_TIMESTAMP)`,
+      [userId, contactName, contactEmail]
+    );
+  }
+}
+
+/**
  * Validation result codes
  */
 const VALIDATION_CODE = {
@@ -338,15 +370,10 @@ async function acceptPairing(params, db, roomManager) {
 
   const updatedPairing = updateResult.rows[0];
 
-  // Create mutual contacts
+  // Create mutual contacts using upsert pattern
   try {
     // Add acceptor as contact for initiator
-    await db.query(
-      `INSERT INTO contacts (user_id, contact_name, contact_email, relationship, created_at)
-       VALUES ($1, $2, $3, 'co-parent', CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, contact_email) DO UPDATE SET relationship = 'co-parent'`,
-      [pairing.parent_a_id, acceptor.username, acceptor.email]
-    );
+    await upsertCoParentContact(db, pairing.parent_a_id, acceptor.username, acceptor.email);
 
     // Get initiator info for contact
     const initiatorResult = await db.query(
@@ -357,13 +384,9 @@ async function acceptPairing(params, db, roomManager) {
     if (initiatorResult.rows.length > 0) {
       const initiator = initiatorResult.rows[0];
       // Add initiator as contact for acceptor
-      await db.query(
-        `INSERT INTO contacts (user_id, contact_name, contact_email, relationship, created_at)
-         VALUES ($1, $2, $3, 'co-parent', CURRENT_TIMESTAMP)
-         ON CONFLICT (user_id, contact_email) DO UPDATE SET relationship = 'co-parent'`,
-        [acceptorId, initiator.username, initiator.email]
-      );
+      await upsertCoParentContact(db, acceptorId, initiator.username, initiator.email);
     }
+    console.log(`✅ Created mutual co-parent contacts for pairing ${pairingId}`);
   } catch (error) {
     console.error('Failed to create mutual contacts:', error);
     // Continue - pairing is still valid
