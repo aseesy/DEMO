@@ -291,6 +291,16 @@ router.get('/google', (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${process.env.APP_URL || 'https://coparentliaizen.com'}/auth/google/callback`;
 
+  // Validate OAuth configuration
+  if (!clientId) {
+    console.error('❌ GOOGLE_CLIENT_ID is not set in environment variables');
+    return res.status(500).json({ 
+      error: 'OAuth configuration error',
+      message: 'Google OAuth client ID is not configured. Please contact support.',
+      code: 'OAUTH_CONFIG_ERROR'
+    });
+  }
+
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${clientId}&` +
     `redirect_uri=${encodeURIComponent(redirectUri)}&` +
@@ -314,22 +324,53 @@ router.post('/google/callback', async (req, res) => {
       return res.status(400).json({ error: 'Authorization code is required' });
     }
 
+    // Validate OAuth configuration
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${process.env.APP_URL || 'https://coparentliaizen.com'}/auth/google/callback`;
+
+    if (!clientId || !clientSecret) {
+      console.error('❌ OAuth configuration missing:', { 
+        hasClientId: !!clientId, 
+        hasClientSecret: !!clientSecret 
+      });
+      return res.status(500).json({ 
+        error: 'OAuth configuration error',
+        message: 'Google OAuth credentials are not configured. Please contact support.',
+        code: 'OAUTH_CONFIG_ERROR'
+      });
+    }
+
     // Exchange code for tokens
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: process.env.GOOGLE_REDIRECT_URI || `${process.env.APP_URL || 'https://coparentliaizen.com'}/auth/google/callback`,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
         grant_type: 'authorization_code'
       })
     });
 
     const tokens = await tokenResponse.json();
     if (tokens.error) {
-      return res.status(400).json({ error: tokens.error_description || 'Failed to exchange code' });
+      console.error('❌ Google OAuth token exchange failed:', tokens);
+      // Provide more helpful error message for invalid_client
+      if (tokens.error === 'invalid_client') {
+        return res.status(401).json({ 
+          error: 'invalid_client',
+          message: 'OAuth client configuration error. Please verify GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are correct.',
+          code: 'OAUTH_INVALID_CLIENT',
+          details: 'Check Railway environment variables and Google Cloud Console configuration'
+        });
+      }
+      return res.status(400).json({ 
+        error: tokens.error,
+        message: tokens.error_description || 'Failed to exchange code',
+        code: tokens.error
+      });
     }
 
     // Get user info from Google
