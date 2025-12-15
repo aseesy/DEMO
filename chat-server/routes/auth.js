@@ -15,6 +15,13 @@ const db = require('../dbPostgres');
 const emailService = require('../emailService');
 const invitationManager = require('../libs/invitation-manager');
 const pairingManager = require('../libs/pairing-manager');
+const {
+  getPasswordError,
+  getPasswordRequirements,
+  validatePasswordDetailed,
+  checkPasswordStrength
+} = require('../libs/password-validator');
+const adaptiveAuth = require('../libs/adaptive-auth');
 const { verifyAuth, optionalAuth, generateToken, setAuthCookie, clearAuthCookie, JWT_SECRET } = require('../middleware/auth');
 const {
   honeypotCheck,
@@ -28,6 +35,39 @@ function isValidEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
+
+/**
+ * GET /api/auth/password-requirements
+ * Returns password requirements for frontend display
+ * No authentication required - used during signup
+ */
+router.get('/password-requirements', (req, res) => {
+  const requirements = validatePasswordDetailed('');
+  res.json({
+    minLength: requirements.minLength,
+    requirements: requirements.requirements.map(r => ({
+      id: r.id,
+      label: r.label,
+    })),
+  });
+});
+
+/**
+ * POST /api/auth/validate-password
+ * Validates a password and returns detailed requirement status
+ * Used for real-time validation during signup
+ */
+router.post('/validate-password', (req, res) => {
+  const { password } = req.body;
+  const result = validatePasswordDetailed(password);
+  const strength = checkPasswordStrength(password);
+
+  res.json({
+    valid: result.valid,
+    strength: strength,
+    requirements: result.requirements,
+  });
+});
 
 // Rate limiting for signup endpoints (3 signups per hour per IP)
 const signupRateLimit = rateLimit({
@@ -61,8 +101,12 @@ router.post('/signup', signupRateLimit, honeypotCheck('website'), rejectDisposab
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
-    if (password.length < 4) {
-      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    const passwordError = getPasswordError(password);
+    if (passwordError) {
+      return res.status(400).json({
+        error: passwordError,
+        requirements: getPasswordRequirements()
+      });
     }
 
     const user = await auth.createUserWithEmail(cleanEmail, password, context || {});
@@ -115,8 +159,12 @@ router.post('/register', signupRateLimit, honeypotCheck('website'), rejectDispos
       return res.status(400).json({ error: 'You cannot invite yourself as a co-parent' });
     }
 
-    if (password.length < 4) {
-      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    const passwordError = getPasswordError(password);
+    if (passwordError) {
+      return res.status(400).json({
+        error: passwordError,
+        requirements: getPasswordRequirements()
+      });
     }
 
     const result = await auth.registerWithInvitation({
@@ -167,34 +215,151 @@ router.post('/register', signupRateLimit, honeypotCheck('website'), rejectDispos
 
 /**
  * POST /api/auth/login
- * User login
- * Protected by rate limiting to prevent brute force attacks
+ * User login with adaptive authentication
+ * Evaluates risk based on device, location, and behavior patterns
  */
 router.post('/login', loginRateLimit, honeypotCheck('website'), async (req, res) => {
+  const loginEmail = (req.body.email || '').trim().toLowerCase();
+  const { password, username, trustDevice, verificationCode } = req.body;
+
   try {
-    const { email, password, username } = req.body;
+    console.log(`🔐 Attempting login for ${loginEmail ? 'email: ' + loginEmail : 'username: ' + username}`);
 
-    console.log(`🔐 Attempting login for ${email ? 'email: ' + email : 'username: ' + username}`);
-
-    if (!password || (!email && !username)) {
+    if (!password || (!loginEmail && !username)) {
       return res.status(400).json({ error: 'Email/username and password are required' });
     }
 
+    // Pre-auth risk assessment (before we know if credentials are valid)
+    const preAuthRisk = await adaptiveAuth.calculateRiskScore(
+      { email: loginEmail || username },
+      req,
+      null
+    );
+
+    console.log(`🛡️ Pre-auth risk: ${adaptiveAuth.formatRiskSummary(preAuthRisk)}`);
+
+    // Block if critical risk before even checking credentials
+    if (preAuthRisk.riskLevel === 'CRITICAL') {
+      await adaptiveAuth.recordLoginAttempt({
+        email: loginEmail || username,
+        success: false,
+        deviceFingerprint: preAuthRisk.deviceFingerprint,
+        ipAddress: preAuthRisk.clientIP,
+        userAgent: req.headers['user-agent'],
+        riskScore: preAuthRisk.score,
+        riskLevel: preAuthRisk.riskLevel,
+      });
+
+      return res.status(403).json({
+        error: 'Login blocked due to suspicious activity. Please try again later or contact support.',
+        code: 'LOGIN_BLOCKED',
+        riskLevel: preAuthRisk.riskLevel,
+      });
+    }
+
+    // Authenticate user
     let user;
-    if (email) {
-      const cleanEmail = email.trim().toLowerCase();
-      user = await auth.authenticateUserByEmail(cleanEmail, password);
-    } else {
-      user = await auth.authenticateUser(username, password);
+    try {
+      if (loginEmail) {
+        user = await auth.authenticateUserByEmail(loginEmail, password);
+      } else {
+        user = await auth.authenticateUser(username, password);
+      }
+    } catch (authError) {
+      // Record failed attempt
+      await adaptiveAuth.recordLoginAttempt({
+        email: loginEmail || username,
+        success: false,
+        deviceFingerprint: preAuthRisk.deviceFingerprint,
+        ipAddress: preAuthRisk.clientIP,
+        userAgent: req.headers['user-agent'],
+        riskScore: preAuthRisk.score,
+        riskLevel: preAuthRisk.riskLevel,
+      });
+
+      if (authError.message === 'Invalid password') {
+        return res.status(401).json({ error: 'Invalid password', code: 'INVALID_PASSWORD' });
+      }
+      throw authError;
     }
 
     if (!user) {
-      const identifier = email || username;
-      console.log(`❌ No user found with ${email ? 'email' : 'username'}: ${identifier}`);
-      return res.status(401).json({
-        error: email ? 'No account found with this email' : 'Invalid username or password',
-        code: email ? 'ACCOUNT_NOT_FOUND' : 'INVALID_CREDENTIALS'
+      await adaptiveAuth.recordLoginAttempt({
+        email: loginEmail || username,
+        success: false,
+        deviceFingerprint: preAuthRisk.deviceFingerprint,
+        ipAddress: preAuthRisk.clientIP,
+        userAgent: req.headers['user-agent'],
+        riskScore: preAuthRisk.score,
+        riskLevel: preAuthRisk.riskLevel,
       });
+
+      return res.status(401).json({
+        error: loginEmail ? 'No account found with this email' : 'Invalid username or password',
+        code: loginEmail ? 'ACCOUNT_NOT_FOUND' : 'INVALID_CREDENTIALS'
+      });
+    }
+
+    // Post-auth risk assessment (now we know the user)
+    const postAuthRisk = await adaptiveAuth.calculateRiskScore(
+      { email: user.email },
+      req,
+      user.id
+    );
+
+    console.log(`🛡️ Post-auth risk: ${adaptiveAuth.formatRiskSummary(postAuthRisk)}`);
+
+    // Handle step-up authentication if required
+    if (postAuthRisk.action === 'step_up_auth') {
+      // Check if verification code was provided
+      if (verificationCode) {
+        const isValid = await adaptiveAuth.verifyStepUpCode(user.id, verificationCode);
+        if (!isValid) {
+          return res.status(401).json({
+            error: 'Invalid or expired verification code',
+            code: 'INVALID_VERIFICATION_CODE',
+            requiresVerification: true,
+          });
+        }
+        // Code valid, proceed with login
+      } else {
+        // Generate and send verification code
+        const code = await adaptiveAuth.generateStepUpCode(user.id, 'email');
+
+        // Send email with code
+        try {
+          await emailService.sendVerificationCode(user.email, code, {
+            reason: 'Unusual login activity detected',
+            ip: postAuthRisk.clientIP,
+          });
+        } catch (emailErr) {
+          console.error('Failed to send verification email:', emailErr);
+        }
+
+        return res.status(403).json({
+          error: 'Additional verification required. Check your email for a verification code.',
+          code: 'STEP_UP_REQUIRED',
+          requiresVerification: true,
+          riskLevel: postAuthRisk.riskLevel,
+        });
+      }
+    }
+
+    // Record successful login
+    await adaptiveAuth.recordLoginAttempt({
+      userId: user.id,
+      email: user.email,
+      success: true,
+      deviceFingerprint: postAuthRisk.deviceFingerprint,
+      ipAddress: postAuthRisk.clientIP,
+      userAgent: req.headers['user-agent'],
+      riskScore: postAuthRisk.score,
+      riskLevel: postAuthRisk.riskLevel,
+    });
+
+    // Trust device if requested and login successful
+    if (trustDevice) {
+      await adaptiveAuth.trustDevice(user.id, postAuthRisk.deviceFingerprint);
     }
 
     console.log(`✅ Login successful for user: ${user.username}`);
@@ -210,13 +375,15 @@ router.post('/login', loginRateLimit, honeypotCheck('website'), async (req, res)
         email: user.email,
         display_name: user.display_name
       },
-      token
+      token,
+      // Include risk info for client-side awareness
+      security: {
+        riskLevel: postAuthRisk.riskLevel,
+        newDevice: postAuthRisk.signals.some(s => s.signal === 'NEW_DEVICE'),
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
-    if (error.message === 'Invalid password') {
-      return res.status(401).json({ error: 'Invalid password', code: 'INVALID_PASSWORD' });
-    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -290,7 +457,8 @@ router.get('/verify', verifyAuth, async (req, res) => {
  */
 router.get('/google', (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${process.env.APP_URL || 'https://coparentliaizen.com'}/auth/google/callback`;
+  // Use www.coparentliaizen.com since Vercel redirects non-www to www
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${process.env.APP_URL || 'https://www.coparentliaizen.com'}/auth/google/callback`;
 
   // Validate OAuth configuration
   if (!clientId) {
@@ -328,7 +496,8 @@ router.post('/google/callback', async (req, res) => {
     // Validate OAuth configuration
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${process.env.APP_URL || 'https://coparentliaizen.com'}/auth/google/callback`;
+    // Use www.coparentliaizen.com since Vercel redirects non-www to www
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${process.env.APP_URL || 'https://www.coparentliaizen.com'}/auth/google/callback`;
 
     if (!clientId || !clientSecret) {
       console.error('❌ OAuth configuration missing:', { 
@@ -532,8 +701,12 @@ router.post('/register-from-invite', async (req, res) => {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
-    if (password.length < 4) {
-      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    const passwordError = getPasswordError(password);
+    if (passwordError) {
+      return res.status(400).json({
+        error: passwordError,
+        requirements: getPasswordRequirements()
+      });
     }
 
     // Register from invitation
@@ -611,8 +784,12 @@ router.post('/register-with-invite', async (req, res) => {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
-    if (password.length < 4) {
-      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    const passwordError = getPasswordError(password);
+    if (passwordError) {
+      return res.status(400).json({
+        error: passwordError,
+        requirements: getPasswordRequirements()
+      });
     }
 
     let result;
