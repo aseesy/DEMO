@@ -267,7 +267,8 @@ router.get('/verify', verifyAuth, async (req, res) => {
 
     const freshUser = users[0];
     res.json({
-      valid: true,
+      authenticated: true, // Frontend expects this field
+      valid: true, // Keep for backward compatibility
       user: {
         id: freshUser.id,
         username: freshUser.username,
