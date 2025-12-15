@@ -20,7 +20,7 @@ router.get('/', verifyAuth, async (req, res) => {
   try {
     const userId = req.user.userId || req.user.id;
 
-    const notifications = await dbSafe.safeSelect('notifications', { user_id: userId }, {
+    const notifications = await dbSafe.safeSelect('in_app_notifications', { user_id: userId }, {
       orderBy: 'created_at',
       orderDirection: 'DESC',
       limit: 50
@@ -45,7 +45,7 @@ router.get('/unread-count', optionalAuth, async (req, res) => {
 
     const userId = req.user.userId || req.user.id;
 
-    const unreadNotifications = await dbSafe.safeSelect('notifications', {
+    const unreadNotifications = await dbSafe.safeSelect('in_app_notifications', {
       user_id: userId,
       read: false
     });
@@ -66,7 +66,7 @@ router.patch('/:id/read', verifyAuth, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.userId || req.user.id;
 
-    await dbSafe.safeUpdate('notifications', { read: true }, {
+    await dbSafe.safeUpdate('in_app_notifications', { read: true }, {
       id: parseInt(id),
       user_id: userId
     });
@@ -86,7 +86,7 @@ router.post('/mark-all-read', verifyAuth, async (req, res) => {
   try {
     const userId = req.user.userId || req.user.id;
 
-    await dbSafe.safeUpdate('notifications', { read: true }, { user_id: userId });
+    await dbSafe.safeUpdate('in_app_notifications', { read: true }, { user_id: userId });
 
     res.json({ success: true });
   } catch (error) {
@@ -106,7 +106,7 @@ router.post('/:id/action', verifyAuth, async (req, res) => {
     const userId = req.user.userId || req.user.id;
 
     // Get notification
-    const notificationResult = await dbSafe.safeSelect('notifications', {
+    const notificationResult = await dbSafe.safeSelect('in_app_notifications', {
       id: parseInt(id),
       user_id: userId
     }, { limit: 1 });
@@ -119,7 +119,7 @@ router.post('/:id/action', verifyAuth, async (req, res) => {
     const notification = notifications[0];
 
     // Mark as read
-    await dbSafe.safeUpdate('notifications', { read: true }, { id: parseInt(id) });
+    await dbSafe.safeUpdate('in_app_notifications', { read: true }, { id: parseInt(id) });
 
     res.json({
       success: true,
