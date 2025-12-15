@@ -79,7 +79,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body. Request may be too large.' });
     }
 
-    const { username, contact_name, contact_email, relationship, notes, separation_date, address,
+    const { username, contact_name, contact_email, relationship, notes, separation_date, separation_details, address,
       difficult_aspects, friction_situations, legal_matters, safety_concerns,
       substance_mental_health, neglect_abuse_concerns, additional_thoughts, other_parent,
       child_age, child_birthdate, school, phone, partner_duration, has_children,
