@@ -159,14 +159,14 @@ async function syncRelationshipMetadata(roomId) {
 
     // Get message count from PostgreSQL
     const messageCountResult = await dbPostgres.query(
-      'SELECT COUNT(*) as count FROM messages WHERE room_id = $1 AND deleted = false',
+      'SELECT COUNT(*) as count FROM messages WHERE room_id = $1',
       [roomId]
     );
     const messageCount = parseInt(messageCountResult.rows[0]?.count || 0);
 
     // Get last interaction timestamp
     const lastMessageResult = await dbPostgres.query(
-      'SELECT MAX(timestamp) as last_message FROM messages WHERE room_id = $1 AND deleted = false',
+      'SELECT MAX(timestamp) as last_message FROM messages WHERE room_id = $1',
       [roomId]
     );
     const lastInteraction = lastMessageResult.rows[0]?.last_message || null;
