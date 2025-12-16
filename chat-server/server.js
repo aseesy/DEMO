@@ -3391,11 +3391,22 @@ app.post('/api/import/cleanup', express.json(), async (req, res) => {
       totalDeleted += deleted;
     }
 
-    console.log(`✅ Cleanup complete: ${totalDeleted} messages deleted`);
+    // Also strip +# prefix from messages (iMessage reply indicator)
+    const stripPrefixResult = await dbPostgres.query(
+      `UPDATE messages SET text = SUBSTRING(text FROM 3) WHERE room_id = $1 AND text LIKE '+#%' RETURNING id`,
+      [roomId]
+    );
+    const strippedCount = stripPrefixResult.rowCount || 0;
+    if (strippedCount > 0) {
+      console.log(`   Stripped '+#' prefix from ${strippedCount} messages`);
+    }
+
+    console.log(`✅ Cleanup complete: ${totalDeleted} messages deleted, ${strippedCount} prefixes stripped`);
 
     res.json({
       success: true,
       deleted: totalDeleted,
+      prefixesStripped: strippedCount,
       patterns: cleanupPatterns
     });
   } catch (error) {
