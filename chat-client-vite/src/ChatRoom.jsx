@@ -327,6 +327,19 @@ function ChatRoom() {
       return; // Don't notify for own messages
     }
 
+    // Don't show notifications for AI/system messages
+    // These are coaching messages meant for the sender, not notifications for the receiver
+    const aiMessageTypes = ['ai_intervention', 'ai_comment', 'pending_original', 'system'];
+    const aiUsernames = ['liaizen', 'alex', 'system'];
+
+    if (aiMessageTypes.includes(message.type)) {
+      return; // Don't notify for AI intervention/coaching messages
+    }
+
+    if (aiUsernames.includes(message.username?.toLowerCase())) {
+      return; // Don't notify for messages from AI users
+    }
+
     // Increment unread count if not on chat screen or page is hidden
     if (currentView !== 'chat' || document.hidden) {
       setUnreadCount(prev => prev + 1);
@@ -2182,7 +2195,7 @@ function ChatRoom() {
                                                       setIsPreApprovedRewrite(true);
                                                       setOriginalRewrite(msg.rewrite1);
                                                     }}
-                                                    className="w-full text-left p-3 bg-teal-lightest/50 border border-teal-light/40 rounded-lg hover:bg-teal-lightest/70 transition-colors text-base text-teal-dark"
+                                                    className="w-full text-left p-3 bg-white border border-teal-light/40 rounded-lg hover:bg-gray-50 transition-colors text-base text-teal-dark"
                                                   >
                                                     <p className="font-normal leading-snug" style={{ fontSize: '15px' }}>"{msg.rewrite1}"</p>
                                                   </button>
@@ -2198,7 +2211,7 @@ function ChatRoom() {
                                                       setIsPreApprovedRewrite(true);
                                                       setOriginalRewrite(msg.rewrite2);
                                                     }}
-                                                    className="w-full text-left p-3 bg-teal-lightest/50 border border-teal-light/40 rounded-lg hover:bg-teal-lightest/70 transition-colors text-base text-teal-dark"
+                                                    className="w-full text-left p-3 bg-white border border-teal-light/40 rounded-lg hover:bg-gray-50 transition-colors text-base text-teal-dark"
                                                   >
                                                     <p className="font-normal leading-snug" style={{ fontSize: '15px' }}>"{msg.rewrite2}"</p>
                                                   </button>
