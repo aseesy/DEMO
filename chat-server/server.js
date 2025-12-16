@@ -3269,6 +3269,9 @@ app.post('/api/import/messages', express.json({ limit: '50mb' }), async (req, re
         imported++;
       } catch (err) {
         errors++;
+        if (errors <= 3) {
+          console.error(`   Import error: ${err.message}`);
+        }
       }
     }
 
