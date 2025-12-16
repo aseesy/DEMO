@@ -271,11 +271,11 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
         <div className="max-w-7xl mx-auto w-full px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             {/* Left side: Menu/Logo */}
-            <div className="flex items-center">
+            <div className="flex items-center gap-4">
               {renderMenuButton(0, { placement: 'bottom' })}
             </div>
 
-            {/* Right side: Navigation Items */}
+            {/* Right side: Navigation Items + LiaiZen Branding */}
             <div className="flex items-center gap-1">
               {navItems.map((item) => {
                 const isActive = currentView === item.id;
@@ -306,6 +306,17 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                   </button>
                 );
               })}
+              {/* LiaiZen Branding - Desktop only, on the right */}
+              <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200">
+                <img
+                  src="/assets/Logo.svg"
+                  alt="LiaiZen"
+                  className="w-6 h-6 object-contain"
+                />
+                <span className="text-sm font-semibold text-[#275559]">
+                  Li<span className="bg-gradient-to-r from-[#4DA8B0] to-[#46BD92] bg-clip-text text-transparent">ai</span>Zen
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -335,7 +346,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             </span>
           </button>
 
-          {/* Menu button - in the middle */}
+          {/* LiaiZen Menu button - matches other buttons */}
           <button
             type="button"
             onClick={() => setIsMenuOpen((prev) => !prev)}
@@ -350,7 +361,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
           >
             <img
               src="/assets/Logo.svg"
-              alt="Menu"
+              alt="LiaiZen menu"
               className="w-6 h-6 object-contain"
             />
           </button>
@@ -375,67 +386,107 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
               )}
             </span>
           </button>
-          {/* Menu dropdown - positioned above */}
-          {isMenuOpen && (
-            <div
-              ref={(node) => {
-                if (node) {
-                  menuRefs.current[1] = node; // Register mobile dropdown in refs array
-                }
-              }}
-              className="absolute bottom-14 left-2 w-52 rounded-xl border-2 border-gray-200 bg-white shadow-xl py-2 z-[100] transition-all duration-200 ease-out opacity-100"
-              role="menu"
-              aria-label="User menu"
-              style={{
-                animation: 'fadeIn 0.2s ease-out',
-              }}
-            >
-              {menuItems.map((item, index) => {
-                if (item.isDivider) {
+          {/* Rainbow/Arch Menu - positioned above in arch pattern */}
+          {isMenuOpen && (() => {
+            // Filter out divider items for arch positioning
+            const archItems = menuItems.filter(item => !item.isDivider);
+            const totalItems = archItems.length;
+            const radius = 90; // Distance from center button (arch height)
+            const horizontalSpread = 140; // Horizontal spread in pixels
+            const startAngle = Math.PI; // Start from left (180 degrees)
+            const angleSpread = 0; // Horizontal arch (no vertical spread in angle)
+            
+            return (
+              <div
+                ref={(node) => {
+                  if (node) {
+                    menuRefs.current[1] = node; // Register mobile dropdown in refs array
+                  }
+                }}
+                className="absolute bottom-14 left-1/2 -translate-x-1/2 pointer-events-none z-[100]"
+                role="menu"
+                aria-label="User menu"
+                style={{
+                  width: `${horizontalSpread * 2 + 80}px`,
+                  height: `${radius + 60}px`,
+                }}
+              >
+                {archItems.map((item, index) => {
+                  // Calculate horizontal position (evenly distributed left to right, perfectly centered)
+                  // Handle case when totalItems is 1 to avoid division by zero
+                  const horizontalPosition = totalItems === 1 ? 0 : (index / (totalItems - 1)) * 2 - 1; // -1 to 1
+                  
+                  // Calculate vertical position using symmetrical arch/parabola formula
+                  // Use absolute value to ensure perfect symmetry: archHeight = radius * (1 - |normalizedX|^2)
+                  const normalizedX = horizontalPosition;
+                  const absX = Math.abs(normalizedX); // Ensure symmetry
+                  const archHeight = radius * (1 - absX * absX); // Perfectly symmetrical arch
+                  
+                  // Position relative to container center (container is centered via left-1/2 -translate-x-1/2)
+                  // Center the arch perfectly: container center + horizontal offset - button half-width
+                  const containerWidth = horizontalSpread * 2 + 80;
+                  const containerCenterX = containerWidth / 2;
+                  const finalX = containerCenterX + (horizontalPosition * horizontalSpread) - 24; // Center button (48px / 2 = 24)
+                  const finalY = archHeight; // Distance from bottom (higher = further from bottom)
+                  
+                  // Calculate rotation - slight tilt based on position for natural look
+                  const rotation = normalizedX * 15; // Tilt up to 15 degrees
+                  
+                  const isActive = currentView === item.id;
+                  const isDanger = item.isDanger;
+                  
+                  // Animation delay for staggered appearance
+                  const delay = index * 0.05;
+
                   return (
-                    <div
+                    <button
                       key={item.id}
-                      className="h-px bg-gray-50 my-1.5 mx-2"
-                      role="separator"
-                    />
+                      ref={(node) => {
+                        if (node) {
+                          // Find the original index in menuItems array (including dividers)
+                          const originalIndex = menuItems.findIndex(mi => mi.id === item.id);
+                          if (originalIndex !== -1) {
+                            menuItemRefs.current[originalIndex] = node;
+                          }
+                        }
+                      }}
+                      type="button"
+                      onClick={item.action}
+                      className={`absolute w-12 h-12 rounded-full bg-white border-2 border-teal-light shadow-lg flex items-center justify-center transition-all duration-300 min-h-[44px] min-w-[44px] pointer-events-auto ${
+                        isDanger
+                          ? 'text-red-600 hover:bg-red-50 focus:bg-red-50 border-red-300'
+                          : `text-teal-medium hover:bg-teal-lightest focus:bg-teal-lightest ${
+                              isActive ? 'bg-teal-lightest border-teal-medium shadow-xl scale-110' : ''
+                            }`
+                      } focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2`}
+                      role="menuitem"
+                      tabIndex={0}
+                      style={{
+                        left: `${finalX}px`,
+                        bottom: `${finalY}px`,
+                        animation: `archMenuAppear 0.4s ease-out ${delay}s both`,
+                        // @ts-ignore - CSS custom property
+                        '--rotation': `${-rotation}deg`,
+                      }}
+                      aria-label={item.label}
+                    >
+                      <span 
+                        className="flex-shrink-0"
+                        style={{
+                          transform: `rotate(${rotation}deg)`, // Counter-rotate icon to keep it upright
+                        }}
+                      >
+                        {item.icon}
+                      </span>
+                      {isActive && !isDanger && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-teal-medium" />
+                      )}
+                    </button>
                   );
-                }
-
-                const isActive = currentView === item.id;
-                const isDanger = item.isDanger;
-
-                return (
-                  <button
-                    key={item.id}
-                    ref={(node) => {
-                      if (node && !item.isDivider) {
-                        menuItemRefs.current[index] = node;
-                      }
-                    }}
-                    type="button"
-                    onClick={item.action}
-                    className={`w-full px-4 py-3 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 min-h-[44px] ${
-                      isDanger
-                        ? 'text-red-600 hover:bg-red-50 focus:bg-red-50'
-                        : `text-teal-medium hover:bg-gray-50 focus:bg-gray-50 ${
-                            isActive ? 'bg-gray-50 font-semibold' : ''
-                          }`
-                    } focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-inset`}
-                    role="menuitem"
-                    tabIndex={0}
-                  >
-                    <span className="flex-shrink-0">
-                      {item.icon}
-                    </span>
-                    <span>{item.label}</span>
-                    {isActive && !isDanger && (
-                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-medium" />
-                    )}
-                  </button>
-                );
-              })}
-          </div>
-          )}
+                })}
+              </div>
+            );
+          })()}
         </div>
       </nav>
     </>

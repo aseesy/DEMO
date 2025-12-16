@@ -1865,11 +1865,13 @@ io.on('connection', (socket) => {
               socket.emit('new_message', pendingOriginalMessage);
 
               // Then send intervention UI ONLY to the sender (private message)
+              // NOTE: mediator.js returns 'validation' and 'insight' fields
+              // We map them to 'personalMessage' and 'tip1' for frontend compatibility
               const interventionMessage = {
                 id: interventionId, // Use the same pre-generated ID
                 type: 'ai_intervention',
-                personalMessage: intervention.personalMessage,
-                tip1: intervention.tip1,
+                personalMessage: intervention.validation,  // ADDRESS: connects feeling to situation
+                tip1: intervention.insight,                // INSIGHT: metaphor or perspective shift
                 rewrite1: intervention.rewrite1,
                 rewrite2: intervention.rewrite2,
                 originalMessage: message,
