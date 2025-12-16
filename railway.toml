@@ -11,7 +11,7 @@
 [build]
 builder = "nixpacks"
 watchPatterns = ["chat-server/**"]
-buildCommand = "cd chat-server && rm -rf node_modules && npm install --legacy-peer-deps && echo 'Build v1.0.3 with neo4j-driver complete'"
+buildCommand = "cd chat-server && rm -rf node_modules && npm install --legacy-peer-deps && echo 'Build v1.0.4 with dbPostgres fix'"
 
 [deploy]
 startCommand = "cd chat-server && node server.js"
