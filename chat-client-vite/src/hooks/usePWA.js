@@ -30,7 +30,8 @@ export function usePWA() {
       setIsInstalled(true);
       console.log('[usePWA] App is installed (standalone mode)');
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // registerServiceWorker is stable (useCallback with no deps) but accessed before declaration
 
   // Listen for install prompt event
   React.useEffect(() => {

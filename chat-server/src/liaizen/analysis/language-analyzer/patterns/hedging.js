@@ -11,11 +11,12 @@
 
 // Hedging/softening markers
 const HEDGING_MARKERS = [
-  'just', 'maybe', 'possibly', 'perhaps', 'might',
-  'sort of', 'kind of', 'kinda', 'a little',
-  'i think', 'i feel like', 'i guess',
+  'just', 'maybe', 'possibly', 'perhaps', 'might', 'really',
+  'sort of', 'kind of', 'kinda', 'a little', 'a bit',
+  'i think', 'i feel like', 'i guess', 'think maybe',
   'not sure if', 'not sure but', 'i could be wrong',
-  'if you don\'t mind', 'if that\'s okay', 'if it\'s not too much'
+  'if you don\'t mind', 'if that\'s okay', 'if it\'s not too much',
+  'isn\'t really', 'not really'
 ];
 
 // Apologetic framing markers

@@ -1039,7 +1039,7 @@ io.on('connection', (socket) => {
       const historyQuery = `
         SELECT m.*, u.display_name, u.first_name, u.preferred_name
         FROM messages m
-        LEFT JOIN users u ON m.username = u.username
+        LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
         WHERE m.room_id = $1
         ORDER BY m.timestamp ASC
         LIMIT 500
@@ -2868,6 +2868,229 @@ io.on('connection', (socket) => {
     } catch (error) {
       console.error('Error handling contact relationship:', error);
       socket.emit('error', { message: 'Failed to process relationship.' });
+    }
+  });
+
+  // Load older messages (pagination)
+  socket.on('load_older_messages', async ({ beforeTimestamp, limit = 50 }) => {
+    const user = activeUsers.get(socket.id);
+    if (!user) {
+      socket.emit('error', { message: 'You must join before loading messages.' });
+      return;
+    }
+
+    try {
+      const dbPostgres = require('./dbPostgres');
+      const query = `
+        SELECT m.*, u.display_name, u.first_name, u.preferred_name
+        FROM messages m
+        LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
+        WHERE m.room_id = $1 AND m.timestamp < $2
+        ORDER BY m.timestamp DESC
+        LIMIT $3
+      `;
+
+      const result = await dbPostgres.query(query, [user.roomId, beforeTimestamp, limit]);
+
+      // Parse and format messages (same as initial load)
+      const olderMessages = result.rows.map(msg => {
+        let originalMessage = null;
+        if (msg.original_message) {
+          try { originalMessage = JSON.parse(msg.original_message); } catch (e) {}
+        }
+        let reactions = null;
+        if (msg.reactions) {
+          try { reactions = JSON.parse(msg.reactions); } catch (e) {}
+        }
+        let userFlaggedBy = null;
+        if (msg.user_flagged_by) {
+          try { userFlaggedBy = JSON.parse(msg.user_flagged_by); } catch (e) {}
+        }
+
+        const displayName = msg.preferred_name || msg.display_name || msg.first_name || msg.username;
+
+        return {
+          id: msg.id,
+          type: msg.type,
+          username: msg.username,
+          displayName: displayName,
+          text: msg.text,
+          timestamp: msg.timestamp,
+          threadId: msg.thread_id || null,
+          validation: msg.validation || null,
+          tip1: msg.tip1 || null,
+          tip2: msg.tip2 || null,
+          rewrite: msg.rewrite || null,
+          originalMessage: originalMessage,
+          edited: msg.edited === 1 || msg.edited === '1',
+          editedAt: msg.edited_at || null,
+          reactions: reactions || {},
+          user_flagged_by: userFlaggedBy || []
+        };
+      }).reverse(); // Reverse to get chronological order
+
+      socket.emit('older_messages', {
+        messages: olderMessages,
+        hasMore: result.rows.length === limit
+      });
+
+      console.log(`📜 Loaded ${olderMessages.length} older messages for ${user.username}`);
+    } catch (error) {
+      console.error('Error loading older messages:', error);
+      socket.emit('error', { message: 'Failed to load older messages.' });
+    }
+  });
+
+  // Search messages
+  socket.on('search_messages', async ({ query, limit = 50, offset = 0 }) => {
+    const user = activeUsers.get(socket.id);
+    if (!user) {
+      socket.emit('error', { message: 'You must join before searching.' });
+      return;
+    }
+
+    if (!query || query.trim().length < 2) {
+      socket.emit('search_results', { messages: [], total: 0, query: query });
+      return;
+    }
+
+    try {
+      const dbPostgres = require('./dbPostgres');
+
+      // Count total matches
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM messages m
+        WHERE m.room_id = $1
+          AND m.type IN ('message', 'user')
+          AND m.text ILIKE $2
+      `;
+      const countResult = await dbPostgres.query(countQuery, [user.roomId, `%${query}%`]);
+      const total = parseInt(countResult.rows[0].total, 10);
+
+      // Get matching messages
+      const searchQuery = `
+        SELECT m.*, u.display_name, u.first_name, u.preferred_name
+        FROM messages m
+        LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
+        WHERE m.room_id = $1
+          AND m.type IN ('message', 'user')
+          AND m.text ILIKE $2
+        ORDER BY m.timestamp DESC
+        LIMIT $3 OFFSET $4
+      `;
+
+      const result = await dbPostgres.query(searchQuery, [user.roomId, `%${query}%`, limit, offset]);
+
+      const searchResults = result.rows.map(msg => {
+        const displayName = msg.preferred_name || msg.display_name || msg.first_name || msg.username;
+        return {
+          id: msg.id,
+          type: msg.type,
+          username: msg.username,
+          displayName: displayName,
+          text: msg.text,
+          timestamp: msg.timestamp
+        };
+      });
+
+      socket.emit('search_results', {
+        messages: searchResults,
+        total: total,
+        query: query,
+        hasMore: offset + result.rows.length < total
+      });
+
+      console.log(`🔍 Search for "${query}" returned ${searchResults.length} of ${total} results for ${user.username}`);
+    } catch (error) {
+      console.error('Error searching messages:', error);
+      socket.emit('error', { message: 'Failed to search messages.' });
+    }
+  });
+
+  // Jump to specific message (load context around it)
+  socket.on('jump_to_message', async ({ messageId }) => {
+    const user = activeUsers.get(socket.id);
+    if (!user) {
+      socket.emit('error', { message: 'You must join before loading messages.' });
+      return;
+    }
+
+    try {
+      const dbPostgres = require('./dbPostgres');
+
+      // Get the target message's timestamp
+      const targetQuery = `SELECT timestamp FROM messages WHERE id = $1 AND room_id = $2`;
+      const targetResult = await dbPostgres.query(targetQuery, [messageId, user.roomId]);
+
+      if (targetResult.rows.length === 0) {
+        socket.emit('error', { message: 'Message not found.' });
+        return;
+      }
+
+      const targetTimestamp = targetResult.rows[0].timestamp;
+
+      // Get messages around that timestamp (25 before, target, 25 after)
+      const contextQuery = `
+        (SELECT m.*, u.display_name, u.first_name, u.preferred_name
+         FROM messages m
+         LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
+         WHERE m.room_id = $1 AND m.timestamp <= $2
+         ORDER BY m.timestamp DESC
+         LIMIT 26)
+        UNION ALL
+        (SELECT m.*, u.display_name, u.first_name, u.preferred_name
+         FROM messages m
+         LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
+         WHERE m.room_id = $1 AND m.timestamp > $2
+         ORDER BY m.timestamp ASC
+         LIMIT 25)
+        ORDER BY timestamp ASC
+      `;
+
+      const result = await dbPostgres.query(contextQuery, [user.roomId, targetTimestamp]);
+
+      const contextMessages = result.rows.map(msg => {
+        let originalMessage = null;
+        if (msg.original_message) {
+          try { originalMessage = JSON.parse(msg.original_message); } catch (e) {}
+        }
+        let reactions = null;
+        if (msg.reactions) {
+          try { reactions = JSON.parse(msg.reactions); } catch (e) {}
+        }
+        let userFlaggedBy = null;
+        if (msg.user_flagged_by) {
+          try { userFlaggedBy = JSON.parse(msg.user_flagged_by); } catch (e) {}
+        }
+
+        const displayName = msg.preferred_name || msg.display_name || msg.first_name || msg.username;
+
+        return {
+          id: msg.id,
+          type: msg.type,
+          username: msg.username,
+          displayName: displayName,
+          text: msg.text,
+          timestamp: msg.timestamp,
+          threadId: msg.thread_id || null,
+          validation: msg.validation || null,
+          originalMessage: originalMessage,
+          edited: msg.edited === 1 || msg.edited === '1',
+          reactions: reactions || {},
+          user_flagged_by: userFlaggedBy || []
+        };
+      });
+
+      socket.emit('jump_to_message_result', {
+        messages: contextMessages,
+        targetMessageId: messageId
+      });
+
+      console.log(`🎯 Jumped to message ${messageId} with ${contextMessages.length} context messages`);
+    } catch (error) {
+      console.error('Error jumping to message:', error);
+      socket.emit('error', { message: 'Failed to load message context.' });
     }
   });
 

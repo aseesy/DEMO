@@ -6,6 +6,27 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   globalIgnores(['dist']),
+  // Service worker files - need ServiceWorker globals
+  {
+    files: ['public/sw.js'],
+    languageOptions: {
+      globals: {
+        ...globals.serviceworker,
+        clients: 'readonly',
+        self: 'readonly',
+        caches: 'readonly',
+      },
+    },
+  },
+  // Node.js scripts - need process global
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -15,7 +36,10 @@ export default defineConfig([
     ],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        process: 'readonly', // Vite replaces process.env at build time
+      },
       parserOptions: {
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },

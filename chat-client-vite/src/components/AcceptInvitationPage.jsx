@@ -163,7 +163,7 @@ export function AcceptInvitationPage() {
     };
 
     autoAccept();
-  }, [hasValidated, isCheckingAuth, isAuthenticated, validationResult, token, shortCode, isAutoAccepting, successMessage, navigate]);
+  }, [hasValidated, isCheckingAuth, isAuthenticated, validationResult, token, shortCode, isAutoAccepting, successMessage, navigate, acceptByCode, acceptInvitation, clearInvitationState]);
 
   // Handle signup form submission
   const handleSubmit = async (e) => {

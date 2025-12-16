@@ -4,6 +4,10 @@
 module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/__tests__/**/*.test.js'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/libs/language-analyzer/',  // Stale duplicate - real code is in src/liaizen/analysis/
+  ],
   collectCoverageFrom: [
     'auth.js',
     'middleware/auth.js',
@@ -22,5 +26,6 @@ module.exports = {
   testTimeout: 10000,
   verbose: true,
   clearMocks: true,
+  setupFiles: ['./jest.setup.js'],
   setupFilesAfterEnv: [],
 };

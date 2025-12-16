@@ -12,10 +12,11 @@
 // Accusation patterns
 const ACCUSATION_PATTERNS = [
   /^you\s+(did|didn't|never|always|don't|won't|can't)\b/i,
-  /\byou('re|'re| are)\s+(the|a|so|being|always)\b/i,
+  /\byou('re|'re| are)\s+(the|a|so|such|being|always|basically|just|really)\b/i,
   /\bit's\s+(your|all your)\s+fault\b/i,
   /\bbecause\s+of\s+you\b/i,
-  /\byou\s+made\s+(me|her|him|this|it)\b/i
+  /\byou\s+made\s+(me|her|him|this|it)\b/i,
+  /\byou('re|'re| are)\s+\w+ing\s+(vira|the kids?|them|her|him)\b/i  // "You're failing Vira"
 ];
 
 // Question patterns
@@ -104,14 +105,14 @@ function detectSentenceType(text) {
     return 'accusation';
   }
 
-  // Questions
-  if (QUESTION_PATTERNS.some(p => p.test(text))) {
-    return 'question';
-  }
-
-  // Requests (polite)
+  // Requests (polite) - check before questions since "Can we...?" is a request, not just a question
   if (REQUEST_PATTERNS.some(p => p.test(text))) {
     return 'request';
+  }
+
+  // Questions (non-request questions like "Why did you...?")
+  if (QUESTION_PATTERNS.some(p => p.test(text))) {
+    return 'question';
   }
 
   // Default to statement

@@ -38,11 +38,13 @@ const VAGUE_REQUEST_PATTERNS = [
 
 // Specific request patterns
 const SPECIFIC_REQUEST_PATTERNS = [
-  /\bcan you\s+\w+\s+(on|at|by)\b/i,
+  /\bcan (you|we)\s+\w+\s+(on|at|by|the)\b/i,  // "Can we swap the Tuesday..."
   /\bplease\s+\w+\s+(the|her|him|them)\b/i,
-  /\bwould you\s+\w+\s+(at|on|by)\b/i,
+  /\bwould (you|we)\s+\w+\s+(at|on|by|the)\b/i,
   /\bi need you to\s+\w+/i,
-  /\b(pack|bring|pick up|drop off|call|text|email)\s+(the|her|him)\b/i
+  /\b(pack|bring|pick up|drop off|call|text|email)\s+(the|her|him)\b/i,
+  /\bcan we\s+swap\b/i,  // "Can we swap..."
+  /\b(swap|change|move)\s+the\s+\w+\s+(pickup|dropoff|visit|time)\b/i  // "swap the Tuesday pickup"
 ];
 
 // Specific reference patterns (times, places, items)

@@ -8,8 +8,8 @@
  * and Neo4j (graph analytics) by validating their consistency.
  */
 
-const path = require('path');
-const dbSafe = require(path.join(__dirname, '../../dbSafe'));
+const dbSafe = require('../../dbSafe');
+const dbPostgres = require('../../dbPostgres');
 const neo4jClient = require('./neo4jClient');
 
 /**
@@ -29,7 +29,6 @@ async function validateCoParentRelationships() {
   try {
     // Get all co-parent relationships from PostgreSQL
     // A co-parent relationship exists when a room has exactly 2 members
-    const dbPostgres = require(path.join(__dirname, '../../dbPostgres'));
     const roomsQuery = `
       SELECT r.id as room_id, 
              array_agg(rm.user_id ORDER BY rm.user_id) as user_ids,
@@ -159,7 +158,6 @@ async function syncRelationshipMetadata(roomId) {
     const [user1, user2] = members.map(m => m.user_id).sort();
 
     // Get message count from PostgreSQL
-    const dbPostgres = require(path.join(__dirname, '../../dbPostgres'));
     const messageCountResult = await dbPostgres.query(
       'SELECT COUNT(*) as count FROM messages WHERE room_id = $1 AND deleted = false',
       [roomId]

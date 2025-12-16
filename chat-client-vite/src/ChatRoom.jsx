@@ -24,8 +24,12 @@ import { ProfileTaskModal } from './components/modals/ProfileTaskModal.jsx';
 import { FlaggingModal } from './components/modals/FlaggingModal.jsx';
 import { ContactSuggestionModal } from './components/modals/ContactSuggestionModal.jsx';
 import { InviteTaskModal } from './components/InviteTaskModal.jsx';
+import { MessageSearch } from './components/MessageSearch.jsx';
 import PrivacySettings from './components/profile/PrivacySettings.jsx';
 import { API_BASE_URL } from './config.js';
+
+// Lazy-load AccountView for code-splitting (reduces initial bundle)
+const AccountView = React.lazy(() => import('./components/AccountView.jsx'));
 import { apiPost, apiGet } from './apiClient.js';
 import { getWithMigration, setWithMigration, removeWithMigration } from './utils/storageMigration.js';
 import {
@@ -137,223 +141,6 @@ function PrivacySettingsWrapper({ username }) {
         onPreviewCoParentView={handlePreview}
         isSaving={isSaving}
       />
-    </div>
-  );
-}
-
-function AccountView({ username }) {
-  const {
-    profileData,
-    isLoadingProfile,
-    isSavingProfile,
-    showPasswordChange,
-    passwordData,
-    isChangingPassword,
-    error,
-    setProfileData,
-    setShowPasswordChange,
-    setPasswordData,
-    saveProfile,
-    changePassword,
-  } = useProfile(username);
-
-  if (isLoadingProfile) {
-    return (
-      <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden">
-        <div className="p-8 sm:p-10">
-          <div className="text-center py-16">
-            <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-100 border-t-teal-medium" />
-            <p className="mt-6 text-teal-medium font-semibold text-lg">Loading account...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden">
-      <div className="p-6 sm:p-8 space-y-8">
-        {error && (
-          <div className="bg-red-50 border-2 border-red-200 text-red-700 px-5 py-4 rounded-xl mb-6 text-sm shadow-sm">
-            <div className="font-semibold mb-1">Error</div>
-            <div>{error}</div>
-          </div>
-        )}
-
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold text-teal-dark mb-3">Account</h2>
-          <p className="text-base text-gray-600 leading-relaxed">
-            Manage billing, authentication, and household members connected to your space.
-          </p>
-        </div>
-
-        {/* Account Information */}
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow mb-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-white border-2 border-teal-light rounded-xl flex items-center justify-center shadow-sm">
-              <svg className="w-6 h-6 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-teal-dark mb-1">
-                Account Information
-              </h3>
-              <p className="text-sm text-gray-500">
-                Signed in as <span className="font-medium text-teal-dark">{profileData?.firstName || username}</span>
-              </p>
-            </div>
-          </div>
-          <div className="space-y-5">
-            <div>
-              <label className="block text-sm font-semibold text-teal-dark mb-2.5">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={profileData.email}
-                onChange={(e) =>
-                  setProfileData({ ...profileData, email: e.target.value })
-                }
-                className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px]"
-                placeholder="your@email.com"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Password Section */}
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white border-2 border-teal-light rounded-xl flex items-center justify-center shadow-sm">
-                <svg className="w-6 h-6 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-teal-dark mb-1">Password</h3>
-                <p className="text-sm text-gray-600">Update your account password</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowPasswordChange(!showPasswordChange)}
-              className="px-5 py-3 bg-white text-teal-medium border-2 border-teal-light hover:bg-teal-lightest rounded-lg font-semibold text-sm transition-all shadow-sm hover:shadow-md min-h-[44px] whitespace-nowrap"
-            >
-              {showPasswordChange ? 'Cancel' : 'Change Password'}
-            </button>
-          </div>
-          {showPasswordChange && (
-            <div className="space-y-5 pt-4 border-t-2 border-teal-light">
-              <div>
-                <label className="block text-sm font-semibold text-teal-dark mb-2.5">
-                  Current Password
-                </label>
-                <input
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      currentPassword: e.target.value,
-                    })
-                  }
-                  className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px]"
-                  placeholder="Enter current password"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-teal-dark mb-2.5">
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      newPassword: e.target.value,
-                    })
-                  }
-                  className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px]"
-                  placeholder="Enter new password"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-teal-dark mb-2.5">
-                  Confirm New Password
-                </label>
-                <input
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      confirmPassword: e.target.value,
-                    })
-                  }
-                  className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px]"
-                  placeholder="Confirm new password"
-                />
-              </div>
-              <button
-                onClick={changePassword}
-                disabled={isChangingPassword}
-                className="w-full bg-teal-dark hover:bg-teal-darkest text-white py-3.5 px-5 rounded-lg font-semibold disabled:bg-gray-400 transition-all shadow-sm hover:shadow-md min-h-[44px] flex items-center justify-center gap-2"
-              >
-                {isChangingPassword ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Changing...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Update Password</span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Other Account Sections */}
-        <div className="grid gap-6 md:grid-cols-2 mb-6">
-          <div className="border-2 border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <h3 className="font-semibold text-lg text-teal-dark mb-2">Plan &amp; Billing</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">Upgrade plans or download invoices.</p>
-          </div>
-          <div className="border-2 border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <h3 className="font-semibold text-lg text-teal-dark mb-2">Household Access</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">Invite, remove, or update connected caregivers.</p>
-          </div>
-        </div>
-
-        {/* Save button */}
-        <div className="bg-teal-dark rounded-xl p-1.5 shadow-md hover:shadow-lg transition-shadow">
-          <button
-            onClick={saveProfile}
-            disabled={isSavingProfile}
-            className="w-full bg-teal-dark hover:bg-teal-darkest text-white py-3.5 px-6 rounded-lg font-semibold text-base disabled:bg-gray-400 transition-all flex items-center justify-center gap-2 min-h-[44px]"
-          >
-            {isSavingProfile ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Saving Changes...</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Save Account</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -577,10 +364,13 @@ function ChatRoom() {
     messages,
     inputMessage,
     isConnected,
+    messageStatuses,
+    pendingMessages,
     sendMessage: originalSendMessage,
     handleInputChange,
     messagesEndRef,
-    typingUsers,
+    messagesContainerRef,
+    typingUsers: _typingUsers,
     setInputMessage,
     removeMessages,
     flagMessage: originalFlagMessage,
@@ -597,6 +387,21 @@ function ChatRoom() {
     getThreadMessages,
     addToThread,
     socket,
+    // Pagination
+    loadOlderMessages,
+    isLoadingOlder,
+    hasMoreMessages,
+    // Search
+    searchMessages,
+    searchQuery,
+    searchResults,
+    searchTotal,
+    isSearching,
+    searchMode,
+    toggleSearchMode,
+    exitSearchMode,
+    jumpToMessage,
+    highlightedMessageId,
   } = chatState;
 
   // Reset unread count when navigating to chat view and mark all messages as seen
@@ -670,17 +475,17 @@ function ChatRoom() {
     originalFlagMessage(messageId);
   }, [originalFlagMessage]);
 
-  // Wrap createThread to track analytics
-  const createThread = React.useCallback((roomId, title, messageIds) => {
+  // Wrap createThread to track analytics (prefixed - feature in development)
+  const _createThread = React.useCallback((roomId, title, messageIds) => {
     trackThreadCreated();
     return originalCreateThread(roomId, title, messageIds);
   }, [originalCreateThread]);
 
-  // Thread UI state
+  // Thread UI state (prefixed - feature in development)
   const [showThreadsPanel, setShowThreadsPanel] = React.useState(false);
-  const [threadSuggestionModal, setThreadSuggestionModal] = React.useState(null);
-  const [creatingThread, setCreatingThread] = React.useState(false);
-  const [newThreadTitle, setNewThreadTitle] = React.useState('');
+  const [_threadSuggestionModal, setThreadSuggestionModal] = React.useState(null);
+  const [_creatingThread, _setCreatingThread] = React.useState(false);
+  const [_newThreadTitle, _setNewThreadTitle] = React.useState('');
 
   // Get room ID from chat state (need to extract from messages or use a ref)
   const roomIdRef = React.useRef(null);
@@ -1096,6 +901,7 @@ function ChatRoom() {
       }, 1000);
       return () => clearTimeout(timer);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]); // Intentionally minimal deps - only run once on auth
 
   // Also check when new messages arrive (indicates someone else might be in room)
@@ -1103,6 +909,7 @@ function ChatRoom() {
     if (isAuthenticated && messages.length > 0 && !hasCoParentConnected) {
       checkRoomMembers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length]); // Intentionally minimal deps - only trigger on new messages
 
   // Check for pending or accepted invitations
@@ -1335,7 +1142,7 @@ function ChatRoom() {
                   <UpdatesPanel
                     username={username}
                     setCurrentView={setCurrentView}
-                    onContactClick={(contactName) => {
+                    onContactClick={(_contactName) => {
                       // Navigate to contacts view when clicking on a person
                       setCurrentView('contacts');
                     }}
@@ -1770,8 +1577,23 @@ function ChatRoom() {
             {/* Chat View */}
             {currentView === 'chat' && (
               <div className="h-full flex flex-col relative">
-                {/* Threads button and invite link - moved to top right corner */}
+                {/* Threads button, search button, and invite link - moved to top right corner */}
                 <div className="absolute top-6 right-6 z-10 flex items-center gap-3">
+                  {/* Search Button */}
+                  <button
+                    type="button"
+                    onClick={toggleSearchMode}
+                    className={`p-3 rounded-lg text-sm font-semibold transition-all border-2 shadow-sm hover:shadow-md min-h-[44px] flex items-center justify-center ${
+                      searchMode
+                        ? 'bg-teal-medium text-white border-teal-medium'
+                        : 'bg-white text-teal-dark border-teal-light hover:bg-teal-lightest hover:border-teal-medium'
+                    }`}
+                    title={searchMode ? 'Close search' : 'Search messages'}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                   {threads.length > 0 && (
                     <button
                       type="button"
@@ -2067,7 +1889,50 @@ function ChatRoom() {
                     )}
 
                     <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-                      <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-6 pb-2 space-y-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      {/* Search Panel */}
+                      {searchMode && (
+                        <MessageSearch
+                          searchQuery={searchQuery}
+                          searchResults={searchResults}
+                          searchTotal={searchTotal}
+                          isSearching={isSearching}
+                          onSearch={searchMessages}
+                          onJumpToMessage={jumpToMessage}
+                          onClose={exitSearchMode}
+                        />
+                      )}
+
+                      <div
+                        ref={messagesContainerRef}
+                        className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-6 pb-2 space-y-4"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                        onScroll={(e) => {
+                          // Load more when scrolling to top
+                          const target = e.target;
+                          if (target.scrollTop < 100 && hasMoreMessages && !isLoadingOlder) {
+                            loadOlderMessages();
+                          }
+                        }}
+                      >
+                        {/* Load More / Loading Indicator */}
+                        {hasMoreMessages && (
+                          <div className="flex justify-center py-2">
+                            {isLoadingOlder ? (
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+                                Loading older messages...
+                              </div>
+                            ) : (
+                              <button
+                                onClick={loadOlderMessages}
+                                className="text-sm text-teal-600 hover:text-teal-700 font-medium py-2 px-4 rounded-lg hover:bg-teal-50 transition-colors"
+                              >
+                                Load older messages
+                              </button>
+                            )}
+                          </div>
+                        )}
+
                         {(() => {
                           // Helper function to get initials from username
                           // Calculate streak for each message
@@ -2205,7 +2070,7 @@ function ChatRoom() {
                             // Handle AI messages and pending originals separately
                             if (isAI) {
                               return group.messages.map((msg) => {
-                                const isIntervention = msg.type === 'ai_intervention';
+                                const _isIntervention = msg.type === 'ai_intervention';
                                 const isComment = msg.type === 'ai_comment' && msg.text && !msg.personalMessage;
                                 const isPendingOriginal = msg.type === 'pending_original';
 
@@ -2400,7 +2265,7 @@ function ChatRoom() {
                                     const isLastInGroup = msgIndex === group.messages.length - 1;
                                     const isFirstInGroup = msgIndex === 0;
                                     const originalIndex = group.startIndex + msgIndex;
-                                    const showAvatar = !isOwn && isFirstInGroup;
+                                    const _showAvatar = !isOwn && isFirstInGroup;
 
                                     return (
                                       <div
@@ -2435,7 +2300,8 @@ function ChatRoom() {
 
                                             {/* Message Bubble */}
                                             <div
-                                              className={`relative py-3.5 px-4 rounded-lg text-base leading-snug ${isOwn
+                                              id={`message-${msg.id}`}
+                                              className={`relative py-3.5 px-4 rounded-lg text-base leading-snug transition-all duration-300 ${isOwn
                                                 ? isLastInGroup
                                                   ? 'text-white rounded-br-sm bg-teal-medium'
                                                   : 'text-white bg-teal-medium'
@@ -2443,7 +2309,8 @@ function ChatRoom() {
                                                   ? 'bg-white border border-gray-200 text-gray-900 rounded-bl-sm'
                                                   : 'bg-white border border-gray-200 text-gray-900'
                                                 } ${isFlagged ? 'bg-orange-50 border-orange-300' : ''
-                                                } ${isInThread ? 'border-l-2 border-l-teal-medium' : ''}`}
+                                                } ${isInThread ? 'border-l-2 border-l-teal-medium' : ''
+                                                } ${highlightedMessageId === msg.id ? 'ring-2 ring-yellow-400 bg-yellow-50' : ''}`}
                                               style={{
                                                 fontFamily: "'Inter', sans-serif",
                                                 fontSize: '15px',
@@ -2460,17 +2327,28 @@ function ChatRoom() {
 
                                               <div className="text-base leading-snug whitespace-pre-wrap wrap-break-word text-left font-medium pr-12" style={{ fontSize: '15px' }}>{msg.text.trim()}</div>
 
-                                              {/* Timestamp - embedded in bubble, right-aligned */}
+                                              {/* Timestamp and Status - embedded in bubble, right-aligned */}
                                               {isLastInGroup && (
-                                                <div className={`absolute bottom-2 right-3 text-[10px] font-medium leading-none ${isOwn ? 'text-white opacity-60' : 'text-gray-400'}`}>
-                                                  {(() => {
-                                                    const msgDate = new Date(msg.timestamp);
-                                                    return msgDate.toLocaleTimeString('en-US', {
-                                                      hour: 'numeric',
-                                                      minute: '2-digit',
-                                                      hour12: true,
-                                                    });
-                                                  })()}
+                                                <div className={`absolute bottom-2 right-3 flex items-center gap-1.5 ${isOwn ? 'text-white opacity-60' : 'text-gray-400'}`}>
+                                                  <span className="text-[10px] font-medium leading-none">
+                                                    {(() => {
+                                                      const msgDate = new Date(msg.timestamp);
+                                                      return msgDate.toLocaleTimeString('en-US', {
+                                                        hour: 'numeric',
+                                                        minute: '2-digit',
+                                                        hour12: true,
+                                                      });
+                                                    })()}
+                                                  </span>
+                                                  {isOwn && (
+                                                    <span className="text-[9px] font-medium leading-none opacity-75">
+                                                      {(() => {
+                                                        // Get message status from messageStatuses Map
+                                                        const status = messageStatuses?.get(msg.id) || 'sent';
+                                                        return status === 'pending' ? 'Not Sent' : status === 'failed' ? 'Failed' : 'Sent';
+                                                      })()}
+                                                    </span>
+                                                  )}
                                                 </div>
                                               )}
 
@@ -2984,8 +2862,19 @@ function ChatRoom() {
               </div>
             )}
 
-            {/* Account View */}
-            {currentView === 'account' && <AccountView username={username} />}
+            {/* Account View - Lazy loaded for code-splitting */}
+            {currentView === 'account' && (
+              <React.Suspense fallback={
+                <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden p-8">
+                  <div className="text-center py-16">
+                    <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-100 border-t-teal-medium" />
+                    <p className="mt-6 text-teal-medium font-semibold text-lg">Loading account...</p>
+                  </div>
+                </div>
+              }>
+                <AccountView username={username} />
+              </React.Suspense>
+            )}
 
             {/* Enhanced task form modal with Manual/AI toggle */}
             <TaskFormModal

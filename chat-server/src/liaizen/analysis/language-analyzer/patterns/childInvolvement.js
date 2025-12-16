@@ -46,11 +46,12 @@ const WELLBEING_PATTERNS = [
 // Triangulation patterns (playing child against parent)
 const TRIANGULATION_PATTERNS = [
   /\b(she|he|they)\s+said\s+(you|your)\b/i,
-  /\b(she|he|they)\s+told\s+me\s+(you|that you|about)\b/i,
+  /\b(she|he|they)\s+told\s+me\s+(you|that you|about|she|he|they)\b/i,  // "she told me she doesn't..."
   /\b(she|he|they)\s+(like|prefer|enjoy)\s+(it|being)\s+(better\s+)?(at|with)\s+(my|me)\b/i,
-  /\b(she|he|they)\s+don't\s+want\s+to\s+(go|be)\s+(to|at|with)\s+your\b/i,
+  /\b(she|he|they)\s+(don't|doesn't|do not|does not)\s+want\s+to\s+(go|be)\s+(to|at|with)\s+your\b/i,
   /\beven\s+(she|he|they)\s+(know|think|said)\b/i,
-  /\b(she|he|they)\s+(asked|begged)\s+not\s+to\s+go\b/i
+  /\b(she|he|they)\s+(asked|begged)\s+not\s+to\s+go\b/i,
+  /\btold\s+me\s+(she|he|they)\s+(doesn't|don't|won't|didn't)\s+want\b/i  // "told me she doesn't want"
 ];
 
 // Quote patterns (child's words being cited)

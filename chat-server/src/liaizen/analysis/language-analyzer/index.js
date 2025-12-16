@@ -34,10 +34,12 @@ const VERSION = '1.0.0';
 function analyze(text, options = {}) {
   const startTime = Date.now();
 
-  if (!text || typeof text !== 'string') {
+  // Check for null/undefined first (invalid_input)
+  if (text === null || text === undefined || typeof text !== 'string') {
     return createEmptyAnalysis('invalid_input');
   }
 
+  // Check for empty string (empty_input) - must be after type check
   const trimmedText = text.trim();
   if (trimmedText.length === 0) {
     return createEmptyAnalysis('empty_input');
@@ -229,9 +231,11 @@ function calculateConfidence(patterns, structureAnalysis) {
   if (structureAnalysis.target === 'unclear') {
     confidence -= 10;
   }
-  if (structureAnalysis.absolutes_used.length === 0 &&
+  // Only penalize neutral language for statements - requests/questions with clear language are good
+  if (structureAnalysis.sentence_type === 'statement' &&
+      structureAnalysis.absolutes_used.length === 0 &&
       structureAnalysis.hedges_used.length === 0) {
-    confidence -= 5; // Very neutral language is harder to analyze
+    confidence -= 5; // Very neutral statements are harder to analyze
   }
 
   // Clamp to 0-100

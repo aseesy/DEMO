@@ -50,9 +50,9 @@ function detect(text) {
   // Detect positive global ("you're a great parent")
   const hasGlobalPositive = /\byou('re|'re| are)\s+(a\s+)?(great|wonderful|amazing|perfect|best)\b/i.test(text);
 
-  // Detect negative global ("you're a bad/terrible parent", "you're basically failing")
+  // Detect negative global ("you're a bad/terrible parent", "you're basically failing", "you're such a terrible")
   const hasGlobalNegative = hasYouAlwaysNever ||
-    /\byou('re|'re| are)\s+(a\s+)?(bad|terrible|awful|worst|horrible)\b/i.test(text) ||
+    /\byou('re|'re| are)\s+(a\s+|such\s+a\s+)?(bad|terrible|awful|worst|horrible)\b/i.test(text) ||
     /\byou('re|'re| are)\s+(basically|essentially|fundamentally)?\s*(fail|suck|ruin)/i.test(text) ||
     foundGlobalMarkers.length > 0 && /\b(fail|failing|ruining|hurting|damaging)\b/i.test(text);
 
