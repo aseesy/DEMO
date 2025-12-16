@@ -574,6 +574,9 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
       setIsPreApprovedRewrite(false);
       setOriginalRewrite('');
       setDraftCoaching(null);
+
+      // Always scroll to bottom after sending a message
+      setTimeout(() => scrollToBottom(), 100);
     }
   };
 

@@ -879,49 +879,52 @@ IF YOU INTERVENE, provide THREE parts:
    ❌ "That must be hard" (generic, not connected to situation)
    ❌ "Communication breakdowns are difficult" (clinical)
 
-2. insight: ONE practical tip on how to improve this specific message. Short and actionable.
+2. insight: ONE practical tip — explain WHY the current approach won't work and WHAT would work better.
 
    RULES:
-   - Focus on WHAT to change in the message, not abstract advice
-   - Be specific to THIS message — not generic communication tips
-   - Max 15 words — short and punchy
-   - Start with an action verb when possible (Try, Lead with, Ask, Remove, etc.)
-   - About the MESSAGE, not about the relationship or feelings
+   - Explain the EFFECT of their current phrasing (what it will cause)
+   - Suggest a better APPROACH (not just "be nicer")
+   - Be specific to THIS message
+   - 1-2 sentences max
+   - Focus on what will actually GET RESULTS, not just being polite
 
    GOOD EXAMPLES:
-   - "Lead with your concern for her bedtime instead of the wait time."
-   - "Ask what happened instead of assuming they forgot."
-   - "Remove 'always' — it puts them on the defensive."
-   - "Start with what you need, not what went wrong."
-   - "Frame it as a request, not an accusation."
-   - "Mention the impact on your child, not just on you."
+   - "Criticism builds resentment and won't lead to healthier meals. Focus on what you want to grow."
+   - "'Always' and 'never' shut down the conversation. Share the specific instance instead."
+   - "Starting with what went wrong puts them on defense. Lead with what you need going forward."
+   - "Telling them what to do invites pushback. Sharing the child's experience invites problem-solving."
+   - "Abstract principles sound preachy. The child's actual experience is harder to argue with."
 
    BAD EXAMPLES:
    ❌ "Try to see it from their perspective" (too abstract)
    ❌ "Communication is key" (generic platitude)
-   ❌ "Take a breath before responding" (about you, not the message)
+   ❌ "Be more positive" (vague, not actionable)
    ❌ "Remember you're both on the same team" (relationship advice, not message tip)
 
-3. rewrite1 and rewrite2: The SAME message, transformed. Keep the exact intent.
-   
+3. rewrite1 and rewrite2: The SAME message, transformed. Keep the exact intent but make it COLLABORATIVE.
+
    RULES:
-   - Preserve exactly what they want to communicate — don't change the subject or goal
-   - Express pain without attack — there's always a way
-   - Ask in a way that makes the other person want to help
-   - Show understanding that the other person has their own reality
-   - Sound like a real person who is hurt but trying — NOT corporate
-   - Vary the wording between rewrite1 and rewrite2
-   
+   - START WITH ACKNOWLEDGMENT when possible — find something they did right first
+   - FOCUS ON THE CHILD'S SPECIFIC EXPERIENCE, not abstract principles
+     - "She says her tummy hurts after" NOT "healthy eating is important"
+     - "He had trouble sleeping" NOT "consistent bedtimes matter"
+   - OFFER PRACTICAL ALTERNATIVES OR SOLUTIONS — not just criticism
+   - END WITH A COLLABORATIVE QUESTION — invite problem-solving together
+   - Sound like a real person who cares — NOT corporate or preachy
+   - Vary the approach between rewrite1 and rewrite2
+
    GOOD EXAMPLES:
-   - "The pickup time changed again and I ended up scrambling. Can we figure out a way to give more heads up when things shift?"
-   - "I felt out of the loop on the schedule change. What's the best way for us to keep each other posted?"
-   - "When the plans shifted last minute, it threw off my whole evening. I know things come up — is there a way we can flag changes earlier?"
-   
+   - "Thanks for feeding Vira dinner. I know she loves McDonald's, but she says her tummy hurts after. I usually grab Chinese and get her rice when we're rushed. Do you have any quick backups that work?"
+   - "I worry about Vira when she eats McDonald's because she says her tummy hurts later. Just wanted to run that by you."
+   - "The pickup time shifted and it threw off bedtime. I know things come up — is there a way we can flag changes earlier?"
+   - "Thanks for taking him to practice. He mentioned he forgot his water bottle — maybe we can keep one in your car too?"
+
    BAD EXAMPLES:
    ❌ "Per our agreement, pickup was scheduled for 7:30" (corporate/legal)
-   ❌ "Let's ensure better communication going forward" (corporate)
+   ❌ "Healthy eating is important for children" (preachy/abstract)
+   ❌ "You should consider healthier options" (judgmental)
    ❌ "I would appreciate if you could..." (stiff)
-   ❌ "Can we agree to..." (corporate)
+   ❌ "Let's ensure better communication going forward" (corporate)
 
 Respond with JSON only:
 {
@@ -930,9 +933,9 @@ Respond with JSON only:
   "emotion": {"currentEmotion": "neutral|frustrated|defensive", "stressLevel": 0-100},
   "intervention": {
     "validation": "Connect feeling to situation — down to earth, not clinical",
-    "insight": "ONE practical tip on how to improve THIS message (max 15 words)",
-    "rewrite1": "Same intent, no attack, human voice",
-    "rewrite2": "Same intent, different wording, human voice"
+    "insight": "WHY current approach won't work + WHAT would work better (1-2 sentences)",
+    "rewrite1": "Acknowledge + child's experience + solution + collaborative question",
+    "rewrite2": "Different approach, same pattern: acknowledge, experience, solution, question"
   }
 }`;
 
@@ -944,7 +947,7 @@ Respond with JSON only:
       messages: [
         {
           role: 'system',
-          content: 'You analyze co-parenting messages. When intervening, provide: (1) validation - connect their feeling to the situation like a friend would, not clinical, (2) insight - ONE practical tip on how to improve THIS specific message (max 15 words, actionable), (3) two rewrites - same intent without attack, human voice not corporate. JSON only.'
+          content: 'You analyze co-parenting messages. When intervening, provide: (1) validation - connect their feeling to the situation like a friend would, (2) insight - explain WHY their approach won\'t work and WHAT would work better, (3) two rewrites - start with acknowledgment, focus on child\'s actual experience not abstract principles, offer solutions, end with collaborative question. JSON only.'
         },
         {
           role: 'user',
