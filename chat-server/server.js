@@ -3236,6 +3236,9 @@ app.get('/api/info', (req, res) => {
 // Requires JWT_SECRET as authorization for security
 app.post('/api/import/messages', express.json({ limit: '50mb' }), async (req, res) => {
   try {
+    // Require database module
+    const dbPostgres = require('./dbPostgres');
+
     // Verify authorization using JWT_SECRET
     const authHeader = req.headers.authorization;
     if (!authHeader || authHeader !== `Bearer ${process.env.JWT_SECRET}`) {
