@@ -322,8 +322,8 @@ function ChatRoom() {
 
   // Callback for new messages - shows both browser notification and in-app toast
   const handleNewMessage = React.useCallback((message) => {
-    // Only process notifications for messages from other users
-    if (message.username === username) {
+    // Only process notifications for messages from other users (case-insensitive)
+    if (message.username?.toLowerCase() === username?.toLowerCase()) {
       return; // Don't notify for own messages
     }
 
@@ -1097,7 +1097,7 @@ function ChatRoom() {
             }));
           }}
           hasMeanMessage={messages.some(msg =>
-            msg.username === username &&
+            msg.username?.toLowerCase() === username?.toLowerCase() &&
             msg.user_flagged_by &&
             Array.isArray(msg.user_flagged_by) &&
             msg.user_flagged_by.length > 0
@@ -1941,8 +1941,8 @@ function ChatRoom() {
                             // Count backwards from current message to find streak
                             for (let i = msgIndex; i >= 0; i--) {
                               const msg = filteredMessages[i];
-                              // Only count messages from the same user
-                              if (msg.username !== username) continue;
+                              // Only count messages from the same user (case-insensitive)
+                              if (msg.username?.toLowerCase() !== username?.toLowerCase()) continue;
 
                               const isFlagged = msg.user_flagged_by &&
                                 Array.isArray(msg.user_flagged_by) &&
@@ -1955,8 +1955,8 @@ function ChatRoom() {
                                 break;
                               }
 
-                              // Only increment if it's from the current user
-                              if (msg.username === username) {
+                              // Only increment if it's from the current user (case-insensitive)
+                              if (msg.username?.toLowerCase() === username?.toLowerCase()) {
                                 streak++;
                               }
                             }
@@ -1964,8 +1964,8 @@ function ChatRoom() {
                           };
 
                           const getStreakBadge = (message, messageIndex) => {
-                            // Only show badge for current user's messages
-                            if (message.username !== username) return null;
+                            // Only show badge for current user's messages (case-insensitive)
+                            if (message.username?.toLowerCase() !== username?.toLowerCase()) return null;
 
                             // Don't show badge for revisions/rewrites
                             if (message.isRevision) return null;

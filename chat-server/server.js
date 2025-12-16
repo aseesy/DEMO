@@ -2497,8 +2497,8 @@ io.on('connection', (socket) => {
 
       const message = messages[0];
 
-      // Don't allow users to flag their own messages
-      if (message.username === user.username) {
+      // Don't allow users to flag their own messages (case-insensitive)
+      if (message.username?.toLowerCase() === user.username?.toLowerCase()) {
         socket.emit('error', { message: 'You cannot flag your own messages.' });
         return;
       }
