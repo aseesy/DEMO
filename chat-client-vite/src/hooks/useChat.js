@@ -199,15 +199,33 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
       }));
 
       setMessages(processedMessages);
-      
+
       // Mark all historical messages as seen
       if (processedMessages.length > 0) {
         const lastMessage = processedMessages[processedMessages.length - 1];
         lastSeenTimestampRef.current = lastMessage.timestamp || new Date().toISOString();
       }
+
+      // Scroll to bottom after loading message history (on page load/refresh)
+      // Use setTimeout to ensure DOM has updated with new messages
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
     });
 
     socket.on('new_message', (message) => {
+      // Debug logging for AI messages
+      if (message.type?.startsWith('ai_') || message.type === 'pending_original') {
+        console.log('📩 Received AI/intervention message:', {
+          type: message.type,
+          id: message.id,
+          hasPersonalMessage: !!message.personalMessage,
+          hasRewrite1: !!message.rewrite1,
+          hasRewrite2: !!message.rewrite2,
+          timestamp: message.timestamp
+        });
+      }
+
       if (typeof message?.text === 'string') {
         const lower = message.text.toLowerCase();
         // Drop any join/leave messages regardless of type

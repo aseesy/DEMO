@@ -1416,8 +1416,27 @@ io.on('connection', (socket) => {
         console.log('🔍 AI Mediator: setImmediate callback triggered');
         try {
           const context = aiMediator.getContext();
-          const participantUsernames = Array.from(activeUsers.values()).map(u => u.username);
+
+          // Get participants from THIS room only (not all active users!)
+          // Use room_members table to include offline co-parents
+          let participantUsernames = [];
+          try {
+            const roomMembersResult = await dbSafe.safeSelect('room_members', { room_id: user.roomId });
+            const roomMemberUserIds = roomMembersResult.map(rm => rm.user_id);
+            if (roomMemberUserIds.length > 0) {
+              const memberUsers = await dbSafe.safeSelect('users', { id: roomMemberUserIds });
+              participantUsernames = memberUsers.map(u => u.username);
+            }
+          } catch (err) {
+            console.warn('⚠️ Failed to get room members, falling back to active users in room');
+            // Fallback: filter activeUsers to this room only
+            participantUsernames = Array.from(activeUsers.values())
+              .filter(u => u.roomId === user.roomId)
+              .map(u => u.username);
+          }
+
           console.log('🤖 AI Mediator: Starting analysis for message:', cleanText.substring(0, 30));
+          console.log(`👥 Room participants: ${participantUsernames.join(', ')}`);
 
           // Get existing contacts with full information for AI context
           let existingContacts = [];
@@ -1488,6 +1507,20 @@ io.on('connection', (socket) => {
                 }
               }
 
+              // Find receiver's user ID to identify which contact is the message recipient
+              let receiverUserId = null;
+              const receiverUsername = participantUsernames.find(u => u.toLowerCase() !== user.username.toLowerCase());
+              if (receiverUsername) {
+                try {
+                  const receiverUserResult = await dbSafe.safeSelect('users', { username: receiverUsername.toLowerCase() }, { limit: 1 });
+                  if (receiverUserResult.length > 0) {
+                    receiverUserId = receiverUserResult[0].id;
+                  }
+                } catch (err) {
+                  console.warn('⚠️ Could not find receiver user ID');
+                }
+              }
+
               // Format contacts with relationships and context for AI mediator
               if (fullContacts.length > 0) {
                 const contactInfo = fullContacts.map(contact => {
@@ -1495,6 +1528,12 @@ io.on('connection', (socket) => {
                   parts.push(contact.contact_name);
                   if (contact.relationship) {
                     parts.push(`(relationship: ${contact.relationship})`);
+                  }
+
+                  // Mark if this contact is the person being messaged (the receiver)
+                  const isReceiver = contact.linked_user_id && receiverUserId && contact.linked_user_id === receiverUserId;
+                  if (isReceiver) {
+                    parts.push(`[⬅️ THIS IS WHO YOU'RE MESSAGING]`);
                   }
 
                   // If this is a child contact, check if it's shared with co-parent
@@ -1862,6 +1901,7 @@ io.on('connection', (socket) => {
                 interventionId: interventionId // Link to the intervention
               };
 
+              console.log('📤 Emitting pending_original:', { id: pendingOriginalMessage.id, type: pendingOriginalMessage.type });
               socket.emit('new_message', pendingOriginalMessage);
 
               // Then send intervention UI ONLY to the sender (private message)
@@ -1878,10 +1918,19 @@ io.on('connection', (socket) => {
                 pendingOriginalId: pendingOriginalId, // Link back to pending message for removal
                 escalation: intervention.escalation,
                 emotion: intervention.emotion,
-                timestamp: message.timestamp // Use same timestamp source for consistency
+                timestamp: message.timestamp, // Use same timestamp source for consistency
+                roomId: user.roomId // Include roomId for frontend consistency
               };
 
               // Send ONLY to the sender (not to the room)
+              console.log('📤 Emitting ai_intervention:', {
+                id: interventionMessage.id,
+                type: interventionMessage.type,
+                hasValidation: !!interventionMessage.personalMessage,
+                hasInsight: !!interventionMessage.tip1,
+                hasRewrite1: !!interventionMessage.rewrite1,
+                hasRewrite2: !!interventionMessage.rewrite2
+              });
               socket.emit('new_message', interventionMessage);
 
               console.log(`✅ Pending original + Intervention UI sent to ${user.username} privately - message NOT visible to others`);
@@ -1993,6 +2042,19 @@ io.on('connection', (socket) => {
           // If AI fails, allow the message through (fail open) rather than blocking everything
           // This prevents the AI system from breaking normal communication
           console.log(`⚠️ AI moderation failed for ${user.username} - allowing message through (fail open)`);
+
+          // Notify the sender that AI mediation encountered an issue
+          // This provides visibility into what happened instead of silent failure
+          const errorNotification = {
+            id: `ai-error-${Date.now()}`,
+            type: 'ai_error',
+            username: 'LiaiZen',
+            text: 'I had trouble analyzing your message, but it was sent successfully. If you\'d like feedback on it, feel free to re-type it.',
+            timestamp: new Date().toISOString(),
+            roomId: user.roomId,
+            isPrivate: true // Only show to sender
+          };
+          socket.emit('new_message', errorNotification);
 
           // Broadcast message normally if AI fails
           messageStore.saveMessage({

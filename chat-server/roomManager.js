@@ -553,6 +553,7 @@ async function ensureContactsForRoomMembers(roomId) {
               contact_name: u2.username,
               contact_email: u2.email || null,
               relationship: 'co-parent',
+              linked_user_id: user2.id, // Link to actual user for AI context
               notes: `Connected via shared room`,
               separation_date: null,
               address: null,
@@ -566,7 +567,7 @@ async function ensureContactsForRoomMembers(roomId) {
               created_at: now,
               updated_at: now
             });
-            console.log(`✅ Created co-parent contact for ${u1.username}: ${u2.username}`);
+            console.log(`✅ Created co-parent contact for ${u1.username}: ${u2.username} (linked_user_id: ${user2.id})`);
           }
 
           // Check if contact exists for user2 -> user1
@@ -591,6 +592,7 @@ async function ensureContactsForRoomMembers(roomId) {
               contact_name: u1.username,
               contact_email: u1.email || null,
               relationship: 'co-parent',
+              linked_user_id: user1.id, // Link to actual user for AI context
               notes: `Connected via shared room`,
               separation_date: null,
               address: null,
@@ -604,7 +606,7 @@ async function ensureContactsForRoomMembers(roomId) {
               created_at: now,
               updated_at: now
             });
-            console.log(`✅ Created co-parent contact for ${u2.username}: ${u1.username}`);
+            console.log(`✅ Created co-parent contact for ${u2.username}: ${u1.username} (linked_user_id: ${user1.id})`);
           }
         }
       }

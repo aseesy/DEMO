@@ -149,6 +149,19 @@ try {
   valuesProfile = null;
 }
 
+// User Intelligence Library (Passive learning from conversations)
+let userIntelligence;
+try {
+  userIntelligence = require('../intelligence/userIntelligence');
+  // Initialize the insights table
+  userIntelligence.initializeInsightsTable().then(() => {
+    console.log('✅ AI Mediator: User intelligence library loaded (passive learning)');
+  });
+} catch (err) {
+  console.warn('⚠️ AI Mediator: User intelligence library not available:', err.message);
+  userIntelligence = null;
+}
+
 // Conversation context tracker (unified state management)
 const conversationContext = {
   recentMessages: [],
@@ -739,6 +752,43 @@ ATTUNEMENT GUIDANCE: Use this relationship history to calibrate your response. F
     }
     // === END VALUES PROFILE CONTEXT ===
 
+    // === USER INTELLIGENCE CONTEXT (comprehensive passive learning) ===
+    // Learn from this message (communication patterns, triggers, emotional states)
+    let userIntelligenceContextString = '';
+    let receiverIntelligenceContextString = '';
+    if (userIntelligence && roleContext?.senderId) {
+      try {
+        const senderProfile = participantProfiles.get(roleContext.senderId.toLowerCase());
+
+        if (senderProfile?.id) {
+          // Learn from this message (updates Neo4j profile with patterns, triggers, styles)
+          await userIntelligence.learnFromMessage(senderProfile.id, message.text, roomId);
+
+          // Get formatted intelligence context for AI
+          userIntelligenceContextString = await userIntelligence.formatForAI(senderProfile.id, message.text);
+
+          if (userIntelligenceContextString) {
+            console.log('🧠 AI Mediator: User intelligence context loaded for sender');
+          }
+        }
+
+        // Also load RECEIVER's intelligence to help sender communicate better with them
+        if (roleContext?.receiverId) {
+          const receiverProfile = participantProfiles.get(roleContext.receiverId.toLowerCase());
+          if (receiverProfile?.id) {
+            receiverIntelligenceContextString = await userIntelligence.formatForReceiverAI(receiverProfile.id, message.text);
+
+            if (receiverIntelligenceContextString) {
+              console.log('🧠 AI Mediator: Receiver intelligence context loaded for better attunement');
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ AI Mediator: Failed to process user intelligence:', err.message);
+      }
+    }
+    // === END USER INTELLIGENCE CONTEXT ===
+
     // Get relationship insights
     let insights = null;
     if (roomId) {
@@ -780,16 +830,11 @@ ATTUNEMENT GUIDANCE: Use this relationship history to calibrate your response. F
     // Get previous emotional state for this user (will be initialized by stateManager if needed)
     const username = message.username;
 
-    // Build relationship context
-    const relationshipContext = contactContextForAI
-      ? `\n\nRELATIONSHIP CONTEXT:\n${contactContextForAI}\n\nThese two people are co-parents who share children but are no longer together. They need to communicate about shared children while navigating their separated relationship.${insightsString}${taskContextString}${flaggedContextString}`
-      : `\n\nRELATIONSHIP CONTEXT:\nThese are co-parents sharing children but no longer together.${insightsString}${taskContextString}${flaggedContextString}`;
-
     // === ROLE-AWARE CONTEXT (002-sender-profile-mediation) ===
     // Build sender/receiver specific context if available
     let roleAwarePromptSection = '';
     let senderDisplayName = message.username;
-    let receiverDisplayName = 'the other co-parent';
+    let receiverDisplayName = roleContext?.receiverId || 'the other co-parent';
     let voiceSignatureSection = '';
     let conversationPatternsSection = '';
     let interventionLearningSection = '';
@@ -874,6 +919,12 @@ ATTUNEMENT GUIDANCE: Use this relationship history to calibrate your response. F
     }
     // === END ROLE-AWARE CONTEXT ===
 
+    // Build relationship context
+    // IMPORTANT: Identify who the sender is messaging (the receiver) vs other contacts
+    const relationshipContext = contactContextForAI
+      ? `\n\nRELATIONSHIP CONTEXT:\n${contactContextForAI}\n\nIMPORTANT: ${senderDisplayName} is messaging ${receiverDisplayName} (their co-parent). Only reference contacts that are RELEVANT to the current message. If a contact wasn't involved in the situation being discussed, don't mention them. These two people share children but are no longer together.${insightsString}${taskContextString}${flaggedContextString}`
+      : `\n\nRELATIONSHIP CONTEXT:\n${senderDisplayName} is messaging ${receiverDisplayName}. These are co-parents sharing children but no longer together.${insightsString}${taskContextString}${flaggedContextString}`;
+
     // UNIFIED PROMPT: Validate, provide clarity, offer rewrites
     const prompt = `Analyze this co-parenting message. Decide: STAY_SILENT, INTERVENE, or COMMENT.
 
@@ -885,6 +936,8 @@ MESSAGE FROM ${senderDisplayName}: "${message.text}"
 ${relationshipContext}
 ${graphContextString || ''}
 ${valuesContextString || ''}
+${userIntelligenceContextString || ''}
+${receiverIntelligenceContextString || ''}
 ${profileContextString || ''}
 ${coparentingContextString || ''}
 ${messageHistory ? `Recent messages:\n${messageHistory}\n` : ''}
@@ -896,26 +949,26 @@ ${roleAwarePromptSection ? `\n${roleAwarePromptSection}\n` : ''}
 
 IF YOU INTERVENE, provide THREE parts:
 
-1. validation: Connect their feeling to the situation. Down to earth, not clinical.
-   
+1. validation: Acknowledge the situation like a friend would — raw, relatable, real.
+
    RULES:
-   - Relate the feeling to what's actually happening (the situation, not the emotion label)
-   - Don't name their emotion directly ("you're angry") — describe the situation that would cause it
-   - Don't give advice
-   - Sound like a friend who gets it, not a therapist
+   - React to the SPECIFIC situation, not the emotion ("Ugh, McDonald's again" not "I understand your frustration")
+   - Sound like a friend commiserating, not a therapist validating
+   - Brief gut reaction that shows you GET IT
+   - Can express mild disapproval of the situation (not the person)
    - 1-2 sentences max
-   
+
    GOOD EXAMPLES:
-   - "Schedules falling apart at the last minute is exhausting, especially when you've already rearranged your day."
-   - "Finding out plans changed through the kids instead of directly — that's a rough way to get news."
-   - "When you've asked for something multiple times and it keeps not happening, it starts to feel like you're invisible."
-   - "Watching pickup time get pushed later and later, with your evening disappearing — that's a lot."
-   
+   - "Ugh, McDonald's again? That's rough when you're trying to keep things healthy."
+   - "Finding out through the kids instead of directly — yeah, that stings."
+   - "Late again. That's the third time this week, right?"
+   - "You set everything up and then plans just... change. Super frustrating."
+
    BAD EXAMPLES:
    ❌ "I hear your frustration" (clinical, uses "I")
-   ❌ "You seem angry" (labeling emotion)
+   ❌ "I understand how you feel" (therapist speak)
    ❌ "That must be hard" (generic, not connected to situation)
-   ❌ "Communication breakdowns are difficult" (clinical)
+   ❌ "Seeing the same fast food options repeatedly can be frustrating" (too formal)
 
 2. insight: ONE practical tip — explain WHY the current approach won't work and WHAT would work better.
 
@@ -939,30 +992,36 @@ IF YOU INTERVENE, provide THREE parts:
    ❌ "Be more positive" (vague, not actionable)
    ❌ "Remember you're both on the same team" (relationship advice, not message tip)
 
-3. rewrite1 and rewrite2: The SAME message, transformed. Keep the exact intent but make it COLLABORATIVE.
+3. rewrite1 and rewrite2: Transform the message — same intent, constructive delivery. MUST USE DIFFERENT APPROACHES.
 
-   RULES:
-   - START WITH ACKNOWLEDGMENT when possible — find something they did right first
+   CRITICAL RULES:
+   - Only mention people who are RELEVANT to the situation (e.g., if discussing the child's meal, mention the child, not unrelated contacts)
+   - Use child names when discussing their experiences
    - FOCUS ON THE CHILD'S SPECIFIC EXPERIENCE, not abstract principles
      - "She says her tummy hurts after" NOT "healthy eating is important"
      - "He had trouble sleeping" NOT "consistent bedtimes matter"
-   - OFFER PRACTICAL ALTERNATIVES OR SOLUTIONS — not just criticism
-   - END WITH A COLLABORATIVE QUESTION — invite problem-solving together
-   - Sound like a real person who cares — NOT corporate or preachy
-   - Vary the approach between rewrite1 and rewrite2
+   - Sound like a real person — NOT corporate or preachy
 
-   GOOD EXAMPLES:
-   - "Thanks for feeding Vira dinner. I know she loves McDonald's, but she says her tummy hurts after. I usually grab Chinese and get her rice when we're rushed. Do you have any quick backups that work?"
-   - "I worry about Vira when she eats McDonald's because she says her tummy hurts later. Just wanted to run that by you."
-   - "The pickup time shifted and it threw off bedtime. I know things come up — is there a way we can flag changes earlier?"
-   - "Thanks for taking him to practice. He mentioned he forgot his water bottle — maybe we can keep one in your car too?"
+   VARY THE APPROACH — pick TWO DIFFERENT strategies for rewrite1 and rewrite2:
+   A) ACKNOWLEDGMENT FIRST: Start with something positive, then concern
+   B) CHILD'S VOICE: Lead with what the child said/experienced
+   C) PRACTICAL OFFER: Offer a specific alternative or solution
+   D) SIMPLE & DIRECT: Just state the concern without extra padding
+   E) CURIOUS QUESTION: Frame as genuinely wondering, not accusing
+
+   GOOD EXAMPLES (note: different approaches):
+   - [A] "Thanks for handling dinner. She mentioned her tummy hurt after — any chance we could mix in something lighter sometimes?"
+   - [B] "She told me her stomach felt off after eating. Maybe less McDonald's would help?"
+   - [C] "I can prep some easy meals for your nights if that helps? She's been getting tummy aches."
+   - [D] "McDonald's seems to upset her stomach. Can we try something else?"
+   - [E] "Has she mentioned anything about how her tummy feels after fast food?"
 
    BAD EXAMPLES:
    ❌ "Per our agreement, pickup was scheduled for 7:30" (corporate/legal)
    ❌ "Healthy eating is important for children" (preachy/abstract)
-   ❌ "You should consider healthier options" (judgmental)
+   ❌ Mentioning people not involved in the situation (if discussing child's meal, don't mention other contacts)
    ❌ "I would appreciate if you could..." (stiff)
-   ❌ "Let's ensure better communication going forward" (corporate)
+   ❌ Two rewrites that are basically the same with minor word changes
 
 Respond with JSON only:
 {

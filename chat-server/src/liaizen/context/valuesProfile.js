@@ -13,7 +13,7 @@
  * - NON-NEGOTIABLES: What they absolutely won't compromise on
  */
 
-const dbPostgres = require('../../dbPostgres');
+const dbPostgres = require('../../../dbPostgres');
 
 // ============================================================
 // VALUE CATEGORIES AND DETECTION PATTERNS

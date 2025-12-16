@@ -180,10 +180,12 @@ function ChatRoom() {
 
   // Wrap setCurrentView to track analytics
   const setCurrentView = React.useCallback((view) => {
+    console.log('[ChatRoom] setCurrentView called with:', view, 'current:', currentView);
     if (view !== currentView) {
       trackViewChange(view);
     }
     setCurrentViewState(view);
+    console.log('[ChatRoom] setCurrentViewState called');
   }, [currentView]);
 
   // Track unread message count for navigation badge
@@ -329,7 +331,7 @@ function ChatRoom() {
 
     // Don't show notifications for AI/system messages
     // These are coaching messages meant for the sender, not notifications for the receiver
-    const aiMessageTypes = ['ai_intervention', 'ai_comment', 'pending_original', 'system'];
+    const aiMessageTypes = ['ai_intervention', 'ai_comment', 'pending_original', 'ai_error', 'system'];
     const aiUsernames = ['liaizen', 'alex', 'system'];
 
     if (aiMessageTypes.includes(message.type)) {
@@ -1118,7 +1120,7 @@ function ChatRoom() {
         />
 
         {/* Main Content Area */}
-        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-16 md:pt-14 md:pb-4' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto' : 'pt-0 md:pt-14 pb-20 md:pb-8 overflow-y-auto px-4 sm:px-6 md:px-8'} relative z-10`}>
+        <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-14 md:pt-14 md:pb-4' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto' : 'pt-0 md:pt-14 pb-14 md:pb-8 overflow-y-auto px-4 sm:px-6 md:px-8'} relative z-10`}>
           <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : currentView === 'profile' ? 'w-full' : 'max-w-7xl mx-auto w-full'}`}>
             {/* Dashboard View - Monochrome Style */}
             {currentView === 'dashboard' && (
@@ -2028,9 +2030,9 @@ function ChatRoom() {
 
                           filteredMessages.forEach((msg, index) => {
                             const isOwn = msg.username?.toLowerCase() === username?.toLowerCase();
-                            const isAI = msg.type === 'ai_intervention' || msg.type === 'ai_comment' || msg.type === 'pending_original';
+                            const isAI = msg.type === 'ai_intervention' || msg.type === 'ai_comment' || msg.type === 'pending_original' || msg.type === 'ai_error';
                             const prevMsg = index > 0 ? filteredMessages[index - 1] : null;
-                            const prevIsAI = prevMsg && (prevMsg.type === 'ai_intervention' || prevMsg.type === 'ai_comment' || prevMsg.type === 'pending_original');
+                            const prevIsAI = prevMsg && (prevMsg.type === 'ai_intervention' || prevMsg.type === 'ai_comment' || prevMsg.type === 'pending_original' || prevMsg.type === 'ai_error');
                             const timeGap = prevMsg && msg.timestamp && prevMsg.timestamp
                               ? new Date(msg.timestamp).getTime() - new Date(prevMsg.timestamp).getTime() > 5 * 60 * 1000
                               : false;
@@ -2091,6 +2093,7 @@ function ChatRoom() {
                                 const _isIntervention = msg.type === 'ai_intervention';
                                 const isComment = msg.type === 'ai_comment' && msg.text && !msg.personalMessage;
                                 const isPendingOriginal = msg.type === 'pending_original';
+                                const isError = msg.type === 'ai_error';
 
                                 const handleRewriteSelected = () => {
                                   // Remove the intervention message AND the pending original message
@@ -2123,6 +2126,27 @@ function ChatRoom() {
                                           <p className="text-base text-orange-800 leading-snug" style={{ fontSize: '15px' }}>
                                             {msg.text}
                                           </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+
+                                // Render AI error notification
+                                if (isError) {
+                                  return (
+                                    <div key={msg.id} className="mb-4 first:mt-0">
+                                      <div className="flex flex-col items-start max-w-[75%] sm:max-w-[60%] md:max-w-[55%]">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0 border border-amber-200 p-1">
+                                            <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                          </div>
+                                          <span className="text-xs font-medium text-amber-700">Notice</span>
+                                        </div>
+                                        <div className="rounded-lg px-4 py-3 bg-amber-50 border border-amber-200">
+                                          <p className="text-sm text-amber-800 leading-snug">{msg.text}</p>
                                         </div>
                                       </div>
                                     </div>
@@ -2592,9 +2616,7 @@ function ChatRoom() {
 
             {/* Contacts View */}
             {currentView === 'contacts' && (
-              <div className="h-[calc(100vh-9rem)] sm:h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)]">
-                <ContactsPanel username={username} />
-              </div>
+              <ContactsPanel username={username} />
             )}
 
             {/* Profile View - Clean Style */}

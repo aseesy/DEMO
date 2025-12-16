@@ -1167,6 +1167,7 @@ async function registerFromInvitation(params, db) {
       contact_name: validation.inviterName || 'Co-Parent',
       contact_email: validation.inviterEmail || null,
       relationship: 'co-parent',
+      linked_user_id: invitation.inviter_id, // Link to actual user for AI context
       created_at: now
     });
 
@@ -1176,10 +1177,11 @@ async function registerFromInvitation(params, db) {
       contact_name: displayName || username,
       contact_email: emailLower,
       relationship: 'co-parent',
+      linked_user_id: userId, // Link to actual user for AI context
       created_at: now
     });
 
-    console.log(`✅ Created bidirectional contacts`);
+    console.log(`✅ Created bidirectional contacts with linked_user_id`);
 
     // 5. Create notification for inviter (non-critical, don't fail transaction)
     try {
@@ -1390,6 +1392,7 @@ async function registerFromShortCode(params, db) {
       contact_name: validation.inviterName || 'Co-Parent',
       contact_email: validation.inviterEmail || null,
       relationship: 'co-parent',
+      linked_user_id: acceptResult.inviterId, // Link to actual user for AI context
       created_at: new Date().toISOString()
     });
     // Add new user to inviter's contacts
@@ -1398,9 +1401,10 @@ async function registerFromShortCode(params, db) {
       contact_name: displayName || user.username,
       contact_email: user.email,
       relationship: 'co-parent',
+      linked_user_id: user.id, // Link to actual user for AI context
       created_at: new Date().toISOString()
     });
-    console.log('✅ Created bidirectional co-parent contacts');
+    console.log('✅ Created bidirectional co-parent contacts with linked_user_id');
   } catch (contactError) {
     console.error('Error creating contacts:', contactError);
     // Don't fail registration if contact creation fails
@@ -1613,6 +1617,7 @@ async function acceptCoParentInvitation(token, acceptingUserId, db) {
         contact_name: invitation.inviter_name || 'Co-Parent',
         contact_email: invitation.inviter_email || null,
         relationship: 'co-parent',
+        linked_user_id: acceptResult.inviterId, // Link to actual user for AI context
         created_at: new Date().toISOString()
       });
     }
@@ -1629,10 +1634,11 @@ async function acceptCoParentInvitation(token, acceptingUserId, db) {
         contact_name: acceptingUser?.display_name || acceptingUser?.username || 'Co-Parent',
         contact_email: acceptingUser?.email || null,
         relationship: 'co-parent',
+        linked_user_id: acceptingUserId, // Link to actual user for AI context
         created_at: new Date().toISOString()
       });
     }
-    console.log('✅ Created/verified bidirectional co-parent contacts');
+    console.log('✅ Created/verified bidirectional co-parent contacts with linked_user_id');
   } catch (contactError) {
     console.error('Error creating contacts:', contactError);
   }

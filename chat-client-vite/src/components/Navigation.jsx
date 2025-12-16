@@ -38,7 +38,9 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
         </svg>
       ),
       action: () => {
+        console.log('[Navigation] contacts action - calling setCurrentView("contacts")');
         setCurrentView('contacts');
+        console.log('[Navigation] contacts action - calling setIsMenuOpen(false)');
         setIsMenuOpen(false);
       },
     },
@@ -51,6 +53,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
         </svg>
       ),
       action: () => {
+        console.log('[Navigation] profile action - calling setCurrentView("profile")');
         setCurrentView('profile');
         setIsMenuOpen(false);
       },
@@ -109,14 +112,27 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
   React.useEffect(() => {
     const handleClick = (event) => {
       if (!isMenuOpen) return;
+      
+      // Check if click is inside menu (including arch menu items)
       const clickedInside = menuRefs.current.some((ref) => ref && ref.contains(event.target));
-      if (!clickedInside) {
+      
+      // Check if click is on a navigation button (Dashboard, Chat, Menu)
+      const isNavButton = event.target.closest('nav[class*="md:hidden"]')?.querySelector('button[aria-label="Dashboard"], button[aria-label="Chat"], button[aria-label="Menu"]')?.contains(event.target);
+      
+      // Check if click is on an arch menu item button
+      const isArchMenuItem = event.target.closest('button[role="menuitem"]');
+      
+      console.log('[Navigation] Outside click handler:', { clickedInside, isNavButton, isArchMenuItem, target: event.target.tagName });
+      
+      // Only close menu if click is outside menu AND not on a nav button AND not on arch menu item
+      if (!clickedInside && !isNavButton && !isArchMenuItem) {
         setIsMenuOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    // Use 'click' instead of 'mousedown' to allow menu item clicks to complete first
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
   }, [isMenuOpen]);
 
   // Keyboard navigation for menu
@@ -264,6 +280,9 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
     );
   };
 
+  // Debug: log when Navigation renders
+  console.log('[Navigation] Rendering, currentView:', currentView);
+
   return (
     <>
       {/* Top Navigation - Desktop Only */}
@@ -302,10 +321,17 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                 );
               })}
               {/* LiaiZen Branding with Dropdown Menu */}
-              <div className="relative ml-2 pl-2 border-l border-gray-200">
+              <div
+                ref={(node) => { menuRefs.current[2] = node; }}
+                className="relative ml-2 pl-2 border-l border-gray-200 z-[60]"
+                style={{ isolation: 'isolate' }}
+              >
                 <button
                   type="button"
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  onClick={() => {
+                    console.log('[Navigation] Desktop menu toggle clicked, current state:', isMenuOpen);
+                    setIsMenuOpen(!isMenuOpen);
+                  }}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2"
                   aria-label="Open menu"
                   aria-expanded={isMenuOpen}
@@ -329,7 +355,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                 </button>
                 {isMenuOpen && (
                   <div
-                    className="absolute right-0 top-full mt-2 w-52 rounded-xl border-2 border-gray-200 bg-white shadow-xl py-2 z-[100] transition-all duration-200 ease-out opacity-100"
+                    className="absolute right-0 top-full mt-2 w-52 rounded-xl border-2 border-gray-200 bg-white shadow-xl py-2 z-[9999] transition-all duration-200 ease-out opacity-100"
                     role="menu"
                     aria-label="User menu"
                     style={{
@@ -360,9 +386,12 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                           }}
                           type="button"
                           onClick={(e) => {
+                            console.log('[Navigation] Desktop menu item clicked:', item.id, 'setCurrentView:', typeof setCurrentView);
                             e.stopPropagation();
                             if (item.action) {
+                              console.log('[Navigation] Calling action for:', item.id);
                               item.action();
+                              console.log('[Navigation] Action completed for:', item.id);
                             }
                           }}
                           className={`w-full px-4 py-3 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 cursor-pointer touch-manipulation select-none min-h-[44px] ${
@@ -394,25 +423,30 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       </nav>
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-lg safe-area-inset-bottom" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
-        <div className="flex items-center justify-around h-12 px-2 py-1">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[9999] bg-white border-t border-teal-medium shadow-lg" style={{ paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))' }}>
+        <div className="relative flex items-center justify-around h-10 px-2 py-0.5 z-10">
           {/* Dashboard button */}
           <button
             type="button"
-            onClick={() => setCurrentView('dashboard')}
-            className={`relative flex items-center justify-center w-12 h-12 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 min-h-[44px] ${
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('[Navigation] Dashboard button clicked');
+              setIsMenuOpen(false);
+              setCurrentView('dashboard');
+            }}
+            className={`relative flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
               currentView === 'dashboard'
-                ? 'bg-teal-lightest text-teal-medium border-2 border-teal-light'
+                ? 'bg-teal-lightest text-teal-medium border border-teal-light'
                 : 'text-teal-medium active:bg-teal-lightest'
             }`}
             aria-label="Dashboard"
             aria-current={currentView === 'dashboard' ? 'page' : undefined}
           >
             <span className="flex-shrink-0 relative">
-              {navItems[0].icon}
+              {React.cloneElement(navItems[0].icon, { className: 'w-5 h-5' })}
               {/* Red dot indicator when notifications are unread */}
               {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-sm" />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm" />
               )}
             </span>
           </button>
@@ -420,10 +454,14 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
           {/* LiaiZen Menu button - matches other buttons */}
           <button
             type="button"
-            onClick={() => setIsMenuOpen((prev) => !prev)}
-            className={`relative flex items-center justify-center w-12 h-12 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 min-h-[44px] ${
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('[Navigation] Mobile menu button clicked, isMenuOpen:', isMenuOpen);
+              setIsMenuOpen((prev) => !prev);
+            }}
+            className={`relative flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
               isMenuOpen
-                ? 'bg-teal-lightest text-teal-medium border-2 border-teal-light'
+                ? 'bg-teal-lightest text-teal-medium border border-teal-light'
                 : 'text-teal-medium active:bg-teal-lightest'
             }`}
             aria-label="Menu"
@@ -433,32 +471,38 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
             <img
               src="/assets/Logo.svg"
               alt="LiaiZen menu"
-              className="w-6 h-6 object-contain"
+              className="w-5 h-5 object-contain"
             />
           </button>
 
           {/* Chat button */}
           <button
             type="button"
-            onClick={() => setCurrentView('chat')}
-            className={`relative flex items-center justify-center w-14 h-12 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 min-h-[44px] ${
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('[Navigation] Chat button clicked');
+              setIsMenuOpen(false);
+              setCurrentView('chat');
+            }}
+            className={`relative flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
               currentView === 'chat'
-                ? 'bg-teal-lightest text-teal-medium border-2 border-teal-light'
+                ? 'bg-teal-lightest text-teal-medium border border-teal-light'
                 : 'text-teal-medium active:bg-teal-lightest'
             }`}
             aria-label="Chat"
             aria-current={currentView === 'chat' ? 'page' : undefined}
           >
             <span className="flex-shrink-0 relative">
-              {navItems[1].icon}
+              {React.cloneElement(navItems[1].icon, { className: 'w-5 h-5' })}
               {/* Red dot indicator when messages are unread */}
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-sm" />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm" />
               )}
             </span>
           </button>
           {/* Rainbow/Arch Menu - positioned above in arch pattern */}
           {isMenuOpen && (() => {
+            console.log('[Navigation] Rendering mobile arch menu');
             // Filter out divider items for arch positioning
             const archItems = menuItems.filter(item => !item.isDivider);
             const totalItems = archItems.length;
@@ -474,7 +518,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                     menuRefs.current[1] = node; // Register mobile dropdown in refs array
                   }
                 }}
-                className="absolute bottom-14 left-1/2 -translate-x-1/2 pointer-events-none z-[100]"
+                className="absolute bottom-12 left-1/2 -translate-x-1/2 pointer-events-none z-[9999]"
                 role="menu"
                 aria-label="User menu"
                 style={{
@@ -522,7 +566,14 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                         }
                       }}
                       type="button"
-                      onClick={item.action}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        console.log('[Navigation] Arch menu item clicked:', item.id, 'action:', typeof item.action);
+                        if (item.action) {
+                          item.action();
+                        }
+                      }}
                       className={`absolute w-12 h-12 rounded-full bg-white border-2 border-teal-light shadow-lg flex items-center justify-center transition-all duration-300 min-h-[44px] min-w-[44px] pointer-events-auto ${
                         isDanger
                           ? 'text-red-600 hover:bg-red-50 focus:bg-red-50 border-red-300'

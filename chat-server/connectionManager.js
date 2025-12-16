@@ -264,6 +264,7 @@ async function acceptPendingConnection(token, userId) {
             contact_name: invitee.username,
             contact_email: invitee.email || connection.inviteeEmail || null,
             relationship: 'co-parent',
+            linked_user_id: userId, // Link to actual user for AI context
             notes: `Connected via invitation on ${new Date().toLocaleDateString()}`,
             separation_date: null,
             address: null,
@@ -277,7 +278,7 @@ async function acceptPendingConnection(token, userId) {
             created_at: now,
             updated_at: now
           });
-          console.log(`✅ Created co-parent contact for ${inviter.username}: ${invitee.username}`);
+          console.log(`✅ Created co-parent contact for ${inviter.username}: ${invitee.username} (linked_user_id: ${userId})`);
         }
         
         // Check if contact already exists for invitee (by name or email)
@@ -297,6 +298,7 @@ async function acceptPendingConnection(token, userId) {
             contact_name: inviter.username,
             contact_email: inviter.email || null,
             relationship: 'co-parent',
+            linked_user_id: connection.inviterId, // Link to actual user for AI context
             notes: `Connected via invitation on ${new Date().toLocaleDateString()}`,
             separation_date: null,
             address: null,
@@ -310,7 +312,7 @@ async function acceptPendingConnection(token, userId) {
             created_at: now,
             updated_at: now
           });
-          console.log(`✅ Created co-parent contact for ${invitee.username}: ${inviter.username}`);
+          console.log(`✅ Created co-parent contact for ${invitee.username}: ${inviter.username} (linked_user_id: ${connection.inviterId})`);
         }
         
         // Save database after creating contacts
