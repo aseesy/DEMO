@@ -6,7 +6,7 @@
 
 [build]
 builder = "nixpacks"
-buildCommand = "rm -rf node_modules && npm install --legacy-peer-deps && echo 'Build v1.0.5 from chat-server'"
+buildCommand = "npm install --legacy-peer-deps && echo 'Build v1.0.6 from chat-server'"
 
 [deploy]
 startCommand = "node server.js"
