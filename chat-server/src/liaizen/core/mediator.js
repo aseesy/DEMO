@@ -879,28 +879,28 @@ IF YOU INTERVENE, provide THREE parts:
    ❌ "That must be hard" (generic, not connected to situation)
    ❌ "Communication breakdowns are difficult" (clinical)
 
-2. insight: A metaphor, analogy, or observation that shifts perspective and brings clarity.
-   
+2. insight: ONE practical tip on how to improve this specific message. Short and actionable.
+
    RULES:
-   - Something interesting that makes them pause
-   - Makes the situation feel less personal — like they can see it from above
-   - Interrupts the reactive loop
-   - NOT advice, NOT "you should" — just a different way of seeing
-   - Can be a metaphor, an analogy to something unrelated, or an unexpected observation
-   - 1-2 sentences max
-   
+   - Focus on WHAT to change in the message, not abstract advice
+   - Be specific to THIS message — not generic communication tips
+   - Max 15 words — short and punchy
+   - Start with an action verb when possible (Try, Lead with, Ask, Remove, etc.)
+   - About the MESSAGE, not about the relationship or feelings
+
    GOOD EXAMPLES:
-   - "It's like trying to coordinate a relay race when both runners think they're the anchor."
-   - "When someone's running late, the story we tell ourselves about why is usually louder than what actually happened."
-   - "Two people can stand at the same window and see completely different views — one sees the street, one sees the sky."
-   - "Schedules are like shared code — when one person changes something without commenting, the whole thing breaks and nobody knows why."
-   - "Sometimes the person running behind is drowning too, just in a different pool."
-   
+   - "Lead with your concern for her bedtime instead of the wait time."
+   - "Ask what happened instead of assuming they forgot."
+   - "Remove 'always' — it puts them on the defensive."
+   - "Start with what you need, not what went wrong."
+   - "Frame it as a request, not an accusation."
+   - "Mention the impact on your child, not just on you."
+
    BAD EXAMPLES:
-   ❌ "Communication patterns often trigger defensiveness" (clinical)
-   ❌ "Try to see it from their perspective" (advice)
-   ❌ "Conflict escalates when..." (lecture)
-   ❌ "You might consider..." (advice)
+   ❌ "Try to see it from their perspective" (too abstract)
+   ❌ "Communication is key" (generic platitude)
+   ❌ "Take a breath before responding" (about you, not the message)
+   ❌ "Remember you're both on the same team" (relationship advice, not message tip)
 
 3. rewrite1 and rewrite2: The SAME message, transformed. Keep the exact intent.
    
@@ -930,7 +930,7 @@ Respond with JSON only:
   "emotion": {"currentEmotion": "neutral|frustrated|defensive", "stressLevel": 0-100},
   "intervention": {
     "validation": "Connect feeling to situation — down to earth, not clinical",
-    "insight": "Metaphor or observation that shifts perspective",
+    "insight": "ONE practical tip on how to improve THIS message (max 15 words)",
     "rewrite1": "Same intent, no attack, human voice",
     "rewrite2": "Same intent, different wording, human voice"
   }
@@ -944,7 +944,7 @@ Respond with JSON only:
       messages: [
         {
           role: 'system',
-          content: 'You analyze co-parenting messages. When intervening, provide: (1) validation - connect their feeling to the situation like a friend would, not clinical, (2) insight - a metaphor or observation that shifts perspective, no advice, (3) two rewrites - same intent without attack, human voice not corporate. JSON only.'
+          content: 'You analyze co-parenting messages. When intervening, provide: (1) validation - connect their feeling to the situation like a friend would, not clinical, (2) insight - ONE practical tip on how to improve THIS specific message (max 15 words, actionable), (3) two rewrites - same intent without attack, human voice not corporate. JSON only.'
         },
         {
           role: 'user',

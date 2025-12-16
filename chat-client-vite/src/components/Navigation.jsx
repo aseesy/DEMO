@@ -269,13 +269,8 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       {/* Top Navigation - Desktop Only */}
       <nav className="hidden md:block fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto w-full px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            {/* Left side: Menu/Logo */}
-            <div className="flex items-center gap-4">
-              {renderMenuButton(0, { placement: 'bottom' })}
-            </div>
-
-            {/* Right side: Navigation Items + LiaiZen Branding */}
+          <div className="flex items-center justify-end h-14">
+            {/* Right side: Navigation Items + LiaiZen Branding with Dropdown Menu */}
             <div className="flex items-center gap-1">
               {navItems.map((item) => {
                 const isActive = currentView === item.id;
@@ -306,16 +301,92 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
                   </button>
                 );
               })}
-              {/* LiaiZen Branding - Desktop only, on the right */}
-              <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200">
-                <img
-                  src="/assets/Logo.svg"
-                  alt="LiaiZen"
-                  className="w-6 h-6 object-contain"
-                />
-                <span className="text-sm font-semibold text-[#275559]">
-                  Li<span className="bg-gradient-to-r from-[#4DA8B0] to-[#46BD92] bg-clip-text text-transparent">ai</span>Zen
-                </span>
+              {/* LiaiZen Branding with Dropdown Menu */}
+              <div className="relative ml-2 pl-2 border-l border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2"
+                  aria-label="Open menu"
+                  aria-expanded={isMenuOpen}
+                >
+                  <img
+                    src="/assets/Logo.svg"
+                    alt="LiaiZen"
+                    className="w-6 h-6 object-contain"
+                  />
+                  <span className="text-sm font-semibold text-[#275559]">
+                    Li<span className="bg-gradient-to-r from-[#4DA8B0] to-[#46BD92] bg-clip-text text-transparent">ai</span>Zen
+                  </span>
+                  <svg
+                    className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isMenuOpen && (
+                  <div
+                    className="absolute right-0 top-full mt-2 w-52 rounded-xl border-2 border-gray-200 bg-white shadow-xl py-2 z-[100] transition-all duration-200 ease-out opacity-100"
+                    role="menu"
+                    aria-label="User menu"
+                    style={{
+                      animation: 'fadeIn 0.2s ease-out',
+                    }}
+                  >
+                    {menuItems.map((item, index) => {
+                      if (item.isDivider) {
+                        return (
+                          <div
+                            key={item.id}
+                            className="h-px bg-gray-50 my-1.5 mx-2"
+                            role="separator"
+                          />
+                        );
+                      }
+
+                      const isActive = currentView === item.id;
+                      const isDanger = item.isDanger;
+
+                      return (
+                        <button
+                          key={item.id}
+                          ref={(node) => {
+                            if (node && !item.isDivider) {
+                              menuItemRefs.current[index] = node;
+                            }
+                          }}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (item.action) {
+                              item.action();
+                            }
+                          }}
+                          className={`w-full px-4 py-3 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 cursor-pointer touch-manipulation select-none min-h-[44px] ${
+                            isDanger
+                              ? 'text-red-600 hover:bg-red-50 focus:bg-red-50 active:bg-red-100'
+                              : `text-teal-medium hover:bg-gray-50 focus:bg-gray-50 active:bg-gray-100 ${
+                                  isActive ? 'bg-gray-50 font-semibold' : ''
+                                }`
+                          } focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-inset`}
+                          role="menuitem"
+                          tabIndex={0}
+                        >
+                          <span className="flex-shrink-0">
+                            {item.icon}
+                          </span>
+                          <span>{item.label}</span>
+                          {isActive && !isDanger && (
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-medium" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>

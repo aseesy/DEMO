@@ -1590,74 +1590,79 @@ function ChatRoom() {
             {/* Chat View */}
             {currentView === 'chat' && (
               <div className="h-full flex flex-col relative">
-                {/* Threads button, search button, and invite link - moved to top right corner */}
-                <div className="absolute top-6 right-6 z-10 flex items-center gap-3">
-                  {/* Search Button */}
+                {/* Chat Header Bar - Sticky toolbar above messages */}
+                <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 sm:px-6 md:px-8 py-3 flex items-center justify-between gap-3">
+                  {/* Left side: Search button */}
                   <button
                     type="button"
                     onClick={toggleSearchMode}
-                    className={`p-3 rounded-lg text-sm font-semibold transition-all border-2 shadow-sm hover:shadow-md min-h-[44px] flex items-center justify-center ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all min-h-[44px] ${
                       searchMode
-                        ? 'bg-teal-medium text-white border-teal-medium'
-                        : 'bg-white text-teal-dark border-teal-light hover:bg-teal-lightest hover:border-teal-medium'
+                        ? 'bg-teal-medium text-white'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-teal-dark'
                     }`}
                     title={searchMode ? 'Close search' : 'Search messages'}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
+                    {!searchMode && <span className="hidden sm:inline">Search</span>}
                   </button>
-                  {threads.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowThreadsPanel(!showThreadsPanel)}
-                      className="px-5 py-3 rounded-lg bg-teal-dark text-white text-sm font-semibold hover:bg-teal-darkest transition-all border-2 border-teal-dark flex items-center gap-2 shadow-sm hover:shadow-md min-h-[44px]"
-                      title="View threads"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      Threads ({threads.length})
-                    </button>
-                  )}
-                  {(() => {
-                    // Show invite button when:
-                    // 1. User is authenticated
-                    // 2. No invite link is currently displayed
-                    // 3. No co-parent is connected yet
-                    // 4. No pending invitation exists (user already sent one)
-                    // 5. No accepted invitation exists (user's invite was accepted)
-                    const shouldShowInvite = isAuthenticated &&
-                      !inviteLink &&
-                      !hasCoParentConnected &&
-                      !hasPendingInvitation &&
-                      !hasAcceptedInvitation;
-                    // Debug logging commented out to reduce console noise
-                    // logger.debug('[Invite Button] shouldShowInvite:', { shouldShowInvite, isAuthenticated, inviteLink: !!inviteLink, hasCoParentConnected, hasPendingInvitation, hasAcceptedInvitation });
-                    return shouldShowInvite ? (
+
+                  {/* Right side: Threads and invite actions */}
+                  <div className="flex items-center gap-2">
+                    {threads.length > 0 && (
                       <button
                         type="button"
-                        onClick={handleLoadInvite}
-                        disabled={isLoadingInvite}
-                        className="px-5 py-3 rounded-lg bg-teal-dark text-white text-sm font-semibold hover:bg-teal-darkest disabled:opacity-60 disabled:cursor-not-allowed transition-all border-2 border-teal-dark shadow-sm hover:shadow-md min-h-[44px] flex items-center gap-2"
-                        title="Invite your co-parent to join this mediation room"
+                        onClick={() => setShowThreadsPanel(!showThreadsPanel)}
+                        className="px-3 py-2 rounded-lg bg-teal-dark text-white text-sm font-medium hover:bg-teal-darkest transition-all flex items-center gap-2 min-h-[44px]"
+                        title="View threads"
                       >
-                        {isLoadingInvite ? (
-                          <>
-                            <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Loading…</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
-                            <span>Invite co-parent</span>
-                          </>
-                        )}
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span className="hidden sm:inline">Threads ({threads.length})</span>
                       </button>
-                    ) : null;
-                  })()}
+                    )}
+                    {(() => {
+                      // Show invite button when:
+                      // 1. User is authenticated
+                      // 2. No invite link is currently displayed
+                      // 3. No co-parent is connected yet
+                      // 4. No pending invitation exists (user already sent one)
+                      // 5. No accepted invitation exists (user's invite was accepted)
+                      const shouldShowInvite = isAuthenticated &&
+                        !inviteLink &&
+                        !hasCoParentConnected &&
+                        !hasPendingInvitation &&
+                        !hasAcceptedInvitation;
+                      // Debug logging commented out to reduce console noise
+                      // logger.debug('[Invite Button] shouldShowInvite:', { shouldShowInvite, isAuthenticated, inviteLink: !!inviteLink, hasCoParentConnected, hasPendingInvitation, hasAcceptedInvitation });
+                      return shouldShowInvite ? (
+                        <button
+                          type="button"
+                          onClick={handleLoadInvite}
+                          disabled={isLoadingInvite}
+                          className="px-3 py-2 rounded-lg bg-teal-dark text-white text-sm font-medium hover:bg-teal-darkest disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center gap-2 min-h-[44px]"
+                          title="Invite your co-parent to join this mediation room"
+                        >
+                          {isLoadingInvite ? (
+                            <>
+                              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              <span className="hidden sm:inline">Loading…</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                              </svg>
+                              <span className="hidden sm:inline">Invite co-parent</span>
+                            </>
+                          )}
+                        </button>
+                      ) : null;
+                    })()}
+                  </div>
                 </div>
 
                 {/* Chat Content */}
@@ -1917,7 +1922,7 @@ function ChatRoom() {
 
                       <div
                         ref={messagesContainerRef}
-                        className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-6 pb-2 space-y-4"
+                        className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-4 pb-2 space-y-4"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                         onScroll={(e) => {
                           // Load more when scrolling to top
