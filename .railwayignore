@@ -21,7 +21,11 @@ start-chat.sh
 # Note: chat-client/ is NOT ignored - needed for static file serving
 
 
-# Prevent pnpm detection
+# Prevent pnpm detection (including subdirectories)
 pnpm-lock.yaml
+**/pnpm-lock.yaml
+**/pnpm-lock.yaml.bak
 pnpm-workspace.yaml
+**/pnpm-workspace.yaml
 pnpm-workspace.yaml.bak
+**/pnpm-workspace.yaml.bak
