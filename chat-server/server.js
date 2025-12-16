@@ -3260,7 +3260,7 @@ app.post('/api/import/messages', express.json({ limit: '50mb' }), async (req, re
     for (const msg of messages) {
       try {
         const messageId = `${Date.now()}-import-${Math.random().toString(36).substr(2, 9)}`;
-        await db.pool.query(
+        await dbPostgres.query(
           `INSERT INTO messages (id, type, username, text, timestamp, room_id)
            VALUES ($1, $2, $3, $4, $5, $6)
            ON CONFLICT (id) DO NOTHING`,
