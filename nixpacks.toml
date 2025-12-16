@@ -1,15 +1,11 @@
-# Root nixpacks.toml - CACHE BUST v5 (force clean install)
-# Forces npm usage, ignores pnpm detection
+# Root nixpacks.toml - CACHE BUST v6 (force clean install)
+# This file configures Nixpacks builder for Railway
+#
+# IMPORTANT: railway.toml is the primary config file
+# This file only specifies Node.js version and providers to skip pnpm detection
 
 [phases.setup]
 nixPkgs = ["nodejs_20"]
-onlyIncludeFiles = ["chat-server"]
 
-[phases.install]
-cmds = ["cd chat-server && rm -rf node_modules && npm install --legacy-peer-deps"]
-
-[phases.build]
-cmds = ["echo 'Build complete - v1.0.2 with neo4j-driver'"]
-
-[start]
-cmd = "cd chat-server && node server.js"
+# Do NOT set onlyIncludeFiles - let Railway include everything
+# Do NOT set build commands here - use railway.toml instead
