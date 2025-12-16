@@ -55,8 +55,8 @@ export function useToast() {
   const show = React.useCallback((messageData) => {
     const { sender, message, timestamp, username } = messageData;
 
-    // Don't show toast for own messages
-    if (sender === username) {
+    // Don't show toast for own messages (case-insensitive comparison)
+    if (sender?.toLowerCase() === username?.toLowerCase()) {
       return;
     }
 
