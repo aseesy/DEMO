@@ -134,6 +134,69 @@ function parseConversationFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split('\n');
 
+  // Check if it's a CSV file
+  const firstLine = lines[0];
+  if (firstLine.includes('message_id') && firstLine.includes('timestamp') && firstLine.includes('sender_name')) {
+    return parseCSVFormat(lines);
+  }
+
+  // Otherwise use the text format parser
+  return parseTextFormat(lines);
+}
+
+function parseCSVFormat(lines) {
+  const messages = [];
+
+  // Skip header
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    // CSV format: message_id,timestamp,sender_id,sender_name,receiver_id,receiver_name,message
+    // Handle quoted fields that may contain commas
+    const fields = parseCSVLine(line);
+
+    if (fields.length >= 7) {
+      const timestamp = new Date(fields[1].replace(' ', 'T') + 'Z');
+      const sender = fields[3]; // sender_name
+      const text = fields[6]; // message
+
+      if (text && text.trim()) {
+        messages.push({
+          sender: sender,
+          text: text.trim(),
+          timestamp: timestamp
+        });
+      }
+    }
+  }
+
+  return messages;
+}
+
+function parseCSVLine(line) {
+  const fields = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      fields.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  fields.push(current); // Don't forget the last field
+
+  return fields;
+}
+
+function parseTextFormat(lines) {
   const messages = [];
   let currentMessage = null;
 

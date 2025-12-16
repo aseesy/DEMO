@@ -3232,6 +3232,60 @@ app.get('/api/info', (req, res) => {
   });
 });
 
+// Bulk message import endpoint (for importing conversation history)
+// Requires JWT_SECRET as authorization for security
+app.post('/api/import/messages', express.json({ limit: '50mb' }), async (req, res) => {
+  try {
+    // Verify authorization using JWT_SECRET
+    const authHeader = req.headers.authorization;
+    if (!authHeader || authHeader !== `Bearer ${process.env.JWT_SECRET}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { messages, roomId } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'messages array required' });
+    }
+
+    if (!roomId) {
+      return res.status(400).json({ error: 'roomId required' });
+    }
+
+    console.log(`📥 Bulk import: ${messages.length} messages for room ${roomId}`);
+
+    let imported = 0;
+    let errors = 0;
+
+    for (const msg of messages) {
+      try {
+        const messageId = `${Date.now()}-import-${Math.random().toString(36).substr(2, 9)}`;
+        await db.pool.query(
+          `INSERT INTO messages (id, type, username, text, timestamp, room_id)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (id) DO NOTHING`,
+          [messageId, 'message', msg.username, msg.text, msg.timestamp, roomId]
+        );
+        imported++;
+      } catch (err) {
+        errors++;
+      }
+    }
+
+    console.log(`✅ Bulk import complete: ${imported} imported, ${errors} errors`);
+
+    res.json({
+      success: true,
+      imported,
+      errors,
+      total: messages.length
+    });
+  } catch (error) {
+    console.error('❌ Bulk import error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Error handlers - catch unhandled errors to prevent crashes
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error);
