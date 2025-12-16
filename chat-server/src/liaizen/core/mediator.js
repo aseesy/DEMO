@@ -669,6 +669,17 @@ COACHING GUIDANCE: Use this context to provide more understanding coaching. If a
         const senderProfile = participantProfiles.get(roleContext.senderId.toLowerCase());
         const receiverProfile = participantProfiles.get(roleContext.receiverId.toLowerCase());
 
+        // Debug logging to diagnose graph context issues
+        console.log('📊 GraphContext Debug:', {
+          senderId: roleContext.senderId,
+          receiverId: roleContext.receiverId,
+          roomId: roomId,
+          senderProfileFound: !!senderProfile,
+          senderProfileId: senderProfile?.id,
+          receiverProfileFound: !!receiverProfile,
+          receiverProfileId: receiverProfile?.id
+        });
+
         if (senderProfile?.id && receiverProfile?.id) {
           const relationshipData = await graphContext.getRelationshipContext(
             senderProfile.id,
