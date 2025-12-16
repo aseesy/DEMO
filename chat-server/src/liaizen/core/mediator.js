@@ -126,6 +126,16 @@ try {
   coparentContext = null;
 }
 
+// Graph Context Library (Neo4j relationship insights for AI coaching)
+let graphContext;
+try {
+  graphContext = require('../context/graphContext');
+  console.log('✅ AI Mediator: Graph context library loaded (Neo4j integration)');
+} catch (err) {
+  console.warn('⚠️ AI Mediator: Graph context library not available');
+  graphContext = null;
+}
+
 // Conversation context tracker (unified state management)
 const conversationContext = {
   recentMessages: [],
@@ -650,6 +660,37 @@ COACHING GUIDANCE: Use this context to provide more understanding coaching. If a
     }
     // === END CO-PARENTING SITUATION CONTEXT ===
 
+    // === GRAPH DATABASE CONTEXT (Neo4j relationship insights) ===
+    // Fetch relationship history and metrics from graph database
+    let graphContextString = '';
+    if (graphContext && roleContext?.senderId && roleContext?.receiverId && roomId) {
+      try {
+        // Get sender's user ID from the participants map if available
+        const senderProfile = participantProfiles.get(roleContext.senderId.toLowerCase());
+        const receiverProfile = participantProfiles.get(roleContext.receiverId.toLowerCase());
+
+        if (senderProfile?.id && receiverProfile?.id) {
+          const relationshipData = await graphContext.getRelationshipContext(
+            senderProfile.id,
+            receiverProfile.id,
+            roomId
+          );
+
+          if (relationshipData?.formattedContext) {
+            graphContextString = `\n\n=== RELATIONSHIP HISTORY (from graph database) ===
+${relationshipData.formattedContext}
+
+ATTUNEMENT GUIDANCE: Use this relationship history to calibrate your response. For high-conflict relationships, be extra gentle. For new relationships, provide more foundational guidance. For established relationships with few interventions, acknowledge their progress.`;
+
+            console.log('📊 AI Mediator: Graph context loaded -', relationshipData.insights?.healthIndicator || 'unknown', 'relationship health');
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ AI Mediator: Failed to build graph context:', err.message);
+      }
+    }
+    // === END GRAPH DATABASE CONTEXT ===
+
     // Get relationship insights
     let insights = null;
     if (roomId) {
@@ -794,6 +835,9 @@ INTERVENE: Only for messages that attack, blame, use contempt, guilt-trip, or we
 MESSAGE FROM ${senderDisplayName}: "${message.text}"
 
 ${relationshipContext}
+${graphContextString || ''}
+${profileContextString || ''}
+${coparentingContextString || ''}
 ${messageHistory ? `Recent messages:\n${messageHistory}\n` : ''}
 ${codeLayerPromptSection || ''}
 ${voiceSignatureSection ? `\n${voiceSignatureSection}\n` : ''}
@@ -1087,6 +1131,29 @@ Respond with JSON only:
         }
       }
       // === END PROFILE RECORDING ===
+
+      // === UPDATE GRAPH DATABASE METRICS ===
+      // Track intervention in Neo4j for relationship insights
+      if (graphContext && roleContext?.senderId && roleContext?.receiverId && roomId) {
+        try {
+          const senderProfile = participantProfiles.get(roleContext.senderId.toLowerCase());
+          const receiverProfile = participantProfiles.get(roleContext.receiverId.toLowerCase());
+
+          if (senderProfile?.id && receiverProfile?.id) {
+            await graphContext.updateMetrics(
+              senderProfile.id,
+              receiverProfile.id,
+              roomId,
+              { incrementInterventions: true }
+            );
+            console.log('📊 AI Mediator: Updated Neo4j intervention count');
+          }
+        } catch (err) {
+          console.warn('⚠️ AI Mediator: Failed to update graph metrics:', err.message);
+          // Non-fatal - don't block the intervention
+        }
+      }
+      // === END GRAPH DATABASE METRICS ===
 
       const interventionResult = {
         type: 'ai_intervention',
