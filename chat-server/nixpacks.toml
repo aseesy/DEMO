@@ -1,0 +1,5 @@
+# Nixpacks config for chat-server directory
+# Used when Railway Root Directory is set to "chat-server"
+
+[phases.setup]
+nixPkgs = ["nodejs_20"]

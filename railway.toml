@@ -28,7 +28,7 @@
 [build]
 builder = "nixpacks"
 watchPatterns = ["chat-server/**"]
-buildCommand = "cd chat-server && rm -rf node_modules && npm install --legacy-peer-deps && echo 'Build v1.0.4 with dbPostgres fix'"
+buildCommand = "cd chat-server && rm -rf node_modules && npm install --legacy-peer-deps && echo 'Build v1.0.5 root-deploy'"
 
 [deploy]
 startCommand = "cd chat-server && node server.js"
