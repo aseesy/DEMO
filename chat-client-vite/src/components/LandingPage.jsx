@@ -11,9 +11,7 @@ import {
 } from '../utils/analytics.js';
 
 export function LandingPage() {
-  const [email, setEmail] = React.useState('');
-  const [newsletterSubmitted, setNewsletterSubmitted] = React.useState(false);
-  const [remainingSpots, setRemainingSpots] = React.useState(null); // null = loading, number = loaded
+  const [_remainingSpots, setRemainingSpots] = React.useState(null); // null = loading, number = loaded
   const [showStickyMobileCTA, setShowStickyMobileCTA] = React.useState(false);
   const [familiesHelped, setFamiliesHelped] = React.useState(null);
 
@@ -22,7 +20,7 @@ export function LandingPage() {
   const [waitlistSubmitting, setWaitlistSubmitting] = React.useState(false);
   const [waitlistSuccess, setWaitlistSuccess] = React.useState(false);
   const [waitlistError, setWaitlistError] = React.useState('');
-  const [waitlistPosition, setWaitlistPosition] = React.useState(null);
+  const [_waitlistPosition, setWaitlistPosition] = React.useState(null);
   const heroFormRef = React.useRef(null);
 
   // Scroll tracking for sections + sticky mobile CTA visibility
@@ -89,7 +87,7 @@ export function LandingPage() {
     sections.forEach((section) => observer.observe(section));
 
     // Observe all elements with fade-in animation
-    const animateElements = document.querySelectorAll('[data-animate=\"fade-in\"]');
+    const animateElements = document.querySelectorAll('[data-animate="fade-in"]');
     animateElements.forEach((element) => observer.observe(element));
 
     return () => {
@@ -125,16 +123,6 @@ export function LandingPage() {
     const interval = setInterval(fetchUserCount, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleNewsletterSubmit = (e) => {
-    e.preventDefault();
-    // TODO: Integrate with newsletter service
-    console.log('Newsletter signup:', email);
-    trackFormSubmit('newsletter', 'email');
-    setNewsletterSubmitted(true);
-    setEmail('');
-    setTimeout(() => setNewsletterSubmitted(false), 3000);
-  };
 
   // Waitlist submission handler
   const handleWaitlistSubmit = async (e, source = 'hero') => {

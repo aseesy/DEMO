@@ -41,7 +41,7 @@ const MILITARY_STATUS_OPTIONS = [
 ];
 
 // Form field component
-const FormField = ({ label, children, optional = false, tooltip }) => (
+const FormField = ({ label, children, optional = false, tooltip: _tooltip }) => (
   <div className="space-y-1.5">
     <label className="flex items-center text-sm font-medium text-gray-700">
       {label}

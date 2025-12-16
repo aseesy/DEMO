@@ -13,7 +13,7 @@ export class ErrorBoundary extends React.Component {
 
     static getDerivedStateFromError(error) {
         // Update state so the next render will show the fallback UI
-        return { hasError: true };
+        return { hasError: true, error };
     }
 
     componentDidCatch(error, errorInfo) {
@@ -21,15 +21,16 @@ export class ErrorBoundary extends React.Component {
         console.error('🚨 Error Boundary caught an error:', error, errorInfo);
 
         // Store error details in state
-        this.state = {
+        this.setState({
             hasError: true,
             error,
-            errorInfo
-        };
+            errorInfo,
+        });
 
         // Send error to monitoring service (if configured)
         if (window.trackError) {
-            window.trackError(error, errorInfo);
+            // Our analytics helper expects (error, errorType, fatal)
+            window.trackError(error, 'react_error', true);
         }
     }
 

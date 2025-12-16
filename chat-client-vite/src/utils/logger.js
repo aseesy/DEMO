@@ -4,7 +4,7 @@
  */
 
 const isDevelopment = import.meta.env.DEV;
-const isProduction = import.meta.env.PROD;
+const _isProduction = import.meta.env.PROD;
 
 /**
  * Log levels

@@ -46,7 +46,9 @@ export const Input = ({
   className = '',
   ...props
 }) => {
-  const inputId = props.id || `input-${label?.toLowerCase().replace(/\s+/g, '-') || Math.random().toString(36).substr(2, 9)}`;
+  const reactId = React.useId();
+  const labelSlug = label ? label.toLowerCase().replace(/\s+/g, '-') : '';
+  const inputId = props.id || (labelSlug ? `input-${labelSlug}-${reactId}` : `input-${reactId}`);
 
   // Character count logic
   const charCount = value?.length || 0;

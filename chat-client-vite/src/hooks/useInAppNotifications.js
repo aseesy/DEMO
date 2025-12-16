@@ -10,8 +10,8 @@ import { apiGet } from '../apiClient.js';
  */
 export function useInAppNotifications({ enabled = true } = {}) {
   const [unreadCount, setUnreadCount] = React.useState(0);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
+  const [isLoading, _setIsLoading] = React.useState(false);
+  const [error, _setError] = React.useState('');
 
   /**
    * Fetch unread notification count

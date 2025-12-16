@@ -8,7 +8,6 @@ import {
   validateOAuthState,
   clearOAuthState,
   detectPopupBlocker,
-  parseOAuthError,
 } from '../utils/oauthHelper.js';
 
 // Helper function to calculate user properties for analytics
@@ -545,7 +544,6 @@ export function useAuth() {
       // Validate state parameter if provided (CSRF protection)
       if (state) {
         if (!validateOAuthState(state)) {
-          const errorInfo = getErrorMessage({ code: 'invalid_state' }, { endpoint: '/api/auth/google/callback' });
           logError(new Error('OAuth state mismatch'), { endpoint: '/api/auth/google/callback', operation: 'oauth_callback', security: true });
           setError('Security validation failed. Please try signing in again.');
           clearOAuthState();
@@ -573,7 +571,7 @@ export function useAuth() {
       let data;
       try {
         data = await response.json();
-      } catch (jsonError) {
+      } catch (_jsonError) {
         // Response is not valid JSON - log the raw response
         const text = await response.text();
         console.error('❌ Invalid JSON response from OAuth callback:', text);

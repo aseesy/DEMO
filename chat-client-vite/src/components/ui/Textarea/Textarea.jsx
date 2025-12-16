@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 
 /**
  * Textarea Component - Multiline text input with auto-resize and character counting
@@ -44,7 +44,9 @@ export const Textarea = ({
   ...props
 }) => {
   const textareaRef = useRef(null);
-  const inputId = props.id || `textarea-${label?.toLowerCase().replace(/\s+/g, '-') || Math.random().toString(36).substr(2, 9)}`;
+  const reactId = useId();
+  const labelSlug = label ? label.toLowerCase().replace(/\s+/g, '-') : '';
+  const inputId = props.id || (labelSlug ? `textarea-${labelSlug}-${reactId}` : `textarea-${reactId}`);
 
   // Character count logic
   const charCount = value?.length || 0;

@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { useInvitations } from '../hooks/useInvitations.js';
 import { useInvitationContext } from '../context/InvitationContext.jsx';
-import { apiPost, apiGet } from '../apiClient.js';
-  import { getErrorMessage, logError, retryWithBackoff, isRetryableError } from '../utils/errorHandler.jsx';
+import { apiPost } from '../apiClient.js';
+import { getErrorMessage, logError, retryWithBackoff, isRetryableError } from '../utils/errorHandler.jsx';
 import { Button, Input } from './ui';
 
 /**
@@ -26,27 +26,19 @@ export function AcceptInvitationPage() {
   const {
     isAuthenticated,
     isCheckingAuth,
-    username: authUsername,
-    email: authEmail,
-    password: authPassword,
     setEmail,
     setPassword,
     setUsername,
-    handleSignup,
     handleGoogleLogin,
     isSigningUp,
     isGoogleLoggingIn,
     error: authError,
-    setError: setAuthError,
   } = useAuth();
 
   const {
-    validateToken,
-    validateCode,
     acceptInvitation,
     acceptByCode,
     isValidating,
-    isAccepting,
     error: inviteError,
   } = useInvitations();
 
@@ -111,7 +103,6 @@ export function AcceptInvitationPage() {
       setAutoAcceptError('');
 
       try {
-        const inviteKey = token || shortCode;
         let result;
         
         if (shortCode) {
@@ -219,7 +210,6 @@ export function AcceptInvitationPage() {
 
     try {
       // Register the user with the invite token
-      const inviteKey = token || shortCode;
       const response = await retryWithBackoff(
         () => apiPost('/api/auth/register-with-invite', {
           email: formEmail.trim().toLowerCase(),

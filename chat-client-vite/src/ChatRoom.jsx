@@ -162,6 +162,9 @@ function ChatRoom() {
     handleLogout,
   } = useAuth();
 
+  // Feature flag: keep banner off unless explicitly enabled.
+  const enableProactiveCoachingBanner = import.meta.env.VITE_ENABLE_PROACTIVE_COACHING_BANNER === 'true';
+
   // In-app notifications (invitations, system messages)
   const {
     unreadCount: notificationCount,
@@ -365,7 +368,7 @@ function ChatRoom() {
     inputMessage,
     isConnected,
     messageStatuses,
-    pendingMessages,
+    pendingMessages: _pendingMessages,
     sendMessage: originalSendMessage,
     handleInputChange,
     messagesEndRef,
@@ -506,7 +509,7 @@ function ChatRoom() {
         message: event.detail.message,
         suggestion: event.detail.suggestion
       });
-      setNewThreadTitle(event.detail.suggestion.threadTitle || '');
+      _setNewThreadTitle(event.detail.suggestion.threadTitle || '');
     };
 
     window.addEventListener('thread-suggestion', handleThreadSuggestion);
@@ -2416,8 +2419,8 @@ function ChatRoom() {
                         })()}
                         <div ref={messagesEndRef} className="h-2" />
                       </div>
-                      {/* Proactive Coaching Banner - DISABLED: Using unified intervention system instead */}
-                      {false && draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend && (
+                      {/* Proactive Coaching Banner - DISABLED by default: Using unified intervention system instead */}
+                      {enableProactiveCoachingBanner && draftCoaching && draftCoaching.riskLevel !== 'low' && !draftCoaching.shouldSend && (
                         <div className="border-t border-orange-200 bg-orange-50 px-3 py-2">
                           <div className="flex items-start gap-2">
                             <svg className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -26,7 +26,7 @@ export function InvitationProvider({ children }) {
   /**
    * Load invitation state from sessionStorage
    */
-  const loadInvitationState = React.useCallback(() => {
+  const _loadInvitationState = React.useCallback(() => {
     const storedToken = sessionStorage.getItem('invitation_token');
     const storedCode = sessionStorage.getItem('invitation_code');
 

@@ -300,7 +300,7 @@ export function categorizeError(error, statusCode = null) {
 /**
  * Get user-friendly error message from error code
  */
-export function getErrorMessage(error, context = {}) {
+export function getErrorMessage(error, _context = {}) {
   const errorCode = error?.code || error?.error?.code;
   const statusCode = error?.status || error?.response?.status;
   const errorMessage = error?.message || error?.error?.message || 'An unexpected error occurred';

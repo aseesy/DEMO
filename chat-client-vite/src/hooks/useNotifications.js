@@ -45,6 +45,44 @@ export function useNotifications({ username, enabled = true }) {
   // We cannot auto-request - user must click the "Enable Notifications" button
   // Removed auto-request to comply with Safari's security requirements
 
+  // Play a noticeable notification sound - two-tone chime like Google Calendar
+  const playNotificationSound = React.useCallback(() => {
+    try {
+      // Create a pleasant two-tone chime sound using Web Audio API
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+      // First tone (higher)
+      const oscillator1 = audioContext.createOscillator();
+      const gainNode1 = audioContext.createGain();
+      oscillator1.connect(gainNode1);
+      gainNode1.connect(audioContext.destination);
+      oscillator1.frequency.value = 880; // A5 note
+      oscillator1.type = 'sine';
+      gainNode1.gain.setValueAtTime(0.5, audioContext.currentTime);
+      gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      oscillator1.start(audioContext.currentTime);
+      oscillator1.stop(audioContext.currentTime + 0.3);
+
+      // Second tone (lower, slight delay) - creates pleasant chime effect
+      const oscillator2 = audioContext.createOscillator();
+      const gainNode2 = audioContext.createGain();
+      oscillator2.connect(gainNode2);
+      gainNode2.connect(audioContext.destination);
+      oscillator2.frequency.value = 660; // E5 note
+      oscillator2.type = 'sine';
+      gainNode2.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode2.gain.setValueAtTime(0.4, audioContext.currentTime + 0.15);
+      gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      oscillator2.start(audioContext.currentTime + 0.15);
+      oscillator2.stop(audioContext.currentTime + 0.5);
+
+      console.log('[useNotifications] 🔔 Playing notification sound');
+    } catch (error) {
+      // Silently fail if audio doesn't work
+      console.debug('Could not play notification sound:', error);
+    }
+  }, []);
+
   // Show notification for a new message
   const showNotification = React.useCallback((message) => {
     // Don't show notification if:
@@ -155,7 +193,7 @@ export function useNotifications({ username, enabled = true }) {
         if (notification) {
           try {
             notification.close();
-          } catch (e) {
+          } catch (_e) {
             // Notification may already be closed
           }
         }
@@ -180,7 +218,7 @@ export function useNotifications({ username, enabled = true }) {
         console.error('[useNotifications] Fallback notification also failed:', fallbackError);
       }
     }
-  }, [enabled, isSupported, permission, username]);
+  }, [enabled, isSupported, permission, playNotificationSound, username]);
 
   // Auto-subscribe to push notifications when PWA is ready
   React.useEffect(() => {
@@ -191,44 +229,6 @@ export function useNotifications({ username, enabled = true }) {
       });
     }
   }, [permission]);
-
-  // Play a noticeable notification sound - two-tone chime like Google Calendar
-  const playNotificationSound = () => {
-    try {
-      // Create a pleasant two-tone chime sound using Web Audio API
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-      // First tone (higher)
-      const oscillator1 = audioContext.createOscillator();
-      const gainNode1 = audioContext.createGain();
-      oscillator1.connect(gainNode1);
-      gainNode1.connect(audioContext.destination);
-      oscillator1.frequency.value = 880; // A5 note
-      oscillator1.type = 'sine';
-      gainNode1.gain.setValueAtTime(0.5, audioContext.currentTime);
-      gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-      oscillator1.start(audioContext.currentTime);
-      oscillator1.stop(audioContext.currentTime + 0.3);
-
-      // Second tone (lower, slight delay) - creates pleasant chime effect
-      const oscillator2 = audioContext.createOscillator();
-      const gainNode2 = audioContext.createGain();
-      oscillator2.connect(gainNode2);
-      gainNode2.connect(audioContext.destination);
-      oscillator2.frequency.value = 660; // E5 note
-      oscillator2.type = 'sine';
-      gainNode2.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode2.gain.setValueAtTime(0.4, audioContext.currentTime + 0.15);
-      gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      oscillator2.start(audioContext.currentTime + 0.15);
-      oscillator2.stop(audioContext.currentTime + 0.5);
-
-      console.log('[useNotifications] 🔔 Playing notification sound');
-    } catch (error) {
-      // Silently fail if audio doesn't work
-      console.debug('Could not play notification sound:', error);
-    }
-  };
 
   return {
     permission,
