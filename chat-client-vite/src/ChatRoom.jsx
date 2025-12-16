@@ -2009,7 +2009,7 @@ function ChatRoom() {
                           let currentGroup = null;
 
                           filteredMessages.forEach((msg, index) => {
-                            const isOwn = msg.username === username;
+                            const isOwn = msg.username?.toLowerCase() === username?.toLowerCase();
                             const isAI = msg.type === 'ai_intervention' || msg.type === 'ai_comment' || msg.type === 'pending_original';
                             const prevMsg = index > 0 ? filteredMessages[index - 1] : null;
                             const prevIsAI = prevMsg && (prevMsg.type === 'ai_intervention' || prevMsg.type === 'ai_comment' || prevMsg.type === 'pending_original');

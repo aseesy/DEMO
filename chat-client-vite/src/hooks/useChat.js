@@ -41,6 +41,7 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
   const messagesContainerRef = React.useRef(null);
   const typingTimeoutRef = React.useRef(null);
   const offlineQueueRef = React.useRef([]); // Queue for offline messages
+  const loadingTimeoutRef = React.useRef(null); // Timeout for loading older messages
 
   // Refs to avoid socket reconnection when these change
   const currentViewRef = React.useRef(currentView);
@@ -219,8 +220,8 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
         timestamp: message.timestamp || new Date().toISOString(),
       };
 
-      // If this is our own message, mark it as sent
-      if (message.username === username && message.id) {
+      // If this is our own message, mark it as sent (case-insensitive comparison)
+      if (message.username?.toLowerCase() === username?.toLowerCase() && message.id) {
         setMessageStatuses((prev) => {
           const next = new Map(prev);
           next.set(message.id, 'sent');
@@ -260,7 +261,7 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
 
       // If this is a rewrite message (sent by current user), trigger removal of original
       // This is handled by the effect in ChatRoom.jsx that watches for new messages
-      if (message.username === username && message.isPreApprovedRewrite) {
+      if (message.username?.toLowerCase() === username?.toLowerCase() && message.isPreApprovedRewrite) {
         // Dispatch event to notify ChatRoom that rewrite was sent
         window.dispatchEvent(new CustomEvent('rewrite-sent', { 
           detail: { message: messageWithTimestamp } 
@@ -301,6 +302,14 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
       trackConnectionError('socket_error', message || 'Unknown socket error');
       console.error('Socket error:', message);
       setError(message);
+      // Reset loading states on error
+      setIsLoadingOlder(false);
+      setIsSearching(false);
+      // Clear any pending timeout
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
     });
 
     socket.on('replaced_by_new_connection', ({ message }) => {
@@ -336,6 +345,12 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
 
     // Handle older messages (pagination)
     socket.on('older_messages', ({ messages: olderMsgs, hasMore }) => {
+      // Clear loading timeout
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+
       setIsLoadingOlder(false);
       setHasMoreMessages(hasMore);
 
@@ -654,6 +669,16 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     const beforeTimestamp = oldestMessage.timestamp;
 
     setIsLoadingOlder(true);
+
+    // Set a timeout to prevent infinite loading (10 seconds)
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.warn('Loading older messages timed out');
+      setIsLoadingOlder(false);
+    }, 10000);
+
     socketRef.current.emit('load_older_messages', {
       beforeTimestamp,
       limit: 50

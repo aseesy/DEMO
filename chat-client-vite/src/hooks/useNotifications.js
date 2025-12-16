@@ -56,7 +56,8 @@ export function useNotifications({ username, enabled = true }) {
       return;
     }
 
-    if (message.username === username) {
+    // Case-insensitive comparison to ensure own messages don't trigger notifications
+    if (message.username?.toLowerCase() === username?.toLowerCase()) {
       return; // Don't notify for own messages
     }
 
