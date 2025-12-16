@@ -3292,6 +3292,58 @@ app.post('/api/import/messages', express.json({ limit: '50mb' }), async (req, re
   }
 });
 
+// Cleanup endpoint for removing garbage messages (iMessage metadata, etc)
+app.post('/api/import/cleanup', express.json(), async (req, res) => {
+  try {
+    const dbPostgres = require('./dbPostgres');
+
+    // Verify authorization
+    const authHeader = req.headers.authorization;
+    if (!authHeader || authHeader !== `Bearer ${process.env.JWT_SECRET}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { roomId, patterns } = req.body;
+
+    if (!roomId) {
+      return res.status(400).json({ error: 'roomId required' });
+    }
+
+    // Default patterns to clean up iMessage metadata
+    const cleanupPatterns = patterns || [
+      '__kIMMessagePartAttributeName',
+      '__kIMFileTransferGUIDAttributeName',
+      '__kIMDataDetectedAttributeName'
+    ];
+
+    console.log(`🧹 Cleaning up messages in room ${roomId}`);
+    console.log(`   Patterns: ${cleanupPatterns.join(', ')}`);
+
+    let totalDeleted = 0;
+
+    for (const pattern of cleanupPatterns) {
+      const result = await dbPostgres.query(
+        `DELETE FROM messages WHERE room_id = $1 AND text = $2 RETURNING id`,
+        [roomId, pattern]
+      );
+      const deleted = result.rowCount || 0;
+      console.log(`   Deleted ${deleted} messages matching "${pattern}"`);
+      totalDeleted += deleted;
+    }
+
+    console.log(`✅ Cleanup complete: ${totalDeleted} messages deleted`);
+
+    res.json({
+      success: true,
+      deleted: totalDeleted,
+      patterns: cleanupPatterns
+    });
+  } catch (error) {
+    console.error('❌ Cleanup error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Error handlers - catch unhandled errors to prevent crashes
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error);
