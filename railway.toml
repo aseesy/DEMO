@@ -2,11 +2,28 @@
 # PostgreSQL-only production setup
 # Frontend is deployed separately on Vercel
 #
-# DEPLOYMENT SETUP (as of 2025-12-15):
-# - Deploy from ROOT directory (/chat/)
-# - Root nixpacks.toml handles: cd chat-server && npm install && node server.js
-# - NO root_dir setting needed in Railway dashboard
-# - pnpm files excluded via .railwayignore
+# ============================================================
+# CRITICAL: ROOT DIRECTORY CONFIGURATION
+# ============================================================
+# This config deploys from the PROJECT ROOT (/chat/), NOT /chat-server/
+#
+# The buildCommand and startCommand use "cd chat-server && ..." to navigate
+# to the server directory. This approach:
+# 1. Allows deployment from project root via `railway up`
+# 2. Prevents "Could not find root directory: /chat-server" errors
+# 3. Works with both git-based deploys and CLI uploads
+#
+# DO NOT set rootDirectory in Railway dashboard!
+# DO NOT set root_dir in this file!
+# ALWAYS deploy from /chat/ (project root), not /chat/chat-server/
+#
+# If you see "Could not find root directory: /chat-server":
+# 1. Check Railway dashboard -> service settings -> remove any root directory
+# 2. Run: cd /path/to/chat && railway up (NOT from chat-server/)
+# 3. Or use: ./scripts/deploy-railway.sh
+#
+# pnpm files are excluded via .railwayignore to prevent build failures
+# ============================================================
 
 [build]
 builder = "nixpacks"
