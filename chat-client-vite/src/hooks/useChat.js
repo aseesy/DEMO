@@ -346,7 +346,7 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     });
 
     // Handle search results
-    socket.on('search_results', ({ messages: results, total, query, hasMore }) => {
+    socket.on('search_results', ({ messages: results, total, query: _query, hasMore: _hasMore }) => {
       setIsSearching(false);
       setSearchResults(results || []);
       setSearchTotal(total || 0);
@@ -724,6 +724,8 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     isConnected,
     isJoined,
     error,
+    pendingMessages,
+    messageStatuses,
     typingUsers,
     messagesEndRef,
     messagesContainerRef,

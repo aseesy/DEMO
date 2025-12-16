@@ -18,11 +18,12 @@ import React from 'react';
 export const Heading = ({
   children,
   variant = 'hero',
-  as: Component = 'h1',
+  as = 'h1',
   className = '',
   color = 'dark',
   ...props
 }) => {
+  const ComponentTag = as;
   // Variant classes with serif font and appropriate sizing
   const variants = {
     hero: 'text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-normal leading-tight',
@@ -43,12 +44,12 @@ export const Heading = ({
   const colorClasses = colors[color] || colors.dark;
 
   return (
-    <Component
+    <ComponentTag
       className={`font-serif ${variantClasses} ${colorClasses} ${className}`}
       {...props}
     >
       {children}
-    </Component>
+    </ComponentTag>
   );
 };
 

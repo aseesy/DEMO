@@ -1,18 +1,7 @@
 import React from 'react';
 import { SectionHeader, Heading, Button } from '../ui';
-import { trackFormSubmit } from '../../utils/analytics';
 
 export function CoParentingCommunicationHub() {
-    const [email, setEmail] = React.useState('');
-    const [subscribed, setSubscribed] = React.useState(false);
-
-    const handleSubscribe = (e) => {
-        e.preventDefault();
-        trackFormSubmit('blog_subscription', 'email');
-        setSubscribed(true);
-        setEmail('');
-    };
-
     const articles = [
         {
             title: 'Why Co-Parenting Arguments Repeat (And How to Break the Communication Cycle)',

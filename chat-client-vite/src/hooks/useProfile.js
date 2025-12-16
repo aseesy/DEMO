@@ -458,7 +458,7 @@ const response = await apiPut('/api/profile/me', requestBody);
     };
 
     let totalScore = 0;
-    for (const [sectionName, fields] of Object.entries(sections)) {
+    for (const [_sectionName, fields] of Object.entries(sections)) {
       const filledFields = fields.filter(field => {
         const value = profileData[field];
         return value && value.toString().trim().length > 0;

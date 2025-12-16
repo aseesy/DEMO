@@ -1,7 +1,15 @@
 import React from 'react';
 import { Button } from './ui';
 
-export function Navigation({ currentView, setCurrentView, onLogout, unreadCount = 0, hasMeanMessage = false, notificationCount = 0, onInvitationAccepted }) {
+export function Navigation({
+  currentView,
+  setCurrentView,
+  onLogout,
+  unreadCount = 0,
+  hasMeanMessage: _hasMeanMessage = false,
+  notificationCount = 0,
+  onInvitationAccepted: _onInvitationAccepted,
+}) {
   const navItems = [
     {
       id: 'dashboard',
@@ -28,7 +36,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
   const menuButtonRef = React.useRef(null);
   const menuItemRefs = React.useRef([]);
 
-  const menuItems = [
+  const menuItems = React.useMemo(() => ([
     {
       id: 'contacts',
       label: 'Contacts',
@@ -103,7 +111,7 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
         setIsMenuOpen(false);
       },
     },
-  ];
+  ]), [onLogout, setCurrentView]);
 
   // Close menu on outside click
   React.useEffect(() => {

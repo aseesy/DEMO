@@ -1,6 +1,6 @@
 import React from 'react';
 import { apiGet, apiPost } from '../apiClient.js';
-import { getErrorMessage, logError, isRetryableError } from '../utils/errorHandler.jsx';
+import { getErrorMessage, logError } from '../utils/errorHandler.jsx';
 import { setUserProperties, setUserID } from '../utils/analyticsEnhancements.js';
 
 /**
@@ -57,7 +57,7 @@ function isTokenExpired(token) {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const exp = payload.exp * 1000; // Convert to milliseconds
     return Date.now() >= exp;
-  } catch (error) {
+  } catch (_error) {
     // If we can't parse the token, consider it expired
     return true;
   }
@@ -74,7 +74,7 @@ export function AuthProvider({ children }) {
   const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
   const [isSigningUp, setIsSigningUp] = React.useState(false);
-  const [isGoogleLoggingIn, setIsGoogleLoggingIn] = React.useState(false);
+  const [isGoogleLoggingIn, _setIsGoogleLoggingIn] = React.useState(false);
   const [error, setError] = React.useState(null);
 
   /**
@@ -247,7 +247,7 @@ export function AuthProvider({ children }) {
   /**
    * Signup with email/password
    */
-  const signup = React.useCallback(async (email, password, username = null) => {
+  const signup = React.useCallback(async (email, password, _username = null) => {
     setIsSigningUp(true);
     setError(null);
 

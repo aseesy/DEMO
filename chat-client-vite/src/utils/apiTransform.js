@@ -10,7 +10,7 @@
  * @param {string} str - snake_case string
  * @returns {string} - camelCase string
  */
-function snakeToCamel(str) {
+function _snakeToCamel(str) {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
@@ -19,7 +19,7 @@ function snakeToCamel(str) {
  * @param {string} str - camelCase string
  * @returns {string} - snake_case string
  */
-function camelToSnake(str) {
+function _camelToSnake(str) {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 

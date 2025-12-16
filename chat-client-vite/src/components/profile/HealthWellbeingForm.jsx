@@ -95,7 +95,7 @@ const CheckboxGroup = ({ options, selected, onChange }) => {
 };
 
 // Form field component
-const FormField = ({ label, tooltip, children, optional = false }) => (
+const FormField = ({ label, tooltip: _tooltip, children, optional = false }) => (
   <div className="space-y-2">
     <label className="flex items-center text-sm font-medium text-gray-700">
       {label}

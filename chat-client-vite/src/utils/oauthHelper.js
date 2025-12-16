@@ -116,7 +116,7 @@ export async function openOAuthPopup(authUrl) {
  * @param {Function} onMessage - Callback when OAuth completes
  * @returns {Promise<Object>} OAuth result
  */
-export function waitForOAuthPopup(popup, onMessage) {
+export function waitForOAuthPopup(popup, _onMessage) {
   return new Promise((resolve, reject) => {
     const checkInterval = setInterval(() => {
       if (popup.closed) {

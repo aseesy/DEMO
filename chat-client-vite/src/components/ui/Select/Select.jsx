@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 
 /**
  * Select Component - Custom dropdown with search and multi-select support
@@ -55,7 +55,9 @@ export const Select = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const selectRef = useRef(null);
-  const inputId = props.id || `select-${label?.toLowerCase().replace(/\s+/g, '-') || Math.random().toString(36).substr(2, 9)}`;
+  const reactId = useId();
+  const labelSlug = label ? label.toLowerCase().replace(/\s+/g, '-') : '';
+  const inputId = props.id || (labelSlug ? `select-${labelSlug}-${reactId}` : `select-${reactId}`);
 
   // Close dropdown when clicking outside
   useEffect(() => {

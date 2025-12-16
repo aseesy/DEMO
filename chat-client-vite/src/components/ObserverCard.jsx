@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-export function ObserverCard({ observerData, originalText, onUseRewrite, onEditMyself, onSendOriginal }) {
+export function ObserverCard({ observerData, originalText: _originalText, onUseRewrite, onEditMyself, onSendOriginal }) {
   if (!observerData) return null;
 
   const { axiomsFired, explanation, tip, rewrite1, rewrite2, escalation } = observerData;
