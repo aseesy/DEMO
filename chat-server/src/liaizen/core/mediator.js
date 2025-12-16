@@ -136,6 +136,19 @@ try {
   graphContext = null;
 }
 
+// Values Profile Library (Learn user values from conversations)
+let valuesProfile;
+try {
+  valuesProfile = require('../context/valuesProfile');
+  // Initialize the database table
+  valuesProfile.initializeTable().then(() => {
+    console.log('✅ AI Mediator: Values profile library loaded (learns from conversations)');
+  });
+} catch (err) {
+  console.warn('⚠️ AI Mediator: Values profile library not available:', err.message);
+  valuesProfile = null;
+}
+
 // Conversation context tracker (unified state management)
 const conversationContext = {
   recentMessages: [],
@@ -702,6 +715,30 @@ ATTUNEMENT GUIDANCE: Use this relationship history to calibrate your response. F
     }
     // === END GRAPH DATABASE CONTEXT ===
 
+    // === VALUES PROFILE CONTEXT (learned from conversations) ===
+    // Learn from this message and get sender's values for AI context
+    let valuesContextString = '';
+    if (valuesProfile && roleContext?.senderId) {
+      try {
+        const senderProfile = participantProfiles.get(roleContext.senderId.toLowerCase());
+
+        if (senderProfile?.id) {
+          // Learn from this message (updates values profile)
+          await valuesProfile.learnFromMessage(senderProfile.id, message.text);
+
+          // Get formatted values context for AI
+          valuesContextString = await valuesProfile.formatForAI(senderProfile.id);
+
+          if (valuesContextString) {
+            console.log('💡 AI Mediator: Values context loaded for sender');
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ AI Mediator: Failed to process values profile:', err.message);
+      }
+    }
+    // === END VALUES PROFILE CONTEXT ===
+
     // Get relationship insights
     let insights = null;
     if (roomId) {
@@ -847,6 +884,7 @@ MESSAGE FROM ${senderDisplayName}: "${message.text}"
 
 ${relationshipContext}
 ${graphContextString || ''}
+${valuesContextString || ''}
 ${profileContextString || ''}
 ${coparentingContextString || ''}
 ${messageHistory ? `Recent messages:\n${messageHistory}\n` : ''}
