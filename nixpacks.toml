@@ -1,5 +1,15 @@
-# Root nixpacks.toml - NOT USED by Railway
-# Railway uses chat-server/nixpacks.toml because root_dir=chat-server
-# This file is kept for reference only
+# Root nixpacks.toml - CACHE BUST v5 (force clean install)
+# Forces npm usage, ignores pnpm detection
 
-# See chat-server/nixpacks.toml for the actual deployment config
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+onlyIncludeFiles = ["chat-server"]
+
+[phases.install]
+cmds = ["cd chat-server && rm -rf node_modules && npm install --legacy-peer-deps"]
+
+[phases.build]
+cmds = ["echo 'Build complete - v1.0.2 with neo4j-driver'"]
+
+[start]
+cmd = "cd chat-server && node server.js"
