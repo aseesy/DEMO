@@ -3292,6 +3292,66 @@ app.post('/api/import/messages', express.json({ limit: '50mb' }), async (req, re
   }
 });
 
+// Update user display names endpoint
+app.post('/api/admin/update-display-names', express.json(), async (req, res) => {
+  try {
+    const dbPostgres = require('./dbPostgres');
+
+    // Verify authorization
+    const authHeader = req.headers.authorization;
+    if (!authHeader || authHeader !== `Bearer ${process.env.JWT_SECRET}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { updates } = req.body;
+
+    if (!updates || !Array.isArray(updates)) {
+      return res.status(400).json({ error: 'updates array required, e.g. [{username: "foo", displayName: "Foo Bar"}]' });
+    }
+
+    console.log(`👤 Updating display names for ${updates.length} users`);
+
+    let updated = 0;
+    for (const { username, displayName, firstName, preferredName } of updates) {
+      if (!username) continue;
+
+      const fields = [];
+      const values = [];
+      let paramIndex = 1;
+
+      if (displayName !== undefined) {
+        fields.push(`display_name = $${paramIndex++}`);
+        values.push(displayName);
+      }
+      if (firstName !== undefined) {
+        fields.push(`first_name = $${paramIndex++}`);
+        values.push(firstName);
+      }
+      if (preferredName !== undefined) {
+        fields.push(`preferred_name = $${paramIndex++}`);
+        values.push(preferredName);
+      }
+
+      if (fields.length === 0) continue;
+
+      values.push(username);
+      const query = `UPDATE users SET ${fields.join(', ')} WHERE LOWER(username) = LOWER($${paramIndex})`;
+
+      const result = await dbPostgres.query(query, values);
+      if (result.rowCount > 0) {
+        console.log(`   Updated ${username}: ${displayName || firstName || preferredName}`);
+        updated++;
+      }
+    }
+
+    console.log(`✅ Updated ${updated} users`);
+    res.json({ success: true, updated });
+  } catch (error) {
+    console.error('❌ Update display names error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Cleanup endpoint for removing garbage messages (iMessage metadata, etc)
 app.post('/api/import/cleanup', express.json(), async (req, res) => {
   try {
