@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { BlogArticleLayout } from './BlogArticleLayout';
 import whyArgumentsRepeatImage from '../../assets/blog/why_arguments_repeat_vector.png';
+import emotionalSecurityImage from '../../assets/blog/emotional_security_theory.png';
 
 export function WhyArgumentsRepeat() {
     const meta = {
@@ -131,6 +132,16 @@ export function WhyArgumentsRepeat() {
             <p>
                 Children are the ultimate "stakeholders" in the co-parenting game. When parents engage in adversarial stances, the child's "security resources" are diverted toward managing parental stress rather than developmental growth.
             </p>
+
+            {/* Emotional Security Theory Infographic */}
+            <div className="my-10">
+                <img
+                    src={emotionalSecurityImage}
+                    alt="Emotional Security Theory: The Child's Compass - comparing High Conflict/Adversarial IPC outcomes (threatened security, increased child distress, emotional reactivity, behavioral problems) versus Low Conflict/Cooperative IPC outcomes (secure attachment, stable adjustment, emotional regulation, resilience, positive co-parenting alliance)"
+                    className="w-full rounded-xl shadow-lg"
+                />
+                <p className="text-center text-sm text-gray-500 mt-3 italic">The Child's Compass: How interparental conflict affects child adjustment</p>
+            </div>
 
             <div className="bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-xl p-6 my-8">
                 <h4 className="font-bold text-teal-800 mb-3">What Research Shows:</h4>
