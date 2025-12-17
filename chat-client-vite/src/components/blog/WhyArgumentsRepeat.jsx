@@ -6,7 +6,7 @@ import whyArgumentsRepeatImage from '../../assets/blog/why_arguments_repeat_vect
 export function WhyArgumentsRepeat() {
     const meta = {
         title: <>The Argument Cycle: <span className="text-teal-600">A Strategic and Biological Analysis of Co-Parenting</span></>,
-        subtitle: "Understanding the mathematical and biological traps that keep co-parents stuck in conflict—and how to break free.",
+        subtitle: "Stuck in a high-conflict co-parenting loop? Discover the neurobiology of conflict and how Game Theory can help you shift from a \"win-lose\" trap to a child-centered \"win-win.\"",
         date: "Dec 10, 2025",
         readTime: "6 min read",
         heroImage: whyArgumentsRepeatImage,

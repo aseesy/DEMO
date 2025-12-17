@@ -121,7 +121,7 @@ export function EmotionalRegulation() {
             </div>
 
             <p>
-                This cycle is why <a href="/co-parenting-communication/why-arguments-repeat" className="text-teal-600 hover:text-teal-800 underline decoration-teal-300 underline-offset-2 font-medium">co-parenting arguments repeat</a>. The content changes, but the emotional pattern stays the same.
+                This cycle is why <a href="/break-co-parenting-argument-cycle-game-theory" className="text-teal-600 hover:text-teal-800 underline decoration-teal-300 underline-offset-2 font-medium">co-parenting arguments repeat</a>. The content changes, but the emotional pattern stays the same.
             </p>
 
             <h2>The Regulation Advantage: What Changes</h2>

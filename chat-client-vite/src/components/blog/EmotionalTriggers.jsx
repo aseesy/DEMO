@@ -90,7 +90,7 @@ export function EmotionalTriggers() {
                 When trust is intact, we give people the benefit of the doubt. Ambiguous messages get interpreted generously. "They probably didn't mean it that way."
             </p>
             <p>
-                When trust is broken, the opposite happens. Every ambiguity becomes a potential attack. <a href="/co-parenting-communication/why-arguments-repeat" className="text-teal-600 hover:text-teal-800 underline decoration-teal-300 underline-offset-2 font-medium">This is one reason co-parenting arguments repeat</a>—because the same words land differently when filtered through damaged trust.
+                When trust is broken, the opposite happens. Every ambiguity becomes a potential attack. <a href="/break-co-parenting-argument-cycle-game-theory" className="text-teal-600 hover:text-teal-800 underline decoration-teal-300 underline-offset-2 font-medium">This is one reason co-parenting arguments repeat</a>—because the same words land differently when filtered through damaged trust.
             </p>
             <p>
                 The cruel irony: the more conflict you've experienced, the more likely you are to perceive conflict—even when it isn't there.

@@ -19,8 +19,9 @@ export function CoParentingCommunicationHub() {
             excerpt: 'Stuck in the same fights? Learn why conflict patterns repeat and how to break the cycle with calmer, more effective tools.',
             date: 'Dec 10, 2025',
             readTime: '5 min read',
-            path: '/co-parenting-communication/why-arguments-repeat',
-            featured: true
+            path: '/break-co-parenting-argument-cycle-game-theory',
+            featured: true,
+            image: '/assets/family-exchange.svg'
         }
     ];
 
@@ -48,11 +49,19 @@ export function CoParentingCommunicationHub() {
                             href={article.path}
                             className={`group block bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 ${article.featured ? 'md:col-span-2 lg:col-span-3 flex flex-col md:flex-row' : ''}`}
                         >
-                            {/* Placeholder Image Area */}
-                            <div className={`bg-teal-100 ${article.featured ? 'md:w-1/2 min-h-[300px]' : 'h-48'} flex items-center justify-center`}>
-                                <svg className="w-16 h-16 text-teal-300" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                </svg>
+                            {/* Article Image */}
+                            <div className={`bg-teal-50 ${article.featured ? 'md:w-1/2 min-h-[300px]' : 'h-48'} flex items-center justify-center overflow-hidden`}>
+                                {article.image ? (
+                                    <img
+                                        src={article.image}
+                                        alt={article.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <svg className="w-16 h-16 text-teal-300" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                    </svg>
+                                )}
                             </div>
 
                             <div className={`p-6 sm:p-8 ${article.featured ? 'md:w-1/2 flex flex-col justify-center' : ''}`}>

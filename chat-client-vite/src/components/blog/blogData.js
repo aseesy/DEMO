@@ -11,7 +11,7 @@ export const blogStructure = {
                     excerpt: 'Stuck in the same fights? Learn why conflict patterns repeat and how to break the cycle with calmer, more effective tools.',
                     date: 'Dec 10, 2025',
                     readTime: '5 min read',
-                    path: '/co-parenting-communication/why-arguments-repeat', // Preserving existing slug
+                    path: '/break-co-parenting-argument-cycle-game-theory',
                     featured: true
                 },
                 {

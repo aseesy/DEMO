@@ -54,7 +54,7 @@ export function WhyItFeelsImpossible() {
             <ul>
                 <li><strong>Disproportionate reactions</strong> – Small issues become major battles</li>
                 <li><strong>Inability to resolve</strong> – Conflicts don't end; they accumulate</li>
-                <li><strong>Pattern repetition</strong> – <a href="/co-parenting-communication/why-arguments-repeat" className="text-teal-600 hover:text-teal-800 underline decoration-teal-300 underline-offset-2 font-medium">The same arguments repeat</a> in different forms</li>
+                <li><strong>Pattern repetition</strong> – <a href="/break-co-parenting-argument-cycle-game-theory" className="text-teal-600 hover:text-teal-800 underline decoration-teal-300 underline-offset-2 font-medium">The same arguments repeat</a> in different forms</li>
                 <li><strong>Blame focus</strong> – More energy on assigning fault than solving problems</li>
                 <li><strong>All-or-nothing thinking</strong> – No middle ground, no compromise</li>
                 <li><strong>Chronic distrust</strong> – Every action interpreted in the worst possible light</li>
