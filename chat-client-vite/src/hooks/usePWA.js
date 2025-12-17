@@ -196,13 +196,22 @@ export function usePWA() {
 
   // Subscribe to push notifications
   const subscribeToPush = React.useCallback(async () => {
-    if (!swRegistration) {
-      console.warn('[usePWA] Service Worker not registered yet');
+    // Skip in development mode
+    if (import.meta.env.DEV) {
+      console.log('[usePWA] Skipping push subscription in development mode');
       return null;
     }
 
     try {
       console.log('[usePWA] Subscribing to push notifications...');
+
+      // Wait for service worker to be ready (handles the "no active Service Worker" error)
+      const registration = await navigator.serviceWorker.ready;
+
+      if (!registration) {
+        console.warn('[usePWA] Service Worker not ready');
+        return null;
+      }
 
       // Request notification permission
       const permission = await Notification.requestPermission();
@@ -211,8 +220,16 @@ export function usePWA() {
         return null;
       }
 
+      // Check if already subscribed
+      const existingSubscription = await registration.pushManager.getSubscription();
+      if (existingSubscription) {
+        console.log('[usePWA] Already subscribed to push notifications');
+        setPushSubscription(existingSubscription);
+        return existingSubscription;
+      }
+
       // Subscribe to push notifications
-      const subscription = await swRegistration.pushManager.subscribe({
+      const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(
           'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U' // VAPID public key
@@ -224,15 +241,10 @@ export function usePWA() {
 
       return subscription;
     } catch (error) {
-      // Only warn in development - this is expected to fail in local dev
-      if (import.meta.env.DEV) {
-        console.warn('[usePWA] Push subscription failed (expected in dev):', error.name);
-      } else {
-        console.error('[usePWA] Push subscription failed:', error);
-      }
+      console.warn('[usePWA] Push subscription failed:', error.name);
       return null;
     }
-  }, [swRegistration]);
+  }, []);
 
   // Unsubscribe from push notifications
   const unsubscribeFromPush = React.useCallback(async () => {
