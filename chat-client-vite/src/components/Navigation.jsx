@@ -423,8 +423,20 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       </nav>
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[9999] bg-white shadow-[0_-2px_8px_-1px_rgba(0,0,0,0.03)]" style={{ paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))' }}>
-        <div className="relative flex items-center justify-around h-11 px-2 py-0.5 z-10">
+      <nav
+        className="block md:hidden fixed left-0 right-0 z-[9999] bg-white shadow-[0_-4px_12px_-1px_rgba(0,0,0,0.08)] border-t border-gray-100"
+        style={{
+          bottom: 0,
+          paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
+          // Ensure visibility on iOS Safari
+          WebkitTransform: 'translateZ(0)',
+          transform: 'translateZ(0)',
+          // Force minimum height to ensure visibility
+          minHeight: '56px',
+        }}
+        data-testid="mobile-nav"
+      >
+        <div className="relative flex items-center justify-around h-14 px-2 py-1 z-10">
           {/* Dashboard button */}
           <button
             type="button"

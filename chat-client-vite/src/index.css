@@ -95,10 +95,11 @@ body {
     /* Only apply safe area padding if there's actually a safe area */
     padding-top: max(0px, env(safe-area-inset-top));
     padding-right: max(0px, env(safe-area-inset-right));
-    padding-bottom: max(0px, env(safe-area-inset-bottom));
     padding-left: max(0px, env(safe-area-inset-left));
+    /* Don't add bottom padding - navigation handles its own safe area */
+    padding-bottom: 0;
   }
-  
+
   /* On smaller screens without notches, remove top padding */
   @media (max-width: 768px) {
     body {
@@ -123,6 +124,18 @@ body {
   /* Force GPU acceleration for smoother rendering */
   transform: translateZ(0);
   will-change: transform;
+}
+
+/* Mobile Navigation - explicit styles to ensure visibility */
+/* These are fallbacks in case Tailwind's md:hidden doesn't work properly */
+[data-testid="mobile-nav"] {
+  display: block !important;
+}
+
+@media (min-width: 768px) {
+  [data-testid="mobile-nav"] {
+    display: none !important;
+  }
 }
 
 /* Menu animation */

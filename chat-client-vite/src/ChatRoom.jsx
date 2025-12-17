@@ -418,6 +418,7 @@ function ChatRoom() {
     exitSearchMode,
     jumpToMessage,
     highlightedMessageId,
+    isInitialLoad,
   } = chatState;
 
   // Reset unread count when navigating to chat view and mark all messages as seen
@@ -1964,7 +1965,12 @@ function ChatRoom() {
                       <div
                         ref={messagesContainerRef}
                          className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-4 pb-2 space-y-4 bg-linear-to-b from-white to-gray-50"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          // Hide messages during initial load to prevent flash while scrolling to bottom
+                          opacity: isInitialLoad ? 0 : 1,
+                          transition: 'opacity 0.15s ease-out'
+                        }}
                         onScroll={(e) => {
                           // Load more when scrolling to top
                           const target = e.target;

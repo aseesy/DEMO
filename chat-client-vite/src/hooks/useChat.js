@@ -24,6 +24,9 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
   const [pendingMessages, setPendingMessages] = React.useState(new Map()); // Track pending messages by ID
   const [messageStatuses, setMessageStatuses] = React.useState(new Map()); // Track message status: 'sent' | 'pending' | 'failed'
 
+  // Track initial load to prevent scroll animation through history
+  const [isInitialLoad, setIsInitialLoad] = React.useState(true);
+
   // Pagination state
   const [isLoadingOlder, setIsLoadingOlder] = React.useState(false);
   const [hasMoreMessages, setHasMoreMessages] = React.useState(true);
@@ -198,6 +201,7 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
           timestamp: msg.timestamp,
       }));
 
+      // Keep isInitialLoad true until scroll is complete to hide messages during scroll
       setMessages(processedMessages);
 
       // Mark all historical messages as seen
@@ -207,10 +211,21 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
       }
 
       // Scroll to bottom after loading message history (on page load/refresh)
-      // Use instant scroll to avoid animating through all messages
-      setTimeout(() => {
-        scrollToBottom(true); // instant scroll on initial load
-      }, 100);
+      // Use requestAnimationFrame to ensure DOM is updated before scrolling
+      // Then set isInitialLoad to false to reveal messages
+      requestAnimationFrame(() => {
+        // Set scroll position directly on container for instant positioning
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+        // Also use scrollIntoView as backup
+        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+
+        // Small delay to ensure scroll is complete before revealing
+        setTimeout(() => {
+          setIsInitialLoad(false);
+        }, 50);
+      });
     });
 
     socket.on('new_message', (message) => {
@@ -807,6 +822,8 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     exitSearchMode,
     jumpToMessage,
     highlightedMessageId,
+    // Initial load state - used to hide messages during scroll positioning
+    isInitialLoad,
   };
 }
 
