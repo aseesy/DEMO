@@ -26,7 +26,7 @@ const BLOCKED_PASSWORDS = new Set([
 ]);
 
 const PASSWORD_REQUIREMENTS = {
-  minLength: 10,
+  minLength: 8,
   maxLength: 128,
   requireLowercase: false,
   requireUppercase: false,
@@ -108,10 +108,10 @@ function checkPasswordStrength(password) {
   let feedback = '';
 
   // Length is the primary factor (NIST recommendation)
-  if (password.length >= 10) score += 1;
-  if (password.length >= 14) score += 1;
-  if (password.length >= 18) score += 1;
-  if (password.length >= 24) score += 1;
+  if (password.length >= 8) score += 1;
+  if (password.length >= 12) score += 1;
+  if (password.length >= 16) score += 1;
+  if (password.length >= 20) score += 1;
 
   // Bonus for variety (not required, just encouraged)
   const hasLower = /[a-z]/.test(password);
