@@ -297,13 +297,10 @@ export default function PrivacySettings({
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-4">
                 {/* Basic Info */}
-                {(previewData.first_name || previewData.last_name) && (
+                {previewData.first_name && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-2">Name</h4>
-                    <p className="text-gray-800">
-                      {[previewData.first_name, previewData.last_name].filter(Boolean).join(' ')}
-                      {previewData.preferred_name && ` (${previewData.preferred_name})`}
-                    </p>
+                    <p className="text-gray-800">{previewData.first_name}</p>
                   </div>
                 )}
 

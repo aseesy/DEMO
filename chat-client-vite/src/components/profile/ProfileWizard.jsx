@@ -18,7 +18,7 @@ const STEPS = [
 // Section field mappings
 const SECTION_FIELDS = {
   personal: [
-    'first_name', 'last_name', 'preferred_name', 'pronouns',
+    'first_name', 'pronouns',
     'birthdate', 'language', 'timezone', 'phone', 'city', 'state', 'zip',
     'work_schedule', 'schedule_flexibility'
   ],

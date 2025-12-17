@@ -109,7 +109,7 @@ export default function PersonalInfoForm({ profileData, updateField }) {
 
   return (
     <div className="space-y-6">
-      {/* Name Row */}
+      {/* Name & Pronouns */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="First Name">
           <input
@@ -117,33 +117,6 @@ export default function PersonalInfoForm({ profileData, updateField }) {
             value={profileData.first_name || ''}
             onChange={(e) => updateField('first_name', e.target.value)}
             placeholder="Your first name"
-            className={inputClasses}
-          />
-        </FormField>
-
-        <FormField label="Last Name">
-          <input
-            type="text"
-            value={profileData.last_name || ''}
-            onChange={(e) => updateField('last_name', e.target.value)}
-            placeholder="Your last name"
-            className={inputClasses}
-          />
-        </FormField>
-      </div>
-
-      {/* Preferred Name & Pronouns */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField
-          label="Preferred Name"
-          optional
-          tooltip="What you'd like to be called in messages"
-        >
-          <input
-            type="text"
-            value={profileData.preferred_name || ''}
-            onChange={(e) => updateField('preferred_name', e.target.value)}
-            placeholder="Nickname or preferred name"
             className={inputClasses}
           />
         </FormField>
