@@ -1593,23 +1593,44 @@ function ChatRoom() {
             {currentView === 'chat' && (
               <div className="h-full flex flex-col relative">
                 {/* Chat Header Bar - Sticky toolbar above messages */}
-                <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 sm:px-6 md:px-8 py-3 flex items-center justify-between gap-3">
-                  {/* Left side: Search button */}
-                  <button
-                    type="button"
-                    onClick={toggleSearchMode}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all min-h-[44px] ${
-                      searchMode
-                        ? 'bg-teal-medium text-white'
-                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-teal-dark'
-                    }`}
-                    title={searchMode ? 'Close search' : 'Search messages'}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200/50 px-4 sm:px-6 md:px-8 py-3 flex items-center gap-3">
+                  {/* Search Bar - Always visible */}
+                  <div className="flex-1 relative max-w-3xl mx-auto">
+                    <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    {!searchMode && <span className="hidden sm:inline">Search</span>}
-                  </button>
+                    <input
+                      type="text"
+                      value={searchQuery || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.trim()) {
+                          if (!searchMode) toggleSearchMode();
+                          searchMessages(value);
+                        } else if (searchMode) {
+                          exitSearchMode();
+                        }
+                      }}
+                      placeholder={(() => {
+                        const other = messages.find(m => m.username && m.username.toLowerCase() !== username?.toLowerCase());
+                        const name = other?.displayName || other?.username;
+                        return name ? `Search Conversation With ${name}` : "Search messages...";
+                      })()}
+                      className="w-full pl-12 pr-10 py-3 border border-gray-200 rounded-full bg-white/90 focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-base text-gray-900 placeholder-gray-400 min-h-[44px] shadow-sm"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => { searchMessages(''); exitSearchMode(); }}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-dark p-1 rounded hover:bg-gray-50"
+                        aria-label="Clear search"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
 
                   {/* Right side: Threads and invite actions */}
                   <div className="flex items-center gap-2">
@@ -1924,7 +1945,7 @@ function ChatRoom() {
 
                       <div
                         ref={messagesContainerRef}
-                        className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-4 pb-2 space-y-4"
+                        className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-4 pb-2 space-y-4 bg-gradient-to-b from-white to-gray-50"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                         onScroll={(e) => {
                           // Load more when scrolling to top
@@ -2024,6 +2045,52 @@ function ChatRoom() {
 
                           const filteredMessages = messages.filter((msg) => msg.type !== 'contact_suggestion');
 
+                          // Empty state - show LiaiZen welcome message when no messages
+                          if (filteredMessages.length === 0) {
+                            return (
+                              <div className="flex flex-col items-center justify-center h-full py-16 px-4 max-w-md mx-auto text-center">
+                                <div className="w-20 h-20 mb-6 rounded-full bg-gradient-to-br from-teal-100 to-teal-50 flex items-center justify-center shadow-lg">
+                                  <img
+                                    src="/assets/Logo.svg"
+                                    alt="LiaiZen"
+                                    className="w-12 h-12"
+                                  />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gray-800 mb-3">Welcome to LiaiZen</h3>
+                                <p className="text-gray-600 mb-6 leading-relaxed">
+                                  This is your safe space for thoughtful co-parenting communication. Every message you send is reviewed by our AI mediator to help keep conversations constructive and focused on what matters most—your children.
+                                </p>
+                                <div className="flex flex-col gap-3 text-sm text-gray-500">
+                                  <div className="flex items-center gap-2">
+                                    <svg className="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Messages are private between co-parents</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <svg className="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>AI helps de-escalate tense moments</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <svg className="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Child-centered communication focus</span>
+                                  </div>
+                                </div>
+                                {!hasCoParentConnected && (
+                                  <div className="mt-8 p-4 bg-teal-50 rounded-xl border border-teal-200">
+                                    <p className="text-sm text-teal-800 font-medium">
+                                      Invite your co-parent to start your first conversation
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+
                           // Group messages for better iMessage-like display
                           const messageGroups = [];
                           let currentGroup = null;
@@ -2111,21 +2178,31 @@ function ChatRoom() {
                                   }
                                 };
 
-                                // Render pending original message as a "not sent" bubble with ! icon
+                                // Render pending original message as a "not sent" bubble
                                 if (isPendingOriginal) {
                                   return (
                                     <div key={msg.id} className="mb-4 first:mt-0 flex justify-end">
                                       <div className="max-w-[75%] sm:max-w-[60%] md:max-w-[55%]">
-                                        <div className="flex items-center gap-2 mb-1 justify-end">
-                                          <div className="w-4 h-4 rounded-full bg-orange-400 flex items-center justify-center shrink-0">
-                                            <span className="text-white text-xs font-bold">!</span>
-                                          </div>
-                                          <span className="text-xs text-orange-600 font-medium">Not sent yet</span>
-                                        </div>
                                         <div className="rounded-2xl px-4 py-2.5 bg-orange-100 border-2 border-orange-300 border-dashed">
                                           <p className="text-base text-orange-800 leading-snug" style={{ fontSize: '15px' }}>
                                             {msg.text}
                                           </p>
+                                        </div>
+                                        {/* Time and Blocked status - under bubble */}
+                                        <div className="flex items-center gap-1.5 mt-1.5 justify-end text-orange-500">
+                                          <span className="text-[11px] font-medium">
+                                            {(() => {
+                                              const msgDate = new Date(msg.timestamp);
+                                              return msgDate.toLocaleTimeString('en-US', {
+                                                hour: 'numeric',
+                                                minute: '2-digit',
+                                                hour12: true,
+                                              });
+                                            })()}
+                                          </span>
+                                          <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
                                         </div>
                                       </div>
                                     </div>
@@ -2224,9 +2301,13 @@ function ChatRoom() {
                                                       setIsPreApprovedRewrite(true);
                                                       setOriginalRewrite(msg.rewrite1);
                                                     }}
-                                                    className="w-full text-left p-3 bg-white border border-teal-light/40 rounded-lg hover:bg-gray-50 transition-colors text-base text-teal-dark"
+                                                    className="w-full text-left p-4 bg-gradient-to-br from-teal-50 to-white border-2 border-teal-200 rounded-xl hover:border-teal-400 hover:shadow-md transition-all text-base text-teal-dark group"
                                                   >
-                                                    <p className="font-normal leading-snug" style={{ fontSize: '15px' }}>"{msg.rewrite1}"</p>
+                                                    <div className="flex items-start gap-3">
+                                                      <div className="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</div>
+                                                      <p className="font-medium leading-snug flex-1" style={{ fontSize: '15px' }}>"{msg.rewrite1}"</p>
+                                                    </div>
+                                                    <div className="mt-2 ml-9 text-xs font-semibold text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity">Click to use this suggestion →</div>
                                                   </button>
                                                 )}
                                                 {msg.rewrite2 && (
@@ -2240,14 +2321,18 @@ function ChatRoom() {
                                                       setIsPreApprovedRewrite(true);
                                                       setOriginalRewrite(msg.rewrite2);
                                                     }}
-                                                    className="w-full text-left p-3 bg-white border border-teal-light/40 rounded-lg hover:bg-gray-50 transition-colors text-base text-teal-dark"
+                                                    className="w-full text-left p-4 bg-gradient-to-br from-teal-50 to-white border-2 border-teal-200 rounded-xl hover:border-teal-400 hover:shadow-md transition-all text-base text-teal-dark group"
                                                   >
-                                                    <p className="font-normal leading-snug" style={{ fontSize: '15px' }}>"{msg.rewrite2}"</p>
+                                                    <div className="flex items-start gap-3">
+                                                      <div className="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</div>
+                                                      <p className="font-medium leading-snug flex-1" style={{ fontSize: '15px' }}>"{msg.rewrite2}"</p>
+                                                    </div>
+                                                    <div className="mt-2 ml-9 text-xs font-semibold text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity">Click to use this suggestion →</div>
                                                   </button>
                                                 )}
 
                                                 {/* Feature 006: Edit option - user can return original to input for manual editing */}
-                                                <div className="pt-3 mt-2 border-t border-gray-200/30">
+                                                <div className="pt-4 mt-3 border-t border-gray-200/50">
                                                   <button
                                                     type="button"
                                                     onClick={() => {
@@ -2262,9 +2347,12 @@ function ChatRoom() {
                                                       removeMessages((m) => m.id === msg.id ||
                                                         (m.type === 'ai_intervention' && m.timestamp === msg.timestamp));
                                                     }}
-                                                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors min-h-[44px]"
+                                                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all min-h-[48px] flex items-center justify-center gap-2"
                                                   >
-                                                    Edit Existing message
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                    </svg>
+                                                    Edit Message Myself
                                                   </button>
                                                 </div>
                                               </div>
@@ -2285,20 +2373,14 @@ function ChatRoom() {
                               <div key={`group-${groupIndex}`} className="mb-6 first:mt-0">
                                 {/* Date Separator */}
                                 {showDateSeparator && dateLabel && (
-                                  <div className="flex items-center justify-center my-4">
-                                    <div className="flex items-center gap-2">
-                                      <div className="h-px bg-gray-200 flex-1" />
-                                      <div className="px-3 py-1">
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">{dateLabel}</span>
-                                      </div>
-                                      <div className="h-px bg-gray-200 flex-1" />
-                                    </div>
+                                  <div className="flex items-center justify-center my-6 max-w-3xl mx-auto">
+                                    <span className="px-4 py-1.5 bg-gray-100 rounded-full text-xs font-semibold text-gray-500 shadow-sm">{dateLabel}</span>
                                   </div>
                                 )}
 
 
                                 {/* Message Group */}
-                                <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} gap-1`}>
+                                <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} gap-1 max-w-3xl mx-auto w-full`}>
                                   {group.messages.map((msg, msgIndex) => {
                                     const isFlagged = msg.user_flagged_by && Array.isArray(msg.user_flagged_by) && msg.user_flagged_by.length > 0;
                                     const isFlaggedByMe = msg.user_flagged_by && Array.isArray(msg.user_flagged_by) && msg.user_flagged_by.includes(username);
@@ -2343,13 +2425,21 @@ function ChatRoom() {
                                             {/* Message Bubble */}
                                             <div
                                               id={`message-${msg.id}`}
-                                              className={`relative py-3.5 px-4 rounded-lg text-base leading-snug transition-all duration-300 ${isOwn
-                                                ? isLastInGroup
-                                                  ? 'text-white rounded-br-sm bg-teal-medium'
-                                                  : 'text-white bg-teal-medium'
-                                                : isLastInGroup
-                                                  ? 'bg-white border border-gray-200 text-gray-900 rounded-bl-sm'
-                                                  : 'bg-white border border-gray-200 text-gray-900'
+                                              className={`relative py-3.5 px-4 rounded-[20px] text-base leading-snug transition-all duration-300 shadow-sm ${isOwn
+                                                ? isFirstInGroup && isLastInGroup
+                                                  ? 'text-white bg-gradient-to-br from-teal-500 to-teal-600'
+                                                  : isFirstInGroup
+                                                    ? 'text-white bg-gradient-to-br from-teal-500 to-teal-600 rounded-br-[8px]'
+                                                    : isLastInGroup
+                                                      ? 'text-white bg-gradient-to-br from-teal-500 to-teal-600 rounded-tr-[8px]'
+                                                      : 'text-white bg-gradient-to-br from-teal-500 to-teal-600 rounded-r-[8px]'
+                                                : isFirstInGroup && isLastInGroup
+                                                  ? 'bg-white border border-gray-200 text-gray-900'
+                                                  : isFirstInGroup
+                                                    ? 'bg-white border border-gray-200 text-gray-900 rounded-bl-[8px]'
+                                                    : isLastInGroup
+                                                      ? 'bg-white border border-gray-200 text-gray-900 rounded-tl-[8px]'
+                                                      : 'bg-white border border-gray-200 text-gray-900 rounded-l-[8px]'
                                                 } ${isFlagged ? 'bg-orange-50 border-orange-300' : ''
                                                 } ${isInThread ? 'border-l-2 border-l-teal-medium' : ''
                                                 } ${highlightedMessageId === msg.id ? 'ring-2 ring-yellow-400 bg-yellow-50' : ''}`}
@@ -2367,32 +2457,7 @@ function ChatRoom() {
                                                 </div>
                                               )}
 
-                                              <div className="text-base leading-snug whitespace-pre-wrap wrap-break-word text-left font-medium pr-12" style={{ fontSize: '15px' }}>{msg.text.trim()}</div>
-
-                                              {/* Timestamp and Status - embedded in bubble, right-aligned */}
-                                              {isLastInGroup && (
-                                                <div className={`absolute bottom-2 right-3 flex items-center gap-1.5 ${isOwn ? 'text-white opacity-60' : 'text-gray-400'}`}>
-                                                  <span className="text-[10px] font-medium leading-none">
-                                                    {(() => {
-                                                      const msgDate = new Date(msg.timestamp);
-                                                      return msgDate.toLocaleTimeString('en-US', {
-                                                        hour: 'numeric',
-                                                        minute: '2-digit',
-                                                        hour12: true,
-                                                      });
-                                                    })()}
-                                                  </span>
-                                                  {isOwn && (
-                                                    <span className="text-[9px] font-medium leading-none opacity-75">
-                                                      {(() => {
-                                                        // Get message status from messageStatuses Map
-                                                        const status = messageStatuses?.get(msg.id) || 'sent';
-                                                        return status === 'pending' ? 'Not Sent' : status === 'failed' ? 'Failed' : 'Sent';
-                                                      })()}
-                                                    </span>
-                                                  )}
-                                                </div>
-                                              )}
+                                              <div className="text-base leading-snug whitespace-pre-wrap wrap-break-word text-left font-medium" style={{ fontSize: '15px' }}>{msg.text.trim()}</div>
 
                                               {isFlagged && (
                                                 <div className="mt-3 flex items-center gap-2 text-xs text-orange-700 font-bold">
@@ -2446,6 +2511,48 @@ function ChatRoom() {
                                                 </div>
                                               )}
                                             </div>
+
+                                            {/* Timestamp and Status - under bubble */}
+                                            {isLastInGroup && (
+                                              <div className={`flex items-center gap-1.5 mt-1.5 ${isOwn ? 'justify-end' : 'justify-start'} text-gray-400`}>
+                                                <span className="text-[11px] font-medium">
+                                                  {(() => {
+                                                    const msgDate = new Date(msg.timestamp);
+                                                    return msgDate.toLocaleTimeString('en-US', {
+                                                      hour: 'numeric',
+                                                      minute: '2-digit',
+                                                      hour12: true,
+                                                    });
+                                                  })()}
+                                                </span>
+                                                {isOwn && (
+                                                  <span className="flex items-center gap-0.5">
+                                                    {(() => {
+                                                      const status = messageStatuses?.get(msg.id) || 'sent';
+                                                      if (status === 'pending') {
+                                                        return <span className="text-[10px] font-medium text-gray-400">Sending...</span>;
+                                                      } else if (status === 'failed') {
+                                                        return <span className="text-[10px] font-medium text-red-500">Failed</span>;
+                                                      } else if (status === 'delivered') {
+                                                        // Double checkmark for delivered
+                                                        return (
+                                                          <svg className="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5M9 12.75l3 3" />
+                                                          </svg>
+                                                        );
+                                                      } else {
+                                                        // Single checkmark for sent
+                                                        return (
+                                                          <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                          </svg>
+                                                        );
+                                                      }
+                                                    })()}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                       </div>
@@ -2573,41 +2680,42 @@ function ChatRoom() {
                         </div>
                       )}
 
-                      <form
-                        onSubmit={sendMessage}
-                        className="bg-white px-4 sm:px-6 md:px-8 py-3 flex items-end gap-3 safe-area-inset-bottom"
-                        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
-                      >
-                        <div className="flex-1 flex items-center gap-3">
-                          <textarea
-                            value={inputMessage}
-                            onChange={handleInputChange}
-                            placeholder="Type a message..."
-                            rows={1}
-                            className={`flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px] max-h-32 resize-none font-normal leading-snug ${draftCoaching && draftCoaching.observerData && !draftCoaching.shouldSend
-                              ? 'border-orange-300 placeholder-orange-400'
-                              : ''
-                              }`}
-                            style={{ fontSize: '15px' }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                sendMessage(e);
-                              }
-                            }}
-                          />
-                        </div>
-                        <button
-                          type="submit"
-                          disabled={!inputMessage.trim()}
-                          className="px-4 py-3 bg-teal-dark text-white rounded-lg font-bold hover:bg-teal-darkest transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] flex items-center justify-center"
-                          title="Send message"
+                      <div className="px-4 sm:px-6 md:px-8 pb-4 pt-2 safe-area-inset-bottom" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+                        <form
+                          onSubmit={sendMessage}
+                          className="bg-white shadow-lg rounded-2xl border border-gray-100 p-2 flex items-end gap-2 max-w-3xl mx-auto"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                          </svg>
-                        </button>
-                      </form>
+                          <div className="flex-1 flex items-center">
+                            <textarea
+                              value={inputMessage}
+                              onChange={handleInputChange}
+                              placeholder="Type a message..."
+                              rows={1}
+                              className={`flex-1 px-4 py-3 border-0 focus:outline-none focus:ring-0 transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px] max-h-32 resize-none font-normal leading-snug bg-transparent ${draftCoaching && draftCoaching.observerData && !draftCoaching.shouldSend
+                                ? 'placeholder-orange-400'
+                                : ''
+                                }`}
+                              style={{ fontSize: '15px' }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  sendMessage(e);
+                                }
+                              }}
+                            />
+                          </div>
+                          <button
+                            type="submit"
+                            disabled={!inputMessage.trim()}
+                            className="w-11 h-11 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-full font-bold hover:from-teal-600 hover:to-teal-700 transition-all disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed flex items-center justify-center shadow-md hover:shadow-lg group"
+                            title="Send message"
+                          >
+                            <svg className="w-5 h-5 transition-transform duration-200 group-hover:rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                          </button>
+                        </form>
+                      </div>
                     </div>
                   </div>
                 </div>

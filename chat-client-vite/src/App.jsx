@@ -37,6 +37,8 @@ import { AiSafety } from './components/blog/AiSafety.jsx';
 import { AiVsImpulse } from './components/blog/AiVsImpulse.jsx';
 import { ForgotPassword } from './components/ForgotPassword.jsx';
 import { ResetPassword } from './components/ResetPassword.jsx';
+import { QuizzesPage } from './components/quizzes/QuizzesPage.jsx';
+import { CoParentingStanceQuiz } from './components/quizzes/CoParentingStanceQuiz.jsx';
 
 function App() {
   // Initialize PWA - registers Service Worker and enables push notifications
@@ -114,6 +116,10 @@ function App() {
                 <Route path="/liaizen/calm-communication-ai" element={<CalmCommunication />} />
                 <Route path="/liaizen/ai-safety-for-parents" element={<AiSafety />} />
                 <Route path="/liaizen/ai-vs-impulse" element={<AiVsImpulse />} />
+
+                {/* Quizzes */}
+                <Route path="/quizzes" element={<QuizzesPage />} />
+                <Route path="/quizzes/co-parenting-stance" element={<CoParentingStanceQuiz />} />
               </Routes>
             </BrowserRouter>
           </MediatorProvider>
