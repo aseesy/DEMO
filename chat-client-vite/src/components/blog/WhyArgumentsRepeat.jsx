@@ -249,6 +249,17 @@ export function WhyArgumentsRepeat() {
 
             <hr className="my-12 border-gray-100" />
 
+            {/* Final Discovery */}
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">The Final Discovery: Peace is a Practice, Not a Destination</h3>
+            <p className="text-lg text-gray-700 leading-relaxed mb-6">
+                Knowledge is the antidote to the chaos. When you understand that your co-parent isn't necessarily a villain, but a human struggling with the same Naive Realism and Loss Aversion that you are, the game changes. You stop reacting to the "sunset" and start building a new horizon.
+            </p>
+            <p className="text-lg text-gray-700 leading-relaxed">
+                It won't be easy, and you won't get it right every time. But every time you choose to pause, reframe, and override your biology, you are doing more than just avoiding an argument—you are actively constructing a foundation of peace for your children to stand on. And that is a victory worth every bit of the effort.
+            </p>
+
+            <hr className="my-12 border-gray-100" />
+
             {/* CTA to Quiz */}
             <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-2xl p-8 my-8 text-white">
                 <h3 className="text-2xl font-bold mb-3">Ready to Put This Into Practice?</h3>
