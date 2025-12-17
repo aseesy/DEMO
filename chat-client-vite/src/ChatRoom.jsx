@@ -2273,31 +2273,38 @@ function ChatRoom() {
                                         )}
                                         {!isComment && (
                                           <>
-                                            {/* Mirror Moment: Single message - acknowledge, validate, encourage enlightened approach */}
-                                            {msg.mirrorMessage && (
-                                              <p className="text-base text-gray-800 leading-relaxed font-medium" style={{ fontSize: '16px' }}>
-                                                {msg.mirrorMessage}
-                                              </p>
-                                            )}
-                                            {/* Legacy support for old personalMessage/tip1 format - only show if NO mirrorMessage */}
-                                            {!msg.mirrorMessage && msg.personalMessage && (
-                                              <p className="text-base text-gray-900 leading-snug mb-3 font-normal" style={{ fontSize: '15px' }}>{msg.personalMessage.replace(/^ADDRESS:\s*/i, '').replace(/^Address:\s*/i, '').replace(/^Address\s*/i, '').replace(/\bAddress\b/gi, '').trim()}</p>
-                                            )}
-                                            {!msg.mirrorMessage && msg.tip1 && (
-                                              <div className="mb-3 p-2 bg-teal-lightest border border-teal-light rounded-lg">
-                                                <div className="flex items-center gap-1.5 mb-1.5">
-                                                  <svg className="w-3.5 h-3.5 text-teal-medium shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                                                  </svg>
-                                                  <p className="text-xs font-semibold text-teal-dark">Tip</p>
-                                                </div>
-                                                <p className="text-sm text-teal-dark font-medium ml-5" style={{ fontSize: '15px' }}>
-                                                  {msg.tip1.replace(/^ONE TIP:\s*/i, '').replace(/^one tip:\s*/i, '').trim()}
+                                            {/* 1-2-3 Framework: ADDRESS → TIP → REWRITES */}
+
+                                            {/* 1. ADDRESS - What the phrasing is doing (validation field from server, or legacy personalMessage) */}
+                                            {(msg.validation || msg.personalMessage) && (
+                                              <div className="mb-4">
+                                                <p className="text-base text-gray-800 leading-relaxed" style={{ fontSize: '15px' }}>
+                                                  {(msg.validation || msg.personalMessage).replace(/^ADDRESS:\s*/i, '').replace(/^Address:\s*/i, '').replace(/^Address\s*/i, '').replace(/\bAddress\b/gi, '').trim()}
                                                 </p>
                                               </div>
                                             )}
-                                            {/* Only show rewrites if NO mirrorMessage (legacy mode) */}
-                                            {!msg.mirrorMessage && (msg.rewrite1 || msg.rewrite2) && (
+
+                                            {/* 2. ONE TIP - Single adjustment (insight field from server, or legacy tip1) */}
+                                            {(msg.insight || msg.tip1) && (
+                                              <div className="mb-4 p-3 bg-gradient-to-r from-teal-50 to-teal-50/50 border border-teal-200 rounded-xl">
+                                                <div className="flex items-start gap-2">
+                                                  <div className="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center shrink-0 mt-0.5">
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                                    </svg>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-xs font-bold text-teal-700 uppercase tracking-wide mb-1">Quick Tip</p>
+                                                    <p className="text-sm text-teal-800 font-semibold" style={{ fontSize: '15px' }}>
+                                                      {(msg.insight || msg.tip1).replace(/^ONE TIP:\s*/i, '').replace(/^one tip:\s*/i, '').replace(/^INSIGHT:\s*/i, '').trim()}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* 3. TWO REWRITES - Alternative phrasings */}
+                                            {(msg.rewrite1 || msg.rewrite2) && (
                                               <div className="space-y-2.5 pt-3 border-t border-gray-200/40">
                                                 <div className="flex items-center gap-1.5 mb-2">
                                                   <svg className="w-3.5 h-3.5 text-teal-dark shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
