@@ -56,8 +56,8 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
     onNewMessageRef.current = onNewMessage;
   }, [onNewMessage]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (instant = false) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: instant ? 'instant' : 'smooth' });
   };
 
   // Only auto-scroll if user is near bottom (within 100px)
@@ -207,9 +207,9 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
       }
 
       // Scroll to bottom after loading message history (on page load/refresh)
-      // Use setTimeout to ensure DOM has updated with new messages
+      // Use instant scroll to avoid animating through all messages
       setTimeout(() => {
-        scrollToBottom();
+        scrollToBottom(true); // instant scroll on initial load
       }, 100);
     });
 
