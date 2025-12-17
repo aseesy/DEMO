@@ -8,12 +8,12 @@ import neurobiologyImage from '../../assets/blog/neurobiology_negativity_bias.pn
 
 export function WhyArgumentsRepeat() {
     const meta = {
-        title: <>The Argument Cycle: <span className="text-teal-600">A Strategic and Biological Analysis of Co-Parenting</span></>,
-        subtitle: "Stuck in a high-conflict co-parenting loop? Discover the neurobiology of conflict and how Game Theory can help you shift from a \"win-lose\" trap to a child-centered \"win-win.\"",
+        title: <>The Co-Parent's Dilemma: <span className="text-teal-600">Why Negotiation Feels Like War (And How to Find Peace)</span></>,
+        subtitle: "Discover why simple conversations turn into emotional tug-of-wars, the psychological traps keeping you stuck, and five powerful reframes to find your way back to win-win.",
         date: "Dec 10, 2025",
-        readTime: "6 min read",
+        readTime: "8 min read",
         heroImage: whyArgumentsRepeatImage,
-        heroImageAlt: "Strategic analysis of the co-parenting argument cycle"
+        heroImageAlt: "Understanding the co-parent's dilemma"
     };
 
     const breadcrumbs = [
@@ -22,67 +22,60 @@ export function WhyArgumentsRepeat() {
     ];
 
     const keyTakeaways = [
-        "<strong>The Resource Trap:</strong> In co-parenting, a \"win\" for your ego is almost always a \"loss\" for your child's peace.",
-        "<strong>The Survival Brain:</strong> One sharp text feels like ten because your brain is wired to prioritize threats over cooperation.",
-        "<strong>The Atmosphere:</strong> Children aren't wounded by the two houses they live in, but by the tension in the air between them."
+        "<strong>The Sunset/Sunrise Problem:</strong> You and your co-parent can witness the same event and derive completely opposite—yet logical—truths.",
+        "<strong>Loss Aversion:</strong> Your brain processes compromise as a \"loss,\" making collaboration feel like surrender even when it's the best path.",
+        "<strong>The Override:</strong> Five specific mental reframes can help you stay in win-win mode when your biology screams \"protect yourself.\""
     ];
 
     return (
         <BlogArticleLayout meta={meta} breadcrumbs={breadcrumbs} keyTakeaways={keyTakeaways}>
             <p className="text-lg text-gray-700 leading-relaxed">
-                In high-stakes co-parenting, transitions often devolve into negotiations over scarce resources: time, financial capital, and emotional bandwidth. When communication breaks down, it is rarely due to a lack of love for the child, but rather a failure to understand the mathematical and biological traps of the "Argument Cycle."
+                Have you ever started a conversation with your co-parent expecting a simple, logical negotiation, only to find yourself locked in an emotional tug-of-war ten minutes later?
             </p>
 
-            <hr className="my-12 border-gray-100" />
-
-            <h2>1. The Mathematics of Conflict: Non-Zero-Sum Games</h2>
-            <p>
-                In classical Game Theory, the Prisoner's Dilemma provides a framework for understanding co-parenting dynamics. Many parents operate under the illusion of a <strong>"Zero-Sum Game,"</strong> where one parent's gain (e.g., an extra holiday) is perceived as the other's absolute loss.
+            <p className="text-lg text-gray-700 leading-relaxed">
+                It is a frustratingly common dynamic. You walk away thinking, <em>"How can they be so unreasonable?"</em> Meanwhile, they are likely thinking the exact same thing about you.
             </p>
 
-            <p>
-                According to game theory research, when two parties in a long-term relationship (like co-parents) prioritize individual "wins," they inevitably reach a <strong>Double Loss</strong>. In this state, both parties have depleted their legal funds, emotional resilience, and co-parenting efficacy—and the child is the ultimate loser.
+            <p className="text-lg text-gray-700 leading-relaxed">
+                For the longest time, I wondered why this happens even when both parents love their children. The answer, it turns out, isn't that one person is "bad" or "wrong." The answer lies in how our brains process reality.
             </p>
 
             <div className="bg-white border-l-4 border-teal-500 shadow-sm p-6 my-8 rounded-r-lg">
                 <p className="font-medium text-gray-900 m-0 italic">
-                    "The Win-Win (Situation 4) is the only mathematically sustainable outcome for a 10-to-20-year parenting horizon."
+                    We are stuck in a psychological trap, but the good news is that once you see the trap, you can step out of it.
                 </p>
-            </div>
-
-            {/* Game Theory Matrix Infographic */}
-            <div className="my-10">
-                <img
-                    src={gameTheoryMatrix}
-                    alt="Co-Parenting Game Theory Matrix: Win-Win (both cooperate - resources preserved, trust grows, child feels peace), Resource Drain (B dominates - B takes leverage, A feels wronged, sanity leaks), Power Struggle (A dominates - A takes leverage, B feels sidelined, conflict escalates), Double Loss (both dominate - both fight for control, resources depleted, child loses most)"
-                    className="w-full rounded-xl shadow-lg"
-                />
-                <p className="text-center text-sm text-gray-500 mt-3 italic">The Co-Parenting Game Theory Matrix: A mindful communication and strategic shift leads to Win-Win</p>
             </div>
 
             <hr className="my-12 border-gray-100" />
 
-            <h2>2. The Biological Imperative: Why We Are Wired to Fight</h2>
+            <h2>The Hidden Truth: The "Sunset/Sunrise" Problem</h2>
             <p>
-                It is a common misconception that high-conflict parents are simply "difficult." Neurobiology offers a different explanation: <strong>Negativity Bias</strong>.
-            </p>
-            <p>
-                Evolution has hard-wired the human brain to prioritize "threat" over "reward" to ensure survival. Research in neuroscience suggests that the amygdala reacts more intensely to a perceived slight in a text message than to a cooperative gesture.
+                The first discovery we need to make is about perspective. In psychology, there is a concept called <strong>Naive Realism</strong>. It is the natural human tendency to believe that we see the world objectively—exactly as it is. Therefore, we assume that if the other person disagrees with us, they must be uninformed, irrational, or biased.
             </p>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 my-8">
-                <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                        <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <p className="font-semibold text-amber-800 mb-1">The Neuroscience Reality</p>
-                        <p className="text-amber-900">Pain feels more intense and lasting than pleasure. This is why a single critical text can overshadow weeks of smooth co-parenting.</p>
-                    </div>
+            <p>
+                Think of it as the "Sunset/Sunrise" problem.
+            </p>
+
+            <p>
+                Imagine a late drop-off or a missed school flyer. Two people witness this exact same event but derive two opposing, yet seemingly logical, truths:
+            </p>
+
+            <div className="grid sm:grid-cols-2 gap-4 my-8">
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                    <p className="font-semibold text-gray-800 mb-2">Parent A sees:</p>
+                    <p className="text-gray-600 italic">"A simple, human mistake."</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                    <p className="font-semibold text-gray-800 mb-2">Parent B sees:</p>
+                    <p className="text-gray-600 italic">"A blatant lack of respect."</p>
                 </div>
             </div>
+
+            <p>
+                When you add a history of broken trust to this mix, your brain adds a filter called <strong>Negativity Bias</strong>. Evolution has hard-wired the human brain to prioritize "threat" over "reward" to ensure survival. This is why your amygdala reacts intensely to a perceived slight in a text message, while completely overlooking a cooperative gesture.
+            </p>
 
             {/* Neurobiology Infographic */}
             <div className="my-10">
@@ -91,105 +84,176 @@ export function WhyArgumentsRepeat() {
                     alt="Neurobiology of Conflict: Amygdala Negativity Bias - comparing Reactive Mind (Amygdala Hijack) with threat response, emotional reactivity, memory of past hurts, and fight/flight/freeze versus Responsive Mind (Prefrontal Cortex) with rational thought, empathy, calm communication, and long-term planning"
                     className="w-full rounded-xl shadow-lg"
                 />
-                <p className="text-center text-sm text-gray-500 mt-3 italic">Reactive Mind vs Responsive Mind: The neurobiology behind co-parenting conflict</p>
+                <p className="text-center text-sm text-gray-500 mt-3 italic">How negativity bias affects your perception in co-parenting conversations</p>
             </div>
 
             <p>
-                Breaking the cycle requires <strong>Cognitive Reframing</strong>—using the prefrontal cortex to override the survival-based "fight or flight" response triggered by a co-parent. This is not about suppressing emotion; it's about creating space between stimulus and response.
+                This combination of different perspectives and biological defensiveness lands you squarely in what I call <strong>The Co-parent's Dilemma</strong>.
             </p>
 
             <hr className="my-12 border-gray-100" />
 
-            <h2>3. The Sunset/Sunrise Paradox: Naive Realism</h2>
+            <h2>The Biological Hurdle: Why "Winning" Feels Safer</h2>
             <p>
-                In psychology, <strong>Naive Realism</strong> is the human tendency to believe that we see the world objectively, while those who disagree with us are uninformed or biased.
-            </p>
-            <p>
-                This is the "Sunset/Sunrise" problem: two people can witness the same event (a late drop-off or a missed school flyer) and derive two diametrically opposed, yet internally logical, truths.
+                In this dilemma, you generally have two choices:
             </p>
 
-            <div className="grid sm:grid-cols-2 gap-4 my-8">
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                    <p className="font-semibold text-gray-800 mb-2">Parent A sees:</p>
-                    <p className="text-gray-600 italic">"They were 15 minutes late again—complete disrespect for my time."</p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                    <p className="font-semibold text-gray-800 mb-2">Parent B sees:</p>
-                    <p className="text-gray-600 italic">"Traffic was terrible and I texted ahead—they're overreacting as usual."</p>
+            <ol className="list-decimal list-inside space-y-2 my-6 text-gray-700">
+                <li><strong>Collaborate:</strong> Give a little to get a little, reaching a happy medium.</li>
+                <li><strong>Turn against each other:</strong> Fight for what is "rightfully yours."</li>
+            </ol>
+
+            <p>
+                Logically, we know collaboration is better. But if you choose the second path, someone has to take the loss. And in co-parenting, those losses usually become heavy burdens that the children have to carry.
+            </p>
+
+            {/* Game Theory Matrix */}
+            <div className="my-10">
+                <img
+                    src={gameTheoryMatrix}
+                    alt="Co-Parenting Game Theory Matrix showing the outcomes of cooperation vs domination"
+                    className="w-full rounded-xl shadow-lg"
+                />
+                <p className="text-center text-sm text-gray-500 mt-3 italic">The Co-Parent's Dilemma: Why collaboration is logical but feels impossible</p>
+            </div>
+
+            <p>
+                So, why is it so hard to just collaborate?
+            </p>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 my-8">
+                <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                        <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p className="font-semibold text-amber-800 mb-1">The "Aha!" Moment</p>
+                        <p className="text-amber-900">The desire to protect your children often gets overridden by your own need for survival. Your brain processes a compromise as a "loss," and loss is biologically processed as a threat.</p>
+                    </div>
                 </div>
             </div>
 
             <p>
-                <strong>The breakthrough:</strong> Recognizing that your co-parent's perspective is a product of their own unique "data set" (upbringing, fears, and experiences) allows you to move from judgment to observation.
+                This is <strong>Loss Aversion</strong>. It's a cornerstone of behavioral economics suggesting that the pain of losing something is psychologically about <em>twice as powerful</em> as the pleasure of gaining the same thing. Giving up an hour of parenting time feels twice as bad as gaining an hour feels good.
             </p>
 
             <hr className="my-12 border-gray-100" />
 
-            <h2>4. Emotional Security Theory: The Impact on the Stakeholder</h2>
+            <h2>The Solution: 5 Ways to Override Your Instincts</h2>
             <p>
-                Data from <strong>Emotional Security Theory (EST)</strong> indicates that children do not suffer primarily from the fact of separation, but from <strong>Interparental Conflict (IPC)</strong>.
-            </p>
-            <p>
-                Children are the ultimate "stakeholders" in the co-parenting game. When parents engage in adversarial stances, the child's "security resources" are diverted toward managing parental stress rather than developmental growth.
+                Ultimately, a win/win scenario is the best outcome for your family. However, because of your wiring, <em>it won't feel like the best outcome</em> in the heat of the moment.
             </p>
 
-            {/* Emotional Security Theory Infographic */}
+            <p>
+                Staying in a win-win mindset when your biology is screaming "protect yourself" is hard work. It requires a mental override—a way to trick your brain out of the short-term fight and into the long-term build.
+            </p>
+
+            <p>
+                Here are five specific reframes to help you rediscover your power and anchor yourself in the bigger picture.
+            </p>
+
+            {/* Reframe 1 */}
+            <div className="bg-gradient-to-br from-teal-50 to-white border border-teal-200 rounded-xl p-6 my-8">
+                <div className="flex items-start gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-teal-500 text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
+                    <h3 className="text-xl font-bold text-teal-800 m-0">Shift from the Finite to the Infinite Game</h3>
+                </div>
+                <p className="text-gray-700 mb-4">
+                    Most arguments feel high-stakes because we treat them like a "Finite Game"—a match with a winner, a loser, and a final buzzer. If you lose the argument about the holiday schedule, it feels like "game over."
+                </p>
+                <div className="bg-white rounded-lg p-4 border border-teal-100">
+                    <p className="font-semibold text-teal-700 mb-2">The Reframe:</p>
+                    <p className="text-gray-700 mb-3">Realize you are playing an <strong>Infinite Game</strong>. The goal isn't to win the Tuesday text exchange; the goal is to keep the game (your child's development) going for 20 years.</p>
+                    <p className="font-semibold text-teal-700 mb-2">The Check:</p>
+                    <p className="text-gray-600 italic">"Does winning this battle help me win the war for my child's mental health?"</p>
+                </div>
+            </div>
+
+            {/* Reframe 2 */}
+            <div className="bg-gradient-to-br from-teal-50 to-white border border-teal-200 rounded-xl p-6 my-8">
+                <div className="flex items-start gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-teal-500 text-white flex items-center justify-center text-sm font-bold shrink-0">2</div>
+                    <h3 className="text-xl font-bold text-teal-800 m-0">The "Future-Retro" Perspective</h3>
+                </div>
+                <p className="text-gray-700 mb-4">
+                    It is easy to get tunnel vision on the resources right in front of you—the $50 for the cleats or the 2 hours on Sunday. But there are invisible resources that are arguably more valuable: your child's trust and your own peace.
+                </p>
+                <div className="bg-white rounded-lg p-4 border border-teal-100">
+                    <p className="font-semibold text-teal-700 mb-2">The Check:</p>
+                    <p className="text-gray-700">Project yourself 15 years into the future. Imagine your child is graduating. Will this specific disagreement matter? If the answer is no, it is a depreciable asset. Don't spend your expensive emotional energy on it. Save your capital for the things that <em>will</em> be remembered.</p>
+                </div>
+            </div>
+
+            {/* Reframe 3 */}
+            <div className="bg-gradient-to-br from-teal-50 to-white border border-teal-200 rounded-xl p-6 my-8">
+                <div className="flex items-start gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-teal-500 text-white flex items-center justify-center text-sm font-bold shrink-0">3</div>
+                    <h3 className="text-xl font-bold text-teal-800 m-0">Audit Your "Emotional Accounting"</h3>
+                </div>
+                <p className="text-gray-700 mb-4">
+                    We tend to keep a mental ledger of debts: <em>"I was flexible last week, so they owe me this week."</em> When the other person doesn't pay up, we feel cheated.
+                </p>
+                <div className="bg-white rounded-lg p-4 border border-teal-100">
+                    <p className="font-semibold text-teal-700 mb-2">The Reframe:</p>
+                    <p className="text-gray-700">Stop viewing flexibility as a loan. View it as an <strong>investment in the ecosystem</strong>. You aren't doing it for <em>them</em>; you are doing it to lower the toxicity levels in the water your child swims in. When you view kindness as a gift to your child rather than a favor to your ex, you stop waiting for a "thank you" that might never come.</p>
+                </div>
+            </div>
+
+            {/* Reframe 4 */}
+            <div className="bg-gradient-to-br from-teal-50 to-white border border-teal-200 rounded-xl p-6 my-8">
+                <div className="flex items-start gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-teal-500 text-white flex items-center justify-center text-sm font-bold shrink-0">4</div>
+                    <h3 className="text-xl font-bold text-teal-800 m-0">The Somatic "Circuit Breaker"</h3>
+                </div>
+                <p className="text-gray-700 mb-4">
+                    Your body usually knows you are leaving the "win-win" zone before your brain does. A tight chest, shallow breathing, or a clenched jaw are the first signs that your amygdala is hijacking the bus.
+                </p>
+                <div className="bg-white rounded-lg p-4 border border-teal-100">
+                    <p className="font-semibold text-teal-700 mb-2">The Check:</p>
+                    <p className="text-gray-700">Before you hit send on a reply, do a quick body scan. If you are physically tense, you are likely in "survival mode." In that state, you are biologically incapable of seeing the win-win. <strong>Step away. The most productive thing you can do in that moment is nothing.</strong></p>
+                </div>
+            </div>
+
+            {/* Reframe 5 */}
+            <div className="bg-gradient-to-br from-teal-50 to-white border border-teal-200 rounded-xl p-6 my-8">
+                <div className="flex items-start gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-teal-500 text-white flex items-center justify-center text-sm font-bold shrink-0">5</div>
+                    <h3 className="text-xl font-bold text-teal-800 m-0">Separate the Intent from the Impact</h3>
+                </div>
+                <p className="text-gray-700 mb-4">
+                    Naive Realism makes us assume that if their action hurt us, their <em>intention</em> was to hurt us. This is often false. They might be disorganized, stressed, or oblivious—not malicious.
+                </p>
+                <div className="bg-white rounded-lg p-4 border border-teal-100">
+                    <p className="font-semibold text-teal-700 mb-2">The Reframe:</p>
+                    <p className="text-gray-700 mb-3">Try on the "Benevolent Translator" hat. Ask yourself, <em>"Is there a generous explanation for this?"</em></p>
+                    <div className="space-y-2 text-sm">
+                        <p><strong>Impact:</strong> They didn't call back.</p>
+                        <p><strong>Fear Story:</strong> They are ignoring me to be controlling.</p>
+                        <p><strong>Generous Story:</strong> They are overwhelmed at work and forgot.</p>
+                    </div>
+                    <p className="text-gray-600 mt-3 italic">Even if the generous story isn't 100% true, believing it keeps <em>you</em> calm, which keeps <em>you</em> in the driver's seat.</p>
+                </div>
+            </div>
+
+            {/* Emotional Security Theory */}
             <div className="my-10">
                 <img
                     src={emotionalSecurityImage}
-                    alt="Emotional Security Theory: The Child's Compass - comparing High Conflict/Adversarial IPC outcomes (threatened security, increased child distress, emotional reactivity, behavioral problems) versus Low Conflict/Cooperative IPC outcomes (secure attachment, stable adjustment, emotional regulation, resilience, positive co-parenting alliance)"
+                    alt="Emotional Security Theory: The Child's Compass - comparing High Conflict/Adversarial IPC outcomes versus Low Conflict/Cooperative IPC outcomes"
                     className="w-full rounded-xl shadow-lg"
                 />
-                <p className="text-center text-sm text-gray-500 mt-3 italic">The Child's Compass: How interparental conflict affects child adjustment</p>
-            </div>
-
-            <div className="bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-xl p-6 my-8">
-                <h4 className="font-bold text-teal-800 mb-3">What Research Shows:</h4>
-                <ul className="space-y-2">
-                    <li className="flex items-start gap-2">
-                        <svg className="w-5 h-5 text-teal-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-gray-700">Children's wellbeing correlates more strongly with <em>conflict level</em> than with family structure</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                        <svg className="w-5 h-5 text-teal-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-gray-700">Reduced interparental conflict leads to better academic and social outcomes</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                        <svg className="w-5 h-5 text-teal-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-gray-700">Children model their future relationship patterns on observed parental dynamics</span>
-                    </li>
-                </ul>
-            </div>
-
-            <hr className="my-12 border-gray-100" />
-
-            <h2>Conclusion: Shifting the Strategy</h2>
-            <p>
-                Breaking the Argument Cycle is not an act of surrender; it is a <strong>high-level strategic shift</strong>. It requires the willpower to move from a fear-based survival mindset to a logic-based cooperative mindset.
-            </p>
-            <p>
-                By centering decisions on the child's emotional stability, you are not "giving in"—you are investing in the only resource that truly matters.
-            </p>
-
-            <div className="bg-white border-l-4 border-teal-500 shadow-sm p-6 my-8 rounded-r-lg">
-                <p className="font-medium text-gray-900 m-0 italic">
-                    "The win is not defeating your co-parent. The win is raising a secure, thriving child."
-                </p>
+                <p className="text-center text-sm text-gray-500 mt-3 italic">The ultimate goal: creating an environment where your child can thrive</p>
             </div>
 
             <hr className="my-12 border-gray-100" />
 
             {/* CTA to Quiz */}
             <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-2xl p-8 my-8 text-white">
-                <h3 className="text-2xl font-bold mb-3">Empower Your Strategy</h3>
+                <h3 className="text-2xl font-bold mb-3">Ready to Put This Into Practice?</h3>
                 <p className="text-teal-100 mb-6">
-                    The first step in breaking a cycle is identifying your position within it. Discover if your current approach is based on structural logic, protective fear, or integrated peace.
+                    The first step in changing a pattern is understanding where you currently stand. Take our quick assessment to discover your natural co-parenting stance and get personalized insights.
                 </p>
                 <Link
                     to="/quizzes/co-parenting-stance"
@@ -211,16 +275,16 @@ export function WhyArgumentsRepeat() {
 
                 <div className="grid gap-6">
                     <div className="bg-gray-50 rounded-xl p-6 hover:bg-white hover:shadow-md transition-all duration-200 border border-transparent hover:border-gray-200">
-                        <h4 className="text-lg font-bold text-gray-900 mb-2">What is the Nash Equilibrium in co-parenting?</h4>
-                        <p className="text-gray-600 leading-relaxed">In game theory, it's the point where both parties have optimized for individual gain but ended up worse off than if they had cooperated. In co-parenting, this often manifests as depleted finances, emotional exhaustion, and damaged family relationships.</p>
+                        <h4 className="text-lg font-bold text-gray-900 mb-2">What is Naive Realism?</h4>
+                        <p className="text-gray-600 leading-relaxed">Naive Realism is the psychological tendency to believe we see the world objectively and as it truly is. This leads us to assume that people who disagree with us must be uninformed, irrational, or biased—when in reality, they're processing the same events through their own equally valid lens.</p>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-6 hover:bg-white hover:shadow-md transition-all duration-200 border border-transparent hover:border-gray-200">
-                        <h4 className="text-lg font-bold text-gray-900 mb-2">Why does my co-parent seem to misunderstand everything I say?</h4>
-                        <p className="text-gray-600 leading-relaxed">Naive Realism and Negativity Bias work together: your co-parent's brain is primed to detect threats, and they genuinely believe their interpretation is objective. Understanding this biology helps move from frustration to strategic communication.</p>
+                        <h4 className="text-lg font-bold text-gray-900 mb-2">Why does compromise feel like losing?</h4>
+                        <p className="text-gray-600 leading-relaxed">This is due to Loss Aversion—a principle from behavioral economics showing that the pain of losing something feels about twice as intense as the pleasure of gaining the same thing. Your brain literally processes "giving up" parenting time as a threat, even when the trade-off benefits everyone.</p>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-6 hover:bg-white hover:shadow-md transition-all duration-200 border border-transparent hover:border-gray-200">
-                        <h4 className="text-lg font-bold text-gray-900 mb-2">How does parental conflict affect children?</h4>
-                        <p className="text-gray-600 leading-relaxed">Research shows children are impacted more by interparental conflict than by separation itself. When exposed to ongoing conflict, children divert emotional resources from development to managing parental stress, affecting their academic, social, and emotional growth.</p>
+                        <h4 className="text-lg font-bold text-gray-900 mb-2">What's the difference between a Finite and Infinite Game?</h4>
+                        <p className="text-gray-600 leading-relaxed">A Finite Game has clear rules, winners, losers, and an endpoint (like a tennis match). An Infinite Game has no final winner—the goal is to keep playing (like raising a child). When you treat co-parenting arguments as finite games to "win," you sacrifice the infinite game of your child's long-term wellbeing.</p>
                     </div>
                 </div>
             </div>
