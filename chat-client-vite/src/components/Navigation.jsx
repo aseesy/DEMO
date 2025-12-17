@@ -283,10 +283,33 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
   // Debug: log when Navigation renders
   console.log('[Navigation] Rendering, currentView:', currentView);
 
+  // Use window width to determine mobile vs desktop since Tailwind responsive classes aren't working
+  const [isMobile, setIsMobile] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return true; // Default to mobile for SSR
+  });
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Check on mount
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <>
       {/* Top Navigation - Desktop Only */}
-      <nav className="hidden md:block fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100"
+        style={{ display: isMobile ? 'none' : 'block' }}
+      >
         <div className="max-w-7xl mx-auto w-full px-6 lg:px-8">
           <div className="flex items-center justify-end h-14">
             {/* Right side: Navigation Items + LiaiZen Branding with Dropdown Menu */}
@@ -423,12 +446,12 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       </nav>
 
       {/* Bottom Navigation - Mobile Only */}
-      {/* Using inline styles for visibility - CSS media query in index.css hides on desktop */}
+      {/* Using isMobile state since Tailwind responsive classes aren't working */}
       <nav
         className="fixed left-0 right-0 z-[9999] bg-white shadow-[0_-4px_12px_-1px_rgba(0,0,0,0.08)] border-t border-gray-100"
         style={{
-          // Force display block - CSS media query in index.css will hide on desktop
-          display: 'block',
+          // Show only on mobile
+          display: isMobile ? 'block' : 'none',
           bottom: 0,
           paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
           // Ensure visibility on iOS Safari by creating stacking context
