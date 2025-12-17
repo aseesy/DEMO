@@ -54,7 +54,7 @@ export function WhyArgumentsRepeat() {
             <div className="my-10">
                 <img
                     src={gameTheoryMatrix}
-                    alt="Co-Parenting Game Theory Matrix: Win-Win (both cooperate - peace and stability for child), Resource Drain (one cooperates, one dominates), Power Struggle (one dominates, one cooperates), Double Loss (both dominate - child is ultimate loser)"
+                    alt="Co-Parenting Game Theory Matrix: Win-Win (both cooperate - resources preserved, trust grows, child feels peace), Resource Drain (B dominates - B takes leverage, A feels wronged, sanity leaks), Power Struggle (A dominates - A takes leverage, B feels sidelined, conflict escalates), Double Loss (both dominate - both fight for control, resources depleted, child loses most)"
                     className="w-full rounded-xl shadow-lg"
                 />
                 <p className="text-center text-sm text-gray-500 mt-3 italic">The Co-Parenting Game Theory Matrix: A mindful communication and strategic shift leads to Win-Win</p>
