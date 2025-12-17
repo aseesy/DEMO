@@ -88,6 +88,7 @@ function App() {
                 {/* Pillar 1: Communication */}
                 <Route path="/co-parenting-communication" element={<BlogPillarPage categoryId="communication" />} />
                 <Route path="/break-co-parenting-argument-cycle-game-theory" element={<WhyArgumentsRepeat />} />
+                <Route path="/co-parenting-communication/why-arguments-repeat" element={<WhyArgumentsRepeat />} /> {/* Legacy URL redirect */}
                 <Route path="/co-parenting-communication/emotional-triggers" element={<EmotionalTriggers />} />
                 <Route path="/co-parenting-communication/emotional-regulation" element={<EmotionalRegulation />} />
                 <Route path="/co-parenting-communication/reaction-vs-response" element={<ReactionVsResponse />} />
