@@ -40,30 +40,8 @@ export function WhyArgumentsRepeat() {
                 In classical Game Theory, the Prisoner's Dilemma provides a framework for understanding co-parenting dynamics. Many parents operate under the illusion of a <strong>"Zero-Sum Game,"</strong> where one parent's gain (e.g., an extra holiday) is perceived as the other's absolute loss.
             </p>
 
-            <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-6 my-8">
-                <h4 className="font-bold text-gray-900 mb-4">The Four Situations of Co-Parenting Game Theory:</h4>
-                <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <span className="text-red-700 font-semibold">Situation 1:</span>
-                        <p className="text-sm text-gray-700 mt-1">Parent A "wins" at Parent B's expense</p>
-                    </div>
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <span className="text-red-700 font-semibold">Situation 2:</span>
-                        <p className="text-sm text-gray-700 mt-1">Parent B "wins" at Parent A's expense</p>
-                    </div>
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                        <span className="text-orange-700 font-semibold">Situation 3:</span>
-                        <p className="text-sm text-gray-700 mt-1">Nash Equilibrium of Total Loss—both depleted</p>
-                    </div>
-                    <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
-                        <span className="text-teal-700 font-semibold">Situation 4:</span>
-                        <p className="text-sm text-gray-700 mt-1">Win-Win—the only sustainable outcome</p>
-                    </div>
-                </div>
-            </div>
-
             <p>
-                According to game theory research, when two parties in a long-term relationship (like co-parents) prioritize individual "wins" (Situations 1 and 2), they inevitably reach <strong>Situation 3: The Nash Equilibrium of Total Loss</strong>. In this state, both parties have depleted their legal funds, emotional resilience, and co-parenting efficacy.
+                According to game theory research, when two parties in a long-term relationship (like co-parents) prioritize individual "wins," they inevitably reach a <strong>Double Loss</strong>. In this state, both parties have depleted their legal funds, emotional resilience, and co-parenting efficacy—and the child is the ultimate loser.
             </p>
 
             <div className="bg-white border-l-4 border-teal-500 shadow-sm p-6 my-8 rounded-r-lg">
@@ -76,10 +54,10 @@ export function WhyArgumentsRepeat() {
             <div className="my-10">
                 <img
                     src={gameTheoryMatrix}
-                    alt="Co-parenting Game Theory Matrix showing Win-Win vs Lose-Lose outcomes: When both parents cooperate, both win with peace and resources for child. When one competes while other cooperates, temporary gain but unstable dynamic. When both compete, both lose with stress and depleted resources."
+                    alt="Co-Parenting Game Theory Matrix: Win-Win (both cooperate - peace and stability for child), Resource Drain (one cooperates, one dominates), Power Struggle (one dominates, one cooperates), Double Loss (both dominate - child is ultimate loser)"
                     className="w-full rounded-xl shadow-lg"
                 />
-                <p className="text-center text-sm text-gray-500 mt-3 italic">The Co-Parenting Game Theory Matrix: Only mutual cooperation leads to sustainable outcomes</p>
+                <p className="text-center text-sm text-gray-500 mt-3 italic">The Co-Parenting Game Theory Matrix: A mindful communication and strategic shift leads to Win-Win</p>
             </div>
 
             <hr className="my-12 border-gray-100" />
