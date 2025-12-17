@@ -137,8 +137,7 @@ async function createUserWithEmail(email, password, context = {}, googleId = nul
     email: emailLower,
     created_at: now,
     first_name: nameData.firstName || null,
-    last_name: nameData.lastName || null,
-    display_name: nameData.displayName || (nameData.firstName ? `${nameData.firstName} ${nameData.lastName || ''}`.trim() : null)
+    display_name: nameData.displayName || nameData.firstName || null
   };
 
   // Hash password if provided (not required for OAuth users)
@@ -221,7 +220,6 @@ async function createUserWithEmail(email, password, context = {}, googleId = nul
     email: emailLower,
     context: context,
     firstName: userData.first_name,
-    lastName: userData.last_name,
     displayName: userData.display_name
   };
 }
@@ -319,8 +317,7 @@ async function createUser(username, password, context = {}, email = null, google
     username: usernameLower,
     created_at: now,
     first_name: nameData.firstName || null,
-    last_name: nameData.lastName || null,
-    display_name: nameData.displayName || (nameData.firstName ? `${nameData.firstName} ${nameData.lastName || ''}`.trim() : null)
+    display_name: nameData.displayName || nameData.firstName || null
   };
 
   // Hash password if provided (not required for OAuth users)
@@ -389,7 +386,6 @@ async function createUser(username, password, context = {}, email = null, google
     context: contextData,
     room,
     firstName: userData.first_name,
-    lastName: userData.last_name,
     displayName: userData.display_name
   };
 }

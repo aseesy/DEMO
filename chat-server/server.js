@@ -926,7 +926,7 @@ async function getUserDisplayName(username) {
     const users = dbSafe.parseResult(userResult);
     if (users.length > 0) {
       const user = users[0];
-      return user.preferred_name || user.display_name || user.first_name || username;
+      return user.first_name || user.display_name || username;
     }
   } catch (err) {
     console.error(`Error getting display name for ${username}:`, err);
@@ -1037,7 +1037,7 @@ io.on('connection', (socket) => {
       const dbPostgres = require('./dbPostgres');
       // Note: messages table doesn't have private/flagged/deleted columns in PostgreSQL schema
       const historyQuery = `
-        SELECT m.*, u.display_name, u.first_name, u.preferred_name
+        SELECT m.*, u.display_name, u.first_name
         FROM messages m
         LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
         WHERE m.room_id = $1
@@ -1080,8 +1080,8 @@ io.on('connection', (socket) => {
           }
         }
 
-        // Get display name: preferred_name > display_name > first_name > username
-        const displayName = msg.preferred_name || msg.display_name || msg.first_name || msg.username;
+        // Get display name: first_name > display_name > username
+        const displayName = msg.first_name || msg.display_name || msg.username;
 
         roomHistory.push({
           id: msg.id,
@@ -2946,7 +2946,7 @@ io.on('connection', (socket) => {
     try {
       const dbPostgres = require('./dbPostgres');
       const query = `
-        SELECT m.*, u.display_name, u.first_name, u.preferred_name
+        SELECT m.*, u.display_name, u.first_name
         FROM messages m
         LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
         WHERE m.room_id = $1 AND m.timestamp < $2
@@ -2971,7 +2971,7 @@ io.on('connection', (socket) => {
           try { userFlaggedBy = JSON.parse(msg.user_flagged_by); } catch (e) {}
         }
 
-        const displayName = msg.preferred_name || msg.display_name || msg.first_name || msg.username;
+        const displayName = msg.first_name || msg.display_name || msg.username;
 
         return {
           id: msg.id,
@@ -3034,7 +3034,7 @@ io.on('connection', (socket) => {
 
       // Get matching messages
       const searchQuery = `
-        SELECT m.*, u.display_name, u.first_name, u.preferred_name
+        SELECT m.*, u.display_name, u.first_name
         FROM messages m
         LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
         WHERE m.room_id = $1
@@ -3047,7 +3047,7 @@ io.on('connection', (socket) => {
       const result = await dbPostgres.query(searchQuery, [user.roomId, `%${query}%`, limit, offset]);
 
       const searchResults = result.rows.map(msg => {
-        const displayName = msg.preferred_name || msg.display_name || msg.first_name || msg.username;
+        const displayName = msg.first_name || msg.display_name || msg.username;
         return {
           id: msg.id,
           type: msg.type,
@@ -3096,14 +3096,14 @@ io.on('connection', (socket) => {
 
       // Get messages around that timestamp (25 before, target, 25 after)
       const contextQuery = `
-        (SELECT m.*, u.display_name, u.first_name, u.preferred_name
+        (SELECT m.*, u.display_name, u.first_name
          FROM messages m
          LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
          WHERE m.room_id = $1 AND m.timestamp <= $2
          ORDER BY m.timestamp DESC
          LIMIT 26)
         UNION ALL
-        (SELECT m.*, u.display_name, u.first_name, u.preferred_name
+        (SELECT m.*, u.display_name, u.first_name
          FROM messages m
          LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
          WHERE m.room_id = $1 AND m.timestamp > $2
@@ -3128,7 +3128,7 @@ io.on('connection', (socket) => {
           try { userFlaggedBy = JSON.parse(msg.user_flagged_by); } catch (e) {}
         }
 
-        const displayName = msg.preferred_name || msg.display_name || msg.first_name || msg.username;
+        const displayName = msg.first_name || msg.display_name || msg.username;
 
         return {
           id: msg.id,

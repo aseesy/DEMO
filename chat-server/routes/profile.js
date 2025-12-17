@@ -299,7 +299,7 @@ router.get('/preview-coparent-view', authenticate, async (req, res) => {
         // Define section fields
         const SECTION_FIELDS = {
             personal: [
-                'first_name', 'last_name', 'preferred_name', 'pronouns',
+                'first_name', 'pronouns',
                 'birthdate', 'language', 'timezone', 'phone', 'city', 'state', 'zip'
             ],
             work: [
@@ -341,7 +341,7 @@ router.get('/preview-coparent-view', authenticate, async (req, res) => {
         if (settings.personal_visibility === 'private') {
             // Keep name but hide other personal fields
             for (const field of SECTION_FIELDS.personal) {
-                if (!['first_name', 'last_name', 'preferred_name'].includes(field)) {
+                if (field !== 'first_name') {
                     delete filteredProfile[field];
                 }
             }
