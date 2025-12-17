@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { BlogArticleLayout } from './BlogArticleLayout';
 import whyArgumentsRepeatImage from '../../assets/blog/why_arguments_repeat_vector.png';
 import emotionalSecurityImage from '../../assets/blog/emotional_security_theory.png';
+import gameTheoryMatrix from '../../assets/blog/game_theory_matrix.png';
+import neurobiologyImage from '../../assets/blog/neurobiology_negativity_bias.png';
 
 export function WhyArgumentsRepeat() {
     const meta = {
@@ -70,6 +72,16 @@ export function WhyArgumentsRepeat() {
                 </p>
             </div>
 
+            {/* Game Theory Matrix Infographic */}
+            <div className="my-10">
+                <img
+                    src={gameTheoryMatrix}
+                    alt="Co-parenting Game Theory Matrix showing Win-Win vs Lose-Lose outcomes: When both parents cooperate, both win with peace and resources for child. When one competes while other cooperates, temporary gain but unstable dynamic. When both compete, both lose with stress and depleted resources."
+                    className="w-full rounded-xl shadow-lg"
+                />
+                <p className="text-center text-sm text-gray-500 mt-3 italic">The Co-Parenting Game Theory Matrix: Only mutual cooperation leads to sustainable outcomes</p>
+            </div>
+
             <hr className="my-12 border-gray-100" />
 
             <h2>2. The Biological Imperative: Why We Are Wired to Fight</h2>
@@ -92,6 +104,16 @@ export function WhyArgumentsRepeat() {
                         <p className="text-amber-900">Pain feels more intense and lasting than pleasure. This is why a single critical text can overshadow weeks of smooth co-parenting.</p>
                     </div>
                 </div>
+            </div>
+
+            {/* Neurobiology Infographic */}
+            <div className="my-10">
+                <img
+                    src={neurobiologyImage}
+                    alt="Neurobiology of Conflict: Amygdala Negativity Bias - comparing Reactive Mind (Amygdala Hijack) with threat response, emotional reactivity, memory of past hurts, and fight/flight/freeze versus Responsive Mind (Prefrontal Cortex) with rational thought, empathy, calm communication, and long-term planning"
+                    className="w-full rounded-xl shadow-lg"
+                />
+                <p className="text-center text-sm text-gray-500 mt-3 italic">Reactive Mind vs Responsive Mind: The neurobiology behind co-parenting conflict</p>
             </div>
 
             <p>
