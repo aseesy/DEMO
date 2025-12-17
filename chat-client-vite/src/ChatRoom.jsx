@@ -1090,19 +1090,9 @@ function ChatRoom() {
 
   if (isAuthenticated) {
     return (
-      <div className="h-dvh bg-white flex flex-col overflow-hidden overscroll-none">
-        {/* In-app toast notifications for visual alerts */}
-        <ToastContainer
-          toasts={toast.toasts}
-          onDismiss={toast.dismiss}
-          onClick={(clickedToast) => {
-            // Navigate to chat when toast is clicked
-            setCurrentView('chat');
-            toast.dismiss(clickedToast.id);
-          }}
-        />
-
-        {/* Navigation - Top for desktop, Bottom for mobile */}
+      <>
+        {/* Navigation - OUTSIDE overflow container for iOS Safari compatibility */}
+        {/* Fixed elements inside overflow:hidden containers can be clipped on iOS Safari */}
         <Navigation
           currentView={currentView}
           setCurrentView={setCurrentView}
@@ -1120,11 +1110,11 @@ function ChatRoom() {
             });
             // Trigger contacts reload after invitation acceptance
             // Dispatch event to reload contacts (contacts hook listens for this)
-            window.dispatchEvent(new CustomEvent('coparent-joined', { 
-              detail: { 
+            window.dispatchEvent(new CustomEvent('coparent-joined', {
+              detail: {
                 coparentId: result?.coParent?.id,
-                coparentName: result?.coParent?.name 
-              } 
+                coparentName: result?.coParent?.name
+              }
             }));
           }}
           hasMeanMessage={messages.some(msg =>
@@ -1135,7 +1125,19 @@ function ChatRoom() {
           )}
         />
 
-        {/* Main Content Area */}
+        <div className="h-dvh bg-white flex flex-col overflow-hidden overscroll-none">
+          {/* In-app toast notifications for visual alerts */}
+          <ToastContainer
+            toasts={toast.toasts}
+            onDismiss={toast.dismiss}
+            onClick={(clickedToast) => {
+              // Navigate to chat when toast is clicked
+              setCurrentView('chat');
+              toast.dismiss(clickedToast.id);
+            }}
+          />
+
+          {/* Main Content Area */}
         <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-14 md:pt-14 md:pb-4' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto' : 'pt-0 md:pt-14 pb-14 md:pb-8 overflow-y-auto px-4 sm:px-6 md:px-8'} relative z-10`}>
           <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : currentView === 'profile' ? 'w-full' : 'max-w-7xl mx-auto w-full'}`}>
             {/* Dashboard View - Monochrome Style */}
@@ -3180,7 +3182,8 @@ function ChatRoom() {
             />
           </div>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 }
