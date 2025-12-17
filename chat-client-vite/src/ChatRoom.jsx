@@ -1089,7 +1089,7 @@ function ChatRoom() {
 
   if (isAuthenticated) {
     return (
-      <div className="h-screen bg-white flex flex-col overflow-hidden">
+      <div className="h-dvh bg-white flex flex-col overflow-hidden overscroll-none">
         {/* In-app toast notifications for visual alerts */}
         <ToastContainer
           toasts={toast.toasts}
@@ -1606,9 +1606,12 @@ function ChatRoom() {
             {/* Full chat view */}
             {/* Chat View */}
             {currentView === 'chat' && (
-              <div className="h-full flex flex-col relative">
-                {/* Chat Header Bar - Sticky toolbar above messages */}
-                <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200/50 px-4 sm:px-6 md:px-8 py-3 flex items-center gap-3">
+                <div className="h-full flex flex-col relative">
+                  {/* Chat Header Bar - Sticky toolbar above messages */}
+                  <div 
+                    className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200/50 px-4 sm:px-6 md:px-8 py-3 flex items-center gap-3"
+                    style={{ WebkitBackdropFilter: 'blur(12px)' }}
+                  >
                   {/* Search Bar - Always visible */}
                   <div className="flex-1 relative max-w-3xl mx-auto">
                     <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -1960,7 +1963,7 @@ function ChatRoom() {
 
                       <div
                         ref={messagesContainerRef}
-                        className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-4 pb-2 space-y-4 bg-gradient-to-b from-white to-gray-50"
+                         className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-4 pb-2 space-y-4 bg-linear-to-b from-white to-gray-50"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                         onScroll={(e) => {
                           // Load more when scrolling to top
@@ -2064,7 +2067,7 @@ function ChatRoom() {
                           if (filteredMessages.length === 0) {
                             return (
                               <div className="flex flex-col items-center justify-center h-full py-16 px-4 max-w-md mx-auto text-center">
-                                <div className="w-20 h-20 mb-6 rounded-full bg-gradient-to-br from-teal-100 to-teal-50 flex items-center justify-center shadow-lg">
+                                <div className="w-20 h-20 mb-6 rounded-full bg-linear-to-br from-teal-100 to-teal-50 flex items-center justify-center shadow-lg">
                                   <img
                                     src="/assets/Logo.svg"
                                     alt="LiaiZen"
@@ -2286,7 +2289,7 @@ function ChatRoom() {
 
                                             {/* 2. ONE TIP - Single adjustment (insight field from server, or legacy tip1) */}
                                             {(msg.insight || msg.tip1) && (
-                                              <div className="mb-4 p-3 bg-gradient-to-r from-teal-50 to-teal-50/50 border border-teal-200 rounded-xl">
+                                               <div className="mb-4 p-3 bg-linear-to-r from-teal-50 to-teal-50/50 border border-teal-200 rounded-xl">
                                                 <div className="flex items-start gap-2">
                                                   <div className="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center shrink-0 mt-0.5">
                                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
@@ -2323,7 +2326,7 @@ function ChatRoom() {
                                                       setIsPreApprovedRewrite(true);
                                                       setOriginalRewrite(msg.rewrite1);
                                                     }}
-                                                    className="w-full text-left p-4 bg-gradient-to-br from-teal-50 to-white border-2 border-teal-200 rounded-xl hover:border-teal-400 hover:shadow-md transition-all text-base text-teal-dark group"
+                                                     className="w-full text-left p-4 bg-linear-to-br from-teal-50 to-white border-2 border-teal-200 rounded-xl hover:border-teal-400 hover:shadow-md transition-all text-base text-teal-dark group"
                                                   >
                                                     <div className="flex items-start gap-3">
                                                       <div className="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</div>
@@ -2343,7 +2346,7 @@ function ChatRoom() {
                                                       setIsPreApprovedRewrite(true);
                                                       setOriginalRewrite(msg.rewrite2);
                                                     }}
-                                                    className="w-full text-left p-4 bg-gradient-to-br from-teal-50 to-white border-2 border-teal-200 rounded-xl hover:border-teal-400 hover:shadow-md transition-all text-base text-teal-dark group"
+                                                     className="w-full text-left p-4 bg-linear-to-br from-teal-50 to-white border-2 border-teal-200 rounded-xl hover:border-teal-400 hover:shadow-md transition-all text-base text-teal-dark group"
                                                   >
                                                     <div className="flex items-start gap-3">
                                                       <div className="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</div>
@@ -2483,12 +2486,12 @@ function ChatRoom() {
                                               id={`message-${msg.id}`}
                                               className={`relative py-3.5 px-4 rounded-[20px] text-base leading-snug transition-all duration-300 shadow-sm ${isOwn
                                                 ? isFirstInGroup && isLastInGroup
-                                                  ? 'text-white bg-gradient-to-br from-teal-500 to-teal-600'
-                                                  : isFirstInGroup
-                                                    ? 'text-white bg-gradient-to-br from-teal-500 to-teal-600 rounded-br-[8px]'
-                                                    : isLastInGroup
-                                                      ? 'text-white bg-gradient-to-br from-teal-500 to-teal-600 rounded-tr-[8px]'
-                                                      : 'text-white bg-gradient-to-br from-teal-500 to-teal-600 rounded-r-[8px]'
+                                                   ? 'text-white bg-linear-to-br from-teal-500 to-teal-600'
+                                                   : isFirstInGroup
+                                                     ? 'text-white bg-linear-to-br from-teal-500 to-teal-600 rounded-br-[8px]'
+                                                     : isLastInGroup
+                                                       ? 'text-white bg-linear-to-br from-teal-500 to-teal-600 rounded-tr-[8px]'
+                                                       : 'text-white bg-linear-to-br from-teal-500 to-teal-600 rounded-r-[8px]'
                                                 : isFirstInGroup && isLastInGroup
                                                   ? 'bg-white border border-gray-200 text-gray-900'
                                                   : isFirstInGroup
@@ -2513,7 +2516,7 @@ function ChatRoom() {
                                                 </div>
                                               )}
 
-                                              <div className="text-base leading-snug whitespace-pre-wrap wrap-break-word text-left font-medium" style={{ fontSize: '15px' }}>{msg.text.trim()}</div>
+                                              <div className="text-base leading-snug whitespace-pre-wrap wrap-break-word text-left font-medium hyphens-auto" style={{ fontSize: '15px' }}>{msg.text.trim()}</div>
 
                                               {isFlagged && (
                                                 <div className="mt-3 flex items-center gap-2 text-xs text-orange-700 font-bold">
@@ -2760,12 +2763,12 @@ function ChatRoom() {
                               }}
                             />
                           </div>
-                          <button
-                            type="submit"
-                            disabled={!inputMessage.trim()}
-                            className="w-11 h-11 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-full font-bold hover:from-teal-600 hover:to-teal-700 transition-all disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed flex items-center justify-center shadow-md hover:shadow-lg group"
-                            title="Send message"
-                          >
+                           <button
+                             type="submit"
+                             disabled={!inputMessage.trim()}
+                             className="w-11 h-11 bg-linear-to-br from-teal-500 to-teal-600 text-white rounded-full font-bold hover:from-teal-600 hover:to-teal-700 transition-all disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed flex items-center justify-center shadow-md hover:shadow-lg group"
+                             title="Send message"
+                           >
                             <svg className="w-5 h-5 transition-transform duration-200 group-hover:rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                             </svg>

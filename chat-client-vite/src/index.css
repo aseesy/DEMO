@@ -149,20 +149,15 @@ body {
 
 /* Reduce spacing between paragraphs in messages */
 .message-text {
-  line-height: 1.35;
-}
-
-/* Reduce spacing between paragraphs (double line breaks) */
-.message-text {
+  line-height: 1.4;
   white-space: pre-wrap;
 }
 
-/* Target consecutive line breaks to reduce paragraph spacing */
+/* Safer paragraph spacing adjustment */
 .message-text br {
-  line-height: 0.8;
   display: block;
   content: "";
-  margin: -0.5rem 0;
+  margin: 0.1rem 0;
 }
 
 /* Touch-friendly inputs on mobile */
