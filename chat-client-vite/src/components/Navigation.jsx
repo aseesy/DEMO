@@ -423,16 +423,25 @@ export function Navigation({ currentView, setCurrentView, onLogout, unreadCount 
       </nav>
 
       {/* Bottom Navigation - Mobile Only */}
+      {/* Using inline styles for visibility - CSS media query in index.css hides on desktop */}
       <nav
-        className="block md:hidden fixed left-0 right-0 z-[9999] bg-white shadow-[0_-4px_12px_-1px_rgba(0,0,0,0.08)] border-t border-gray-100"
+        className="fixed left-0 right-0 z-[9999] bg-white shadow-[0_-4px_12px_-1px_rgba(0,0,0,0.08)] border-t border-gray-100"
         style={{
+          // Force display block - CSS media query in index.css will hide on desktop
+          display: 'block',
           bottom: 0,
           paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
-          // Ensure visibility on iOS Safari
+          // Ensure visibility on iOS Safari by creating stacking context
           WebkitTransform: 'translateZ(0)',
           transform: 'translateZ(0)',
           // Force minimum height to ensure visibility
           minHeight: '56px',
+          // Explicit positioning values
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          backgroundColor: 'white',
         }}
         data-testid="mobile-nav"
       >
