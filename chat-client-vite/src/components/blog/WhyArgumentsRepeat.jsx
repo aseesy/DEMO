@@ -22,9 +22,9 @@ export function WhyArgumentsRepeat() {
     ];
 
     const keyTakeaways = [
-        "Co-parenting conflicts often follow <strong>Game Theory patterns</strong>—understanding them reveals the path to Win-Win.",
-        "<strong>Negativity Bias</strong> is biological: your brain is wired to prioritize threats over cooperation.",
-        "Children suffer from <strong>Interparental Conflict</strong>, not separation itself—your communication strategy matters."
+        "<strong>The Resource Trap:</strong> In co-parenting, a \"win\" for your ego is almost always a \"loss\" for your child's peace.",
+        "<strong>The Survival Brain:</strong> One sharp text feels like ten because your brain is wired to prioritize threats over cooperation.",
+        "<strong>The Atmosphere:</strong> Children aren't wounded by the two houses they live in, but by the tension in the air between them."
     ];
 
     return (
