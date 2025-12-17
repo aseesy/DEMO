@@ -68,7 +68,7 @@ export function ProfilePanel({ username }) {
 
   const TABS = [
     { id: 'personal', label: 'Personal' },
-    { id: 'schedule', label: 'Schedule' },
+    { id: 'motivations', label: 'Motivations' },
     { id: 'background', label: 'Background' },
   ];
 
@@ -223,39 +223,9 @@ export function ProfilePanel({ username }) {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-teal-medium mb-1">Occupation</label>
-              <input
-                type="text"
-                name="occupation"
-                value={profileData.occupation || ''}
-                onChange={handleFieldChange}
-                placeholder="e.g., Software Engineer, Teacher, Nurse"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-teal-medium focus:ring-1 focus:ring-teal-medium"
-              />
-            </div>
-          </>
-        )}
-
-        {activeTab === 'schedule' && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-teal-medium mb-1">Employment Status</label>
-              <select
-                name="employment_status"
-                value={profileData.employment_status || ''}
-                onChange={handleFieldChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-teal-medium focus:ring-1 focus:ring-teal-medium"
-              >
-                <option value="">Select...</option>
-                <option value="full_time">Full-time</option>
-                <option value="part_time">Part-time</option>
-                <option value="self_employed">Self-employed</option>
-                <option value="unemployed">Unemployed</option>
-                <option value="retired">Retired</option>
-                <option value="student">Student</option>
-                <option value="stay_at_home">Stay-at-home parent</option>
-              </select>
+            {/* Schedule Section */}
+            <div className="pt-4 mt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-500 mb-4">Your schedule helps LiaiZen coordinate better.</p>
             </div>
 
             <div>
@@ -264,7 +234,7 @@ export function ProfilePanel({ username }) {
                 name="work_schedule"
                 value={profileData.work_schedule || ''}
                 onChange={handleFieldChange}
-                placeholder="e.g., Mon-Fri 9-5, rotating shifts, etc."
+                placeholder="e.g., Mon-Fri 9-5, rotating shifts, work from home..."
                 rows={2}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-teal-medium focus:ring-1 focus:ring-teal-medium"
               />
@@ -284,33 +254,124 @@ export function ProfilePanel({ username }) {
                 <option value="low">Low - Fixed schedule</option>
               </select>
             </div>
+          </>
+        )}
+
+        {activeTab === 'motivations' && (
+          <>
+            {/* Core Values - Multi-select */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-teal-medium mb-2">
+                What values are most important to you?
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 'honesty', label: 'Honesty' },
+                  { value: 'integrity', label: 'Integrity' },
+                  { value: 'fairness', label: 'Fairness' },
+                  { value: 'responsibility', label: 'Responsibility' },
+                  { value: 'respect', label: 'Respect' },
+                  { value: 'compassion', label: 'Compassion' },
+                  { value: 'justice', label: 'Justice' },
+                  { value: 'kindness', label: 'Kindness' },
+                  { value: 'empathy', label: 'Empathy' },
+                  { value: 'loyalty', label: 'Loyalty' },
+                  { value: 'cooperation', label: 'Cooperation' },
+                  { value: 'tolerance', label: 'Tolerance' },
+                  { value: 'gratitude', label: 'Gratitude' },
+                  { value: 'self_discipline', label: 'Self-discipline' },
+                  { value: 'humility', label: 'Humility' },
+                  { value: 'courage', label: 'Courage' },
+                  { value: 'patience', label: 'Patience' },
+                  { value: 'perseverance', label: 'Perseverance' },
+                  { value: 'authenticity', label: 'Authenticity' },
+                  { value: 'reliability', label: 'Reliability' },
+                  { value: 'professionalism', label: 'Professionalism' },
+                  { value: 'accountability', label: 'Accountability' },
+                  { value: 'innovation', label: 'Innovation' },
+                  { value: 'teamwork', label: 'Teamwork' }
+                ].map(option => {
+                  const selectedValues = (profileData.motivation_values || '').split(',').filter(Boolean);
+                  const isSelected = selectedValues.includes(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        const newValues = isSelected
+                          ? selectedValues.filter(v => v !== option.value)
+                          : [...selectedValues, option.value];
+                        updateField('motivation_values', newValues.join(','));
+                      }}
+                      className={`px-3 py-2 rounded-full text-sm font-medium transition-all ${
+                        isSelected
+                          ? 'bg-teal-medium text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <div>
-              <label className="block text-sm font-medium text-teal-medium mb-1">Commute Time</label>
-              <input
-                type="text"
-                name="commute_time"
-                value={profileData.commute_time || ''}
+              <label className="block text-sm font-medium text-teal-medium mb-1">
+                What are your main goals as a parent?
+              </label>
+              <textarea
+                name="motivation_goals"
+                value={profileData.motivation_goals || ''}
                 onChange={handleFieldChange}
-                placeholder="e.g., 30 minutes, work from home"
+                placeholder="e.g., Raise a confident, kind child. Maintain a stable routine..."
+                rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-teal-medium focus:ring-1 focus:ring-teal-medium"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-teal-medium mb-1">Travel Required</label>
-              <select
-                name="travel_required"
-                value={profileData.travel_required || ''}
+              <label className="block text-sm font-medium text-teal-medium mb-1">
+                What are your strengths as a parent?
+              </label>
+              <textarea
+                name="motivation_strengths"
+                value={profileData.motivation_strengths || ''}
                 onChange={handleFieldChange}
+                placeholder="e.g., I'm patient, I'm good at explaining things..."
+                rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-teal-medium focus:ring-1 focus:ring-teal-medium"
-              >
-                <option value="">Select...</option>
-                <option value="none">None</option>
-                <option value="rarely">Rarely (a few times a year)</option>
-                <option value="sometimes">Sometimes (monthly)</option>
-                <option value="often">Often (weekly)</option>
-              </select>
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-teal-medium mb-1">
+                What would you like to improve?
+              </label>
+              <textarea
+                name="motivation_improvements"
+                value={profileData.motivation_improvements || ''}
+                onChange={handleFieldChange}
+                placeholder="e.g., Being more patient during stressful moments, better time management..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-teal-medium focus:ring-1 focus:ring-teal-medium"
+              />
+            </div>
+
+            {/* Info Box */}
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-sm text-purple-800">
+              <div className="flex gap-3">
+                <svg className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <div>
+                  <p className="font-medium">Why we ask</p>
+                  <p className="mt-1 text-purple-700">
+                    Understanding your values and motivations helps LiaiZen provide more personalized support.
+                    This information is <strong>completely private</strong> and never shared with your co-parent.
+                  </p>
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -486,7 +547,7 @@ export function ProfilePanel({ username }) {
                 name="additional_context"
                 value={profileData.additional_context || ''}
                 onChange={handleFieldChange}
-                placeholder="Share any relevant information about your co-parenting situation..."
+                placeholder="Share anything else you'd like LiaiZen to know about you..."
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-teal-medium focus:ring-1 focus:ring-teal-medium"
               />

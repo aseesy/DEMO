@@ -1,10 +1,8 @@
 import React from 'react';
 import { useProfile } from '../../hooks/useProfile';
 import PersonalInfoForm from './PersonalInfoForm';
-import WorkScheduleForm from './WorkScheduleForm';
-import HealthWellbeingForm from './HealthWellbeingForm';
-import FinancialContextForm from './FinancialContextForm';
 import BackgroundForm from './BackgroundForm';
+import MotivationsForm from './MotivationsForm';
 
 /**
  * ProfileWizard - Multi-step profile completion wizard
@@ -12,10 +10,8 @@ import BackgroundForm from './BackgroundForm';
  */
 
 const STEPS = [
-  { id: 'personal', title: 'Personal Information', icon: 'user', description: 'Basic info about you' },
-  { id: 'work', title: 'Work & Schedule', icon: 'briefcase', description: 'Your availability' },
-  { id: 'health', title: 'Health & Wellbeing', icon: 'heart', description: 'Private health context' },
-  { id: 'financial', title: 'Financial Context', icon: 'dollar', description: 'Private financial info' },
+  { id: 'personal', title: 'Personal', icon: 'user', description: 'Basic info about you' },
+  { id: 'motivations', title: 'Motivations', icon: 'sparkles', description: 'Your values and goals' },
   { id: 'background', title: 'Background', icon: 'book', description: 'Your story' }
 ];
 
@@ -23,21 +19,12 @@ const STEPS = [
 const SECTION_FIELDS = {
   personal: [
     'first_name', 'last_name', 'preferred_name', 'pronouns',
-    'birthdate', 'language', 'timezone', 'phone', 'city', 'state', 'zip'
+    'birthdate', 'language', 'timezone', 'phone', 'city', 'state', 'zip',
+    'work_schedule', 'schedule_flexibility'
   ],
-  work: [
-    'employment_status', 'occupation', 'employer', 'work_schedule',
-    'schedule_flexibility', 'commute_time', 'travel_required'
-  ],
-  health: [
-    'health_physical_conditions', 'health_physical_limitations',
-    'health_mental_conditions', 'health_mental_treatment', 'health_mental_history',
-    'health_substance_history', 'health_in_recovery', 'health_recovery_duration'
-  ],
-  financial: [
-    'finance_income_level', 'finance_income_stability', 'finance_employment_benefits',
-    'finance_housing_status', 'finance_housing_type', 'finance_vehicles',
-    'finance_debt_stress', 'finance_support_paying', 'finance_support_receiving'
+  motivations: [
+    'motivation_values', 'motivation_goals',
+    'motivation_strengths', 'motivation_improvements'
   ],
   background: [
     'background_birthplace', 'background_raised', 'background_family_origin',
@@ -63,6 +50,11 @@ const StepIcon = ({ type, isActive, isComplete }) => {
     user: (
       <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    ),
+    sparkles: (
+      <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
       </svg>
     ),
     briefcase: (
@@ -158,12 +150,8 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
     switch (step.id) {
       case 'personal':
         return <PersonalInfoForm profileData={profileData} updateField={updateField} />;
-      case 'work':
-        return <WorkScheduleForm profileData={profileData} updateField={updateField} />;
-      case 'health':
-        return <HealthWellbeingForm profileData={profileData} updateField={updateField} />;
-      case 'financial':
-        return <FinancialContextForm profileData={profileData} updateField={updateField} />;
+      case 'motivations':
+        return <MotivationsForm profileData={profileData} updateField={updateField} />;
       case 'background':
         return <BackgroundForm profileData={profileData} updateField={updateField} />;
       default:

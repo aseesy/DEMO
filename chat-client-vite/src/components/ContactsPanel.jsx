@@ -683,63 +683,6 @@ export function ContactsPanel({ username }) {
                       />
                     </div>
 
-                    {/* Financial Section */}
-                    <div className="bg-teal-lightest rounded-lg p-3 space-y-3 mt-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h4 className="font-semibold text-teal-medium text-sm">Financial</h4>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-600 mb-1">Do they pay child support?</label>
-                        <select
-                          value={contactFormData.coparent_pays_child_support || ''}
-                          onChange={(e) => {
-                            const paysSupport = e.target.value;
-                            setContactFormData({ 
-                              ...contactFormData, 
-                              coparent_pays_child_support: paysSupport,
-                              // If they pay, they can't receive - automatically set to 'no'
-                              coparent_receives_child_support: (paysSupport === 'yes' || paysSupport === 'sometimes') ? 'no' : contactFormData.coparent_receives_child_support
-                            });
-                          }}
-                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
-                        >
-                          <option value="">Select...</option>
-                          <option value="yes">Yes</option>
-                          <option value="no">No</option>
-                          <option value="sometimes">Sometimes/Inconsistent</option>
-                          <option value="pending">Pending court order</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-600 mb-1">Do they receive child support?</label>
-                        <select
-                          value={contactFormData.coparent_receives_child_support || ''}
-                          onChange={(e) => {
-                            const receivesSupport = e.target.value;
-                            setContactFormData({ 
-                              ...contactFormData, 
-                              coparent_receives_child_support: receivesSupport,
-                              // If they receive, they can't pay - automatically set to 'no'
-                              coparent_pays_child_support: receivesSupport === 'yes' ? 'no' : contactFormData.coparent_pays_child_support
-                            });
-                          }}
-                          disabled={contactFormData.coparent_pays_child_support === 'yes' || contactFormData.coparent_pays_child_support === 'sometimes'}
-                          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        >
-                          <option value="">Select...</option>
-                          <option value="yes">Yes</option>
-                          <option value="no">No</option>
-                          <option value="pending">Pending court order</option>
-                        </select>
-                        {(contactFormData.coparent_pays_child_support === 'yes' || contactFormData.coparent_pays_child_support === 'sometimes') && (
-                          <p className="text-xs text-gray-500 mt-1">If they pay child support, they don't receive it.</p>
-                        )}
-                      </div>
-                    </div>
-
                     {/* Work Section */}
                     <div className="bg-teal-lightest rounded-lg p-3 space-y-3 mt-3">
                       <div className="flex items-center gap-2 mb-2">

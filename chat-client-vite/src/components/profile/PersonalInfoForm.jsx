@@ -261,6 +261,59 @@ export default function PersonalInfoForm({ profileData, updateField }) {
         </FormField>
       </div>
 
+      {/* Schedule Section */}
+      <div className="pt-4 border-t border-gray-100">
+        <h4 className="text-sm font-semibold text-[#275559] mb-4">Your Schedule</h4>
+
+        <div className="space-y-4">
+          <FormField
+            label="Typical Schedule"
+            optional
+            tooltip="Describe your regular weekly schedule"
+          >
+            <textarea
+              value={profileData.work_schedule || ''}
+              onChange={(e) => updateField('work_schedule', e.target.value)}
+              placeholder="e.g., Monday-Friday 9am-5pm, weekends off. Or describe your typical week."
+              rows={3}
+              className={`${inputClasses} resize-none`}
+            />
+          </FormField>
+
+          <div className="space-y-3">
+            <label className="flex items-center text-sm font-medium text-gray-700">
+              Schedule Flexibility
+              <Tooltip text="How easily can you adjust your schedule for child-related needs?" />
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { value: 'high', label: 'High Flexibility', description: 'Can adjust schedule easily' },
+                { value: 'medium', label: 'Some Flexibility', description: 'Can adjust with notice' },
+                { value: 'low', label: 'Limited Flexibility', description: 'Strict schedule' }
+              ].map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => updateField('schedule_flexibility', option.value)}
+                  className={`p-3 rounded-lg border-2 text-left transition-all ${
+                    profileData.schedule_flexibility === option.value
+                      ? 'border-[#4DA8B0] bg-[#4DA8B0]/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className={`font-medium text-sm ${
+                    profileData.schedule_flexibility === option.value ? 'text-[#275559]' : 'text-gray-700'
+                  }`}>
+                    {option.label}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">{option.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Info Box */}
       <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
         <div className="flex gap-3">
@@ -270,8 +323,8 @@ export default function PersonalInfoForm({ profileData, updateField }) {
           <div>
             <p className="font-medium">Why we ask</p>
             <p className="mt-1 text-blue-700">
-              Your location and timezone help LiaiZen suggest realistic scheduling options
-              and provide location-aware support resources.
+              Your location, timezone, and schedule help LiaiZen suggest realistic scheduling options
+              and coordinate effectively with your co-parent.
             </p>
           </div>
         </div>

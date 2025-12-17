@@ -5,8 +5,6 @@
 
 export { default as ProfileWizard } from './ProfileWizard';
 export { default as PersonalInfoForm } from './PersonalInfoForm';
-export { default as WorkScheduleForm } from './WorkScheduleForm';
-export { default as HealthWellbeingForm } from './HealthWellbeingForm';
-export { default as FinancialContextForm } from './FinancialContextForm';
+export { default as MotivationsForm } from './MotivationsForm';
 export { default as BackgroundForm } from './BackgroundForm';
 export { default as PrivacySettings } from './PrivacySettings';
