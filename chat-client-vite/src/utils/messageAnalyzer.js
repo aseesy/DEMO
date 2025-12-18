@@ -29,7 +29,16 @@ export async function analyzeMessage(messageText, senderProfile = {}, receiverPr
       receiverProfile,
     });
 
-    return response;
+    // Check if the request was successful
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Mediation API error:', response.status, errorText);
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    // Parse the JSON response
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error analyzing message:', error);
     // On error, default to PASS (allow message through)
