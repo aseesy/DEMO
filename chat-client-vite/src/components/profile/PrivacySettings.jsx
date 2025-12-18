@@ -12,7 +12,6 @@ const SECTIONS = [
     title: 'Personal Information',
     description: 'Name, pronouns, location, timezone',
     icon: 'user',
-    canChange: true,
     defaultValue: 'shared'
   },
   {
@@ -21,28 +20,7 @@ const SECTIONS = [
     title: 'Work & Schedule',
     description: 'Employment, schedule, flexibility',
     icon: 'briefcase',
-    canChange: true,
     defaultValue: 'private'
-  },
-  {
-    id: 'health',
-    key: 'health_visibility',
-    title: 'Health & Wellbeing',
-    description: 'Physical, mental health, recovery',
-    icon: 'heart',
-    canChange: false,
-    defaultValue: 'private',
-    lockedReason: 'Health information is always kept private for your safety'
-  },
-  {
-    id: 'financial',
-    key: 'financial_visibility',
-    title: 'Financial Context',
-    description: 'Income, housing, child support',
-    icon: 'dollar',
-    canChange: false,
-    defaultValue: 'private',
-    lockedReason: 'Financial information is always kept private for your safety'
   },
   {
     id: 'background',
@@ -50,7 +28,6 @@ const SECTIONS = [
     title: 'Background',
     description: 'Culture, education, military service',
     icon: 'book',
-    canChange: true,
     defaultValue: 'shared'
   }
 ];
@@ -66,16 +43,6 @@ const SectionIcon = ({ type }) => {
     briefcase: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-      </svg>
-    ),
-    heart: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-      </svg>
-    ),
-    dollar: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
     book: (
@@ -162,54 +129,33 @@ export default function PrivacySettings({
           <span className="w-3 h-3 rounded-full bg-gray-400" />
           <span className="text-gray-600">Private (AI only)</span>
         </div>
-        <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-          <span className="text-gray-600">Locked private</span>
-        </div>
       </div>
 
       {/* Section Controls */}
       <div className="space-y-3">
         {SECTIONS.map((section) => {
           const isShared = settings[section.key] === 'shared';
-          const isLocked = !section.canChange;
 
           return (
             <div
               key={section.id}
               className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                isLocked
-                  ? 'bg-gray-50 border-gray-200'
-                  : isShared
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-white border-gray-200'
+                isShared
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-white border-gray-200'
               }`}
             >
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${
-                  isLocked
-                    ? 'bg-gray-200 text-gray-500'
-                    : isShared
-                      ? 'bg-green-100 text-green-600'
-                      : 'bg-gray-100 text-gray-500'
+                  isShared
+                    ? 'bg-green-100 text-green-600'
+                    : 'bg-gray-100 text-gray-500'
                 }`}>
                   <SectionIcon type={section.icon} />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-800">{section.title}</span>
-                    {isLocked && (
-                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    )}
-                  </div>
+                  <span className="font-medium text-gray-800">{section.title}</span>
                   <p className="text-sm text-gray-500">{section.description}</p>
-                  {isLocked && section.lockedReason && (
-                    <p className="text-xs text-amber-600 mt-1">{section.lockedReason}</p>
-                  )}
                 </div>
               </div>
 
@@ -222,7 +168,7 @@ export default function PrivacySettings({
                 <Toggle
                   enabled={isShared}
                   onChange={() => handleToggle(section.key, settings[section.key])}
-                  disabled={isLocked || isSaving}
+                  disabled={isSaving}
                 />
               </div>
             </div>
@@ -268,7 +214,7 @@ export default function PrivacySettings({
             <ul className="mt-2 space-y-1 text-blue-700">
               <li>• <strong>Shared</strong> info is visible to your co-parent when they view your profile</li>
               <li>• <strong>Private</strong> info is only used by LiaiZen's AI to help you communicate better</li>
-              <li>• Health & Financial data is <strong>always encrypted</strong> and never shared</li>
+              <li>• <strong>Health & Financial</strong> data is always encrypted and <strong>never shared</strong> with your co-parent</li>
               <li>• You can change these settings anytime</li>
             </ul>
           </div>

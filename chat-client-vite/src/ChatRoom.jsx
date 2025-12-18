@@ -5,7 +5,6 @@ import { useAuth } from './hooks/useAuth.js';
 import { useTasks } from './hooks/useTasks.js';
 import { useChat } from './hooks/useChat.js';
 import { useContacts } from './hooks/useContacts.js';
-import { useProfile } from './hooks/useProfile.js';
 import { useNotifications } from './hooks/useNotifications.js';
 import { useInAppNotifications } from './hooks/useInAppNotifications.js';
 import { useToast } from './hooks/useToast.js';
@@ -16,7 +15,6 @@ import { UpdatesPanel } from './components/UpdatesPanel.jsx';
 import { CommunicationStatsWidget } from './components/CommunicationStatsWidget.jsx';
 import { Navigation } from './components/Navigation.jsx';
 import { LandingPage } from './components/LandingPage.jsx';
-import { PWAInstallButton } from './components/PWAInstallButton.jsx';
 import { ObserverCard } from './components/ObserverCard.jsx';
 import { TaskFormModal } from './components/modals/TaskFormModal.jsx';
 import { WelcomeModal } from './components/modals/WelcomeModal.jsx';
@@ -25,12 +23,12 @@ import { FlaggingModal } from './components/modals/FlaggingModal.jsx';
 import { ContactSuggestionModal } from './components/modals/ContactSuggestionModal.jsx';
 import { InviteTaskModal } from './components/InviteTaskModal.jsx';
 import { MessageSearch } from './components/MessageSearch.jsx';
-import PrivacySettings from './components/profile/PrivacySettings.jsx';
 import { API_BASE_URL } from './config.js';
+import { SettingsView, DashboardView } from './views';
 
 // Lazy-load AccountView for code-splitting (reduces initial bundle)
 const AccountView = React.lazy(() => import('./components/AccountView.jsx'));
-import { apiPost, apiGet } from './apiClient.js';
+import { apiPost } from './apiClient.js';
 import { getWithMigration, setWithMigration, removeWithMigration } from './utils/storageMigration.js';
 import {
   trackMessageSent,
@@ -49,101 +47,6 @@ import { logger } from './utils/logger.js';
 
 // Main LiaiZen chat room component
 // Handles chat, tasks, contacts, profile, and all core app functionality
-
-// Privacy Settings Wrapper Component
-function PrivacySettingsWrapper({ username }) {
-  const {
-    privacySettings,
-    loadPrivacySettings,
-    updatePrivacySettings,
-  } = useProfile(username);
-  const [isSaving, setIsSaving] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      await loadPrivacySettings();
-      setIsLoading(false);
-    };
-    if (username) {
-      load();
-    }
-  }, [username, loadPrivacySettings]);
-
-  const handleChange = React.useCallback(async (newSettings) => {
-    setIsSaving(true);
-    try {
-      const result = await updatePrivacySettings(newSettings);
-      if (!result?.success) {
-        console.error('Failed to update privacy settings:', result?.error);
-      }
-    } catch (error) {
-      console.error('Error updating privacy settings:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [updatePrivacySettings]);
-
-  const handlePreview = React.useCallback(async () => {
-    try {
-      const response = await apiGet('/api/user/profile/preview-coparent-view');
-      if (response.ok) {
-        return await response.json();
-      }
-      throw new Error('Failed to load preview');
-    } catch (error) {
-      console.error('Error loading preview:', error);
-      throw error;
-    }
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="border-2 border-teal-light rounded-2xl p-8 bg-white shadow-sm">
-        <div className="flex items-center justify-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-teal-medium" />
-        </div>
-      </div>
-    );
-  }
-
-  // Default settings if none loaded
-  const defaultSettings = {
-    personal_visibility: 'shared',
-    work_visibility: 'private',
-    health_visibility: 'private',
-    financial_visibility: 'private',
-    background_visibility: 'shared',
-    field_overrides: '{}',
-  };
-
-  const currentSettings = privacySettings || defaultSettings;
-
-  return (
-    <div className="border-2 border-teal-light rounded-2xl p-8 bg-white shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start gap-4 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-teal-medium flex items-center justify-center shrink-0 shadow-md">
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <div className="flex-1">
-          <h3 className="text-xl font-semibold text-teal-dark mb-2">Privacy Settings</h3>
-          <p className="text-base text-gray-600 mb-4 leading-relaxed">
-            Control what information your co-parent can see about you
-          </p>
-        </div>
-      </div>
-      <PrivacySettings
-        settings={currentSettings}
-        onChange={handleChange}
-        onPreviewCoParentView={handlePreview}
-        isSaving={isSaving}
-      />
-    </div>
-  );
-}
 
 function ChatRoom() {
   const navigate = useNavigate();
@@ -1140,472 +1043,35 @@ function ChatRoom() {
           {/* Main Content Area */}
         <div className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-14 md:pt-14 md:pb-4' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto' : 'pt-0 md:pt-14 pb-14 md:pb-8 overflow-y-auto px-4 sm:px-6 md:px-8'} relative z-10`}>
           <div className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : currentView === 'profile' ? 'w-full' : 'max-w-7xl mx-auto w-full'}`}>
-            {/* Dashboard View - Monochrome Style */}
+            {/* Dashboard View */}
             {currentView === 'dashboard' && (
-              <div className="space-y-6 md:space-y-8">
-                {/* Feature 005: Removed standalone invite cards - functionality now in tasks */}
-                {/* Co-parent connection prompt - subtle banner pointing to tasks */}
-                {!hasCoParentConnected && (
-                  <button
-                    onClick={() => setShowInviteModal(true)}
-                    className="w-full rounded-xl border-2 border-teal-400 bg-linear-to-r from-teal-50 to-emerald-50 px-5 py-4 shadow-sm hover:shadow-md transition-all text-left group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-teal-800">Connect with Your Co-Parent</h3>
-                          <p className="text-sm text-teal-600">Send an invite or enter a code to start communicating</p>
-                        </div>
-                      </div>
-                      <svg className="w-5 h-5 text-teal-500 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </button>
-                )}
-
-                {/* Dashboard Grid: Updates and Tasks */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-                  {/* Updates Section */}
-                  <UpdatesPanel
-                    username={username}
-                    setCurrentView={setCurrentView}
-                    onContactClick={(_contactName) => {
-                      // Navigate to contacts view when clicking on a person
-                      setCurrentView('contacts');
-                    }}
-                  />
-
-                  {/* Tasks Section */}
-                  <div className="bg-white rounded-xl border-2 border-teal-light p-4 md:p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="mb-4">
-                      <h2 className="text-lg md:text-xl font-semibold text-teal-dark">
-                        Your Tasks
-                      </h2>
-                    </div>
-
-                    {/* Search and Filter Controls */}
-                    <div className="mb-4 space-y-3">
-                      {/* Search Input */}
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={taskSearch}
-                          onChange={(e) => setTaskSearch(e.target.value)}
-                          placeholder="Search tasks..."
-                          className="w-full px-3 py-2 pl-9 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 text-sm bg-white min-h-[36px] transition-all"
-                        />
-                        <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        {taskSearch && (
-                          <button
-                            onClick={() => setTaskSearch('')}
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-medium p-1 rounded-lg hover:bg-gray-50 transition-all touch-manipulation"
-                            aria-label="Clear search"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Filter Buttons */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <button
-                          onClick={() => setTaskFilter('open')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[32px] touch-manipulation ${taskFilter === 'open'
-                            ? 'bg-teal-medium text-white shadow-sm hover:shadow-md'
-                            : 'bg-white border-2 border-teal-light text-teal-medium hover:border-teal-medium hover:bg-teal-lightest'
-                            }`}
-                        >
-                          Open
-                        </button>
-                        <button
-                          onClick={() => setTaskFilter('completed')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[32px] touch-manipulation ${taskFilter === 'completed'
-                            ? 'bg-teal-medium text-white shadow-sm hover:shadow-md'
-                            : 'bg-white border-2 border-teal-light text-teal-medium hover:border-teal-medium hover:bg-teal-lightest'
-                            }`}
-                        >
-                          Completed
-                        </button>
-                        <button
-                          onClick={() => setTaskFilter('all')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[32px] touch-manipulation ${taskFilter === 'all'
-                            ? 'bg-teal-medium text-white shadow-sm hover:shadow-md'
-                            : 'bg-white border-2 border-teal-light text-teal-medium hover:border-teal-medium hover:bg-teal-lightest'
-                            }`}
-                        >
-                          All
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingTask(null);
-                            setTaskFormMode('manual');
-                            setAiTaskDetails('');
-                            setIsGeneratingTask(false);
-                            setTaskFormData({
-                              title: '',
-                              description: '',
-                              status: 'open',
-                              priority: 'medium',
-                              due_date: '',
-                              assigned_to: 'self',
-                              related_people: [],
-                            });
-                            setShowTaskForm(true);
-                          }}
-                          className="px-3 py-1.5 bg-teal-dark text-white rounded-lg text-xs font-semibold hover:bg-teal-darkest transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 min-h-[32px] whitespace-nowrap"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                          </svg>
-                          Add Task
-                        </button>
-                      </div>
-                    </div>
-                    {isLoadingTasks ? (
-                      <div className="text-center py-8">
-                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-teal-light border-t-teal-medium" />
-                      </div>
-                    ) : tasks.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-gray-600 text-sm">
-                          {taskSearch || taskFilter !== 'open'
-                            ? 'No tasks match your search or filter criteria.'
-                            : 'No open tasks found. Create your first task to get started!'}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {tasks.map((task) => {
-                          const titleLower = (task.title || '').toLowerCase().trim();
-                          const isCoparentTask =
-                            titleLower.includes('add your co-parent') ||
-                            titleLower.includes('add coparent');
-                          const isProfileTask =
-                            titleLower.includes('complete your profile') ||
-                            titleLower.includes('complete profile');
-                          const isChildrenTask =
-                            titleLower.includes('add your children') ||
-                            titleLower.includes('add children');
-                          const isWelcomeTask = titleLower.includes('welcome');
-                          const isSmartTask =
-                            task.status !== 'completed' &&
-                            (isCoparentTask || isProfileTask || isChildrenTask);
-
-                          // Feature 005: Check for invite task
-                          const isInviteTask = titleLower.includes('invite your co-parent');
-
-                          // Get icon based on task content
-                          const getTaskIcon = () => {
-                            const iconSize = "w-full h-full";
-                            if (isWelcomeTask) {
-                              return (
-                                <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                </svg>
-                              );
-                            }
-                            if (isProfileTask) {
-                              return (
-                                <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                              );
-                            }
-                            // Feature 005: Invite task icon (envelope with plus)
-                            if (isInviteTask) {
-                              return (
-                                <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                              );
-                            }
-                            if (isCoparentTask) {
-                              return (
-                                <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                              );
-                            }
-                            if (isChildrenTask) {
-                              return (
-                                <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                              );
-                            }
-                            // Default task icon
-                            return (
-                              <svg className={`${iconSize} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                              </svg>
-                            );
-                          };
-
-                          return (
-                            <div
-                              key={task.id}
-                              onClick={() => {
-                                // Welcome task: show static info modal
-                                if (task.title === 'Welcome to LiaiZen') {
-                                  setEditingTask(task);
-                                  setShowWelcomeModal(true);
-                                  return;
-                                }
-
-                                // Profile task: show profile task modal
-                                if (isProfileTask) {
-                                  setEditingTask(task);
-                                  setShowProfileTaskModal(true);
-                                  return;
-                                }
-
-                                // Feature 005: Invite task opens InviteTaskModal
-                                const isInviteTask = titleLower.includes('invite your co-parent');
-                                if ((isCoparentTask || isInviteTask) && task.status !== 'completed') {
-                                  setShowInviteModal(true);
-                                  return;
-                                }
-
-                                if (isSmartTask) {
-                                  if (isChildrenTask) {
-                                    setCurrentView('contacts');
-                                  }
-                                  return;
-                                }
-
-                                // Regular task: open edit modal
-                                setEditingTask(task);
-                                setTaskFormData({
-                                  title: task.title,
-                                  description: task.description || '',
-                                  status: task.status,
-                                  priority: task.priority || 'medium',
-                                  due_date: task.due_date || '',
-                                  assigned_to: task.assigned_to || 'self',
-                                  related_people: Array.isArray(task.related_people) ? task.related_people : [],
-                                });
-                                setShowTaskForm(true);
-                              }}
-                              className={`flex items-start sm:items-center gap-2.5 sm:gap-3 p-3 sm:p-3.5 rounded-lg cursor-pointer transition-all touch-manipulation ${task.status === 'completed'
-                                ? 'bg-gray-50 opacity-70 border-2 border-gray-200'
-                                : 'bg-white hover:shadow-md active:scale-[0.98] border-2 border-teal-light hover:border-teal-medium shadow-sm'
-                                }`}
-                            >
-                              {/* Task Icon/Status Circle */}
-                              <div className="shrink-0">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleTaskStatus(task);
-                                  }}
-                                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all touch-manipulation shadow-sm hover:shadow-md ${task.status === 'completed' ? 'bg-teal-medium' : 'bg-teal-medium'
-                                    }`}
-                                >
-                                  {task.status === 'completed' ? (
-                                    <svg
-                                      className="w-4 h-4 sm:w-5 sm:h-5 text-white"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                      strokeWidth={2.5}
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M5 13l4 4L19 7"
-                                      />
-                                    </svg>
-                                  ) : (
-                                    <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
-                                      {getTaskIcon()}
-                                    </div>
-                                  )}
-                                </button>
-                              </div>
-
-                              {/* Task Content */}
-                              <div className="flex-1 min-w-0 overflow-hidden">
-                                <div className="flex items-center gap-2 min-w-0 mb-0.5">
-                                  <h3
-                                    className={`text-xs sm:text-sm font-semibold text-teal-dark truncate ${task.status === 'completed'
-                                      ? 'line-through text-gray-400'
-                                      : ''
-                                      }`}
-                                  >
-                                    {(() => {
-                                      // Feature 005: Handle invite task title
-                                      const isInviteTask = titleLower.includes('invite your co-parent');
-                                      if (isInviteTask && task.status !== 'completed') {
-                                        return 'Invite Co-Parent';
-                                      }
-                                      if (isSmartTask) {
-                                        if (isCoparentTask) return 'Add Co-parent';
-                                        if (isProfileTask) return 'Complete Profile';
-                                        if (isChildrenTask) return 'Add Children';
-                                      }
-                                      return task.title;
-                                    })()}
-                                  </h3>
-                                  {/* Show arrow for actionable tasks */}
-                                  {(isSmartTask || (titleLower.includes('invite your co-parent') && task.status !== 'completed')) && (
-                                    <svg
-                                      className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-medium shrink-0"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                      strokeWidth={2}
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M9 5l7 7-7 7"
-                                      />
-                                    </svg>
-                                  )}
-                                </div>
-                                {task.description && (
-                                  <p
-                                    className={`text-xs text-gray-600 line-clamp-2 wrap-break-word leading-relaxed ${task.status === 'completed'
-                                      ? 'line-through text-gray-400'
-                                      : ''
-                                      }`}
-                                  >
-                                    {task.description}
-                                  </p>
-                                )}
-                                {/* Assigned and Related People */}
-                                {(task.assigned_to || (Array.isArray(task.related_people) && task.related_people.length > 0)) && (
-                                  <div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
-                                    {task.assigned_to && (() => {
-                                      if (task.assigned_to === 'self') {
-                                        return (
-                                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-white text-teal-medium rounded text-[10px] font-medium border border-teal-light">
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span className="hidden sm:inline">Assigned: </span>
-                                            Self
-                                          </span>
-                                        );
-                                      }
-                                      const assignedContact = contacts.find(c => c.id.toString() === task.assigned_to.toString());
-                                      return assignedContact ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-white text-teal-medium rounded text-[10px] font-medium border border-teal-light">
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                          </svg>
-                                          <span className="hidden sm:inline">Assigned: </span>
-                                          {assignedContact.contact_name}
-                                        </span>
-                                      ) : null;
-                                    })()}
-                                    {Array.isArray(task.related_people) && task.related_people.length > 0 && (
-                                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-white text-teal-medium rounded text-[10px] font-medium border border-teal-light">
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                        </svg>
-                                        {task.related_people.length} {task.related_people.length === 1 ? 'person' : 'people'}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Communication Stats Widget */}
-                  <div className="mt-4">
-                    <CommunicationStatsWidget username={username} />
-                  </div>
-
-                  {/* Threads Section */}
-                  <div className="bg-white rounded-2xl border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow overflow-hidden mt-6 md:mt-8">
-                    <div className="p-6 sm:p-8">
-                      <div className="flex items-center justify-between mb-6">
-                        <div>
-                          <h2 className="text-2xl font-semibold text-teal-dark mb-1">
-                            Threads
-                          </h2>
-                          <p className="text-sm text-gray-600">Organized conversation topics</p>
-                        </div>
-                        {threads.length > 0 && (
-                          <button
-                            onClick={() => setCurrentView('chat')}
-                            className="text-sm text-teal-medium hover:text-teal-dark font-semibold px-4 py-2 rounded-lg hover:bg-teal-lightest transition-colors"
-                          >
-                            View All ({threads.length})
-                          </button>
-                        )}
-                      </div>
-
-                      {threads.length === 0 ? (
-                        <div className="text-center py-12">
-                          <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                          </svg>
-                          <p className="text-gray-600 text-base">
-                            No conversation threads yet. Start a chat to create threads!
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {threads.slice(0, 3).map((thread) => (
-                            <div
-                              key={thread.id}
-                              onClick={() => {
-                                setSelectedThreadId(thread.id);
-                                setCurrentView('chat');
-                              }}
-                              className="p-4 border-2 border-teal-light rounded-xl hover:border-teal-medium hover:bg-teal-lightest transition-all cursor-pointer shadow-sm hover:shadow-md"
-                            >
-                              <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 bg-white border-2 border-teal-light rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                                  <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                  </svg>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-3 mb-1">
-                                    <h3 className="text-base font-semibold text-teal-dark truncate">
-                                      {thread.title}
-                                    </h3>
-                                    {thread.message_count > 0 && (
-                                      <span className="text-xs text-gray-500 font-medium shrink-0 bg-gray-100 px-2 py-1 rounded-lg">
-                                        {thread.message_count} {thread.message_count === 1 ? 'msg' : 'msgs'}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {thread.last_message_at && (
-                                    <p className="text-xs text-gray-500">
-                                      {new Date(thread.last_message_at).toLocaleDateString()}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <DashboardView
+                username={username}
+                hasCoParentConnected={hasCoParentConnected}
+                tasks={tasks}
+                isLoadingTasks={isLoadingTasks}
+                taskSearch={taskSearch}
+                setTaskSearch={setTaskSearch}
+                taskFilter={taskFilter}
+                setTaskFilter={setTaskFilter}
+                contacts={contacts}
+                threads={threads}
+                selectedThreadId={selectedThreadId}
+                setSelectedThreadId={setSelectedThreadId}
+                setCurrentView={setCurrentView}
+                setShowInviteModal={setShowInviteModal}
+                setEditingTask={setEditingTask}
+                setShowWelcomeModal={setShowWelcomeModal}
+                setShowProfileTaskModal={setShowProfileTaskModal}
+                setShowTaskForm={setShowTaskForm}
+                setTaskFormMode={setTaskFormMode}
+                setAiTaskDetails={setAiTaskDetails}
+                setIsGeneratingTask={setIsGeneratingTask}
+                setTaskFormData={setTaskFormData}
+                toggleTaskStatus={toggleTaskStatus}
+                getThreadMessages={getThreadMessages}
+              />
             )}
-
             {/* Full chat view */}
             {/* Chat View */}
             {currentView === 'chat' && (
@@ -2805,276 +2271,29 @@ function ChatRoom() {
               </div>
             )}
 
-            {/* Settings View - Placeholder */}
+            {/* Settings View */}
             {currentView === 'settings' && (
-              <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden">
-                <div className="p-8 sm:p-10 space-y-8">
-                  <div>
-                    <h2 className="text-3xl font-semibold text-teal-dark mb-3">Settings</h2>
-                  </div>
-
-                  {/* PWA Install Section */}
-                  <div className="mb-4">
-                    <PWAInstallButton />
-                  </div>
-
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {/* Notifications Settings */}
-                    <div className="border-2 border-teal-light rounded-2xl p-8 bg-white shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-start gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-xl bg-teal-medium flex items-center justify-center shrink-0 shadow-md">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                          </svg>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-teal-dark mb-2">Notifications</h3>
-                          <p className="text-base text-gray-600 mb-6 leading-relaxed">
-                            Get notified when your co-parent sends you a message
-                          </p>
-
-                          {notifications.isSupported ? (
-                            <div className="space-y-3">
-                              {notifications.permission === 'granted' ? (
-                                <div className="space-y-3">
-                                  <div className="flex items-center gap-2 text-sm text-teal-dark bg-teal-lightest px-3 py-2 rounded-lg">
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                    </svg>
-                                    <span className="font-medium">Notifications enabled</span>
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      // Send a test notification
-                                      notifications.showNotification({
-                                        username: 'Co-parent',
-                                        text: 'This is a test notification! You will see this every time a new message arrives.',
-                                        id: 'test-' + Date.now(),
-                                        timestamp: new Date().toISOString()
-                                      });
-                                    }}
-                                    className="w-full px-5 py-3 bg-white text-teal-medium border-2 border-teal-medium rounded-lg font-semibold hover:bg-teal-lightest transition-all min-h-[44px] shadow-sm hover:shadow-md"
-                                  >
-                                    Test Notification
-                                  </button>
-                                </div>
-                              ) : notifications.permission === 'denied' ? (
-                                <div className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg">
-                                  <p className="font-medium mb-1">Notifications blocked</p>
-                                  <p className="text-xs">Please enable notifications in your browser settings</p>
-                                </div>
-                              ) : (
-                                <div className="space-y-3">
-                                  <div className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-lg">
-                                    <p className="font-medium mb-1">Get notified of new messages</p>
-                                    <p className="text-xs text-gray-600">Enable notifications to receive alerts when your co-parent sends a message, even when the app is closed.</p>
-                                  </div>
-                                  <button
-                                    onClick={notifications.requestPermission}
-                                    className="w-full px-5 py-3 bg-teal-medium text-white rounded-lg font-semibold hover:bg-teal-dark transition-all shadow-sm hover:shadow-md min-h-[44px]"
-                                  >
-                                    Enable Notifications
-                                  </button>
-                                </div>
-                              )}
-
-                              {notifications.permission === 'granted' && (
-                                <div className="space-y-3 pt-3 border-t border-teal-light">
-                                  <p className="text-sm font-medium text-teal-dark">Notification Preferences</p>
-                                  <div className="space-y-2">
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={notificationPrefs.newMessages}
-                                        onChange={(e) => setNotificationPrefs(prev => ({ ...prev, newMessages: e.target.checked }))}
-                                        className="w-5 h-5 text-teal-medium border-teal-light rounded focus:ring-teal-medium focus:ring-2"
-                                      />
-                                      <span className="text-sm text-gray-700">New messages from co-parent</span>
-                                    </label>
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={notificationPrefs.taskReminders}
-                                        onChange={(e) => setNotificationPrefs(prev => ({ ...prev, taskReminders: e.target.checked }))}
-                                        className="w-5 h-5 text-teal-medium border-teal-light rounded focus:ring-teal-medium focus:ring-2"
-                                      />
-                                      <span className="text-sm text-gray-700">Task reminders</span>
-                                    </label>
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={notificationPrefs.invitations}
-                                        onChange={(e) => setNotificationPrefs(prev => ({ ...prev, invitations: e.target.checked }))}
-                                        className="w-5 h-5 text-teal-medium border-teal-light rounded focus:ring-teal-medium focus:ring-2"
-                                      />
-                                      <span className="text-sm text-gray-700">Invitation requests</span>
-                                    </label>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                              Notifications are not supported in this browser
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Privacy Settings */}
-                    <PrivacySettingsWrapper username={username} />
-                  </div>
-
-                  {/* Send Invite Section - Always visible when no co-parent connected */}
-                  {!hasCoParentConnected && (
-                    <div className="border-2 border-emerald-300 rounded-2xl p-8 bg-emerald-50 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0 shadow-md">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-emerald-800 mb-2">Invite Your Co-Parent</h3>
-                          <p className="text-base text-emerald-700 mb-4 leading-relaxed">
-                            Generate a link or code to share with your co-parent so they can join your mediation room.
-                          </p>
-                          {inviteLink ? (
-                            <div className="space-y-3">
-                              {inviteCode && (
-                                <div>
-                                  <label className="block text-xs font-medium text-emerald-800 mb-1">Invite Code</label>
-                                  <div className="flex items-center gap-2">
-                                    <div className="flex-1 bg-white border-2 border-emerald-200 rounded-lg p-3 text-center">
-                                      <span className="text-xl font-mono font-bold text-emerald-800 tracking-wider">{inviteCode}</span>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={async () => {
-                                        await navigator.clipboard.writeText(inviteCode);
-                                        setInviteCopied(true);
-                                        setTimeout(() => setInviteCopied(false), 2000);
-                                      }}
-                                      className="p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                                    >
-                                      {inviteCopied ? '✓' : 'Copy'}
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                              <div>
-                                <label className="block text-xs font-medium text-emerald-800 mb-1">Invite Link</label>
-                                <div className="p-3 bg-white rounded-lg border-2 border-emerald-200 break-all text-emerald-800 font-mono text-xs">
-                                  {inviteLink}
-                                </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={handleCopyInvite}
-                                  className="flex-1 px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-all"
-                                >
-                                  {inviteCopied ? 'Copied!' : 'Copy Link'}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => { setInviteLink(''); setInviteCode(''); }}
-                                  className="px-4 py-3 rounded-lg border-2 border-emerald-300 text-emerald-700 font-semibold hover:bg-emerald-100 transition-colors"
-                                >
-                                  Close
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={handleLoadInvite}
-                              disabled={isLoadingInvite}
-                              className="w-full px-5 py-3 rounded-lg bg-emerald-600 text-white text-base font-semibold hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 min-h-[44px] shadow-sm hover:shadow-md"
-                            >
-                              {isLoadingInvite ? (
-                                <>
-                                  <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                  <span>Generating...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                  </svg>
-                                  <span>Generate Invite Link</span>
-                                </>
-                              )}
-                            </button>
-                          )}
-                          {inviteError && (
-                            <div className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
-                              {inviteError}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Enter Invite Code Section */}
-                  <div className="border-2 border-teal-light rounded-2xl p-8 bg-white shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-teal-medium flex items-center justify-center shrink-0 shadow-md">
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-teal-dark mb-2">Enter Invite Code</h3>
-                        <p className="text-base text-gray-600 mb-4 leading-relaxed">
-                          Have an invite code from your co-parent? Enter it here to connect.
-                        </p>
-                        <div className="space-y-3">
-                          <input
-                            type="text"
-                            value={manualInviteCode}
-                            onChange={(e) => setManualInviteCode(e.target.value.toUpperCase())}
-                            placeholder="Enter code (e.g., LZ-ABC123)"
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 text-gray-900 text-base min-h-[44px] transition-all"
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                handleManualAcceptInvite();
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={handleManualAcceptInvite}
-                            disabled={isAcceptingInvite || !manualInviteCode.trim()}
-                            className="w-full px-5 py-3 rounded-lg bg-teal-medium text-white text-base font-semibold hover:bg-teal-dark disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 min-h-[44px] shadow-sm hover:shadow-md"
-                          >
-                            {isAcceptingInvite ? (
-                              <>
-                                <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                <span>Connecting...</span>
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                </svg>
-                                <span>Connect with Co-parent</span>
-                              </>
-                            )}
-                          </button>
-                          {inviteError && (
-                            <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
-                              {inviteError}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <SettingsView
+                username={username}
+                notifications={notifications}
+                notificationPrefs={notificationPrefs}
+                setNotificationPrefs={setNotificationPrefs}
+                hasCoParentConnected={hasCoParentConnected}
+                inviteLink={inviteLink}
+                inviteCode={inviteCode}
+                inviteError={inviteError}
+                isLoadingInvite={isLoadingInvite}
+                inviteCopied={inviteCopied}
+                setInviteCopied={setInviteCopied}
+                setInviteLink={setInviteLink}
+                setInviteCode={setInviteCode}
+                manualInviteCode={manualInviteCode}
+                setManualInviteCode={setManualInviteCode}
+                isAcceptingInvite={isAcceptingInvite}
+                onLoadInvite={handleLoadInvite}
+                onCopyInvite={handleCopyInvite}
+                onManualAcceptInvite={handleManualAcceptInvite}
+              />
             )}
 
             {/* Account View - Lazy loaded for code-splitting */}
