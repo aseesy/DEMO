@@ -42,25 +42,23 @@ export function ObserverCard({ observerData, originalText, onUseRewrite, onEditM
       </div>
 
 
-      {/* Observer Explanation */}
+      {/* Validation - friend-like acknowledgment */}
       {explanation && (
-        <div className="mb-3">
+        <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <div className="flex items-start gap-2">
-            <svg className="w-4 h-4 text-teal-medium mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-sm text-teal-dark leading-snug">
-              {explanation}
+            <span className="text-lg">💭</span>
+            <p className="text-sm text-gray-800 leading-snug italic">
+              "{explanation}"
             </p>
           </div>
         </div>
       )}
 
-      {/* Tip */}
+      {/* Insight - practical advice */}
       {tip && (
-        <div className="mb-3 p-2 bg-teal-lightest border border-teal-light rounded-lg">
-          <p className="text-xs font-semibold text-teal-dark mb-1">Quick Tip:</p>
-          <p className="text-sm text-teal-dark font-medium">{tip}</p>
+        <div className="mb-3 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+          <p className="text-xs font-semibold text-teal-700 mb-1">Why this matters:</p>
+          <p className="text-sm text-teal-800">{tip}</p>
         </div>
       )}
 

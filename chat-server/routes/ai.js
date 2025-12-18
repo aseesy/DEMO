@@ -237,10 +237,12 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
     };
 
     // Map intervention data based on type
+    // Note: AI mediator returns 'validation' and 'insight' (new names)
+    // We map to 'personalMessage' and 'tip1' for backwards compatibility with client
     if (analysis.type === 'ai_intervention' && analysis.action === 'INTERVENE') {
       result.intervention = {
-        personalMessage: analysis.personalMessage || '',
-        tip1: analysis.tip1 || '',
+        personalMessage: analysis.validation || analysis.personalMessage || '',
+        tip1: analysis.insight || analysis.tip1 || '',
         rewrite1: analysis.rewrite1 || '',
         rewrite2: analysis.rewrite2 || '',
         comment: null,
