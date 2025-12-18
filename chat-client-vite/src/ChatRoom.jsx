@@ -8,6 +8,7 @@ import { useContacts } from './hooks/useContacts.js';
 import { useNotifications } from './hooks/useNotifications.js';
 import { useInAppNotifications } from './hooks/useInAppNotifications.js';
 import { useToast } from './hooks/useToast.js';
+import { useInviteManagement } from './hooks/useInviteManagement.js';
 import { ToastContainer } from './components/ui/Toast/Toast.jsx';
 import { ContactsPanel } from './components/ContactsPanel.jsx';
 import { ProfilePanel } from './components/ProfilePanel.jsx';
@@ -23,13 +24,12 @@ import { FlaggingModal } from './components/modals/FlaggingModal.jsx';
 import { ContactSuggestionModal } from './components/modals/ContactSuggestionModal.jsx';
 import { InviteTaskModal } from './components/InviteTaskModal.jsx';
 import { MessageSearch } from './components/MessageSearch.jsx';
-import { API_BASE_URL } from './config.js';
 import { SettingsView, DashboardView, ChatView } from './views';
+import { STORAGE_KEYS } from './utils/storageKeys.js';
 
 // Lazy-load AccountView for code-splitting (reduces initial bundle)
 const AccountView = React.lazy(() => import('./components/AccountView.jsx'));
-import { apiPost } from './apiClient.js';
-import { getWithMigration, setWithMigration, removeWithMigration } from './utils/storageMigration.js';
+import { getWithMigration, setWithMigration } from './utils/storageMigration.js';
 import {
   trackMessageSent,
   trackAIIntervention,
@@ -54,8 +54,8 @@ function ChatRoom() {
 
   const [showLanding, setShowLanding] = React.useState(() => {
     // Don't show landing if user is already authenticated
-    // Check both token keys for compatibility (including old key for migration)
-    return !getWithMigration('authTokenBackup', 'auth_token_backup') && !localStorage.getItem('token') && !localStorage.getItem('isAuthenticated');
+    // Check for auth token and auth flag
+    return !localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) && !localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED);
   });
 
   const {
@@ -325,6 +325,39 @@ function ChatRoom() {
     isInitialLoad,
   } = chatState;
 
+  // Invite management hook - handles all invite-related state and logic
+  const {
+    inviteLink,
+    setInviteLink,
+    inviteCode,
+    setInviteCode,
+    inviteError,
+    setInviteError,
+    isLoadingInvite,
+    inviteCopied,
+    setInviteCopied,
+    pendingInviteCode,
+    setPendingInviteCode,
+    isAcceptingInvite,
+    manualInviteCode,
+    setManualInviteCode,
+    showManualInvite,
+    setShowManualInvite,
+    hasCoParentConnected,
+    setHasCoParentConnected,
+    hasPendingInvitation,
+    hasAcceptedInvitation,
+    handleLoadInvite,
+    handleCopyInvite,
+    handleManualAcceptInvite,
+    checkRoomMembers,
+    checkInvitations,
+  } = useInviteManagement({
+    username,
+    isAuthenticated,
+    messages,
+  });
+
   // Reset unread count when navigating to chat view and mark all messages as seen
   React.useEffect(() => {
     if (currentView === 'chat' && messages.length > 0) {
@@ -463,19 +496,7 @@ function ChatRoom() {
     setFeedbackGiven(prev => new Set([...prev, interventionId]));
   }, [socket]);
 
-  // Invite state for sharing a room with a co-parent
-  const [inviteLink, setInviteLink] = React.useState('');
-  const [inviteCode, setInviteCode] = React.useState('');
-  const [inviteError, setInviteError] = React.useState('');
-  const [isLoadingInvite, setIsLoadingInvite] = React.useState(false);
-  const [inviteCopied, setInviteCopied] = React.useState(false);
-  const [pendingInviteCode, setPendingInviteCode] = React.useState(null);
-  const [isAcceptingInvite, setIsAcceptingInvite] = React.useState(false);
-  const [hasCoParentConnected, setHasCoParentConnected] = React.useState(false);
-  const [hasPendingInvitation, setHasPendingInvitation] = React.useState(false);
-  const [hasAcceptedInvitation, setHasAcceptedInvitation] = React.useState(false);
-  const [manualInviteCode, setManualInviteCode] = React.useState('');
-  const [showManualInvite, setShowManualInvite] = React.useState(false);
+  // Modal state
   const [showWelcomeModal, setShowWelcomeModal] = React.useState(false);
   const [showProfileTaskModal, setShowProfileTaskModal] = React.useState(false);
   const [showInviteModal, setShowInviteModal] = React.useState(false); // Feature 005: Invite task modal
@@ -529,438 +550,46 @@ function ChatRoom() {
     }
   }, [messages, pendingContactSuggestion, dismissedSuggestions]);
 
-  // Check for invite code in URL or localStorage on mount
+  // Periodic room member and invitation checking
   React.useEffect(() => {
-    const inviteCodeFromUrl = searchParams.get('invite');
-    const inviteCodeFromStorage = getWithMigration('pendingInviteCode', 'pending_invite_code');
-
-    // Prioritize URL, then localStorage
-    const inviteCode = inviteCodeFromUrl || inviteCodeFromStorage;
-
-    if (inviteCode) {
-      logger.debug('Invite code detected:', { inviteCode, source: inviteCodeFromUrl ? 'URL' : 'localStorage' });
-      setPendingInviteCode(inviteCode);
-
-      // Store in localStorage if from URL
-      if (inviteCodeFromUrl) {
-        setWithMigration('pendingInviteCode', inviteCodeFromUrl);
-      }
-
-      // Clean up URL (remove invite param) but keep in localStorage
-      if (inviteCodeFromUrl) {
-        navigate(window.location.pathname, { replace: true });
-      }
-    }
-  }, [searchParams, navigate]);
-
-  // Auto-accept invite after authentication
-  React.useEffect(() => {
-    const acceptInvite = async () => {
-      if (!pendingInviteCode || !username || !isAuthenticated || isAcceptingInvite) return;
-
-      setIsAcceptingInvite(true);
-      setInviteError(''); // Clear any previous errors
-      try {
-        const response = await fetch(`${API_BASE_URL.replace(/\/+$/, '')}/api/room/join`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            inviteCode: pendingInviteCode,
-            username,
-          }),
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-          logger.debug('Successfully accepted invite, joined room:', data.roomId);
-          setPendingInviteCode(null);
-          // Clear invite code from localStorage after successful acceptance
-          removeWithMigration('pendingInviteCode');
-          setHasCoParentConnected(true); // Co-parents are now connected
-
-          // Update user properties when co-parent connects
-          setUserProperties({
-            hasCoparent: true,
-            roomStatus: 'multi_user',
-          });
-          // Show success message briefly
-          setInviteError(''); // Clear errors
-          // Note: Periodic room member check will confirm connection
-          // Note: Contacts will auto-refresh when user navigates to that view
-        } else {
-          const errorMsg = data.error || 'Failed to accept invite. Please try again.';
-          setInviteError(errorMsg);
-          // Show manual invite UI if auto-accept failed
-          setShowManualInvite(true);
-          logger.error('Invite acceptance failed', errorMsg);
-        }
-      } catch (err) {
-        logger.error('Error accepting invite', err);
-        const errorMsg = err.message || 'Failed to accept invite. Please check your connection and try again.';
-        setInviteError(errorMsg);
-        // Show manual invite UI if auto-accept failed
-        setShowManualInvite(true);
-      } finally {
-        setIsAcceptingInvite(false);
-      }
-    };
-
-    if (isAuthenticated && pendingInviteCode && !isAcceptingInvite) {
-      // Small delay to ensure auth state is fully set
-      const timer = setTimeout(() => {
-        acceptInvite();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated, username, pendingInviteCode, isAcceptingInvite]);
-
-  // Manual invite acceptance handler
-  const handleManualAcceptInvite = async () => {
-    const codeToUse = manualInviteCode.trim() || pendingInviteCode;
-    if (!codeToUse) {
-      setInviteError('Please enter an invite code');
-      return;
-    }
-
-    setIsAcceptingInvite(true);
-    setInviteError('');
-
-    try {
-      // Check if it's a co-parent invitation code (LZ-XXXXXX format)
-      const isCoParentInviteCode = /^LZ-[A-Z0-9]{6}$/i.test(codeToUse.toUpperCase());
-      const token = getWithMigration('authTokenBackup', 'auth_token_backup');
-
-      let response;
-      let data;
-
-      if (isCoParentInviteCode) {
-        // Use the co-parent invitation endpoint for LZ codes
-        response = await fetch(`${API_BASE_URL.replace(/\/+$/, '')}/api/invitations/accept-code`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` })
-          },
-          credentials: 'include',
-          body: JSON.stringify({ code: codeToUse.toUpperCase() }),
-        });
-
-        data = await response.json();
-
-        if (response.ok && data.success) {
-          logger.debug('Successfully accepted co-parent invite:', data);
-          setPendingInviteCode(null);
-          setManualInviteCode('');
-          setShowManualInvite(false);
-          removeWithMigration('pendingInviteCode');
-          setHasCoParentConnected(true);
-          setUserProperties({
-            hasCoparent: true,
-            roomStatus: 'multi_user',
-          });
-          setInviteError('');
-          return;
-        }
-      } else {
-        // Use the room invite endpoint for other codes
-        response = await fetch(`${API_BASE_URL.replace(/\/+$/, '')}/api/room/join`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            inviteCode: codeToUse,
-            username,
-          }),
-        });
-
-        data = await response.json();
-
-        if (response.ok && data.success) {
-          logger.debug('Successfully accepted room invite:', data.roomId);
-          setPendingInviteCode(null);
-          setManualInviteCode('');
-          setShowManualInvite(false);
-          removeWithMigration('pendingInviteCode');
-          setHasCoParentConnected(true);
-          setUserProperties({
-            hasCoparent: true,
-            roomStatus: 'multi_user',
-          });
-          setInviteError('');
-          return;
-        }
-      }
-
-      // Handle error cases
-      if (data?.code === 'ALREADY_CONNECTED') {
-        setInviteError('You are already connected with this co-parent!');
-        setHasCoParentConnected(true);
-      } else {
-        setInviteError(data?.error || 'Failed to accept invite. Please check the code and try again.');
-      }
-    } catch (err) {
-      logger.error('Error manually accepting invite', err);
-      setInviteError('Failed to accept invite. Please check your connection and try again.');
-    } finally {
-      setIsAcceptingInvite(false);
-    }
-  };
-
-  // Check if co-parents are connected by querying room membership
-  const checkRoomMembers = React.useCallback(async () => {
-    if (!isAuthenticated) return;
-
-    try {
-      const token = getWithMigration('authTokenBackup', 'auth_token_backup');
-      const apiUrl = `${API_BASE_URL.replace(/\/+$/, '')}/api/room/members/check`;
-
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      const response = await fetch(
-        apiUrl,
-        {
-          method: 'GET',
-          credentials: 'include',
-          signal: controller.signal,
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        },
-      );
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        const hasMultiple = data.hasMultipleMembers === true;
-        // Only log when status changes to reduce noise (logging removed to prevent re-renders)
-        setHasCoParentConnected(hasMultiple);
-
-        // Update user properties when co-parent connects
-        if (hasMultiple) {
-          setUserProperties({
-            hasCoparent: true,
-            roomStatus: 'multi_user',
-          });
-        }
-      } else if (response.status === 404) {
-        // Endpoint doesn't exist yet (server not restarted) - fallback to message-based detection
-        if (messages.length > 0 && username) {
-          const uniqueUsernames = new Set(
-            messages
-              .filter((msg) => msg.username && msg.type !== 'ai_intervention' && msg.type !== 'ai_comment')
-              .map((msg) => msg.username),
-          );
-          const hasMultiple = uniqueUsernames.size >= 2;
-          setHasCoParentConnected(hasMultiple);
-        } else {
-          setHasCoParentConnected(false);
-        }
-      } else {
-        // Other error - try message-based detection silently
-        if (messages.length > 0 && username) {
-          const uniqueUsernames = new Set(
-            messages
-              .filter((msg) => msg.username && msg.type !== 'ai_intervention' && msg.type !== 'ai_comment')
-              .map((msg) => msg.username),
-          );
-          const hasMultiple = uniqueUsernames.size >= 2;
-          setHasCoParentConnected(hasMultiple);
-        } else {
-          setHasCoParentConnected(false);
-        }
-      }
-    } catch (err) {
-      // Suppress network/CORS errors - they're expected if server is down or restarting
-      const isNetworkError = err.name === 'TypeError' ||
-        err.name === 'AbortError' ||
-        (err.message && (
-          err.message.includes('Failed to fetch') ||
-          err.message.includes('Load failed') ||
-          err.message.includes('network') ||
-          err.message.includes('access control') ||
-          err.message.includes('aborted')
-        ));
-
-      // Silently handle network errors - don't log or set state
-      if (isNetworkError) {
-        return; // Exit early, don't update state on network errors
-      }
-
-      // Only log non-network errors (but silently - don't spam console)
-      // logger.error('Error checking room members', err);
-
-      // Fallback to message-based detection if API fails (only for non-network errors)
-      if (messages.length > 0 && username) {
-        const uniqueUsernames = new Set(
-          messages
-            .filter((msg) => msg.username && msg.type !== 'ai_intervention' && msg.type !== 'ai_comment')
-            .map((msg) => msg.username),
-        );
-        const hasMultiple = uniqueUsernames.size >= 2;
-        setHasCoParentConnected(hasMultiple);
-      } else {
-        setHasCoParentConnected(false);
-      }
-    }
-  }, [isAuthenticated, messages, username]);
-
-  React.useEffect(() => {
-    // Check immediately when authenticated and in chat view (only if not already connected)
     if (currentView === 'chat' && isAuthenticated && !hasCoParentConnected) {
       checkRoomMembers();
     }
-
-    // Poll periodically - faster when waiting for co-parent, slower once connected
     let interval;
     if (currentView === 'chat' && isAuthenticated) {
-      // 5 seconds when waiting for co-parent, 60 seconds once connected
       const pollInterval = hasCoParentConnected ? 60000 : 5000;
       interval = setInterval(checkRoomMembers, pollInterval);
     }
-
     return () => {
       if (interval) clearInterval(interval);
     };
   }, [currentView, isAuthenticated, hasCoParentConnected, checkRoomMembers]);
 
-  // Check once when user first authenticates (in case they're already in a room)
+  // Check once when user first authenticates
   React.useEffect(() => {
     if (isAuthenticated && !hasCoParentConnected) {
-      // Small delay to ensure user data is loaded
       const timer = setTimeout(() => {
         checkRoomMembers();
       }, 1000);
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]); // Intentionally minimal deps - only run once on auth
+  }, [isAuthenticated, hasCoParentConnected, checkRoomMembers]);
 
-  // Also check when new messages arrive (indicates someone else might be in room)
+  // Check when new messages arrive
   React.useEffect(() => {
     if (isAuthenticated && messages.length > 0 && !hasCoParentConnected) {
       checkRoomMembers();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages.length]); // Intentionally minimal deps - only trigger on new messages
+  }, [messages.length, isAuthenticated, hasCoParentConnected, checkRoomMembers]);
 
-  // Check for pending or accepted invitations
-  const checkInvitations = React.useCallback(async () => {
-    if (!isAuthenticated) return;
-
-    try {
-      const token = getWithMigration('authTokenBackup', 'auth_token_backup');
-      const response = await fetch(
-        `${API_BASE_URL.replace(/\/+$/, '')}/api/invitations`,
-        {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        },
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-
-        // Check sent invitations (invitations user sent)
-        const hasPendingSent = data.sent?.some(inv => inv.status === 'pending') || false;
-        const hasAcceptedSent = data.sent?.some(inv => inv.status === 'accepted') || false;
-
-        // Check received invitations (invitations user received)
-        const hasPendingReceived = data.received?.some(inv => inv.status === 'pending') || false;
-        const hasAcceptedReceived = data.received?.some(inv => inv.status === 'accepted') || false;
-
-        // Set states
-        setHasPendingInvitation(hasPendingSent || hasPendingReceived);
-        setHasAcceptedInvitation(hasAcceptedSent || hasAcceptedReceived);
-      }
-    } catch (err) {
-      // Silently handle errors - don't block UI
-      logger.error('[checkInvitations] Error checking invitations', err);
-    }
-  }, [isAuthenticated]);
-
-  // Check invitations periodically and on mount
+  // Check invitations periodically
   React.useEffect(() => {
     if (isAuthenticated) {
-      // Check immediately
       checkInvitations();
-
-      // Check periodically (every 5 seconds)
       const interval = setInterval(checkInvitations, 5000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated, checkInvitations]);
-
-  // Load or get existing invite link (optimized - uses GET with session auth, falls back to POST)
-  const handleLoadInvite = async () => {
-    if (!isAuthenticated || isLoadingInvite) {
-      setInviteError('Please make sure you are logged in.');
-      return;
-    }
-    setInviteError('');
-    setInviteCopied(false);
-    setIsLoadingInvite(true);
-
-    try {
-      // Use the new co-parent invitation API
-      const response = await apiPost('/api/invitations/create', {});
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        logger.apiError('/api/invitations', response.status, errorData.error || 'Unknown error');
-        if (response.status === 401) {
-          setInviteError('Your session has expired. Please refresh the page and try again.');
-        } else {
-          setInviteError(errorData.error || errorData.message || `Unable to create invite (${response.status}). Please try again.`);
-        }
-        return;
-      }
-
-      const data = await response.json();
-
-      if (!data.success) {
-        setInviteError(data.error || data.message || 'Unable to create invite. Please try again.');
-        return;
-      }
-
-      // Store the short code (LZ-XXXXXX format) for manual entry
-      if (data.shortCode) {
-        setInviteCode(data.shortCode);
-      }
-
-      // Use the inviteUrl from the API response (includes token for new users)
-      // For existing users, they can use the short code
-      if (data.inviteUrl) {
-        setInviteLink(data.inviteUrl);
-      } else {
-        // Fallback: construct link with short code if inviteUrl not provided
-        const currentOrigin = window.location.origin;
-        setInviteLink(`${currentOrigin}/accept-invite?code=${data.shortCode}`);
-      }
-    } catch (err) {
-      logger.error('Error loading invite', err);
-      setInviteError('Unable to create invite. Please check your connection and try again.');
-    } finally {
-      setIsLoadingInvite(false);
-    }
-  };
-
-  const handleCopyInvite = async () => {
-    if (!inviteLink) return;
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-      setInviteCopied(true);
-      setTimeout(() => setInviteCopied(false), 2000);
-    } catch {
-      setInviteCopied(false);
-    }
-  };
 
   // Callback for when user clicks Get Started on landing page
   const handleGetStarted = React.useCallback(() => {
