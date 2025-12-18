@@ -111,12 +111,21 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
 
       // If API_BASE_URL is just /api (relative), use current origin
       if (socketUrl === '/api' || socketUrl === '') {
-        socketUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001';
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001';
+        
+        // Development - use same hostname as frontend but port 3001
+        if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+          const hostname = window.location.hostname || 'localhost';
+          socketUrl = `http://${hostname}:3001`;
+        } else {
+          socketUrl = origin;
+        }
       }
 
-      // Fallback to localhost for development
+      // Fallback to current hostname for development if it's localhost/127.0.0.1
       if (!socketUrl || socketUrl === 'http://localhost:3001') {
-        socketUrl = 'http://localhost:3001';
+        const hostname = typeof window !== 'undefined' ? window.location.hostname || 'localhost' : 'localhost';
+        socketUrl = `http://${hostname}:3001`;
       }
     }
 
@@ -186,7 +195,11 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
       setError('');
     });
 
-    socket.on('message_history', (history) => {
+    socket.on('message_history', (data) => {
+      // Handle both old format (array) and new format ({ messages, hasMore })
+      const history = Array.isArray(data) ? data : data.messages || [];
+      const hasMore = Array.isArray(data) ? true : data.hasMore ?? true;
+
       const filtered = (history || []).filter((msg) => {
         if (typeof msg?.text !== 'string') return true;
         const lower = msg.text.toLowerCase();
@@ -203,6 +216,9 @@ export function useChat({ username, isAuthenticated, currentView, onNewMessage }
 
       // Keep isInitialLoad true until scroll is complete to hide messages during scroll
       setMessages(processedMessages);
+
+      // Set whether there are more messages to load
+      setHasMoreMessages(hasMore);
 
       // Mark all historical messages as seen
       if (processedMessages.length > 0) {
