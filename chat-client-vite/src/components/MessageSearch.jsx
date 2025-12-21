@@ -9,6 +9,9 @@ import React from 'react';
  * - Result list with message previews
  * - Click to jump to message in context
  * - Close button to exit search mode
+ *
+ * @param {boolean} hideHeader - When true, hides the search header (for desktop where
+ *                               Navigation already has the search input)
  */
 export function MessageSearch({
   searchQuery,
@@ -18,6 +21,7 @@ export function MessageSearch({
   onSearch,
   onJumpToMessage,
   onClose,
+  hideHeader = false,
 }) {
   const inputRef = React.useRef(null);
   const [localQuery, setLocalQuery] = React.useState(searchQuery || '');
@@ -85,61 +89,94 @@ export function MessageSearch({
 
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm">
-      {/* Search Header */}
-      <div className="flex items-center gap-3 p-3 border-b border-gray-100">
-        {/* Search Icon */}
-        <svg
-          className="w-5 h-5 text-gray-400 shrink-0"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
-
-        {/* Search Input */}
-        <input
-          ref={inputRef}
-          type="text"
-          value={localQuery}
-          onChange={handleInputChange}
-          placeholder="Search messages..."
-          className="flex-1 text-sm border-none outline-none bg-transparent placeholder-gray-400"
-        />
-
-        {/* Loading Indicator */}
-        {isSearching && (
-          <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
-        )}
-
-        {/* Result Count */}
-        {!isSearching && searchTotal > 0 && (
-          <span className="text-xs text-gray-500 shrink-0">
-            {searchTotal} result{searchTotal !== 1 ? 's' : ''}
-          </span>
-        )}
-
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-          title="Close search"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* Search Header - hidden on desktop where Navigation has the search input */}
+      {!hideHeader && (
+        <div className="flex items-center gap-3 p-3 border-b border-gray-100">
+          {/* Search Icon */}
+          <svg
+            className="w-5 h-5 text-gray-400 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
-        </button>
-      </div>
+
+          {/* Search Input */}
+          <input
+            ref={inputRef}
+            type="text"
+            value={localQuery}
+            onChange={handleInputChange}
+            placeholder="Search messages..."
+            className="flex-1 text-sm border-none outline-none bg-transparent placeholder-gray-400"
+          />
+
+          {/* Loading Indicator */}
+          {isSearching && (
+            <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+          )}
+
+          {/* Result Count */}
+          {!isSearching && searchTotal > 0 && (
+            <span className="text-xs text-gray-500 shrink-0">
+              {searchTotal} result{searchTotal !== 1 ? 's' : ''}
+            </span>
+          )}
+
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            title="Close search"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Compact header for desktop - just shows result count and close button */}
+      {hideHeader && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Search Results</span>
+            {isSearching && (
+              <div className="w-3 h-3 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+            )}
+            {!isSearching && searchTotal > 0 && (
+              <span className="text-xs text-gray-500">
+                ({searchTotal} result{searchTotal !== 1 ? 's' : ''})
+              </span>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            title="Close search"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Search Results */}
       {searchResults.length > 0 && (

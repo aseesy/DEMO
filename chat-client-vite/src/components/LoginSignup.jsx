@@ -96,6 +96,26 @@ export function LoginSignup() {
 
   const isSubmitting = isLoggingIn || isSigningUp || isGoogleLoggingIn;
 
+  // Show transitional state after successful auth (before redirect)
+  if (isAuthenticated) {
+    return (
+      <div
+        className="min-h-dvh bg-white flex items-center justify-center px-4 py-6 sm:py-8"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)',
+        }}
+      >
+        <div className="text-center">
+          <div className="w-10 h-10 border-3 border-teal-medium border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-teal-medium font-medium">
+            {isNewSignup ? 'Setting up your account...' : 'Signing in...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-dvh bg-white flex items-center justify-center px-4 py-6 sm:py-8"

@@ -87,6 +87,22 @@ export function ChatView({
   const [feedbackGiven, setFeedbackGiven] = React.useState(new Set());
   const [pendingOriginalMessageToRemove, setPendingOriginalMessageToRemove] = React.useState(null);
 
+  // Detect mobile vs desktop for search header display
+  const [isMobile, setIsMobile] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return true;
+  });
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Track which interventions we've already tracked
   const trackedInterventionsRef = React.useRef(new Set());
 
@@ -300,6 +316,7 @@ export function ChatView({
                 onSearch={searchMessages}
                 onJumpToMessage={jumpToMessage}
                 onClose={exitSearchMode}
+                hideHeader={!isMobile}
               />
             )}
 
