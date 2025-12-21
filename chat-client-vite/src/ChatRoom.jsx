@@ -2,6 +2,7 @@ import React from 'react';
 import './index.css';
 import { useAuth } from './hooks/useAuth.js';
 import { useTasks } from './hooks/useTasks.js';
+import { useDashboard } from './hooks/useDashboard.js';
 import { useContacts } from './hooks/useContacts.js';
 import { useNotifications } from './hooks/useNotifications.js';
 import { useInAppNotifications } from './hooks/useInAppNotifications.js';
@@ -145,6 +146,22 @@ function ChatRoomContent({
     loadTasks,
   } = useTasks(username, shouldLoadTasks);
 
+  // Dashboard hook - prepares grouped props for DashboardView
+  const dashboardProps = useDashboard({
+    tasks,
+    isLoadingTasks,
+    taskSearch,
+    taskFilter,
+    setTaskSearch,
+    setTaskFilter,
+    setShowTaskForm,
+    setEditingTask,
+    setTaskFormData,
+    toggleTaskStatus,
+    messages: [],
+    setCurrentView,
+  });
+
   // Contacts
   const { contacts } = useContacts(
     showLanding ? null : username,
@@ -187,6 +204,7 @@ function ChatRoomContent({
   } = useInviteManagement({ username, isAuthenticated, messages: [], currentView });
 
   // Modal state (extracted to hook for SRP)
+  // Note: Dashboard uses modalHandlers from useDashboard, but we still need these for other views
   const {
     showWelcomeModal,
     setShowWelcomeModal,
@@ -320,28 +338,12 @@ function ChatRoomContent({
               <DashboardView
                 username={username}
                 hasCoParentConnected={hasCoParentConnected}
-                tasks={tasks}
-                isLoadingTasks={isLoadingTasks}
-                taskSearch={taskSearch}
-                setTaskSearch={setTaskSearch}
-                taskFilter={taskFilter}
-                setTaskFilter={setTaskFilter}
                 contacts={contacts}
-                threads={[]}
-                selectedThreadId={null}
-                setSelectedThreadId={() => {}}
                 setCurrentView={setCurrentView}
-                setShowInviteModal={setShowInviteModal}
-                setEditingTask={setEditingTask}
-                setShowWelcomeModal={setShowWelcomeModal}
-                setShowProfileTaskModal={setShowProfileTaskModal}
-                setShowTaskForm={setShowTaskForm}
-                setTaskFormMode={setTaskFormMode}
-                setAiTaskDetails={setAiTaskDetails}
-                setIsGeneratingTask={setIsGeneratingTask}
-                setTaskFormData={setTaskFormData}
-                toggleTaskStatus={toggleTaskStatus}
-                getThreadMessages={() => {}}
+                taskState={dashboardProps.taskState}
+                taskHandlers={dashboardProps.taskHandlers}
+                modalHandlers={dashboardProps.modalHandlers}
+                threadState={dashboardProps.threadState}
               />
             )}
 

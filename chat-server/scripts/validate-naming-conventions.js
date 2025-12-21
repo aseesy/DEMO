@@ -7,13 +7,14 @@
  * - JavaScript: camelCase for variables/functions, PascalCase for classes
  * - Database: snake_case for columns (allowed in destructuring)
  * - localStorage: camelCase keys
+ * - Functions: getX for data retrieval (not fetchX, findX, lookupX)
+ * - Error messages: "Error getting" not "Error fetching"
  *
  * Usage: node scripts/validate-naming-conventions.js
  */
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 const ERRORS = [];
 const WARNINGS = [];
@@ -27,6 +28,61 @@ const PATTERNS = {
   // Object properties with snake_case (excluding known API/database fields)
   snakeCaseProperty: /\.([a-z]+_[a-z]+)\b/g,
 };
+
+// Function naming patterns to check
+const FUNCTION_PATTERNS = [
+  {
+    name: 'fetch-function',
+    regex: /(?:async\s+)?function\s+(fetch[A-Z][a-zA-Z]*)/g,
+    message: 'Use get* instead of fetch* for data retrieval functions',
+    severity: 'error',
+  },
+  {
+    name: 'lookup-function',
+    regex: /(?:async\s+)?function\s+(lookup[A-Z][a-zA-Z]*)/g,
+    message: 'Use get* instead of lookup* for data retrieval functions',
+    severity: 'error',
+  },
+  {
+    name: 'find-data-function',
+    regex: /(?:async\s+)?function\s+(find(?:User|Room|Contact|Task|Message|Profile|Invitation)[a-zA-Z]*)/g,
+    message: 'Use get* instead of find* for data retrieval functions',
+    severity: 'error',
+  },
+  {
+    name: 'arrow-fetch',
+    regex: /(?:const|let)\s+(fetch[A-Z][a-zA-Z]*)\s*=\s*(?:async\s*)?\(/g,
+    message: 'Use get* instead of fetch* for arrow function names',
+    severity: 'error',
+  },
+  {
+    name: 'arrow-lookup',
+    regex: /(?:const|let)\s+(lookup[A-Z][a-zA-Z]*)\s*=\s*(?:async\s*)?\(/g,
+    message: 'Use get* instead of lookup* for arrow function names',
+    severity: 'error',
+  },
+  {
+    name: 'error-fetching',
+    regex: /Error\s+fetching\b/gi,
+    message: 'Use "Error getting" instead of "Error fetching"',
+    severity: 'warning',
+  },
+  {
+    name: 'comment-fetch',
+    regex: /\/\/\s*[Ff]etch\s+(?:the\s+)?(?:user|room|contact|task|message|profile|data)/g,
+    message: 'Use "Get" instead of "Fetch" in comments',
+    severity: 'warning',
+  },
+];
+
+// Lines containing these patterns are allowed exceptions (deprecated aliases)
+const EXCEPTION_PATTERNS = [
+  /\/\/.*[Dd]eprecated/,
+  /fetchParticipantProfiles:\s*getParticipantProfiles/,
+  /lookupUser:\s*getUserByUsername/,
+  /findUserRoom:\s*getExistingUserRoom/,
+  /findPotentialMatches:\s*getPotentialMatches/,
+];
 
 // Allowed snake_case patterns (database columns, API responses that come from backend)
 const ALLOWED_SNAKE_CASE = new Set([
@@ -73,6 +129,13 @@ function findFiles(dir, extensions, fileList = []) {
   return fileList;
 }
 
+/**
+ * Check if a line is an allowed exception
+ */
+function isException(line) {
+  return EXCEPTION_PATTERNS.some(pattern => pattern.test(line));
+}
+
 function checkFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split('\n');
@@ -111,6 +174,28 @@ function checkFile(filePath) {
           code: line.trim(),
         });
       }
+    });
+  });
+
+  // Check for function naming violations (fetch*/find*/lookup* instead of get*)
+  lines.forEach((line, index) => {
+    // Skip exception lines (deprecated aliases, etc.)
+    if (isException(line)) return;
+
+    FUNCTION_PATTERNS.forEach(pattern => {
+      // Reset regex lastIndex for each line
+      pattern.regex.lastIndex = 0;
+      const matches = [...line.matchAll(pattern.regex)];
+
+      matches.forEach(match => {
+        const target = pattern.severity === 'error' ? ERRORS : WARNINGS;
+        target.push({
+          file: relativePath,
+          line: index + 1,
+          message: pattern.message,
+          code: match[0].trim(),
+        });
+      });
     });
   });
 }

@@ -12,30 +12,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run ESLint (Frontend)
         working-directory: ./chat-client-vite
         run: npm run lint
-      
+
       - name: Run ESLint (Backend)
         working-directory: ./chat-server
         run: npm run lint || echo "No lint script, skipping"
-      
+
       - name: Check Prettier formatting
         run: |
           npx prettier --check "**/*.{js,jsx,json,md}" || {
             echo "❌ Code is not formatted. Run: npx prettier --write ."
             exit 1
           }
+
+      - name: Check naming conventions
+        working-directory: ./chat-server
+        run: node scripts/validate-naming-conventions.js
 
   test-backend:
     name: Backend Tests

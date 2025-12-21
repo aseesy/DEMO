@@ -272,6 +272,53 @@ await query('SELECT * FROM users WHERE id = $1', [userId]);
 | Socket events    | snake_case                  | `send_message`, `ai_intervention`  |
 | Database tables  | snake_case                  | `pairing_sessions`, `room_members` |
 
+### Function Naming Standards
+
+**Data Retrieval** - Always use `get*`:
+
+| ✅ Do            | ❌ Don't                              |
+| ---------------- | ------------------------------------- |
+| `getUserById`    | `fetchUser`, `findUser`, `lookupUser` |
+| `getContacts`    | `fetchContacts`, `loadContacts`       |
+| `getRoomMembers` | `findRoomMembers`, `queryMembers`     |
+
+**Other Operations**:
+
+| Pattern      | Use Case              | Example                          |
+| ------------ | --------------------- | -------------------------------- |
+| `get*`       | Retrieve data         | `getUserById`, `getActiveRoom`   |
+| `create*`    | Create new entity     | `createUser`, `createInvitation` |
+| `update*`    | Modify existing       | `updateProfile`, `updateTask`    |
+| `delete*`    | Remove entity         | `deleteContact`, `deleteMessage` |
+| `is*`/`has*` | Boolean checks        | `isAuthenticated`, `hasAccess`   |
+| `validate*`  | Validation            | `validateEmail`, `validateToken` |
+| `parse*`     | Transform data        | `parseResult`, `parseReactions`  |
+| `build*`     | Construct objects     | `buildContext`, `buildPrompt`    |
+| `handle*`    | Event handlers        | `handleSubmit`, `handleError`    |
+| `on*`        | Callbacks             | `onSuccess`, `onClose`           |
+
+**Error Messages** - Use "getting" not "fetching":
+
+```javascript
+// ✅ GOOD
+console.error('Error getting user:', error);
+
+// ❌ BAD
+console.error('Error fetching user:', error);
+```
+
+**Comments** - Match function names:
+
+```javascript
+// ✅ GOOD
+// Get user profile data
+const profile = await getUserProfile(userId);
+
+// ❌ BAD
+// Fetch user profile data
+const profile = await getUserProfile(userId);
+```
+
 ---
 
 ## Key Design Principles

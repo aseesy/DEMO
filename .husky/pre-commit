@@ -4,6 +4,24 @@
 # Run lint-staged to check only staged files
 npx lint-staged
 
+# Check for naming convention violations in staged files
+echo "🔍 Checking naming conventions..."
+STAGED_JS=$(git diff --cached --name-only | grep -E '\.(js|jsx)$' || true)
+
+if [ -n "$STAGED_JS" ]; then
+  # Check for fetch*/lookup* function names (should be get*)
+  if echo "$STAGED_JS" | xargs grep -E 'function\s+fetch[A-Z]|function\s+lookup[A-Z]' 2>/dev/null | grep -v 'Deprecated'; then
+    echo "❌ Error: Found fetch*/lookup* function names. Use get* instead."
+    echo "   See CLAUDE.md 'Function Naming Standards' section."
+    exit 1
+  fi
+
+  # Check for "Error fetching" messages (should be "Error getting")
+  if echo "$STAGED_JS" | xargs grep -i 'Error fetching' 2>/dev/null | grep -v 'Deprecated'; then
+    echo "⚠️  Warning: Found 'Error fetching' messages. Use 'Error getting' instead."
+  fi
+fi
+
 # Check for console.log and debugger statements (warn only)
 if git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' | xargs grep -E '(console\.(log|warn|error|debug)|debugger)' 2>/dev/null; then
   echo "⚠️  Warning: Found console.log or debugger statements. Consider removing them before committing."

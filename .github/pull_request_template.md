@@ -31,6 +31,14 @@
 - [ ] ✅ Error handling implemented
 - [ ] ✅ Input validation implemented
 
+## Naming Convention Checklist
+
+- [ ] ✅ Functions use `get*` for data retrieval (not `fetch*`/`find*`/`lookup*`)
+- [ ] ✅ Error messages say "Error getting X" (not "Error fetching X")
+- [ ] ✅ Comments match function naming standards
+- [ ] ✅ No polyadic functions (4+ args) - use options object instead
+- [ ] ✅ Functions do ONE thing (command OR query, not both)
+
 ## Security Checklist
 
 - [ ] ✅ No security vulnerabilities introduced
