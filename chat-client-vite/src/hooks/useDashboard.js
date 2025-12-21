@@ -1,58 +1,52 @@
 import React from 'react';
+import { useTasks } from './useTasks.js';
 import { useModalController } from './useModalController.js';
 
 /**
- * useDashboard - Prepares all props for DashboardView
+ * useDashboard - ViewModel for DashboardView
  * 
  * We create explicit objects. This prepares the data for the view.
  * If you are using a custom hook (which you should be, to separate logic from view),
  * this is even easier.
  * 
- * This hook groups task state, task handlers, modal handlers, and thread state
- * into explicit objects that DashboardView expects. By using a custom hook,
- * we separate the logic of preparing data from the view component, making
- * the code more maintainable and testable.
+ * This hook acts as the ViewModel, encapsulating all dashboard state and behavior.
+ * It internalizes state management (Dependency Inversion Principle) so the parent
+ * component doesn't need to know about low-level details like taskSearch or taskFilter.
+ * 
+ * The Dashboard owns its dependencies - it manages tasks, modals, and threads internally.
+ * The parent component only needs to provide high-level dependencies (username, auth state).
  * 
  * @param {Object} options
- * @param {Array} options.tasks - Task list
- * @param {boolean} options.isLoadingTasks - Loading state for tasks
- * @param {string} options.taskSearch - Task search query
- * @param {string} options.taskFilter - Task filter value
- * @param {Function} options.setTaskSearch - Set task search query
- * @param {Function} options.setTaskFilter - Set task filter
- * @param {Function} options.setShowTaskForm - Show/hide task form
- * @param {Function} options.setEditingTask - Set task being edited
- * @param {Function} options.setTaskFormData - Set task form data
- * @param {Function} options.toggleTaskStatus - Toggle task status
+ * @param {string} options.username - Current user's username
+ * @param {boolean} options.isAuthenticated - Whether user is authenticated
  * @param {Array} options.messages - Messages array (for modal controller)
  * @param {Function} options.setCurrentView - View navigation handler
  * @returns {Object} Dashboard props grouped into taskState, taskHandlers, modalHandlers, threadState
  */
-export function useDashboard({
-  tasks,
-  isLoadingTasks,
-  taskSearch,
-  taskFilter,
-  setTaskSearch,
-  setTaskFilter,
-  setShowTaskForm,
-  setEditingTask,
-  setTaskFormData,
-  toggleTaskStatus,
-  messages = [],
-  setCurrentView,
-}) {
-  // Modal handlers
+export function useDashboard({ username, isAuthenticated, messages = [], setCurrentView }) {
+  const shouldLoadTasks = isAuthenticated && !!username;
+
+  // Internalize state management - Dashboard owns its dependencies
+  // The parent component doesn't need to know about taskSearch, taskFilter, etc.
   const {
-    taskFormMode,
-    setTaskFormMode,
-    aiTaskDetails,
-    setAiTaskDetails,
-    isGeneratingTask,
-    setIsGeneratingTask,
-    setShowWelcomeModal,
-    setShowProfileTaskModal,
-    setShowInviteModal,
+    tasks,
+    isLoadingTasks,
+    taskSearch,
+    taskFilter,
+    setShowTaskForm,
+    setEditingTask,
+    setTaskFormData,
+    setTaskSearch,
+    setTaskFilter,
+    toggleTaskStatus,
+  } = useTasks(username, shouldLoadTasks);
+
+  // Modal handlers - also internalized
+  const {
+    welcomeModal,
+    profileTaskModal,
+    inviteModal,
+    taskFormModal,
   } = useModalController({ messages, setCurrentView });
 
   // We create explicit objects. This prepares the data for the view.
@@ -75,22 +69,22 @@ export function useDashboard({
     () => ({
       setEditingTask,
       setShowTaskForm,
-      setTaskFormMode,
-      setAiTaskDetails,
-      setIsGeneratingTask,
+      setTaskFormMode: taskFormModal.setTaskFormMode,
+      setAiTaskDetails: taskFormModal.setAiTaskDetails,
+      setIsGeneratingTask: taskFormModal.setIsGeneratingTask,
       setTaskFormData,
       toggleTaskStatus,
     }),
-    [setEditingTask, setShowTaskForm, setTaskFormMode, setAiTaskDetails, setIsGeneratingTask, setTaskFormData, toggleTaskStatus]
+    [setEditingTask, setShowTaskForm, taskFormModal.setTaskFormMode, taskFormModal.setAiTaskDetails, taskFormModal.setIsGeneratingTask, setTaskFormData, toggleTaskStatus]
   );
 
   const modalHandlers = React.useMemo(
     () => ({
-      setShowWelcomeModal,
-      setShowProfileTaskModal,
-      setShowInviteModal,
+      setShowWelcomeModal: welcomeModal.setShow,
+      setShowProfileTaskModal: profileTaskModal.setShow,
+      setShowInviteModal: inviteModal.setShow,
     }),
-    [setShowWelcomeModal, setShowProfileTaskModal, setShowInviteModal]
+    [welcomeModal.setShow, profileTaskModal.setShow, inviteModal.setShow]
   );
 
   const threadState = React.useMemo(

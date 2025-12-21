@@ -126,7 +126,7 @@ function ChatRoomContent({
     }
   }, [isAuthenticated, currentView]);
 
-  // Tasks
+  // Tasks - still needed for GlobalModals and other views
   const shouldLoadTasks = isAuthenticated && !showLanding && !isCheckingAuth;
   const {
     tasks,
@@ -146,18 +146,11 @@ function ChatRoomContent({
     loadTasks,
   } = useTasks(username, shouldLoadTasks);
 
-  // Dashboard hook - prepares grouped props for DashboardView
+  // Dashboard hook - ViewModel that owns its state
+  // The Dashboard manages its own dependencies internally
   const dashboardProps = useDashboard({
-    tasks,
-    isLoadingTasks,
-    taskSearch,
-    taskFilter,
-    setTaskSearch,
-    setTaskFilter,
-    setShowTaskForm,
-    setEditingTask,
-    setTaskFormData,
-    toggleTaskStatus,
+    username,
+    isAuthenticated,
     messages: [],
     setCurrentView,
   });
@@ -206,23 +199,12 @@ function ChatRoomContent({
   // Modal state (extracted to hook for SRP)
   // Note: Dashboard uses modalHandlers from useDashboard, but we still need these for other views
   const {
-    showWelcomeModal,
-    setShowWelcomeModal,
-    showProfileTaskModal,
-    setShowProfileTaskModal,
-    showInviteModal,
-    setShowInviteModal,
-    taskFormMode,
-    setTaskFormMode,
-    aiTaskDetails,
-    setAiTaskDetails,
-    isGeneratingTask,
-    setIsGeneratingTask,
-    pendingContactSuggestion,
-    setPendingContactSuggestion,
-    dismissedSuggestions,
-    setDismissedSuggestions,
-    handleAddContactFromSuggestion,
+    welcomeModal,
+    profileTaskModal,
+    inviteModal,
+    taskFormModal,
+    contactSuggestionModal,
+    messageFlaggingModal,
   } = useModalController({ messages: [], setCurrentView });
 
   // Handlers
@@ -434,12 +416,12 @@ function ChatRoomContent({
             <GlobalModals
               showTaskForm={showTaskForm}
               editingTask={editingTask}
-              taskFormMode={taskFormMode}
-              setTaskFormMode={setTaskFormMode}
-              aiTaskDetails={aiTaskDetails}
-              setAiTaskDetails={setAiTaskDetails}
-              isGeneratingTask={isGeneratingTask}
-              setIsGeneratingTask={setIsGeneratingTask}
+              taskFormMode={taskFormModal.taskFormMode}
+              setTaskFormMode={taskFormModal.setTaskFormMode}
+              aiTaskDetails={taskFormModal.aiTaskDetails}
+              setAiTaskDetails={taskFormModal.setAiTaskDetails}
+              isGeneratingTask={taskFormModal.isGeneratingTask}
+              setIsGeneratingTask={taskFormModal.setIsGeneratingTask}
               taskFormData={taskFormData}
               setTaskFormData={setTaskFormData}
               contacts={contacts}
@@ -449,37 +431,37 @@ function ChatRoomContent({
                 setEditingTask(null);
               }}
               onSaveTask={saveTask}
-              showWelcomeModal={showWelcomeModal}
+              showWelcomeModal={welcomeModal.show}
               onCloseWelcome={() => {
-                setShowWelcomeModal(false);
+                welcomeModal.setShow(false);
                 setEditingTask(null);
               }}
               onCompleteWelcome={() => {
                 toggleTaskStatus(editingTask);
-                setShowWelcomeModal(false);
+                welcomeModal.setShow(false);
                 setEditingTask(null);
               }}
-              showProfileTaskModal={showProfileTaskModal}
+              showProfileTaskModal={profileTaskModal.show}
               onCloseProfileTask={() => {
-                setShowProfileTaskModal(false);
+                profileTaskModal.setShow(false);
                 setEditingTask(null);
               }}
               onNavigateToProfile={() => {
-                setShowProfileTaskModal(false);
+                profileTaskModal.setShow(false);
                 setEditingTask(null);
                 setCurrentView('profile');
               }}
-              showInviteModal={showInviteModal}
-              onCloseInvite={() => setShowInviteModal(false)}
+              showInviteModal={inviteModal.show}
+              onCloseInvite={() => inviteModal.setShow(false)}
               onInviteSuccess={() => {
-                setShowInviteModal(false);
+                inviteModal.setShow(false);
                 if (loadTasks) loadTasks();
                 setHasCoParentConnected(true);
               }}
-              pendingContactSuggestion={pendingContactSuggestion}
-              onAddContact={handleAddContactFromSuggestion}
-              onDismissContactSuggestion={() => setPendingContactSuggestion(null)}
-              setDismissedSuggestions={setDismissedSuggestions}
+              pendingContactSuggestion={contactSuggestionModal.pendingContactSuggestion}
+              onAddContact={contactSuggestionModal.handleAddContactFromSuggestion}
+              onDismissContactSuggestion={() => contactSuggestionModal.setPendingContactSuggestion(null)}
+              setDismissedSuggestions={contactSuggestionModal.setDismissedSuggestions}
             />
           </div>
         </div>
