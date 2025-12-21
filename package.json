@@ -20,7 +20,8 @@
     "test:coverage": "npm run test:coverage:backend && npm run test:coverage:frontend",
     "test:coverage:backend": "cd chat-server && npm run test:coverage -- --passWithNoTests || true",
     "test:coverage:frontend": "cd chat-client-vite && npm run test:coverage -- --passWithNoTests || true",
-    "verify:production": "node scripts/test/verify-production.js"
+    "verify:production": "node scripts/test/verify-production.js",
+    "test:deploy": "node scripts/test/git-vercel.test.js"
   },
   "private": true,
   "engines": {
@@ -28,6 +29,8 @@
   },
   "packageManager": "npm@10.0.0",
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4"
