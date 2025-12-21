@@ -1,6 +1,6 @@
 import './index.css';
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ChatRoom from './ChatRoom.jsx';
 import { LoginSignup } from './components/LoginSignup.jsx';
 import { AcceptInvitationPage } from './components/AcceptInvitationPage.jsx';
@@ -60,6 +60,8 @@ function App() {
                 <Route path="/" element={<ChatRoom />} />
                 {/* Sign in route - dedicated login/signup page */}
                 <Route path="/signin" element={<LoginSignup />} />
+                {/* Redirect /login to /signin for compatibility */}
+                <Route path="/login" element={<Navigate to="/signin" replace />} />
                 {/* Accept invitation route - for users accepting co-parent invitations */}
                 <Route path="/accept-invite" element={<AcceptInvitationPage />} />
                 {/* Invite co-parent route - shown after signup */}
