@@ -50,27 +50,23 @@ export function registerAllModalHooks() {
   
   if (!existing.includes('taskFormModal')) {
     registerModalHook('taskFormModal', (deps) => {
-      // This plugin needs no dependencies - it's self-contained
       return useTaskFormModal();
-    });
+    }, []); // No dependencies required
   }
 
   if (!existing.includes('contactSuggestionModal')) {
     registerModalHook('contactSuggestionModal', (deps) => {
-      // This plugin declares what it needs by extracting from container
-      // Controller doesn't need to know - plugin is responsible for its own dependencies
       return useContactSuggestionModal({ 
         messages: deps.messages, 
         setCurrentView: deps.setCurrentView 
       });
-    });
+    }, ['messages', 'setCurrentView']); // Declares required dependencies
   }
 
   if (!existing.includes('messageFlaggingModal')) {
     registerModalHook('messageFlaggingModal', (deps) => {
-      // This plugin needs no dependencies - it's self-contained
       return useMessageFlaggingModal();
-    });
+    }, []); // No dependencies required
   }
 }
 
