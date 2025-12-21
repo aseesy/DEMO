@@ -1,4 +1,5 @@
 # LiaiZen Rewrite Construction Standards
+
 **File:** /docs/rewrite_standards.md
 **Version:** 2.0.x
 **Status:** Active
@@ -18,7 +19,7 @@ They serve to:
 - express the sender's intention with strong clarity
 - support predictable, collaborative communication
 - model well-regulated phrasing
-- preserve the sender's *idiolect* (their unique writing style)
+- preserve the sender's _idiolect_ (their unique writing style)
 - maintain alignment with context, logistics, and history
 - demonstrate how the same person would speak when fully clear and centered
 
@@ -32,6 +33,7 @@ They only refine **how** the intention is delivered.
 Every rewrite must meet these standards:
 
 ### 2.1 Idiolect Fidelity
+
 Rewrites must reflect the sender's natural communication tendencies, including:
 
 - vocabulary
@@ -46,6 +48,7 @@ Rewrites must reflect the sender's natural communication tendencies, including:
 > The goal: **Even close friends shouldn't be able to tell the AI helped.**
 
 ### 2.2 Contextual Precision
+
 Rewrites integrate:
 
 - timing (pickup, drop-off, schedules)
@@ -57,6 +60,7 @@ Rewrites integrate:
 This is handled via an ultra-fast contextual engine (<100ms selection).
 
 ### 2.3 Regulated Expression Modeling
+
 Rewrites represent the sender as they sound when:
 
 - calm
@@ -66,9 +70,11 @@ Rewrites represent the sender as they sound when:
 - at their highest communicative capacity
 
 Think:
+
 > **"You — after three coffees and a great night's sleep."**
 
 ### 2.4 Structural Cleanliness
+
 Each rewrite must:
 
 - focus on one main topic
@@ -79,12 +85,13 @@ Each rewrite must:
 - move the conversation forward
 
 ### 2.5 Preservation of Intention
+
 Rewrites must:
 
 - keep all factual content
 - keep the purpose of the original message
 - keep the meaning intact
-- keep the emotional *temperature* neutral
+- keep the emotional _temperature_ neutral
 
 Rewrites **never** introduce:
 
@@ -153,12 +160,15 @@ Negotiations, joint decisions, coordination challenges, tension-sensitive topics
 Rewrites follow this deterministic pipeline:
 
 ### Step 1 — Extract Intent
+
 Identify the sender's core purpose (request, information, boundary, clarification).
 
 ### Step 2 — Map Observed Structure
+
 Find patterns, clarity gaps, and actionable improvements.
 
 ### Step 3 — Select Rewrite Pattern
+
 Engine chooses from a library of rewrite templates:
 
 - based on context
@@ -167,6 +177,7 @@ Engine chooses from a library of rewrite templates:
 - matched to the user's communication style
 
 ### Step 4 — Inject Idiolect
+
 Rewrite template is re-shaped to match the sender's:
 
 - wording
@@ -176,6 +187,7 @@ Rewrite template is re-shaped to match the sender's:
 - communication habits
 
 ### Step 5 — Apply Context
+
 Inject correct logistical details:
 
 - times
@@ -185,6 +197,7 @@ Inject correct logistical details:
 - custody specifics
 
 ### Step 6 — Final Regulation Pass
+
 Ensure the rewrite reflects:
 
 - calm pacing
@@ -197,18 +210,21 @@ Ensure the rewrite reflects:
 
 # 5. Examples of Structural Improvements
 
-*(Note: These are structural examples, not actual rewrites.)*
+_(Note: These are structural examples, not actual rewrites.)_
 
 ### BEFORE (Structural Issue)
+
 "Can you tell me why you didn't respond about the shoes? Also I need you to bring the kids at 5. And you still didn't send me the info from school."
 
 Multi-topic, unclear request, implied evaluation.
 
 ### TYPE 1 — Direct
+
 "One quick thing about the shoes—can you send the update?
 Also, are you able to bring them at 5?"
 
 ### TYPE 2 — Collaborative
+
 "Can you share the shoe update when you get a moment?
 If 5pm works for drop-off today, let me know."
 
@@ -226,18 +242,23 @@ Both:
 # 6. Internal Developer Rules
 
 ### 6.1 Rewrites always follow the sender's voice model
+
 Never generic. Never AI-sounding.
 
 ### 6.2 Rewrites never exceed the scope of the original message
+
 No new content.
 
 ### 6.3 Rewrites always reflect regulated tone
+
 Even if the sender is dysregulated.
 
 ### 6.4 Rewrites maintain the constitutional hierarchy
+
 Rewrites must reflect all Core Principles and Immutable Principles.
 
 ### 6.5 Rewrites complete in <100ms
+
 Context engine must remain ultra-fast.
 
 ---

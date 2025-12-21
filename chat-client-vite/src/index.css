@@ -37,6 +37,11 @@
   
   /* Yellow shades */
   --color-yellow-600: #ca8a04;
+
+  /* Z-Index Scale */
+  --z-nav: 50;
+  --z-modal: 100;
+  --z-toast: 9999;
 }
 
 * {
@@ -73,7 +78,29 @@ body {
   }
   
   .pb-safe {
-    padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Combined padding for bottom nav layouts */
+  .pb-nav-mobile {
+    padding-bottom: calc(3.5rem + max(0.5rem, env(safe-area-inset-bottom)));
+  }
+
+  /* Combined padding for top layouts on mobile (safe area only) */
+  .pt-nav-mobile {
+    padding-top: env(safe-area-inset-top);
   }
   
   .safe-area-inset-top {
@@ -188,7 +215,7 @@ body {
   position: fixed;
   top: 1rem;
   right: 1rem;
-  z-index: 9999;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;

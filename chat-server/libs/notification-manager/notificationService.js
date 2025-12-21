@@ -43,14 +43,7 @@ const NOTIFICATION_ACTIONS = {
  * @returns {Promise<object>} Created notification
  */
 async function createNotification(params, db) {
-  const {
-    userId,
-    type,
-    title,
-    message = null,
-    data = {},
-    invitationId = null,
-  } = params;
+  const { userId, type, title, message = null, data = {}, invitationId = null } = params;
 
   // Validation
   if (!userId) {
@@ -94,19 +87,22 @@ async function createInvitationNotification(params, db) {
     throw new Error('userId, inviterName, and invitationId are required');
   }
 
-  return createNotification({
-    userId,
-    type: NOTIFICATION_TYPES.COPARENT_INVITATION,
-    title: 'Co-Parent Invitation',
-    message: `${inviterName} has invited you to connect as co-parents on LiaiZen.`,
-    data: {
-      inviter_name: inviterName,
-      invitation_token: invitationToken,
-      action_required: true,
-      actions: ['accept', 'decline'],
+  return createNotification(
+    {
+      userId,
+      type: NOTIFICATION_TYPES.COPARENT_INVITATION,
+      title: 'Co-Parent Invitation',
+      message: `${inviterName} has invited you to connect as co-parents on LiaiZen.`,
+      data: {
+        inviter_name: inviterName,
+        invitation_token: invitationToken,
+        action_required: true,
+        actions: ['accept', 'decline'],
+      },
+      invitationId,
     },
-    invitationId,
-  }, db);
+    db
+  );
 }
 
 /**
@@ -126,18 +122,21 @@ async function createInvitationAcceptedNotification(params, db) {
     throw new Error('userId and inviteeName are required');
   }
 
-  return createNotification({
-    userId,
-    type: NOTIFICATION_TYPES.INVITATION_ACCEPTED,
-    title: 'Invitation Accepted',
-    message: `${inviteeName} has accepted your invitation to connect as co-parents!`,
-    data: {
-      invitee_name: inviteeName,
-      room_id: roomId,
-      action_required: false,
+  return createNotification(
+    {
+      userId,
+      type: NOTIFICATION_TYPES.INVITATION_ACCEPTED,
+      title: 'Invitation Accepted',
+      message: `${inviteeName} has accepted your invitation to connect as co-parents!`,
+      data: {
+        invitee_name: inviteeName,
+        room_id: roomId,
+        action_required: false,
+      },
+      invitationId,
     },
-    invitationId,
-  }, db);
+    db
+  );
 }
 
 /**
@@ -156,19 +155,22 @@ async function createInvitationDeclinedNotification(params, db) {
     throw new Error('userId is required');
   }
 
-  return createNotification({
-    userId,
-    type: NOTIFICATION_TYPES.INVITATION_DECLINED,
-    title: 'Invitation Declined',
-    message: inviteeName
-      ? `${inviteeName} has declined your invitation.`
-      : 'Your invitation has been declined.',
-    data: {
-      invitee_name: inviteeName,
-      action_required: false,
+  return createNotification(
+    {
+      userId,
+      type: NOTIFICATION_TYPES.INVITATION_DECLINED,
+      title: 'Invitation Declined',
+      message: inviteeName
+        ? `${inviteeName} has declined your invitation.`
+        : 'Your invitation has been declined.',
+      data: {
+        invitee_name: inviteeName,
+        action_required: false,
+      },
+      invitationId,
     },
-    invitationId,
-  }, db);
+    db
+  );
 }
 
 /**
@@ -183,12 +185,7 @@ async function getNotifications(userId, db, options = {}) {
     throw new Error('userId and db are required');
   }
 
-  const {
-    unreadOnly = false,
-    type = null,
-    limit = 50,
-    offset = 0,
-  } = options;
+  const { unreadOnly = false, type = null, limit = 50, offset = 0 } = options;
 
   let query = `
     SELECT n.*, i.status as invitation_status, i.invitee_email
@@ -227,7 +224,7 @@ async function getUnreadCount(userId, db) {
   if (userId === null || userId === undefined) {
     throw new Error('userId is required');
   }
-  
+
   if (!db || typeof db.query !== 'function') {
     throw new Error('db with query method is required');
   }

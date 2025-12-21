@@ -8,6 +8,7 @@
 
 **Problem Statement**:
 Currently, `aiMediator.js` conflates analysis with coaching in a single AI call. This means:
+
 1. We can't see what the AI "observed" before it coached
 2. Analysis logic is buried in a large prompt
 3. Hard to test analysis separate from coaching
@@ -15,6 +16,7 @@ Currently, `aiMediator.js` conflates analysis with coaching in a single AI call.
 
 **Solution**:
 Create a **Language Analyzer Library** (`chat-server/libs/language-analyzer/`) that:
+
 1. Analyzes message language patterns (local + optional AI enhancement)
 2. Produces structured, factual analysis (no coaching, no emotions)
 3. Feeds structured data to the coaching layer
@@ -69,79 +71,79 @@ The analyzer examines these aspects of each message:
 
 ### 1. Global vs. Specific
 
-| Pattern | Description | Examples |
-|---------|-------------|----------|
-| `global_positive` | Universal positive claim | "You're a great parent" |
-| `global_negative` | Universal negative claim | "You always mess things up" |
-| `specific_behavior` | Cites concrete action | "When you picked her up late on Tuesday" |
-| `specific_impact` | Describes concrete effect | "She missed her soccer practice" |
+| Pattern             | Description               | Examples                                 |
+| ------------------- | ------------------------- | ---------------------------------------- |
+| `global_positive`   | Universal positive claim  | "You're a great parent"                  |
+| `global_negative`   | Universal negative claim  | "You always mess things up"              |
+| `specific_behavior` | Cites concrete action     | "When you picked her up late on Tuesday" |
+| `specific_impact`   | Describes concrete effect | "She missed her soccer practice"         |
 
 **Markers**: always, never, every time, constantly, basically, completely, totally
 
 ### 2. Evaluative vs. Descriptive
 
-| Pattern | Description | Examples |
-|---------|-------------|----------|
-| `evaluative_character` | Judges person's character | "You're a bad parent" |
-| `evaluative_competence` | Judges ability | "You're failing her" |
-| `descriptive_action` | Describes behavior | "The homework wasn't done" |
-| `descriptive_observation` | States observation | "She seemed upset" |
+| Pattern                   | Description               | Examples                   |
+| ------------------------- | ------------------------- | -------------------------- |
+| `evaluative_character`    | Judges person's character | "You're a bad parent"      |
+| `evaluative_competence`   | Judges ability            | "You're failing her"       |
+| `descriptive_action`      | Describes behavior        | "The homework wasn't done" |
+| `descriptive_observation` | States observation        | "She seemed upset"         |
 
 **Markers**: good/bad, right/wrong, failing, incompetent, terrible, great, perfect
 
 ### 3. Hedging and Apologizing
 
-| Pattern | Description | Examples |
-|---------|-------------|----------|
-| `over_explaining` | Excessive justification | "I know this is hard and I'm sorry but..." |
-| `apologetic_framing` | Unnecessary apology | "Sorry to bring this up again but..." |
-| `hedging_softeners` | Weakening language | "I just think maybe possibly..." |
-| `direct_statement` | Clear, unhedged | "I need to discuss the schedule" |
+| Pattern              | Description             | Examples                                   |
+| -------------------- | ----------------------- | ------------------------------------------ |
+| `over_explaining`    | Excessive justification | "I know this is hard and I'm sorry but..." |
+| `apologetic_framing` | Unnecessary apology     | "Sorry to bring this up again but..."      |
+| `hedging_softeners`  | Weakening language      | "I just think maybe possibly..."           |
+| `direct_statement`   | Clear, unhedged         | "I need to discuss the schedule"           |
 
 **Markers**: just, maybe, possibly, I think, sorry, I know this is, if it's okay
 
 ### 4. Vague vs. Specific
 
-| Pattern | Description | Examples |
-|---------|-------------|----------|
-| `vague_complaint` | Unspecific grievance | "The way you're handling things" |
-| `vague_request` | Unclear ask | "I need you to do better" |
-| `specific_complaint` | Concrete grievance | "She didn't have her inhaler" |
-| `specific_request` | Clear ask | "Can you pack her inhaler on Wednesdays?" |
+| Pattern              | Description          | Examples                                  |
+| -------------------- | -------------------- | ----------------------------------------- |
+| `vague_complaint`    | Unspecific grievance | "The way you're handling things"          |
+| `vague_request`      | Unclear ask          | "I need you to do better"                 |
+| `specific_complaint` | Concrete grievance   | "She didn't have her inhaler"             |
+| `specific_request`   | Clear ask            | "Can you pack her inhaler on Wednesdays?" |
 
 **Markers**: things, stuff, everything, something, this, that, issues, problems
 
 ### 5. Focus Type
 
-| Pattern | Description | Examples |
-|---------|-------------|----------|
-| `logistics_focused` | Schedule, tasks, items | "Can we swap Tuesday pickup?" |
-| `character_focused` | Person's traits | "You're so irresponsible" |
-| `child_focused` | Child's needs/wellbeing | "Emma needs consistency" |
-| `relationship_focused` | Co-parent dynamic | "We need to communicate better" |
-| `past_focused` | Historical grievance | "You did the same thing last year" |
-| `future_focused` | Forward-looking | "Going forward, can we..." |
+| Pattern                | Description             | Examples                           |
+| ---------------------- | ----------------------- | ---------------------------------- |
+| `logistics_focused`    | Schedule, tasks, items  | "Can we swap Tuesday pickup?"      |
+| `character_focused`    | Person's traits         | "You're so irresponsible"          |
+| `child_focused`        | Child's needs/wellbeing | "Emma needs consistency"           |
+| `relationship_focused` | Co-parent dynamic       | "We need to communicate better"    |
+| `past_focused`         | Historical grievance    | "You did the same thing last year" |
+| `future_focused`       | Forward-looking         | "Going forward, can we..."         |
 
 ### 6. Child Involvement
 
-| Pattern | Description | Examples |
-|---------|-------------|----------|
-| `child_mentioned` | Child referenced | "Vira said she was tired" |
-| `child_as_messenger` | Child carrying adult messages | "Tell your dad he needs to..." |
-| `child_as_weapon` | Child used to attack | "You're failing Vira" |
-| `child_wellbeing_cited` | Child's needs as reason | "For Emma's sake, can we..." |
-| `child_triangulation` | Playing child against parent | "She said she likes it better at my house" |
+| Pattern                 | Description                   | Examples                                   |
+| ----------------------- | ----------------------------- | ------------------------------------------ |
+| `child_mentioned`       | Child referenced              | "Vira said she was tired"                  |
+| `child_as_messenger`    | Child carrying adult messages | "Tell your dad he needs to..."             |
+| `child_as_weapon`       | Child used to attack          | "You're failing Vira"                      |
+| `child_wellbeing_cited` | Child's needs as reason       | "For Emma's sake, can we..."               |
+| `child_triangulation`   | Playing child against parent  | "She said she likes it better at my house" |
 
 ### 7. Sentence Structure
 
-| Pattern | Description | Examples |
-|---------|-------------|----------|
-| `accusation` | Direct blame | "You did this" |
-| `question` | Inquiry | "Can we discuss...?" |
-| `request` | Ask for action | "I need you to..." |
-| `statement` | Neutral observation | "The pickup is at 3" |
-| `demand` | Forceful requirement | "You need to..." |
-| `threat` | Consequence warning | "If you don't..., I will..." |
+| Pattern      | Description          | Examples                     |
+| ------------ | -------------------- | ---------------------------- |
+| `accusation` | Direct blame         | "You did this"               |
+| `question`   | Inquiry              | "Can we discuss...?"         |
+| `request`    | Ask for action       | "I need you to..."           |
+| `statement`  | Neutral observation  | "The pickup is at 3"         |
+| `demand`     | Forceful requirement | "You need to..."             |
+| `threat`     | Consequence warning  | "If you don't..., I will..." |
 
 ---
 
@@ -200,18 +202,18 @@ interface LanguageAnalysis {
     sentence_type: 'accusation' | 'question' | 'request' | 'statement' | 'demand' | 'threat';
     target: 'other_parent' | 'self' | 'child' | 'third_party' | 'situation';
     tense: 'past' | 'present' | 'future' | 'mixed';
-    absolutes_used: string[];  // ["always", "never", "basically"]
-    hedges_used: string[];     // ["just", "maybe", "sorry"]
+    absolutes_used: string[]; // ["always", "never", "basically"]
+    hedges_used: string[]; // ["just", "maybe", "sorry"]
   };
 
   // Human-readable summary (for debugging/logging)
-  summary: string[];  // Array of factual observations
+  summary: string[]; // Array of factual observations
 
   // Confidence and metadata
   meta: {
     analyzer_version: string;
     analysis_method: 'local' | 'ai_enhanced';
-    confidence: number;  // 0-100
+    confidence: number; // 0-100
     processing_time_ms: number;
   };
 }
@@ -371,7 +373,7 @@ chat-server/libs/language-analyzer/
 ```javascript
 // Single AI call does everything
 const result = await openaiClient.createChatCompletion({
-  messages: [{ role: 'user', content: bigPromptWithAnalysisAndCoaching }]
+  messages: [{ role: 'user', content: bigPromptWithAnalysisAndCoaching }],
 });
 ```
 
@@ -398,7 +400,7 @@ Based on this analysis, apply the 1-2-3 coaching framework...
 `;
 
 const result = await openaiClient.createChatCompletion({
-  messages: [{ role: 'user', content: prompt }]
+  messages: [{ role: 'user', content: prompt }],
 });
 ```
 
@@ -428,14 +430,17 @@ const result = await openaiClient.createChatCompletion({
 ## Non-Functional Requirements
 
 ### NFR-001: Performance
+
 - Local analysis must complete in <10ms
 - No external API calls for basic analysis
 
 ### NFR-002: Accuracy
+
 - Pattern detection should match human evaluation in >90% of cases
 - Summary should be factual and verifiable
 
 ### NFR-003: Constitution Compliance
+
 - Analysis must never include emotional diagnoses
 - Analysis must never include psychological labels
 - Analysis describes language mechanics only
@@ -445,23 +450,27 @@ const result = await openaiClient.createChatCompletion({
 ## Implementation Phases
 
 ### Phase 1: Core Pattern Detection
+
 - Implement global/specific detection
 - Implement evaluative/descriptive detection
 - Implement hedging detection
 - Create integration test suite
 
 ### Phase 2: Advanced Analysis
+
 - Implement specificity detection
 - Implement focus type detection
 - Implement child involvement detection
 - Implement sentence structure analysis
 
 ### Phase 3: Integration
+
 - Update aiMediator.js to use analyzer
 - Include analysis in coaching prompts
 - Add logging for analysis results
 
 ### Phase 4: Validation
+
 - A/B test coaching quality with/without analyzer
 - Gather feedback on analysis accuracy
 - Tune pattern detection rules

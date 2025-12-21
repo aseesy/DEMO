@@ -14,7 +14,7 @@ export function initAnalytics() {
     console.log('Analytics: GOOGLE_TAG detected, skipping dynamic initialization');
     // Ensure gtag is available if Google Tag Manager is used
     if (typeof window !== 'undefined' && !window.gtag && window.dataLayer) {
-      window.gtag = function() {
+      window.gtag = function () {
         window.dataLayer.push(arguments);
       };
     }
@@ -391,4 +391,3 @@ export function trackInterventionFeedback(helpful) {
 
   console.log('Analytics: Intervention feedback', { helpful });
 }
-

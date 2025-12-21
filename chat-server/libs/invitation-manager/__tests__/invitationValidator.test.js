@@ -112,7 +112,7 @@ describe('Invitation Validator', () => {
       expect(result.code).toBe('DECLINED');
     });
 
-    it('should reject and update expired invitation', async () => {
+    it('should reject expired invitation without updating DB (pure validation)', async () => {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - 1);
 
@@ -129,7 +129,30 @@ describe('Invitation Validator', () => {
 
       expect(result.valid).toBe(false);
       expect(result.code).toBe('EXPIRED');
-      // Should have updated status in DB
+      expect(result.needsExpiration).toBe(true); // Flag for caller to handle
+      // Pure function - only 1 SELECT query, no UPDATE
+      expect(db.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('should reject and update expired invitation with validateTokenAndExpire', async () => {
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 1);
+
+      const mockInvitation = {
+        id: 1,
+        token_hash: tokenHash,
+        status: 'pending',
+        expires_at: pastDate.toISOString(),
+      };
+
+      const db = createMockDb([mockInvitation]);
+
+      const result = await invitationValidator.validateTokenAndExpire(validToken, db);
+
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe('EXPIRED');
+      expect(result.needsExpiration).toBeUndefined(); // Flag removed after handling
+      // Should have updated status in DB (SELECT + UPDATE)
       expect(db.query).toHaveBeenCalledTimes(2);
     });
   });
@@ -150,7 +173,11 @@ describe('Invitation Validator', () => {
         inviter_email: 'alex@test.com',
       };
 
-      const acceptedInvitation = { ...mockInvitation, status: 'accepted', invitee_id: 'accepter123' };
+      const acceptedInvitation = {
+        ...mockInvitation,
+        status: 'accepted',
+        invitee_id: 'accepter123',
+      };
 
       const db = createMockDb([]);
       db.query
@@ -169,9 +196,9 @@ describe('Invitation Validator', () => {
     it('should throw error for invalid token', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        invitationValidator.acceptInvitation('invalid', 'user123', db)
-      ).rejects.toThrow('Invalid invitation token');
+      await expect(invitationValidator.acceptInvitation('invalid', 'user123', db)).rejects.toThrow(
+        'Invalid invitation token'
+      );
     });
 
     it('should throw error when accepter has reached co-parent limit', async () => {
@@ -192,17 +219,17 @@ describe('Invitation Validator', () => {
         .mockResolvedValueOnce({ rows: [mockInvitation], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [{ count: '1' }], rowCount: 1 }); // limit reached
 
-      await expect(
-        invitationValidator.acceptInvitation(validToken, 'user123', db)
-      ).rejects.toThrow('Co-parent limit reached');
+      await expect(invitationValidator.acceptInvitation(validToken, 'user123', db)).rejects.toThrow(
+        'Co-parent limit reached'
+      );
     });
 
     it('should throw error for missing parameters', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        invitationValidator.acceptInvitation(null, 'user123', db)
-      ).rejects.toThrow('token, acceptingUserId, and db are required');
+      await expect(invitationValidator.acceptInvitation(null, 'user123', db)).rejects.toThrow(
+        'token, acceptingUserId, and db are required'
+      );
     });
   });
 
@@ -221,7 +248,11 @@ describe('Invitation Validator', () => {
         inviter_email: 'alex@test.com',
       };
 
-      const declinedInvitation = { ...mockInvitation, status: 'declined', invitee_id: 'decliner123' };
+      const declinedInvitation = {
+        ...mockInvitation,
+        status: 'declined',
+        invitee_id: 'decliner123',
+      };
 
       const db = createMockDb([]);
       db.query
@@ -237,9 +268,9 @@ describe('Invitation Validator', () => {
     it('should throw error for invalid token', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        invitationValidator.declineInvitation('invalid', 'user123', db)
-      ).rejects.toThrow('Invalid invitation token');
+      await expect(invitationValidator.declineInvitation('invalid', 'user123', db)).rejects.toThrow(
+        'Invalid invitation token'
+      );
     });
   });
 
@@ -306,9 +337,9 @@ describe('Invitation Validator', () => {
     it('should throw error for missing parameters', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        invitationValidator.getUserInvitations(null, db)
-      ).rejects.toThrow('userId and db are required');
+      await expect(invitationValidator.getUserInvitations(null, db)).rejects.toThrow(
+        'userId and db are required'
+      );
     });
   });
 
@@ -320,10 +351,10 @@ describe('Invitation Validator', () => {
       const result = await invitationValidator.expireOldInvitations(db);
 
       expect(result).toBe(5);
-      expect(db.query).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE invitations'),
-        [INVITATION_STATUS.EXPIRED, INVITATION_STATUS.PENDING]
-      );
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE invitations'), [
+        INVITATION_STATUS.EXPIRED,
+        INVITATION_STATUS.PENDING,
+      ]);
     });
 
     it('should return 0 when no invitations to expire', async () => {
@@ -336,9 +367,9 @@ describe('Invitation Validator', () => {
     });
 
     it('should throw error for missing db', async () => {
-      await expect(
-        invitationValidator.expireOldInvitations(null)
-      ).rejects.toThrow('db is required');
+      await expect(invitationValidator.expireOldInvitations(null)).rejects.toThrow(
+        'db is required'
+      );
     });
   });
 });

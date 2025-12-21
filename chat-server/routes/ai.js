@@ -15,7 +15,7 @@ const { verifyAuth } = require('../middleware/auth');
 // Service references - set from server.js
 let aiMediator;
 
-router.setHelpers = function(helpers) {
+router.setHelpers = function (helpers) {
   aiMediator = helpers.aiMediator;
 };
 
@@ -41,7 +41,7 @@ router.post('/tasks/generate', async (req, res) => {
 
     const OpenAI = require('openai');
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
+      apiKey: process.env.OPENAI_API_KEY,
     });
 
     const prompt = `You are a helpful task management assistant for a co-parenting app. Based on the following task description, create a well-structured task with:
@@ -65,15 +65,16 @@ Respond in JSON format only with this structure:
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful task management assistant. Always respond with valid JSON only, no additional text.'
+          content:
+            'You are a helpful task management assistant. Always respond with valid JSON only, no additional text.',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       max_tokens: 300,
-      temperature: 0.7
+      temperature: 0.7,
     });
 
     const response = completion.choices[0].message.content.trim();
@@ -102,12 +103,12 @@ Respond in JSON format only with this structure:
         ? taskData.priority.toLowerCase()
         : 'medium',
       due_date: taskData.due_date || null,
-      status: 'open'
+      status: 'open',
     };
 
     res.json({
       success: true,
-      task: generatedTask
+      task: generatedTask,
     });
   } catch (error) {
     console.error('Error generating task with AI:', error);
@@ -131,10 +132,15 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
       return res.status(400).json({ error: 'Message text is required' });
     }
 
+    console.log('🔍 /api/mediate/analyze called:', { text: text.substring(0, 50), username: req.user?.username });
     const user = req.user;
 
     // Get recent messages for context
-    const userResult = await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: user.username.toLowerCase() },
+      { limit: 1 }
+    );
     const users = dbSafe.parseResult(userResult);
 
     if (users.length === 0) {
@@ -142,7 +148,21 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
     }
 
     const userId = users[0].id;
-    const roomId = user.roomId || null;
+    
+    // Get user's room from database (JWT doesn't include roomId)
+    let roomId = null;
+    const roomMembersResult = await dbSafe.safeSelect(
+      'room_members',
+      { user_id: userId },
+      { limit: 1 }
+    );
+    const roomMembers = dbSafe.parseResult(roomMembersResult);
+    if (roomMembers && roomMembers.length > 0) {
+      roomId = roomMembers[0].room_id;
+      console.log('✅ Found roomId:', roomId);
+    } else {
+      console.log('⚠️  No room found for user:', userId);
+    }
 
     // Get recent messages
     let recentMessages = [];
@@ -159,7 +179,8 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
 
     // Get participant usernames
     const participantUsernames = roomId
-      ? await dbSafe.safeSelect('room_members', { room_id: roomId })
+      ? await dbSafe
+          .safeSelect('room_members', { room_id: roomId })
           .then(result => dbSafe.parseResult(result).map(m => m.username))
       : [user.username];
 
@@ -174,9 +195,10 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
     }));
 
     // Format contact context string for AI prompt
-    const contactContextForAI = contactsData.length > 0
-      ? contactsData.map(c => `${c.contact_name} (${c.relationship || 'contact'})`).join(', ')
-      : null;
+    const contactContextForAI =
+      contactsData.length > 0
+        ? contactsData.map(c => `${c.contact_name} (${c.relationship || 'contact'})`).join(', ')
+        : null;
 
     // Create message object for analysis
     const message = {
@@ -186,6 +208,18 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
     };
 
     // Analyze using the Observer/Mediator framework
+    if (!aiMediator) {
+      console.error('❌ aiMediator is not initialized!');
+      return res.status(500).json({ error: 'AI mediator not available' });
+    }
+    
+    console.log('🤖 Calling aiMediator.analyzeMessage with:', {
+      messageLength: message.text.length,
+      recentMessagesCount: recentMessages.length,
+      participantCount: participantUsernames.length,
+      hasRoomId: !!roomId,
+    });
+    
     const analysis = await aiMediator.analyzeMessage(
       message,
       recentMessages,
@@ -195,8 +229,10 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
       roomId,
       null, // taskContextForAI
       null, // flaggedMessagesContext
-      null  // roleContext (can be enhanced with senderProfile/receiverProfile)
+      null // roleContext (can be enhanced with senderProfile/receiverProfile)
     );
+
+    console.log('📊 Analysis result:', analysis ? { action: analysis.action, type: analysis.type } : 'null (no intervention)');
 
     if (!analysis) {
       // No intervention needed (STAY_SILENT)
@@ -237,12 +273,12 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
     };
 
     // Map intervention data based on type
-    // Note: AI mediator returns 'validation' and 'insight' (new names)
-    // We map to 'personalMessage' and 'tip1' for backwards compatibility with client
+    // Note: AI mediator returns 'validation' (removed 'insight' per user request)
+    // We map to 'personalMessage' for backwards compatibility with client
     if (analysis.type === 'ai_intervention' && analysis.action === 'INTERVENE') {
       result.intervention = {
         personalMessage: analysis.validation || analysis.personalMessage || '',
-        tip1: analysis.insight || analysis.tip1 || '',
+        tip1: '', // Removed per user request - no longer showing "why this matters"
         rewrite1: analysis.rewrite1 || '',
         rewrite2: analysis.rewrite2 || '',
         comment: null,
@@ -257,9 +293,11 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
       };
     }
 
+    console.log('📤 Sending response:', { action: result.action, hasIntervention: !!result.intervention });
     res.json(result);
   } catch (error) {
-    console.error('Error analyzing message:', error);
+    console.error('❌ Error analyzing message:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });

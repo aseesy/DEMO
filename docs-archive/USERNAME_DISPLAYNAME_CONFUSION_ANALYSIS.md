@@ -29,6 +29,7 @@ There are **two different concepts** being conflated:
 ### **The Problem**
 
 The API parameter is named `username` but it's actually a **display name**, not a unique identifier. This causes:
+
 - ❌ Confusion about what `username` means
 - ❌ Inconsistent naming across codebase
 - ❌ Potential bugs when mixing the two concepts
@@ -43,22 +44,26 @@ The API parameter is named `username` but it's actually a **display name**, not 
 **Location**: `chat-server/server.js:3625` - `POST /api/auth/register-with-invite`
 
 **Current Code:**
+
 ```javascript
 app.post('/api/auth/register-with-invite', async (req, res) => {
   const { email, password, username, inviteToken, inviteCode } = req.body;
-  
+
   // Comment says: "username: User's display name (required)"
   // But parameter is called "username" - confusing!
-  
+
   if (!username) {
     return res.status(400).json({ error: 'Username is required' });
   }
-  
+
   // username is used as displayName
-  result = await auth.registerFromShortCode({
-    displayName: username,  // ← Confusing! username → displayName
-    // ...
-  }, db);
+  result = await auth.registerFromShortCode(
+    {
+      displayName: username, // ← Confusing! username → displayName
+      // ...
+    },
+    db
+  );
 });
 ```
 
@@ -71,6 +76,7 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 **Location**: `chat-server/auth.js` - Multiple functions
 
 **Current Code:**
+
 ```javascript
 // registerFromShortCode, registerFromPairing, registerFromInvitation
 // All accept "displayName" parameter, which is correct
@@ -86,9 +92,10 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 **Location**: `chat-server/auth.js:1726` - `getDisambiguatedDisplay()`
 
 **Current Code:**
+
 ```javascript
 function getDisambiguatedDisplay(user, contextUsers = []) {
-  const displayName = user.display_name || user.username;  // ← Fallback to username
+  const displayName = user.display_name || user.username; // ← Fallback to username
   // ...
 }
 ```
@@ -102,6 +109,7 @@ function getDisambiguatedDisplay(user, contextUsers = []) {
 **Location**: `chat-server/server.js:6266` - `PUT /api/user/profile`
 
 **Current Code:**
+
 ```javascript
 const { currentUsername, username, email, ... } = req.body;
 
@@ -116,6 +124,7 @@ const { currentUsername, username, email, ... } = req.body;
 ## 🎯 Root Cause
 
 ### **Database Schema** (Correct)
+
 ```sql
 CREATE TABLE users (
   username TEXT UNIQUE NOT NULL,  -- Unique identifier
@@ -125,6 +134,7 @@ CREATE TABLE users (
 ```
 
 ### **API Design** (Incorrect)
+
 ```javascript
 // Registration endpoint
 POST /api/auth/register-with-invite
@@ -140,15 +150,18 @@ Body: {
 ## 📊 Impact Assessment
 
 ### **High Impact Areas**
+
 1. **Registration Endpoints** - Direct user input, high visibility
 2. **API Documentation** - Misleading parameter names
 3. **Frontend Integration** - Frontend sends `username` expecting it to be display name
 
 ### **Medium Impact Areas**
+
 1. **Auth Module** - Functions correctly named, but called incorrectly
 2. **Display Logic** - Fallback to username works but is confusing
 
 ### **Low Impact Areas**
+
 1. **Profile Update** - Correctly uses username as unique identifier
 2. **Database Queries** - All use database username correctly
 
@@ -161,18 +174,21 @@ Body: {
 **Goal**: Rename API parameter from `username` to `displayName` or `firstName`
 
 **Changes:**
+
 1. Update `POST /api/auth/register-with-invite` endpoint
    - Change `req.body.username` → `req.body.displayName`
    - Update validation messages
    - Update API documentation
 
 **Risk Mitigation:**
+
 - ✅ Add backward compatibility (accept both `username` and `displayName`)
 - ✅ Log deprecation warning for `username` parameter
 - ✅ Update frontend to use new parameter name
 - ✅ Test both old and new parameter names
 
 **Files to Modify:**
+
 - `chat-server/server.js` (line ~3625)
 - Frontend registration components (if applicable)
 
@@ -183,11 +199,13 @@ Body: {
 **Goal**: Clarify the difference between database username and display name
 
 **Changes:**
+
 1. Add JSDoc comments explaining the difference
 2. Update API documentation
 3. Add code comments where confusion might occur
 
 **Files to Modify:**
+
 - `chat-server/auth.js` (add comments)
 - `chat-server/server.js` (add comments)
 - API documentation files
@@ -199,15 +217,18 @@ Body: {
 **Goal**: Ensure `Username` value object represents database username, not display name
 
 **Current State:**
+
 - ✅ `Username` value object is correctly designed for unique identifiers
 - ✅ Validation rules match database username requirements
 
 **Changes:**
+
 1. Add JSDoc clarifying `Username` is for unique identifiers
 2. Consider creating `DisplayName` value object if needed
 3. Update usage guide to clarify distinction
 
 **Files to Modify:**
+
 - `chat-server/src/domain/valueObjects/Username.js` (add comments)
 - `DOMAIN_MODEL_USAGE_GUIDE.md` (add clarification)
 
@@ -218,11 +239,13 @@ Body: {
 **Goal**: Update frontend to use correct parameter names
 
 **Changes:**
+
 1. Update registration forms to send `displayName` instead of `username`
 2. Update API client calls
 3. Test registration flow
 
 **Risk Mitigation:**
+
 - ✅ Deploy backend changes first (with backward compatibility)
 - ✅ Update frontend after backend is deployed
 - ✅ Test full registration flow
@@ -237,47 +260,65 @@ Body: {
 **File**: `chat-server/server.js`
 
 **Before:**
+
 ```javascript
 app.post('/api/auth/register-with-invite', async (req, res) => {
   const { email, password, username, inviteToken, inviteCode } = req.body;
-  
+
   if (!username) {
     return res.status(400).json({ error: 'Username is required' });
   }
-  
-  result = await auth.registerFromShortCode({
-    displayName: username,
-    // ...
-  }, db);
+
+  result = await auth.registerFromShortCode(
+    {
+      displayName: username,
+      // ...
+    },
+    db
+  );
 });
 ```
 
 **After:**
+
 ```javascript
 app.post('/api/auth/register-with-invite', async (req, res) => {
   // Support both 'username' (deprecated) and 'displayName' (new) for backward compatibility
-  const { email, password, username: deprecatedUsername, displayName, inviteToken, inviteCode } = req.body;
-  
+  const {
+    email,
+    password,
+    username: deprecatedUsername,
+    displayName,
+    inviteToken,
+    inviteCode,
+  } = req.body;
+
   // Use displayName if provided, fallback to deprecated username parameter
   const userDisplayName = displayName || deprecatedUsername;
-  
+
   if (!userDisplayName) {
     return res.status(400).json({ error: 'Display name is required' });
   }
-  
+
   // Log deprecation warning if old parameter is used
   if (deprecatedUsername && !displayName) {
-    console.warn('⚠️  Deprecated: "username" parameter in register-with-invite. Use "displayName" instead.');
+    console.warn(
+      '⚠️  Deprecated: "username" parameter in register-with-invite. Use "displayName" instead.'
+    );
   }
-  
-  result = await auth.registerFromShortCode({
-    displayName: userDisplayName,
-    // ...
-  }, db);
+
+  result = await auth.registerFromShortCode(
+    {
+      displayName: userDisplayName,
+      // ...
+    },
+    db
+  );
 });
 ```
 
 **Benefits:**
+
 - ✅ Backward compatible (accepts both)
 - ✅ Clear naming (displayName)
 - ✅ Deprecation path (warns about old parameter)
@@ -288,10 +329,11 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 ### **Step 2: Update API Documentation** (10 minutes)
 
 **Add to endpoint documentation:**
+
 ```javascript
 /**
  * POST /api/auth/register-with-invite
- * 
+ *
  * Body parameters:
  * - email: User's email (required)
  * - password: User's password (required)
@@ -309,14 +351,15 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 **File**: `chat-server/auth.js`
 
 **Add comments:**
+
 ```javascript
 /**
  * Create a new user account with email (auto-generates username from email)
- * 
+ *
  * IMPORTANT: Database "username" is a unique identifier (e.g., "alice123"),
  * NOT the same as display name or first name. The username is auto-generated
  * from the email address and used for system lookups.
- * 
+ *
  * @param {string} email - User's email address
  * @param {string} password - User's password
  * @param {Object} nameData - Name information
@@ -334,17 +377,18 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 **File**: `chat-server/src/domain/valueObjects/Username.js`
 
 **Add comment:**
+
 ```javascript
 /**
  * Username Value Object
- * 
+ *
  * IMPORTANT: This represents a database username (unique identifier),
  * NOT a display name or first name. Database usernames are:
  * - Auto-generated from email (e.g., "alice123")
  * - Lowercase, alphanumeric
  * - Unique across the system
  * - Used for authentication and database lookups
- * 
+ *
  * For display names, use the display_name field in the users table.
  */
 ```
@@ -356,22 +400,26 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 **File**: `DOMAIN_MODEL_USAGE_GUIDE.md`
 
 **Add section:**
+
 ```markdown
 ## ⚠️ Important: Username vs Display Name
 
 **Database Username** (unique identifier):
+
 - Auto-generated from email (e.g., "alice123")
 - Used for system lookups and authentication
 - Stored in `users.username` column
 - Use `Username` value object for this
 
 **Display Name** (user-facing name):
+
 - User-provided (e.g., "Alice", "Bob Smith")
 - Used for display to other users
 - Stored in `users.display_name` column
 - Plain string (no value object yet)
 
 **First Name**:
+
 - User's first name (e.g., "Alice")
 - Stored in `users.first_name` column
 - Plain string (no value object yet)
@@ -386,12 +434,14 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 **Risk**: Frontend or other clients use `username` parameter
 
 **Mitigation:**
+
 - ✅ Support both `username` and `displayName` parameters
 - ✅ Log deprecation warning
 - ✅ Update frontend after backend deployment
 - ✅ Monitor error logs
 
-**Timeline**: 
+**Timeline**:
+
 - Week 1: Deploy backend with backward compatibility
 - Week 2: Update frontend to use `displayName`
 - Week 3: Remove `username` parameter support (optional)
@@ -403,6 +453,7 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 **Risk**: Code might try to use display name as database username
 
 **Mitigation:**
+
 - ✅ Add validation to ensure database username format
 - ✅ Use `Username` value object for database operations
 - ✅ Add code comments explaining the difference
@@ -415,6 +466,7 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 **Risk**: Frontend might break if parameter name changes
 
 **Mitigation:**
+
 - ✅ Deploy backend with backward compatibility first
 - ✅ Test frontend with both parameter names
 - ✅ Gradual migration (update frontend after backend)
@@ -425,6 +477,7 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 ## 📊 Implementation Checklist
 
 ### **Phase 1: Backend Changes** (Low Risk)
+
 - [ ] Update `POST /api/auth/register-with-invite` to accept both parameters
 - [ ] Add deprecation warning for `username` parameter
 - [ ] Update API documentation
@@ -433,18 +486,21 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 - [ ] Deploy to production
 
 ### **Phase 2: Documentation** (No Risk)
+
 - [ ] Update `DOMAIN_MODEL_USAGE_GUIDE.md`
 - [ ] Add comments to `auth.js`
 - [ ] Add comments to `Username.js` value object
 - [ ] Update API documentation
 
 ### **Phase 3: Frontend Updates** (Medium Risk)
+
 - [ ] Update registration forms to use `displayName`
 - [ ] Update API client calls
 - [ ] Test registration flow
 - [ ] Deploy frontend changes
 
 ### **Phase 4: Cleanup** (Optional, Low Risk)
+
 - [ ] Remove `username` parameter support (after frontend migration)
 - [ ] Update all documentation
 - [ ] Final testing
@@ -454,22 +510,26 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 ## 🎯 Success Criteria
 
 ### **Phase 1 Complete When:**
+
 - ✅ Backend accepts both `username` and `displayName`
 - ✅ Deprecation warnings logged
 - ✅ No breaking changes
 - ✅ Tests passing
 
 ### **Phase 2 Complete When:**
+
 - ✅ Documentation updated
 - ✅ Code comments added
 - ✅ Usage guide clarified
 
 ### **Phase 3 Complete When:**
+
 - ✅ Frontend uses `displayName`
 - ✅ Registration flow works
 - ✅ No errors in production
 
 ### **Final Success:**
+
 - ✅ Clear distinction between database username and display name
 - ✅ No confusion in codebase
 - ✅ API parameters match their purpose
@@ -480,15 +540,18 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 ## 📚 Related Concepts
 
 ### **Database Fields:**
+
 - `username` - Unique identifier (auto-generated)
 - `first_name` - User's first name
 - `display_name` - User's display name (shown to others)
 
 ### **API Parameters:**
+
 - `displayName` - User's display name (NEW, correct)
 - `username` - User's display name (DEPRECATED, confusing)
 
 ### **Value Objects:**
+
 - `Username` - For database username (unique identifier)
 - No value object for display name yet (could be added in Phase 2)
 
@@ -498,4 +561,3 @@ app.post('/api/auth/register-with-invite', async (req, res) => {
 **Recommended Start**: Phase 1 (Backend Changes)  
 **Estimated Time**: 1-2 hours  
 **Risk Level**: 🟢 **LOW** (with backward compatibility)
-

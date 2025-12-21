@@ -10,24 +10,27 @@
 ## Technical Context (from Codebase Analysis)
 
 ### Architecture
+
 - **Backend**: Node.js + Express.js server (`chat-server/`)
 - **AI Integration**: OpenAI API via `openaiClient.js`
 - **AI Mediation**: `aiMediator.js` - single consolidated module handling all mediation
 - **Libraries**: Modular `libs/` directory with pattern-based organization
 
 ### Existing Patterns (from Codebase)
+
 - **Library Structure**: Each lib has `index.js` + dedicated modules + `__tests__/` folder
 - **Pattern Detection**: `libs/language-analyzer/` demonstrates pattern-based detection with multiple sub-modules
 - **Context Building**: `libs/communication-profile/mediationContext.js` shows role-aware context formatting
 - **Testing**: Jest tests in `__tests__/` subdirectories following `*.test.js` naming
 
 ### Relevant Files
-| File | Purpose |
-|------|---------|
-| `chat-server/aiMediator.js` | Main AI mediation logic, prompt construction |
-| `chat-server/ai-mediation-constitution.md` | Constitutional rules for AI behavior |
-| `chat-server/libs/communication-profile/mediationContext.js` | Role-aware context builder |
-| `chat-server/libs/language-analyzer/index.js` | Pattern analysis reference implementation |
+
+| File                                                         | Purpose                                      |
+| ------------------------------------------------------------ | -------------------------------------------- |
+| `chat-server/aiMediator.js`                                  | Main AI mediation logic, prompt construction |
+| `chat-server/ai-mediation-constitution.md`                   | Constitutional rules for AI behavior         |
+| `chat-server/libs/communication-profile/mediationContext.js` | Role-aware context builder                   |
+| `chat-server/libs/language-analyzer/index.js`                | Pattern analysis reference implementation    |
 
 ---
 
@@ -43,6 +46,7 @@
 **Location**: Lines 402-528 (prompt construction)
 
 **Changes**:
+
 1. Add new section after `=== YOUR IDENTITY ===` block (~line 427)
 2. Insert explicit role disambiguation
 
@@ -115,12 +119,14 @@ Sender's underlying intent: Concerned about child's performance
 **Location**: Line 536-537 (system message in API call)
 
 **Current**:
+
 ```javascript
 role: 'system',
 content: 'You are LiaiZen - a communication COACH (not therapist) for co-parents. CONSTITUTION RULES: 1) Talk about LANGUAGE/PHRASING, never emotions...'
 ```
 
 **Updated**:
+
 ```javascript
 role: 'system',
 content: 'You are LiaiZen - a communication COACH for co-parents. CONSTITUTION RULES: 1) Talk about LANGUAGE/PHRASING, never emotions ("this phrasing implies blame" not "you\'re angry"). 2) NO psychological labels (narcissist, manipulative, insecure - PROHIBITED). 3) Child-centric when child mentioned. 4) Use 1-2-3 framework: ADDRESS (what phrasing does) + ONE TIP (max 10 words) + TWO REWRITES (different approaches). CRITICAL: Rewrites are ALTERNATIVE messages the SENDER could send INSTEAD - NOT responses the receiver would send back. Only use "you/your" - NEVER "we/us/our/both". Respond ONLY with valid JSON.'
@@ -304,44 +310,45 @@ module.exports = {
 const FALLBACK_REWRITES = {
   // For insults, attacks, name-calling
   attack: {
-    rewrite1: "I'm feeling really frustrated right now and need us to communicate more respectfully.",
+    rewrite1:
+      "I'm feeling really frustrated right now and need us to communicate more respectfully.",
     rewrite2: "Something isn't working for me. Can we discuss what's happening?",
-    tip: "Name the feeling, not the person.",
+    tip: 'Name the feeling, not the person.',
   },
 
   // For blame statements
   blame: {
     rewrite1: "I'm feeling overwhelmed and need us to work together on this.",
     rewrite2: "I've noticed an issue I'd like us to address together. Can we talk about it?",
-    tip: "Describe the impact, not their intent.",
+    tip: 'Describe the impact, not their intent.',
   },
 
   // For demands/commands
   demand: {
-    rewrite1: "I need help with something. Would you be able to assist?",
-    rewrite2: "This is important to me. Can we find a solution that works for both of us?",
-    tip: "Make a request, not a command.",
+    rewrite1: 'I need help with something. Would you be able to assist?',
+    rewrite2: 'This is important to me. Can we find a solution that works for both of us?',
+    tip: 'Make a request, not a command.',
   },
 
   // For threats/ultimatums
   threat: {
     rewrite1: "I'm feeling like we're not making progress. I need us to find a way forward.",
-    rewrite2: "This issue is important to me. Can we work on resolving it?",
-    tip: "State your need, not the consequence.",
+    rewrite2: 'This issue is important to me. Can we work on resolving it?',
+    tip: 'State your need, not the consequence.',
   },
 
   // For triangulation (using child)
   triangulation: {
-    rewrite1: "I need to discuss something with you directly about the kids.",
+    rewrite1: 'I need to discuss something with you directly about the kids.',
     rewrite2: "Can we talk about this between us? I don't want to put the kids in the middle.",
-    tip: "Speak directly, not through your child.",
+    tip: 'Speak directly, not through your child.',
   },
 
   // Generic fallback
   generic: {
     rewrite1: "I have a concern I'd like to discuss with you.",
-    rewrite2: "Something has been bothering me. Can we talk about it?",
-    tip: "Express your need clearly and directly.",
+    rewrite2: 'Something has been bothering me. Can we talk about it?',
+    tip: 'Express your need clearly and directly.',
   },
 };
 
@@ -357,7 +364,10 @@ function detectCategory(originalMessage, languageAnalysis = null) {
 
   // Check language analysis flags first (most accurate)
   if (languageAnalysis?.patterns) {
-    if (languageAnalysis.patterns.child_triangulation || languageAnalysis.patterns.child_as_messenger) {
+    if (
+      languageAnalysis.patterns.child_triangulation ||
+      languageAnalysis.patterns.child_as_messenger
+    ) {
       return 'triangulation';
     }
     if (languageAnalysis.patterns.evaluative_character) {
@@ -372,7 +382,9 @@ function detectCategory(originalMessage, languageAnalysis = null) {
   if (/\b(your fault|you('re| are) (the|to) blame|because of you)\b/i.test(text)) {
     return 'blame';
   }
-  if (/\b(you (must|have to|need to|better)|or else|i('ll| will) (call|tell|go to))\b/i.test(text)) {
+  if (
+    /\b(you (must|have to|need to|better)|or else|i('ll| will) (call|tell|go to))\b/i.test(text)
+  ) {
     return 'threat';
   }
   if (/\b(tell (your|the) (dad|mom|father|mother)|tell (him|her) (that|to))\b/i.test(text)) {
@@ -433,14 +445,14 @@ describe('Rewrite Validator', () => {
       const receiverRewrites = [
         "I understand you're frustrated, but let's talk calmly.",
         "That hurt me. Can we discuss what's bothering you?",
-        "When you said that, I felt attacked.",
+        'When you said that, I felt attacked.',
         "That's not fair. I'm doing my best.",
         "I don't appreciate being spoken to that way.",
         "I'm sorry you feel that way.",
-        "Can you explain what I did wrong?",
-        "What exactly do you mean by that?",
+        'Can you explain what I did wrong?',
+        'What exactly do you mean by that?',
         "I didn't mean to upset you.",
-        "Hearing that was really painful.",
+        'Hearing that was really painful.',
       ];
 
       receiverRewrites.forEach(rewrite => {
@@ -456,14 +468,14 @@ describe('Rewrite Validator', () => {
     describe('should accept sender-perspective rewrites', () => {
       const senderRewrites = [
         "I'm feeling really frustrated right now.",
-        "I feel overwhelmed and need help.",
-        "I need us to communicate more respectfully.",
+        'I feel overwhelmed and need help.',
+        'I need us to communicate more respectfully.',
         "I've noticed things aren't going well. Can we discuss?",
         "I'm concerned about how things are going.",
-        "I would like us to find a better approach.",
+        'I would like us to find a better approach.',
         "Can we discuss what's happening?",
         "Something isn't working for me.",
-        "This situation is difficult for me.",
+        'This situation is difficult for me.',
         "I'd prefer if we could talk about this calmly.",
       ];
 
@@ -514,7 +526,7 @@ describe('Rewrite Validator', () => {
     it('should detect when one rewrite fails', () => {
       const intervention = {
         rewrite1: "I'm feeling frustrated.",
-        rewrite2: "That hurt me. Why would you say that?", // Receiver perspective
+        rewrite2: 'That hurt me. Why would you say that?', // Receiver perspective
       };
 
       const result = validator.validateIntervention(intervention, 'you suck');
@@ -528,7 +540,7 @@ describe('Rewrite Validator', () => {
     it('should detect when both rewrites fail', () => {
       const intervention = {
         rewrite1: "I understand you're upset.",
-        rewrite2: "That hurt me. Can we talk?",
+        rewrite2: 'That hurt me. Can we talk?',
       };
 
       const result = validator.validateIntervention(intervention, 'you suck');
@@ -547,21 +559,21 @@ describe('Fallback Rewrites', () => {
 
     it('should detect blame', () => {
       expect(fallbacks.detectCategory("It's your fault")).toBe('blame');
-      expect(fallbacks.detectCategory("because of you")).toBe('blame');
+      expect(fallbacks.detectCategory('because of you')).toBe('blame');
     });
 
     it('should detect triangulation', () => {
-      expect(fallbacks.detectCategory("tell your dad he needs to pay")).toBe('triangulation');
-      expect(fallbacks.detectCategory("tell him to call me")).toBe('triangulation');
+      expect(fallbacks.detectCategory('tell your dad he needs to pay')).toBe('triangulation');
+      expect(fallbacks.detectCategory('tell him to call me')).toBe('triangulation');
     });
 
     it('should detect threats', () => {
       expect(fallbacks.detectCategory("I'll call my lawyer")).toBe('threat');
-      expect(fallbacks.detectCategory("you better do this or else")).toBe('threat');
+      expect(fallbacks.detectCategory('you better do this or else')).toBe('threat');
     });
 
     it('should default to generic', () => {
-      expect(fallbacks.detectCategory("whatever")).toBe('generic');
+      expect(fallbacks.detectCategory('whatever')).toBe('generic');
     });
   });
 
@@ -668,6 +680,7 @@ if (rewriteValidator) {
 **Mandate**: All rewrites MUST be written from the sender's perspective as alternative phrasings.
 
 **Critical Understanding**:
+
 - Rewrites are what the SENDER could send INSTEAD of their original message
 - Rewrites are NOT responses the receiver would send back
 - Rewrites express the sender's underlying intent in a better way
@@ -675,25 +688,26 @@ if (rewriteValidator) {
 
 **Prohibited Rewrite Patterns** (indicate receiver perspective):
 
-| Pattern | Why Prohibited | Example |
-|---------|----------------|---------|
-| "I understand you're..." | Receiver empathy response | Responding to received attack |
-| "That hurt me..." | Receiver reaction | Processing received insult |
-| "When you said that..." | Receiver reflection | Discussing what was heard |
-| "I don't appreciate..." | Receiver boundary-setting | Responding to mistreatment |
-| "Can you explain what you meant?" | Receiver clarification | Asking about received message |
+| Pattern                           | Why Prohibited            | Example                       |
+| --------------------------------- | ------------------------- | ----------------------------- |
+| "I understand you're..."          | Receiver empathy response | Responding to received attack |
+| "That hurt me..."                 | Receiver reaction         | Processing received insult    |
+| "When you said that..."           | Receiver reflection       | Discussing what was heard     |
+| "I don't appreciate..."           | Receiver boundary-setting | Responding to mistreatment    |
+| "Can you explain what you meant?" | Receiver clarification    | Asking about received message |
 
 **Required Rewrite Patterns** (indicate sender perspective):
 
-| Pattern | Why Required | Example |
-|---------|--------------|---------|
-| "I'm feeling..." | Sender emotional expression | Sender states their state |
-| "I need..." | Sender need statement | Sender states their requirement |
-| "I've noticed..." | Sender observation | Sender shares their concern |
-| "Can we..." | Sender request/invitation | Sender proposes collaboration |
-| "Something isn't working..." | Sender problem statement | Sender identifies issue |
+| Pattern                      | Why Required                | Example                         |
+| ---------------------------- | --------------------------- | ------------------------------- |
+| "I'm feeling..."             | Sender emotional expression | Sender states their state       |
+| "I need..."                  | Sender need statement       | Sender states their requirement |
+| "I've noticed..."            | Sender observation          | Sender shares their concern     |
+| "Can we..."                  | Sender request/invitation   | Sender proposes collaboration   |
+| "Something isn't working..." | Sender problem statement    | Sender identifies issue         |
 
 **Perspective Test**: Before accepting any rewrite, apply this test:
+
 > "Is this what the SENDER could say instead of their original message? Or is this what the RECEIVER would say after receiving that message?"
 
 **Rationale**: Rewrites must be actionable alternatives for the person being coached. A rewrite that sounds like a response is useless to the sender who needs a better way to express their own concern.
@@ -703,13 +717,13 @@ if (rewriteValidator) {
 
 ## File Changes Summary
 
-| File | Action | Description |
-|------|--------|-------------|
-| `chat-server/aiMediator.js` | MODIFY | Add role clarity section, examples, system message update, validation integration |
-| `chat-server/ai-mediation-constitution.md` | MODIFY | Add Principle IV: Sender Perspective Primacy |
-| `chat-server/libs/rewrite-validator/index.js` | CREATE | Main validation module |
-| `chat-server/libs/rewrite-validator/fallbacks.js` | CREATE | Fallback rewrites module |
-| `chat-server/libs/rewrite-validator/__tests__/validator.test.js` | CREATE | Unit tests |
+| File                                                             | Action | Description                                                                       |
+| ---------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------- |
+| `chat-server/aiMediator.js`                                      | MODIFY | Add role clarity section, examples, system message update, validation integration |
+| `chat-server/ai-mediation-constitution.md`                       | MODIFY | Add Principle IV: Sender Perspective Primacy                                      |
+| `chat-server/libs/rewrite-validator/index.js`                    | CREATE | Main validation module                                                            |
+| `chat-server/libs/rewrite-validator/fallbacks.js`                | CREATE | Fallback rewrites module                                                          |
+| `chat-server/libs/rewrite-validator/__tests__/validator.test.js` | CREATE | Unit tests                                                                        |
 
 ---
 
@@ -729,6 +743,7 @@ if (rewriteValidator) {
 ## Testing Strategy
 
 ### Unit Tests
+
 1. Receiver-perspective pattern detection
 2. Sender-perspective pattern acceptance
 3. Edge cases (empty, null, ambiguous)
@@ -736,11 +751,13 @@ if (rewriteValidator) {
 5. Integration validation
 
 ### Integration Tests
+
 1. Full intervention flow with validation
 2. Fallback application when AI fails
 3. Logging verification
 
 ### Manual QA
+
 1. Test with known problematic messages:
    - "you suck"
    - "You never help with anything"
@@ -763,17 +780,17 @@ if (rewriteValidator) {
 
 ## Success Criteria
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Validation accuracy | >95% | Test suite pass rate |
-| False positive rate | <5% | Valid sender rewrites incorrectly rejected |
-| Fallback usage | <10% | Interventions requiring fallbacks |
-| User rewrite acceptance | >60% | Analytics (post-implementation) |
+| Metric                  | Target | Measurement                                |
+| ----------------------- | ------ | ------------------------------------------ |
+| Validation accuracy     | >95%   | Test suite pass rate                       |
+| False positive rate     | <5%    | Valid sender rewrites incorrectly rejected |
+| Fallback usage          | <10%   | Interventions requiring fallbacks          |
+| User rewrite acceptance | >60%   | Analytics (post-implementation)            |
 
 ---
 
 ## Changelog
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2025-11-26 | Initial implementation plan |
+| Version | Date       | Changes                     |
+| ------- | ---------- | --------------------------- |
+| 1.0.0   | 2025-11-26 | Initial implementation plan |

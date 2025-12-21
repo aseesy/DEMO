@@ -11,34 +11,34 @@ async function checkPassword(email, password) {
   try {
     const emailLower = email.trim().toLowerCase();
     console.log(`🔍 Checking password for: ${emailLower}`);
-    
+
     // Get user
     const result = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
     const users = result;
-    
+
     if (users.length === 0) {
       console.log(`❌ No user found with email: ${emailLower}`);
       return;
     }
-    
+
     const user = users[0];
     console.log(`✅ User found: ${user.username} (id: ${user.id})`);
     console.log(`📧 Email: ${user.email}`);
     console.log(`🔑 Password hash exists: ${!!user.password_hash}`);
-    
+
     if (!user.password_hash) {
       console.log(`❌ User has no password_hash`);
       return;
     }
-    
+
     // Check hash type
     const isBcryptHash = /^\$2[ayb]\$/.test(user.password_hash);
     console.log(`🔑 Hash type: ${isBcryptHash ? 'bcrypt' : 'legacy SHA-256'}`);
     console.log(`🔑 Hash preview: ${user.password_hash.substring(0, 20)}...`);
-    
+
     // Test password
     let isValid = false;
-    
+
     if (isBcryptHash) {
       console.log(`\n🔐 Testing with bcrypt...`);
       isValid = await bcrypt.compare(password, user.password_hash);
@@ -52,7 +52,7 @@ async function checkPassword(email, password) {
       console.log(`   Input hash: ${sha256Hash.substring(0, 20)}...`);
       console.log(`   Stored hash: ${user.password_hash.substring(0, 20)}...`);
     }
-    
+
     if (isValid) {
       console.log(`\n✅✅✅ PASSWORD IS CORRECT! ✅✅✅`);
     } else {
@@ -62,7 +62,7 @@ async function checkPassword(email, password) {
       console.log(`   - Hash might be corrupted`);
       console.log(`   - Try resetting the password`);
     }
-    
+
     process.exit(isValid ? 0 : 1);
   } catch (error) {
     console.error('❌ Error:', error);
@@ -81,4 +81,3 @@ if (!email || !password) {
 }
 
 checkPassword(email, password);
-

@@ -16,44 +16,45 @@
 const FALLBACK_REWRITES = {
   // For insults, attacks, name-calling
   attack: {
-    rewrite1: "I'm feeling really frustrated right now and need us to communicate more respectfully.",
+    rewrite1:
+      "I'm feeling really frustrated right now and need us to communicate more respectfully.",
     rewrite2: "Something isn't working for me. Can we discuss what's happening?",
-    tip: "Name the feeling, not the person.",
+    tip: 'Name the feeling, not the person.',
   },
 
   // For blame statements
   blame: {
     rewrite1: "I'm feeling overwhelmed and need us to work together on this.",
     rewrite2: "I've noticed an issue I'd like us to address together. Can we talk about it?",
-    tip: "Describe the impact, not their intent.",
+    tip: 'Describe the impact, not their intent.',
   },
 
   // For demands/commands
   demand: {
-    rewrite1: "I need help with something. Would you be able to assist?",
-    rewrite2: "This is important to me. Can we find a solution that works for both of us?",
-    tip: "Make a request, not a command.",
+    rewrite1: 'I need help with something. Would you be able to assist?',
+    rewrite2: 'This is important to me. Can we find a solution that works for both of us?',
+    tip: 'Make a request, not a command.',
   },
 
   // For threats/ultimatums
   threat: {
     rewrite1: "I'm feeling like we're not making progress. I need us to find a way forward.",
-    rewrite2: "This issue is important to me. Can we work on resolving it?",
-    tip: "State your need, not the consequence.",
+    rewrite2: 'This issue is important to me. Can we work on resolving it?',
+    tip: 'State your need, not the consequence.',
   },
 
   // For triangulation (using child as messenger/weapon)
   triangulation: {
-    rewrite1: "I need to discuss something with you directly about the kids.",
+    rewrite1: 'I need to discuss something with you directly about the kids.',
     rewrite2: "Can we talk about this between us? I don't want to put the kids in the middle.",
-    tip: "Speak directly, not through your child.",
+    tip: 'Speak directly, not through your child.',
   },
 
   // Generic fallback for unclassified messages
   generic: {
     rewrite1: "I have a concern I'd like to discuss with you.",
-    rewrite2: "Something has been bothering me. Can we talk about it?",
-    tip: "Express your need clearly and directly.",
+    rewrite2: 'Something has been bothering me. Can we talk about it?',
+    tip: 'Express your need clearly and directly.',
   },
 };
 
@@ -73,7 +74,10 @@ function detectCategory(originalMessage, languageAnalysis = null) {
 
   // Check language analysis flags first (most accurate)
   if (languageAnalysis?.patterns) {
-    if (languageAnalysis.patterns.child_triangulation || languageAnalysis.patterns.child_as_messenger) {
+    if (
+      languageAnalysis.patterns.child_triangulation ||
+      languageAnalysis.patterns.child_as_messenger
+    ) {
       return 'triangulation';
     }
     if (languageAnalysis.patterns.evaluative_character) {
@@ -101,7 +105,9 @@ function detectCategory(originalMessage, languageAnalysis = null) {
   if (/\b(idiot|stupid|suck|pathetic|worthless|bitch|asshole|jerk|loser)\b/i.test(text)) {
     return 'attack';
   }
-  if (/\byou('re| are) (a |an |the |so |such a )?(bad|terrible|awful|worst|horrible)\b/i.test(text)) {
+  if (
+    /\byou('re| are) (a |an |the |so |such a )?(bad|terrible|awful|worst|horrible)\b/i.test(text)
+  ) {
     return 'attack';
   }
 

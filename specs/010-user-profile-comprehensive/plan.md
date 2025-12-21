@@ -9,18 +9,21 @@
 ## Technical Context (From Codebase Exploration)
 
 ### Architecture
+
 - **Frontend:** React 18 + Vite, deployed to Vercel
 - **Backend:** Node.js + Express.js + Socket.io, deployed to Railway
 - **Database:** SQLite (dev) / PostgreSQL (prod)
 - **AI System:** LiaiZen mediator in `chat-server/src/liaizen/`
 
 ### Existing Profile Infrastructure
+
 - **Database:** `users` table with 15+ profile columns already migrated
 - **Frontend:** `ProfilePanel.jsx` with basic profile editing
 - **Hook:** `useProfile.js` for state management
 - **API:** `GET/PUT /api/user/profile` endpoints exist
 
 ### Design System
+
 - **Primary Colors:** Teal (#275559, #00908B, #007470)
 - **Focus Ring:** #4DA8B0 with 20% opacity
 - **Buttons:** rounded-lg, min-height 44px
@@ -142,7 +145,7 @@ CREATE TABLE IF NOT EXISTS profile_audit_log (
 
 ```javascript
 module.exports = {
-  up: async (db) => {
+  up: async db => {
     // Add columns in batches to avoid timeout
     const columns = [
       // Personal
@@ -162,9 +165,9 @@ module.exports = {
     await db.query(`CREATE TABLE IF NOT EXISTS profile_audit_log ...`);
   },
 
-  down: async (db) => {
+  down: async db => {
     // Rollback script
-  }
+  },
 };
 ```
 
@@ -190,8 +193,11 @@ app.get('/api/user/profile', verifyAuth, async (req, res) => {
     }
 
     // Fetch privacy settings
-    const privacy = await dbSafe.safeSelect('user_profile_privacy',
-      { user_id: user[0].id }, { limit: 1 });
+    const privacy = await dbSafe.safeSelect(
+      'user_profile_privacy',
+      { user_id: user[0].id },
+      { limit: 1 }
+    );
 
     const privacySettings = privacy[0] || getDefaultPrivacySettings();
 
@@ -207,7 +213,7 @@ app.get('/api/user/profile', verifyAuth, async (req, res) => {
     res.json({
       ...profile,
       privacySettings: isOwnProfile ? privacySettings : null,
-      isOwnProfile
+      isOwnProfile,
     });
   } catch (error) {
     console.error('Error fetching profile:', error);
@@ -233,8 +239,11 @@ app.put('/api/user/profile', verifyAuth, async (req, res) => {
     }
 
     // Get user
-    const user = await dbSafe.safeSelect('users',
-      { username: currentUsername.toLowerCase() }, { limit: 1 });
+    const user = await dbSafe.safeSelect(
+      'users',
+      { username: currentUsername.toLowerCase() },
+      { limit: 1 }
+    );
     if (!user.length) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -250,10 +259,14 @@ app.put('/api/user/profile', verifyAuth, async (req, res) => {
 
     // Calculate and update completion percentage
     const completionPct = calculateProfileCompletion(profileData);
-    await dbSafe.safeUpdate('users', {
-      profile_completion_percentage: completionPct,
-      profile_last_updated: new Date().toISOString()
-    }, { id: user[0].id });
+    await dbSafe.safeUpdate(
+      'users',
+      {
+        profile_completion_percentage: completionPct,
+        profile_last_updated: new Date().toISOString(),
+      },
+      { id: user[0].id }
+    );
 
     // Auto-complete onboarding task if threshold met
     if (completionPct >= 50) {
@@ -263,7 +276,7 @@ app.put('/api/user/profile', verifyAuth, async (req, res) => {
     res.json({
       success: true,
       completionPercentage: completionPct,
-      message: 'Profile updated successfully'
+      message: 'Profile updated successfully',
     });
   } catch (error) {
     console.error('Error updating profile:', error);
@@ -280,31 +293,47 @@ app.put('/api/user/profile', verifyAuth, async (req, res) => {
 // GET /api/user/profile/privacy
 app.get('/api/user/profile/privacy', verifyAuth, async (req, res) => {
   const userId = req.user.id;
-  const privacy = await dbSafe.safeSelect('user_profile_privacy',
-    { user_id: userId }, { limit: 1 });
+  const privacy = await dbSafe.safeSelect(
+    'user_profile_privacy',
+    { user_id: userId },
+    { limit: 1 }
+  );
   res.json(privacy[0] || getDefaultPrivacySettings());
 });
 
 // PUT /api/user/profile/privacy
 app.put('/api/user/profile/privacy', verifyAuth, async (req, res) => {
   const userId = req.user.id;
-  const { personal_visibility, work_visibility, health_visibility,
-          financial_visibility, background_visibility, field_overrides } = req.body;
+  const {
+    personal_visibility,
+    work_visibility,
+    health_visibility,
+    financial_visibility,
+    background_visibility,
+    field_overrides,
+  } = req.body;
 
   // Upsert privacy settings
-  const existing = await dbSafe.safeSelect('user_profile_privacy',
-    { user_id: userId }, { limit: 1 });
+  const existing = await dbSafe.safeSelect(
+    'user_profile_privacy',
+    { user_id: userId },
+    { limit: 1 }
+  );
 
   if (existing.length) {
-    await dbSafe.safeUpdate('user_profile_privacy', {
-      personal_visibility,
-      work_visibility,
-      health_visibility,
-      financial_visibility,
-      background_visibility,
-      field_overrides: JSON.stringify(field_overrides),
-      updated_at: new Date().toISOString()
-    }, { user_id: userId });
+    await dbSafe.safeUpdate(
+      'user_profile_privacy',
+      {
+        personal_visibility,
+        work_visibility,
+        health_visibility,
+        financial_visibility,
+        background_visibility,
+        field_overrides: JSON.stringify(field_overrides),
+        updated_at: new Date().toISOString(),
+      },
+      { user_id: userId }
+    );
   } else {
     await dbSafe.safeInsert('user_profile_privacy', {
       user_id: userId,
@@ -313,7 +342,7 @@ app.put('/api/user/profile/privacy', verifyAuth, async (req, res) => {
       health_visibility,
       financial_visibility,
       background_visibility,
-      field_overrides: JSON.stringify(field_overrides)
+      field_overrides: JSON.stringify(field_overrides),
     });
   }
 
@@ -328,8 +357,11 @@ app.get('/api/user/profile/preview-coparent-view', verifyAuth, async (req, res) 
   const userId = req.user.id;
 
   const user = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
-  const privacy = await dbSafe.safeSelect('user_profile_privacy',
-    { user_id: userId }, { limit: 1 });
+  const privacy = await dbSafe.safeSelect(
+    'user_profile_privacy',
+    { user_id: userId },
+    { limit: 1 }
+  );
 
   // Return profile as co-parent would see it
   const filteredProfile = filterProfileByPrivacy(user[0], privacy[0], false);
@@ -357,7 +389,7 @@ const SENSITIVE_FIELDS = [
   'finance_income_level',
   'finance_debt_stress',
   'finance_support_paying',
-  'finance_support_receiving'
+  'finance_support_receiving',
 ];
 
 function encryptSensitiveFields(data) {
@@ -391,15 +423,39 @@ function filterProfileByPrivacy(profile, privacySettings, isOwnProfile) {
 
   const filtered = {};
   const sectionMap = {
-    personal: ['first_name', 'last_name', 'preferred_name', 'pronouns',
-               'language', 'timezone', 'phone', 'city', 'state', 'zip'],
-    work: ['occupation', 'employer', 'employment_status', 'work_schedule',
-           'schedule_flexibility', 'commute_time', 'travel_required'],
+    personal: [
+      'first_name',
+      'last_name',
+      'preferred_name',
+      'pronouns',
+      'language',
+      'timezone',
+      'phone',
+      'city',
+      'state',
+      'zip',
+    ],
+    work: [
+      'occupation',
+      'employer',
+      'employment_status',
+      'work_schedule',
+      'schedule_flexibility',
+      'commute_time',
+      'travel_required',
+    ],
     health: SENSITIVE_FIELDS.filter(f => f.startsWith('health_')),
     financial: SENSITIVE_FIELDS.filter(f => f.startsWith('finance_')),
-    background: ['background_birthplace', 'background_raised', 'background_family_origin',
-                 'background_culture', 'background_religion', 'background_military',
-                 'education_level', 'education_field']
+    background: [
+      'background_birthplace',
+      'background_raised',
+      'background_family_origin',
+      'background_culture',
+      'background_religion',
+      'background_military',
+      'education_level',
+      'education_field',
+    ],
   };
 
   // Always include basic identity fields
@@ -424,15 +480,24 @@ function filterProfileByPrivacy(profile, privacySettings, isOwnProfile) {
 function calculateProfileCompletion(profile) {
   const fields = [
     // Personal (20%)
-    'first_name', 'last_name', 'birthdate', 'pronouns', 'timezone',
+    'first_name',
+    'last_name',
+    'birthdate',
+    'pronouns',
+    'timezone',
     // Work (20%)
-    'occupation', 'employment_status', 'work_schedule',
+    'occupation',
+    'employment_status',
+    'work_schedule',
     // Health (20%)
-    'health_physical_conditions', 'health_mental_conditions',
+    'health_physical_conditions',
+    'health_mental_conditions',
     // Financial (20%)
-    'finance_income_level', 'finance_housing_status',
+    'finance_income_level',
+    'finance_housing_status',
     // Background (20%)
-    'education_level', 'background_culture'
+    'education_level',
+    'background_culture',
   ];
 
   let filledCount = 0;
@@ -452,7 +517,7 @@ function getDefaultPrivacySettings() {
     health_visibility: 'private',
     financial_visibility: 'private',
     background_visibility: 'shared',
-    field_overrides: {}
+    field_overrides: {},
   };
 }
 
@@ -462,7 +527,7 @@ module.exports = {
   filterProfileByPrivacy,
   calculateProfileCompletion,
   getDefaultPrivacySettings,
-  SENSITIVE_FIELDS
+  SENSITIVE_FIELDS,
 };
 ```
 
@@ -483,7 +548,7 @@ const STEPS = [
   { id: 'work', title: 'Work & Schedule', icon: '💼' },
   { id: 'health', title: 'Health & Wellbeing', icon: '❤️' },
   { id: 'financial', title: 'Financial Context', icon: '💰' },
-  { id: 'background', title: 'Background', icon: '🏠' }
+  { id: 'background', title: 'Background', icon: '🏠' },
 ];
 
 export function ProfileWizard({ onComplete, initialStep = 0 }) {
@@ -519,10 +584,16 @@ export function ProfileWizard({ onComplete, initialStep = 0 }) {
                 idx <= currentStep ? 'text-teal-dark' : 'text-gray-400'
               }`}
             >
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg
-                ${idx < currentStep ? 'bg-teal-medium text-white' :
-                  idx === currentStep ? 'bg-teal-lightest border-2 border-teal-medium' :
-                  'bg-gray-100'}`}>
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg
+                ${
+                  idx < currentStep
+                    ? 'bg-teal-medium text-white'
+                    : idx === currentStep
+                      ? 'bg-teal-lightest border-2 border-teal-medium'
+                      : 'bg-gray-100'
+                }`}
+              >
                 {idx < currentStep ? '✓' : step.icon}
               </div>
               <span className="text-xs mt-1 hidden sm:block">{step.title}</span>
@@ -539,18 +610,24 @@ export function ProfileWizard({ onComplete, initialStep = 0 }) {
 
       {/* Step Content */}
       <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
-          {STEPS[currentStep].title}
-        </h2>
-        <p className="text-gray-600 mb-6">
-          {getStepDescription(STEPS[currentStep].id)}
-        </p>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">{STEPS[currentStep].title}</h2>
+        <p className="text-gray-600 mb-6">{getStepDescription(STEPS[currentStep].id)}</p>
 
-        {currentStep === 0 && <PersonalInfoForm profileData={profileData} updateField={updateField} />}
-        {currentStep === 1 && <WorkScheduleForm profileData={profileData} updateField={updateField} />}
-        {currentStep === 2 && <HealthWellbeingForm profileData={profileData} updateField={updateField} />}
-        {currentStep === 3 && <FinancialContextForm profileData={profileData} updateField={updateField} />}
-        {currentStep === 4 && <BackgroundForm profileData={profileData} updateField={updateField} />}
+        {currentStep === 0 && (
+          <PersonalInfoForm profileData={profileData} updateField={updateField} />
+        )}
+        {currentStep === 1 && (
+          <WorkScheduleForm profileData={profileData} updateField={updateField} />
+        )}
+        {currentStep === 2 && (
+          <HealthWellbeingForm profileData={profileData} updateField={updateField} />
+        )}
+        {currentStep === 3 && (
+          <FinancialContextForm profileData={profileData} updateField={updateField} />
+        )}
+        {currentStep === 4 && (
+          <BackgroundForm profileData={profileData} updateField={updateField} />
+        )}
       </div>
 
       {/* Navigation */}
@@ -563,10 +640,7 @@ export function ProfileWizard({ onComplete, initialStep = 0 }) {
           ← Back
         </button>
         <div className="flex gap-3">
-          <button
-            onClick={handleSkip}
-            className="px-4 py-2 text-gray-500 hover:text-gray-700"
-          >
+          <button onClick={handleSkip} className="px-4 py-2 text-gray-500 hover:text-gray-700">
             Skip for now
           </button>
           <button
@@ -580,8 +654,10 @@ export function ProfileWizard({ onComplete, initialStep = 0 }) {
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Saving...
               </>
+            ) : currentStep === STEPS.length - 1 ? (
+              'Complete'
             ) : (
-              currentStep === STEPS.length - 1 ? 'Complete' : 'Continue →'
+              'Continue →'
             )}
           </button>
         </div>
@@ -603,13 +679,13 @@ export function PersonalInfoForm({ profileData, updateField }) {
         <FormField
           label="First Name"
           value={profileData.first_name}
-          onChange={(v) => updateField('first_name', v)}
+          onChange={v => updateField('first_name', v)}
           placeholder="Your first name"
         />
         <FormField
           label="Last Name"
           value={profileData.last_name}
-          onChange={(v) => updateField('last_name', v)}
+          onChange={v => updateField('last_name', v)}
           placeholder="Your last name"
         />
       </div>
@@ -617,7 +693,7 @@ export function PersonalInfoForm({ profileData, updateField }) {
       <FormField
         label="Preferred Name"
         value={profileData.preferred_name}
-        onChange={(v) => updateField('preferred_name', v)}
+        onChange={v => updateField('preferred_name', v)}
         placeholder="What should we call you?"
         hint="This is how LiaiZen will address you"
       />
@@ -625,13 +701,13 @@ export function PersonalInfoForm({ profileData, updateField }) {
       <FormSelect
         label="Pronouns"
         value={profileData.pronouns}
-        onChange={(v) => updateField('pronouns', v)}
+        onChange={v => updateField('pronouns', v)}
         options={[
           { value: '', label: 'Select pronouns' },
           { value: 'he/him', label: 'He/Him' },
           { value: 'she/her', label: 'She/Her' },
           { value: 'they/them', label: 'They/Them' },
-          { value: 'other', label: 'Other / Prefer not to say' }
+          { value: 'other', label: 'Other / Prefer not to say' },
         ]}
       />
 
@@ -639,24 +715,24 @@ export function PersonalInfoForm({ profileData, updateField }) {
         label="Birthdate"
         type="date"
         value={profileData.birthdate}
-        onChange={(v) => updateField('birthdate', v)}
+        onChange={v => updateField('birthdate', v)}
       />
 
       <div className="grid grid-cols-2 gap-4">
         <FormSelect
           label="Language"
           value={profileData.language || 'en'}
-          onChange={(v) => updateField('language', v)}
+          onChange={v => updateField('language', v)}
           options={[
             { value: 'en', label: 'English' },
             { value: 'es', label: 'Spanish' },
-            { value: 'fr', label: 'French' }
+            { value: 'fr', label: 'French' },
           ]}
         />
         <FormSelect
           label="Timezone"
           value={profileData.timezone}
-          onChange={(v) => updateField('timezone', v)}
+          onChange={v => updateField('timezone', v)}
           options={getTimezoneOptions()}
         />
       </div>
@@ -675,15 +751,15 @@ export function WorkScheduleForm({ profileData, updateField }) {
       <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
         <span className="text-blue-600">🔒</span>
         <p className="text-sm text-blue-800">
-          Work information is <strong>private by default</strong>.
-          Only LiaiZen AI uses this to understand your availability constraints.
+          Work information is <strong>private by default</strong>. Only LiaiZen AI uses this to
+          understand your availability constraints.
         </p>
       </div>
 
       <FormSelect
         label="Employment Status"
         value={profileData.employment_status}
-        onChange={(v) => updateField('employment_status', v)}
+        onChange={v => updateField('employment_status', v)}
         options={[
           { value: '', label: 'Select status' },
           { value: 'employed', label: 'Employed' },
@@ -691,21 +767,21 @@ export function WorkScheduleForm({ profileData, updateField }) {
           { value: 'unemployed', label: 'Unemployed' },
           { value: 'student', label: 'Student' },
           { value: 'retired', label: 'Retired' },
-          { value: 'disability', label: 'Disability' }
+          { value: 'disability', label: 'Disability' },
         ]}
       />
 
       <FormField
         label="Occupation"
         value={profileData.occupation}
-        onChange={(v) => updateField('occupation', v)}
+        onChange={v => updateField('occupation', v)}
         placeholder="e.g., Teacher, Software Engineer"
       />
 
       <FormTextarea
         label="Work Schedule"
         value={profileData.work_schedule}
-        onChange={(v) => updateField('work_schedule', v)}
+        onChange={v => updateField('work_schedule', v)}
         placeholder="e.g., Monday-Friday 9-5, rotating shifts, flexible hours"
         hint="Helps AI understand when you're available for pickups/communication"
       />
@@ -713,19 +789,19 @@ export function WorkScheduleForm({ profileData, updateField }) {
       <FormSelect
         label="Schedule Flexibility"
         value={profileData.schedule_flexibility}
-        onChange={(v) => updateField('schedule_flexibility', v)}
+        onChange={v => updateField('schedule_flexibility', v)}
         options={[
           { value: '', label: 'Select flexibility' },
           { value: 'high', label: 'High - I can adjust most times' },
           { value: 'medium', label: 'Medium - Some flexibility' },
-          { value: 'low', label: 'Low - Very rigid schedule' }
+          { value: 'low', label: 'Low - Very rigid schedule' },
         ]}
       />
 
       <FormField
         label="Commute Time"
         value={profileData.commute_time}
-        onChange={(v) => updateField('commute_time', v)}
+        onChange={v => updateField('commute_time', v)}
         placeholder="e.g., 30 minutes, 1 hour"
         hint="Helps with pickup/dropoff logistics"
       />
@@ -744,12 +820,10 @@ export function HealthWellbeingForm({ profileData, updateField }) {
       <div className="flex items-start gap-2 p-4 bg-purple-50 rounded-lg border border-purple-200">
         <span className="text-purple-600 text-xl">🔐</span>
         <div>
-          <p className="text-sm font-medium text-purple-900 mb-1">
-            Strictly Confidential
-          </p>
+          <p className="text-sm font-medium text-purple-900 mb-1">Strictly Confidential</p>
           <p className="text-sm text-purple-800">
-            This information is <strong>never shared with your co-parent</strong>.
-            It helps LiaiZen understand your situation and provide more empathetic support.
+            This information is <strong>never shared with your co-parent</strong>. It helps LiaiZen
+            understand your situation and provide more empathetic support.
           </p>
         </div>
       </div>
@@ -760,14 +834,14 @@ export function HealthWellbeingForm({ profileData, updateField }) {
         <FormMultiSelect
           label="Physical Conditions (if any)"
           value={profileData.health_physical_conditions}
-          onChange={(v) => updateField('health_physical_conditions', v)}
+          onChange={v => updateField('health_physical_conditions', v)}
           options={[
             'Chronic pain',
             'Mobility limitations',
             'Fatigue/energy issues',
             'Autoimmune condition',
             'Other',
-            'Prefer not to say'
+            'Prefer not to say',
           ]}
           hint="Select all that apply"
         />
@@ -775,7 +849,7 @@ export function HealthWellbeingForm({ profileData, updateField }) {
         <FormTextarea
           label="How do these affect your parenting?"
           value={profileData.health_physical_limitations}
-          onChange={(v) => updateField('health_physical_limitations', v)}
+          onChange={v => updateField('health_physical_limitations', v)}
           placeholder="Optional - helps AI understand your constraints"
         />
       </div>
@@ -786,29 +860,21 @@ export function HealthWellbeingForm({ profileData, updateField }) {
         <FormMultiSelect
           label="Mental Health Considerations"
           value={profileData.health_mental_conditions}
-          onChange={(v) => updateField('health_mental_conditions', v)}
-          options={[
-            'Anxiety',
-            'Depression',
-            'PTSD',
-            'ADHD',
-            'Other',
-            'None',
-            'Prefer not to say'
-          ]}
+          onChange={v => updateField('health_mental_conditions', v)}
+          options={['Anxiety', 'Depression', 'PTSD', 'ADHD', 'Other', 'None', 'Prefer not to say']}
         />
 
         <FormSelect
           label="Currently in treatment?"
           value={profileData.health_mental_treatment}
-          onChange={(v) => updateField('health_mental_treatment', v)}
+          onChange={v => updateField('health_mental_treatment', v)}
           options={[
             { value: '', label: 'Select option' },
             { value: 'therapy', label: 'Therapy' },
             { value: 'medication', label: 'Medication' },
             { value: 'both', label: 'Both therapy and medication' },
             { value: 'none', label: 'Not currently' },
-            { value: 'prefer_not_say', label: 'Prefer not to say' }
+            { value: 'prefer_not_say', label: 'Prefer not to say' },
           ]}
         />
       </div>
@@ -819,13 +885,13 @@ export function HealthWellbeingForm({ profileData, updateField }) {
         <FormSelect
           label="Substance use history"
           value={profileData.health_substance_history}
-          onChange={(v) => updateField('health_substance_history', v)}
+          onChange={v => updateField('health_substance_history', v)}
           options={[
             { value: '', label: 'Select option' },
             { value: 'none', label: 'No history' },
             { value: 'past', label: 'Past use' },
             { value: 'current', label: 'Current use' },
-            { value: 'prefer_not_say', label: 'Prefer not to say' }
+            { value: 'prefer_not_say', label: 'Prefer not to say' },
           ]}
         />
 
@@ -834,12 +900,12 @@ export function HealthWellbeingForm({ profileData, updateField }) {
           <FormSelect
             label="In recovery?"
             value={profileData.health_in_recovery}
-            onChange={(v) => updateField('health_in_recovery', v)}
+            onChange={v => updateField('health_in_recovery', v)}
             options={[
               { value: '', label: 'Select option' },
               { value: 'yes', label: 'Yes' },
               { value: 'no', label: 'No' },
-              { value: 'prefer_not_say', label: 'Prefer not to say' }
+              { value: 'prefer_not_say', label: 'Prefer not to say' },
             ]}
           />
         )}
@@ -886,16 +952,33 @@ export function PrivacySettings() {
   };
 
   const sections = [
-    { id: 'personal', label: 'Personal Information', icon: '👤',
-      fields: 'Name, pronouns, location' },
-    { id: 'work', label: 'Work & Schedule', icon: '💼',
-      fields: 'Employment, schedule, flexibility' },
-    { id: 'health', label: 'Health & Wellbeing', icon: '❤️',
-      fields: 'Physical health, mental health', locked: true },
-    { id: 'financial', label: 'Financial Context', icon: '💰',
-      fields: 'Income, housing, debt', locked: true },
-    { id: 'background', label: 'Background', icon: '🏠',
-      fields: 'Education, culture, family' }
+    {
+      id: 'personal',
+      label: 'Personal Information',
+      icon: '👤',
+      fields: 'Name, pronouns, location',
+    },
+    {
+      id: 'work',
+      label: 'Work & Schedule',
+      icon: '💼',
+      fields: 'Employment, schedule, flexibility',
+    },
+    {
+      id: 'health',
+      label: 'Health & Wellbeing',
+      icon: '❤️',
+      fields: 'Physical health, mental health',
+      locked: true,
+    },
+    {
+      id: 'financial',
+      label: 'Financial Context',
+      icon: '💰',
+      fields: 'Income, housing, debt',
+      locked: true,
+    },
+    { id: 'background', label: 'Background', icon: '🏠', fields: 'Education, culture, family' },
   ];
 
   return (
@@ -911,12 +994,12 @@ export function PrivacySettings() {
       </div>
 
       <p className="text-sm text-gray-600">
-        Control what information is visible to your co-parent.
-        Health and Financial data is always private (AI-only).
+        Control what information is visible to your co-parent. Health and Financial data is always
+        private (AI-only).
       </p>
 
       <div className="space-y-3">
-        {sections.map((section) => (
+        {sections.map(section => (
           <div
             key={section.id}
             className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
@@ -937,7 +1020,7 @@ export function PrivacySettings() {
             ) : (
               <select
                 value={settings?.[`${section.id}_visibility`] || 'private'}
-                onChange={(e) => updateVisibility(section.id, e.target.value)}
+                onChange={e => updateVisibility(section.id, e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-lg text-sm
                            focus:outline-none focus:border-[#4DA8B0]"
               >
@@ -955,19 +1038,23 @@ export function PrivacySettings() {
           <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Co-Parent's View of Your Profile</h3>
-              <button onClick={() => setPreviewMode(false)} className="text-gray-400 hover:text-gray-600">
+              <button
+                onClick={() => setPreviewMode(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
                 ✕
               </button>
             </div>
             <div className="space-y-4">
-              {Object.entries(previewData || {}).map(([key, value]) => (
-                value && (
-                  <div key={key} className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}</span>
-                    <span className="text-gray-900">{value}</span>
-                  </div>
-                )
-              ))}
+              {Object.entries(previewData || {}).map(
+                ([key, value]) =>
+                  value && (
+                    <div key={key} className="flex justify-between py-2 border-b border-gray-100">
+                      <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}</span>
+                      <span className="text-gray-900">{value}</span>
+                    </div>
+                  )
+              )}
             </div>
           </div>
         </div>
@@ -1004,25 +1091,31 @@ async function buildUserContext(userId) {
 
   // Work context
   if (profile.work_schedule || profile.schedule_flexibility) {
-    contextParts.push(`Work: ${profile.employment_status || 'employed'}, ` +
-      `schedule: ${profile.work_schedule || 'standard'}, ` +
-      `flexibility: ${profile.schedule_flexibility || 'medium'}`);
+    contextParts.push(
+      `Work: ${profile.employment_status || 'employed'}, ` +
+        `schedule: ${profile.work_schedule || 'standard'}, ` +
+        `flexibility: ${profile.schedule_flexibility || 'medium'}`
+    );
   }
 
   // Health context (indirect references only)
   if (profile.health_physical_conditions || profile.health_mental_conditions) {
-    const hasPhysical = profile.health_physical_conditions?.includes('chronic') ||
-                        profile.health_physical_conditions?.includes('mobility');
-    const hasMental = profile.health_mental_conditions?.includes('anxiety') ||
-                      profile.health_mental_conditions?.includes('depression');
+    const hasPhysical =
+      profile.health_physical_conditions?.includes('chronic') ||
+      profile.health_physical_conditions?.includes('mobility');
+    const hasMental =
+      profile.health_mental_conditions?.includes('anxiety') ||
+      profile.health_mental_conditions?.includes('depression');
 
     if (hasPhysical) contextParts.push('Has physical health considerations');
     if (hasMental) contextParts.push('Managing stress/mental health challenges');
   }
 
   // Financial stress (indirect)
-  if (profile.finance_debt_stress === 'significant' ||
-      profile.finance_debt_stress === 'overwhelming') {
+  if (
+    profile.finance_debt_stress === 'significant' ||
+    profile.finance_debt_stress === 'overwhelming'
+  ) {
     contextParts.push('Experiencing financial stress');
   }
 
@@ -1063,6 +1156,7 @@ async function mediateMessage(message, senderContext, receiverContext) {
 # Profile-Aware Coaching Examples
 
 ## Work Schedule Context
+
 USER PROFILE: Works evenings, low flexibility
 MESSAGE: "Why can't you pick up tomorrow at 4pm?"
 
@@ -1070,6 +1164,7 @@ COACHING: "I notice this timing may be challenging given your schedule.
 Consider: 'I have a work conflict at 4pm. Could we do 6pm, or would morning work better for you?'"
 
 ## Health Considerations
+
 USER PROFILE: Has anxiety, in therapy
 MESSAGE: "This is stressing me out and you don't even care!"
 
@@ -1077,6 +1172,7 @@ COACHING: "Take a breath. The phrasing 'you don't even care' may escalate.
 Try: 'I'm feeling overwhelmed by this situation. Can we find a solution together?'"
 
 ## Financial Stress
+
 USER PROFILE: Significant debt stress, receiving support
 MESSAGE: "You never pay your fair share!"
 
@@ -1179,6 +1275,7 @@ PROFILE_ENCRYPTION_KEY=<generate-secure-key>
 ## File Changes Summary
 
 ### New Files (12)
+
 ```
 chat-server/
 ├── migrations/010_user_profile_comprehensive.js
@@ -1200,6 +1297,7 @@ chat-client-vite/src/
 ```
 
 ### Modified Files (6)
+
 ```
 chat-server/
 ├── db.js                  # Add new columns, tables
@@ -1230,21 +1328,21 @@ chat-client-vite/src/
 
 ## Success Metrics (30 days post-launch)
 
-| Metric | Target |
-|--------|--------|
-| Profile completion rate | >70% at 50%+ completion |
-| AI escalation reduction | 15% for complete profiles |
-| User satisfaction | +0.6 improvement on "AI understands me" |
-| Privacy incidents | Zero |
+| Metric                  | Target                                  |
+| ----------------------- | --------------------------------------- |
+| Profile completion rate | >70% at 50%+ completion                 |
+| AI escalation reduction | 15% for complete profiles               |
+| User satisfaction       | +0.6 improvement on "AI understands me" |
+| Privacy incidents       | Zero                                    |
 
 ---
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| Users overwhelmed by form length | Progressive wizard with skip options |
-| Privacy concerns | Clear labeling, preview feature, encryption |
-| Database migration failure | Rollback script, staging testing |
-| AI reveals private info | Strict prompt engineering, testing |
-| Performance with encryption | Cache decrypted data in memory per session |
+| Risk                             | Mitigation                                  |
+| -------------------------------- | ------------------------------------------- |
+| Users overwhelmed by form length | Progressive wizard with skip options        |
+| Privacy concerns                 | Clear labeling, preview feature, encryption |
+| Database migration failure       | Rollback script, staging testing            |
+| AI reveals private info          | Strict prompt engineering, testing          |
+| Performance with encryption      | Cache decrypted data in memory per session  |

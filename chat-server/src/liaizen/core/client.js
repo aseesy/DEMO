@@ -17,7 +17,7 @@ const rateLimitState = {
   requestCount: 0,
   windowStart: Date.now(),
   windowMs: RATE_LIMIT.WINDOW_MS,
-  maxRequestsPerWindow: RATE_LIMIT.MAX_REQUESTS_PER_WINDOW
+  maxRequestsPerWindow: RATE_LIMIT.MAX_REQUESTS_PER_WINDOW,
 };
 
 /**
@@ -37,7 +37,7 @@ function getClient() {
     openaiInstance = new OpenAI({
       apiKey: apiKey,
       maxRetries: RATE_LIMIT.MAX_RETRIES,
-      timeout: AI.TIMEOUT_MS
+      timeout: AI.TIMEOUT_MS,
     });
 
     console.log('✅ OpenAI client initialized');
@@ -100,7 +100,9 @@ async function createChatCompletion(params) {
     const response = await client.chat.completions.create(params);
     const duration = Date.now() - startTime;
 
-    console.log(`✅ OpenAI request completed in ${duration}ms (model: ${params.model}, tokens: ${response.usage?.total_tokens || 'unknown'})`);
+    console.log(
+      `✅ OpenAI request completed in ${duration}ms (model: ${params.model}, tokens: ${response.usage?.total_tokens || 'unknown'})`
+    );
 
     return response;
   } catch (error) {
@@ -128,7 +130,10 @@ function getRateLimitStats() {
     requestCount: rateLimitState.requestCount,
     maxRequests: rateLimitState.maxRequestsPerWindow,
     windowMs: rateLimitState.windowMs,
-    percentUsed: (rateLimitState.requestCount / rateLimitState.maxRequestsPerWindow * 100).toFixed(1)
+    percentUsed: (
+      (rateLimitState.requestCount / rateLimitState.maxRequestsPerWindow) *
+      100
+    ).toFixed(1),
   };
 }
 
@@ -136,5 +141,5 @@ module.exports = {
   getClient,
   isConfigured,
   createChatCompletion,
-  getRateLimitStats
+  getRateLimitStats,
 };

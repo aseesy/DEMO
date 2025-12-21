@@ -55,9 +55,9 @@ LiaiZen is now a Progressive Web App (PWA), which means you can install it on yo
 ## 🎨 Customization
 
 Icons are generated from your logo. To update them:
+
 1. Replace `icon-192.png` and `icon-512.png` in the `chat-client` folder
 2. Ensure they are PNG format
 3. Recommended sizes: 192x192 and 512x512 pixels
 
 Enjoy your installable LiaiZen app! 📱✨
-

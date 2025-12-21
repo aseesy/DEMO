@@ -10,6 +10,7 @@
 ## Phase 1: Error Handling Infrastructure
 
 ### Task 1.1: Enhance Error Handler Utility
+
 **Type**: infrastructure
 **Priority**: critical
 **Complexity**: medium
@@ -18,18 +19,21 @@
 
 **Description**:
 Enhance existing `chat-client-vite/src/utils/errorHandler.jsx` with:
-- Error code mapping (REG_*, OAuth errors, invitation errors)
+
+- Error code mapping (REG\_\*, OAuth errors, invitation errors)
 - User-friendly error messages
 - Retry logic with exponential backoff
 - Error categorization (network, validation, server, auth)
 - Error logging with context
 
 **Files**:
+
 - Path: `chat-client-vite/src/utils/errorHandler.jsx`
   Action: enhance
 
 **Acceptance Criteria**:
-- [ ] Error code mapping covers all REG_* codes
+
+- [ ] Error code mapping covers all REG\_\* codes
 - [ ] OAuth error codes mapped to user messages
 - [ ] Invitation error codes mapped
 - [ ] Retry logic implemented with max 3 retries
@@ -40,6 +44,7 @@ Enhance existing `chat-client-vite/src/utils/errorHandler.jsx` with:
 ---
 
 ### Task 1.2: Create Auth Context Provider
+
 **Type**: infrastructure
 **Priority**: critical
 **Complexity**: medium
@@ -48,6 +53,7 @@ Enhance existing `chat-client-vite/src/utils/errorHandler.jsx` with:
 
 **Description**:
 Create centralized authentication state management:
+
 - AuthContext provider with React Context API
 - Token management (storage, validation, refresh)
 - Session verification on mount
@@ -56,10 +62,12 @@ Create centralized authentication state management:
 - Auth state guards for API calls
 
 **Files**:
+
 - Path: `chat-client-vite/src/context/AuthContext.jsx`
   Action: create
 
 **Acceptance Criteria**:
+
 - [ ] AuthContext provides: isAuthenticated, username, email, token, isCheckingAuth
 - [ ] Token stored securely in localStorage
 - [ ] Token expiration checked before API calls
@@ -71,6 +79,7 @@ Create centralized authentication state management:
 ---
 
 ### Task 1.3: Create Invitation Context Provider
+
 **Type**: infrastructure
 **Priority**: high
 **Complexity**: small
@@ -79,6 +88,7 @@ Create centralized authentication state management:
 
 **Description**:
 Create invitation state management:
+
 - InvitationContext provider
 - Token/code persistence in sessionStorage
 - Token restoration on page load
@@ -86,10 +96,12 @@ Create invitation state management:
 - Validation state management
 
 **Files**:
+
 - Path: `chat-client-vite/src/context/InvitationContext.jsx`
   Action: create
 
 **Acceptance Criteria**:
+
 - [ ] InvitationContext provides: token, code, validationResult, is validating
 - [ ] Token persisted in sessionStorage
 - [ ] Token restored on page load
@@ -101,6 +113,7 @@ Create invitation state management:
 ## Phase 2: Registration Flow Fixes
 
 ### Task 2.1: Enhance Email/Password Registration Error Handling
+
 **Type**: feature
 **Priority**: critical
 **Complexity**: medium
@@ -109,7 +122,8 @@ Create invitation state management:
 
 **Description**:
 Improve registration error handling in `useAuth.js` and `LoginSignup.jsx`:
-- Handle all REG_* error codes with specific messages
+
+- Handle all REG\_\* error codes with specific messages
 - Add "Sign in instead" link for REG_001 (email exists)
 - Improve password validation (strength indicator)
 - Add retry logic for network errors
@@ -117,13 +131,15 @@ Improve registration error handling in `useAuth.js` and `LoginSignup.jsx`:
 - Handle username generation failures gracefully
 
 **Files**:
+
 - Path: `chat-client-vite/src/hooks/useAuth.js`
   Action: modify
 - Path: `chat-client-vite/src/components/LoginSignup.jsx`
   Action: modify
 
 **Acceptance Criteria**:
-- [ ] All REG_* codes show specific error messages
+
+- [ ] All REG\_\* codes show specific error messages
 - [ ] REG_001 shows "Email already registered" with "Sign in instead" link
 - [ ] Password strength indicator added
 - [ ] Network errors show retry button
@@ -134,6 +150,7 @@ Improve registration error handling in `useAuth.js` and `LoginSignup.jsx`:
 ---
 
 ### Task 2.2: Add Password Strength Indicator
+
 **Type**: feature
 **Priority**: medium
 **Complexity**: small
@@ -142,18 +159,21 @@ Improve registration error handling in `useAuth.js` and `LoginSignup.jsx`:
 
 **Description**:
 Add password strength indicator component:
+
 - Real-time strength calculation
 - Visual indicator (weak/medium/strong)
 - Requirements checklist (min 8 chars, 1 uppercase, 1 number)
 - Accessible (aria-labels)
 
 **Files**:
+
 - Path: `chat-client-vite/src/components/PasswordStrengthIndicator.jsx`
   Action: create
 - Path: `chat-client-vite/src/components/LoginSignup.jsx`
   Action: modify (integrate component)
 
 **Acceptance Criteria**:
+
 - [ ] Strength calculated in real-time
 - [ ] Visual indicator (color-coded)
 - [ ] Requirements checklist shown
@@ -163,6 +183,7 @@ Add password strength indicator component:
 ---
 
 ### Task 2.3: Enhance Google OAuth Error Handling
+
 **Type**: feature
 **Priority**: critical
 **Complexity**: medium
@@ -171,6 +192,7 @@ Add password strength indicator component:
 
 **Description**:
 Improve Google OAuth error handling:
+
 - Detect popup blocker
 - Handle all OAuth error codes (access_denied, server_error, etc.)
 - Implement state parameter for CSRF protection
@@ -179,12 +201,14 @@ Improve Google OAuth error handling:
 - Offer email/password alternative
 
 **Files**:
+
 - Path: `chat-client-vite/src/components/GoogleOAuthCallback.jsx`
   Action: modify
 - Path: `chat-client-vite/src/hooks/useAuth.js`
   Action: modify (handleGoogleLogin)
 
 **Acceptance Criteria**:
+
 - [ ] Popup blocker detected with instructions
 - [ ] All OAuth error codes handled
 - [ ] State parameter implemented and validated
@@ -197,6 +221,7 @@ Improve Google OAuth error handling:
 ## Phase 3: Login Flow Fixes
 
 ### Task 3.1: Enhance Email/Password Login Error Handling
+
 **Type**: feature
 **Priority**: critical
 **Complexity**: medium
@@ -205,6 +230,7 @@ Improve Google OAuth error handling:
 
 **Description**:
 Improve login error handling:
+
 - Distinguish "account not found" from "wrong password"
 - Add "Forgot password?" placeholder link
 - Handle session expiration gracefully
@@ -213,12 +239,14 @@ Improve login error handling:
 - Clear password field on error
 
 **Files**:
+
 - Path: `chat-client-vite/src/hooks/useAuth.js`
   Action: modify (handleLogin)
 - Path: `chat-client-vite/src/components/LoginSignup.jsx`
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] "Account not found" vs "Wrong password" distinguished
 - [ ] "Forgot password?" link added (placeholder)
 - [ ] Session expiration detected and handled
@@ -229,6 +257,7 @@ Improve login error handling:
 ---
 
 ### Task 3.2: Enhance Google OAuth Login Error Handling
+
 **Type**: feature
 **Priority**: high
 **Complexity**: small
@@ -237,18 +266,21 @@ Improve login error handling:
 
 **Description**:
 Improve Google OAuth login errors:
+
 - Handle "account not registered" case
 - Show "Create account with Google" option
 - Handle OAuth callback errors
 - Handle token exchange failures
 
 **Files**:
+
 - Path: `chat-client-vite/src/components/GoogleOAuthCallback.jsx`
   Action: modify
 - Path: `chat-client-vite/src/hooks/useAuth.js`
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] "Account not registered" detected
 - [ ] "Create account" option shown
 - [ ] OAuth callback errors handled
@@ -259,6 +291,7 @@ Improve Google OAuth login errors:
 ## Phase 4: Invitation Flow Fixes
 
 ### Task 4.1: Enhance Invitation Validation Error Handling
+
 **Type**: feature
 **Priority**: critical
 **Complexity**: medium
@@ -267,6 +300,7 @@ Improve Google OAuth login errors:
 
 **Description**:
 Improve invitation validation error handling:
+
 - Handle all validation error codes with helpful messages
 - Add "Request new invitation" option for expired/cancelled
 - Handle network errors with retry
@@ -274,12 +308,14 @@ Improve invitation validation error handling:
 - Show inviter name/email when available
 
 **Files**:
+
 - Path: `chat-client-vite/src/components/AcceptInvitationPage.jsx`
   Action: modify
 - Path: `chat-client-vite/src/hooks/useInvitations.js`
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] All validation error codes show helpful messages
 - [ ] "Request new invitation" button for expired/cancelled
 - [ ] Network errors show retry button
@@ -290,6 +326,7 @@ Improve invitation validation error handling:
 ---
 
 ### Task 4.2: Fix Registration from Invitation Flow
+
 **Type**: feature
 **Priority**: critical
 **Complexity**: high
@@ -298,6 +335,7 @@ Improve invitation validation error handling:
 
 **Description**:
 Fix registration from invitation:
+
 - Validate token before showing form
 - Re-validate token on form submit
 - Handle all error codes (REG_001, REG_002, etc.)
@@ -307,12 +345,14 @@ Fix registration from invitation:
 - Handle co-parent limit check
 
 **Files**:
+
 - Path: `chat-client-vite/src/components/AcceptInvitationPage.jsx`
   Action: modify
 - Path: `chat-server/auth.js`
   Action: modify (registerFromInvitation, registerFromShortCode)
 
 **Acceptance Criteria**:
+
 - [ ] Token validated before form shown
 - [ ] Token re-validated on submit
 - [ ] All error codes handled with specific messages
@@ -324,6 +364,7 @@ Fix registration from invitation:
 ---
 
 ### Task 4.3: Fix Accepting Invitation (Existing User)
+
 **Type**: feature
 **Priority**: high
 **Complexity**: medium
@@ -332,6 +373,7 @@ Fix registration from invitation:
 
 **Description**:
 Fix accepting invitation for existing users:
+
 - Check co-parent limit before acceptance
 - Handle "already connected" case
 - Prevent self-invitation
@@ -339,12 +381,14 @@ Fix accepting invitation for existing users:
 - Show helpful messages
 
 **Files**:
+
 - Path: `chat-client-vite/src/components/AcceptInvitationPage.jsx`
   Action: modify
 - Path: `chat-server/server.js` (accept endpoints)
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] Co-parent limit checked before acceptance
 - [ ] "Already connected" detected and handled
 - [ ] Self-invitation prevented
@@ -356,6 +400,7 @@ Fix accepting invitation for existing users:
 ## Phase 5: State Management Fixes
 
 ### Task 5.1: Fix Authentication State Race Conditions
+
 **Type**: bugfix
 **Priority**: critical
 **Complexity**: high
@@ -364,6 +409,7 @@ Fix accepting invitation for existing users:
 
 **Description**:
 Fix race conditions in authentication state:
+
 - Wait for auth verification before API calls
 - Update all hooks to check auth state
 - Fix localStorage validation
@@ -371,6 +417,7 @@ Fix race conditions in authentication state:
 - Sync state across tabs
 
 **Files**:
+
 - Path: `chat-client-vite/src/hooks/useAuth.js`
   Action: modify
 - Path: `chat-client-vite/src/hooks/useTasks.js`
@@ -383,6 +430,7 @@ Fix race conditions in authentication state:
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] All hooks wait for auth verification
 - [ ] No API calls before auth confirmed
 - [ ] localStorage validated on load
@@ -393,6 +441,7 @@ Fix race conditions in authentication state:
 ---
 
 ### Task 5.2: Fix Invitation State Persistence
+
 **Type**: bugfix
 **Priority**: high
 **Complexity**: small
@@ -401,18 +450,21 @@ Fix race conditions in authentication state:
 
 **Description**:
 Fix invitation token persistence:
+
 - Store token in sessionStorage
 - Restore on page load
 - Clear after successful use
 - Handle multiple invitations
 
 **Files**:
+
 - Path: `chat-client-vite/src/components/AcceptInvitationPage.jsx`
   Action: modify
 - Path: `chat-client-vite/src/context/InvitationContext.jsx`
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] Token stored in sessionStorage
 - [ ] Token restored on page load
 - [ ] Token cleared after successful use
@@ -423,6 +475,7 @@ Fix invitation token persistence:
 ## Phase 6: UI/UX Improvements
 
 ### Task 6.1: Add Real-time Form Validation
+
 **Type**: feature
 **Priority**: medium
 **Complexity**: medium
@@ -431,6 +484,7 @@ Fix invitation token persistence:
 
 **Description**:
 Add real-time validation to all forms:
+
 - Email validation as user types
 - Password validation with strength
 - Name validation
@@ -439,6 +493,7 @@ Add real-time validation to all forms:
 - Visual indicators (red borders, icons)
 
 **Files**:
+
 - Path: `chat-client-vite/src/components/LoginSignup.jsx`
   Action: modify
 - Path: `chat-client-vite/src/components/AcceptInvitationPage.jsx`
@@ -447,6 +502,7 @@ Add real-time validation to all forms:
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] Email validated in real-time
 - [ ] Password validated with strength
 - [ ] Name validated
@@ -458,6 +514,7 @@ Add real-time validation to all forms:
 ---
 
 ### Task 6.2: Add Password Visibility Toggle
+
 **Type**: feature
 **Priority**: low
 **Complexity**: small
@@ -466,18 +523,21 @@ Add real-time validation to all forms:
 
 **Description**:
 Add show/hide password toggle:
+
 - Eye icon button
 - Toggle password visibility
 - Accessible (aria-label)
 - Mobile-friendly
 
 **Files**:
+
 - Path: `chat-client-vite/src/components/LoginSignup.jsx`
   Action: modify
 - Path: `chat-client-vite/src/components/AcceptInvitationPage.jsx`
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] Eye icon button added
 - [ ] Password visibility toggles
 - [ ] Accessible (aria-label="Show password")
@@ -486,6 +546,7 @@ Add show/hide password toggle:
 ---
 
 ### Task 6.3: Improve Loading States
+
 **Type**: feature
 **Priority**: medium
 **Complexity**: small
@@ -494,12 +555,14 @@ Add show/hide password toggle:
 
 **Description**:
 Improve loading states across all forms:
+
 - Loading spinners on all async actions
 - Disable buttons during processing
 - Show progress for long operations
 - Clear loading messages
 
 **Files**:
+
 - Path: `chat-client-vite/src/components/LoginSignup.jsx`
   Action: modify
 - Path: `chat-client-vite/src/components/AcceptInvitationPage.jsx`
@@ -508,6 +571,7 @@ Improve loading states across all forms:
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] Loading spinners on all async actions
 - [ ] Buttons disabled during processing
 - [ ] Progress shown for long operations
@@ -516,6 +580,7 @@ Improve loading states across all forms:
 ---
 
 ### Task 6.4: Improve Error Message Display
+
 **Type**: feature
 **Priority**: medium
 **Complexity**: small
@@ -524,6 +589,7 @@ Improve loading states across all forms:
 
 **Description**:
 Improve error message display:
+
 - Dismissible errors (X button)
 - Auto-dismiss after 5 seconds
 - Clear on form interaction
@@ -531,6 +597,7 @@ Improve error message display:
 - Better styling (red background, icon)
 
 **Files**:
+
 - Path: `chat-client-vite/src/components/LoginSignup.jsx`
   Action: modify
 - Path: `chat-client-vite/src/components/AcceptInvitationPage.jsx`
@@ -539,6 +606,7 @@ Improve error message display:
   Action: create
 
 **Acceptance Criteria**:
+
 - [ ] Dismissible errors (X button)
 - [ ] Auto-dismiss after 5 seconds
 - [ ] Clear on form interaction
@@ -548,6 +616,7 @@ Improve error message display:
 ---
 
 ### Task 6.5: Fix Navigation Issues
+
 **Type**: bugfix
 **Priority**: high
 **Complexity**: medium
@@ -556,12 +625,14 @@ Improve error message display:
 
 **Description**:
 Fix navigation issues:
+
 - Prevent redirect loops (max 3 redirects)
 - Preserve intended destination
 - Handle back button properly
 - Support deep links
 
 **Files**:
+
 - Path: `chat-client-vite/src/App.jsx`
   Action: modify
 - Path: `chat-client-vite/src/hooks/useAuth.js`
@@ -570,6 +641,7 @@ Fix navigation issues:
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] Redirect loops prevented (max 3)
 - [ ] Intended destination preserved
 - [ ] Back button handled properly
@@ -581,6 +653,7 @@ Fix navigation issues:
 ## Phase 7: Integration Fixes
 
 ### Task 7.1: Improve Email Service Error Handling
+
 **Type**: feature
 **Priority**: medium
 **Complexity**: medium
@@ -589,6 +662,7 @@ Fix navigation issues:
 
 **Description**:
 Improve email service error handling:
+
 - Track email send status
 - Queue emails for retry
 - Don't block registration on email failure
@@ -596,12 +670,14 @@ Improve email service error handling:
 - Log delivery failures
 
 **Files**:
+
 - Path: `chat-server/emailService.js`
   Action: modify
 - Path: `chat-server/server.js` (invitation endpoints)
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] Email send status tracked
 - [ ] Emails queued for retry
 - [ ] Registration doesn't block on email failure
@@ -611,6 +687,7 @@ Improve email service error handling:
 ---
 
 ### Task 7.2: Improve Database Error Handling
+
 **Type**: feature
 **Priority**: high
 **Complexity**: medium
@@ -619,6 +696,7 @@ Improve email service error handling:
 
 **Description**:
 Improve database error handling:
+
 - Connection pooling
 - Retry logic for transient errors
 - Transaction handling
@@ -626,12 +704,14 @@ Improve database error handling:
 - User-friendly error messages
 
 **Files**:
+
 - Path: `chat-server/dbPostgres.js`
   Action: modify
 - Path: `chat-server/auth.js`
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] Connection pooling implemented
 - [ ] Retry logic for transient errors
 - [ ] Transactions handled properly
@@ -643,6 +723,7 @@ Improve database error handling:
 ## Testing Tasks
 
 ### Task 8.1: Create Test Suite for Registration
+
 **Type**: testing
 **Priority**: high
 **Complexity**: medium
@@ -651,6 +732,7 @@ Improve database error handling:
 
 **Description**:
 Create comprehensive tests for registration:
+
 - Email already exists
 - Invalid email format
 - Weak password
@@ -660,12 +742,14 @@ Create comprehensive tests for registration:
 - Room creation failure
 
 **Files**:
+
 - Path: `chat-client-vite/src/__tests__/registration.test.js`
   Action: create
 - Path: `chat-server/__tests__/auth.test.js`
   Action: create
 
 **Acceptance Criteria**:
+
 - [ ] All registration scenarios tested
 - [ ] Error codes verified
 - [ ] User messages verified
@@ -674,6 +758,7 @@ Create comprehensive tests for registration:
 ---
 
 ### Task 8.2: Create Test Suite for Login
+
 **Type**: testing
 **Priority**: high
 **Complexity**: medium
@@ -682,6 +767,7 @@ Create comprehensive tests for registration:
 
 **Description**:
 Create comprehensive tests for login:
+
 - Invalid credentials
 - Account not found
 - Session expired
@@ -689,12 +775,14 @@ Create comprehensive tests for login:
 - Server error
 
 **Files**:
+
 - Path: `chat-client-vite/src/__tests__/login.test.js`
   Action: create
 - Path: `chat-server/__tests__/auth.test.js`
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] All login scenarios tested
 - [ ] Error handling verified
 - [ ] Retry logic tested
@@ -702,6 +790,7 @@ Create comprehensive tests for login:
 ---
 
 ### Task 8.3: Create Test Suite for Invitations
+
 **Type**: testing
 **Priority**: high
 **Complexity**: medium
@@ -710,6 +799,7 @@ Create comprehensive tests for login:
 
 **Description**:
 Create comprehensive tests for invitations:
+
 - Invalid token
 - Expired invitation
 - Already accepted
@@ -719,12 +809,14 @@ Create comprehensive tests for invitations:
 - Co-parent limit
 
 **Files**:
+
 - Path: `chat-client-vite/src/__tests__/invitations.test.js`
   Action: create
 - Path: `chat-server/__tests__/invitations.test.js`
   Action: create
 
 **Acceptance Criteria**:
+
 - [ ] All invitation scenarios tested
 - [ ] Error codes verified
 - [ ] User messages verified
@@ -737,6 +829,7 @@ Create comprehensive tests for invitations:
 **Total Estimated Hours**: 96 hours (~2.5 weeks full-time, 4 weeks part-time)
 
 **Critical Path**:
+
 1. Error Handler (Task 1.1)
 2. Auth Context (Task 1.2)
 3. Registration Fixes (Task 2.1, 2.3)
@@ -746,6 +839,7 @@ Create comprehensive tests for invitations:
 7. Testing (Task 8.1, 8.2, 8.3)
 
 **Recommended Agent Assignments**:
+
 - **backend-architect**: Tasks 7.1, 7.2 (database, email service)
 - **frontend-specialist**: Tasks 6.1-6.5 (UI/UX improvements)
 - **full-stack-developer**: Tasks 2.1-2.3, 3.1-3.2, 4.1-4.3 (end-to-end flows)
@@ -753,6 +847,5 @@ Create comprehensive tests for invitations:
 
 ---
 
-*Tasks created: 2025-01-27*
-*Based on: plan-user-auth-invite-system.md*
-
+_Tasks created: 2025-01-27_
+_Based on: plan-user-auth-invite-system.md_

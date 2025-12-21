@@ -1,6 +1,11 @@
 import React from 'react';
 import { apiGet, apiPost, apiDelete } from '../apiClient.js';
-import { getErrorMessage, logError, retryWithBackoff, isRetryableError } from '../utils/errorHandler.jsx';
+import {
+  getErrorMessage,
+  logError,
+  retryWithBackoff,
+  isRetryableError,
+} from '../utils/errorHandler.jsx';
 
 /**
  * Hook for managing co-parent pairing using the new unified pairing system
@@ -28,23 +33,23 @@ export function usePairing() {
     setError('');
 
     try {
-      const response = await retryWithBackoff(
-        () => apiGet('/api/pairing/status'),
-        {
-          maxRetries: 3,
-          shouldRetry: (error, statusCode) => {
-            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
-              return false;
-            }
-            return isRetryableError(error, statusCode);
-          },
-        }
-      );
+      const response = await retryWithBackoff(() => apiGet('/api/pairing/status'), {
+        maxRetries: 3,
+        shouldRetry: (error, statusCode) => {
+          if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
+            return false;
+          }
+          return isRetryableError(error, statusCode);
+        },
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/status' });
+        const errorInfo = getErrorMessage(data, {
+          statusCode: response.status,
+          endpoint: '/api/pairing/status',
+        });
         logError(data, { endpoint: '/api/pairing/status', operation: 'fetch_status' });
         setError(errorInfo.userMessage);
         return null;
@@ -68,78 +73,87 @@ export function usePairing() {
    * @param {string} inviteeEmail - Required for email type
    * @returns {Promise<Object>} Result with pairingCode, token (for email/link), expiresAt
    */
-  const createPairing = React.useCallback(async (type, inviteeEmail = null) => {
-    if (!type || !['email', 'link', 'code'].includes(type)) {
-      setError('Invalid invitation type');
-      return { success: false, error: 'Invalid invitation type' };
-    }
-
-    if (type === 'email' && !inviteeEmail) {
-      setError('Email is required for email invitations');
-      return { success: false, error: 'Email is required for email invitations' };
-    }
-
-    setIsCreating(true);
-    setError('');
-
-    try {
-      const response = await retryWithBackoff(
-        () => apiPost('/api/pairing/create', { type, inviteeEmail }),
-        {
-          maxRetries: 2,
-          shouldRetry: (error, statusCode) => {
-            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
-              return false;
-            }
-            return isRetryableError(error, statusCode);
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/create' });
-        logError(data, { endpoint: '/api/pairing/create', operation: 'create_pairing', type });
-        setError(errorInfo.userMessage);
-        return { success: false, error: errorInfo.userMessage, code: data.code };
+  const createPairing = React.useCallback(
+    async (type, inviteeEmail = null) => {
+      if (!type || !['email', 'link', 'code'].includes(type)) {
+        setError('Invalid invitation type');
+        return { success: false, error: 'Invalid invitation type' };
       }
 
-      // Check if mutual invitation was detected
-      if (data.mutual) {
-        // Auto-refresh status since we're now paired
-        await fetchPairingStatus();
+      if (type === 'email' && !inviteeEmail) {
+        setError('Email is required for email invitations');
+        return { success: false, error: 'Email is required for email invitations' };
+      }
+
+      setIsCreating(true);
+      setError('');
+
+      try {
+        console.log(`[usePairing] Creating pairing of type: ${type}`);
+        const response = await retryWithBackoff(
+          () => apiPost('/api/pairing/create', { type, inviteeEmail }),
+          {
+            maxRetries: 2,
+            shouldRetry: (error, statusCode) => {
+              if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
+                return false;
+              }
+              return isRetryableError(error, statusCode);
+            },
+          }
+        );
+
+        const data = await response.json();
+        console.log(`[usePairing] Create response status: ${response.status}`, data);
+
+        if (!response.ok) {
+          const errorInfo = getErrorMessage(data, {
+            statusCode: response.status,
+            endpoint: '/api/pairing/create',
+          });
+          logError(data, { endpoint: '/api/pairing/create', operation: 'create_pairing', type });
+          setError(errorInfo.userMessage);
+          return { success: false, error: errorInfo.userMessage, code: data.code };
+        }
+
+        // Check if mutual invitation was detected
+        if (data.mutual) {
+          // Auto-refresh status since we're now paired
+          await fetchPairingStatus();
+          return {
+            success: true,
+            mutual: true,
+            message: data.message,
+            sharedRoomId: data.sharedRoomId,
+          };
+        }
+
         return {
           success: true,
-          mutual: true,
-          message: data.message,
-          sharedRoomId: data.sharedRoomId,
+          pairingCode: data.pairingCode,
+          token: data.token,
+          expiresAt: data.expiresAt,
+          inviteType: data.inviteType,
         };
+      } catch (err) {
+        console.error('[usePairing] Create pairing exception:', err);
+        const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/create' });
+        logError(err, { endpoint: '/api/pairing/create', operation: 'create_pairing', type });
+        setError(errorInfo.userMessage);
+        return { success: false, error: errorInfo.userMessage };
+      } finally {
+        setIsCreating(false);
       }
-
-      return {
-        success: true,
-        pairingCode: data.pairingCode,
-        token: data.token,
-        expiresAt: data.expiresAt,
-        inviteType: data.inviteType,
-      };
-    } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/create' });
-      logError(err, { endpoint: '/api/pairing/create', operation: 'create_pairing', type });
-      setError(errorInfo.userMessage);
-      return { success: false, error: errorInfo.userMessage };
-    } finally {
-      setIsCreating(false);
-    }
-  }, [fetchPairingStatus]);
+    },
+    [fetchPairingStatus]
+  );
 
   /**
    * Validate a pairing code (public - no auth required)
    * @param {string} code - The pairing code (e.g., "LZ-842396")
    * @returns {Promise<Object>} Validation result
    */
-  const validateCode = React.useCallback(async (code) => {
+  const validateCode = React.useCallback(async code => {
     if (!code) {
       return { valid: false, code: 'CODE_REQUIRED', error: 'Pairing code is required' };
     }
@@ -164,12 +178,15 @@ export function usePairing() {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/validate' });
+        const errorInfo = getErrorMessage(data, {
+          statusCode: response.status,
+          endpoint: '/api/pairing/validate',
+        });
         return {
           valid: false,
           code: data.code || 'INVALID_CODE',
           error: errorInfo.userMessage,
-          errorInfo
+          errorInfo,
         };
       }
 
@@ -192,7 +209,7 @@ export function usePairing() {
    * @param {string} token - The invitation token
    * @returns {Promise<Object>} Validation result
    */
-  const validateToken = React.useCallback(async (token) => {
+  const validateToken = React.useCallback(async token => {
     if (!token) {
       return { valid: false, code: 'TOKEN_REQUIRED', error: 'Invitation token is required' };
     }
@@ -217,12 +234,15 @@ export function usePairing() {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/validate-token' });
+        const errorInfo = getErrorMessage(data, {
+          statusCode: response.status,
+          endpoint: '/api/pairing/validate-token',
+        });
         return {
           valid: false,
           code: data.code || 'INVALID_TOKEN',
           error: errorInfo.userMessage,
-          errorInfo
+          errorInfo,
         };
       }
 
@@ -233,7 +253,10 @@ export function usePairing() {
         expiresAt: data.expiresAt,
       };
     } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/validate-token' });
+      const errorInfo = getErrorMessage(err, {
+        statusCode: 0,
+        endpoint: '/api/pairing/validate-token',
+      });
       return { valid: false, code: 'NETWORK_ERROR', error: errorInfo.userMessage, errorInfo };
     } finally {
       setIsValidating(false);
@@ -245,179 +268,203 @@ export function usePairing() {
    * @param {Object} params - { code?: string, token?: string }
    * @returns {Promise<Object>} Result with sharedRoomId, partnerId
    */
-  const acceptPairing = React.useCallback(async ({ code, token }) => {
-    if (!code && !token) {
-      setError('Either code or token is required');
-      return { success: false, error: 'Either code or token is required' };
-    }
-
-    setIsAccepting(true);
-    setError('');
-
-    try {
-      const response = await retryWithBackoff(
-        () => apiPost('/api/pairing/accept', { code, token }),
-        {
-          maxRetries: 2,
-          shouldRetry: (error, statusCode) => {
-            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
-              return false;
-            }
-            return isRetryableError(error, statusCode);
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/accept' });
-        logError(data, { endpoint: '/api/pairing/accept', operation: 'accept_pairing' });
-        setError(errorInfo.userMessage);
-        return { success: false, error: errorInfo.userMessage, code: data.code };
+  const acceptPairing = React.useCallback(
+    async ({ code, token }) => {
+      if (!code && !token) {
+        setError('Either code or token is required');
+        return { success: false, error: 'Either code or token is required' };
       }
 
-      // Refresh status after accepting
-      await fetchPairingStatus();
+      setIsAccepting(true);
+      setError('');
 
-      return {
-        success: true,
-        message: data.message,
-        sharedRoomId: data.sharedRoomId,
-        partnerId: data.partnerId,
-      };
-    } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/accept' });
-      logError(err, { endpoint: '/api/pairing/accept', operation: 'accept_pairing' });
-      setError(errorInfo.userMessage);
-      return { success: false, error: errorInfo.userMessage };
-    } finally {
-      setIsAccepting(false);
-    }
-  }, [fetchPairingStatus]);
+      try {
+        const response = await retryWithBackoff(
+          () => apiPost('/api/pairing/accept', { code, token }),
+          {
+            maxRetries: 2,
+            shouldRetry: (error, statusCode) => {
+              if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
+                return false;
+              }
+              return isRetryableError(error, statusCode);
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          const errorInfo = getErrorMessage(data, {
+            statusCode: response.status,
+            endpoint: '/api/pairing/accept',
+          });
+          logError(data, { endpoint: '/api/pairing/accept', operation: 'accept_pairing' });
+          setError(errorInfo.userMessage);
+          return { success: false, error: errorInfo.userMessage, code: data.code };
+        }
+
+        // Refresh status after accepting
+        await fetchPairingStatus();
+
+        return {
+          success: true,
+          message: data.message,
+          sharedRoomId: data.sharedRoomId,
+          partnerId: data.partnerId,
+        };
+      } catch (err) {
+        const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/accept' });
+        logError(err, { endpoint: '/api/pairing/accept', operation: 'accept_pairing' });
+        setError(errorInfo.userMessage);
+        return { success: false, error: errorInfo.userMessage };
+      } finally {
+        setIsAccepting(false);
+      }
+    },
+    [fetchPairingStatus]
+  );
 
   /**
    * Decline a pairing invitation
    * @param {number} pairingId - The pairing session ID
    * @returns {Promise<Object>} Result
    */
-  const declinePairing = React.useCallback(async (pairingId) => {
-    if (!pairingId) {
-      setError('Pairing ID is required');
-      return { success: false, error: 'Pairing ID is required' };
-    }
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await apiPost(`/api/pairing/decline/${pairingId}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/decline' });
-        setError(errorInfo.userMessage);
-        return { success: false, error: errorInfo.userMessage };
+  const declinePairing = React.useCallback(
+    async pairingId => {
+      if (!pairingId) {
+        setError('Pairing ID is required');
+        return { success: false, error: 'Pairing ID is required' };
       }
 
-      // Refresh status after declining
-      await fetchPairingStatus();
+      setIsLoading(true);
+      setError('');
 
-      return { success: true, message: data.message };
-    } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/decline' });
-      setError(errorInfo.userMessage);
-      return { success: false, error: errorInfo.userMessage };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchPairingStatus]);
+      try {
+        const response = await apiPost(`/api/pairing/decline/${pairingId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          const errorInfo = getErrorMessage(data, {
+            statusCode: response.status,
+            endpoint: '/api/pairing/decline',
+          });
+          setError(errorInfo.userMessage);
+          return { success: false, error: errorInfo.userMessage };
+        }
+
+        // Refresh status after declining
+        await fetchPairingStatus();
+
+        return { success: true, message: data.message };
+      } catch (err) {
+        const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/decline' });
+        setError(errorInfo.userMessage);
+        return { success: false, error: errorInfo.userMessage };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchPairingStatus]
+  );
 
   /**
    * Cancel a pending pairing (initiator only)
    * @param {number} pairingId - The pairing session ID
    * @returns {Promise<Object>} Result
    */
-  const cancelPairing = React.useCallback(async (pairingId) => {
-    if (!pairingId) {
-      setError('Pairing ID is required');
-      return { success: false, error: 'Pairing ID is required' };
-    }
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await apiDelete(`/api/pairing/${pairingId}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/cancel' });
-        setError(errorInfo.userMessage);
-        return { success: false, error: errorInfo.userMessage };
+  const cancelPairing = React.useCallback(
+    async pairingId => {
+      if (!pairingId) {
+        setError('Pairing ID is required');
+        return { success: false, error: 'Pairing ID is required' };
       }
 
-      // Refresh status after cancelling
-      await fetchPairingStatus();
+      setIsLoading(true);
+      setError('');
 
-      return { success: true, message: data.message };
-    } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/cancel' });
-      setError(errorInfo.userMessage);
-      return { success: false, error: errorInfo.userMessage };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchPairingStatus]);
+      try {
+        const response = await apiDelete(`/api/pairing/${pairingId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          const errorInfo = getErrorMessage(data, {
+            statusCode: response.status,
+            endpoint: '/api/pairing/cancel',
+          });
+          setError(errorInfo.userMessage);
+          return { success: false, error: errorInfo.userMessage };
+        }
+
+        // Refresh status after cancelling
+        await fetchPairingStatus();
+
+        return { success: true, message: data.message };
+      } catch (err) {
+        const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/cancel' });
+        setError(errorInfo.userMessage);
+        return { success: false, error: errorInfo.userMessage };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchPairingStatus]
+  );
 
   /**
    * Resend a pairing invitation (generates new token/expiration)
    * @param {number} pairingId - The pairing session ID
    * @returns {Promise<Object>} Result with new token and expiresAt
    */
-  const resendPairing = React.useCallback(async (pairingId) => {
-    if (!pairingId) {
-      setError('Pairing ID is required');
-      return { success: false, error: 'Pairing ID is required' };
-    }
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await apiPost(`/api/pairing/resend/${pairingId}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/resend' });
-        setError(errorInfo.userMessage);
-        return { success: false, error: errorInfo.userMessage };
+  const resendPairing = React.useCallback(
+    async pairingId => {
+      if (!pairingId) {
+        setError('Pairing ID is required');
+        return { success: false, error: 'Pairing ID is required' };
       }
 
-      // Refresh status after resending
-      await fetchPairingStatus();
+      setIsLoading(true);
+      setError('');
 
-      return {
-        success: true,
-        message: data.message,
-        token: data.token,
-        expiresAt: data.expiresAt,
-      };
-    } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/resend' });
-      setError(errorInfo.userMessage);
-      return { success: false, error: errorInfo.userMessage };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchPairingStatus]);
+      try {
+        const response = await apiPost(`/api/pairing/resend/${pairingId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          const errorInfo = getErrorMessage(data, {
+            statusCode: response.status,
+            endpoint: '/api/pairing/resend',
+          });
+          setError(errorInfo.userMessage);
+          return { success: false, error: errorInfo.userMessage };
+        }
+
+        // Refresh status after resending
+        await fetchPairingStatus();
+
+        return {
+          success: true,
+          message: data.message,
+          token: data.token,
+          expiresAt: data.expiresAt,
+        };
+      } catch (err) {
+        const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/resend' });
+        setError(errorInfo.userMessage);
+        return { success: false, error: errorInfo.userMessage };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchPairingStatus]
+  );
 
   /**
    * Build an invite URL from a token
    * @param {string} token - The invitation token
    * @returns {string} Full invite URL
    */
-  const buildInviteUrl = React.useCallback((token) => {
+  const buildInviteUrl = React.useCallback(token => {
     const baseUrl = window.location.origin;
     return `${baseUrl}/accept-invite?token=${encodeURIComponent(token)}`;
   }, []);

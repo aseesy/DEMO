@@ -9,6 +9,7 @@
 This document defines all data entities required for the co-parent invitation feature. The design extends existing entities (User, Room) and introduces two new entities (Invitation, InAppNotification) to support the invitation lifecycle.
 
 **Design Principles**:
+
 - Minimal schema changes to existing tables
 - Audit trail for all invitation events (legal compliance)
 - Data integrity enforced via foreign key constraints
@@ -58,6 +59,7 @@ This document defines all data entities required for the co-parent invitation fe
 **Purpose**: Represents a parent using the platform
 
 **Existing Fields** (no changes to schema):
+
 - `id`: SERIAL PRIMARY KEY - Unique user identifier
 - `username`: TEXT UNIQUE NOT NULL - Auto-generated from email
 - `email`: TEXT UNIQUE - User's email address (required for invitation flow)
@@ -70,16 +72,19 @@ This document defines all data entities required for the co-parent invitation fe
 - `last_login`: TIMESTAMP WITH TIME ZONE - Last login timestamp
 
 **New Relationships**:
+
 - **One-to-many with Invitation** (as inviter): User can send multiple invitations
 - **One-to-many with Invitation** (as invitee): User can receive multiple invitations
 - **One-to-many with InAppNotification**: User can have multiple notifications
 
 **Validation Rules**:
+
 - Email must be unique (enforced by UNIQUE constraint)
 - Email must match RFC 5322 format (enforced by application layer)
 - Password (if provided) must be min 8 chars, 1 uppercase, 1 number
 
 **Indexes** (existing):
+
 - PRIMARY KEY on `id`
 - UNIQUE on `username`
 - UNIQUE on `email`
@@ -94,6 +99,7 @@ This document defines all data entities required for the co-parent invitation fe
 **Purpose**: Tracks invitation lifecycle from creation to acceptance/expiration
 
 **Fields**:
+
 - `id`: SERIAL PRIMARY KEY - Unique invitation identifier
 - `inviter_id`: INTEGER NOT NULL - User who sent the invitation (FK → users.id)
 - `invitee_email`: TEXT NOT NULL - Email address of invited person
@@ -106,11 +112,13 @@ This document defines all data entities required for the co-parent invitation fe
 - `accepted_by`: INTEGER - User ID who accepted (FK → users.id, nullable)
 
 **Relationships**:
+
 - **Many-to-one with User** (inviter): `inviter_id` → `users.id`
 - **Many-to-one with User** (accepter): `accepted_by` → `users.id`
 - **Many-to-one with Room**: `room_id` → `rooms.id`
 
 **Validation Rules**:
+
 - `invitee_email` must be valid email format (RFC 5322)
 - `token_hash` must be 64 characters (SHA-256 hex output)
 - `status` must be one of: 'pending', 'accepted', 'expired', 'cancelled'
@@ -119,6 +127,7 @@ This document defines all data entities required for the co-parent invitation fe
 - `accepted_at` cannot be set if `status != 'accepted'`
 
 **State Transitions**:
+
 ```
 pending → accepted (when invitee accepts invitation)
 pending → expired (when expires_at < NOW())
@@ -126,6 +135,7 @@ pending → cancelled (when inviter cancels invitation - future feature)
 ```
 
 **Indexes**:
+
 ```sql
 CREATE INDEX idx_invitations_token_hash ON invitations(token_hash);
 CREATE INDEX idx_invitations_invitee_email ON invitations(invitee_email);
@@ -133,11 +143,13 @@ CREATE INDEX idx_invitations_status_expires ON invitations(status, expires_at);
 ```
 
 **Index Rationale**:
+
 - `token_hash`: Fast token validation lookup (every invitation link click)
 - `invitee_email`: Check if user already has pending invitation before sending new one
 - `status, expires_at`: Fast cleanup of expired invitations (daily cron job)
 
 **Lifecycle Example**:
+
 ```sql
 -- Creation (status = 'pending')
 INSERT INTO invitations (inviter_id, invitee_email, token_hash, room_id, expires_at)
@@ -164,6 +176,7 @@ AND expires_at < NOW();
 ```
 
 **Audit Trail**:
+
 - All invitations persist in database (never deleted)
 - `created_at`, `accepted_at`, `expires_at` provide complete timeline
 - Supports legal compliance (GDPR Article 30 - audit logs)
@@ -175,6 +188,7 @@ AND expires_at < NOW();
 **Purpose**: In-app notifications for existing users (invitation received, accepted, etc.)
 
 **Fields**:
+
 - `id`: SERIAL PRIMARY KEY - Unique notification identifier
 - `user_id`: INTEGER NOT NULL - User who receives the notification (FK → users.id)
 - `type`: TEXT NOT NULL - Notification type (for frontend rendering)
@@ -185,9 +199,11 @@ AND expires_at < NOW();
 - `read_at`: TIMESTAMP WITH TIME ZONE - When notification was marked as read (nullable)
 
 **Relationships**:
+
 - **Many-to-one with User**: `user_id` → `users.id`
 
 **Validation Rules**:
+
 - `type` must be one of predefined types (enforced by application layer):
   - `invitation_received`: Co-parent sent invitation
   - `invitation_accepted`: Co-parent accepted your invitation
@@ -200,17 +216,20 @@ AND expires_at < NOW();
 - `read_at` cannot be set if `is_read = FALSE`
 
 **State Transitions**:
+
 ```
 unread (is_read=FALSE, read_at=NULL) → read (is_read=TRUE, read_at=NOW())
 ```
 
 **Indexes**:
+
 ```sql
 CREATE INDEX idx_notifications_user_unread ON in_app_notifications(user_id, is_read);
 CREATE INDEX idx_notifications_created ON in_app_notifications(created_at DESC);
 ```
 
 **Index Rationale**:
+
 - `user_id, is_read`: Fast query for unread notifications (most common query: "show me my unread notifications")
 - `created_at DESC`: Chronological ordering for notification feed
 
@@ -245,6 +264,7 @@ CREATE INDEX idx_notifications_created ON in_app_notifications(created_at DESC);
 ```
 
 **Lifecycle Example**:
+
 ```sql
 -- Creation (unread notification)
 INSERT INTO in_app_notifications (user_id, type, message, data, is_read)
@@ -268,6 +288,7 @@ AND read_at < NOW() - INTERVAL '30 days';
 ```
 
 **Real-Time Delivery**:
+
 - On notification creation → emit Socket.io event to user
 - User offline → notification persists in database for later retrieval
 - User logs in → frontend fetches unread notifications via GET /api/notifications
@@ -279,6 +300,7 @@ AND read_at < NOW() - INTERVAL '30 days';
 **Purpose**: Private communication space shared between co-parents
 
 **Existing Fields** (no schema changes):
+
 - `id`: TEXT PRIMARY KEY - Unique room identifier (e.g., "room_1234567890_abc123")
 - `name`: TEXT NOT NULL - Room name (e.g., "John's Co-Parenting Room")
 - `created_by`: INTEGER NOT NULL - User who created the room (FK → users.id)
@@ -286,20 +308,24 @@ AND read_at < NOW() - INTERVAL '30 days';
 - `created_at`: TIMESTAMP WITH TIME ZONE - Room creation date
 
 **Relationships**:
+
 - **One-to-many with RoomMember**: Room has multiple members
 - **One-to-many with Invitation**: Room can have multiple pending invitations
 
 **Validation Rules** (existing):
+
 - `name` must be non-empty (max 100 characters)
 - `is_private` must be 1 for co-parent rooms (enforced by application)
 
 **Indexes** (existing):
+
 - PRIMARY KEY on `id`
 - Foreign key on `created_by` → `users.id`
 
 **State Transitions**: N/A (room state is implicit from membership)
 
 **Invitation Flow Integration**:
+
 - User 1 signs up → `createPrivateRoom(userId, username)` creates room
 - User 1 invites User 2 → invitation references room.id
 - User 2 accepts → User 2 added to room_members (room now has 2 members)
@@ -311,6 +337,7 @@ AND read_at < NOW() - INTERVAL '30 days';
 **Purpose**: Links users to rooms they are members of
 
 **Existing Fields** (no schema changes):
+
 - `id`: SERIAL PRIMARY KEY - Unique membership identifier
 - `room_id`: TEXT NOT NULL - Room identifier (FK → rooms.id)
 - `user_id`: INTEGER NOT NULL - User identifier (FK → users.id)
@@ -318,14 +345,17 @@ AND read_at < NOW() - INTERVAL '30 days';
 - `joined_at`: TIMESTAMP WITH TIME ZONE - When user joined the room
 
 **Relationships**:
+
 - **Many-to-one with Room**: `room_id` → `rooms.id`
 - **Many-to-one with User**: `user_id` → `users.id`
 
 **Validation Rules** (existing):
+
 - `role` must be 'owner' or 'member'
 - UNIQUE constraint on `(room_id, user_id)` - user cannot be in same room twice
 
 **Indexes** (existing):
+
 ```sql
 CREATE INDEX idx_room_members_room ON room_members(room_id);
 CREATE INDEX idx_room_members_user ON room_members(user_id);
@@ -334,6 +364,7 @@ CREATE INDEX idx_room_members_user ON room_members(user_id);
 **State Transitions**: N/A (membership is binary: exists or doesn't)
 
 **Invitation Flow Integration**:
+
 ```sql
 -- After invitation acceptance, add co-parent to room
 INSERT INTO room_members (room_id, user_id, role, joined_at)
@@ -345,6 +376,7 @@ SELECT * FROM room_members WHERE room_id = 'room_123';
 ```
 
 **Co-Parent Equality**:
+
 - Both co-parents have `role='member'` (no owner/admin distinction for accepted invitations)
 - Ensures neutral platform stance (Constitutional Principle XVII)
 - Both have equal read/write permissions in room
@@ -441,6 +473,7 @@ COMMENT ON COLUMN in_app_notifications.data IS 'JSONB structured data for notifi
 ```
 
 **Rollback Script**:
+
 ```sql
 -- Down migration - rollback
 DROP INDEX IF EXISTS idx_notifications_created;
@@ -460,6 +493,7 @@ DROP TABLE IF EXISTS invitations CASCADE;
 ### Foreign Key Cascade Rules
 
 **ON DELETE CASCADE**:
+
 - `invitations.inviter_id` → `users.id`: If inviter deleted, delete their invitations
 - `invitations.room_id` → `rooms.id`: If room deleted, delete invitations for it
 - `in_app_notifications.user_id` → `users.id`: If user deleted, delete their notifications
@@ -467,9 +501,11 @@ DROP TABLE IF EXISTS invitations CASCADE;
 - `room_members.room_id` → `rooms.id`: If room deleted, remove all memberships
 
 **ON DELETE SET NULL**:
+
 - `invitations.accepted_by` → `users.id`: If accepting user deleted, keep invitation for audit trail (accepted_by becomes NULL)
 
 **Rationale**:
+
 - CASCADE ensures no orphaned records
 - SET NULL preserves audit trail for accepted invitations even if user later deleted
 
@@ -491,6 +527,7 @@ DROP TABLE IF EXISTS invitations CASCADE;
 ### Common Queries
 
 **1. Validate invitation token**:
+
 ```sql
 SELECT * FROM invitations
 WHERE token_hash = $1
@@ -498,18 +535,22 @@ AND status = 'pending'
 AND expires_at > NOW()
 LIMIT 1;
 ```
-*Performance*: Indexed on `token_hash` → <10ms
+
+_Performance_: Indexed on `token_hash` → <10ms
 
 **2. Get user's unread notifications**:
+
 ```sql
 SELECT * FROM in_app_notifications
 WHERE user_id = $1
 AND is_read = FALSE
 ORDER BY created_at DESC;
 ```
-*Performance*: Indexed on `(user_id, is_read)` → <50ms
+
+_Performance_: Indexed on `(user_id, is_read)` → <50ms
 
 **3. Check if email already has pending invitation**:
+
 ```sql
 SELECT * FROM invitations
 WHERE invitee_email = $1
@@ -517,45 +558,52 @@ AND status = 'pending'
 AND expires_at > NOW()
 LIMIT 1;
 ```
-*Performance*: Indexed on `invitee_email` → <20ms
+
+_Performance_: Indexed on `invitee_email` → <20ms
 
 **4. Get room members**:
+
 ```sql
 SELECT u.id, u.username, u.email, rm.role, rm.joined_at
 FROM users u
 INNER JOIN room_members rm ON u.id = rm.user_id
 WHERE rm.room_id = $1;
 ```
-*Performance*: Indexed on `room_id` → <30ms
+
+_Performance_: Indexed on `room_id` → <30ms
 
 **5. Cleanup expired invitations (cron job)**:
+
 ```sql
 UPDATE invitations
 SET status = 'expired'
 WHERE status = 'pending'
 AND expires_at < NOW();
 ```
-*Performance*: Indexed on `(status, expires_at)` → <100ms for batch update
+
+_Performance_: Indexed on `(status, expires_at)` → <100ms for batch update
 
 ---
 
 ## Data Volume Estimates
 
 **Assumptions**:
+
 - 1,000 users in first 3 months
 - 70% invitation acceptance rate
 - Average 1.2 invitations sent per user (some retries/typos)
 
 **Storage Estimates**:
 
-| Table | Rows | Size per Row | Total Size |
-|-------|------|--------------|------------|
-| invitations | 1,200 | ~200 bytes | ~240 KB |
-| in_app_notifications | 2,000 | ~150 bytes | ~300 KB |
-| room_members (new) | 1,400 | ~100 bytes | ~140 KB |
-| **Total (new data)** | | | **~680 KB** |
+| Table                | Rows  | Size per Row | Total Size  |
+| -------------------- | ----- | ------------ | ----------- |
+| invitations          | 1,200 | ~200 bytes   | ~240 KB     |
+| in_app_notifications | 2,000 | ~150 bytes   | ~300 KB     |
+| room_members (new)   | 1,400 | ~100 bytes   | ~140 KB     |
+| **Total (new data)** |       |              | **~680 KB** |
 
 **Scaling Considerations**:
+
 - At 10,000 users: ~6.8 MB (negligible)
 - At 100,000 users: ~68 MB (still trivial)
 - PostgreSQL can handle billions of rows efficiently

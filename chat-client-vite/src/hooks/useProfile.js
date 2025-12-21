@@ -207,15 +207,15 @@ export function useProfile(username) {
   const updateField = (fieldName, value) => {
     setProfileData(prev => ({
       ...prev,
-      [fieldName]: value
+      [fieldName]: value,
     }));
   };
 
   // Update multiple fields at once
-  const updateFields = (updates) => {
+  const updateFields = updates => {
     setProfileData(prev => ({
       ...prev,
-      ...updates
+      ...updates,
     }));
   };
 
@@ -245,7 +245,7 @@ export function useProfile(username) {
       console.log('DEBUG saveProfile - sending request body:', requestBody);
       console.log('DEBUG saveProfile - request body keys:', Object.keys(requestBody));
 
-const response = await apiPut('/api/profile/me', requestBody);
+      const response = await apiPut('/api/profile/me', requestBody);
       console.log('DEBUG saveProfile - response status:', response.status);
       const data = await response.json();
       console.log('DEBUG saveProfile - response data:', data);
@@ -254,14 +254,14 @@ const response = await apiPut('/api/profile/me', requestBody);
         if (data.username && data.username !== username) {
           const updatedUsername = data.username;
           localStorage.setItem('username', updatedUsername);
-          setProfileData((prev) => ({ ...prev, username: updatedUsername }));
+          setProfileData(prev => ({ ...prev, username: updatedUsername }));
         }
 
         // Update completion percentage from response
         if (data.completionPercentage !== undefined) {
-          setProfileData((prev) => ({
+          setProfileData(prev => ({
             ...prev,
-            profile_completion_percentage: data.completionPercentage
+            profile_completion_percentage: data.completionPercentage,
           }));
         }
 
@@ -286,7 +286,8 @@ const response = await apiPut('/api/profile/me', requestBody);
     } catch (err) {
       console.error('Error saving profile - full error:', err);
       console.error('Error saving profile - stack:', err.stack);
-      const errorMessage = err.message || 'Failed to save profile. Please check your connection and try again.';
+      const errorMessage =
+        err.message || 'Failed to save profile. Please check your connection and try again.';
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -295,7 +296,7 @@ const response = await apiPut('/api/profile/me', requestBody);
   };
 
   // Save specific section only
-  const saveSection = async (sectionFields) => {
+  const saveSection = async sectionFields => {
     if (!username) return;
     setIsSavingProfile(true);
     setError('');
@@ -316,9 +317,9 @@ const response = await apiPut('/api/profile/me', requestBody);
 
       if (response.ok) {
         if (data.completionPercentage !== undefined) {
-          setProfileData((prev) => ({
+          setProfileData(prev => ({
             ...prev,
-            profile_completion_percentage: data.completionPercentage
+            profile_completion_percentage: data.completionPercentage,
           }));
         }
         return { success: true, completionPercentage: data.completionPercentage };
@@ -357,26 +358,29 @@ const response = await apiPut('/api/profile/me', requestBody);
   }, [username]);
 
   // Update privacy settings
-  const updatePrivacySettings = React.useCallback(async (newSettings) => {
-    if (!username) return { success: false, error: 'Username required' };
-    try {
-      // Try the profile route first, fallback to user route
-      let response = await apiPut('/api/profile/privacy/me', newSettings);
-      if (!response.ok) {
-        response = await apiPut('/api/user/profile/privacy', newSettings);
+  const updatePrivacySettings = React.useCallback(
+    async newSettings => {
+      if (!username) return { success: false, error: 'Username required' };
+      try {
+        // Try the profile route first, fallback to user route
+        let response = await apiPut('/api/profile/privacy/me', newSettings);
+        if (!response.ok) {
+          response = await apiPut('/api/user/profile/privacy', newSettings);
+        }
+        if (response.ok) {
+          setPrivacySettings(prev => ({ ...prev, ...newSettings }));
+          return { success: true };
+        } else {
+          const data = await response.json();
+          return { success: false, error: data.error };
+        }
+      } catch (err) {
+        console.error('Error updating privacy settings:', err);
+        return { success: false, error: err.message };
       }
-      if (response.ok) {
-        setPrivacySettings(prev => ({ ...prev, ...newSettings }));
-        return { success: true };
-      } else {
-        const data = await response.json();
-        return { success: false, error: data.error };
-      }
-    } catch (err) {
-      console.error('Error updating privacy settings:', err);
-      return { success: false, error: err.message };
-    }
-  }, [username]);
+    },
+    [username]
+  );
 
   // Get profile completion status
   const getCompletionStatus = async () => {
@@ -450,11 +454,61 @@ const response = await apiPut('/api/profile/me', requestBody);
   // Calculate local completion percentage (for real-time feedback)
   const calculateLocalCompletion = React.useMemo(() => {
     const sections = {
-      personal: ['first_name', 'last_name', 'preferred_name', 'pronouns', 'birthdate', 'language', 'timezone', 'phone', 'city', 'state', 'zip'],
-      work: ['employment_status', 'occupation', 'employer', 'work_schedule', 'schedule_flexibility', 'commute_time', 'travel_required'],
-      health: ['health_physical_conditions', 'health_physical_limitations', 'health_mental_conditions', 'health_mental_treatment', 'health_mental_history', 'health_substance_history', 'health_in_recovery', 'health_recovery_duration'],
-      financial: ['finance_income_level', 'finance_income_stability', 'finance_employment_benefits', 'finance_housing_status', 'finance_housing_type', 'finance_vehicles', 'finance_debt_stress', 'finance_support_paying', 'finance_support_receiving'],
-      background: ['background_birthplace', 'background_raised', 'background_family_origin', 'background_culture', 'background_religion', 'background_military', 'background_military_branch', 'background_military_status', 'education_level', 'education_field']
+      personal: [
+        'first_name',
+        'last_name',
+        'preferred_name',
+        'pronouns',
+        'birthdate',
+        'language',
+        'timezone',
+        'phone',
+        'city',
+        'state',
+        'zip',
+      ],
+      work: [
+        'employment_status',
+        'occupation',
+        'employer',
+        'work_schedule',
+        'schedule_flexibility',
+        'commute_time',
+        'travel_required',
+      ],
+      health: [
+        'health_physical_conditions',
+        'health_physical_limitations',
+        'health_mental_conditions',
+        'health_mental_treatment',
+        'health_mental_history',
+        'health_substance_history',
+        'health_in_recovery',
+        'health_recovery_duration',
+      ],
+      financial: [
+        'finance_income_level',
+        'finance_income_stability',
+        'finance_employment_benefits',
+        'finance_housing_status',
+        'finance_housing_type',
+        'finance_vehicles',
+        'finance_debt_stress',
+        'finance_support_paying',
+        'finance_support_receiving',
+      ],
+      background: [
+        'background_birthplace',
+        'background_raised',
+        'background_family_origin',
+        'background_culture',
+        'background_religion',
+        'background_military',
+        'background_military_branch',
+        'background_military_status',
+        'education_level',
+        'education_field',
+      ],
     };
 
     let totalScore = 0;

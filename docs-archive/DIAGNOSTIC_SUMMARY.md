@@ -10,24 +10,27 @@ Based on code analysis, here are the probable causes of your deployment issues:
 
 ### 1. PostgreSQL Connection Blocking Startup ⚠️ CRITICAL
 
-**Problem:** 
+**Problem:**
+
 - `dbPostgres.js` creates PostgreSQL connection pool immediately when module loads
 - If `DATABASE_URL` is set but PostgreSQL isn't ready, server hangs during startup
 - Railway sends SIGTERM when health check times out (300ms is too short)
 
 **Evidence:**
+
 - You mentioned login issues started after adding PostgreSQL
 - SIGTERM errors in Railway logs
 - Server failing to start
 
 **Solution:**
+
 1. **Option A (Quick Fix):** Remove `DATABASE_URL` from Railway variables temporarily
    - Go to Railway Dashboard → Variables
-   - Delete `DATABASE_URL` 
+   - Delete `DATABASE_URL`
    - Server will use SQLite instead
    - Redeploy
 
-2. **Option B (Fix PostgreSQL):** 
+2. **Option B (Fix PostgreSQL):**
    - Verify `DATABASE_URL` is correct
    - Ensure PostgreSQL service is running
    - Increase health check timeout to 1000ms
@@ -37,6 +40,7 @@ Based on code analysis, here are the probable causes of your deployment issues:
 #### Railway Variables (Check in Railway Dashboard → Variables):
 
 **Required:**
+
 - ✅ `NODE_ENV=production`
 - ✅ `FRONTEND_URL=https://www.coparentliaizen.com,https://coparentliaizen.com,https://*.vercel.app`
   - **CRITICAL:** No spaces after commas!
@@ -46,15 +50,18 @@ Based on code analysis, here are the probable causes of your deployment issues:
   - Generate with: `openssl rand -base64 32`
 
 **PostgreSQL (if using):**
+
 - ⚠️ `DATABASE_URL=<postgres-connection-string>`
   - If causing issues, remove it to use SQLite
 
 **Optional:**
+
 - `PORT=3001` (Railway sets automatically)
 
 #### Vercel Variables (Check in Vercel Dashboard → Environment Variables):
 
 **Required:**
+
 - ✅ `VITE_API_URL=https://demo-production-6dcd.up.railway.app`
   - Must be set for: Production, Preview, Development
   - No trailing slash
@@ -67,6 +74,7 @@ Based on code analysis, here are the probable causes of your deployment issues:
 **Problem:** If PostgreSQL is connecting, 300ms is too short
 
 **Solution:** Update `railway.toml`:
+
 ```toml
 healthcheckTimeout = 1000  # 1 second
 ```
@@ -74,11 +82,13 @@ healthcheckTimeout = 1000  # 1 second
 ### 4. CORS Configuration
 
 **Check:** `FRONTEND_URL` must be exactly:
+
 ```
 https://www.coparentliaizen.com,https://coparentliaizen.com,https://*.vercel.app
 ```
 
 **Common mistakes:**
+
 - Spaces after commas
 - Missing `https://`
 - Missing `*.vercel.app` wildcard
@@ -86,6 +96,7 @@ https://www.coparentliaizen.com,https://coparentliaizen.com,https://*.vercel.app
 ## 🔧 Immediate Action Items
 
 ### Step 1: Check Railway Variables
+
 1. Go to Railway Dashboard: https://railway.app/dashboard
 2. Click your service → **Variables** tab
 3. Verify these are set:
@@ -95,6 +106,7 @@ https://www.coparentliaizen.com,https://coparentliaizen.com,https://*.vercel.app
    - `DATABASE_URL` (if present, check if it's causing issues)
 
 ### Step 2: Check Vercel Variables
+
 1. Go to Vercel Dashboard: https://vercel.com/dashboard
 2. Click your project → **Settings** → **Environment Variables**
 3. Verify:
@@ -102,7 +114,9 @@ https://www.coparentliaizen.com,https://coparentliaizen.com,https://*.vercel.app
    - Set for: Production, Preview, Development
 
 ### Step 3: Test Backend
+
 Run in terminal:
+
 ```bash
 curl https://demo-production-6dcd.up.railway.app/health
 ```
@@ -110,16 +124,19 @@ curl https://demo-production-6dcd.up.railway.app/health
 Should return: `{"status":"ok",...}`
 
 If not responding:
+
 - Check Railway logs: `railway logs`
 - Look for PostgreSQL connection errors
 - Check if server is starting
 
 ### Step 4: Check Railway Logs
+
 ```bash
 railway logs
 ```
 
 Look for:
+
 - ❌ `PostgreSQL pool error`
 - ❌ `Migration failed`
 - ❌ `Failed to start server`
@@ -148,6 +165,7 @@ Look for:
 ## 📊 Configuration Checklist
 
 ### Railway Configuration
+
 - [ ] Root Directory: `chat-server`
 - [ ] Start Command: `cd chat-server && node server.js`
 - [ ] Health Check Path: `/health`
@@ -158,6 +176,7 @@ Look for:
 - [ ] `DATABASE_URL` (only if PostgreSQL is working)
 
 ### Vercel Configuration
+
 - [ ] Root Directory: `chat-client-vite`
 - [ ] Framework: Vite
 - [ ] Build Command: `npm run build`
@@ -167,11 +186,13 @@ Look for:
 ## 🆘 If Still Having Issues
 
 1. **Check Railway logs for specific errors:**
+
    ```bash
    railway logs
    ```
 
 2. **Test backend manually:**
+
    ```bash
    curl https://demo-production-6dcd.up.railway.app/health
    ```
@@ -197,7 +218,7 @@ railway --version
 railway variables
 railway logs
 
-# Check Vercel CLI  
+# Check Vercel CLI
 vercel --version
 cd chat-client-vite && vercel env ls
 
@@ -211,6 +232,3 @@ curl -I https://www.coparentliaizen.com
 ---
 
 **Next Steps:** Check the variables in your Railway and Vercel dashboards using the checklist above.
-
-
-

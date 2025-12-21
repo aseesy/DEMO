@@ -52,7 +52,6 @@
      - **Type**: `A`
      - **Value**: (IP address from Vercel)
      - **TTL**: `3600` (or default)
-   
    - **CNAME Record** (www subdomain):
      - **Name**: `www`
      - **Type**: `CNAME`
@@ -83,6 +82,7 @@
      ```
 
 2. **Commit and Push**:
+
    ```bash
    git add chat-client/config.js
    git commit -m "Update Railway domain in config"
@@ -107,16 +107,19 @@
 ## ✅ Final Configuration
 
 ### Frontend (Vercel)
+
 - **Domain**: `coparentliaizen.com` (users visit this)
 - **SSL**: Automatic (Vercel provides)
 - **DNS**: Points to Vercel via Hostinger
 
 ### Backend (Railway)
+
 - **Domain**: `your-app.up.railway.app` (Railway-provided)
 - **SSL**: Automatic (Railway provides)
 - **No custom domain needed** - Railway domain works perfectly
 
 ### Connection Flow
+
 1. User visits: `https://coparentliaizen.com` (Vercel)
 2. Frontend loads from Vercel
 3. Frontend connects to: `https://your-app.up.railway.app` (Railway backend)

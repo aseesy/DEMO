@@ -11,17 +11,15 @@ export function WelcomeModal({ editingTask, onClose, onComplete }) {
       title={editingTask.title}
       size="large"
       footer={
-        <Button
-          variant="secondary"
-          onClick={onComplete}
-        >
+        <Button variant="secondary" onClick={onComplete}>
           OK
         </Button>
       }
     >
       <div className="prose prose-slate max-w-none">
         <p className="text-base text-gray-900 whitespace-pre-wrap leading-relaxed mb-4">
-          {editingTask.description || 'Welcome to LiaiZen! We\'re here to help make co-parenting easier.'}
+          {editingTask.description ||
+            "Welcome to LiaiZen! We're here to help make co-parenting easier."}
         </p>
       </div>
     </Modal>

@@ -26,11 +26,13 @@
 After adding the environment variable, you need to trigger a new deployment:
 
 **Option A: Redeploy from Vercel**
+
 1. Go to **Deployments** tab
 2. Click the three dots (...) on the latest deployment
 3. Click **Redeploy**
 
 **Option B: Push a small change**
+
 ```bash
 git commit --allow-empty -m "chore: trigger Vercel redeploy"
 git push origin main
@@ -46,9 +48,11 @@ git push origin main
 ## Environment Variables Reference
 
 ### Frontend (Vercel)
+
 - `VITE_API_URL` - Backend API URL (Railway)
 
 ### Backend (Railway)
+
 - `PORT` - Server port (Railway sets automatically)
 - `FRONTEND_URL` - Allowed CORS origins (should include `https://www.coparentliaizen.com,https://coparentliaizen.com`)
 - `OPENAI_API_KEY` - OpenAI API key for AI mediator
@@ -59,14 +63,17 @@ git push origin main
 ## Troubleshooting
 
 ### "Unable to connect to server"
+
 - ✅ Check Railway backend is running (green status)
 - ✅ Verify `VITE_API_URL` is set in Vercel
 - ✅ Ensure CORS allows your domain in Railway env vars
 
 ### Mixed Content Error (HTTP/HTTPS)
+
 - ✅ Make sure Railway URL uses `https://` (not `http://`)
 - ✅ Railway should automatically provide HTTPS
 
 ### CORS Errors
+
 - ✅ Update Railway `FRONTEND_URL` to include your Vercel domain
 - ✅ Format: `https://www.coparentliaizen.com,https://coparentliaizen.com`

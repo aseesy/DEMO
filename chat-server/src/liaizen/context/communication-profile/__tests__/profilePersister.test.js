@@ -22,9 +22,13 @@ describe('Profile Persister', () => {
     it('should update profile with communication_patterns', async () => {
       const db = createMockDb([{ user_id: 'alex' }]);
 
-      await profilePersister.updateProfile('alex', {
-        communication_patterns: { tone_tendencies: ['assertive'] },
-      }, db);
+      await profilePersister.updateProfile(
+        'alex',
+        {
+          communication_patterns: { tone_tendencies: ['assertive'] },
+        },
+        db
+      );
 
       expect(db.query).toHaveBeenCalled();
       const callArgs = db.query.mock.calls[0];
@@ -34,9 +38,13 @@ describe('Profile Persister', () => {
     it('should update profile with triggers', async () => {
       const db = createMockDb([{ user_id: 'alex' }]);
 
-      await profilePersister.updateProfile('alex', {
-        triggers: { topics: ['schedule'] },
-      }, db);
+      await profilePersister.updateProfile(
+        'alex',
+        {
+          triggers: { topics: ['schedule'] },
+        },
+        db
+      );
 
       expect(db.query).toHaveBeenCalled();
       const callArgs = db.query.mock.calls[0];
@@ -46,9 +54,13 @@ describe('Profile Persister', () => {
     it('should normalize user ID to lowercase', async () => {
       const db = createMockDb([{ user_id: 'alex' }]);
 
-      await profilePersister.updateProfile('ALEX', {
-        communication_patterns: {},
-      }, db);
+      await profilePersister.updateProfile(
+        'ALEX',
+        {
+          communication_patterns: {},
+        },
+        db
+      );
 
       const callArgs = db.query.mock.calls[0];
       expect(callArgs[1][0]).toBe('alex');
@@ -76,9 +88,13 @@ describe('Profile Persister', () => {
     it('should always update last_profile_update timestamp', async () => {
       const db = createMockDb([{ user_id: 'alex' }]);
 
-      await profilePersister.updateProfile('alex', {
-        communication_patterns: {},
-      }, db);
+      await profilePersister.updateProfile(
+        'alex',
+        {
+          communication_patterns: {},
+        },
+        db
+      );
 
       const callArgs = db.query.mock.calls[0];
       expect(callArgs[0]).toContain('last_profile_update');
@@ -87,9 +103,13 @@ describe('Profile Persister', () => {
     it('should increment profile_version', async () => {
       const db = createMockDb([{ user_id: 'alex' }]);
 
-      await profilePersister.updateProfile('alex', {
-        communication_patterns: {},
-      }, db);
+      await profilePersister.updateProfile(
+        'alex',
+        {
+          communication_patterns: {},
+        },
+        db
+      );
 
       const callArgs = db.query.mock.calls[0];
       expect(callArgs[0]).toContain('profile_version = COALESCE(profile_version, 0) + 1');
@@ -114,11 +134,15 @@ describe('Profile Persister', () => {
       // Second query is the upsert
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const result = await profilePersister.recordIntervention('alex', {
-        type: 'suggestion',
-        escalation_level: 'low',
-        original_message: 'Test message',
-      }, db);
+      const result = await profilePersister.recordIntervention(
+        'alex',
+        {
+          type: 'suggestion',
+          escalation_level: 'low',
+          original_message: 'Test message',
+        },
+        db
+      );
 
       expect(result.total_interventions).toBe(1);
     });
@@ -132,13 +156,20 @@ describe('Profile Persister', () => {
 
       const db = createMockDb([{ intervention_history: existingHistory }]);
       // First query returns existing history
-      db.query.mockResolvedValueOnce({ rows: [{ intervention_history: existingHistory }], rowCount: 1 });
+      db.query.mockResolvedValueOnce({
+        rows: [{ intervention_history: existingHistory }],
+        rowCount: 1,
+      });
       // Second query is the upsert
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const result = await profilePersister.recordIntervention('alex', {
-        type: 'suggestion',
-      }, db);
+      const result = await profilePersister.recordIntervention(
+        'alex',
+        {
+          type: 'suggestion',
+        },
+        db
+      );
 
       expect(result.total_interventions).toBe(6);
     });
@@ -148,11 +179,15 @@ describe('Profile Persister', () => {
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const result = await profilePersister.recordIntervention('alex', {
-        type: 'rewrite',
-        escalation_level: 'medium',
-        original_message: 'Test message preview here',
-      }, db);
+      const result = await profilePersister.recordIntervention(
+        'alex',
+        {
+          type: 'rewrite',
+          escalation_level: 'medium',
+          original_message: 'Test message preview here',
+        },
+        db
+      );
 
       expect(result.recent_interventions).toHaveLength(1);
       expect(result.recent_interventions[0].type).toBe('rewrite');
@@ -166,12 +201,19 @@ describe('Profile Persister', () => {
       };
 
       const db = createMockDb([{ intervention_history: existingHistory }]);
-      db.query.mockResolvedValueOnce({ rows: [{ intervention_history: existingHistory }], rowCount: 1 });
+      db.query.mockResolvedValueOnce({
+        rows: [{ intervention_history: existingHistory }],
+        rowCount: 1,
+      });
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const result = await profilePersister.recordIntervention('alex', {
-        type: 'new',
-      }, db);
+      const result = await profilePersister.recordIntervention(
+        'alex',
+        {
+          type: 'new',
+        },
+        db
+      );
 
       expect(result.recent_interventions).toHaveLength(20);
       expect(result.recent_interventions[0].type).toBe('new');
@@ -190,9 +232,9 @@ describe('Profile Persister', () => {
     it('should throw error for missing userId', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        profilePersister.recordIntervention(null, {}, db)
-      ).rejects.toThrow('userId is required');
+      await expect(profilePersister.recordIntervention(null, {}, db)).rejects.toThrow(
+        'userId is required'
+      );
     });
 
     it('should handle JSON string history', async () => {
@@ -202,7 +244,10 @@ describe('Profile Persister', () => {
       });
 
       const db = createMockDb([{ intervention_history: historyJson }]);
-      db.query.mockResolvedValueOnce({ rows: [{ intervention_history: historyJson }], rowCount: 1 });
+      db.query.mockResolvedValueOnce({
+        rows: [{ intervention_history: historyJson }],
+        rowCount: 1,
+      });
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
       const result = await profilePersister.recordIntervention('alex', {}, db);
@@ -217,11 +262,15 @@ describe('Profile Persister', () => {
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const result = await profilePersister.recordAcceptedRewrite('alex', {
-        original: 'You never listen',
-        rewrite: 'I feel unheard when...',
-        tip: 'Use I-statements',
-      }, db);
+      const result = await profilePersister.recordAcceptedRewrite(
+        'alex',
+        {
+          original: 'You never listen',
+          rewrite: 'I feel unheard when...',
+          tip: 'Use I-statements',
+        },
+        db
+      );
 
       expect(result.successful_rewrites).toHaveLength(1);
       expect(result.successful_rewrites[0].original).toBe('You never listen');
@@ -236,13 +285,20 @@ describe('Profile Persister', () => {
       };
 
       const db = createMockDb([]);
-      db.query.mockResolvedValueOnce({ rows: [{ intervention_history: existingHistory, successful_rewrites: [] }], rowCount: 1 });
+      db.query.mockResolvedValueOnce({
+        rows: [{ intervention_history: existingHistory, successful_rewrites: [] }],
+        rowCount: 1,
+      });
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const result = await profilePersister.recordAcceptedRewrite('alex', {
-        original: 'test',
-        rewrite: 'test',
-      }, db);
+      const result = await profilePersister.recordAcceptedRewrite(
+        'alex',
+        {
+          original: 'test',
+          rewrite: 'test',
+        },
+        db
+      );
 
       expect(result.intervention_history.accepted_count).toBe(3);
     });
@@ -255,13 +311,20 @@ describe('Profile Persister', () => {
       };
 
       const db = createMockDb([]);
-      db.query.mockResolvedValueOnce({ rows: [{ intervention_history: existingHistory, successful_rewrites: [] }], rowCount: 1 });
+      db.query.mockResolvedValueOnce({
+        rows: [{ intervention_history: existingHistory, successful_rewrites: [] }],
+        rowCount: 1,
+      });
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const result = await profilePersister.recordAcceptedRewrite('alex', {
-        original: 'test',
-        rewrite: 'test',
-      }, db);
+      const result = await profilePersister.recordAcceptedRewrite(
+        'alex',
+        {
+          original: 'test',
+          rewrite: 'test',
+        },
+        db
+      );
 
       expect(result.intervention_history.acceptance_rate).toBe(0.5); // 5/10
     });
@@ -270,13 +333,25 @@ describe('Profile Persister', () => {
       const existingRewrites = Array(50).fill({ original: 'old' });
 
       const db = createMockDb([]);
-      db.query.mockResolvedValueOnce({ rows: [{ successful_rewrites: existingRewrites, intervention_history: { total_interventions: 1 } }], rowCount: 1 });
+      db.query.mockResolvedValueOnce({
+        rows: [
+          {
+            successful_rewrites: existingRewrites,
+            intervention_history: { total_interventions: 1 },
+          },
+        ],
+        rowCount: 1,
+      });
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const result = await profilePersister.recordAcceptedRewrite('alex', {
-        original: 'new',
-        rewrite: 'new rewrite',
-      }, db);
+      const result = await profilePersister.recordAcceptedRewrite(
+        'alex',
+        {
+          original: 'new',
+          rewrite: 'new rewrite',
+        },
+        db
+      );
 
       expect(result.successful_rewrites).toHaveLength(50);
       expect(result.successful_rewrites[0].original).toBe('new');
@@ -287,10 +362,14 @@ describe('Profile Persister', () => {
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const result = await profilePersister.recordAcceptedRewrite('alex', {
-        original: 'test',
-        rewrite: 'test',
-      }, db);
+      const result = await profilePersister.recordAcceptedRewrite(
+        'alex',
+        {
+          original: 'test',
+          rewrite: 'test',
+        },
+        db
+      );
 
       expect(result.successful_rewrites[0].accepted_at).toBeDefined();
     });
@@ -298,9 +377,9 @@ describe('Profile Persister', () => {
     it('should throw error for missing userId', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        profilePersister.recordAcceptedRewrite(null, {}, db)
-      ).rejects.toThrow('userId is required');
+      await expect(profilePersister.recordAcceptedRewrite(null, {}, db)).rejects.toThrow(
+        'userId is required'
+      );
     });
 
     it('should normalize user ID to lowercase', async () => {
@@ -308,7 +387,11 @@ describe('Profile Persister', () => {
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
       db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      await profilePersister.recordAcceptedRewrite('ALEX', { original: 'test', rewrite: 'test' }, db);
+      await profilePersister.recordAcceptedRewrite(
+        'ALEX',
+        { original: 'test', rewrite: 'test' },
+        db
+      );
 
       expect(db.query.mock.calls[0][1][0]).toBe('alex');
     });

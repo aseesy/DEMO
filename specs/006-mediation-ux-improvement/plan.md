@@ -7,10 +7,12 @@
 ## Executive Summary
 
 This plan addresses two critical mediation UX issues:
+
 1. **Original message disappears** during mediation, confusing users
 2. **False positives** on friendly messages like "you're my friend"
 
 The implementation consists of three phases:
+
 1. **Phase 1: Fix False Positives** - Add positive sentiment detection (Quick Win)
 2. **Phase 2: Keep Original Visible** - Show original message in intervention card
 3. **Phase 3: Add User Options** - "Send Original Anyway" and "Edit Myself" buttons
@@ -20,11 +22,13 @@ The implementation consists of three phases:
 ## Technical Context
 
 ### Architecture
+
 - **Frontend**: React 18 + Vite (`chat-client-vite/`)
 - **Backend**: Node.js + Express (`chat-server/`)
 - **AI Mediation**: OpenAI API via `chat-server/src/liaizen/core/mediator.js`
 
 ### File Structure
+
 ```
 chat-server/
 ├── src/liaizen/core/
@@ -36,6 +40,7 @@ chat-client-vite/
 ```
 
 ### Design System
+
 - **Primary**: #275559 (teal-dark)
 - **Primary Light**: #4DA8B0 (teal-medium)
 - **Muted text**: text-gray-400
@@ -54,11 +59,22 @@ chat-client-vite/
 **Location**: Lines 202-210 (after existing pre-filter checks)
 
 **Current Code** (lines 202-210):
+
 ```javascript
 // Pre-filter: Allow common greetings and polite messages without AI analysis
 const text = message.text.toLowerCase().trim();
 const allowedGreetings = ['hi', 'hello', 'hey', 'hi there', 'hello there', 'hey there'];
-const allowedPolite = ['thanks', 'thank you', 'ok', 'okay', 'sure', 'yes', 'no', 'got it', 'sounds good'];
+const allowedPolite = [
+  'thanks',
+  'thank you',
+  'ok',
+  'okay',
+  'sure',
+  'yes',
+  'no',
+  'got it',
+  'sounds good',
+];
 
 if (allowedGreetings.includes(text) || allowedPolite.includes(text)) {
   console.log('✅ AI Mediator: Pre-approved message (greeting/polite) - allowing without analysis');
@@ -67,11 +83,22 @@ if (allowedGreetings.includes(text) || allowedPolite.includes(text)) {
 ```
 
 **New Code** (add after existing pre-filter):
+
 ```javascript
 // Pre-filter: Allow common greetings and polite messages without AI analysis
 const text = message.text.toLowerCase().trim();
 const allowedGreetings = ['hi', 'hello', 'hey', 'hi there', 'hello there', 'hey there'];
-const allowedPolite = ['thanks', 'thank you', 'ok', 'okay', 'sure', 'yes', 'no', 'got it', 'sounds good'];
+const allowedPolite = [
+  'thanks',
+  'thank you',
+  'ok',
+  'okay',
+  'sure',
+  'yes',
+  'no',
+  'got it',
+  'sounds good',
+];
 
 if (allowedGreetings.includes(text) || allowedPolite.includes(text)) {
   console.log('✅ AI Mediator: Pre-approved message (greeting/polite) - allowing without analysis');
@@ -93,7 +120,9 @@ const positivePatterns = [
 
 for (const pattern of positivePatterns) {
   if (pattern.test(message.text)) {
-    console.log('✅ AI Mediator: Pre-approved message (positive sentiment) - allowing without analysis');
+    console.log(
+      '✅ AI Mediator: Pre-approved message (positive sentiment) - allowing without analysis'
+    );
     return null;
   }
 }
@@ -106,6 +135,7 @@ for (const pattern of positivePatterns) {
 **Location**: Lines 134-145 (`detectConflictPatterns` function)
 
 **Current Code**:
+
 ```javascript
 function detectConflictPatterns(messageText) {
   const text = messageText.toLowerCase();
@@ -114,7 +144,7 @@ function detectConflictPatterns(messageText) {
     hasAccusatory: /\b(you always|you never|you're|you are)\b/.test(text),
     hasTriangulation: /\b(she told me|he said|the kids|child.*said)\b/.test(text),
     hasComparison: /\b(fine with me|never does that|at my house|at your house)\b/.test(text),
-    hasBlaming: /\b(your fault|because of you|you made|you caused)\b/.test(text)
+    hasBlaming: /\b(your fault|because of you|you made|you caused)\b/.test(text),
   };
 
   return patterns;
@@ -122,12 +152,14 @@ function detectConflictPatterns(messageText) {
 ```
 
 **New Code**:
+
 ```javascript
 function detectConflictPatterns(messageText) {
   const text = messageText.toLowerCase();
 
   // Positive context words that indicate friendly intent
-  const positiveContextWords = /\b(friend|best|great|awesome|amazing|wonderful|helpful|kind|love|appreciate|proud|happy|good|fantastic|incredible)\b/i;
+  const positiveContextWords =
+    /\b(friend|best|great|awesome|amazing|wonderful|helpful|kind|love|appreciate|proud|happy|good|fantastic|incredible)\b/i;
 
   // Check if "you're/you are" is in a positive context
   const hasYouAre = /\b(you'?re|you are)\b/i.test(text);
@@ -135,11 +167,16 @@ function detectConflictPatterns(messageText) {
 
   const patterns = {
     // Only flag "you're/you are" as accusatory if NOT in positive context
-    hasAccusatory: /\b(you always|you never)\b/.test(text) ||
-      (hasYouAre && !isPositiveContext && /\b(wrong|bad|stupid|crazy|irresponsible|useless|terrible|awful|horrible|pathetic|lazy|selfish)\b/i.test(text)),
+    hasAccusatory:
+      /\b(you always|you never)\b/.test(text) ||
+      (hasYouAre &&
+        !isPositiveContext &&
+        /\b(wrong|bad|stupid|crazy|irresponsible|useless|terrible|awful|horrible|pathetic|lazy|selfish)\b/i.test(
+          text
+        )),
     hasTriangulation: /\b(she told me|he said|the kids|child.*said)\b/.test(text),
     hasComparison: /\b(fine with me|never does that|at my house|at your house)\b/.test(text),
-    hasBlaming: /\b(your fault|because of you|you made|you caused)\b/.test(text)
+    hasBlaming: /\b(your fault|because of you|you made|you caused)\b/.test(text),
   };
 
   return patterns;
@@ -149,6 +186,7 @@ function detectConflictPatterns(messageText) {
 ### 1.3 Test Cases for Phase 1
 
 Messages that should **NOT** be mediated (should return `null`):
+
 - "you're my friend"
 - "you're the best"
 - "you're doing great"
@@ -161,6 +199,7 @@ Messages that should **NOT** be mediated (should return `null`):
 - "proud of you"
 
 Messages that **SHOULD** be mediated:
+
 - "you're always late"
 - "you never listen"
 - "you're so irresponsible"
@@ -177,6 +216,7 @@ Messages that **SHOULD** be mediated:
 **Location**: Lines 866-876 (intervention return object)
 
 **Current Code**:
+
 ```javascript
 return {
   type: 'ai_intervention',
@@ -187,7 +227,7 @@ return {
   rewrite2: intervention.rewrite2,
   originalMessage: message,
   escalation: result.escalation,
-  emotion: result.emotion
+  emotion: result.emotion,
 };
 ```
 
@@ -200,6 +240,7 @@ return {
 **Location**: Lines 2094-2170 (intervention card rendering)
 
 **Current Code** (simplified):
+
 ```jsx
 <div className="rounded-lg px-4 py-3 bg-teal-lightest/30 border border-teal-light/50">
   {msg.personalMessage && (
@@ -212,6 +253,7 @@ return {
 ```
 
 **New Code** (add original message display at top):
+
 ```jsx
 <div className="rounded-lg px-4 py-3 bg-teal-lightest/30 border border-teal-light/50">
   {/* NEW: Show original message that triggered mediation */}
@@ -263,6 +305,7 @@ The current code already stores `pendingOriginalMessageToRemove` - we need to en
 **Location**: After the rewrite buttons section (lines 2167-2168)
 
 **Add new buttons**:
+
 ```jsx
 {(msg.rewrite1 || msg.rewrite2) && (
   <div className="space-y-2.5 pt-3 border-t border-gray-200/40">
@@ -323,6 +366,7 @@ The current code already stores `pendingOriginalMessageToRemove` - we need to en
 Need to ensure that when user clicks "Send Original Anyway", the message is sent without going through AI analysis again.
 
 **Modify handleSendMessage to accept bypass flag**:
+
 ```javascript
 const handleSendMessage = async (messageText = inputMessage, bypassMediation = false) => {
   // ... existing validation ...
@@ -333,7 +377,7 @@ const handleSendMessage = async (messageText = inputMessage, bypassMediation = f
       roomId: currentRoom,
       text: messageText,
       username,
-      bypassMediation: true  // Backend needs to respect this flag
+      bypassMediation: true, // Backend needs to respect this flag
     });
     return;
   }
@@ -349,22 +393,26 @@ const handleSendMessage = async (messageText = inputMessage, bypassMediation = f
 ## Implementation Order
 
 ### Step 1: Phase 1 - Fix False Positives (Estimated: 30 minutes)
+
 1. Add positive sentiment patterns to `mediator.js`
 2. Refine `detectConflictPatterns` function
 3. Test with "you're my friend" and similar messages
 
 ### Step 2: Phase 2 - Keep Original Visible (Estimated: 1 hour)
+
 1. Update intervention card UI in `ChatRoom.jsx`
 2. Add original message display section
 3. Test that original stays visible
 
 ### Step 3: Phase 3 - Add User Options (Estimated: 1 hour)
+
 1. Add "Send Original Anyway" button
 2. Add "Edit Myself" button
 3. Implement bypass mediation logic
 4. Add analytics tracking
 
 ### Step 4: Testing & Polish (Estimated: 30 minutes)
+
 1. Test all positive sentiment patterns
 2. Test intervention flow end-to-end
 3. Test "Send Original Anyway" flow
@@ -375,11 +423,11 @@ const handleSendMessage = async (messageText = inputMessage, bypassMediation = f
 
 ## Files to Modify
 
-| File | Action | Description |
-|------|--------|-------------|
+| File                                       | Action | Description                                                  |
+| ------------------------------------------ | ------ | ------------------------------------------------------------ |
 | `chat-server/src/liaizen/core/mediator.js` | Modify | Add positive sentiment pre-filter, refine accusatory pattern |
-| `chat-client-vite/src/ChatRoom.jsx` | Modify | Show original message, add action buttons |
-| `chat-server/server.js` | Modify | Support bypassMediation flag (optional) |
+| `chat-client-vite/src/ChatRoom.jsx`        | Modify | Show original message, add action buttons                    |
+| `chat-server/server.js`                    | Modify | Support bypassMediation flag (optional)                      |
 
 ---
 
@@ -408,9 +456,9 @@ const handleSendMessage = async (messageText = inputMessage, bypassMediation = f
 
 ## Risks & Mitigations
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Over-permissive positive filter | Conflict messages slip through | Test with edge cases, monitor analytics |
-| UI too cluttered with original | Confusing experience | Keep original compact with subtle styling |
-| Users always click "Send Original" | Defeats mediation purpose | Track metrics, consider UI changes if abused |
-| Bypass flag exploited | Users bypass all mediation | Log bypasses, rate limit if needed |
+| Risk                               | Impact                         | Mitigation                                   |
+| ---------------------------------- | ------------------------------ | -------------------------------------------- |
+| Over-permissive positive filter    | Conflict messages slip through | Test with edge cases, monitor analytics      |
+| UI too cluttered with original     | Confusing experience           | Keep original compact with subtle styling    |
+| Users always click "Send Original" | Defeats mediation purpose      | Track metrics, consider UI changes if abused |
+| Bypass flag exploited              | Users bypass all mediation     | Log bypasses, rate limit if needed           |

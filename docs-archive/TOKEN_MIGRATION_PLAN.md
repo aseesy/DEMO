@@ -37,43 +37,39 @@
 
 ### Color Replacements
 
-| Hardcoded | Token Class | Usage |
-|-----------|-------------|-------|
-| `#275559` | `teal-dark` | Primary buttons, headers |
-| `#00908B` | `teal-medium` | Secondary buttons, links, accents |
-| `#C5E8E4` | `teal-light` | Borders |
-| `#E6F7F5` | `teal-lightest` | Subtle backgrounds |
-| `#1f4447` | `teal-darkest` | Hover states on dark teal |
-| `#3d8a92` | Use `teal-dark` with opacity or create new token | Secondary hover |
+| Hardcoded | Token Class                                      | Usage                             |
+| --------- | ------------------------------------------------ | --------------------------------- |
+| `#275559` | `teal-dark`                                      | Primary buttons, headers          |
+| `#00908B` | `teal-medium`                                    | Secondary buttons, links, accents |
+| `#C5E8E4` | `teal-light`                                     | Borders                           |
+| `#E6F7F5` | `teal-lightest`                                  | Subtle backgrounds                |
+| `#1f4447` | `teal-darkest`                                   | Hover states on dark teal         |
+| `#3d8a92` | Use `teal-dark` with opacity or create new token | Secondary hover                   |
 
 ### Example Migrations
 
 **Before:**
+
 ```jsx
-<button className="bg-[#275559] hover:bg-[#1f4447] text-white">
-  Primary Action
-</button>
+<button className="bg-[#275559] hover:bg-[#1f4447] text-white">Primary Action</button>
 ```
 
 **After:**
+
 ```jsx
-<button className="bg-teal-dark hover:bg-teal-darkest text-white">
-  Primary Action
-</button>
+<button className="bg-teal-dark hover:bg-teal-darkest text-white">Primary Action</button>
 ```
 
 **Before:**
+
 ```jsx
-<div className="border-2 border-[#C5E8E4] bg-[#E6F7F5]">
-  Card
-</div>
+<div className="border-2 border-[#C5E8E4] bg-[#E6F7F5]">Card</div>
 ```
 
 **After:**
+
 ```jsx
-<div className="border-2 border-teal-light bg-teal-lightest">
-  Card
-</div>
+<div className="border-2 border-teal-light bg-teal-lightest">Card</div>
 ```
 
 ## Automated Migration Script
@@ -96,6 +92,7 @@ You can use find/replace with these patterns:
 ## Verification Checklist
 
 After migration, verify:
+
 - [ ] All colors use token classes
 - [ ] No hardcoded hex values remain
 - [ ] Hover states work correctly
@@ -109,7 +106,7 @@ After migration, verify:
 ✅ **Type Safety**: Tailwind IntelliSense for token classes  
 ✅ **Maintainability**: Easier to update design system  
 ✅ **Consistency**: Enforced through Tailwind config  
-✅ **Documentation**: Token usage is self-documenting  
+✅ **Documentation**: Token usage is self-documenting
 
 ## Next Steps
 
@@ -118,4 +115,3 @@ After migration, verify:
 3. Continue with other high-priority files
 4. Verify all changes work correctly
 5. Update any remaining hardcoded values
-

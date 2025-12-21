@@ -15,7 +15,7 @@ Your project is now initialized with Git! Follow these steps to connect it to Gi
 1. **Go to GitHub**: https://github.com/new
 2. **Repository name**: Choose a name (e.g., `coparentliaizen`, `liaizen-chat`, or `chat-app`)
 3. **Description**: "Multi-user chat application with co-parent features"
-4. **Visibility**: 
+4. **Visibility**:
    - Choose **Private** (recommended for production apps)
    - Or **Public** (if you want it open source)
 5. **DO NOT** initialize with README, .gitignore, or license (we already have these)
@@ -60,6 +60,7 @@ Before pushing, verify these files are **NOT** in your repository:
 - ❌ `node_modules/` (should be ignored)
 
 **To check what will be pushed:**
+
 ```bash
 git ls-files | grep -E "(\.env|chat\.db|node_modules)"
 ```
@@ -105,6 +106,7 @@ After initial setup, your workflow will be:
 **Problem:** Can't push to GitHub
 
 **Solutions:**
+
 - Verify the repository URL is correct
 - Check you have access to the repository
 - Try using HTTPS instead of SSH (or vice versa)
@@ -114,6 +116,7 @@ After initial setup, your workflow will be:
 **Problem:** Authentication failed
 
 **Solutions:**
+
 - Use GitHub Personal Access Token instead of password
 - Or set up SSH keys: https://docs.github.com/en/authentication/connecting-to-github-with-ssh
 
@@ -122,6 +125,7 @@ After initial setup, your workflow will be:
 **Problem:** Sensitive files in repository
 
 **Solution:**
+
 ```bash
 # Remove from git (but keep local file)
 git rm --cached chat-server/.env
@@ -145,4 +149,3 @@ Once your code is on GitHub:
 ---
 
 **Need help?** Check GitHub's documentation: https://docs.github.com/en/get-started
-

@@ -5,14 +5,14 @@
 // Mock dependencies BEFORE importing the module under test
 jest.mock('../../../dbSafe', () => ({
   dbPostgres: {
-    query: jest.fn()
+    query: jest.fn(),
   },
-  safeSelect: jest.fn()
+  safeSelect: jest.fn(),
 }));
 
 // Mock dbPostgres directly (used via dynamic require inside validateCoParentRelationships)
 jest.mock('../../../dbPostgres', () => ({
-  query: jest.fn()
+  query: jest.fn(),
 }));
 
 jest.mock('../neo4jClient');
@@ -32,18 +32,18 @@ describe('Database Synchronization Validator', () => {
     it('should validate relationships successfully when in sync', async () => {
       // Mock PostgreSQL query result (uses dbPostgres directly in the function)
       dbPostgres.query.mockResolvedValue({
-        rows: [{
-          room_id: 'room_123',
-          user_ids: [1, 2],
-          member_count: 2
-        }]
+        rows: [
+          {
+            room_id: 'room_123',
+            user_ids: [1, 2],
+            member_count: 2,
+          },
+        ],
       });
 
       // Mock Neo4j query result
       neo4jClient.isAvailable = jest.fn(() => true);
-      neo4jClient.getCoParents = jest.fn().mockResolvedValue([
-        { userId: 2, roomId: 'room_123' }
-      ]);
+      neo4jClient.getCoParents = jest.fn().mockResolvedValue([{ userId: 2, roomId: 'room_123' }]);
 
       const result = await dbSyncValidator.validateCoParentRelationships();
 
@@ -54,11 +54,13 @@ describe('Database Synchronization Validator', () => {
     it('should detect missing relationships in Neo4j', async () => {
       // Mock PostgreSQL query result (uses dbPostgres directly in the function)
       dbPostgres.query.mockResolvedValue({
-        rows: [{
-          room_id: 'room_123',
-          user_ids: [1, 2],
-          member_count: 2
-        }]
+        rows: [
+          {
+            room_id: 'room_123',
+            user_ids: [1, 2],
+            member_count: 2,
+          },
+        ],
       });
 
       // Mock Neo4j - relationship doesn't exist
@@ -106,9 +108,7 @@ describe('Database Synchronization Validator', () => {
 
     it('should return false for non-co-parent rooms (not 2 members)', async () => {
       neo4jClient.isAvailable = jest.fn(() => true);
-      dbSafe.safeSelect.mockResolvedValue([
-        { user_id: 1 }
-      ]); // Only 1 member
+      dbSafe.safeSelect.mockResolvedValue([{ user_id: 1 }]); // Only 1 member
 
       const result = await dbSyncValidator.syncRelationshipMetadata('room_123');
 
@@ -136,14 +136,14 @@ describe('Database Synchronization Validator', () => {
     it('should return overall valid true when both validations pass', async () => {
       // Set up mocks for successful validation
       neo4jClient.isAvailable = jest.fn(() => true);
-      neo4jClient.getCoParents = jest.fn().mockResolvedValue([
-        { userId: 2, roomId: 'room_123' }
-      ]);
+      neo4jClient.getCoParents = jest.fn().mockResolvedValue([{ userId: 2, roomId: 'room_123' }]);
       neo4jClient.getUsers = jest.fn().mockResolvedValue([{ userId: 1 }, { userId: 2 }]);
 
       // Mock PostgreSQL to return data that matches Neo4j
       dbPostgres.query
-        .mockResolvedValueOnce({ rows: [{ room_id: 'room_123', user_ids: [1, 2], member_count: 2 }] }) // for validateCoParentRelationships
+        .mockResolvedValueOnce({
+          rows: [{ room_id: 'room_123', user_ids: [1, 2], member_count: 2 }],
+        }) // for validateCoParentRelationships
         .mockResolvedValueOnce({ rows: [{ id: 1 }, { id: 2 }] }); // for validateUserNodes
 
       const result = await dbSyncValidator.runFullValidation();
@@ -154,4 +154,3 @@ describe('Database Synchronization Validator', () => {
     });
   });
 });
-

@@ -7,44 +7,48 @@ Comprehensive analytics tracking has been added to the LiaiZen chat room to moni
 ## ✅ What's Now Being Tracked
 
 ### 1. **Message Activity**
+
 - ✅ **Messages Sent** - Tracks every message sent with:
   - Message length
   - Whether it was a rewrite (pre-approved)
-  
+
 ### 2. **AI Features**
+
 - ✅ **AI Interventions** - Tracks when AI intervenes with:
   - Intervention type
   - Confidence level
   - Risk level
-  
 - ✅ **Rewrite Suggestions Used** - Tracks when users accept rewrites:
   - Which rewrite option (option_1, option_2, draft_rewrite_1, draft_rewrite_2)
   - Original message length
   - Rewrite length
-  
 - ✅ **Intervention Overrides** - Tracks when users override AI suggestions:
   - Override action (send_anyway, edit_first)
 
 ### 3. **Task Management**
+
 - ✅ **Task Created** - Tracks new tasks with:
   - Task type
   - Priority level
-  
 - ✅ **Task Completed** - Tracks task completions with:
   - Task type
 
 ### 4. **Contacts**
+
 - ✅ **Contact Added** - Tracks when contacts are added:
   - Contact type (suggestion, manual, etc.)
 
 ### 5. **Navigation**
+
 - ✅ **View Changes** - Tracks navigation between views:
   - View name (dashboard, chat, contacts, profile, settings, account)
 
 ### 6. **Threads**
+
 - ✅ **Thread Created** - Tracks when users create message threads
 
 ### 7. **Moderation**
+
 - ✅ **Message Flagged** - Tracks when users flag messages:
   - Flag reason
 
@@ -52,18 +56,18 @@ Comprehensive analytics tracking has been added to the LiaiZen chat room to moni
 
 All events are prefixed with their category and include relevant parameters:
 
-| Event Name | Category | Key Parameters |
-|------------|----------|----------------|
-| `message_sent` | chat | `message_length`, `is_rewrite` |
-| `ai_intervention` | ai | `intervention_type`, `confidence`, `risk_level` |
-| `rewrite_used` | ai | `rewrite_option`, `original_length`, `rewrite_length` |
-| `intervention_override` | ai | `override_action` |
-| `task_created` | tasks | `task_type`, `priority` |
-| `task_completed` | tasks | `task_type` |
-| `contact_added` | contacts | `contact_type` |
-| `view_change` | navigation | `view_name` |
-| `thread_created` | chat | (no additional params) |
-| `message_flagged` | moderation | `flag_reason` |
+| Event Name              | Category   | Key Parameters                                        |
+| ----------------------- | ---------- | ----------------------------------------------------- |
+| `message_sent`          | chat       | `message_length`, `is_rewrite`                        |
+| `ai_intervention`       | ai         | `intervention_type`, `confidence`, `risk_level`       |
+| `rewrite_used`          | ai         | `rewrite_option`, `original_length`, `rewrite_length` |
+| `intervention_override` | ai         | `override_action`                                     |
+| `task_created`          | tasks      | `task_type`, `priority`                               |
+| `task_completed`        | tasks      | `task_type`                                           |
+| `contact_added`         | contacts   | `contact_type`                                        |
+| `view_change`           | navigation | `view_name`                                           |
+| `thread_created`        | chat       | (no additional params)                                |
+| `message_flagged`       | moderation | `flag_reason`                                         |
 
 ## 🔍 How to View the Data
 
@@ -86,22 +90,26 @@ All events are prefixed with their category and include relevant parameters:
 ## 📈 Key Metrics You Can Now Measure
 
 ### User Engagement
+
 - **Messages per session** - Count of `message_sent` events
 - **Active chat time** - Time between first and last `message_sent`
 - **View switching frequency** - Count of `view_change` events
 
 ### AI Feature Effectiveness
+
 - **Intervention rate** - `ai_intervention` / `message_sent`
 - **Rewrite acceptance rate** - `rewrite_used` / `ai_intervention`
 - **Override rate** - `intervention_override` / `ai_intervention`
 - **Most common intervention types** - Group by `intervention_type`
 
 ### Task Management
+
 - **Task creation rate** - `task_created` events
 - **Task completion rate** - `task_completed` / `task_created`
 - **Task types distribution** - Group by `task_type`
 
 ### Product Usage
+
 - **Feature adoption** - Track which features users engage with
 - **Navigation patterns** - See which views users visit most
 - **Thread usage** - Track `thread_created` events
@@ -141,6 +149,7 @@ To verify tracking is working:
 ### Tracking Pattern
 
 All tracking follows this pattern:
+
 ```javascript
 // Wrap original function
 const originalFunction = ...;
@@ -156,6 +165,7 @@ const trackedFunction = React.useCallback((...args) => {
 ## 🚀 Next Steps
 
 ### Potential Enhancements:
+
 1. **Error Tracking** - Track API errors, failed operations
 2. **Performance Metrics** - Track load times, render performance
 3. **User Journey Mapping** - Create detailed funnels
@@ -163,6 +173,7 @@ const trackedFunction = React.useCallback((...args) => {
 5. **Feature Flags** - Track feature usage by flag
 
 ### Custom Dashboards:
+
 1. Create GA4 dashboards for:
    - AI feature effectiveness
    - User engagement patterns
@@ -174,4 +185,3 @@ const trackedFunction = React.useCallback((...args) => {
 **Status**: ✅ **FULLY IMPLEMENTED AND ACTIVE**
 
 All chat room tracking is now live and sending data to Google Analytics 4!
-

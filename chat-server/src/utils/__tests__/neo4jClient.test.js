@@ -22,15 +22,15 @@ jest.mock('http', () => ({
         }
         return mockResponse;
       }),
-      setEncoding: jest.fn()
+      setEncoding: jest.fn(),
     };
     setTimeout(() => callback(mockResponse), 0);
     return {
       on: jest.fn(),
       write: jest.fn(),
-      end: jest.fn()
+      end: jest.fn(),
     };
-  })
+  }),
 }));
 
 // Now require the module after mocks are set up

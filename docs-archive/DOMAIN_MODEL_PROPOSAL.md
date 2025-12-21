@@ -67,8 +67,7 @@ const message = { id: 'msg-123', text: 'Hello', roomId: 'room-1', username: 'ali
 
 // Business logic in service functions
 function canUserEditMessage(user, message) {
-  return user.username === message.username && 
-         Date.now() - message.timestamp < 5 * 60 * 1000;
+  return user.username === message.username && Date.now() - message.timestamp < 5 * 60 * 1000;
 }
 ```
 
@@ -113,7 +112,7 @@ chat-server/src/domain/
 ```javascript
 /**
  * User - Represents a parent/co-parent using the platform
- * 
+ *
  * Encapsulates:
  * - User identity and authentication
  * - Profile information
@@ -171,7 +170,7 @@ class User {
       display_name: row.display_name,
       created_at: row.created_at,
       last_login: row.last_login,
-      access_tier: row.access_tier
+      access_tier: row.access_tier,
     });
   }
 
@@ -186,7 +185,7 @@ class User {
       display_name: this.displayName,
       created_at: this.createdAt.toISOString(),
       last_login: this.lastLogin?.toISOString(),
-      access_tier: this.accessTier
+      access_tier: this.accessTier,
     };
   }
 }
@@ -197,7 +196,7 @@ class User {
 ```javascript
 /**
  * Message - Communication between co-parents
- * 
+ *
  * Encapsulates:
  * - Message content and metadata
  * - Edit permissions (5-minute window)
@@ -251,7 +250,7 @@ class Message {
     if (newText.length > 1000) {
       throw new Error('Message exceeds maximum length');
     }
-    
+
     this.originalText = this.text;
     this.text = newText.trim();
     this.editedAt = new Date();
@@ -270,7 +269,7 @@ class Message {
       timestamp: row.timestamp,
       edited_at: row.edited_at,
       was_mediated: row.was_mediated,
-      type: row.type
+      type: row.type,
     });
   }
 
@@ -287,7 +286,7 @@ class Message {
       timestamp: this.timestamp.toISOString(),
       edited_at: this.editedAt?.toISOString(),
       was_mediated: this.wasMediated,
-      type: this.type
+      type: this.type,
     };
   }
 }
@@ -298,7 +297,7 @@ class Message {
 ```javascript
 /**
  * Room - Private communication space between two co-parents
- * 
+ *
  * Encapsulates:
  * - Room membership (exactly 2 co-parents)
  * - Access control
@@ -320,9 +319,7 @@ class Room {
    * Check if user is a member
    */
   isMember(user) {
-    return this.members.some(m => 
-      m.userId === user.id || m.username === user.username.value
-    );
+    return this.members.some(m => m.userId === user.id || m.username === user.username.value);
   }
 
   /**
@@ -339,7 +336,7 @@ class Room {
       userId: user.id,
       username: user.username.value,
       role: 'member',
-      joinedAt: new Date()
+      joinedAt: new Date(),
     });
   }
 
@@ -363,7 +360,7 @@ class Room {
       created_at: row.created_at,
       is_private: row.is_private,
       members: members,
-      children: children
+      children: children,
     });
   }
 }
@@ -374,7 +371,7 @@ class Room {
 ```javascript
 /**
  * Task - Shared parenting responsibility
- * 
+ *
  * Encapsulates:
  * - Task assignment and completion
  * - Due dates and recurrence
@@ -442,7 +439,7 @@ class Task {
       completed_at: row.completed_at,
       assigned_to: row.assigned_to,
       created_by: row.user_id,
-      recurrence_pattern: row.recurrence_pattern
+      recurrence_pattern: row.recurrence_pattern,
     });
   }
 }
@@ -453,7 +450,7 @@ class Task {
 ```javascript
 /**
  * Contact - Shared directory entry
- * 
+ *
  * Encapsulates:
  * - Contact information
  * - Role and relationship
@@ -508,7 +505,7 @@ class Contact {
       relationship: row.relationship,
       notes: row.notes,
       added_by: row.user_id,
-      created_at: row.created_at
+      created_at: row.created_at,
     });
   }
 }
@@ -519,7 +516,7 @@ class Contact {
 ```javascript
 /**
  * CommunicationProfile - User communication patterns and history
- * 
+ *
  * Encapsulates:
  * - Communication patterns (accusatory, collaborative, etc.)
  * - Emotional triggers
@@ -534,8 +531,7 @@ class CommunicationProfile {
     this.stressHistory = data.stress_history || [];
     this.interventionOutcomes = data.intervention_outcomes || [];
     this.communicationPreferences = data.communication_preferences || {};
-    this.lastUpdated = data.profile_last_updated ? 
-      new Date(data.profile_last_updated) : new Date();
+    this.lastUpdated = data.profile_last_updated ? new Date(data.profile_last_updated) : new Date();
   }
 
   /**
@@ -545,7 +541,7 @@ class CommunicationProfile {
     this.interventionOutcomes.push({
       timestamp: new Date(),
       intervention: intervention,
-      wasHelpful: wasHelpful
+      wasHelpful: wasHelpful,
     });
     this.lastUpdated = new Date();
   }
@@ -560,7 +556,7 @@ class CommunicationProfile {
       interventionFrequency: negativeRatio > 0.5 ? 'minimal' : 'moderate',
       interventionStyle: negativeRatio > 0.5 ? 'gentle' : 'moderate',
       preferredTone: 'warm',
-      confidence: Math.min(100, this.interventionOutcomes.length * 10)
+      confidence: Math.min(100, this.interventionOutcomes.length * 10),
     };
   }
 
@@ -680,30 +676,35 @@ class MessageId {
 ## 🔄 Migration Strategy
 
 ### **Phase 1: Foundation** (Week 1)
+
 1. Create `src/domain/` directory structure
 2. Implement value objects (`Email`, `Username`, `RoomId`, `MessageId`)
 3. Add tests for value objects
 4. **No breaking changes** - keep existing code working
 
 ### **Phase 2: Core Entities** (Week 2-3)
+
 1. Implement `User`, `Message`, `Room` classes
 2. Create factory methods (`fromDbRow`, `toDbRow`)
 3. Add domain validation methods
 4. **Gradual migration** - use alongside existing code
 
 ### **Phase 3: Business Logic** (Week 4)
+
 1. Move business rules into entity methods
 2. Update service functions to use domain classes
 3. Add tests for domain logic
 4. **Refactor existing code** - replace plain objects
 
 ### **Phase 4: Advanced Entities** (Week 5)
+
 1. Implement `Task`, `Contact`, `CommunicationProfile`
 2. Add relationship methods
 3. Complete migration
 4. **Remove plain object patterns**
 
 ### **Phase 5: Repository Pattern** (Week 6)
+
 1. Create repository interfaces
 2. Implement database repositories
 3. Abstract data access
@@ -714,6 +715,7 @@ class MessageId {
 ## 📈 Benefits
 
 ### **Immediate Benefits**
+
 - ✅ **Type Safety** - Compile-time validation
 - ✅ **Encapsulation** - Business rules in entities
 - ✅ **Discoverability** - Domain concepts obvious in code
@@ -721,6 +723,7 @@ class MessageId {
 - ✅ **Documentation** - Self-documenting code
 
 ### **Long-term Benefits**
+
 - ✅ **Maintainability** - Single source of truth
 - ✅ **Refactoring** - Easier to change domain rules
 - ✅ **Onboarding** - New developers understand domain quickly
@@ -731,12 +734,14 @@ class MessageId {
 ## ⚠️ Trade-offs
 
 ### **Cons**
+
 - ❌ **Initial Overhead** - More code to write initially
 - ❌ **Learning Curve** - Team needs to learn domain model pattern
 - ❌ **Migration Effort** - Existing code needs refactoring
 - ❌ **Performance** - Slight overhead from object creation
 
 ### **Mitigation**
+
 - ✅ **Gradual Migration** - Can be done incrementally
 - ✅ **Backward Compatible** - Keep existing code working during migration
 - ✅ **Clear Examples** - Provide examples and documentation
@@ -747,23 +752,27 @@ class MessageId {
 ## 🎯 Success Criteria
 
 ### **Phase 1 Complete When**
+
 - ✅ Value objects implemented and tested
 - ✅ No breaking changes to existing code
 - ✅ Team understands value object pattern
 
 ### **Phase 2 Complete When**
+
 - ✅ Core entities (`User`, `Message`, `Room`) implemented
 - ✅ Factory methods working
 - ✅ Domain validation in place
 - ✅ 50% of new code uses domain classes
 
 ### **Phase 3 Complete When**
+
 - ✅ Business logic moved to entities
 - ✅ Service functions refactored
 - ✅ All tests passing
 - ✅ 80% of code uses domain classes
 
 ### **Final Success**
+
 - ✅ All core entities implemented
 - ✅ Repository pattern in place
 - ✅ 100% of new code uses domain classes
@@ -775,12 +784,14 @@ class MessageId {
 ## 📋 Implementation Checklist
 
 ### **Immediate Actions**
+
 - [ ] Create `src/domain/` directory structure
 - [ ] Implement value objects (`Email`, `Username`, `RoomId`, `MessageId`)
 - [ ] Write tests for value objects
 - [ ] Document value object usage
 
 ### **Short-term Actions**
+
 - [ ] Implement `User` entity
 - [ ] Implement `Message` entity
 - [ ] Implement `Room` entity
@@ -788,12 +799,14 @@ class MessageId {
 - [ ] Add domain validation
 
 ### **Medium-term Actions**
+
 - [ ] Implement remaining entities
 - [ ] Move business logic to entities
 - [ ] Refactor service functions
 - [ ] Create repository interfaces
 
 ### **Long-term Actions**
+
 - [ ] Complete migration
 - [ ] Remove plain object patterns
 - [ ] Update documentation
@@ -809,16 +822,16 @@ class MessageId {
 // server.js
 socket.on('send_message', async ({ text, roomId }) => {
   const user = activeUsers.get(socket.id);
-  
+
   // Plain object
   const message = {
     id: generateId('msg'),
     username: user.username,
     text: text,
     timestamp: Date.now(),
-    roomId: roomId
+    roomId: roomId,
   };
-  
+
   // Business logic in service
   if (canUserSendMessage(user, roomId)) {
     await messageStore.saveMessage(message);
@@ -842,14 +855,14 @@ function canUserSendMessage(user, roomId) {
 socket.on('send_message', async ({ text, roomId }) => {
   const user = await userRepository.findById(activeUsers.get(socket.id).id);
   const room = await roomRepository.findById(new RoomId(roomId));
-  
+
   // Domain entity with validation
   const message = Message.create({
     room: room,
     sender: user,
-    text: text
+    text: text,
   });
-  
+
   // Business logic in entity
   if (message.canBeSentBy(user, room)) {
     await messageRepository.save(message);
@@ -867,20 +880,18 @@ class Message {
     if (text.length > 1000) {
       throw new Error('Message exceeds maximum length');
     }
-    
+
     return new Message({
       id: new MessageId(generateId('msg')),
       roomId: room.id,
       sender: sender.username,
       text: text,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
-  
+
   canBeSentBy(user, room) {
-    return room.isMember(user) && 
-           this.text.length > 0 && 
-           this.text.length <= 1000;
+    return room.isMember(user) && this.text.length > 0 && this.text.length <= 1000;
   }
 }
 ```
@@ -909,4 +920,3 @@ class Message {
 **Status**: Ready for Implementation  
 **Priority**: High (Architectural Foundation)  
 **Estimated Effort**: 6 weeks (gradual migration)
-

@@ -1,20 +1,20 @@
 /**
  * Password Migration Script
- * 
+ *
  * This script migrates existing SHA-256 password hashes to bcrypt.
- * 
+ *
  * IMPORTANT: This script requires users to reset their passwords or
  * you'll need to contact users to provide their passwords for migration.
- * 
+ *
  * Since SHA-256 is a one-way hash, we cannot automatically convert
  * existing hashes to bcrypt. Users will need to log in with their
  * current password, which will then be hashed with bcrypt on next login.
- * 
+ *
  * Alternatively, you can:
  * 1. Force password reset for all users
  * 2. Set a temporary password and require users to change it
  * 3. Let users log in normally - their password will be re-hashed on next login
- * 
+ *
  * Usage: node migrate-passwords.js
  */
 
@@ -77,7 +77,6 @@ async function migratePasswords() {
 
     console.log('✅ Migration setup complete!');
     console.log('   The authentication system will handle password migration automatically.');
-
   } catch (error) {
     console.error('❌ Error during migration:', error);
     process.exit(1);
@@ -90,8 +89,7 @@ migratePasswords()
     console.log('\n✅ Migration script completed.');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Migration failed:', error);
     process.exit(1);
   });
-

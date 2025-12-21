@@ -26,7 +26,11 @@ router.get('/updates', async (req, res) => {
     }
 
     // Get user
-    const users = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const users = await dbSafe.safeSelect(
+      'users',
+      { username: username.toLowerCase() },
+      { limit: 1 }
+    );
 
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -41,7 +45,7 @@ router.get('/updates', async (req, res) => {
       return res.json({ updates: [] });
     }
 
-    // Fetch recent expenses (limit 3)
+    // Get recent expenses (limit 3)
     let expenseUpdates = [];
     try {
       const expensesQuery = `
@@ -56,11 +60,15 @@ router.get('/updates', async (req, res) => {
 
       expenseUpdates = expensesRes.rows.map(exp => {
         const isMe = exp.requested_by === userId;
-        const personName = exp.display_name || (exp.first_name ? `${exp.first_name} ${exp.last_name || ''}`.trim() : exp.requester_name);
+        const personName =
+          exp.display_name ||
+          (exp.first_name ? `${exp.first_name} ${exp.last_name || ''}`.trim() : exp.requester_name);
         let description = '';
 
         if (exp.status === 'pending') {
-          description = isMe ? `You requested $${exp.amount} for ${exp.description}` : `${personName} requested $${exp.amount} for ${exp.description}`;
+          description = isMe
+            ? `You requested $${exp.amount} for ${exp.description}`
+            : `${personName} requested $${exp.amount} for ${exp.description}`;
         } else if (exp.status === 'approved') {
           description = `Expense for ${exp.description} was approved`;
         } else if (exp.status === 'declined') {
@@ -73,14 +81,14 @@ router.get('/updates', async (req, res) => {
           timestamp: exp.updated_at,
           personName: isMe ? 'You' : personName,
           id: exp.id,
-          status: exp.status
+          status: exp.status,
         };
       });
     } catch (err) {
-      console.warn('Could not fetch expenses:', err.message);
+      console.warn('Could not get expenses:', err.message);
     }
 
-    // Fetch recent agreements (limit 3)
+    // Get recent agreements (limit 3)
     let agreementUpdates = [];
     try {
       const agreementsQuery = `
@@ -95,11 +103,15 @@ router.get('/updates', async (req, res) => {
 
       agreementUpdates = agreementsRes.rows.map(agr => {
         const isMe = agr.proposed_by === userId;
-        const personName = agr.display_name || (agr.first_name ? `${agr.first_name} ${agr.last_name || ''}`.trim() : agr.proposer_name);
+        const personName =
+          agr.display_name ||
+          (agr.first_name ? `${agr.first_name} ${agr.last_name || ''}`.trim() : agr.proposer_name);
         let description = '';
 
         if (agr.status === 'proposed') {
-          description = isMe ? `You proposed: ${agr.title}` : `${personName} proposed: ${agr.title}`;
+          description = isMe
+            ? `You proposed: ${agr.title}`
+            : `${personName} proposed: ${agr.title}`;
         } else if (agr.status === 'agreed') {
           description = `Agreement reached: ${agr.title}`;
         } else if (agr.status === 'rejected') {
@@ -112,7 +124,7 @@ router.get('/updates', async (req, res) => {
           timestamp: agr.updated_at,
           personName: isMe ? 'You' : personName,
           id: agr.id,
-          status: agr.status
+          status: agr.status,
         };
       });
     } catch (err) {
@@ -120,10 +132,7 @@ router.get('/updates', async (req, res) => {
     }
 
     // Aggregate all updates
-    const allUpdates = [
-      ...expenseUpdates,
-      ...agreementUpdates
-    ];
+    const allUpdates = [...expenseUpdates, ...agreementUpdates];
 
     // Sort by timestamp (newest first)
     allUpdates.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -133,7 +142,7 @@ router.get('/updates', async (req, res) => {
 
     res.json({ updates: limitedUpdates });
   } catch (error) {
-    console.error('Error fetching dashboard updates:', error);
+    console.error('Error getting dashboard updates:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -151,7 +160,11 @@ router.get('/communication-stats', async (req, res) => {
     }
 
     // Get user ID
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: username.toLowerCase() },
+      { limit: 1 }
+    );
     const users = dbSafe.parseResult(userResult);
 
     if (users.length === 0) {
@@ -165,10 +178,10 @@ router.get('/communication-stats', async (req, res) => {
 
     res.json({
       success: true,
-      stats: stats
+      stats: stats,
     });
   } catch (error) {
-    console.error('Error fetching communication stats:', error);
+    console.error('Error getting communication stats:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -3,7 +3,9 @@
 ## ❌ Critical Issues (Must Fix Before Production)
 
 ### 1. **SQL Injection Vulnerability** ⚠️ CRITICAL
+
 **Current State:** Code uses string concatenation with basic `escapeSQL()` function
+
 ```javascript
 db.exec(`SELECT * FROM users WHERE username = '${usernameLower}'`);
 ```
@@ -13,7 +15,9 @@ db.exec(`SELECT * FROM users WHERE username = '${usernameLower}'`);
 **Impact:** Could allow attackers to read/modify/delete all data
 
 ### 2. **Weak Password Hashing** ⚠️ CRITICAL
+
 **Current State:** Uses SHA-256 (fast hash, not secure for passwords)
+
 ```javascript
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
@@ -25,9 +29,11 @@ function hashPassword(password) {
 **Impact:** Compromised passwords could allow unauthorized access
 
 ### 3. **SQLite Limitations for Production** ⚠️ HIGH
+
 **Current State:** Uses `sql.js` (SQLite in-memory via JavaScript)
 
 **Issues:**
+
 - Limited concurrent write performance
 - No built-in replication
 - Single file = single point of failure
@@ -40,25 +46,31 @@ function hashPassword(password) {
 ## ⚠️ High Priority Issues
 
 ### 4. **No Database Backups**
+
 - No automated backup strategy
 - Single file database (`chat.db`) - if corrupted, all data lost
 - No point-in-time recovery
 
 **Fix Required:**
+
 - Implement automated daily backups
 - Store backups in separate location (S3, etc.)
 - Test restore procedures
 
 ### 5. **No Connection Pooling**
+
 - Single database connection
 - Could cause bottlenecks under load
 
 ### 6. **No Transaction Management**
+
 - Operations not wrapped in transactions
 - Risk of partial data corruption on errors
 
 ### 7. **Missing Indexes**
+
 Current indexes:
+
 - ✅ `idx_username` on users(username)
 - ✅ `idx_messages_timestamp` on messages(timestamp)
 - ✅ `idx_room_members` on room_members(room_id, user_id)
@@ -68,6 +80,7 @@ Current indexes:
 - ✅ `idx_pending_email` on pending_connections(invitee_email)
 
 **Missing:**
+
 - Index on `messages(room_id)` for room-based queries
 - Index on `pending_connections(inviter_id)` for user queries
 - Index on `room_invites(room_id)` for room queries
@@ -77,21 +90,25 @@ Current indexes:
 ## 📋 Medium Priority Issues
 
 ### 8. **No Data Validation at Database Level**
+
 - Missing CHECK constraints
 - No NOT NULL constraints on critical fields
 - Email format not validated at DB level
 
 ### 9. **No Soft Deletes**
+
 - Hard deletes everywhere (CASCADE deletes)
 - No audit trail
 - Cannot recover deleted data
 
 ### 10. **Error Handling**
+
 - Some database errors not properly caught
 - No retry logic for transient failures
 - Error messages might expose internal details
 
 ### 11. **No Query Timeout**
+
 - Long-running queries could hang the server
 - No protection against runaway queries
 
@@ -112,18 +129,21 @@ Current indexes:
 ## 🔧 Recommended Actions Before Production
 
 ### Immediate (Before Launch):
+
 1. **Fix SQL Injection** - Use parameterized queries
 2. **Fix Password Hashing** - Switch to bcrypt
 3. **Implement Database Backups** - Daily automated backups
 4. **Add Missing Indexes** - For performance
 
 ### Short Term (First Month):
+
 5. **Add Transaction Management** - For data integrity
 6. **Implement Soft Deletes** - For audit trail
 7. **Add Query Timeouts** - Prevent hangs
 8. **Add Data Validation** - CHECK constraints
 
 ### Long Term (Scale):
+
 9. **Migrate to PostgreSQL** - For production scalability
 10. **Implement Connection Pooling** - For better performance
 11. **Add Database Monitoring** - Track performance metrics
@@ -136,6 +156,7 @@ Current indexes:
 **Current Score: 4/10** ⚠️
 
 **Breakdown:**
+
 - Security: 2/10 (SQL injection, weak passwords)
 - Reliability: 5/10 (no backups, SQLite limitations)
 - Performance: 6/10 (good indexes, but SQLite bottlenecks)
@@ -149,6 +170,7 @@ Current indexes:
 ## 🚀 Quick Wins (Can Fix Today)
 
 1. **Switch to bcrypt** (already in dependencies):
+
    ```javascript
    const bcrypt = require('bcrypt');
    // Hash: bcrypt.hash(password, 10)
@@ -156,6 +178,7 @@ Current indexes:
    ```
 
 2. **Add missing indexes**:
+
    ```sql
    CREATE INDEX idx_messages_room_id ON messages(room_id);
    CREATE INDEX idx_pending_connections_inviter ON pending_connections(inviter_id);
@@ -213,16 +236,17 @@ If moving to PostgreSQL:
 
 ## Conclusion
 
-The database is **functional for development** but **NOT ready for production** due to critical security vulnerabilities. 
+The database is **functional for development** but **NOT ready for production** due to critical security vulnerabilities.
 
 **Minimum requirements before production:**
+
 1. Fix SQL injection (use parameterized queries)
 2. Fix password hashing (use bcrypt)
 3. Implement automated backups
 4. Add missing indexes
 
 **For scale beyond 100 concurrent users:**
+
 - Migrate to PostgreSQL
 - Implement connection pooling
 - Add read replicas
-

@@ -75,7 +75,8 @@ async function recordInterventionOutcome(userId, outcomeData, db) {
       learningData.unsuccessful_interventions.push(outcome);
       // Keep last 50 unsuccessful
       if (learningData.unsuccessful_interventions.length > 50) {
-        learningData.unsuccessful_interventions = learningData.unsuccessful_interventions.slice(-50);
+        learningData.unsuccessful_interventions =
+          learningData.unsuccessful_interventions.slice(-50);
       }
     }
 
@@ -138,11 +139,12 @@ function updateUserPreferences(learningData, outcome) {
   }
 
   // Dislikes clinical language
-  if (outcome.user_feedback && (
-    outcome.user_feedback.includes('clinical') ||
-    outcome.user_feedback.includes('therapist') ||
-    outcome.user_feedback.includes('too formal')
-  )) {
+  if (
+    outcome.user_feedback &&
+    (outcome.user_feedback.includes('clinical') ||
+      outcome.user_feedback.includes('therapist') ||
+      outcome.user_feedback.includes('too formal'))
+  ) {
     prefs.dislikes_clinical_language = true;
   }
 
@@ -150,9 +152,15 @@ function updateUserPreferences(learningData, outcome) {
   if (outcome.user_feedback && outcome.user_feedback.includes('validation')) {
     if (outcome.outcome === 'accepted') {
       // Extract style preference if mentioned
-      if (outcome.user_feedback.includes('down to earth') || outcome.user_feedback.includes('friend')) {
+      if (
+        outcome.user_feedback.includes('down to earth') ||
+        outcome.user_feedback.includes('friend')
+      ) {
         prefs.preferred_validation_style = 'down_to_earth';
-      } else if (outcome.user_feedback.includes('brief') || outcome.user_feedback.includes('short')) {
+      } else if (
+        outcome.user_feedback.includes('brief') ||
+        outcome.user_feedback.includes('short')
+      ) {
         prefs.preferred_validation_style = 'brief';
       }
     }
@@ -323,11 +331,3 @@ module.exports = {
   formatLearningForAI,
   getDefaultLearning,
 };
-
-
-
-
-
-
-
-

@@ -25,7 +25,11 @@ router.get('/:contactId', async (req, res) => {
     }
 
     // Get user
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: username.toLowerCase() },
+      { limit: 1 }
+    );
     const users = dbSafe.parseResult(userResult);
 
     if (users.length === 0) {
@@ -35,11 +39,15 @@ router.get('/:contactId', async (req, res) => {
     const userId = users[0].id;
 
     // Verify contact belongs to user and is a child
-    const contactResult = await dbSafe.safeSelect('contacts', {
-      id: parseInt(contactId),
-      user_id: userId,
-      relationship: 'my child'
-    }, { limit: 1 });
+    const contactResult = await dbSafe.safeSelect(
+      'contacts',
+      {
+        id: parseInt(contactId),
+        user_id: userId,
+        relationship: 'my child',
+      },
+      { limit: 1 }
+    );
     const contacts = dbSafe.parseResult(contactResult);
 
     if (contacts.length === 0) {
@@ -47,23 +55,27 @@ router.get('/:contactId', async (req, res) => {
     }
 
     // Get all activities for this child
-    const activitiesResult = await dbSafe.safeSelect('child_activities', {
-      contact_id: parseInt(contactId)
-    }, {
-      orderBy: 'created_at',
-      orderDirection: 'DESC'
-    });
+    const activitiesResult = await dbSafe.safeSelect(
+      'child_activities',
+      {
+        contact_id: parseInt(contactId),
+      },
+      {
+        orderBy: 'created_at',
+        orderDirection: 'DESC',
+      }
+    );
     let activities = dbSafe.parseResult(activitiesResult);
 
     // Parse JSON fields
     activities = activities.map(activity => ({
       ...activity,
-      days_of_week: activity.days_of_week ? JSON.parse(activity.days_of_week) : []
+      days_of_week: activity.days_of_week ? JSON.parse(activity.days_of_week) : [],
     }));
 
     res.json({ activities });
   } catch (error) {
-    console.error('Error fetching activities:', error);
+    console.error('Error getting activities:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -92,7 +104,7 @@ router.post('/', async (req, res) => {
       splitType,
       splitPercentage,
       paidBy,
-      notes
+      notes,
     } = req.body;
 
     if (!username) {
@@ -100,11 +112,17 @@ router.post('/', async (req, res) => {
     }
 
     if (!contactId || !activityName || !recurrence || !startDate) {
-      return res.status(400).json({ error: 'Contact ID, activity name, recurrence, and start date are required' });
+      return res
+        .status(400)
+        .json({ error: 'Contact ID, activity name, recurrence, and start date are required' });
     }
 
     // Get user
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: username.toLowerCase() },
+      { limit: 1 }
+    );
     const users = dbSafe.parseResult(userResult);
 
     if (users.length === 0) {
@@ -114,11 +132,15 @@ router.post('/', async (req, res) => {
     const userId = users[0].id;
 
     // Verify contact belongs to user and is a child
-    const contactResult = await dbSafe.safeSelect('contacts', {
-      id: parseInt(contactId),
-      user_id: userId,
-      relationship: 'my child'
-    }, { limit: 1 });
+    const contactResult = await dbSafe.safeSelect(
+      'contacts',
+      {
+        id: parseInt(contactId),
+        user_id: userId,
+        relationship: 'my child',
+      },
+      { limit: 1 }
+    );
     const contacts = dbSafe.parseResult(contactResult);
 
     if (contacts.length === 0) {
@@ -146,14 +168,14 @@ router.post('/', async (req, res) => {
       paid_by: paidBy || null,
       notes: notes || null,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     await dbSafe.safeInsert('child_activities', insertData);
 
     res.json({
       success: true,
-      message: 'Activity created successfully'
+      message: 'Activity created successfully',
     });
   } catch (error) {
     console.error('Error creating activity:', error);
@@ -185,7 +207,7 @@ router.put('/:activityId', async (req, res) => {
       splitType,
       splitPercentage,
       paidBy,
-      notes
+      notes,
     } = req.body;
 
     if (!username) {
@@ -193,7 +215,11 @@ router.put('/:activityId', async (req, res) => {
     }
 
     // Get user
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: username.toLowerCase() },
+      { limit: 1 }
+    );
     const users = dbSafe.parseResult(userResult);
 
     if (users.length === 0) {
@@ -203,10 +229,14 @@ router.put('/:activityId', async (req, res) => {
     const userId = users[0].id;
 
     // Verify activity belongs to user
-    const activityResult = await dbSafe.safeSelect('child_activities', {
-      id: parseInt(activityId),
-      user_id: userId
-    }, { limit: 1 });
+    const activityResult = await dbSafe.safeSelect(
+      'child_activities',
+      {
+        id: parseInt(activityId),
+        user_id: userId,
+      },
+      { limit: 1 }
+    );
     const activities = dbSafe.parseResult(activityResult);
 
     if (activities.length === 0) {
@@ -215,14 +245,15 @@ router.put('/:activityId', async (req, res) => {
 
     // Build update data
     const updateData = {
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     if (activityName !== undefined) updateData.activity_name = activityName.trim();
     if (description !== undefined) updateData.description = description || null;
     if (location !== undefined) updateData.location = location || null;
     if (instructorContact !== undefined) updateData.instructor_contact = instructorContact || null;
-    if (daysOfWeek !== undefined) updateData.days_of_week = daysOfWeek ? JSON.stringify(daysOfWeek) : null;
+    if (daysOfWeek !== undefined)
+      updateData.days_of_week = daysOfWeek ? JSON.stringify(daysOfWeek) : null;
     if (startTime !== undefined) updateData.start_time = startTime || null;
     if (endTime !== undefined) updateData.end_time = endTime || null;
     if (recurrence !== undefined) updateData.recurrence = recurrence;
@@ -239,7 +270,7 @@ router.put('/:activityId', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Activity updated successfully'
+      message: 'Activity updated successfully',
     });
   } catch (error) {
     console.error('Error updating activity:', error);
@@ -261,7 +292,11 @@ router.delete('/:activityId', async (req, res) => {
     }
 
     // Get user
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: username.toLowerCase() },
+      { limit: 1 }
+    );
     const users = dbSafe.parseResult(userResult);
 
     if (users.length === 0) {
@@ -271,10 +306,14 @@ router.delete('/:activityId', async (req, res) => {
     const userId = users[0].id;
 
     // Verify activity belongs to user
-    const activityResult = await dbSafe.safeSelect('child_activities', {
-      id: parseInt(activityId),
-      user_id: userId
-    }, { limit: 1 });
+    const activityResult = await dbSafe.safeSelect(
+      'child_activities',
+      {
+        id: parseInt(activityId),
+        user_id: userId,
+      },
+      { limit: 1 }
+    );
     const activities = dbSafe.parseResult(activityResult);
 
     if (activities.length === 0) {
@@ -285,7 +324,7 @@ router.delete('/:activityId', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Activity deleted successfully'
+      message: 'Activity deleted successfully',
     });
   } catch (error) {
     console.error('Error deleting activity:', error);

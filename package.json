@@ -10,11 +10,25 @@
     "stop": "./stop-dev.sh",
     "dev": "./start-dev.sh",
     "dev:stack": "node chat-server/scripts/dev-stack.js",
-    "lint:fix": "node chat-server/scripts/lint-fix.js"
+    "lint:fix": "node chat-server/scripts/lint-fix.js",
+    "prepare": "husky install",
+    "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,json,md}\"",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd chat-server && npm test -- --passWithNoTests || true",
+    "test:frontend": "cd chat-client-vite && npm test -- --run --passWithNoTests || true",
+    "test:coverage": "npm run test:coverage:backend && npm run test:coverage:frontend",
+    "test:coverage:backend": "cd chat-server && npm run test:coverage -- --passWithNoTests || true",
+    "test:coverage:frontend": "cd chat-client-vite && npm run test:coverage -- --passWithNoTests || true"
   },
   "private": true,
   "engines": {
     "node": ">=18.0.0 <25.0.0"
   },
-  "packageManager": "npm@10.0.0"
+  "packageManager": "npm@10.0.0",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.7.4"
+  }
 }

@@ -72,23 +72,25 @@ async function initializeIntelligenceTable() {
 async function updatePostgresProfile(userId, intelligence) {
   try {
     // Check if user has a record
-    const existing = await dbPostgres.query(
-      'SELECT * FROM user_intelligence WHERE user_id = $1',
-      [userId]
-    );
+    const existing = await dbPostgres.query('SELECT * FROM user_intelligence WHERE user_id = $1', [
+      userId,
+    ]);
 
     if (existing.rows.length === 0) {
       // Create new record
-      await dbPostgres.query(`
+      await dbPostgres.query(
+        `
         INSERT INTO user_intelligence (user_id, messages_analyzed, communication_styles, triggers, emotional_patterns, values)
         VALUES ($1, 1, $2, $3, $4, $5)
-      `, [
-        userId,
-        JSON.stringify(buildStylesObject(intelligence)),
-        JSON.stringify(buildTriggersObject(intelligence)),
-        JSON.stringify(buildEmotionsObject(intelligence)),
-        JSON.stringify(buildValuesObject(intelligence))
-      ]);
+      `,
+        [
+          userId,
+          JSON.stringify(buildStylesObject(intelligence)),
+          JSON.stringify(buildTriggersObject(intelligence)),
+          JSON.stringify(buildEmotionsObject(intelligence)),
+          JSON.stringify(buildValuesObject(intelligence)),
+        ]
+      );
     } else {
       // Update existing record
       const current = existing.rows[0];
@@ -97,7 +99,8 @@ async function updatePostgresProfile(userId, intelligence) {
       const emotions = mergeJsonb(current.emotional_patterns, buildEmotionsObject(intelligence));
       const values = mergeJsonb(current.values, buildValuesObject(intelligence));
 
-      await dbPostgres.query(`
+      await dbPostgres.query(
+        `
         UPDATE user_intelligence
         SET messages_analyzed = messages_analyzed + 1,
             communication_styles = $2,
@@ -107,7 +110,15 @@ async function updatePostgresProfile(userId, intelligence) {
             last_analyzed = NOW(),
             updated_at = NOW()
         WHERE user_id = $1
-      `, [userId, JSON.stringify(styles), JSON.stringify(triggers), JSON.stringify(emotions), JSON.stringify(values)]);
+      `,
+        [
+          userId,
+          JSON.stringify(styles),
+          JSON.stringify(triggers),
+          JSON.stringify(emotions),
+          JSON.stringify(values),
+        ]
+      );
     }
     return true;
   } catch (error) {
@@ -121,10 +132,9 @@ async function updatePostgresProfile(userId, intelligence) {
  */
 async function getProfileFromPostgres(userId) {
   try {
-    const result = await dbPostgres.query(
-      'SELECT * FROM user_intelligence WHERE user_id = $1',
-      [userId]
-    );
+    const result = await dbPostgres.query('SELECT * FROM user_intelligence WHERE user_id = $1', [
+      userId,
+    ]);
 
     if (result.rows.length === 0) return null;
 
@@ -135,7 +145,7 @@ async function getProfileFromPostgres(userId) {
       values: row.values || {},
       communicationStyles: row.communication_styles || {},
       triggers: row.triggers || {},
-      emotionalPatterns: row.emotional_patterns || {}
+      emotionalPatterns: row.emotional_patterns || {},
     };
   } catch (error) {
     console.error('❌ UserIntelligence: Failed to get PostgreSQL profile:', error.message);
@@ -192,67 +202,67 @@ function mergeJsonb(existing, newData) {
 const COMMUNICATION_PATTERNS = {
   direct: {
     name: 'Direct Communicator',
-    markers: ['need', 'want', 'will', 'won\'t', 'can you', 'please'],
-    description: 'Gets straight to the point'
+    markers: ['need', 'want', 'will', "won't", 'can you', 'please'],
+    description: 'Gets straight to the point',
   },
   emotional: {
     name: 'Emotional Communicator',
     markers: ['feel', 'feeling', 'hurt', 'upset', 'happy', 'worried', 'scared', 'love'],
-    description: 'Leads with feelings'
+    description: 'Leads with feelings',
   },
   logical: {
     name: 'Logical Communicator',
     markers: ['because', 'reason', 'makes sense', 'logically', 'think about', 'consider'],
-    description: 'Uses reasoning and logic'
+    description: 'Uses reasoning and logic',
   },
   questioning: {
     name: 'Questioning Communicator',
     markers: ['why', 'how come', 'what if', 'could you explain', '?'],
-    description: 'Seeks understanding through questions'
+    description: 'Seeks understanding through questions',
   },
   accommodating: {
     name: 'Accommodating Communicator',
     markers: ['whatever you think', 'up to you', 'i guess', 'if that works', 'no problem'],
-    description: 'Tends to go along with others'
+    description: 'Tends to go along with others',
   },
   assertive: {
     name: 'Assertive Communicator',
-    markers: ['i expect', 'i need', 'it\'s important', 'must', 'should'],
-    description: 'Clear about expectations'
-  }
+    markers: ['i expect', 'i need', "it's important", 'must', 'should'],
+    description: 'Clear about expectations',
+  },
 };
 
 const TRIGGER_PATTERNS = {
   lateness: {
     name: 'Time/Punctuality',
     markers: ['late', 'waiting', 'on time', 'delayed', 'running behind', 'where are you'],
-    intensity_markers: ['always late', 'never on time', 'again']
+    intensity_markers: ['always late', 'never on time', 'again'],
   },
   communication: {
     name: 'Communication Gaps',
-    markers: ['didn\'t tell', 'didn\'t know', 'why didn\'t you', 'should have told', 'inform'],
-    intensity_markers: ['never tell', 'always find out']
+    markers: ["didn't tell", "didn't know", "why didn't you", 'should have told', 'inform'],
+    intensity_markers: ['never tell', 'always find out'],
   },
   broken_promises: {
     name: 'Broken Promises',
     markers: ['said you would', 'promised', 'supposed to', 'agreed', 'commitment'],
-    intensity_markers: ['always break', 'never follow through']
+    intensity_markers: ['always break', 'never follow through'],
   },
   money: {
     name: 'Financial Issues',
     markers: ['pay', 'money', 'expensive', 'cost', 'afford', 'child support'],
-    intensity_markers: ['never pay', 'always about money']
+    intensity_markers: ['never pay', 'always about money'],
   },
   parenting_decisions: {
     name: 'Parenting Decisions',
-    markers: ['without asking', 'didn\'t consult', 'my decision too', 'both parents'],
-    intensity_markers: ['never ask', 'always decide']
+    markers: ['without asking', "didn't consult", 'my decision too', 'both parents'],
+    intensity_markers: ['never ask', 'always decide'],
   },
   new_partner: {
     name: 'New Partner Issues',
     markers: ['boyfriend', 'girlfriend', 'partner', 'new person', 'around my child'],
-    intensity_markers: ['don\'t want', 'uncomfortable']
-  }
+    intensity_markers: ["don't want", 'uncomfortable'],
+  },
 };
 
 // ============================================================
@@ -275,7 +285,7 @@ function analyzeMessage(message, context = {}) {
     topics: [],
     intensity: 'normal',
     hasInsight: false,
-    insight: null
+    insight: null,
   };
 
   // Extract values using the valuesProfile module
@@ -292,7 +302,7 @@ function analyzeMessage(message, context = {}) {
       intelligence.communicationStyle.push({
         style: patternKey,
         name: pattern.name,
-        confidence: Math.min(matchCount * 20, 100)
+        confidence: Math.min(matchCount * 20, 100),
       });
     }
   }
@@ -307,7 +317,7 @@ function analyzeMessage(message, context = {}) {
         trigger: triggerKey,
         name: trigger.name,
         intensity: intensityMatch > 0 ? 'high' : 'normal',
-        confidence: Math.min((baseMatch + intensityMatch * 2) * 20, 100)
+        confidence: Math.min((baseMatch + intensityMatch * 2) * 20, 100),
       });
     }
   }
@@ -320,7 +330,7 @@ function analyzeMessage(message, context = {}) {
     angry: ['angry', 'furious', 'mad', 'pissed', 'livid'],
     sad: ['sad', 'depressed', 'down', 'unhappy'],
     hopeful: ['hope', 'hoping', 'maybe we can', 'would be nice'],
-    grateful: ['thank', 'appreciate', 'grateful', 'glad']
+    grateful: ['thank', 'appreciate', 'grateful', 'glad'],
   };
 
   for (const [emotion, markers] of Object.entries(emotionMarkers)) {
@@ -336,7 +346,7 @@ function analyzeMessage(message, context = {}) {
     school: ['school', 'homework', 'teacher', 'grades', 'class'],
     health: ['doctor', 'sick', 'medicine', 'healthy', 'diet'],
     activities: ['practice', 'game', 'lesson', 'activity', 'sport'],
-    behavior: ['behavior', 'attitude', 'acting', 'tantrum', 'misbehave']
+    behavior: ['behavior', 'attitude', 'acting', 'tantrum', 'misbehave'],
   };
 
   for (const [topic, markers] of Object.entries(topicPatterns)) {
@@ -352,7 +362,7 @@ function analyzeMessage(message, context = {}) {
     intelligence.insight = {
       type: 'trigger_pattern',
       observation: `${mainTrigger.name} seems to be a significant concern`,
-      suggestion: `This might be worth exploring - what makes this feel so important?`
+      suggestion: `This might be worth exploring - what makes this feel so important?`,
     };
   }
 
@@ -381,22 +391,30 @@ async function updateNeo4jProfile(userId, intelligence) {
     // Update communication style scores
     if (intelligence.communicationStyle.length > 0) {
       const topStyle = intelligence.communicationStyle[0];
-      updates.push(`u.communication_style_${topStyle.style} = COALESCE(u.communication_style_${topStyle.style}, 0) + 1`);
+      updates.push(
+        `u.communication_style_${topStyle.style} = COALESCE(u.communication_style_${topStyle.style}, 0) + 1`
+      );
     }
 
     // Update trigger counts
     for (const trigger of intelligence.triggers) {
-      updates.push(`u.trigger_${trigger.trigger} = COALESCE(u.trigger_${trigger.trigger}, 0) + ${trigger.intensity === 'high' ? 2 : 1}`);
+      updates.push(
+        `u.trigger_${trigger.trigger} = COALESCE(u.trigger_${trigger.trigger}, 0) + ${trigger.intensity === 'high' ? 2 : 1}`
+      );
     }
 
     // Update emotional patterns
     if (intelligence.emotionalState) {
-      updates.push(`u.emotion_${intelligence.emotionalState} = COALESCE(u.emotion_${intelligence.emotionalState}, 0) + 1`);
+      updates.push(
+        `u.emotion_${intelligence.emotionalState} = COALESCE(u.emotion_${intelligence.emotionalState}, 0) + 1`
+      );
     }
 
     // Update value scores
     for (const [valueKey, valueData] of Object.entries(intelligence.values)) {
-      updates.push(`u.value_${valueKey} = COALESCE(u.value_${valueKey}, 0) + ${Math.round(valueData.score)}`);
+      updates.push(
+        `u.value_${valueKey} = COALESCE(u.value_${valueKey}, 0) + ${Math.round(valueData.score)}`
+      );
     }
 
     // Update messages analyzed count
@@ -470,10 +488,13 @@ async function learnFromMessage(userId, message, roomId = null) {
  */
 async function storeInsight(userId, insight, roomId = null) {
   try {
-    await dbPostgres.query(`
+    await dbPostgres.query(
+      `
       INSERT INTO user_insights (user_id, room_id, insight_type, observation, suggestion, created_at)
       VALUES ($1, $2, $3, $4, $5, NOW())
-    `, [userId, roomId, insight.type, insight.observation, insight.suggestion]);
+    `,
+      [userId, roomId, insight.type, insight.observation, insight.suggestion]
+    );
     return true;
   } catch (error) {
     // Table might not exist yet, that's ok
@@ -519,12 +540,15 @@ async function initializeInsightsTable() {
  */
 async function getPendingInsights(userId, limit = 3) {
   try {
-    const result = await dbPostgres.query(`
+    const result = await dbPostgres.query(
+      `
       SELECT * FROM user_insights
       WHERE user_id = $1 AND shown_to_user = FALSE
       ORDER BY created_at DESC
       LIMIT $2
-    `, [userId, limit]);
+    `,
+      [userId, limit]
+    );
     return result.rows;
   } catch (error) {
     return [];
@@ -555,7 +579,7 @@ async function getProfileFromNeo4j(userId) {
     `;
 
     const result = await neo4jClient._executeCypher(query, {
-      userId: neo4jDriver.int(userId)
+      userId: neo4jDriver.int(userId),
     });
 
     if (result.records.length === 0) return null;
@@ -569,7 +593,7 @@ async function getProfileFromNeo4j(userId) {
       values: {},
       communicationStyles: {},
       triggers: {},
-      emotionalPatterns: {}
+      emotionalPatterns: {},
     };
 
     // Extract values, styles, triggers, emotions from node properties
@@ -666,59 +690,59 @@ function detectMessageTopics(messageText) {
 const VALUE_SPECIFIC_DESCRIPTIONS = {
   health_nutrition: {
     context: 'This sender cares about what their child eats',
-    specific: 'healthy eating matters to them'
+    specific: 'healthy eating matters to them',
   },
   education_learning: {
     context: 'Education is important to this sender',
-    specific: 'academic success matters to them'
+    specific: 'academic success matters to them',
   },
   routine_structure: {
     context: 'This sender values consistency',
-    specific: 'predictable schedules matter to them'
+    specific: 'predictable schedules matter to them',
   },
   emotional_safety: {
     context: 'This sender prioritizes emotional security',
-    specific: 'how the child feels matters deeply'
+    specific: 'how the child feels matters deeply',
   },
   quality_time: {
     context: 'This sender values meaningful time together',
-    specific: 'presence and attention matter to them'
+    specific: 'presence and attention matter to them',
   },
   safety_protection: {
     context: 'Physical safety is a priority',
-    specific: 'keeping the child safe matters to them'
+    specific: 'keeping the child safe matters to them',
   },
   financial_responsibility: {
     context: 'Financial fairness matters',
-    specific: 'fair cost-sharing is important to them'
+    specific: 'fair cost-sharing is important to them',
   },
   screen_time: {
     context: 'This sender monitors screen time',
-    specific: 'limiting device use matters to them'
-  }
+    specific: 'limiting device use matters to them',
+  },
 };
 
 const TRIGGER_SPECIFIC_DESCRIPTIONS = {
   lateness: {
     context: 'Time and punctuality are sensitive',
-    avoid: 'Avoid accusatory language about being late'
+    avoid: 'Avoid accusatory language about being late',
   },
   communication: {
     context: 'Being informed matters',
-    avoid: 'Avoid implying they were left out intentionally'
+    avoid: 'Avoid implying they were left out intentionally',
   },
   broken_promises: {
     context: 'Follow-through is important',
-    avoid: 'Avoid triggering feelings of unreliability'
+    avoid: 'Avoid triggering feelings of unreliability',
   },
   money: {
     context: 'Financial topics are sensitive',
-    avoid: 'Avoid accusatory money language'
+    avoid: 'Avoid accusatory money language',
   },
   parenting_decisions: {
     context: 'Shared decision-making matters',
-    avoid: 'Avoid implying they were excluded from choices'
-  }
+    avoid: 'Avoid implying they were excluded from choices',
+  },
 };
 
 /**
@@ -763,7 +787,7 @@ async function formatForAI(userId, messageText = '') {
       logical: 'uses reasoning - include the "why" in rewrites',
       questioning: 'asks questions - frame rewrites as collaborative inquiry',
       accommodating: 'tends to accommodate - rewrites can be more assertive',
-      assertive: 'states expectations clearly - match that clarity'
+      assertive: 'states expectations clearly - match that clarity',
     };
     const topStyle = sortedStyles[0][0];
     parts.push(`Style: ${styleDescriptions[topStyle] || topStyle}`);
@@ -811,7 +835,10 @@ async function formatForReceiverAI(userId, messageText = '') {
 
   if (relevantTriggers.length > 0) {
     const triggerAdvice = relevantTriggers.map(([k]) => {
-      return TRIGGER_SPECIFIC_DESCRIPTIONS[k]?.avoid || `Receiver is sensitive to ${k.replace(/_/g, ' ')}`;
+      return (
+        TRIGGER_SPECIFIC_DESCRIPTIONS[k]?.avoid ||
+        `Receiver is sensitive to ${k.replace(/_/g, ' ')}`
+      );
     });
     parts.push(triggerAdvice.join('. '));
   }
@@ -844,7 +871,7 @@ async function formatForReceiverAI(userId, messageText = '') {
       angry: 'Receiver can react strongly - avoid accusatory language',
       defensive: 'Receiver may get defensive - use "I" statements',
       hopeful: 'Receiver is open to collaboration',
-      grateful: 'Receiver responds well to appreciation'
+      grateful: 'Receiver responds well to appreciation',
     };
     const dominant = sortedEmotions[0][0];
     if (emotionAdvice[dominant]) {
@@ -868,7 +895,7 @@ async function getSelfReflection(userId) {
   if (!profile || profile.messagesAnalyzed < 10) {
     return {
       ready: false,
-      message: 'Still learning about your communication patterns...'
+      message: 'Still learning about your communication patterns...',
     };
   }
 
@@ -878,26 +905,34 @@ async function getSelfReflection(userId) {
   const topValue = Object.entries(profile.values).sort((a, b) => b[1] - a[1])[0];
   if (topValue) {
     const valueDescriptions = {
-      health_nutrition: 'Your child\'s health and nutrition clearly matters deeply to you.',
+      health_nutrition: "Your child's health and nutrition clearly matters deeply to you.",
       routine_structure: 'Consistency and routine seem to be important to how you parent.',
-      education_learning: 'You place a high value on your child\'s education and growth.',
-      emotional_safety: 'Your child\'s emotional wellbeing is a priority for you.',
-      safety_protection: 'Keeping your child safe is a core concern.'
+      education_learning: "You place a high value on your child's education and growth.",
+      emotional_safety: "Your child's emotional wellbeing is a priority for you.",
+      safety_protection: 'Keeping your child safe is a core concern.',
     };
-    reflections.push(valueDescriptions[topValue[0]] || `You care deeply about ${topValue[0].replace(/_/g, ' ')}.`);
+    reflections.push(
+      valueDescriptions[topValue[0]] || `You care deeply about ${topValue[0].replace(/_/g, ' ')}.`
+    );
   }
 
   // Trigger reflection
   const topTrigger = Object.entries(profile.triggers).sort((a, b) => b[1] - a[1])[0];
   if (topTrigger) {
     const triggerReflections = {
-      lateness: 'Being kept waiting seems to be frustrating for you - perhaps because you value your time and reliability.',
-      communication: 'Finding out about things after the fact bothers you - you want to be kept in the loop.',
-      broken_promises: 'When commitments aren\'t honored, it hits hard. Trust is important to you.',
+      lateness:
+        'Being kept waiting seems to be frustrating for you - perhaps because you value your time and reliability.',
+      communication:
+        'Finding out about things after the fact bothers you - you want to be kept in the loop.',
+      broken_promises: "When commitments aren't honored, it hits hard. Trust is important to you.",
       money: 'Financial matters create tension - this might be about fairness or security.',
-      parenting_decisions: 'You want to be part of decisions about your child. Co-parenting means shared decision-making to you.'
+      parenting_decisions:
+        'You want to be part of decisions about your child. Co-parenting means shared decision-making to you.',
     };
-    reflections.push(triggerReflections[topTrigger[0]] || `${topTrigger[0].replace(/_/g, ' ')} seems to be a sensitive area.`);
+    reflections.push(
+      triggerReflections[topTrigger[0]] ||
+        `${topTrigger[0].replace(/_/g, ' ')} seems to be a sensitive area.`
+    );
   }
 
   // Communication style reflection
@@ -907,16 +942,18 @@ async function getSelfReflection(userId) {
       direct: 'You tend to communicate directly and get to the point.',
       emotional: 'You lead with your feelings when you communicate.',
       logical: 'You like to explain your reasoning when you communicate.',
-      assertive: 'You\'re clear about your expectations in communication.'
+      assertive: "You're clear about your expectations in communication.",
     };
-    reflections.push(styleReflections[topStyle[0]] || `Your communication style leans ${topStyle[0]}.`);
+    reflections.push(
+      styleReflections[topStyle[0]] || `Your communication style leans ${topStyle[0]}.`
+    );
   }
 
   return {
     ready: true,
     messagesAnalyzed: profile.messagesAnalyzed,
     reflections,
-    summary: reflections.join(' ')
+    summary: reflections.join(' '),
   };
 }
 
@@ -943,5 +980,5 @@ module.exports = {
 
   // Constants
   COMMUNICATION_PATTERNS,
-  TRIGGER_PATTERNS
+  TRIGGER_PATTERNS,
 };

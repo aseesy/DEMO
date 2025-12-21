@@ -7,17 +7,20 @@
 **Symptom**: Page loads but shows blank/white screen
 
 **Common Causes**:
+
 1. **Invalid Route**: Navigating to a route that doesn't exist (e.g., `/signup` instead of `/signin`)
 2. **React Error**: Component threw an error but Error Boundary wasn't set up
 3. **Authentication Redirect Loop**: User is authenticated but redirect logic is broken
 
 **Solutions**:
+
 1. Check browser console for errors (`F12` → Console tab)
 2. Use `window.getErrorLog()` to see captured errors
 3. Verify route exists in `App.jsx`
 4. Check if Error Boundary is working (should show error UI, not blank screen)
 
 **Valid Routes**:
+
 - `/` - Main dashboard/chat
 - `/signin` - Login/Signup page
 - `/accept-invite` - Accept co-parent invitation
@@ -38,6 +41,7 @@
 **Cause**: PostgreSQL database not configured or migrations not run
 
 **Solution**:
+
 ```bash
 # Check DATABASE_URL is set
 echo $DATABASE_URL
@@ -54,11 +58,13 @@ node run-migration.js
 **Symptom**: Invite links don't work or emails not sent
 
 **Common Issues**:
+
 - `APP_URL` not set in `.env` → links point to wrong domain
 - Email service not configured → emails logged to console instead
 - User already authenticated → redirect happens before invite page loads
 
 **Solution**:
+
 ```bash
 # Set APP_URL in .env
 echo "APP_URL=http://localhost:5173" >> chat-server/.env
@@ -76,6 +82,7 @@ echo "APP_URL=http://localhost:5173" >> chat-server/.env
 **Cause**: Auth state and routing logic conflict
 
 **Debug Steps**:
+
 1. Open browser console
 2. Check `localStorage.getItem('isAuthenticated')`
 3. Check `localStorage.getItem('chatUser')`
@@ -88,6 +95,7 @@ echo "APP_URL=http://localhost:5173" >> chat-server/.env
 **Symptom**: Changes to React components don't appear
 
 **Solution**:
+
 ```bash
 # Hard refresh browser
 # Mac: Cmd + Shift + R
@@ -103,11 +111,13 @@ npm run dev
 ### 5. Server Crashes on Startup
 
 **Common Errors**:
+
 - `DATABASE_URL not set` → Add to `.env`
 - `Port 3001 already in use` → Kill existing process
 - `Cannot find module` → Run `npm install`
 
 **Solution**:
+
 ```bash
 # Kill existing server
 pkill -f "node server.js"
@@ -128,17 +138,17 @@ node server.js
 
 ```javascript
 // View captured errors
-window.getErrorLog()
+window.getErrorLog();
 
 // Clear error log
-window.clearErrorLog()
+window.clearErrorLog();
 
 // Check auth state
-localStorage.getItem('isAuthenticated')
-localStorage.getItem('chatUser')
+localStorage.getItem('isAuthenticated');
+localStorage.getItem('chatUser');
 
 // Clear auth state
-localStorage.clear()
+localStorage.clear();
 ```
 
 ### Server Logs
@@ -159,6 +169,7 @@ grep "ERROR" chat-server/server.log
 ## Prevention Checklist
 
 Before pushing code:
+
 - [ ] Test all routes manually
 - [ ] Check browser console for errors
 - [ ] Verify Error Boundary catches errors (not blank screen)

@@ -3,13 +3,15 @@
 ## What Was Implemented
 
 ### 1. User Node Creation ✅
+
 - **When:** Every time a new user signs up
 - **Where:** `auth.js` - `createUserWithEmail()`, `createUser()`, `registerFromInvitation()`
 - **Result:** User node created in Neo4j with userId, username, email, displayName, createdAt
 
 ### 2. Co-Parent Relationship Creation ✅
+
 - **When:** Co-parents connect (room created with 2 members)
-- **Where:** 
+- **Where:**
   - `roomManager.js` - `createCoParentRoom()` - Creates relationship when room is explicitly created for co-parents
   - `roomManager.js` - `addUserToRoom()` - Creates relationship when second user joins (co-parent connection)
   - `auth.js` - `registerFromInvitation()` - Creates relationship after invitation acceptance
@@ -18,6 +20,7 @@
 ## Graph Structure Created
 
 ### User Node
+
 ```cypher
 (:User {
   userId: 123,
@@ -29,6 +32,7 @@
 ```
 
 ### Co-Parent Relationship
+
 ```cypher
 (:User {userId: 1})-[:CO_PARENT_WITH {
   roomId: "room_123",
@@ -46,6 +50,7 @@
 ```
 
 ### Room Node
+
 ```cypher
 (:Room {
   roomId: "room_123",
@@ -56,6 +61,7 @@
 ```
 
 ### Room Memberships
+
 ```cypher
 (:User {userId: 1})-[:MEMBER_OF {
   role: "owner",
@@ -71,12 +77,14 @@
 ## Integration Points
 
 ### ✅ User Signup
+
 - `auth.js` → `createUserWithEmail()` → Creates user node
 - `auth.js` → `createUser()` → Creates user node
 - `auth.js` → `registerFromInvitation()` → Creates user node + relationship
 - `auth.js` → `getOrCreateGoogleUser()` → Uses `createUser()` (covered)
 
 ### ✅ Co-Parent Connection
+
 - `roomManager.js` → `createCoParentRoom()` → Creates relationship + room
 - `roomManager.js` → `addUserToRoom()` → Creates relationship when 2nd member joins
 - `auth.js` → `registerFromInvitation()` → Creates relationship after room creation
@@ -84,11 +92,13 @@
 ## Outcome: "Mom A's New Partner" Scenario
 
 ### Initial State
+
 ```
 Mom A ←→ Dad A (Room 1)
 ```
 
 **Neo4j Graph:**
+
 ```cypher
 (:MomA)-[:CO_PARENT_WITH {roomId: "room_1"}]->(:DadA)
 (:DadA)-[:CO_PARENT_WITH {roomId: "room_1"}]->(:MomA)
@@ -96,12 +106,14 @@ Mom A ←→ Dad A (Room 1)
 ```
 
 ### After Mom A's Partner Joins
+
 ```
 Mom A ←→ Dad A (Room 1)          [Still active]
 Mom A ←→ Mom A's Partner (Room 2) [New relationship]
 ```
 
 **Neo4j Graph:**
+
 ```cypher
 // Original relationship (still active)
 (:MomA)-[:CO_PARENT_WITH {roomId: "room_1", active: true}]->(:DadA)
@@ -117,6 +129,7 @@ Mom A ←→ Mom A's Partner (Room 2) [New relationship]
 ```
 
 **Query: Find all of Mom A's co-parents**
+
 ```cypher
 MATCH (momA:User {userId: 1})-[:CO_PARENT_WITH {active: true}]->(coParent:User)
 RETURN coParent
@@ -126,11 +139,13 @@ RETURN coParent
 ## Error Handling
 
 ✅ **Non-blocking:** All Neo4j operations are non-blocking
+
 - User signup succeeds even if Neo4j fails
 - Room creation succeeds even if Neo4j fails
 - Errors are logged but don't break the flow
 
 ✅ **Graceful degradation:** If Neo4j is unavailable:
+
 - Application continues to function normally
 - PostgreSQL remains the source of truth
 - Neo4j is an enhancement, not a requirement
@@ -138,6 +153,7 @@ RETURN coParent
 ## Configuration
 
 Set these environment variables:
+
 ```bash
 NEO4J_URI=http://localhost:7474
 NEO4J_USER=neo4j
@@ -148,15 +164,19 @@ NEO4J_DATABASE=neo4j  # Optional, default: neo4j
 ## Available Functions
 
 ### `neo4jClient.createUserNode(userId, username, email, displayName)`
+
 Creates a User node in Neo4j
 
 ### `neo4jClient.createCoParentRelationship(userId1, userId2, roomId, roomName)`
+
 Creates bidirectional co-parent relationship + room node + memberships
 
 ### `neo4jClient.endCoParentRelationship(userId1, userId2)`
+
 Deactivates a relationship (preserves history)
 
 ### `neo4jClient.getCoParents(userId)`
+
 Returns all active co-parents for a user
 
 ## Testing
@@ -193,8 +213,8 @@ To test the integration:
 ## Status: ✅ COMPLETE
 
 The Neo4j integration is fully implemented and will automatically:
+
 - Create user nodes when users sign up
 - Create co-parent relationships when users connect
 - Handle evolving relationships (e.g., Mom A's new partner)
 - Maintain privacy (each relationship = private room)
-

@@ -1,0 +1,255 @@
+/**
+ * SocketAdapter - Abstraction layer for real-time communication
+ *
+ * Why this exists:
+ * - Decouples application code from socket.io-client
+ * - If we switch to native WebSocket, Ably, Pusher, or another service, only this file changes
+ * - Provides a stable, framework-agnostic API
+ *
+ * Usage:
+ *   import { createSocketConnection, SocketEvents } from '../adapters/socket';
+ *   const socket = createSocketConnection(url, options);
+ *   socket.on(SocketEvents.MESSAGE, handler);
+ */
+
+import { io } from 'socket.io-client';
+
+/**
+ * SocketEvents - Centralized event name constants
+ *
+ * Why this exists:
+ * - Single source of truth for event names
+ * - Prevents typos in event string literals
+ * - Easy to audit all socket events in one place
+ */
+export const SocketEvents = {
+  // Connection events
+  CONNECT: 'connect',
+  DISCONNECT: 'disconnect',
+  CONNECT_ERROR: 'connect_error',
+  RECONNECT: 'reconnect',
+  RECONNECT_ATTEMPT: 'reconnect_attempt',
+
+  // Room events
+  JOIN: 'join',
+  JOINED: 'joined',
+  LEAVE: 'leave',
+
+  // Message events
+  SEND_MESSAGE: 'send_message',
+  NEW_MESSAGE: 'new_message',
+  MESSAGE_DELIVERED: 'message_delivered',
+  MESSAGE_ERROR: 'message_error',
+  FLAG_MESSAGE: 'flag_message',
+  MESSAGE_FLAGGED: 'message_flagged',
+
+  // Typing events
+  TYPING: 'typing',
+  TYPING_UPDATE: 'typing_update',
+
+  // AI/Mediation events
+  AI_INTERVENTION: 'ai_intervention',
+  ANALYZE_DRAFT: 'analyze_draft',
+  DRAFT_COACHING: 'draft_coaching',
+
+  // Thread events
+  CREATE_THREAD: 'create_thread',
+  THREAD_CREATED: 'thread_created',
+  GET_THREADS: 'get_threads',
+  THREADS_LIST: 'threads_list',
+  GET_THREAD_MESSAGES: 'get_thread_messages',
+  THREAD_MESSAGES: 'thread_messages',
+  ADD_TO_THREAD: 'add_to_thread',
+
+  // Search events
+  SEARCH_MESSAGES: 'search_messages',
+  SEARCH_RESULTS: 'search_results',
+
+  // History events
+  GET_MESSAGES: 'get_messages',
+  MESSAGES_HISTORY: 'messages_history',
+  LOAD_OLDER: 'load_older',
+  OLDER_MESSAGES: 'older_messages',
+  NO_MORE_MESSAGES: 'no_more_messages',
+
+  // Error events
+  ERROR: 'error',
+  SERVER_ERROR: 'server_error',
+};
+
+/**
+ * SocketConnection - Wrapper class for socket instance
+ *
+ * Provides a clean interface that doesn't expose socket.io internals
+ */
+class SocketConnection {
+  constructor(socket) {
+    this._socket = socket;
+    this._listeners = new Map();
+  }
+
+  /**
+   * Check if socket is connected
+   */
+  get connected() {
+    return this._socket?.connected ?? false;
+  }
+
+  /**
+   * Get socket ID
+   */
+  get id() {
+    return this._socket?.id ?? null;
+  }
+
+  /**
+   * Subscribe to an event
+   * @param {string} event - Event name (use SocketEvents constants)
+   * @param {Function} handler - Event handler
+   * @returns {Function} Unsubscribe function
+   */
+  on(event, handler) {
+    this._socket.on(event, handler);
+
+    // Track listener for cleanup
+    if (!this._listeners.has(event)) {
+      this._listeners.set(event, new Set());
+    }
+    this._listeners.get(event).add(handler);
+
+    // Return unsubscribe function
+    return () => this.off(event, handler);
+  }
+
+  /**
+   * Subscribe to an event (once)
+   * @param {string} event - Event name
+   * @param {Function} handler - Event handler
+   */
+  once(event, handler) {
+    this._socket.once(event, handler);
+  }
+
+  /**
+   * Unsubscribe from an event
+   * @param {string} event - Event name
+   * @param {Function} handler - Event handler
+   */
+  off(event, handler) {
+    this._socket.off(event, handler);
+
+    const handlers = this._listeners.get(event);
+    if (handlers) {
+      handlers.delete(handler);
+    }
+  }
+
+  /**
+   * Emit an event
+   * @param {string} event - Event name (use SocketEvents constants)
+   * @param {*} data - Data to send
+   */
+  emit(event, data) {
+    if (this._socket?.connected) {
+      this._socket.emit(event, data);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Emit an event with acknowledgment callback
+   * @param {string} event - Event name
+   * @param {*} data - Data to send
+   * @param {Function} callback - Acknowledgment callback
+   */
+  emitWithAck(event, data, callback) {
+    if (this._socket?.connected) {
+      this._socket.emit(event, data, callback);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Connect the socket
+   */
+  connect() {
+    this._socket.connect();
+  }
+
+  /**
+   * Disconnect the socket
+   */
+  disconnect() {
+    this._socket.disconnect();
+  }
+
+  /**
+   * Remove all listeners and disconnect
+   */
+  destroy() {
+    // Remove all tracked listeners
+    this._listeners.forEach((handlers, event) => {
+      handlers.forEach(handler => {
+        this._socket.off(event, handler);
+      });
+    });
+    this._listeners.clear();
+
+    // Disconnect
+    this._socket.disconnect();
+    this._socket = null;
+  }
+
+  /**
+   * Get the raw socket (escape hatch for edge cases)
+   * @deprecated Prefer using the wrapper methods
+   */
+  getRawSocket() {
+    console.warn('SocketConnection.getRawSocket() is deprecated. Use wrapper methods instead.');
+    return this._socket;
+  }
+}
+
+/**
+ * createSocketConnection - Factory function to create a socket connection
+ *
+ * @param {string} url - Server URL
+ * @param {Object} options - Connection options
+ * @param {boolean} options.autoConnect - Auto-connect on creation (default: true)
+ * @param {boolean} options.withCredentials - Include credentials (default: true)
+ * @param {string[]} options.transports - Transport methods (default: ['websocket', 'polling'])
+ * @param {Object} options.auth - Authentication data
+ * @returns {SocketConnection} Wrapped socket instance
+ */
+export function createSocketConnection(url, options = {}) {
+  const {
+    autoConnect = true,
+    withCredentials = true,
+    transports = ['websocket', 'polling'],
+    auth,
+    ...restOptions
+  } = options;
+
+  const socket = io(url, {
+    autoConnect,
+    withCredentials,
+    transports,
+    auth,
+    ...restOptions,
+  });
+
+  return new SocketConnection(socket);
+}
+
+/**
+ * getSocketUrl - Get the socket server URL based on environment
+ *
+ * @returns {string} Socket server URL
+ */
+export function getSocketUrl() {
+  return import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080';
+}
+
+export default createSocketConnection;

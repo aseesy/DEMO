@@ -13,14 +13,14 @@ If you're seeing this error when trying to generate a Gmail refresh token, you n
 3. **Click on it to edit**
 
 4. **Add the redirect URI:**
-   
+
    **If using the helper script** (`generate-gmail-refresh-token.js`):
    - Under "Authorized redirect URIs", click "ADD URI"
    - Enter: `http://localhost:3000/oauth/callback`
    - Click "SAVE"
-   
+
    ⚠️ **Note:** Google has deprecated the OOB flow. The script now uses a local web server.
-   
+
    **If using OAuth Playground:**
    - Under "Authorized redirect URIs", click "ADD URI"
    - Enter: `https://developers.google.com/oauthplayground`
@@ -33,15 +33,16 @@ If you're seeing this error when trying to generate a Gmail refresh token, you n
 ## Recommended: Use the Helper Script
 
 The helper script (`urn:ietf:wg:oauth:2.0:oob`) is the recommended method because:
+
 - It's designed for installed/desktop apps
 - Simpler to set up
 - More reliable
 
 Just run:
+
 ```bash
 cd chat-server
 node generate-gmail-refresh-token.js
 ```
 
 After adding the redirect URI above.
-

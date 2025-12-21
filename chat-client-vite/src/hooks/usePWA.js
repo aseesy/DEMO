@@ -35,7 +35,7 @@ export function usePWA() {
 
   // Listen for install prompt event
   React.useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
+    const handleBeforeInstallPrompt = e => {
       console.log('[usePWA] Install prompt available');
       e.preventDefault(); // Prevent automatic prompt
       setInstallPromptEvent(e);
@@ -68,7 +68,7 @@ export function usePWA() {
     }
 
     // Detect Safari with multiple methods for reliability
-    const isSafari = 
+    const isSafari =
       /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
       /^((?!chrome|android).)*safari/i.test(navigator.vendor) ||
       (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome'));
@@ -76,7 +76,9 @@ export function usePWA() {
     // In Safari, completely skip service worker registration to avoid errors
     // Safari's service worker implementation is buggy and causes InvalidStateError
     if (isSafari) {
-      console.log('[usePWA] Safari detected - skipping service worker registration to prevent errors');
+      console.log(
+        '[usePWA] Safari detected - skipping service worker registration to prevent errors'
+      );
       return null;
     }
 
@@ -95,7 +97,7 @@ export function usePWA() {
           try {
             // Only call update if registration is still valid
             if (registration && typeof registration.update === 'function') {
-              registration.update().catch((error) => {
+              registration.update().catch(error => {
                 // Catch promise rejections from update()
                 if (error.name === 'InvalidStateError') {
                   console.debug('[usePWA] No service worker update available (expected)');
@@ -141,7 +143,11 @@ export function usePWA() {
             try {
               newWorker.addEventListener('statechange', () => {
                 try {
-                  if (newWorker && newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  if (
+                    newWorker &&
+                    newWorker.state === 'installed' &&
+                    navigator.serviceWorker.controller
+                  ) {
                     console.log('[usePWA] New Service Worker installed, update available');
                     // You can show an update notification here
                   }
@@ -266,14 +272,17 @@ export function usePWA() {
   }, [pushSubscription]);
 
   // Send message to Service Worker
-  const sendMessageToSW = React.useCallback((message) => {
-    if (!swRegistration || !swRegistration.active) {
-      console.warn('[usePWA] Service Worker not active');
-      return;
-    }
+  const sendMessageToSW = React.useCallback(
+    message => {
+      if (!swRegistration || !swRegistration.active) {
+        console.warn('[usePWA] Service Worker not active');
+        return;
+      }
 
-    swRegistration.active.postMessage(message);
-  }, [swRegistration]);
+      swRegistration.active.postMessage(message);
+    },
+    [swRegistration]
+  );
 
   return {
     isInstallable,
@@ -289,10 +298,8 @@ export function usePWA() {
 
 // Helper function to convert VAPID key
 function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/\-/g, '+')
-    .replace(/_/g, '/');
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
 
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);

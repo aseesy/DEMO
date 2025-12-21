@@ -33,17 +33,8 @@
     }
   },
   "lastUpdated": "2025-11-26T00:00:00Z",
-  "departments": [
-    "architecture",
-    "engineering",
-    "quality",
-    "data",
-    "product",
-    "operations"
-  ],
-  "customDepartments": [
-    "domain"
-  ],
+  "departments": ["architecture", "engineering", "quality", "data", "product", "operations"],
+  "customDepartments": ["domain"],
   "departmentCounts": {
     "product": 2,
     "quality": 1

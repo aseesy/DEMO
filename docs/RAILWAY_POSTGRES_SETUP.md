@@ -7,6 +7,7 @@
 When you connect a PostgreSQL service to your chat-server service in Railway, Railway automatically injects the `DATABASE_URL` environment variable.
 
 **Steps:**
+
 1. In Railway dashboard, find your **PostgreSQL** service
 2. Click the service → Go to **Variables** tab
 3. You should see `DATABASE_URL` listed
@@ -51,6 +52,7 @@ After setting `DATABASE_URL`, check your Railway logs. You should see:
 ```
 
 Instead of:
+
 ```
 ❌ DATABASE_URL is not set. PostgreSQL client cannot be initialized.
 ```
@@ -58,11 +60,13 @@ Instead of:
 ## Troubleshooting
 
 **If DATABASE_URL doesn't appear automatically:**
+
 - Make sure both services (PostgreSQL and chat-server) are in the same Railway project
 - Try disconnecting and reconnecting the PostgreSQL service
 - Check that PostgreSQL service is not in "stopped" state
 
 **If connection fails:**
+
 - Verify the connection string format is correct
 - Check that PostgreSQL service is running (not stopped)
 - Make sure the password in the connection string is correct
@@ -70,14 +74,15 @@ Instead of:
 ## Connection String Format
 
 Railway PostgreSQL connection strings look like:
+
 ```
 postgresql://postgres:PASSWORD@maglev.proxy.rlwy.net:57813/railway
 ```
 
 Where:
+
 - `postgres` = username
 - `PASSWORD` = database password
 - `maglev.proxy.rlwy.net` = hostname
 - `57813` = port
 - `railway` = database name
-

@@ -4,7 +4,7 @@
  * All keys use camelCase for consistency with JavaScript conventions
  */
 export const STORAGE_KEYS = {
-  AUTH_TOKEN: 'authTokenBackup',
+  AUTH_TOKEN: 'auth_token_backup',
   USERNAME: 'username',
   IS_AUTHENTICATED: 'isAuthenticated',
   USER_EMAIL: 'userEmail',
@@ -23,4 +23,3 @@ export const STORAGE_KEYS = {
 
 // Note: storageHelpers removed - unused
 // Use storageMigration utilities (getWithMigration, setWithMigration, removeWithMigration) instead
-

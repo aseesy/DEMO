@@ -1,8 +1,8 @@
 /**
  * Unit Tests: OpenAI Client Wrapper
- * 
+ *
  * Tests for OpenAI API client, rate limiting, and error handling.
- * 
+ *
  * @module src/liaizen/core/__tests__/client.test
  */
 
@@ -48,7 +48,7 @@ describe('OpenAI Client', () => {
       delete process.env.OPENAI_API_KEY;
       jest.resetModules();
       const freshClient = require('../client');
-      
+
       // isConfigured returns falsy value (empty string) when not configured
       const result = freshClient.isConfigured();
       expect(result).toBeFalsy();
@@ -58,7 +58,7 @@ describe('OpenAI Client', () => {
       process.env.OPENAI_API_KEY = '';
       jest.resetModules();
       const freshClient = require('../client');
-      
+
       // isConfigured returns falsy value (empty string) when not configured
       const result = freshClient.isConfigured();
       expect(result).toBeFalsy();
@@ -66,13 +66,13 @@ describe('OpenAI Client', () => {
 
     it('should return true when API key is set', () => {
       process.env.OPENAI_API_KEY = 'sk-test-key';
-      
+
       expect(client.isConfigured()).toBe(true);
     });
 
     it('should return true when API key is set with whitespace', () => {
       process.env.OPENAI_API_KEY = '  sk-test-key  ';
-      
+
       // Should trim and return true
       expect(client.isConfigured()).toBe(true);
     });
@@ -85,19 +85,21 @@ describe('OpenAI Client', () => {
 
     it('should throw error when client is not configured', async () => {
       delete process.env.OPENAI_API_KEY;
-      
-      await expect(
-        client.createChatCompletion({ model: 'gpt-4', messages: [] })
-      ).rejects.toThrow('OpenAI client not configured');
+
+      await expect(client.createChatCompletion({ model: 'gpt-4', messages: [] })).rejects.toThrow(
+        'OpenAI client not configured'
+      );
     });
 
     it('should make API call when configured', async () => {
       const mockResponse = {
-        choices: [{
-          message: {
-            content: 'Test response',
+        choices: [
+          {
+            message: {
+              content: 'Test response',
+            },
           },
-        }],
+        ],
         usage: {
           total_tokens: 100,
         },
@@ -171,11 +173,13 @@ describe('OpenAI Client', () => {
     it('should log request completion with timing', async () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       const mockResponse = {
-        choices: [{
-          message: {
-            content: 'Test response',
+        choices: [
+          {
+            message: {
+              content: 'Test response',
+            },
           },
-        }],
+        ],
         usage: {
           total_tokens: 150,
         },
@@ -189,8 +193,9 @@ describe('OpenAI Client', () => {
       });
 
       expect(consoleSpy).toHaveBeenCalled();
-      const logCall = consoleSpy.mock.calls.find(call => 
-        call[0] && typeof call[0] === 'string' && call[0].includes('OpenAI request completed')
+      const logCall = consoleSpy.mock.calls.find(
+        call =>
+          call[0] && typeof call[0] === 'string' && call[0].includes('OpenAI request completed')
       );
       expect(logCall).toBeDefined();
 
@@ -205,7 +210,7 @@ describe('OpenAI Client', () => {
 
     it('should track rate limit statistics', () => {
       const stats = client.getRateLimitStats();
-      
+
       expect(stats).toBeDefined();
       expect(stats).toHaveProperty('requestCount');
       expect(stats).toHaveProperty('maxRequests');
@@ -224,7 +229,7 @@ describe('OpenAI Client', () => {
 
       // Get initial stats
       const initialStats = client.getRateLimitStats();
-      
+
       // Make a request
       await client.createChatCompletion({
         model: 'gpt-4o-mini',
@@ -257,7 +262,7 @@ describe('OpenAI Client', () => {
 
       // Some requests might succeed, some might fail due to rate limiting
       const results = await Promise.allSettled(requests);
-      
+
       // At least some requests should have been made
       expect(mockCreate).toHaveBeenCalled();
     });
@@ -303,7 +308,7 @@ describe('OpenAI Client', () => {
       delete process.env.OPENAI_API_KEY;
       jest.resetModules();
       const freshClient = require('../client');
-      
+
       // isConfigured returns falsy value when not configured
       const result = freshClient.isConfigured();
       expect(result).toBeFalsy();
@@ -313,7 +318,7 @@ describe('OpenAI Client', () => {
       delete process.env.OPENAI_API_KEY;
       jest.resetModules();
       const freshClient = require('../client');
-      
+
       // isConfigured returns falsy value when not configured
       const result = freshClient.isConfigured();
       expect(result).toBeFalsy();
@@ -340,11 +345,13 @@ describe('OpenAI Client', () => {
     it('should handle response without usage data', async () => {
       process.env.OPENAI_API_KEY = 'sk-test-key';
       const mockResponse = {
-        choices: [{
-          message: {
-            content: 'Test response',
+        choices: [
+          {
+            message: {
+              content: 'Test response',
+            },
           },
-        }],
+        ],
         // No usage property
       };
 
@@ -365,4 +372,3 @@ describe('OpenAI Client', () => {
     });
   });
 });
-

@@ -16,6 +16,7 @@ This policy establishes release standards, versioning, and procedures for the SD
 ## Constitutional Alignment
 
 This policy enforces:
+
 - **Principle VIII**: Documentation Synchronization - All releases fully documented
 - **Principle VI**: Git Operation Approval - No autonomous release tagging
 - **Principle VII**: Observability - All releases logged and traced
@@ -26,6 +27,7 @@ This policy enforces:
 ## Scope
 
 All software releases from repositories using the SDD Framework must follow this policy, including:
+
 - Application releases
 - Library releases
 - Framework releases
@@ -44,6 +46,7 @@ Follow **Semantic Versioning 2.0.0** (semver):
 ```
 
 **Examples**:
+
 - `1.0.0` - Major release
 - `1.2.3` - Minor with patches
 - `2.0.0-beta.1` - Pre-release
@@ -54,12 +57,14 @@ Follow **Semantic Versioning 2.0.0** (semver):
 #### Major (X.0.0)
 
 **When to increment**:
+
 - Breaking changes (API incompatibilities)
 - Removed functionality
 - Major architectural changes
 - Incompatible dependency updates
 
 **Examples**:
+
 - `1.x.x → 2.0.0`: Removed old authentication API
 - `2.x.x → 3.0.0`: Changed database schema (breaking)
 
@@ -68,12 +73,14 @@ Follow **Semantic Versioning 2.0.0** (semver):
 #### Minor (x.Y.0)
 
 **When to increment**:
+
 - New features (backward compatible)
 - New functionality added
 - Deprecations (but not removals)
 - Performance improvements
 
 **Examples**:
+
 - `1.0.x → 1.1.0`: Added user profile feature
 - `1.1.x → 1.2.0`: Added API pagination
 
@@ -82,12 +89,14 @@ Follow **Semantic Versioning 2.0.0** (semver):
 #### Patch (x.y.Z)
 
 **When to increment**:
+
 - Bug fixes (backward compatible)
 - Security patches
 - Documentation fixes
 - Internal refactoring
 
 **Examples**:
+
 - `1.2.0 → 1.2.1`: Fixed password reset bug
 - `1.2.1 → 1.2.2`: Security patch for XSS
 
@@ -98,16 +107,19 @@ Follow **Semantic Versioning 2.0.0** (semver):
 **Format**: `{version}-{identifier}.{number}`
 
 **Types**:
+
 - `alpha`: Early testing (unstable, incomplete)
 - `beta`: Feature complete, testing for bugs
 - `rc`: Release candidate (final testing)
 
 **Examples**:
+
 - `2.0.0-alpha.1` - First alpha
 - `2.0.0-beta.2` - Second beta
 - `2.0.0-rc.1` - Release candidate
 
 **Ordering**:
+
 ```
 1.0.0-alpha.1 < 1.0.0-alpha.2 < 1.0.0-beta.1 < 1.0.0-beta.2 < 1.0.0-rc.1 < 1.0.0
 ```
@@ -117,6 +129,7 @@ Follow **Semantic Versioning 2.0.0** (semver):
 **Format**: `{version}+{metadata}`
 
 **Examples**:
+
 - `1.0.0+20251107` - Date
 - `1.0.0+sha.5114f85` - Git commit
 - `1.0.0+build.123` - Build number
@@ -134,6 +147,7 @@ Follow **Semantic Versioning 2.0.0** (semver):
 **Versioning**: `X.Y.Z` (no pre-release identifier)
 
 **Requirements**:
+
 - All tests pass (unit, integration, E2E)
 - Security scan clear
 - Performance benchmarks met
@@ -151,12 +165,14 @@ Follow **Semantic Versioning 2.0.0** (semver):
 **Versioning**: `X.Y.Z-{alpha|beta|rc}.N`
 
 **Requirements**:
+
 - Tests pass
 - Documented known issues
 - Clear "do not use in production" warning
 - Feedback mechanism provided
 
 **Purpose**:
+
 - Get early feedback
 - Test in production-like environments
 - Validate breaking changes
@@ -168,6 +184,7 @@ Follow **Semantic Versioning 2.0.0** (semver):
 **Versioning**: Increment patch: `X.Y.Z → X.Y.(Z+1)`
 
 **Requirements**:
+
 - Fix critical bug only (minimal changes)
 - Tests for the bug
 - Expedited review process
@@ -182,11 +199,13 @@ Follow **Semantic Versioning 2.0.0** (semver):
 ### Step 1: Release Planning
 
 **Determine release type**:
+
 - Major: Breaking changes or major features
 - Minor: New features (backward compatible)
 - Patch: Bug fixes only
 
 **Create release proposal**:
+
 ```markdown
 # Release Proposal: v1.2.0
 
@@ -195,6 +214,7 @@ Follow **Semantic Versioning 2.0.0** (semver):
 ## Target Date: 2025-11-15
 
 ## Included Features:
+
 - #42: User authentication
 - #55: API pagination
 - #67: Email notifications
@@ -204,21 +224,25 @@ Follow **Semantic Versioning 2.0.0** (semver):
 ## Migration Required: No
 
 ## Dependencies:
+
 - Upgrade bcrypt to v5.1.0
 - Add nodemailer dependency
 
 ## Testing Plan:
+
 - Unit tests: All pass
 - Integration tests: All pass
 - E2E tests: Critical flows
 - Performance: Load test with 1000 concurrent users
 
 ## Documentation:
+
 - API docs updated
 - CHANGELOG updated
 - Migration guide (N/A)
 
 ## Approvals:
+
 - [ ] Team lead
 - [ ] Architect (if major)
 ```
@@ -226,40 +250,49 @@ Follow **Semantic Versioning 2.0.0** (semver):
 ### Step 2: Release Preparation
 
 **Create release branch** (if using Git Flow):
+
 ```bash
 git checkout -b release/v1.2.0 develop
 ```
 
 **Version bump**:
+
 ```bash
 npm version minor  # 1.1.5 → 1.2.0
 ```
 
 **Update CHANGELOG.md**:
+
 ```markdown
 # Changelog
 
 ## [1.2.0] - 2025-11-15
 
 ### Added
+
 - User authentication with JWT (#42)
 - API pagination for all list endpoints (#55)
 - Email notification system (#67)
 
 ### Changed
+
 - Updated bcrypt to v5.1.0
 
 ### Deprecated
+
 - Old authentication method (will be removed in v2.0.0)
 
 ### Fixed
+
 - None
 
 ### Security
+
 - Patched XSS vulnerability in user input
 ```
 
 **Update documentation**:
+
 - API documentation
 - User guides
 - README (if needed)
@@ -268,6 +301,7 @@ npm version minor  # 1.1.5 → 1.2.0
 ### Step 3: Release Testing
 
 **Test in staging**:
+
 ```bash
 # Deploy to staging
 deploy-to-staging release/v1.2.0
@@ -288,6 +322,7 @@ npm run test:performance
 ```
 
 **Minimum staging duration**:
+
 - Patch: 4 hours
 - Minor: 24 hours
 - Major: 48 hours
@@ -296,14 +331,15 @@ npm run test:performance
 
 **Approval requirements**:
 
-| Release Type | Approvers | Notice |
-|--------------|-----------|--------|
-| Patch | 1 (team lead) | 4 hours |
-| Minor | 1 (team lead) | 24 hours |
-| Major | 2 (lead + architect) | 48 hours |
-| Breaking | Team consensus | 1 week |
+| Release Type | Approvers            | Notice   |
+| ------------ | -------------------- | -------- |
+| Patch        | 1 (team lead)        | 4 hours  |
+| Minor        | 1 (team lead)        | 24 hours |
+| Major        | 2 (lead + architect) | 48 hours |
+| Breaking     | Team consensus       | 1 week   |
 
 **Approval checklist**:
+
 - [ ] All tests pass
 - [ ] Staging deployment successful
 - [ ] Documentation updated
@@ -315,6 +351,7 @@ npm run test:performance
 ### Step 5: Release Execution
 
 **Merge to main**:
+
 ```bash
 # Merge release branch to main
 git checkout main
@@ -322,6 +359,7 @@ git merge --no-ff release/v1.2.0
 ```
 
 **Tag release**:
+
 ```bash
 # Create annotated tag
 git tag -a v1.2.0 -m "Release v1.2.0
@@ -337,6 +375,7 @@ git push origin v1.2.0
 ```
 
 **Merge back to develop** (if using Git Flow):
+
 ```bash
 git checkout develop
 git merge --no-ff release/v1.2.0
@@ -344,6 +383,7 @@ git push origin develop
 ```
 
 **Delete release branch**:
+
 ```bash
 git branch -d release/v1.2.0
 git push origin --delete release/v1.2.0
@@ -352,12 +392,14 @@ git push origin --delete release/v1.2.0
 ### Step 6: Release Deployment
 
 **Deploy to production**:
+
 ```bash
 # Deploy tagged version
 deploy-to-production v1.2.0
 ```
 
 **Verify deployment**:
+
 - Health checks pass
 - Smoke tests pass
 - No error spikes
@@ -366,6 +408,7 @@ deploy-to-production v1.2.0
 ### Step 7: Release Communication
 
 **Create GitHub Release**:
+
 ```bash
 gh release create v1.2.0 \
   --title "v1.2.0 - User Authentication & Pagination" \
@@ -373,6 +416,7 @@ gh release create v1.2.0 \
 ```
 
 **Release notes template**:
+
 ```markdown
 # v1.2.0 - User Authentication & Pagination
 
@@ -381,7 +425,9 @@ Released: 2025-11-15
 ## ✨ New Features
 
 ### User Authentication
+
 Added JWT-based authentication system. Users can now:
+
 - Register with email and password
 - Log in and receive access tokens
 - Reset forgotten passwords
@@ -389,10 +435,13 @@ Added JWT-based authentication system. Users can now:
 See [Authentication Guide](docs/auth.md) for details.
 
 ### API Pagination
+
 All list endpoints now support pagination:
 ```
+
 GET /api/users?page=1&limit=20
-```
+
+````
 
 ## 🔧 Improvements
 
@@ -415,13 +464,14 @@ GET /api/users?page=1&limit=20
 
 ```bash
 npm install package@1.2.0
-```
+````
 
 ## 🙏 Contributors
 
 - @developer1 (#42, #55)
 - @developer2 (#67)
-```
+
+````
 
 **Announce release**:
 - Team chat/Slack
@@ -561,9 +611,10 @@ function oldMethod() {
   console.warn('oldMethod is deprecated, use newMethod instead');
   // implementation
 }
-```
+````
 
 **Timeline**:
+
 - v1.0.0: oldMethod exists
 - v1.2.0: oldMethod deprecated, newMethod added
 - v2.0.0: oldMethod removed
@@ -587,30 +638,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+
 - Feature in progress
 
 ## [1.2.0] - 2025-11-15
 
 ### Added
+
 - User authentication with JWT (#42)
 - API pagination (#55)
 
 ### Changed
+
 - Updated bcrypt dependency
 
 ### Deprecated
+
 - Old auth method (use JWT instead)
 
 ### Removed
+
 - None
 
 ### Fixed
+
 - Password reset email bug (#88)
 
 ### Security
+
 - Patched XSS vulnerability
 
 ## [1.1.0] - 2025-10-15
+
 ...
 ```
 
@@ -721,13 +780,13 @@ git branch -d hotfix/critical-bug
 
 ### Targets
 
-| Metric | Target |
-|--------|--------|
+| Metric            | Target                             |
+| ----------------- | ---------------------------------- |
 | Release frequency | Monthly (minor), Quarterly (major) |
-| Lead time | <1 week |
-| Hotfix rate | <5% of releases |
-| Rollback rate | <2% |
-| Time to deploy | <30 minutes |
+| Lead time         | <1 week                            |
+| Hotfix rate       | <5% of releases                    |
+| Rollback rate     | <2%                                |
+| Time to deploy    | <30 minutes                        |
 
 ---
 

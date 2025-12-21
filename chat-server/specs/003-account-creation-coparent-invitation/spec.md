@@ -6,6 +6,7 @@
 **Input**: User description: "users should be able to create a new account. We want the new user to be able to invite their co-parent to join the chat room with them."
 
 ## Execution Flow (main)
+
 ```
 1. Parse user description from Input
    → Identified: account creation + co-parent invitation flow
@@ -35,6 +36,7 @@
 ---
 
 ## ⚡ Quick Guidelines
+
 - ✅ Focus on WHAT users need and WHY
 - ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
 - 👥 Written for business stakeholders, not developers
@@ -44,9 +46,11 @@
 ## Feature Overview
 
 ### Business Objective
+
 Enable separated parents to easily join the LiaiZen co-parenting platform and immediately connect with their co-parent to begin using the communication tools together. This reduces friction in onboarding and ensures both parents can collaborate from day one.
 
 ### Success Criteria
+
 - New users can successfully create accounts without technical difficulty
 - Invitation process is intuitive and requires minimal steps
 - Co-parents can join and access shared communication space within 24 hours
@@ -54,6 +58,7 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 - Zero security vulnerabilities in invitation flow
 
 ### User Value
+
 - **For Inviter (Parent 1)**: Quick and easy way to onboard their co-parent without technical barriers
 - **For Invitee (Parent 2)**: Trusted invitation from known co-parent, clear path to join
 - **For Platform**: Higher user retention through paired co-parent accounts
@@ -61,12 +66,14 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 
 ---
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### Primary User Story
+
 **As a parent**, I want to create an account and immediately invite my co-parent so that we can both start using the communication platform together without delays.
 
 **Detailed User Journey:**
+
 1. Parent 1 visits the platform and chooses to sign up
 2. Parent 1 provides their name, email, and password
 3. Parent 1's account is created and they are logged in
@@ -83,31 +90,37 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 ### Acceptance Scenarios
 
 #### Scenario 1: New User Account Creation
+
 - **Given** a person visiting the platform for the first time
 - **When** they complete the signup form with valid email, password, and name
 - **Then** their account is created, they are logged in, and they see their dashboard
 
 #### Scenario 2: Co-Parent Invitation (New User)
+
 - **Given** a newly registered user on their dashboard
 - **When** they enter their co-parent's email address and send an invitation
 - **Then** the co-parent receives an email with a secure invitation link
 
 #### Scenario 3: Co-Parent Accepts Invitation (Creates Account)
+
 - **Given** a co-parent receives an invitation email
 - **When** they click the invitation link and complete signup
 - **Then** their account is created AND they are automatically connected to the inviter's chat room
 
 #### Scenario 4: Shared Room Access
+
 - **Given** both co-parents have accepted the connection
 - **When** either parent logs in and navigates to messages
 - **Then** they see a shared private chat room with both members
 
 #### Scenario 5: Invitation to Existing User
+
 - **Given** a user invites a co-parent who already has an account
 - **When** the invitee logs into their existing account
 - **Then** they see an in-app notification with option to accept/decline the room invitation
 
 #### Scenario 6: Expired Invitation
+
 - **Given** an invitation was sent 8 days ago (past 7-day expiration)
 - **When** the co-parent tries to use the link
 - **Then** they see a message that the invitation expired and are prompted to request a new one
@@ -115,6 +128,7 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 ### Edge Cases
 
 #### Account Creation Edge Cases
+
 - What happens when user provides an email that already exists?
   - **Expected**: System shows "Email already registered. Try logging in or reset password."
 - What happens when user provides invalid email format?
@@ -123,6 +137,7 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
   - **Expected**: [NEEDS CLARIFICATION: What are password requirements? Length, complexity?]
 
 #### Invitation Edge Cases
+
 - What happens when inviter sends invitation to their own email?
   - **Expected**: System prevents this with error "You cannot invite yourself"
 - What happens when inviter sends multiple invitations to same email?
@@ -133,6 +148,7 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
   - **Expected**: [NEEDS CLARIFICATION: Email validation on signup? Security token validation?]
 
 #### Room/Connection Edge Cases
+
 - What happens when user has multiple co-parents (blended families)?
   - **Expected**: MVP supports only one co-parent per user. Multiple co-parents planned for future release.
 - What happens when both parents independently sign up before inviting each other?
@@ -142,11 +158,12 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 
 ---
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
 #### Account Creation
+
 - **FR-001**: System MUST allow users to create accounts using email and password
 - **FR-002**: System MUST validate email addresses are properly formatted before accepting registration
 - **FR-003**: System MUST ensure email addresses are unique (prevent duplicate accounts)
@@ -155,6 +172,7 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 - **FR-006**: System MUST create a personal user profile immediately after account creation
 
 #### Co-Parent Invitation
+
 - **FR-007**: System MUST allow users to invite co-parents via email address
 - **FR-008**: System MUST generate secure, unique invitation links that expire after 7 days
 - **FR-009**: System MUST send invitation emails containing the secure link and inviter's name
@@ -163,6 +181,7 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 - **FR-012**: System MUST display confirmation to inviter when invitation is successfully sent
 
 #### Invitation Acceptance & Room Creation
+
 - **FR-013**: System MUST allow invitees to create accounts via the invitation link
 - **FR-014**: System MUST automatically create a shared private chat room when invitation is accepted
 - **FR-015**: System MUST add both inviter and invitee as members of the shared room
@@ -170,6 +189,7 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 - **FR-017**: System MUST notify both users when connection is established
 
 #### Security & Privacy
+
 - **FR-018**: System MUST ensure invitation links can only be used once
 - **FR-019**: System MUST invalidate invitation links after expiration period
 - **FR-020**: System MUST encrypt passwords before storage
@@ -178,60 +198,72 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 ### Non-Functional Requirements
 
 #### Usability
+
 - **NFR-001**: Account creation form MUST be completable in under 2 minutes
 - **NFR-002**: Invitation process MUST require no more than 3 user interactions
 - **NFR-003**: Error messages MUST be clear and actionable for non-technical users
 
 #### Performance
+
 - **NFR-004**: Account creation MUST complete within 3 seconds under normal load
 - **NFR-005**: Invitation email MUST be delivered within 5 minutes
 
 #### Reliability
+
 - **NFR-006**: Invitation links MUST work consistently across all major email clients
 - **NFR-007**: System MUST handle email delivery failures gracefully with retry logic
 
 #### Accessibility
+
 - **NFR-008**: Account creation form MUST be accessible via screen readers (WCAG 2.1 AA)
 - **NFR-009**: Invitation emails MUST be readable on mobile devices
 
 ### Co-Parenting Domain Requirements
 
 #### Child-Centered Outcomes
+
 - **CDR-001**: System MUST prioritize ease of connection so parents can focus on children, not technology
 - **CDR-002**: System SHOULD provide optional onboarding guidance about effective co-parenting communication
 
 #### Conflict Reduction
+
 - **CDR-003**: System MUST create neutral, equal-permission rooms to avoid power imbalances
 - **CDR-004**: Invitation messages MUST use neutral, professional language
 
 #### Privacy & Security
+
 - **CDR-005**: System MUST comply with data protection regulations (GDPR, COPPA if children data collected)
 - **CDR-006**: System MUST maintain audit trail of invitation and connection events for legal purposes
 
 #### Asynchronous Communication
+
 - **CDR-007**: System MUST NOT require both parents to be online simultaneously for invitation flow
 - **CDR-008**: System MUST allow co-parents in different time zones to complete the process independently
 
 ---
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 #### User
+
 - Represents a parent using the platform
 - Attributes: name, email (unique), password (hashed), account creation date, profile details
 - Relationships: can send invitations, can receive invitations, can be member of rooms
 
 #### Invitation
+
 - Represents a request from one parent to another to join the platform
 - Attributes: unique token, inviter reference, invitee email, expiration date, status (pending/accepted/expired), creation date
 - Relationships: created by inviter (User), intended for invitee (email → User after acceptance)
 
 #### Room
+
 - Represents a private communication space shared between co-parents
 - Attributes: room ID, room name, privacy setting (private), creation date
 - Relationships: created by user, contains multiple members
 
 #### RoomMember
+
 - Represents a user's membership in a room
 - Attributes: user reference, room reference, role (owner/member), join date
 - Relationships: links User to Room
@@ -239,15 +271,18 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 ---
 
 ## Review & Acceptance Checklist
-*GATE: Automated checks run during main() execution*
+
+_GATE: Automated checks run during main() execution_
 
 ### Content Quality
+
 - [x] No implementation details (languages, frameworks, APIs)
 - [x] Focused on user value and business needs
 - [x] Written for non-technical stakeholders
 - [x] All mandatory sections completed
 
 ### Requirement Completeness
+
 - [x] No [NEEDS CLARIFICATION] markers remain - **All clarifications resolved**
 - [x] Requirements are testable and unambiguous (except clarifications)
 - [x] Success criteria are measurable
@@ -255,6 +290,7 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 - [x] Dependencies and assumptions identified
 
 ### Co-Parenting Domain Alignment
+
 - [x] Child-centered outcomes prioritized
 - [x] Conflict reduction mechanisms included
 - [x] Privacy and security requirements defined
@@ -266,24 +302,31 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 ## Clarifications - RESOLVED
 
 ### 1. Invitation Timing ✅
+
 **Decision**: **Required** - Invitation is a mandatory step in the onboarding flow.
+
 - User must invite their co-parent before completing signup
 - Cannot skip or defer invitation step
 
 ### 2. Multiple Co-Parents ✅
+
 **Decision**: **One co-parent only for MVP**
+
 - Chat rooms limited to 2 people (inviter + one co-parent)
 - Multiple co-parents planned for future release
 
 ### 3. Existing Account Invitation Handling ✅
+
 **Decision**: **In-app notification only**
+
 - If invitee already has an account, send in-app notification (no email)
 - Invitee sees notification when they log in with accept/decline options
 
 ---
 
 ## Execution Status
-*Updated by main() during processing*
+
+_Updated by main() during processing_
 
 - [x] User description parsed
 - [x] Key concepts extracted
@@ -298,13 +341,16 @@ Enable separated parents to easily join the LiaiZen co-parenting platform and im
 ## Next Steps
 
 ### For Stakeholder Review
+
 1. Review clarifications and provide decisions
 2. Validate acceptance scenarios match business expectations
 3. Confirm success criteria are appropriate
 4. Approve non-functional requirements (timings, performance)
 
 ### For Planning Phase (`/plan`)
+
 Once clarifications are resolved:
+
 1. Technical research on invitation token security best practices
 2. Email template design for invitation messages
 3. API contract definition for registration and invitation endpoints
@@ -317,6 +363,7 @@ Once clarifications are resolved:
 ## Domain Validation Readiness
 
 This specification addresses LiaiZen co-parenting domain requirements:
+
 - ✅ Child-centered: Reduces friction so parents can focus on children
 - ✅ Conflict reduction: Neutral language, equal permissions
 - ✅ Privacy: Secure invitation flow, data protection compliance

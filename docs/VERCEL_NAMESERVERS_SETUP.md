@@ -121,6 +121,7 @@ You've changed the nameservers to Vercel - this is a great approach! Vercel will
 **Issue**: Nameservers haven't propagated yet
 
 **Solution**:
+
 1. **Wait for Propagation**:
    - Nameserver changes take 5-15 minutes to propagate
    - Can take up to 48 hours in some cases
@@ -140,6 +141,7 @@ You've changed the nameservers to Vercel - this is a great approach! Vercel will
 **Issue**: SSL certificate hasn't been provisioned yet
 
 **Solution**:
+
 1. **Wait for SSL Provisioning**:
    - SSL certificates are provisioned automatically after nameservers propagate
    - Usually takes 5-15 minutes
@@ -160,6 +162,7 @@ You've changed the nameservers to Vercel - this is a great approach! Vercel will
 **Issue**: Domain is not added to Vercel project
 
 **Solution**:
+
 1. **Add Domain to Vercel**:
    - Go to **Settings** → **Domains**
    - Click **Add Domain**
@@ -176,6 +179,7 @@ You've changed the nameservers to Vercel - this is a great approach! Vercel will
 **Issue**: Still getting SSL errors after nameservers are set
 
 **Solution**:
+
 1. **Wait for Propagation**:
    - DNS and SSL provisioning can take time
    - Wait 10-30 minutes after nameservers are set
@@ -214,4 +218,3 @@ You've changed the nameservers to Vercel - this is a great approach! Vercel will
 ---
 
 **Next Steps: Wait for nameservers to propagate (5-15 minutes), then wait for SSL certificate to be provisioned (5-15 minutes). Your domain should work without SSL errors!** 🌐
-

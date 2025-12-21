@@ -7,6 +7,7 @@ You're **90% done**! Just need one thing: GitHub token.
 ## 3-Step Setup
 
 ### Step 1: Get GitHub Token (2 min)
+
 1. Go to: https://github.com/settings/tokens
 2. Click **"Generate new token (classic)"**
 3. Name: `LiaiZen MCP`
@@ -15,6 +16,7 @@ You're **90% done**! Just need one thing: GitHub token.
 6. **COPY THE TOKEN** (starts with `ghp_`)
 
 ### Step 2: Add to Shell (1 min)
+
 ```bash
 # Paste your token here (replace ghp_... with your actual token)
 echo 'export GITHUB_TOKEN=ghp_your_token_here' >> ~/.zshrc
@@ -25,6 +27,7 @@ echo $GITHUB_TOKEN
 ```
 
 ### Step 3: Restart Claude Code (1 min)
+
 - Completely quit Claude Code
 - Reopen it
 - MCP servers will now be active!
@@ -32,6 +35,7 @@ echo $GITHUB_TOKEN
 ## Test It Works (1 min)
 
 Ask Claude Code:
+
 ```
 "Show me all users in the database"
 ```
@@ -55,6 +59,7 @@ If it works, you'll see database results!
 ## Available MCP Servers
 
 Once done, you'll have:
+
 - 🗄️ **SQLite MCP** - Query your chat database
 - 🐙 **GitHub MCP** - View commits, issues, PRs
 - 📁 **Filesystem MCP** - Advanced file operations

@@ -15,22 +15,26 @@ To prevent confusion and maintain clarity as the number of agents grows, all age
 Each agent's memory structure contains four main directories. Files within these directories MUST include the agent name to avoid confusion:
 
 #### Context Directory
+
 - **Pattern**: `{agent-name}-context.md`
 - **Example**: `subagent-architect-context.md`
 - **Purpose**: Current working context and state
 
 #### Knowledge Directory
+
 - **Pattern**: `{agent-name}-knowledge.md` (main file)
 - **Additional**: `{agent-name}-{topic}.md` for specific knowledge areas
 - **Example**: `subagent-architect-knowledge.md`, `subagent-architect-workflow.md`
 - **Purpose**: Accumulated knowledge and learnings
 
 #### Decisions Directory
+
 - **Pattern**: `{agent-name}-decisions.md`
 - **Example**: `subagent-architect-decisions.md`
 - **Purpose**: Historical decisions and rationales
 
 #### Performance Directory
+
 - **Pattern**: `{agent-name}-performance.md`
 - **Example**: `subagent-architect-performance.md`
 - **Purpose**: Performance tracking and optimization data
@@ -38,12 +42,14 @@ Each agent's memory structure contains four main directories. Files within these
 ### Why This Matters
 
 Without agent-specific naming:
+
 - Multiple `README.md` files across agents become indistinguishable
 - File searches return ambiguous results
 - Context switching between agents becomes error-prone
 - Maintenance and debugging become difficult
 
 With agent-specific naming:
+
 - Each file is immediately identifiable
 - Search results are precise
 - Navigation is intuitive
@@ -69,12 +75,14 @@ With agent-specific naming:
 ### For New Agents
 
 The `create-agent.sh` script automatically creates files with the correct naming convention:
+
 - Uses `{agent_name}-context.md` instead of `README.md`
 - Applies pattern consistently across all memory directories
 
 ### For Existing Agents
 
 Existing generic `README.md` files should be renamed to follow the convention:
+
 ```bash
 # Old: README.md
 # New: {agent-name}-{directory}.md
@@ -97,6 +105,7 @@ mv README.md subagent-architect-context.md
 ## Migration Checklist
 
 When updating existing agents:
+
 - [ ] Rename context/README.md → context/{agent-name}-context.md
 - [ ] Rename knowledge/README.md → knowledge/{agent-name}-knowledge.md
 - [ ] Rename decisions/README.md → decisions/{agent-name}-decisions.md

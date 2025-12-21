@@ -1,6 +1,6 @@
 /**
  * Unit Tests: RoomId Value Object
- * 
+ *
  * @module domain/valueObjects/__tests__/RoomId.test
  */
 
@@ -160,18 +160,17 @@ describe('RoomId', () => {
     it('should not allow value modification', () => {
       const roomId = new RoomId('room-abc123');
       const originalValue = roomId.value;
-      
+
       // Try to modify (will fail silently in non-strict mode, throw in strict mode)
       try {
         roomId.value = 'hacked-room-id';
       } catch (e) {
         // In strict mode, this will throw - that's fine
       }
-      
+
       // Verify value didn't change
       expect(roomId.value).toBe(originalValue);
       expect(roomId.value).toBe('room-abc123');
     });
   });
 });
-

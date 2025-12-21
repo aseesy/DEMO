@@ -3,6 +3,7 @@
 ## Understanding the Warning
 
 Vercel warns that `VITE_GOOGLE_PLACES_API_KEY` will be exposed because:
+
 - **Vite environment variables** prefixed with `VITE_` are bundled into client-side JavaScript
 - This is **intentional and necessary** for Google Places API to work in the browser
 - The API key **must** be accessible to client-side code
@@ -54,6 +55,7 @@ Google Places API is designed to be used client-side. The key is meant to be vis
 ## Security Best Practices
 
 ### ✅ DO:
+
 - **Restrict by HTTP referrer** - Only allow your domains
 - **Restrict API usage** - Only enable Places API
 - **Set quotas** - Prevent abuse and unexpected charges
@@ -61,6 +63,7 @@ Google Places API is designed to be used client-side. The key is meant to be vis
 - **Use separate keys** - One for dev, one for production
 
 ### ❌ DON'T:
+
 - Don't use the same key for multiple projects
 - Don't skip referrer restrictions
 - Don't enable unnecessary APIs
@@ -75,7 +78,7 @@ If you want to completely hide the API key, you can create a backend proxy endpo
 app.get('/api/places/autocomplete', async (req, res) => {
   const { input } = req.query;
   const apiKey = process.env.GOOGLE_PLACES_API_KEY; // Server-side only
-  
+
   const response = await fetch(
     `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${input}&key=${apiKey}`
   );
@@ -85,6 +88,7 @@ app.get('/api/places/autocomplete', async (req, res) => {
 ```
 
 However, this requires:
+
 - More complex implementation
 - Backend API calls (slower)
 - Additional server resources
@@ -115,11 +119,13 @@ If you get this error from other domains, your restrictions are working! ✅
 ## Cost Management
 
 Google Places API pricing:
+
 - **Autocomplete (Per Session)**: $2.83 per 1,000 sessions
 - **Place Details**: $17 per 1,000 requests
 - **Free tier**: $200/month credit (covers ~70,000 autocomplete sessions)
 
 Set up billing alerts:
+
 1. Go to **Billing** → **Budgets & alerts**
 2. Create a budget for your project
 3. Set alert threshold (e.g., 80% of free tier)
@@ -127,6 +133,7 @@ Set up billing alerts:
 ## Summary
 
 **The Vercel warning is expected** - client-side API keys are visible by design. The security comes from:
+
 1. ✅ **HTTP referrer restrictions** (only your domains can use it)
 2. ✅ **API restrictions** (only Places API enabled)
 3. ✅ **Quota limits** (prevent abuse)
@@ -136,7 +143,7 @@ This is Google's recommended approach and is secure when properly configured.
 ## Need Help?
 
 If you need assistance:
+
 1. Check [Google Places API documentation](https://developers.google.com/maps/documentation/places/web-service)
 2. Review [API key best practices](https://developers.google.com/maps/api-security-best-practices)
 3. Contact Google Cloud support if you have billing concerns
-

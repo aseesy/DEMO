@@ -5,7 +5,7 @@
 const dbPostgres = require('../../../dbPostgres');
 const dbSafe = require('../../../dbSafe');
 
-  console.log('📊 UserContext: Using PostgreSQL');
+console.log('📊 UserContext: Using PostgreSQL');
 
 /**
  * Get user context by username
@@ -15,20 +15,24 @@ const dbSafe = require('../../../dbSafe');
 async function getUserContext(username) {
   try {
     // PostgreSQL-only: user_context.user_id is TEXT (username)
-    const result = await dbPostgres.query('SELECT * FROM user_context WHERE user_id = $1', [username.toLowerCase()]);
-      if (result.rowCount === 0) return null;
+    const result = await dbPostgres.query('SELECT * FROM user_context WHERE user_id = $1', [
+      username.toLowerCase(),
+    ]);
+    if (result.rowCount === 0) return null;
 
-      const row = result.rows[0];
+    const row = result.rows[0];
     // Handle JSONB fields that may be parsed or string
-    const children = typeof row.children === 'string' ? JSON.parse(row.children) : (row.children || []);
-    const contacts = typeof row.contacts === 'string' ? JSON.parse(row.contacts) : (row.contacts || []);
-    
-      return {
-        username: row.user_id,
+    const children =
+      typeof row.children === 'string' ? JSON.parse(row.children) : row.children || [];
+    const contacts =
+      typeof row.contacts === 'string' ? JSON.parse(row.contacts) : row.contacts || [];
+
+    return {
+      username: row.user_id,
       co_parent: row.co_parent || null,
       children: children,
-      contacts: contacts
-      };
+      contacts: contacts,
+    };
   } catch (err) {
     console.error('Error getting user context:', err);
     return null;
@@ -48,8 +52,8 @@ async function setUserContext(username, context) {
 
   try {
     // PostgreSQL-only: user_context.user_id is TEXT (username)
-      await dbPostgres.query(
-        `INSERT INTO user_context (user_id, co_parent, children, contacts)
+    await dbPostgres.query(
+      `INSERT INTO user_context (user_id, co_parent, children, contacts)
        VALUES ($1, $2, $3::jsonb, $4::jsonb)
          ON CONFLICT (user_id) DO UPDATE SET
            co_parent = EXCLUDED.co_parent,
@@ -73,7 +77,7 @@ async function setUserContext(username, context) {
  * @returns {Promise<Object>} - The updated context
  */
 async function updateUserContext(username, updates) {
-  const current = await getUserContext(username) || {};
+  const current = (await getUserContext(username)) || {};
   const merged = { ...current, ...updates };
   return setUserContext(username, merged);
 }
@@ -92,12 +96,16 @@ async function formatContextForAI(username, profileData = null) {
   if (!userProfile) {
     try {
       // PostgreSQL-only: use dbSafe to get user
-      const users = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+      const users = await dbSafe.safeSelect(
+        'users',
+        { username: username.toLowerCase() },
+        { limit: 1 }
+      );
       if (users.length > 0) {
         userProfile = users[0];
       }
     } catch (err) {
-      console.error(`Error fetching profile for ${username}:`, err.message);
+      console.error(`Error getting profile for ${username}:`, err.message);
     }
   }
 
@@ -118,13 +126,15 @@ async function formatContextForAI(username, profileData = null) {
 
   // Children
   if (context?.children && context.children.length > 0) {
-    const childrenInfo = context.children.map(child => {
-      let info = child.name || 'Child';
-      if (child.age) {
-        info += ` (age ${child.age})`;
-      }
-      return info;
-    }).join(', ');
+    const childrenInfo = context.children
+      .map(child => {
+        let info = child.name || 'Child';
+        if (child.age) {
+          info += ` (age ${child.age})`;
+        }
+        return info;
+      })
+      .join(', ');
     parts.push(`Shared custody of: ${childrenInfo}`);
   }
 
@@ -143,7 +153,7 @@ async function formatContextForAI(username, profileData = null) {
     }
     parts.push(`Occupation: ${workInfo.join(' ')}`);
   }
-  
+
   if (userProfile?.communication_style) {
     parts.push(`Communication style: "${userProfile.communication_style}"`);
   }
@@ -153,21 +163,21 @@ async function formatContextForAI(username, profileData = null) {
   if (userProfile?.communication_goals) {
     parts.push(`Communication goals: "${userProfile.communication_goals}"`);
   }
-  
+
   // Additional context fields
   if (userProfile?.additional_context) {
     parts.push(`Additional context: "${userProfile.additional_context}"`);
   }
-  
+
   if (userProfile?.address) {
     parts.push(`Location: ${userProfile.address}`);
   }
-  
+
   // Household context (for understanding family dynamics)
   if (userProfile?.household_members) {
     parts.push(`Household: ${userProfile.household_members}`);
   }
-  
+
   // Timezone for temporal awareness
   if (userProfile?.timezone) {
     parts.push(`Timezone: ${userProfile.timezone}`);
@@ -182,5 +192,5 @@ module.exports = {
   getUserContext,
   setUserContext,
   updateUserContext,
-  formatContextForAI
+  formatContextForAI,
 };

@@ -47,6 +47,7 @@ This will compile `src/code.ts` to `code.js` in the root of the `figma-plugin` d
 ### 4. Configure Backend API URL
 
 In the plugin UI:
+
 1. Enter your backend API URL (default: `http://localhost:3001`)
 2. Click "Update API URL"
 3. For production, use: `https://demo-production-6dcd.up.railway.app` or `https://coparentliaizen.com`
@@ -118,11 +119,13 @@ figma-plugin/
 The TypeScript code in `src/code.ts` compiles to `code.js` in the root directory. The `manifest.json` references `code.js` as the main entry point.
 
 **Note**: After making changes to `src/code.ts`, you must rebuild:
+
 ```bash
 npm run build
 ```
 
 For development, use watch mode:
+
 ```bash
 npm run dev
 ```
@@ -208,6 +211,5 @@ Potential enhancements:
 
 ---
 
-*Last Updated: 2025-01-23*
-*Project: LiaiZen Co-Parenting Platform*
-
+_Last Updated: 2025-01-23_
+_Project: LiaiZen Co-Parenting Platform_

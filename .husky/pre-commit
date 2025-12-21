@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged to check only staged files
+npx lint-staged
+
+# Check for console.log and debugger statements (warn only)
+if git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' | xargs grep -E '(console\.(log|warn|error|debug)|debugger)' 2>/dev/null; then
+  echo "⚠️  Warning: Found console.log or debugger statements. Consider removing them before committing."
+  echo "   (This is a warning, not a blocker)"
+fi
+
+# Check for TODO/FIXME comments (warn only)
+if git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' | xargs grep -E '(TODO|FIXME|XXX|HACK)' 2>/dev/null; then
+  echo "⚠️  Warning: Found TODO/FIXME comments. Ensure they're tracked in issues."
+  echo "   (This is a warning, not a blocker)"
+fi

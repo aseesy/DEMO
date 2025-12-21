@@ -11,10 +11,7 @@
       "https://demo-production-6dcd.up.railway.app",
       "https://coparentliaizen.com"
     ],
-    "devAllowedDomains": [
-      "http://localhost:3001"
-    ]
+    "devAllowedDomains": ["http://localhost:3001"]
   },
   "permissions": ["currentuser"]
 }
-

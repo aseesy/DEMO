@@ -20,15 +20,19 @@ router.get('/', verifyAuth, async (req, res) => {
   try {
     const userId = req.user.userId || req.user.id;
 
-    const notifications = await dbSafe.safeSelect('in_app_notifications', { user_id: userId }, {
-      orderBy: 'created_at',
-      orderDirection: 'DESC',
-      limit: 50
-    });
+    const notifications = await dbSafe.safeSelect(
+      'in_app_notifications',
+      { user_id: userId },
+      {
+        orderBy: 'created_at',
+        orderDirection: 'DESC',
+        limit: 50,
+      }
+    );
 
     res.json({ notifications });
   } catch (error) {
-    console.error('Error fetching notifications:', error);
+    console.error('Error getting notifications:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -47,12 +51,12 @@ router.get('/unread-count', optionalAuth, async (req, res) => {
 
     const unreadNotifications = await dbSafe.safeSelect('in_app_notifications', {
       user_id: userId,
-      read: false
+      read: false,
     });
 
     res.json({ count: unreadNotifications.length });
   } catch (error) {
-    console.error('Error fetching unread count:', error);
+    console.error('Error getting unread count:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -66,10 +70,14 @@ router.patch('/:id/read', verifyAuth, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.userId || req.user.id;
 
-    await dbSafe.safeUpdate('in_app_notifications', { read: true }, {
-      id: parseInt(id),
-      user_id: userId
-    });
+    await dbSafe.safeUpdate(
+      'in_app_notifications',
+      { read: true },
+      {
+        id: parseInt(id),
+        user_id: userId,
+      }
+    );
 
     res.json({ success: true });
   } catch (error) {
@@ -106,10 +114,14 @@ router.post('/:id/action', verifyAuth, async (req, res) => {
     const userId = req.user.userId || req.user.id;
 
     // Get notification
-    const notificationResult = await dbSafe.safeSelect('in_app_notifications', {
-      id: parseInt(id),
-      user_id: userId
-    }, { limit: 1 });
+    const notificationResult = await dbSafe.safeSelect(
+      'in_app_notifications',
+      {
+        id: parseInt(id),
+        user_id: userId,
+      },
+      { limit: 1 }
+    );
     const notifications = dbSafe.parseResult(notificationResult);
 
     if (notifications.length === 0) {
@@ -123,7 +135,7 @@ router.post('/:id/action', verifyAuth, async (req, res) => {
 
     res.json({
       success: true,
-      message: `Action '${action}' handled for notification`
+      message: `Action '${action}' handled for notification`,
     });
   } catch (error) {
     console.error('Error handling notification action:', error);

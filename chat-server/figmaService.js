@@ -1,6 +1,6 @@
 /**
  * Figma API Service
- * 
+ *
  * Integrates with Figma REST API to:
  * - Read file data and structure
  * - Export images and assets
@@ -27,7 +27,7 @@ class FigmaService {
   async request(endpoint, options = {}) {
     return new Promise((resolve, reject) => {
       const url = new URL(`${FIGMA_API_BASE}${endpoint}`);
-      
+
       if (options.params) {
         Object.keys(options.params).forEach(key => {
           url.searchParams.append(key, options.params[key]);
@@ -45,10 +45,10 @@ class FigmaService {
         },
       };
 
-      const req = https.request(reqOptions, (res) => {
+      const req = https.request(reqOptions, res => {
         let data = '';
 
-        res.on('data', (chunk) => {
+        res.on('data', chunk => {
           data += chunk;
         });
 
@@ -66,7 +66,7 @@ class FigmaService {
         });
       });
 
-      req.on('error', (error) => {
+      req.on('error', error => {
         reject(error);
       });
 
@@ -194,4 +194,3 @@ class FigmaService {
 }
 
 module.exports = FigmaService;
-

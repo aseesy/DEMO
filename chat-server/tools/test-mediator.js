@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Test script to verify mediator functionality
- * 
+ *
  * Tests the Observer/Mediator framework with various message types
  */
 
@@ -16,27 +16,47 @@ async function testMediator() {
   const testCases = [
     {
       name: 'Clean Message (Should PASS)',
-      message: { text: 'Can you pick up the kids at 3pm?', username: 'testuser', timestamp: new Date().toISOString() },
+      message: {
+        text: 'Can you pick up the kids at 3pm?',
+        username: 'testuser',
+        timestamp: new Date().toISOString(),
+      },
       expected: 'STAY_SILENT',
     },
     {
       name: 'Positive Message (Should PASS)',
-      message: { text: 'I really appreciate how you handled that situation.', username: 'testuser', timestamp: new Date().toISOString() },
+      message: {
+        text: 'I really appreciate how you handled that situation.',
+        username: 'testuser',
+        timestamp: new Date().toISOString(),
+      },
       expected: 'STAY_SILENT',
     },
     {
       name: 'Direct Insult (Should INTERVENE)',
-      message: { text: 'You\'re such an idiot', username: 'testuser', timestamp: new Date().toISOString() },
+      message: {
+        text: "You're such an idiot",
+        username: 'testuser',
+        timestamp: new Date().toISOString(),
+      },
       expected: 'INTERVENE',
     },
     {
       name: 'Indirect Accusation (Should INTERVENE)',
-      message: { text: 'I just think it\'s confusing for her to be around your new friend so soon.', username: 'testuser', timestamp: new Date().toISOString() },
+      message: {
+        text: "I just think it's confusing for her to be around your new friend so soon.",
+        username: 'testuser',
+        timestamp: new Date().toISOString(),
+      },
       expected: 'INTERVENE',
     },
     {
       name: 'Blame Attack (Should INTERVENE)',
-      message: { text: 'It\'s YOUR fault she\'s failing in school', username: 'testuser', timestamp: new Date().toISOString() },
+      message: {
+        text: "It's YOUR fault she's failing in school",
+        username: 'testuser',
+        timestamp: new Date().toISOString(),
+      },
       expected: 'INTERVENE',
     },
   ];
@@ -59,7 +79,7 @@ async function testMediator() {
         null, // roomId
         null, // taskContextForAI
         null, // flaggedMessagesContext
-        null  // roleContext
+        null // roleContext
       );
 
       const actual = result ? result.action : 'STAY_SILENT';
@@ -76,7 +96,9 @@ async function testMediator() {
       if (result && result.type === 'ai_intervention') {
         console.log(`   📊 Intervention Details:`);
         console.log(`      - Risk Level: ${result.escalation?.riskLevel || 'unknown'}`);
-        console.log(`      - Personal Message: ${result.personalMessage?.substring(0, 60) || 'N/A'}...`);
+        console.log(
+          `      - Personal Message: ${result.personalMessage?.substring(0, 60) || 'N/A'}...`
+        );
         console.log(`      - Tip: ${result.tip1 || 'N/A'}`);
         console.log(`      - Rewrite 1: ${result.rewrite1?.substring(0, 50) || 'N/A'}...`);
         console.log(`      - Rewrite 2: ${result.rewrite2?.substring(0, 50) || 'N/A'}...`);
@@ -114,4 +136,3 @@ testMediator().catch(error => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
-

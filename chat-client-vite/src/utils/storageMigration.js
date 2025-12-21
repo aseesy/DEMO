@@ -1,22 +1,21 @@
 /**
  * localStorage Migration Utility
- * 
+ *
  * Migrates old snake_case localStorage keys to new camelCase keys
  * Provides backward compatibility during transition period
  */
 
 const MIGRATION_MAP = {
   // Old key → New key
-  'auth_token_backup': 'authTokenBackup',
-  'notification_preferences': 'notificationPreferences',
-  'pending_invite_code': 'pendingInviteCode',
-  'liaizen_add_contact': 'liaizenAddContact',
-  'liaizen_smart_task': 'liaizenSmartTask',
-  'liaizen_toast_sound': 'liaizenToastSound',
-  'pending_sent_invitation': 'pendingSentInvitation',
-  'oauth_processed_code': 'oauthProcessedCode',
-  'invitation_token': 'invitationToken',
-  'invitation_code': 'invitationCode',
+  notification_preferences: 'notificationPreferences',
+  pending_invite_code: 'pendingInviteCode',
+  liaizen_add_contact: 'liaizenAddContact',
+  liaizen_smart_task: 'liaizenSmartTask',
+  liaizen_toast_sound: 'liaizenToastSound',
+  pending_sent_invitation: 'pendingSentInvitation',
+  oauth_processed_code: 'oauthProcessedCode',
+  invitation_token: 'invitationToken',
+  invitation_code: 'invitationCode',
 };
 
 /**
@@ -27,7 +26,7 @@ const MIGRATION_MAP = {
  */
 function migrateKey(oldKey, newKey) {
   if (typeof window === 'undefined') return false;
-  
+
   const oldValue = localStorage.getItem(oldKey);
   if (oldValue !== null) {
     // Set new key with old value
@@ -45,19 +44,19 @@ function migrateKey(oldKey, newKey) {
  */
 export function runMigrations() {
   if (typeof window === 'undefined') return 0;
-  
+
   let migratedCount = 0;
-  
+
   for (const [oldKey, newKey] of Object.entries(MIGRATION_MAP)) {
     if (migrateKey(oldKey, newKey)) {
       migratedCount++;
     }
   }
-  
+
   if (migratedCount > 0) {
     console.log(`[Storage Migration] Migrated ${migratedCount} localStorage keys to camelCase`);
   }
-  
+
   return migratedCount;
 }
 
@@ -70,11 +69,11 @@ export function runMigrations() {
  */
 export function getWithMigration(newKey, oldKey = null) {
   if (typeof window === 'undefined') return null;
-  
+
   // Try new key first
   const newValue = localStorage.getItem(newKey);
   if (newValue !== null) return newValue;
-  
+
   // Find old key if not provided
   if (!oldKey) {
     for (const [old, newK] of Object.entries(MIGRATION_MAP)) {
@@ -84,7 +83,7 @@ export function getWithMigration(newKey, oldKey = null) {
       }
     }
   }
-  
+
   // Try old key and migrate if found
   if (oldKey) {
     const oldValue = localStorage.getItem(oldKey);
@@ -93,7 +92,7 @@ export function getWithMigration(newKey, oldKey = null) {
       return oldValue;
     }
   }
-  
+
   return null;
 }
 
@@ -105,10 +104,10 @@ export function getWithMigration(newKey, oldKey = null) {
  */
 export function setWithMigration(newKey, value) {
   if (typeof window === 'undefined') return;
-  
+
   // Set new key
   localStorage.setItem(newKey, value);
-  
+
   // Remove old key if it exists
   for (const [oldKey, newK] of Object.entries(MIGRATION_MAP)) {
     if (newK === newKey) {
@@ -125,10 +124,10 @@ export function setWithMigration(newKey, value) {
  */
 export function removeWithMigration(newKey) {
   if (typeof window === 'undefined') return;
-  
+
   // Remove new key
   localStorage.removeItem(newKey);
-  
+
   // Remove old key if it exists
   for (const [oldKey, newK] of Object.entries(MIGRATION_MAP)) {
     if (newK === newKey) {
@@ -143,6 +142,5 @@ export default {
   getWithMigration,
   setWithMigration,
   removeWithMigration,
-  MIGRATION_MAP
+  MIGRATION_MAP,
 };
-

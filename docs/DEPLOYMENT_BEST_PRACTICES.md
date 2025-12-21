@@ -3,6 +3,7 @@
 ## Current Setup Analysis
 
 Your frontend is **static HTML files** (no build process):
+
 - ✅ Uses CDN for React, Tailwind, Socket.io
 - ✅ No compilation needed
 - ✅ Just needs to be served as static files
@@ -12,11 +13,13 @@ Your frontend is **static HTML files** (no build process):
 ### Option 1: Single Service with Project Root (⭐ RECOMMENDED for Now)
 
 **Setup:**
+
 - Railway Root Directory: `.` (project root) or leave blank
 - Backend serves frontend static files
 - One service, one domain
 
 **Pros:**
+
 - ✅ Simplest setup
 - ✅ One deployment
 - ✅ One domain to manage
@@ -24,16 +27,19 @@ Your frontend is **static HTML files** (no build process):
 - ✅ Perfect for static frontend (no build needed)
 
 **Cons:**
+
 - ⚠️ Can't scale frontend/backend independently
 - ⚠️ Backend handles both API and static files
 
 **When to use:**
+
 - Small to medium apps
 - Static frontend (like yours)
 - MVP/early stage
 - Cost-conscious
 
 **Configuration:**
+
 ```
 Railway Service Settings:
 - Root Directory: . (or blank)
@@ -46,11 +52,13 @@ Railway Service Settings:
 ### Option 2: Separate Services (⭐ BEST for Scale)
 
 **Setup:**
+
 - **Backend Service**: Root Directory = `chat-server`
 - **Frontend Service**: Root Directory = `chat-client`
 - Two services, can use same domain with routing
 
 **Pros:**
+
 - ✅ Independent scaling
 - ✅ Separate deployment cycles
 - ✅ Frontend can use CDN (Cloudflare, etc.)
@@ -58,18 +66,21 @@ Railway Service Settings:
 - ✅ Can optimize each service separately
 
 **Cons:**
+
 - ⚠️ More complex setup
 - ⚠️ Two services to manage
 - ⚠️ Higher cost (two services)
 - ⚠️ Need to configure CORS properly
 
 **When to use:**
+
 - Large applications
 - Need independent scaling
 - Frontend has build process
 - Production at scale
 
 **Configuration:**
+
 ```
 Backend Service:
 - Root Directory: chat-server
@@ -87,19 +98,23 @@ Frontend Service:
 ### Option 3: Build Frontend into Backend (⚠️ Not Recommended)
 
 **Setup:**
+
 - Copy `chat-client` into `chat-server` during build
 - Serve from backend
 
 **Pros:**
+
 - ✅ Works with current Railway root directory
 
 **Cons:**
+
 - ❌ Hacky solution
 - ❌ Mixes concerns
 - ❌ Harder to maintain
 - ❌ Not scalable
 
 **When to use:**
+
 - Temporary workaround only
 - Not recommended for production
 
@@ -110,12 +125,14 @@ Frontend Service:
 ### **Use Option 1: Single Service with Project Root**
 
 **Why:**
+
 1. Your frontend is static (no build needed)
 2. You're in MVP/early stage
 3. Simpler is better for now
 4. Can migrate to Option 2 later if needed
 
 **Steps:**
+
 1. **In Railway Dashboard:**
    - Go to your service → Settings → Source
    - Change **Root Directory** from `chat-server` to `.` (or leave blank)
@@ -129,6 +146,7 @@ Frontend Service:
 3. **Redeploy**
 
 **Result:**
+
 - ✅ Both `chat-server` and `chat-client` accessible
 - ✅ Backend serves frontend automatically
 - ✅ One service, one domain
@@ -150,6 +168,7 @@ When you need to scale:
 ## 🔧 Current Implementation
 
 Your current code already supports Option 1:
+
 - ✅ Server detects frontend files automatically
 - ✅ Serves static files from `chat-client`
 - ✅ Handles multiple path scenarios
@@ -169,15 +188,14 @@ For MVP/early stage, Option 1 is more cost-effective.
 
 ## ✅ Quick Decision Matrix
 
-| Factor | Option 1 (Single) | Option 2 (Separate) |
-|--------|-------------------|---------------------|
-| **Complexity** | ⭐ Simple | ⚠️ More complex |
-| **Cost** | ⭐ Lower | ⚠️ Higher |
-| **Scalability** | ⚠️ Limited | ⭐ Excellent |
-| **Maintenance** | ⭐ Easier | ⚠️ More to manage |
-| **Best For** | MVP/Early stage | Production at scale |
+| Factor          | Option 1 (Single) | Option 2 (Separate) |
+| --------------- | ----------------- | ------------------- |
+| **Complexity**  | ⭐ Simple         | ⚠️ More complex     |
+| **Cost**        | ⭐ Lower          | ⚠️ Higher           |
+| **Scalability** | ⚠️ Limited        | ⭐ Excellent        |
+| **Maintenance** | ⭐ Easier         | ⚠️ More to manage   |
+| **Best For**    | MVP/Early stage   | Production at scale |
 
 ---
 
 **Recommendation: Start with Option 1, migrate to Option 2 when you need independent scaling.** 🚀
-

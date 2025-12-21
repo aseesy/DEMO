@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
  * Lint and Fix Script
- * 
+ *
  * Auto-fixes common code quality issues:
  * - Unused imports
  * - Missing error handling
  * - Inconsistent formatting
- * 
+ *
  * Usage: npm run lint:fix
  */
 
@@ -40,7 +40,7 @@ try {
     try {
       execSync('npx eslint . --fix', {
         cwd: SERVER_DIR,
-        stdio: 'inherit'
+        stdio: 'inherit',
       });
       console.log('✅ Backend linting complete\n');
     } catch (error) {
@@ -51,7 +51,7 @@ try {
     try {
       execSync('npm run lint', {
         cwd: CLIENT_DIR,
-        stdio: 'inherit'
+        stdio: 'inherit',
       });
       console.log('✅ Frontend linting complete\n');
     } catch (error) {
@@ -65,16 +65,21 @@ try {
 
   // Check for common issues
   console.log('🔍 Checking for common issues...\n');
-  
+
   const issues = [];
-  
+
   // Check for console.log in production code (basic check)
   try {
-    const serverFiles = execSync('find . -name "*.js" -not -path "./node_modules/*" -not -path "./scripts/*" | head -5', {
-      cwd: SERVER_DIR,
-      encoding: 'utf8'
-    }).trim().split('\n');
-    
+    const serverFiles = execSync(
+      'find . -name "*.js" -not -path "./node_modules/*" -not -path "./scripts/*" | head -5',
+      {
+        cwd: SERVER_DIR,
+        encoding: 'utf8',
+      }
+    )
+      .trim()
+      .split('\n');
+
     // This is just a placeholder - real linting should use ESLint
     console.log('✅ Basic checks complete');
   } catch (error) {
@@ -83,9 +88,7 @@ try {
 
   console.log('\n✅ Lint and fix complete!');
   console.log('💡 Review any remaining issues manually');
-  
 } catch (error) {
   console.error('❌ Lint error:', error.message);
   process.exit(1);
 }
-

@@ -97,7 +97,7 @@ function analyze(text, options = {}) {
 
     // Structure
     has_concrete_request: structurePatterns.has_concrete_request,
-    has_proposed_change: structurePatterns.has_proposed_change
+    has_proposed_change: structurePatterns.has_proposed_change,
   };
 
   // Compile structure analysis
@@ -106,7 +106,7 @@ function analyze(text, options = {}) {
     target: structurePatterns.target,
     tense: structurePatterns.tense,
     absolutes_used: globalSpecificPatterns.absolutes_used,
-    hedges_used: hedgingPatterns.hedges_used
+    hedges_used: hedgingPatterns.hedges_used,
   };
 
   // Generate summary from all detectors
@@ -134,8 +134,8 @@ function analyze(text, options = {}) {
       analysis_method: 'local',
       confidence,
       processing_time_ms: processingTime,
-      text_length: trimmedText.length
-    }
+      text_length: trimmedText.length,
+    },
   };
 }
 
@@ -175,7 +175,7 @@ function generateSummary(
       observations.push('Links evaluation to child to strengthen attack');
     }
     if (childPatterns.child_triangulation) {
-      observations.push('Triangulation: uses child\'s words/preferences against other parent');
+      observations.push("Triangulation: uses child's words/preferences against other parent");
     }
     if (childPatterns.child_as_messenger) {
       observations.push('Uses child as messenger to other parent');
@@ -199,9 +199,11 @@ function generateSummary(
   }
 
   // 7. Missing elements
-  if (!structurePatterns.has_concrete_request &&
-      !structurePatterns.has_proposed_change &&
-      (globalSpecificPatterns.global_negative || evaluativePatterns.evaluative_character)) {
+  if (
+    !structurePatterns.has_concrete_request &&
+    !structurePatterns.has_proposed_change &&
+    (globalSpecificPatterns.global_negative || evaluativePatterns.evaluative_character)
+  ) {
     observations.push('No concrete request or proposed change');
   }
 
@@ -232,9 +234,11 @@ function calculateConfidence(patterns, structureAnalysis) {
     confidence -= 10;
   }
   // Only penalize neutral language for statements - requests/questions with clear language are good
-  if (structureAnalysis.sentence_type === 'statement' &&
-      structureAnalysis.absolutes_used.length === 0 &&
-      structureAnalysis.hedges_used.length === 0) {
+  if (
+    structureAnalysis.sentence_type === 'statement' &&
+    structureAnalysis.absolutes_used.length === 0 &&
+    structureAnalysis.hedges_used.length === 0
+  ) {
     confidence -= 5; // Very neutral statements are harder to analyze
   }
 
@@ -253,7 +257,7 @@ function createEmptyAnalysis(reason) {
       target: 'unclear',
       tense: 'unknown',
       absolutes_used: [],
-      hedges_used: []
+      hedges_used: [],
     },
     summary: [],
     meta: {
@@ -261,8 +265,8 @@ function createEmptyAnalysis(reason) {
       analysis_method: 'local',
       confidence: 0,
       processing_time_ms: 0,
-      error: reason
-    }
+      error: reason,
+    },
   };
 }
 
@@ -299,10 +303,7 @@ function formatForPrompt(analysis) {
     return 'LANGUAGE ANALYSIS: Unable to analyze message';
   }
 
-  const lines = [
-    '=== LANGUAGE ANALYSIS (factual observations) ===',
-    ''
-  ];
+  const lines = ['=== LANGUAGE ANALYSIS (factual observations) ===', ''];
 
   // Summary observations
   if (analysis.summary.length > 0) {
@@ -350,6 +351,6 @@ module.exports = {
     specificity,
     focus,
     childInvolvement,
-    structure
-  }
+    structure,
+  },
 };

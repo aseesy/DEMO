@@ -23,7 +23,11 @@
 
 'use strict';
 
-const { AXIOM_CATEGORIES, createFiringAxiomResult, createNonFiringAxiomResult } = require('../../types');
+const {
+  AXIOM_CATEGORIES,
+  createFiringAxiomResult,
+  createNonFiringAxiomResult,
+} = require('../../types');
 
 // ============================================================================
 // AXIOM METADATA
@@ -53,7 +57,7 @@ const REQUEST_PATTERNS = [
   /\bwould\s+it\s+be\s+possible\b/gi,
   /\bdo\s+you\s+mind\b/gi,
   /\bi\s+need\s+you\s+to\b/gi,
-  /\bi('d| would)\s+appreciate\b/gi
+  /\bi('d| would)\s+appreciate\b/gi,
 ];
 
 /**
@@ -65,19 +69,19 @@ const ACTION_VERBS = [
   /\b(call|text|email|contact|confirm)\b/gi,
   /\b(watch|supervise|help|assist)\b/gi,
   /\b(schedule|arrange|plan|book)\b/gi,
-  /\b(pay|reimburse|split|cover)\b/gi
+  /\b(pay|reimburse|split|cover)\b/gi,
 ];
 
 /**
  * Time/place specificity indicators
  */
 const SPECIFICITY_PATTERNS = [
-  /\bat\s+\d{1,2}(:\d{2})?\s*(am|pm|o'clock)?\b/gi,  // "at 3pm"
+  /\bat\s+\d{1,2}(:\d{2})?\s*(am|pm|o'clock)?\b/gi, // "at 3pm"
   /\b(on|by|before|after)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/gi,
   /\b(tomorrow|today|tonight|this\s+weekend)\b/gi,
   /\b(this|next|on)\s+(week|month)\b/gi,
-  /\bfrom\s+\w+\s+(to|until)\s+\w+\b/gi,  // "from 3 to 5"
-  /\b\d{1,2}(:\d{2})?\s*(am|pm)\b/gi  // Just times like "3pm"
+  /\bfrom\s+\w+\s+(to|until)\s+\w+\b/gi, // "from 3 to 5"
+  /\b\d{1,2}(:\d{2})?\s*(am|pm)\b/gi, // Just times like "3pm"
 ];
 
 /**
@@ -91,7 +95,7 @@ const DISQUALIFIERS = [
   /\b(again|as\s+usual|like\s+always)\b/gi,
   /\bfor\s+once\b/gi,
   /\bwhy\s+(can't|don't|won't)\s+you\b/gi,
-  /\b(she|he|they)\s+said\b/gi  // Child as messenger
+  /\b(she|he|they)\s+said\b/gi, // Child as messenger
 ];
 
 // ============================================================================
@@ -235,7 +239,7 @@ function check(parsed, context = {}) {
     action_verbs: findActionVerbs(text),
     specificity_indicators: findSpecificityIndicators(text),
     disqualifiers: findDisqualifiers(text),
-    is_question: isQuestion(text)
+    is_question: isQuestion(text),
   };
 
   // Check disqualifiers first
@@ -270,7 +274,7 @@ function check(parsed, context = {}) {
       specificity: evidence.specificity_indicators[0] || null,
       is_question: evidence.is_question,
       trigger_phrase: triggerPhrase,
-      all_evidence: evidence
+      all_evidence: evidence,
     },
     'Clear, specific request without hidden criticism. Safe to transmit.'
   );
@@ -308,5 +312,5 @@ module.exports = {
   findSpecificityIndicators,
   findDisqualifiers,
   isQuestion,
-  calculateConfidence
+  calculateConfidence,
 };

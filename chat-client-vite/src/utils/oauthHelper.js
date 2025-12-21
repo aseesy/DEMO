@@ -31,11 +31,11 @@ export function storeOAuthState(state) {
 export function validateOAuthState(receivedState) {
   const storedState = sessionStorage.getItem('oauth_state');
   const timestamp = sessionStorage.getItem('oauth_state_timestamp');
-  
+
   if (!storedState || !timestamp) {
     return false;
   }
-  
+
   // Check expiration (10 minutes)
   const age = Date.now() - parseInt(timestamp, 10);
   if (age > 10 * 60 * 1000) {
@@ -43,14 +43,14 @@ export function validateOAuthState(receivedState) {
     clearOAuthState();
     return false;
   }
-  
+
   // Check if states match
   if (storedState !== receivedState) {
     // State mismatch - potential CSRF attack
     clearOAuthState();
     return false;
   }
-  
+
   return true;
 }
 
@@ -68,9 +68,9 @@ export function clearOAuthState() {
  * @returns {Promise<boolean>} True if popup blocker detected
  */
 export function detectPopupBlocker() {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const popup = window.open('', '_blank', 'width=1,height=1');
-    
+
     if (!popup || popup.closed || typeof popup.closed === 'undefined') {
       // Popup was blocked
       resolve(true);
@@ -90,23 +90,23 @@ export function detectPopupBlocker() {
 export async function openOAuthPopup(authUrl) {
   // First check if popup blocker is active
   const isBlocked = await detectPopupBlocker();
-  
+
   if (isBlocked) {
     return null;
   }
-  
+
   // Open popup
   const popup = window.open(
     authUrl,
     'google_oauth',
     'width=500,height=600,scrollbars=yes,resizable=yes'
   );
-  
+
   // Check if popup was actually opened
   if (!popup || popup.closed || typeof popup.closed === 'undefined') {
     return null;
   }
-  
+
   return popup;
 }
 
@@ -124,19 +124,16 @@ export function waitForOAuthPopup(popup, onMessage) {
         reject(new Error('Popup was closed before completing authentication'));
       }
     }, 1000);
-    
+
     // Listen for message from popup
-    const messageHandler = (event) => {
+    const messageHandler = event => {
       // Verify origin for security
-      const allowedOrigins = [
-        window.location.origin,
-        'https://accounts.google.com',
-      ];
-      
+      const allowedOrigins = [window.location.origin, 'https://accounts.google.com'];
+
       if (!allowedOrigins.includes(event.origin)) {
         return;
       }
-      
+
       if (event.data.type === 'oauth_complete') {
         clearInterval(checkInterval);
         window.removeEventListener('message', messageHandler);
@@ -149,18 +146,21 @@ export function waitForOAuthPopup(popup, onMessage) {
         reject(new Error(event.data.error));
       }
     };
-    
+
     window.addEventListener('message', messageHandler);
-    
+
     // Timeout after 5 minutes
-    setTimeout(() => {
-      clearInterval(checkInterval);
-      window.removeEventListener('message', messageHandler);
-      if (!popup.closed) {
-        popup.close();
-      }
-      reject(new Error('OAuth authentication timed out'));
-    }, 5 * 60 * 1000);
+    setTimeout(
+      () => {
+        clearInterval(checkInterval);
+        window.removeEventListener('message', messageHandler);
+        if (!popup.closed) {
+          popup.close();
+        }
+        reject(new Error('OAuth authentication timed out'));
+      },
+      5 * 60 * 1000
+    );
   });
 }
 
@@ -180,7 +180,8 @@ export function parseOAuthError(error, errorDescription) {
     },
     server_error: {
       message: 'OAuth server error',
-      userMessage: 'Google sign-in is temporarily unavailable. Please try again in a moment or use email/password.',
+      userMessage:
+        'Google sign-in is temporarily unavailable. Please try again in a moment or use email/password.',
       action: 'retry_or_email',
       retryable: true,
     },
@@ -221,18 +222,17 @@ export function parseOAuthError(error, errorDescription) {
       retryable: false,
     },
   };
-  
+
   const errorInfo = errorMap[error] || {
     message: error || 'Unknown OAuth error',
     userMessage: errorDescription || 'An error occurred during sign-in. Please try again.',
     action: 'retry',
     retryable: true,
   };
-  
+
   return {
     ...errorInfo,
     code: error,
     description: errorDescription,
   };
 }
-

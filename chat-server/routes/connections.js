@@ -18,14 +18,14 @@ const {
   honeypotCheck,
   rateLimit,
   recaptchaVerify,
-  rejectDisposableEmail
+  rejectDisposableEmail,
 } = require('../middleware/spamProtection');
 
 // Helper references - set from server.js
 let auth;
 let autoCompleteOnboardingTasks;
 
-router.setHelpers = function(helpers) {
+router.setHelpers = function (helpers) {
   auth = helpers.auth;
   autoCompleteOnboardingTasks = helpers.autoCompleteOnboardingTasks;
 };
@@ -38,14 +38,15 @@ function isValidEmail(email) {
 
 // Spam protection middleware for contact form
 const contactFormProtection = [
-  honeypotCheck('website'),      // Honeypot field
-  rateLimit({                    // Rate limit: 5 submissions per hour per IP
+  honeypotCheck('website'), // Honeypot field
+  rateLimit({
+    // Rate limit: 5 submissions per hour per IP
     windowMs: 3600000,
     maxRequests: 5,
-    message: 'Too many contact form submissions. Please try again later.'
+    message: 'Too many contact form submissions. Please try again later.',
   }),
-  rejectDisposableEmail,         // Block disposable emails
-  recaptchaVerify({ minScore: 0.5, action: 'contact' })  // reCAPTCHA v3
+  rejectDisposableEmail, // Block disposable emails
+  recaptchaVerify({ minScore: 0.5, action: 'contact' }), // reCAPTCHA v3
 ];
 
 // ========================================
@@ -64,7 +65,7 @@ router.post('/contact', contactFormProtection, async (req, res) => {
     // Validate required fields
     if (!name || !email || !subject || !message) {
       return res.status(400).json({
-        error: 'All fields are required (name, email, subject, message)'
+        error: 'All fields are required (name, email, subject, message)',
       });
     }
 
@@ -83,21 +84,20 @@ router.post('/contact', contactFormProtection, async (req, res) => {
       name: name.trim(),
       email: email.trim().toLowerCase(),
       subject: subject.trim(),
-      message: message.trim()
+      message: message.trim(),
     });
 
     console.log(`📧 Contact form submitted by ${name} <${email}>: ${subject}`);
 
     res.json({
       success: true,
-      message: 'Your message has been sent successfully. We\'ll get back to you within 24-48 hours.'
+      message: "Your message has been sent successfully. We'll get back to you within 24-48 hours.",
     });
-
   } catch (error) {
     console.error('Error processing contact form:', error);
     res.status(500).json({
       error: 'Failed to send message. Please try emailing us directly at info@liaizen.com',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 });
@@ -163,7 +163,7 @@ router.post('/invite', async (req, res) => {
       message: emailExists
         ? 'Connection request sent to existing user'
         : 'Invitation email sent to new user',
-      isExistingUser: emailExists
+      isExistingUser: emailExists,
     });
   } catch (error) {
     console.error('Error sending invitation:', error);
@@ -188,7 +188,7 @@ router.get('/join', async (req, res) => {
     if (!connection) {
       return res.status(404).json({
         error: 'Invalid or expired invitation token',
-        valid: false
+        valid: false,
       });
     }
 
@@ -199,7 +199,7 @@ router.get('/join', async (req, res) => {
       valid: true,
       inviteeEmail: connection.inviteeEmail,
       inviteeHasAccount: !!inviteeUser,
-      expiresAt: connection.expiresAt
+      expiresAt: connection.expiresAt,
     });
   } catch (error) {
     console.error('Error validating token:', error);
@@ -234,7 +234,7 @@ router.post('/join/accept', async (req, res) => {
     // Verify email matches (if user has email set)
     if (user.email && user.email.toLowerCase() !== connection.inviteeEmail.toLowerCase()) {
       return res.status(403).json({
-        error: 'This invitation was sent to another email address. Please log out and try again.'
+        error: 'This invitation was sent to another email address. Please log out and try again.',
       });
     }
 
@@ -265,7 +265,7 @@ router.post('/join/accept', async (req, res) => {
     res.json({
       success: true,
       message: 'Connection created successfully',
-      roomId: result.inviterRoom
+      roomId: result.inviterRoom,
     });
   } catch (error) {
     console.error('Error accepting invitation:', error);
@@ -293,7 +293,7 @@ router.post('/auth/signup-with-token', async (req, res) => {
     if (passwordError) {
       return res.status(400).json({
         error: passwordError,
-        requirements: getPasswordRequirements()
+        requirements: getPasswordRequirements(),
       });
     }
 
@@ -312,7 +312,7 @@ router.post('/auth/signup-with-token', async (req, res) => {
     res.json({
       success: true,
       user,
-      message: 'Account created and connection established'
+      message: 'Account created and connection established',
     });
   } catch (error) {
     if (error.message === 'Username already exists' || error.message === 'Email already exists') {

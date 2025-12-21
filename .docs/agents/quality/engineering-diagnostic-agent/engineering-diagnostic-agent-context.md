@@ -17,20 +17,23 @@ None currently active.
 ### Recent Diagnostics
 
 | Date | Issue Type | Root Cause | Resolution Status |
-|------|------------|------------|-------------------|
-| - | - | - | - |
+| ---- | ---------- | ---------- | ----------------- |
+| -    | -          | -          | -                 |
 
 ### Environment States
 
 **Local Development**:
+
 - Status: Unknown
 - Last checked: Never
 
 **Staging**:
+
 - Status: Unknown
 - Last checked: Never
 
 **Production**:
+
 - Status: Unknown
 - Last checked: Never
 
@@ -53,9 +56,9 @@ None.
 ## Session History
 
 | Session | Date | Focus Area | Outcome |
-|---------|------|------------|---------|
-| - | - | - | - |
+| ------- | ---- | ---------- | ------- |
+| -       | -    | -          | -       |
 
 ---
 
-*Last Updated: 2025-11-26*
+_Last Updated: 2025-11-26_

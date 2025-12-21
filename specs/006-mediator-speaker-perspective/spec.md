@@ -11,7 +11,7 @@
 
 ### Problem Statement
 
-LiaiZen's AI mediator currently has ambiguity in its speaker/receiver role understanding. When a sender writes a hostile message like "you suck", the AI may generate rewrites that sound like responses from the *receiver* rather than alternative phrasings for the *sender*.
+LiaiZen's AI mediator currently has ambiguity in its speaker/receiver role understanding. When a sender writes a hostile message like "you suck", the AI may generate rewrites that sound like responses from the _receiver_ rather than alternative phrasings for the _sender_.
 
 **Current Problematic Behavior Example:**
 
@@ -23,7 +23,7 @@ AI might generate:
 - rewrite2: "That comment hurt. Can we discuss what's bothering you?"
 ```
 
-These rewrites sound like what Parent B (the receiver) would say *after receiving* "you suck" - not what Parent A (the sender) should send *instead* of "you suck".
+These rewrites sound like what Parent B (the receiver) would say _after receiving_ "you suck" - not what Parent A (the sender) should send _instead_ of "you suck".
 
 **Correct Expected Behavior:**
 
@@ -35,20 +35,20 @@ AI should generate:
 - rewrite2: "The way things are going isn't working for me. Can we talk about what's happening?"
 ```
 
-These are alternative messages Parent A could send *instead* that express their underlying frustration without attacking.
+These are alternative messages Parent A could send _instead_ that express their underlying frustration without attacking.
 
 ### Business Objective
 
-Ensure the AI mediator always coaches from the correct perspective: helping the *sender* express their underlying need/concern more effectively, never generating "response" messages that only make sense from the receiver's perspective.
+Ensure the AI mediator always coaches from the correct perspective: helping the _sender_ express their underlying need/concern more effectively, never generating "response" messages that only make sense from the receiver's perspective.
 
 ### Success Metrics
 
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| Rewrite perspective accuracy | 100% | QA review of intervention samples |
-| User acceptance rate of rewrites | >60% | Analytics tracking |
-| False "receiver perspective" rewrites | 0% | Automated validation |
-| Reduction in rewrite rejections | -30% | Before/after comparison |
+| Metric                                | Target | Measurement Method                |
+| ------------------------------------- | ------ | --------------------------------- |
+| Rewrite perspective accuracy          | 100%   | QA review of intervention samples |
+| User acceptance rate of rewrites      | >60%   | Analytics tracking                |
+| False "receiver perspective" rewrites | 0%     | Automated validation              |
+| Reduction in rewrite rejections       | -30%   | Before/after comparison           |
 
 ---
 
@@ -57,10 +57,11 @@ Ensure the AI mediator always coaches from the correct perspective: helping the 
 ### US-001: Sender Receives Correct Rewrite Perspective
 
 **As a** co-parent sending a message that triggers AI intervention
-**I want** the suggested rewrites to be alternative ways *I* could express my concern
-**So that** I can choose a better phrasing that still represents what *I* want to say
+**I want** the suggested rewrites to be alternative ways _I_ could express my concern
+**So that** I can choose a better phrasing that still represents what _I_ want to say
 
 **Acceptance Criteria:**
+
 - [ ] Rewrites are phrased from first-person perspective of the sender
 - [ ] Rewrites express the sender's underlying intent/concern
 - [ ] Rewrites never sound like responses to the original message
@@ -74,6 +75,7 @@ Ensure the AI mediator always coaches from the correct perspective: helping the 
 **So that** all coaching is correctly directed at the person composing the message
 
 **Acceptance Criteria:**
+
 - [ ] Prompt explicitly labels sender as "person writing this message"
 - [ ] Prompt explicitly labels receiver as "person who will receive this message"
 - [ ] System message reinforces that rewrites replace the sender's message
@@ -108,6 +110,7 @@ YOUR REWRITES ARE NOT:
 ```
 
 **Business Rules:**
+
 1. Every intervention MUST generate rewrites from sender perspective
 2. Rewrites MUST preserve the sender's underlying intent
 3. Rewrites MUST NOT be phrased as reactions to the original message
@@ -117,6 +120,7 @@ YOUR REWRITES ARE NOT:
 The system MUST validate generated rewrites before returning them.
 
 **Receiver-Perspective Indicators to Detect:**
+
 - Starts with "I understand you're..."
 - Contains "That [hurt/upset/bothered] me..."
 - Phrases like "When you said that..."
@@ -124,6 +128,7 @@ The system MUST validate generated rewrites before returning them.
 - Second-person accusatory opener in rewrite (responding back)
 
 **Validation Logic:**
+
 ```javascript
 function validateRewritePerspective(rewrite, originalMessage) {
   const receiverIndicators = [
@@ -133,7 +138,7 @@ function validateRewritePerspective(rewrite, originalMessage) {
     /^in response to/i,
     /hearing (that|this)/i,
     /^I('m| am) sorry you feel/i,
-    /^that('s| is) (not|a) (nice|fair|okay)/i
+    /^that('s| is) (not|a) (nice|fair|okay)/i,
   ];
 
   for (const pattern of receiverIndicators) {
@@ -202,16 +207,16 @@ If a generated rewrite fails perspective validation:
 const fallbackRewrites = {
   frustration: [
     "I'm feeling frustrated and need us to communicate more respectfully.",
-    "Something isn't working for me. Can we discuss what's happening?"
+    "Something isn't working for me. Can we discuss what's happening?",
   ],
   concern: [
     "I have a concern I'd like to discuss with you.",
-    "I've noticed something that's been bothering me. Can we talk about it?"
+    "I've noticed something that's been bothering me. Can we talk about it?",
   ],
   conflict: [
     "I'm having a hard time with how things are going. Can we find a better approach?",
-    "This situation isn't working for me. I'd like to find a solution together."
-  ]
+    "This situation isn't working for me. I'd like to find a solution together.",
+  ],
 };
 ```
 
@@ -222,12 +227,14 @@ const fallbackRewrites = {
 ### Architecture Integration
 
 **Affected Files:**
+
 - `chat-server/aiMediator.js` - Main prompt modification
 - `chat-server/ai-mediation-constitution.md` - Add role clarity section
 - `chat-server/libs/communication-profile/mediationContext.js` - Enhance role context formatting
 - New: `chat-server/libs/rewrite-validator.js` - Validation module
 
 **Dependencies:**
+
 - Existing role context from Feature 002 (sender-profile-mediation)
 - Communication profile library
 - OpenAI client
@@ -339,6 +346,7 @@ Add to `ai-mediation-constitution.md` Section II:
 **Mandate**: All rewrites MUST be written from the sender's perspective as alternative phrasings.
 
 **Critical Understanding**:
+
 - Rewrites are what the SENDER could send INSTEAD of their original message
 - Rewrites are NOT responses the receiver would send back
 - Rewrites express the sender's underlying intent in a better way
@@ -365,21 +373,25 @@ Add to `ai-mediation-constitution.md` Section II:
 ## Implementation Notes
 
 ### Phase 1: Prompt Enhancement
+
 1. Add explicit role disambiguation section to prompt
 2. Add example library with correct/incorrect comparisons
 3. Update system message to reinforce sender perspective
 
 ### Phase 2: Validation Layer
+
 1. Create `rewrite-validator.js` module
 2. Implement receiver-perspective detection
 3. Add logging for validation failures
 
 ### Phase 3: Fallback System
+
 1. Create pre-approved fallback rewrite library
 2. Implement fallback selection based on message intent
 3. Add metrics for fallback usage
 
 ### Phase 4: Monitoring & Iteration
+
 1. Review validation failure logs weekly
 2. Expand receiver-indicator patterns as needed
 3. Tune prompt based on persistent issues
@@ -390,21 +402,21 @@ Add to `ai-mediation-constitution.md` Section II:
 
 ### Co-Parenting Alignment
 
-| Requirement | Status | Notes |
-|-------------|--------|-------|
-| Child-centered outcomes | ✅ | Proper coaching helps parents communicate better for children |
-| Conflict reduction | ✅ | Correct perspective ensures useful alternatives |
-| Privacy & security | ✅ | No new data collection required |
-| Accessibility | ✅ | No UI changes |
-| Audit trail | ✅ | Validation failures logged |
+| Requirement             | Status | Notes                                                         |
+| ----------------------- | ------ | ------------------------------------------------------------- |
+| Child-centered outcomes | ✅     | Proper coaching helps parents communicate better for children |
+| Conflict reduction      | ✅     | Correct perspective ensures useful alternatives               |
+| Privacy & security      | ✅     | No new data collection required                               |
+| Accessibility           | ✅     | No UI changes                                                 |
+| Audit trail             | ✅     | Validation failures logged                                    |
 
 ### Risk Assessment
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Over-aggressive validation | Medium | Medium | Start conservative, tune based on data |
-| Fallback overuse | Low | Low | Monitor metrics, improve prompt |
-| User confusion | Low | Low | Rewrites will be MORE useful |
+| Risk                       | Probability | Impact | Mitigation                             |
+| -------------------------- | ----------- | ------ | -------------------------------------- |
+| Over-aggressive validation | Medium      | Medium | Start conservative, tune based on data |
+| Fallback overuse           | Low         | Low    | Monitor metrics, improve prompt        |
+| User confusion             | Low         | Low    | Rewrites will be MORE useful           |
 
 ---
 
@@ -417,10 +429,12 @@ Add to `ai-mediation-constitution.md` Section II:
 **Sender Intent Analysis**: Expressing frustration with co-parent's actions/decisions
 
 **Wrong (Receiver Perspective)**:
+
 - "That's really hurtful. I'd appreciate if we could talk respectfully."
 - "I don't deserve that. What's really bothering you?"
 
 **Correct (Sender Perspective)**:
+
 - "I'm frustrated with how things are going and need us to find a better approach."
 - "I'm having trouble understanding your decision. Can you help me see your perspective?"
 
@@ -431,10 +445,12 @@ Add to `ai-mediation-constitution.md` Section II:
 **Sender Intent Analysis**: Disappointed about how something affected the children
 
 **Wrong (Receiver Perspective)**:
+
 - "That's not fair. I was trying my best."
 - "Can you explain what you mean? I thought it went okay."
 
 **Correct (Sender Perspective)**:
+
 - "I'm disappointed about how the weekend went. Can we talk about what happened?"
 - "I think the kids were affected by [specific issue]. I'd like to discuss how we can handle it differently."
 
@@ -445,10 +461,12 @@ Add to `ai-mediation-constitution.md` Section II:
 **Sender Intent Analysis**: Feeling unheard, escalating for attention
 
 **Wrong (Receiver Perspective)**:
+
 - "That's unnecessary. Can't we talk about this?"
 - "I'd prefer to resolve this between us."
 
 **Correct (Sender Perspective)**:
+
 - "I'm feeling like we're not making progress and I need us to find a way forward."
 - "This issue is important to me and I need it addressed. Can we work on a solution?"
 
@@ -456,6 +474,6 @@ Add to `ai-mediation-constitution.md` Section II:
 
 ## Changelog
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2025-11-26 | Initial specification |
+| Version | Date       | Changes               |
+| ------- | ---------- | --------------------- |
+| 1.0.0   | 2025-11-26 | Initial specification |

@@ -5,6 +5,7 @@ Complete guide to deploy your chat application to Railway.
 ## ✅ Why Railway?
 
 **Pros:**
+
 - ✅ **Automatic SSL** - HTTPS out of the box
 - ✅ **Easy deployments** - Connect GitHub, auto-deploy on push
 - ✅ **Built-in monitoring** - Logs and metrics included
@@ -14,6 +15,7 @@ Complete guide to deploy your chat application to Railway.
 - ✅ **WebSocket support** - Socket.io works perfectly
 
 **Cons:**
+
 - ⚠️ **Ephemeral filesystem** - Files lost on redeploy (SQLite needs special handling)
 - ⚠️ **Cost** - $5-20/month after free tier
 - ⚠️ **Less control** - Can't SSH into server
@@ -25,11 +27,13 @@ Complete guide to deploy your chat application to Railway.
 **Solutions:**
 
 ### Option A: Use Railway Volumes (Recommended for SQLite)
+
 - Add a persistent volume to store `chat.db`
 - Database persists across deployments
 - Easy to set up
 
 ### Option B: Migrate to PostgreSQL (Best for Production)
+
 - Railway has one-click PostgreSQL addon
 - Better for production (concurrent writes, backups)
 - More scalable long-term
@@ -56,21 +60,22 @@ Complete guide to deploy your chat application to Railway.
 
 2. **Add Environment Variables:**
    Go to **Variables** tab and add:
+
    ```env
    NODE_ENV=production
    PORT=3001
    FRONTEND_URL=https://coparentliaizen.com,https://www.coparentliaizen.com
-   
+
    # Email Configuration
    EMAIL_SERVICE=gmail
    GMAIL_USER=info@liaizen.com
    GMAIL_APP_PASSWORD=your_app_password
    EMAIL_FROM=info@liaizen.com
    APP_NAME=LiaiZen
-   
+
    # AI Moderation
    OPENAI_API_KEY=sk-your-openai-api-key
-   
+
    # Security
    JWT_SECRET=your-super-secret-jwt-key-min-32-chars
    ```
@@ -137,6 +142,7 @@ Complete guide to deploy your chat application to Railway.
 ### Option 1: Using package.json Scripts
 
 Railway will automatically:
+
 - Run `npm install`
 - Run `npm start` (from your package.json)
 
@@ -162,22 +168,26 @@ Railway will automatically:
 If you choose PostgreSQL (recommended for production):
 
 ### 1. Install PostgreSQL Client
+
 ```bash
 npm install pg
 ```
 
 ### 2. Update `chat-server/db.js`
+
 Replace SQLite code with PostgreSQL connection:
+
 ```javascript
 const { Pool } = require('pg');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 ```
 
 ### 3. Migrate Data (One-time)
+
 Create a migration script to copy data from SQLite to PostgreSQL.
 
 ## 💰 Railway Pricing
@@ -187,6 +197,7 @@ Create a migration script to copy data from SQLite to PostgreSQL.
 - **Pro Plan**: $20/month + usage
 
 **Typical Costs:**
+
 - Backend service: ~$5-10/month
 - Frontend service: ~$5/month
 - PostgreSQL (if used): ~$5/month
@@ -210,6 +221,7 @@ Create a migration script to copy data from SQLite to PostgreSQL.
 **Problem:** `chat.db` disappears after redeploy
 
 **Solution:**
+
 - Use Railway Volume (mount at `/app/data`)
 - Or migrate to PostgreSQL
 
@@ -218,6 +230,7 @@ Create a migration script to copy data from SQLite to PostgreSQL.
 **Problem:** Socket.io connections fail
 
 **Solution:**
+
 - Verify Railway supports WebSockets (it does by default)
 - Check CORS settings in your server
 - Ensure `FRONTEND_URL` includes your Railway domain
@@ -227,6 +240,7 @@ Create a migration script to copy data from SQLite to PostgreSQL.
 **Problem:** Variables not accessible in code
 
 **Solution:**
+
 - Check variable names match exactly (case-sensitive)
 - Redeploy after adding variables
 - Check logs for errors
@@ -236,6 +250,7 @@ Create a migration script to copy data from SQLite to PostgreSQL.
 **Problem:** Domain doesn't resolve
 
 **Solution:**
+
 - Wait 5-15 minutes for DNS propagation
 - Verify DNS records in Hostinger
 - Check Railway domain settings
@@ -271,4 +286,3 @@ railway open
 ---
 
 **Ready to deploy?** Start with Step 1 and Railway will guide you through the rest! 🚀
-

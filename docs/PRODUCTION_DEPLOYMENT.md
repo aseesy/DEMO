@@ -40,18 +40,21 @@ Complete guide to move LiaiZen from development to production and start getting 
 **Best for:** Full control, cost-effective, scalable
 
 **Providers:**
+
 - **DigitalOcean** ($6-12/month) - Simple, great docs
 - **Linode** ($5-10/month) - Good performance
 - **Vultr** ($6/month) - Competitive pricing
 - **AWS Lightsail** ($3.50-10/month) - AWS ecosystem
 
 **Pros:**
+
 - Full control
 - Can run both frontend and backend
 - Easy to scale
 - Cost-effective
 
 **Cons:**
+
 - Requires server management
 - Need to set up SSL yourself
 
@@ -60,18 +63,21 @@ Complete guide to move LiaiZen from development to production and start getting 
 **Best for:** Quick deployment, minimal setup
 
 **Providers:**
+
 - **Heroku** ($7-25/month) - Easiest, but more expensive
 - **Railway** ($5-20/month) - Modern, good DX
 - **Render** ($7-25/month) - Simple, good free tier
 - **Fly.io** ($3-15/month) - Global edge deployment
 
 **Pros:**
+
 - Automatic SSL
 - Easy deployments
 - Built-in monitoring
 - Less server management
 
 **Cons:**
+
 - More expensive
 - Less control
 - Vendor lock-in
@@ -81,16 +87,19 @@ Complete guide to move LiaiZen from development to production and start getting 
 **Best for:** Large scale, enterprise needs
 
 **Providers:**
+
 - **AWS** (EC2, ECS, Lambda)
 - **Google Cloud Platform** (Compute Engine, Cloud Run)
 - **Microsoft Azure** (App Service, Container Instances)
 
 **Pros:**
+
 - Highly scalable
 - Enterprise features
 - Global infrastructure
 
 **Cons:**
+
 - Complex setup
 - Can be expensive
 - Steeper learning curve
@@ -159,12 +168,14 @@ const SOCKET_URL = process.env.VITE_SOCKET_URL || 'https://api.yourdomain.com';
 Point your domain to your server:
 
 **For VPS:**
+
 ```
 A Record: @ → YOUR_SERVER_IP
 A Record: www → YOUR_SERVER_IP
 ```
 
 **For Platform (Heroku/Railway/etc):**
+
 ```
 CNAME: @ → your-app.herokuapp.com
 CNAME: www → your-app.herokuapp.com
@@ -187,11 +198,13 @@ sudo certbot renew --dry-run
 ```
 
 **Option B: Cloudflare (Free SSL)**
+
 - Use Cloudflare as DNS provider
 - Enable "Full" SSL mode
 - Automatic SSL for free
 
 **Option C: Platform SSL**
+
 - Heroku/Railway/Render provide SSL automatically
 - Just add your domain in dashboard
 
@@ -204,11 +217,13 @@ sudo certbot renew --dry-run
 **Good for:** Starting out, MVP launch
 
 **Setup:**
+
 - SQLite file (`chat.db`) works as-is
 - Ensure proper file permissions
 - Set up automated backups
 
 **Backup Script:**
+
 ```bash
 #!/bin/bash
 # backup-db.sh
@@ -219,6 +234,7 @@ find /backups -name "chat_*.db" -mtime +30 -delete
 ```
 
 **Cron Job (Daily at 2 AM):**
+
 ```bash
 0 2 * * * /path/to/backup-db.sh
 ```
@@ -228,12 +244,14 @@ find /backups -name "chat_*.db" -mtime +30 -delete
 **When to migrate:** 50+ concurrent users, need better performance
 
 **Setup:**
+
 1. Install PostgreSQL on server or use managed service
 2. Create database and user
 3. Migrate data from SQLite
 4. Update connection code
 
 **Managed Options:**
+
 - **Supabase** (Free tier, PostgreSQL)
 - **Railway** (PostgreSQL addon)
 - **Heroku Postgres** (Addon)
@@ -248,6 +266,7 @@ find /backups -name "chat_*.db" -mtime +30 -delete
 See `chat-server/GMAIL_SETUP.md` for detailed instructions.
 
 **Quick Setup:**
+
 1. Enable 2-Step Verification on Gmail
 2. Generate App Password
 3. Add to `.env`:
@@ -257,6 +276,7 @@ See `chat-server/GMAIL_SETUP.md` for detailed instructions.
    ```
 
 **Alternative Email Services:**
+
 - **SendGrid** (Free: 100 emails/day)
 - **Mailgun** (Free: 5,000 emails/month)
 - **AWS SES** (Very cheap, $0.10 per 1,000 emails)
@@ -268,6 +288,7 @@ See `chat-server/GMAIL_SETUP.md` for detailed instructions.
 ### VPS Deployment (DigitalOcean Example)
 
 **1. Server Setup:**
+
 ```bash
 # Update system
 sudo apt update && sudo apt upgrade -y
@@ -284,6 +305,7 @@ sudo apt install -y nginx
 ```
 
 **2. Deploy Application:**
+
 ```bash
 # Clone your repo or upload files
 cd /var/www
@@ -311,12 +333,13 @@ pm2 save
 ```
 
 **3. Configure Nginx:**
+
 ```nginx
 # /etc/nginx/sites-available/liaizen
 server {
     listen 80;
     server_name yourdomain.com www.yourdomain.com;
-    
+
     # Redirect HTTP to HTTPS
     return 301 https://$server_name$request_uri;
 }
@@ -324,10 +347,10 @@ server {
 server {
     listen 443 ssl http2;
     server_name yourdomain.com www.yourdomain.com;
-    
+
     ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-    
+
     # Frontend
     location / {
         proxy_pass http://localhost:3000;
@@ -337,7 +360,7 @@ server {
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
     }
-    
+
     # Backend API
     location /api {
         proxy_pass http://localhost:3001;
@@ -346,7 +369,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header Host $host;
     }
-    
+
     # WebSocket
     location /socket.io {
         proxy_pass http://localhost:3001;
@@ -370,12 +393,14 @@ sudo systemctl restart nginx
 ### Platform Deployment (Heroku Example)
 
 **1. Install Heroku CLI:**
+
 ```bash
 npm install -g heroku
 heroku login
 ```
 
 **2. Create Apps:**
+
 ```bash
 # Backend
 cd chat-server
@@ -400,6 +425,7 @@ git push heroku main
 ### 7.1 Update CORS for Production
 
 In `chat-server/server.js`, ensure:
+
 ```javascript
 const allowedOrigins = (process.env.FRONTEND_URL || 'https://yourdomain.com')
   .split(',')
@@ -435,24 +461,27 @@ sudo ufw enable
 ### 8.1 Error Tracking
 
 **Free Options:**
+
 - **Sentry** (Free: 5,000 events/month)
 - **LogRocket** (Free trial)
 - **Rollbar** (Free: 5,000 events/month)
 
 **Setup Sentry:**
+
 ```bash
 npm install @sentry/node
 ```
 
 ```javascript
 // In server.js
-const Sentry = require("@sentry/node");
-Sentry.init({ dsn: "your-sentry-dsn" });
+const Sentry = require('@sentry/node');
+Sentry.init({ dsn: 'your-sentry-dsn' });
 ```
 
 ### 8.2 Uptime Monitoring
 
 **Free Services:**
+
 - **UptimeRobot** (Free: 50 monitors)
 - **Pingdom** (Free trial)
 - **StatusCake** (Free tier)
@@ -460,12 +489,14 @@ Sentry.init({ dsn: "your-sentry-dsn" });
 ### 8.3 Application Logs
 
 **PM2 Logs:**
+
 ```bash
 pm2 logs liaizen-backend
 pm2 logs liaizen-frontend
 ```
 
 **Log Rotation:**
+
 ```bash
 pm2 install pm2-logrotate
 pm2 set pm2-logrotate:max_size 10M
@@ -492,11 +523,13 @@ pm2 set pm2-logrotate:retain 7
 ### Load Testing
 
 **Tools:**
+
 - **Apache Bench** (simple)
 - **k6** (free, powerful)
 - **Loader.io** (free tier)
 
 **Test Scenarios:**
+
 - 10 concurrent users
 - 50 concurrent users
 - 100 concurrent users
@@ -512,6 +545,7 @@ Already set up ✅ - Users can install from browser.
 ### App Store Distribution (Future)
 
 For native app stores, consider:
+
 - **Capacitor** - Wrap PWA as native app
 - **React Native** - Full native rewrite (more work)
 
@@ -522,6 +556,7 @@ For native app stores, consider:
 ### Infrastructure Costs
 
 #### Minimal Setup (VPS)
+
 - **Domain:** $10-15/year
 - **VPS (DigitalOcean):** $6-12/month
 - **Email (Gmail):** Free
@@ -529,6 +564,7 @@ For native app stores, consider:
 - **Total Infrastructure:** ~$82-159/year
 
 #### Platform Setup (Heroku)
+
 - **Domain:** $10-15/year
 - **Backend (Heroku):** $7-25/month
 - **Frontend (Heroku):** $7-25/month
@@ -536,6 +572,7 @@ For native app stores, consider:
 - **Total Infrastructure:** ~$178-630/year
 
 #### Scale Setup (AWS)
+
 - **Domain:** $10-15/year
 - **EC2:** $10-50/month
 - **RDS (PostgreSQL):** $15-100/month
@@ -545,15 +582,18 @@ For native app stores, consider:
 ### Feature Pricing (3 Tiers)
 
 #### Tier 1: AI Mediation
+
 - **Monthly:** $15/month
 - **Yearly:** $180/year (14 months - 2 months free)
 
 #### Tier 2: Integrated Co-Parent Platform
+
 - **Monthly:** $20/month
 - **Yearly:** $240/year (14 months - 2 months free)
 - Includes: Calendar, Expenses, Document Sharing
 
 #### Tier 3: Analytics and Coaching
+
 - **Monthly:** $25/month
 - **Yearly:** $300/year (14 months - 2 months free)
 
@@ -570,18 +610,21 @@ For native app stores, consider:
 ## 🎯 Launch Strategy
 
 ### Phase 1: Soft Launch (Week 1-2)
+
 - [ ] Deploy to production
 - [ ] Test with 5-10 beta users
 - [ ] Monitor for issues
 - [ ] Fix critical bugs
 
 ### Phase 2: Limited Launch (Week 3-4)
+
 - [ ] Invite 50-100 users
 - [ ] Gather feedback
 - [ ] Monitor performance
 - [ ] Optimize based on usage
 
 ### Phase 3: Public Launch (Month 2+)
+
 - [ ] Marketing website
 - [ ] Social media presence
 - [ ] User onboarding flow
@@ -612,16 +655,19 @@ For native app stores, consider:
 ## 📞 Support & Maintenance
 
 ### Daily:
+
 - Check error logs
 - Monitor uptime
 - Review user feedback
 
 ### Weekly:
+
 - Review analytics
 - Test backup restore
 - Update dependencies (security patches)
 
 ### Monthly:
+
 - Performance review
 - Security audit
 - User feedback analysis
@@ -673,4 +719,3 @@ sudo systemctl restart nginx
 **You're ready to launch! 🚀**
 
 Start with a VPS (DigitalOcean) for the best balance of control and simplicity. The setup above will get you production-ready in about 2-4 hours.
-

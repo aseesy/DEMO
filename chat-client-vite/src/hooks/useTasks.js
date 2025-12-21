@@ -1,6 +1,16 @@
 import React from 'react';
-import { apiGet, apiPost, apiPut } from '../apiClient.js';
-import { logger } from '../utils/logger.js';
+import { trackTaskCreated, trackTaskCompleted } from '../utils/analytics.js';
+import {
+  getTaskAction as getTaskActionFromHelper,
+  getNextTaskStatus,
+  wasTaskCompleted,
+  getDefaultTaskFormData,
+} from '../utils/taskHelpers.js';
+import {
+  queryFetchTasks,
+  commandUpdateTaskStatus,
+  commandSaveTask,
+} from '../utils/taskQueries.js';
 
 // Minimal tasks hook to mirror the existing dashboard task behavior.
 // This focuses on loading tasks, limiting to 5, toggling status,
@@ -13,79 +23,23 @@ export function useTasks(username, isAuthenticated = true) {
   const [taskFilter, setTaskFilter] = React.useState('open'); // Default to 'open' tasks
   const [showTaskForm, setShowTaskForm] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState(null);
-  const [taskFormData, setTaskFormData] = React.useState({
-    title: '',
-    description: '',
-    status: 'open',
-    priority: 'medium',
-    due_date: '',
-    assigned_to: 'self',
-    related_people: [],
-  });
+  // Use utility function for default form data
+  const [taskFormData, setTaskFormData] = React.useState(getDefaultTaskFormData());
 
   const loadTasks = React.useCallback(async () => {
     if (!username || !isAuthenticated) {
       setTasks([]);
       return;
     }
+
     setIsLoadingTasks(true);
-    try {
-      const params = new URLSearchParams({
-        username,
-        search: taskSearch,
-      });
-
-      // Handle different filter types
-      if (taskFilter === 'open' || taskFilter === 'completed') {
-        params.append('status', taskFilter);
-      } else if (taskFilter === 'high') {
-        params.append('priority', 'high');
-      }
-      // 'all' filter doesn't need any params
-
-      const url = `/api/tasks?${params.toString()}`;
-      const response = await apiGet(url);
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          // Sort by priority (high first) then by creation date (oldest first for dashboard)
-          const priorityOrder = { high: 0, medium: 1, low: 2 };
-          const sorted = [...data].sort((a, b) => {
-            // First sort by priority
-            const priorityA = priorityOrder[a.priority] ?? 1;
-            const priorityB = priorityOrder[b.priority] ?? 1;
-            if (priorityA !== priorityB) {
-              return priorityA - priorityB;
-            }
-            // Then by creation date (oldest first)
-            const dateA = new Date(a.created_at || 0);
-            const dateB = new Date(b.created_at || 0);
-            return dateA - dateB;
-          });
-          // Show all tasks (Feature 005: removed 5-task limit)
-          setTasks(sorted);
-
-        } else {
-          logger.warn('[useTasks] Response data is not an array:', data);
-          setTasks([]);
-        }
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        logger.apiError(`/api/tasks`, response.status, errorData.error || 'Unknown error');
-        if (response.status === 401) {
-          // User not authenticated - silently ignore
-          setTasks([]);
-        } else {
-          // Other errors - log but don't show to user
-          setTasks([]);
-        }
-      }
-    } catch (err) {
-      logger.error('[useTasks] Error loading tasks', err);
-      setTasks([]);
-    } finally {
-      setIsLoadingTasks(false);
-    }
+    const result = await queryFetchTasks({
+      username,
+      search: taskSearch,
+      filter: taskFilter,
+    });
+    setTasks(result.tasks);
+    setIsLoadingTasks(false);
   }, [username, taskFilter, taskSearch, isAuthenticated]);
 
   React.useEffect(() => {
@@ -98,67 +52,62 @@ export function useTasks(username, isAuthenticated = true) {
     }
   }, [loadTasks, isAuthenticated, username]);
 
-  const toggleTaskStatus = async (task) => {
+  const toggleTaskStatus = async task => {
     if (!task?.id || !username) return;
-    try {
-      const newStatus = task.status === 'completed' ? 'open' : 'completed';
-      const response = await apiPut(`/api/tasks/${task.id}`, {
-        username,
-        status: newStatus,
-      });
-      if (response.ok) {
-        loadTasks();
+
+    const previousStatus = task.status;
+    const newStatus = getNextTaskStatus(previousStatus);
+
+    const result = await commandUpdateTaskStatus({
+      taskId: task.id,
+      username,
+      status: newStatus,
+    });
+
+    if (result.success) {
+      // Track analytics when task is completed
+      if (wasTaskCompleted(previousStatus, newStatus)) {
+        trackTaskCompleted(task.type || 'general');
       }
-    } catch (err) {
-      logger.error('Error updating task status', err);
+      loadTasks();
     }
   };
 
   /**
    * Get the action type for a task
    * Some tasks (like "Invite Your Co-Parent") should open a modal instead of toggling status
+   * Uses extracted utility function for business logic
    * @param {Object} task - The task object
    * @returns {Object} - { type: 'modal' | 'toggle', modal?: string }
    */
-  const getTaskAction = React.useCallback((task) => {
-    // Special handling for invite task - opens InviteTaskModal
-    if ((task.title === 'Invite Your Co-Parent' || task.title === 'Add Your Co-parent') && task.status !== 'completed') {
-      return { type: 'modal', modal: 'invite' };
-    }
-    // Default action is to toggle status
-    return { type: 'toggle' };
+  const getTaskAction = React.useCallback(task => {
+    return getTaskActionFromHelper(task);
   }, []);
 
-  const saveTask = async () => {
-    if (!taskFormData.title.trim() || !username) return;
-    try {
-      const path = editingTask ? `/api/tasks/${editingTask.id}` : '/api/tasks';
-      const method = editingTask ? apiPut : apiPost;
-      const response = await method(path, {
-        username,
-        ...taskFormData,
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setShowTaskForm(false);
-        setEditingTask(null);
-        setTaskFormData({
-          title: '',
-          description: '',
-          status: 'open',
-          priority: 'medium',
-          due_date: '',
-          assigned_to: 'self',
-          related_people: [],
-        });
-        loadTasks();
-        return data;
-      } else {
-        alert(data.error || 'Failed to save task');
+  const saveTask = async (taskDataOverride = null) => {
+    const dataToSave = taskDataOverride || taskFormData;
+    if (!dataToSave.title?.trim() || !username) return;
+
+    const taskId = editingTask?.id || dataToSave.id || null;
+
+    const result = await commandSaveTask({
+      username,
+      taskData: dataToSave,
+      taskId,
+    });
+
+    if (result.success) {
+      // Track analytics for new task creation
+      if (result.isNew) {
+        trackTaskCreated(dataToSave.type || 'general', dataToSave.priority || 'medium');
       }
-    } catch (err) {
-      logger.error('Error saving task', err);
-      alert('Failed to save task. Please try again.');
+      setShowTaskForm(false);
+      setEditingTask(null);
+      setTaskFormData(getDefaultTaskFormData());
+      loadTasks();
+      return result.task;
+    } else {
+      alert(result.error || 'Failed to save task');
     }
   };
 
@@ -181,5 +130,3 @@ export function useTasks(username, isAuthenticated = true) {
     getTaskAction, // Feature 005: helper for special task actions
   };
 }
-
-

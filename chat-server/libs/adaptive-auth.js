@@ -32,8 +32,8 @@ const RISK_WEIGHTS = {
   NEW_LOCATION: 20,
   IMPOSSIBLE_TRAVEL: 40,
   UNUSUAL_TIME: 10,
-  FAILED_ATTEMPTS_RECENT: 25,      // 3+ failed attempts in last hour
-  FAILED_ATTEMPTS_MANY: 35,        // 5+ failed attempts in last hour
+  FAILED_ATTEMPTS_RECENT: 25, // 3+ failed attempts in last hour
+  FAILED_ATTEMPTS_MANY: 35, // 5+ failed attempts in last hour
   PASSWORD_RECENTLY_CHANGED: 10,
   ACCOUNT_RECENTLY_CREATED: 5,
   TOR_OR_VPN: 30,
@@ -57,11 +57,7 @@ function generateDeviceFingerprint(req) {
     req.body?.deviceInfo?.platform || '',
   ];
 
-  return crypto
-    .createHash('sha256')
-    .update(components.join('|'))
-    .digest('hex')
-    .substring(0, 32);
+  return crypto.createHash('sha256').update(components.join('|')).digest('hex').substring(0, 32);
 }
 
 /**
@@ -92,7 +88,9 @@ async function isVPNOrTor(ip) {
   // - AbuseIPDB
   // For now, check some basic patterns
   const suspiciousPatterns = [
-    /^10\./, /^192\.168\./, /^172\.(1[6-9]|2[0-9]|3[0-1])\./,  // Private IPs (shouldn't reach here)
+    /^10\./,
+    /^192\.168\./,
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./, // Private IPs (shouldn't reach here)
   ];
 
   return suspiciousPatterns.some(pattern => pattern.test(ip));
@@ -111,14 +109,15 @@ async function getLoginHistory(userId, days = 30) {
       'login_attempts',
       { user_id: userId },
       {
-        orderBy: 'attempted_at DESC',
+        orderBy: 'attempted_at',
+        orderDirection: 'DESC',
         limit: 100,
       }
     );
 
     return history.filter(h => h.attempted_at >= cutoff);
   } catch (error) {
-    console.error('[AdaptiveAuth] Error fetching login history:', error);
+    console.error('[AdaptiveAuth] Error getting login history:', error);
     return [];
   }
 }
@@ -173,7 +172,8 @@ function detectImpossibleTravel(history, currentIP) {
   if (history.length === 0) return false;
 
   const lastLogin = history[0];
-  const timeDiffHours = (Date.now() - new Date(lastLogin.attempted_at).getTime()) / (1000 * 60 * 60);
+  const timeDiffHours =
+    (Date.now() - new Date(lastLogin.attempted_at).getTime()) / (1000 * 60 * 60);
 
   // If last login was from different IP within 1 hour, flag it
   // In production, use actual geolocation to calculate distance
@@ -201,7 +201,7 @@ function isUnusualTime(history) {
   const hourDiff = Math.abs(currentHour - avgHour);
 
   // If more than 6 hours different from average, flag it
-  return hourDiff > 6 || (24 - hourDiff) > 6;
+  return hourDiff > 6 || 24 - hourDiff > 6;
 }
 
 /**
@@ -213,8 +213,13 @@ function isSuspiciousUserAgent(userAgent) {
   if (!userAgent) return true;
 
   const suspiciousPatterns = [
-    /curl/i, /wget/i, /python/i, /bot/i, /spider/i, /crawler/i,
-    /^$/,  // Empty
+    /curl/i,
+    /wget/i,
+    /python/i,
+    /bot/i,
+    /spider/i,
+    /crawler/i,
+    /^$/, // Empty
   ];
 
   return suspiciousPatterns.some(pattern => pattern.test(userAgent));
@@ -318,16 +323,8 @@ async function calculateRiskScore(context, req, userId = null) {
  * @param {Object} attempt - Attempt details
  */
 async function recordLoginAttempt(attempt) {
-  const {
-    userId,
-    email,
-    success,
-    deviceFingerprint,
-    ipAddress,
-    userAgent,
-    riskScore,
-    riskLevel,
-  } = attempt;
+  const { userId, email, success, deviceFingerprint, ipAddress, userAgent, riskScore, riskLevel } =
+    attempt;
 
   try {
     await dbSafe.safeInsert('login_attempts', {
@@ -363,13 +360,17 @@ async function trustDevice(userId, deviceFingerprint, deviceName = null) {
 
     if (existing.length > 0) {
       // Update last seen
-      await dbSafe.safeUpdate('user_devices', {
-        last_seen: new Date().toISOString(),
-        is_trusted: true,
-      }, {
-        user_id: userId,
-        device_fingerprint: deviceFingerprint,
-      });
+      await dbSafe.safeUpdate(
+        'user_devices',
+        {
+          last_seen: new Date().toISOString(),
+          is_trusted: true,
+        },
+        {
+          user_id: userId,
+          device_fingerprint: deviceFingerprint,
+        }
+      );
     } else {
       // Add new device
       await dbSafe.safeInsert('user_devices', {

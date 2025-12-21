@@ -7,12 +7,14 @@ If Google Tag wasn't detected on your website, follow these steps:
 ### 1. Verify Environment Variable is Set
 
 **In Development:**
+
 ```bash
 cd chat-client-vite
 cat .env | grep GOOGLE_TAG
 ```
 
 **In Production (Vercel):**
+
 - Go to Project Settings → Environment Variables
 - Verify `VITE_GOOGLE_TAG` is set
 - Value should include the complete `<script>` tag(s)
@@ -22,6 +24,7 @@ cat .env | grep GOOGLE_TAG
 Your `VITE_GOOGLE_TAG` should look like this:
 
 **For Google Analytics 4:**
+
 ```bash
 VITE_GOOGLE_TAG="<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX\"></script>
 <script>
@@ -33,6 +36,7 @@ VITE_GOOGLE_TAG="<script async src=\"https://www.googletagmanager.com/gtag/js?id
 ```
 
 **For Google Tag Manager:**
+
 ```bash
 VITE_GOOGLE_TAG="<!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -48,6 +52,7 @@ height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\"></iframe></nos
 ### 3. Restart Development Server
 
 After adding/changing `.env`:
+
 ```bash
 # Stop server (Ctrl+C)
 npm run dev
@@ -56,6 +61,7 @@ npm run dev
 ### 4. Check Browser Console
 
 Open browser DevTools (F12) → Console tab. Look for:
+
 - ✅ `Google Tag injected successfully` - Working!
 - ⚠️ `No GOOGLE_TAG found in environment variables` - Not configured
 - ⚠️ `Google Tag already present` - Tag exists (good!)
@@ -69,6 +75,7 @@ Open browser DevTools (F12) → Console tab. Look for:
 ### 6. Production Deployment
 
 **For Vercel:**
+
 1. Go to Project Settings → Environment Variables
 2. Add: `VITE_GOOGLE_TAG` = `<!-- Your complete tag snippet -->`
 3. **Important:** Redeploy after adding variable
@@ -86,14 +93,18 @@ If automatic injection isn't working, you can manually add the tag to `index.htm
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
+      function gtag() {
+        dataLayer.push(arguments);
+      }
       gtag('js', new Date());
       gtag('config', 'G-XXXXXXXXXX');
     </script>
     <!-- End Google Tag -->
-    
+
     <meta charset="UTF-8" />
     <!-- rest of head -->
+  </head>
+</html>
 ```
 
 **Note:** This bypasses the automatic injection system. Remove manual tag if you want to use env var method.
@@ -103,12 +114,14 @@ If automatic injection isn't working, you can manually add the tag to `index.htm
 ### Issue: Tag Not Detected by Google
 
 **Possible Causes:**
+
 1. Tag not in `<head>` section
 2. Tag injected too late (after page load)
 3. Tag format incorrect
 4. Environment variable not set in production
 
 **Solution:**
+
 - Check page source - tag should be in `<head>`
 - Verify environment variable is set
 - Use manual injection as temporary fix
@@ -118,6 +131,7 @@ If automatic injection isn't working, you can manually add the tag to `index.htm
 **Cause:** Both build-time and runtime injection ran
 
 **Solution:**
+
 - The system should prevent this automatically
 - Check for `data-gtag="injected"` attribute
 - Remove any manually added tags
@@ -127,6 +141,7 @@ If automatic injection isn't working, you can manually add the tag to `index.htm
 **Cause:** Environment variable not set in production
 
 **Solution:**
+
 1. Add `VITE_GOOGLE_TAG` to Vercel environment variables
 2. Redeploy
 3. Check build logs
@@ -136,6 +151,7 @@ If automatic injection isn't working, you can manually add the tag to `index.htm
 ### Test Tag Injection
 
 1. **Development:**
+
    ```bash
    npm run dev
    # Open browser console
@@ -166,8 +182,8 @@ If automatic injection isn't working, you can manually add the tag to `index.htm
 ## Support
 
 If still having issues:
+
 1. Share browser console output
 2. Share build logs
 3. Verify environment variable format
 4. Check if tag appears in page source
-

@@ -25,7 +25,7 @@ describe('Language Analyzer Integration', () => {
     });
 
     test('analyzes logistics request correctly', () => {
-      const text = "Can we swap the Tuesday pickup? I have a work meeting until 4.";
+      const text = 'Can we swap the Tuesday pickup? I have a work meeting until 4.';
       const result = languageAnalyzer.analyze(text);
 
       expect(result.patterns.global_negative).toBe(false);
@@ -39,7 +39,8 @@ describe('Language Analyzer Integration', () => {
     });
 
     test('analyzes over-hedged message', () => {
-      const text = "I'm sorry to bring this up again, but I just think maybe the homework situation isn't really working...";
+      const text =
+        "I'm sorry to bring this up again, but I just think maybe the homework situation isn't really working...";
       const result = languageAnalyzer.analyze(text);
 
       expect(result.patterns.apologetic_framing).toBe(true);
@@ -68,7 +69,7 @@ describe('Language Analyzer Integration', () => {
     });
 
     test('analyzes child as messenger correctly', () => {
-      const text = "Tell your dad he needs to pay the child support.";
+      const text = 'Tell your dad he needs to pay the child support.';
       const result = languageAnalyzer.analyze(text);
 
       expect(result.patterns.child_as_messenger).toBe(true);
@@ -82,14 +83,14 @@ describe('Language Analyzer Integration', () => {
     });
 
     test('analyzes demand correctly', () => {
-      const text = "You need to stop being late.";
+      const text = 'You need to stop being late.';
       const result = languageAnalyzer.analyze(text);
 
       expect(result.structure.sentence_type).toBe('demand');
     });
 
     test('allows neutral statements', () => {
-      const text = "The pickup is at 3pm.";
+      const text = 'The pickup is at 3pm.';
       const result = languageAnalyzer.analyze(text);
 
       expect(result.patterns.global_negative).toBe(false);
@@ -113,14 +114,14 @@ describe('Language Analyzer Integration', () => {
 
   describe('quickCheck()', () => {
     test('flags hostile messages', () => {
-      expect(languageAnalyzer.quickCheck("You always mess things up")).toBe(true);
+      expect(languageAnalyzer.quickCheck('You always mess things up')).toBe(true);
       expect(languageAnalyzer.quickCheck("You're a terrible parent")).toBe(true);
       expect(languageAnalyzer.quickCheck("It's your fault")).toBe(true);
     });
 
     test('passes neutral messages', () => {
-      expect(languageAnalyzer.quickCheck("Can we discuss the schedule?")).toBe(false);
-      expect(languageAnalyzer.quickCheck("The pickup is at 3")).toBe(false);
+      expect(languageAnalyzer.quickCheck('Can we discuss the schedule?')).toBe(false);
+      expect(languageAnalyzer.quickCheck('The pickup is at 3')).toBe(false);
     });
   });
 

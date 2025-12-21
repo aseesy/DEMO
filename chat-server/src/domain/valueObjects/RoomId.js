@@ -1,9 +1,9 @@
 /**
  * RoomId Value Object
- * 
+ *
  * Immutable, validated room identifier wrapper.
  * Provides type safety for room IDs.
- * 
+ *
  * @module domain/valueObjects/RoomId
  */
 
@@ -26,7 +26,7 @@ class RoomId {
     }
 
     this.value = trimmed;
-    
+
     // Make immutable
     Object.freeze(this);
   }
@@ -73,4 +73,3 @@ class RoomId {
 }
 
 module.exports = RoomId;
-

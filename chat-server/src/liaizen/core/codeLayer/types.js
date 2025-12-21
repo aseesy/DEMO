@@ -217,7 +217,7 @@ const VERSION = '1.0.0';
 const AXIOM_CATEGORIES = {
   INDIRECT_COMMUNICATION: 'indirect_communication',
   CONTEXTUAL: 'contextual',
-  CLEAN: 'clean'
+  CLEAN: 'clean',
 };
 
 /**
@@ -227,7 +227,7 @@ const AXIOM_CATEGORIES = {
 const CONFLICT_LEVELS = {
   LOW: 'low',
   MODERATE: 'moderate',
-  HIGH: 'high'
+  HIGH: 'high',
 };
 
 /**
@@ -239,7 +239,7 @@ const TARGETS = {
   COMPETENCE: 'competence',
   AUTONOMY: 'autonomy',
   PARENTING: 'parenting',
-  UNCLEAR: 'unclear'
+  UNCLEAR: 'unclear',
 };
 
 /**
@@ -250,7 +250,7 @@ const INSTRUMENTS = {
   CHILD: 'child',
   MONEY: 'money',
   SCHEDULE: 'schedule',
-  THIRD_PARTY: 'third_party'
+  THIRD_PARTY: 'third_party',
 };
 
 /**
@@ -262,7 +262,7 @@ const AIMS = {
   CONTROL: 'control',
   INFORM: 'inform',
   REQUEST: 'request',
-  DEFEND: 'defend'
+  DEFEND: 'defend',
 };
 
 /**
@@ -275,7 +275,7 @@ const DOMAINS = {
   PARENTING: 'parenting',
   CHARACTER: 'character',
   LOGISTICS: 'logistics',
-  GENERAL: 'general'
+  GENERAL: 'general',
 };
 
 /**
@@ -285,7 +285,7 @@ const DOMAINS = {
 const TEMPORAL = {
   PAST: 'past',
   PRESENT: 'present',
-  FUTURE: 'future'
+  FUTURE: 'future',
 };
 
 /**
@@ -295,7 +295,7 @@ const TEMPORAL = {
 const EPISTEMIC = {
   FACT: 'fact',
   INTERPRETATION: 'interpretation',
-  UNKNOWN: 'unknown'
+  UNKNOWN: 'unknown',
 };
 
 // ============================================================================
@@ -317,7 +317,7 @@ function createEmptyParsedMessage(raw, context = {}) {
       intensifiers: [],
       patternMarkers: [],
       contrastMarkers: [],
-      negations: []
+      negations: [],
     },
     conceptual: {
       speaker: false,
@@ -325,14 +325,14 @@ function createEmptyParsedMessage(raw, context = {}) {
       thirdParty: [],
       temporal: TEMPORAL.PRESENT,
       epistemic: EPISTEMIC.UNKNOWN,
-      domain: DOMAINS.GENERAL
+      domain: DOMAINS.GENERAL,
     },
     vector: {
       sender: context.senderId || 'unknown',
       receiver: context.receiverId || 'unknown',
       target: TARGETS.UNCLEAR,
       instrument: null,
-      aim: AIMS.INFORM
+      aim: AIMS.INFORM,
     },
     axiomsFired: [],
     assessment: {
@@ -340,7 +340,7 @@ function createEmptyParsedMessage(raw, context = {}) {
       attackSurface: [],
       childAsInstrument: false,
       deniability: 'low',
-      transmit: true
+      transmit: true,
     },
     meta: {
       version: VERSION,
@@ -351,9 +351,9 @@ function createEmptyParsedMessage(raw, context = {}) {
         primitiveMapperMs: 0,
         vectorIdentifierMs: 0,
         axiomCheckerMs: 0,
-        assessmentGenMs: 0
-      }
-    }
+        assessmentGenMs: 0,
+      },
+    },
   };
 }
 
@@ -372,7 +372,7 @@ function createNonFiringAxiomResult(id, name, category) {
     category,
     confidence: 0,
     evidence: {},
-    intentImpactDelta: ''
+    intentImpactDelta: '',
   };
 }
 
@@ -394,7 +394,7 @@ function createFiringAxiomResult(id, name, category, confidence, evidence, inten
     category,
     confidence,
     evidence,
-    intentImpactDelta
+    intentImpactDelta,
   };
 }
 
@@ -419,5 +419,5 @@ module.exports = {
   // Factory functions
   createEmptyParsedMessage,
   createNonFiringAxiomResult,
-  createFiringAxiomResult
+  createFiringAxiomResult,
 };

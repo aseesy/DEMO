@@ -39,10 +39,7 @@ export function useToast() {
       oscillator.type = 'sine';
 
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.01,
-        audioContext.currentTime + 0.2
-      );
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
 
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.2);
@@ -52,42 +49,45 @@ export function useToast() {
   }, [soundEnabled]);
 
   // Show a new toast notification
-  const show = React.useCallback((messageData) => {
-    const { sender, message, timestamp, username } = messageData;
+  const show = React.useCallback(
+    messageData => {
+      const { sender, message, timestamp, username } = messageData;
 
-    // Don't show toast for own messages (case-insensitive comparison)
-    if (sender?.toLowerCase() === username?.toLowerCase()) {
-      return;
-    }
+      // Don't show toast for own messages (case-insensitive comparison)
+      if (sender?.toLowerCase() === username?.toLowerCase()) {
+        return;
+      }
 
-    // Create toast object
-    const newToast = {
-      id: `toast-${Date.now()}-${Math.random()}`,
-      sender: sender || 'Co-parent',
-      message: message && message.length > 80
-        ? message.substring(0, 80) + '...'
-        : message || '',
-      timestamp: timestamp || new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      createdAt: Date.now(),
-    };
+      // Create toast object
+      const newToast = {
+        id: `toast-${Date.now()}-${Math.random()}`,
+        sender: sender || 'Co-parent',
+        message: message && message.length > 80 ? message.substring(0, 80) + '...' : message || '',
+        timestamp:
+          timestamp ||
+          new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        createdAt: Date.now(),
+      };
 
-    // Add toast to queue
-    setToasts((prev) => {
-      // Limit to 3 toasts max to avoid clutter
-      const updated = [newToast, ...prev];
-      return updated.slice(0, 3);
-    });
+      // Add toast to queue
+      setToasts(prev => {
+        // Limit to 3 toasts max to avoid clutter
+        const updated = [newToast, ...prev];
+        return updated.slice(0, 3);
+      });
 
-    // Play sound
-    playSound();
-  }, [playSound]);
+      // Play sound
+      playSound();
+    },
+    [playSound]
+  );
 
   // Dismiss a specific toast
-  const dismiss = React.useCallback((toastId) => {
-    setToasts((prev) => prev.filter((t) => t.id !== toastId));
+  const dismiss = React.useCallback(toastId => {
+    setToasts(prev => prev.filter(t => t.id !== toastId));
   }, []);
 
   // Clear all toasts
@@ -97,7 +97,7 @@ export function useToast() {
 
   // Toggle sound on/off
   const toggleSound = React.useCallback(() => {
-    setSoundEnabled((prev) => {
+    setSoundEnabled(prev => {
       const newValue = !prev;
       localStorage.setItem('liaizen_toast_sound', String(newValue));
       return newValue;

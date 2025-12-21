@@ -29,7 +29,7 @@ export function MessageSearch({
   }, []);
 
   // Debounced search
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const value = e.target.value;
     setLocalQuery(value);
 
@@ -43,7 +43,7 @@ export function MessageSearch({
   };
 
   // Format timestamp for display
-  const formatDate = (timestamp) => {
+  const formatDate = timestamp => {
     if (!timestamp) return '';
     const date = new Date(timestamp);
     const now = new Date();
@@ -57,7 +57,11 @@ export function MessageSearch({
     } else if (days < 7) {
       return date.toLocaleDateString([], { weekday: 'short' });
     } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+      return date.toLocaleDateString([], {
+        month: 'short',
+        day: 'numeric',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+      });
     }
   };
 
@@ -70,7 +74,9 @@ export function MessageSearch({
 
     return parts.map((part, i) =>
       regex.test(part) ? (
-        <mark key={i} className="bg-yellow-200 text-gray-900 px-0.5 rounded">{part}</mark>
+        <mark key={i} className="bg-yellow-200 text-gray-900 px-0.5 rounded">
+          {part}
+        </mark>
       ) : (
         part
       )
@@ -82,8 +88,18 @@ export function MessageSearch({
       {/* Search Header */}
       <div className="flex items-center gap-3 p-3 border-b border-gray-100">
         {/* Search Icon */}
-        <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <svg
+          className="w-5 h-5 text-gray-400 shrink-0"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
         </svg>
 
         {/* Search Input */}
@@ -115,7 +131,12 @@ export function MessageSearch({
           title="Close search"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </button>
       </div>
@@ -123,7 +144,7 @@ export function MessageSearch({
       {/* Search Results */}
       {searchResults.length > 0 && (
         <div className="max-h-64 overflow-y-auto">
-          {searchResults.map((result) => (
+          {searchResults.map(result => (
             <button
               key={result.id}
               onClick={() => onJumpToMessage(result.id)}

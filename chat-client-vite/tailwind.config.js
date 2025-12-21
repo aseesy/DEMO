@@ -98,7 +98,9 @@ export default {
         '2xl': tokens.shadows['2xl'].value,
       },
       fontFamily: {
-        primary: tokens.typography.fontFamily.primary.value.split(',').map(f => f.trim().replace(/'/g, '')),
+        primary: tokens.typography.fontFamily.primary.value
+          .split(',')
+          .map(f => f.trim().replace(/'/g, '')),
         serif: ['Georgia', 'Cambria', 'Times New Roman', 'Times', 'serif'],
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },

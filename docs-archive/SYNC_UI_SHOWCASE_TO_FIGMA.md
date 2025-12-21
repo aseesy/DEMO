@@ -7,6 +7,7 @@ This guide shows you how to sync components from the UI Showcase page (`/ui-show
 ## What Gets Synced
 
 The UI Showcase (`UIShowcase.jsx`) includes:
+
 - **Button Component** - All variants and states
 - **Modal Component** - Interactive modals
 - **Input Components** - Form inputs
@@ -23,13 +24,16 @@ Plus the UI Showcase page itself which demonstrates all these components in cont
 ### 1. Make Sure Everything is Running
 
 **Backend Server:**
+
 ```bash
 cd chat-server
 npm start
 ```
+
 The server should be running on `http://localhost:3001`
 
 **Frontend Dev Server (optional, for viewing showcase):**
+
 ```bash
 cd chat-client-vite
 npm run dev
@@ -46,6 +50,7 @@ npm run dev
 ### 3. Configure Backend URL (if needed)
 
 In the plugin UI:
+
 - Check the API URL field (default: `http://localhost:3001`)
 - If your backend is on a different URL, update it
 - Click "Update API URL"
@@ -99,6 +104,7 @@ A frame called **"📐 Wireframes from Code"** will be created with:
 ### Component Details
 
 Each component wireframe includes:
+
 - **Component Name** - Label at the top
 - **Structure** - Layout and hierarchy
 - **Elements** - Buttons, inputs, text elements as wireframe boxes
@@ -107,6 +113,7 @@ Each component wireframe includes:
 ## Example: What You'll See
 
 ### Button Component Wireframe
+
 ```
 ┌─────────────────────────────────┐
 │ Button Component                │
@@ -122,6 +129,7 @@ Each component wireframe includes:
 ```
 
 ### UI Showcase Page Wireframe
+
 ```
 ┌─────────────────────────────────────────┐
 │ UI Showcase - Design System             │
@@ -176,9 +184,11 @@ Then use the Figma plugin to render it.
 ### No Components Found
 
 1. **Check backend is running:**
+
    ```bash
    curl http://localhost:3001/api/figma/scan-components
    ```
+
    Should return a list of components
 
 2. **Check component files exist:**
@@ -238,4 +248,3 @@ After syncing wireframes to Figma:
 ---
 
 **Ready to sync?** Run the plugin and click "Sync Components from Code"! 🚀
-

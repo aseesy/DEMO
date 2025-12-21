@@ -6,7 +6,7 @@ let googleMapsLoadingState = {
   isLoaded: false,
   error: null,
   script: null,
-  listeners: new Set()
+  listeners: new Set(),
 };
 
 /**
@@ -28,7 +28,7 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
         hasKey: !!apiKey,
         keyLength: apiKey?.length || 0,
         keyPrefix: apiKey?.substring(0, 10) || 'none',
-        allEnvKeys: Object.keys(import.meta.env).filter(k => k.includes('GOOGLE'))
+        allEnvKeys: Object.keys(import.meta.env).filter(k => k.includes('GOOGLE')),
       });
     }
 
@@ -40,8 +40,12 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
 
       // Log warning in development
       if (import.meta.env.DEV) {
-        console.warn('Google Places API key not configured - address autocomplete will be unavailable');
-        console.warn('To configure: Set VITE_GOOGLE_PLACES_API_KEY in your .env file or Vercel environment variables');
+        console.warn(
+          'Google Places API key not configured - address autocomplete will be unavailable'
+        );
+        console.warn(
+          'To configure: Set VITE_GOOGLE_PLACES_API_KEY in your .env file or Vercel environment variables'
+        );
       }
       return;
     }
@@ -55,12 +59,12 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
 
     // Check if script is already being loaded or already exists
     const scriptSrc = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    
+
     // Check if script with this src already exists in DOM
     const existingScript = Array.from(document.querySelectorAll('script')).find(
       s => s.src && s.src.includes('maps.googleapis.com/maps/api/js')
     );
-    
+
     if (existingScript) {
       // Script already exists in DOM, wait for it to load
       if (googleMapsLoadingState.isLoaded) {
@@ -100,11 +104,11 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
       googleMapsLoadingState.isLoaded = true;
       googleMapsLoadingState.isLoading = false;
       googleMapsLoadingState.script = script;
-      
+
       // Notify all listeners
       googleMapsLoadingState.listeners.forEach(listener => listener());
       googleMapsLoadingState.listeners.clear();
-      
+
       setIsLoaded(true);
     };
 
@@ -113,7 +117,7 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
       googleMapsLoadingState.error = errorMsg;
       googleMapsLoadingState.isLoading = false;
       setError(errorMsg);
-      
+
       // Notify all listeners of error
       googleMapsLoadingState.listeners.forEach(listener => listener());
       googleMapsLoadingState.listeners.clear();
@@ -133,14 +137,11 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
 
     try {
       // Initialize autocomplete
-      const autocomplete = new window.google.maps.places.Autocomplete(
-        inputRef.current,
-        {
-          types: ['address'],
-          componentRestrictions: { country: 'us' }, // Restrict to US addresses
-          fields: ['formatted_address', 'address_components', 'geometry'],
-        }
-      );
+      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' }, // Restrict to US addresses
+        fields: ['formatted_address', 'address_components', 'geometry'],
+      });
 
       // Listen for place selection
       const listener = autocomplete.addListener('place_changed', () => {
@@ -160,7 +161,7 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
           fullAddress: place.formatted_address,
         };
 
-        place.address_components?.forEach((component) => {
+        place.address_components?.forEach(component => {
           const types = component.types;
 
           if (types.includes('street_number')) {

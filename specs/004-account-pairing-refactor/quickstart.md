@@ -62,6 +62,7 @@ Create these test accounts for testing:
 **Steps**:
 
 ### 1.1 User A Creates Account and Sends Invitation
+
 ```bash
 # 1. Open browser to http://localhost:5173
 # 2. Click "Sign Up"
@@ -77,6 +78,7 @@ Create these test accounts for testing:
 ```
 
 **Expected Results**:
+
 - [x] User redirected to /add-coparent after signup
 - [x] Email input field visible
 - [x] After sending, UI shows:
@@ -85,12 +87,14 @@ Create these test accounts for testing:
   - Shareable link
   - "Copy Link" and "Resend Email" buttons
 - [x] Database check:
+
 ```sql
 SELECT * FROM pairing_sessions WHERE parent_b_email = 'userc@test.com';
 -- Should return 1 row with status = 'pending'
 ```
 
 ### 1.2 User C Receives Email and Accepts
+
 ```bash
 # 1. Check server logs for invitation email content
 # 2. Copy invitation link from logs (e.g., /accept-pairing?token=abc123...)
@@ -104,6 +108,7 @@ SELECT * FROM pairing_sessions WHERE parent_b_email = 'userc@test.com';
 ```
 
 **Expected Results**:
+
 - [x] Invitation page shows inviter name (testuser_a)
 - [x] Email field pre-filled with userc@test.com
 - [x] After accepting:
@@ -114,6 +119,7 @@ SELECT * FROM pairing_sessions WHERE parent_b_email = 'userc@test.com';
 - [x] User A receives real-time notification (Socket.io)
 - [x] User C redirected to /rooms/{roomId}
 - [x] Database check:
+
 ```sql
 -- Check pairing is active
 SELECT * FROM pairing_sessions WHERE id = 1;
@@ -142,6 +148,7 @@ SELECT * FROM contacts WHERE (user_id = [User A ID] AND relationship = 'co-paren
 **Steps**:
 
 ### 2.1 User A Generates Pairing Code
+
 ```bash
 # 1. Log in as testuser_a (if not already)
 # 2. Navigate to /add-coparent
@@ -150,6 +157,7 @@ SELECT * FROM contacts WHERE (user_id = [User A ID] AND relationship = 'co-paren
 ```
 
 **Expected Results**:
+
 - [x] Large pairing code displayed (e.g., LZ-842396)
 - [x] Code is 6 numeric digits (LZ-NNNNNN format)
 - [x] Expiration timer shows "Expires in 15 minutes"
@@ -157,6 +165,7 @@ SELECT * FROM contacts WHERE (user_id = [User A ID] AND relationship = 'co-paren
 - [x] Auto-refresh every 5 seconds shows "Waiting for connection..."
 
 ### 2.2 User B Enters Code and Accepts
+
 ```bash
 # 1. Log in as testuser_b (different browser/incognito)
 # 2. Navigate to /add-coparent
@@ -167,6 +176,7 @@ SELECT * FROM contacts WHERE (user_id = [User A ID] AND relationship = 'co-paren
 ```
 
 **Expected Results**:
+
 - [x] Code input field auto-formats (adds LZ- prefix)
 - [x] After entering valid code, "Connect" button enabled
 - [x] After clicking "Connect":
@@ -179,6 +189,7 @@ SELECT * FROM contacts WHERE (user_id = [User A ID] AND relationship = 'co-paren
 - [x] Both users can now see each other in shared room
 
 **Database Validation**:
+
 ```sql
 -- Check pairing is active
 SELECT * FROM pairing_sessions WHERE pairing_code LIKE 'LZ-%' AND status = 'active';
@@ -200,6 +211,7 @@ FROM pairing_sessions WHERE invite_type = 'code';
 **Steps**:
 
 ### 3.1 User A Invites User D
+
 ```bash
 # 1. Log in as testuser_a
 # 2. Navigate to /add-coparent
@@ -209,6 +221,7 @@ FROM pairing_sessions WHERE invite_type = 'code';
 ```
 
 ### 3.2 User D Invites User A (Before Accepting)
+
 ```bash
 # 1. Create account as testuser_d (email: userd@test.com)
 # 2. Navigate to /add-coparent
@@ -217,12 +230,14 @@ FROM pairing_sessions WHERE invite_type = 'code';
 ```
 
 **Expected Results**:
+
 - [x] System detects mutual invitation immediately
 - [x] Both users see success message: "You and [username] are now paired!"
 - [x] Both users receive real-time notification
 - [x] Only ONE shared room created (not two)
 - [x] Both pairing records updated to 'active'
 - [x] Database check:
+
 ```sql
 -- Check both invitations are active
 SELECT * FROM pairing_sessions
@@ -252,6 +267,7 @@ WHERE (user_id = [User A ID] AND relationship = 'co-parent')
 **Steps**:
 
 ### 4.1 User A Generates Shareable Link
+
 ```bash
 # 1. Log in as testuser_a
 # 2. Navigate to /add-coparent
@@ -260,6 +276,7 @@ WHERE (user_id = [User A ID] AND relationship = 'co-parent')
 ```
 
 **Expected Results**:
+
 - [x] Shareable link displayed (e.g., https://coparentliaizen.com/accept-pairing?token=...)
 - [x] "Copy Link" button visible
 - [x] Native share button visible (on mobile)
@@ -267,6 +284,7 @@ WHERE (user_id = [User A ID] AND relationship = 'co-parent')
 - [x] Pairing code also displayed (for fallback)
 
 ### 4.2 User E Clicks Link and Accepts
+
 ```bash
 # 1. Copy shareable link
 # 2. Open in incognito window
@@ -276,6 +294,7 @@ WHERE (user_id = [User A ID] AND relationship = 'co-parent')
 ```
 
 **Expected Results**:
+
 - [x] Link validates successfully
 - [x] User can create account or log in
 - [x] After accepting, pairing completes
@@ -290,6 +309,7 @@ WHERE (user_id = [User A ID] AND relationship = 'co-parent')
 **Steps**:
 
 ### 5.1 Unpaired State
+
 ```bash
 # 1. Create new user (testuser_f)
 # 2. Navigate to dashboard
@@ -297,10 +317,12 @@ WHERE (user_id = [User A ID] AND relationship = 'co-parent')
 ```
 
 **Expected Results**:
+
 - [x] Status badge shows: "Unpaired"
 - [x] Message: "Add your co-parent to unlock full features"
 - [x] "Add Co-Parent" CTA button visible
 - [x] API check:
+
 ```bash
 curl -H "Authorization: Bearer [jwt_token]" \
   http://localhost:3001/api/pairing/status
@@ -308,17 +330,20 @@ curl -H "Authorization: Bearer [jwt_token]" \
 ```
 
 ### 5.2 Pending (Sent) State
+
 ```bash
 # 1. User F sends invitation to userg@test.com
 # 2. Check pairing status widget
 ```
 
 **Expected Results**:
+
 - [x] Status badge shows: "Pending"
 - [x] Message: "Waiting for userg@test.com to accept"
 - [x] Pairing code displayed
 - [x] "Resend Invite" and "Cancel Pairing" buttons visible
 - [x] API check:
+
 ```bash
 curl -H "Authorization: Bearer [jwt_token]" \
   http://localhost:3001/api/pairing/status
@@ -326,17 +351,20 @@ curl -H "Authorization: Bearer [jwt_token]" \
 ```
 
 ### 5.3 Paired State
+
 ```bash
 # 1. User G accepts invitation
 # 2. Check pairing status widget (User F's dashboard)
 ```
 
 **Expected Results**:
+
 - [x] Status badge shows: "Paired"
 - [x] Message: "Paired with [testuser_g]"
 - [x] "Open Chat" button visible (links to shared room)
 - [x] Paired date displayed: "Connected: [X] days ago"
 - [x] API check:
+
 ```bash
 curl -H "Authorization: Bearer [jwt_token]" \
   http://localhost:3001/api/pairing/status
@@ -352,6 +380,7 @@ curl -H "Authorization: Bearer [jwt_token]" \
 **Steps**:
 
 ### 6.1 Resend Invitation
+
 ```bash
 # 1. Log in as user with pending invitation
 # 2. Navigate to pairing status widget
@@ -359,10 +388,12 @@ curl -H "Authorization: Bearer [jwt_token]" \
 ```
 
 **Expected Results**:
+
 - [x] Success message: "Invitation email resent"
 - [x] New token generated (old token invalidated)
 - [x] Expiration date reset to 7 days from now
 - [x] Database check:
+
 ```sql
 SELECT token_hash, expires_at FROM pairing_sessions WHERE id = [pairing_id];
 -- token_hash should be different from before
@@ -370,32 +401,38 @@ SELECT token_hash, expires_at FROM pairing_sessions WHERE id = [pairing_id];
 ```
 
 ### 6.2 Cancel Pairing
+
 ```bash
 # 1. User with pending invitation clicks "Cancel Pairing"
 # 2. Confirm cancellation in modal
 ```
 
 **Expected Results**:
+
 - [x] Confirmation modal appears: "Are you sure?"
 - [x] After confirming:
   - Success message: "Pairing invitation canceled"
   - Status updates to "Unpaired"
   - "Add Co-Parent" button appears
 - [x] Database check:
+
 ```sql
 SELECT status FROM pairing_sessions WHERE id = [pairing_id];
 -- status = 'canceled'
 ```
 
 ### 6.3 Attempt to Accept Canceled Invitation
+
 ```bash
 # 1. Invitee tries to use canceled invitation link/code
 ```
 
 **Expected Results**:
+
 - [x] Error message: "This invitation has been canceled"
 - [x] Suggestion: "Please ask your co-parent to send a new invitation"
 - [x] API returns 404:
+
 ```bash
 curl -X POST http://localhost:3001/api/pairing/accept \
   -H "Content-Type: application/json" \
@@ -412,12 +449,14 @@ curl -X POST http://localhost:3001/api/pairing/accept \
 **Steps**:
 
 ### 7.1 Setup
+
 ```bash
 # 1. User A generates pairing code (e.g., LZ-999999)
 # 2. Share code with User B and User C
 ```
 
 ### 7.2 Simultaneous Acceptance
+
 ```bash
 # 1. User B and User C both navigate to /add-coparent
 # 2. Both enter code LZ-999999 simultaneously
@@ -425,9 +464,11 @@ curl -X POST http://localhost:3001/api/pairing/accept \
 ```
 
 **Expected Results**:
+
 - [x] Only ONE user successfully pairs (first to acquire database lock)
 - [x] Other user receives error: "Pairing code already used"
 - [x] Database check:
+
 ```sql
 -- Only one pairing should be active
 SELECT COUNT(*) FROM pairing_sessions
@@ -448,6 +489,7 @@ SELECT * FROM pairing_audit_log WHERE pairing_session_id = [pairing_id];
 **Steps**:
 
 ### 8.1 Test Code Expiration (15 minutes)
+
 ```bash
 # 1. User A generates code-type pairing
 # 2. Wait 16 minutes (or manually update expires_at in database)
@@ -455,9 +497,11 @@ SELECT * FROM pairing_audit_log WHERE pairing_session_id = [pairing_id];
 ```
 
 **Expected Results**:
+
 - [x] Error message: "This pairing code has expired"
 - [x] Suggestion: "Please ask your co-parent to generate a new code"
 - [x] Database check:
+
 ```sql
 -- Manual expiration test
 UPDATE pairing_sessions
@@ -469,6 +513,7 @@ WHERE pairing_code = 'LZ-123456';
 ```
 
 ### 8.2 Test Email/Link Expiration (7 days)
+
 ```bash
 # 1. Create email-type pairing
 # 2. Manually set expires_at to past date
@@ -476,10 +521,12 @@ WHERE pairing_code = 'LZ-123456';
 ```
 
 **Expected Results**:
+
 - [x] Error message: "This invitation has expired"
 - [x] API returns 404
 
 ### 8.3 Test Cleanup Job
+
 ```bash
 # 1. Create several expired pairings (status = 'expired')
 # 2. Set created_at to 31 days ago
@@ -487,6 +534,7 @@ WHERE pairing_code = 'LZ-123456';
 ```
 
 **Expected Results**:
+
 ```sql
 -- Create old expired pairings
 INSERT INTO pairing_sessions (pairing_code, parent_a_id, status, created_at, expires_at)
@@ -511,6 +559,7 @@ SELECT COUNT(*) FROM pairing_sessions WHERE pairing_code = 'LZ-999998';
 **Steps**:
 
 ### 9.1 Check Old Table Read Support
+
 ```bash
 # 1. Insert old-style pending connection (simulate legacy data)
 ```
@@ -521,6 +570,7 @@ VALUES (1, 'olduser@test.com', 'old_token_12345', 'pending', datetime('now', '+7
 ```
 
 **Expected Results**:
+
 ```bash
 # 2. Call GET /api/pairing/status for inviter
 curl -H "Authorization: Bearer [jwt_token]" \
@@ -531,12 +581,14 @@ curl -H "Authorization: Bearer [jwt_token]" \
 ```
 
 ### 9.2 Auto-Migration on Login
+
 ```bash
 # 1. User with pending_connections entry logs in
 # 2. Check that entry was migrated to pairing_sessions
 ```
 
 **Expected Results**:
+
 ```sql
 -- After user login, check migration occurred
 SELECT * FROM pairing_sessions WHERE parent_b_email = 'olduser@test.com';
@@ -551,6 +603,7 @@ SELECT * FROM pending_connections WHERE invitee_email = 'olduser@test.com';
 ## API Testing (cURL Commands)
 
 ### Create Pairing
+
 ```bash
 curl -X POST http://localhost:3001/api/pairing/create \
   -H "Content-Type: application/json" \
@@ -562,6 +615,7 @@ curl -X POST http://localhost:3001/api/pairing/create \
 ```
 
 ### Accept Pairing
+
 ```bash
 curl -X POST http://localhost:3001/api/pairing/accept \
   -H "Content-Type: application/json" \
@@ -572,18 +626,21 @@ curl -X POST http://localhost:3001/api/pairing/accept \
 ```
 
 ### Get Pairing Status
+
 ```bash
 curl http://localhost:3001/api/pairing/status \
   -H "Authorization: Bearer [jwt_token]"
 ```
 
 ### Cancel Pairing
+
 ```bash
 curl -X POST http://localhost:3001/api/pairing/123/cancel \
   -H "Authorization: Bearer [jwt_token]"
 ```
 
 ### Validate Code (Preview)
+
 ```bash
 curl -X POST http://localhost:3001/api/pairing/validate-code \
   -H "Content-Type: application/json" \
@@ -597,6 +654,7 @@ curl -X POST http://localhost:3001/api/pairing/validate-code \
 ## Performance Testing
 
 ### Load Test: Concurrent Pairing Creations
+
 ```bash
 # Use Apache Bench or similar tool
 ab -n 100 -c 10 -H "Authorization: Bearer [token]" \
@@ -608,6 +666,7 @@ ab -n 100 -c 10 -H "Authorization: Bearer [token]" \
 ```
 
 ### Stress Test: Code Collisions
+
 ```bash
 # Generate 10,000 pairing codes
 # Verify no duplicates (all codes are unique)
@@ -629,6 +688,7 @@ grep -oP 'LZ-\d{6}' codes.txt | sort | uniq -d
 ## Checklist: Pre-Deployment Validation
 
 ### Functional Tests
+
 - [ ] Email invitation flow (new user) works end-to-end
 - [ ] Email invitation flow (existing user) works end-to-end
 - [ ] Code pairing flow works end-to-end
@@ -641,6 +701,7 @@ grep -oP 'LZ-\d{6}' codes.txt | sort | uniq -d
 - [ ] Concurrent acceptance prevented (race condition)
 
 ### Database Tests
+
 - [ ] pairing_sessions table created successfully
 - [ ] pairing_audit_log table created successfully
 - [ ] Indexes exist and improve query performance
@@ -649,6 +710,7 @@ grep -oP 'LZ-\d{6}' codes.txt | sort | uniq -d
 - [ ] Backward compatibility layer reads old table
 
 ### API Tests
+
 - [ ] All endpoints return correct status codes
 - [ ] Rate limiting enforced (5 per hour)
 - [ ] Authentication required for protected endpoints
@@ -656,6 +718,7 @@ grep -oP 'LZ-\d{6}' codes.txt | sort | uniq -d
 - [ ] Error messages are user-friendly
 
 ### Real-Time Tests
+
 - [ ] Socket.io events delivered within 2 seconds
 - [ ] Events delivered to correct users only (not broadcast)
 - [ ] pairing:accepted event includes all required data
@@ -663,6 +726,7 @@ grep -oP 'LZ-\d{6}' codes.txt | sort | uniq -d
 - [ ] Reconnection handles missed events
 
 ### Security Tests
+
 - [ ] Pairing codes are cryptographically random
 - [ ] Tokens are 32+ bytes and hashed in database
 - [ ] Email enumeration prevention (generic error messages)
@@ -670,6 +734,7 @@ grep -oP 'LZ-\d{6}' codes.txt | sort | uniq -d
 - [ ] Rate limiting prevents abuse
 
 ### UI/UX Tests
+
 - [ ] Mobile-responsive (touch targets 44px minimum)
 - [ ] Code input auto-formats (LZ- prefix)
 - [ ] Native share API works on mobile
@@ -679,4 +744,4 @@ grep -oP 'LZ-\d{6}' codes.txt | sort | uniq -d
 
 ---
 
-*Quickstart Testing Guide for coparentliaizen.com - Better Co-Parenting Through Better Communication*
+_Quickstart Testing Guide for coparentliaizen.com - Better Co-Parenting Through Better Communication_

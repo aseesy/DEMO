@@ -37,122 +37,135 @@ export function useActivities(contactId, username) {
   }, [loadActivities]);
 
   // Create new activity
-  const createActivity = React.useCallback(async (activityData) => {
-    if (!contactId || !username) {
-      throw new Error('Contact ID and username are required');
-    }
-
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      const response = await apiPost('/api/activities', {
-        username,
-        contactId,
-        activityName: activityData.activityName,
-        description: activityData.description,
-        location: activityData.location,
-        instructorContact: activityData.instructorContact,
-        daysOfWeek: activityData.daysOfWeek,
-        startTime: activityData.startTime,
-        endTime: activityData.endTime,
-        recurrence: activityData.recurrence,
-        startDate: activityData.startDate,
-        endDate: activityData.endDate,
-        cost: activityData.cost ? parseFloat(activityData.cost) : 0,
-        costFrequency: activityData.costFrequency,
-        splitType: activityData.splitType,
-        splitPercentage: activityData.splitPercentage ? parseFloat(activityData.splitPercentage) : null,
-        paidBy: activityData.paidBy,
-        notes: activityData.notes
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create activity');
+  const createActivity = React.useCallback(
+    async activityData => {
+      if (!contactId || !username) {
+        throw new Error('Contact ID and username are required');
       }
 
-      // Reload activities after creating
-      await loadActivities();
-    } catch (err) {
-      console.error('Error creating activity:', err);
-      setError(err.message || 'Failed to create activity');
-      throw err;
-    } finally {
-      setIsSaving(false);
-    }
-  }, [contactId, username, loadActivities]);
+      setIsSaving(true);
+      setError(null);
+
+      try {
+        const response = await apiPost('/api/activities', {
+          username,
+          contactId,
+          activityName: activityData.activityName,
+          description: activityData.description,
+          location: activityData.location,
+          instructorContact: activityData.instructorContact,
+          daysOfWeek: activityData.daysOfWeek,
+          startTime: activityData.startTime,
+          endTime: activityData.endTime,
+          recurrence: activityData.recurrence,
+          startDate: activityData.startDate,
+          endDate: activityData.endDate,
+          cost: activityData.cost ? parseFloat(activityData.cost) : 0,
+          costFrequency: activityData.costFrequency,
+          splitType: activityData.splitType,
+          splitPercentage: activityData.splitPercentage
+            ? parseFloat(activityData.splitPercentage)
+            : null,
+          paidBy: activityData.paidBy,
+          notes: activityData.notes,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create activity');
+        }
+
+        // Reload activities after creating
+        await loadActivities();
+      } catch (err) {
+        console.error('Error creating activity:', err);
+        setError(err.message || 'Failed to create activity');
+        throw err;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [contactId, username, loadActivities]
+  );
 
   // Update activity
-  const updateActivity = React.useCallback(async (activityId, activityData) => {
-    if (!username) {
-      throw new Error('Username is required');
-    }
-
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      const response = await apiPut(`/api/activities/${activityId}`, {
-        username,
-        activityName: activityData.activityName,
-        description: activityData.description,
-        location: activityData.location,
-        instructorContact: activityData.instructorContact,
-        daysOfWeek: activityData.daysOfWeek,
-        startTime: activityData.startTime,
-        endTime: activityData.endTime,
-        recurrence: activityData.recurrence,
-        startDate: activityData.startDate,
-        endDate: activityData.endDate,
-        cost: activityData.cost ? parseFloat(activityData.cost) : 0,
-        costFrequency: activityData.costFrequency,
-        splitType: activityData.splitType,
-        splitPercentage: activityData.splitPercentage ? parseFloat(activityData.splitPercentage) : null,
-        paidBy: activityData.paidBy,
-        notes: activityData.notes
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update activity');
+  const updateActivity = React.useCallback(
+    async (activityId, activityData) => {
+      if (!username) {
+        throw new Error('Username is required');
       }
 
-      // Reload activities after updating
-      await loadActivities();
-    } catch (err) {
-      console.error('Error updating activity:', err);
-      setError(err.message || 'Failed to update activity');
-      throw err;
-    } finally {
-      setIsSaving(false);
-    }
-  }, [username, loadActivities]);
+      setIsSaving(true);
+      setError(null);
+
+      try {
+        const response = await apiPut(`/api/activities/${activityId}`, {
+          username,
+          activityName: activityData.activityName,
+          description: activityData.description,
+          location: activityData.location,
+          instructorContact: activityData.instructorContact,
+          daysOfWeek: activityData.daysOfWeek,
+          startTime: activityData.startTime,
+          endTime: activityData.endTime,
+          recurrence: activityData.recurrence,
+          startDate: activityData.startDate,
+          endDate: activityData.endDate,
+          cost: activityData.cost ? parseFloat(activityData.cost) : 0,
+          costFrequency: activityData.costFrequency,
+          splitType: activityData.splitType,
+          splitPercentage: activityData.splitPercentage
+            ? parseFloat(activityData.splitPercentage)
+            : null,
+          paidBy: activityData.paidBy,
+          notes: activityData.notes,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update activity');
+        }
+
+        // Reload activities after updating
+        await loadActivities();
+      } catch (err) {
+        console.error('Error updating activity:', err);
+        setError(err.message || 'Failed to update activity');
+        throw err;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [username, loadActivities]
+  );
 
   // Delete activity
-  const deleteActivity = React.useCallback(async (activityId) => {
-    if (!username) {
-      throw new Error('Username is required');
-    }
-
-    setError(null);
-
-    try {
-      const response = await apiDelete(`/api/activities/${activityId}`, { username });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete activity');
+  const deleteActivity = React.useCallback(
+    async activityId => {
+      if (!username) {
+        throw new Error('Username is required');
       }
 
-      // Reload activities after deleting
-      await loadActivities();
-    } catch (err) {
-      console.error('Error deleting activity:', err);
-      setError(err.message || 'Failed to delete activity');
-      throw err;
-    }
-  }, [username, loadActivities]);
+      setError(null);
+
+      try {
+        const response = await apiDelete(`/api/activities/${activityId}`, { username });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to delete activity');
+        }
+
+        // Reload activities after deleting
+        await loadActivities();
+      } catch (err) {
+        console.error('Error deleting activity:', err);
+        setError(err.message || 'Failed to delete activity');
+        throw err;
+      }
+    },
+    [username, loadActivities]
+  );
 
   return {
     activities,
@@ -162,6 +175,6 @@ export function useActivities(contactId, username) {
     createActivity,
     updateActivity,
     deleteActivity,
-    reloadActivities: loadActivities
+    reloadActivities: loadActivities,
   };
 }

@@ -9,6 +9,7 @@
 ## Executive Summary
 
 LiaiZen currently has **good foundational context** but significant gaps in:
+
 1. **User perspective preservation** - Voice, style, personal context
 2. **Deep contextual awareness** - Limited message history, no pattern tracking
 3. **Personal context integration** - User profile data underutilized
@@ -23,6 +24,7 @@ LiaiZen currently has **good foundational context** but significant gaps in:
 ### 1. User Perspective & Voice Preservation
 
 #### Current State
+
 - ✅ Tracks communication patterns (tone, phrases)
 - ✅ Uses temporal decay for pattern relevance
 - ❌ Doesn't preserve user's unique voice in rewrites
@@ -32,6 +34,7 @@ LiaiZen currently has **good foundational context** but significant gaps in:
 #### Improvements Needed
 
 **A. Voice Signature Extraction**
+
 ```javascript
 // Track unique voice markers per user
 {
@@ -47,12 +50,14 @@ LiaiZen currently has **good foundational context** but significant gaps in:
 ```
 
 **B. Voice-Aware Rewrites**
+
 - Preserve user's sentence structure preferences
 - Maintain their formality level
 - Keep their unique phrases when appropriate
 - Don't make casual users sound formal, or vice versa
 
 **C. Personal Context Integration**
+
 ```javascript
 // Include user's personal context in rewrites
 {
@@ -73,6 +78,7 @@ LiaiZen currently has **good foundational context** but significant gaps in:
 ### 2. Deep Message History & Pattern Tracking
 
 #### Current State
+
 - ✅ Last 10-15 messages included
 - ❌ No conversation patterns tracked
 - ❌ No topic continuity
@@ -82,6 +88,7 @@ LiaiZen currently has **good foundational context** but significant gaps in:
 #### Improvements Needed
 
 **A. Extended Message History**
+
 ```javascript
 // Increase from 10-15 to 20-30 messages
 // Include metadata: timestamps, edits, reactions
@@ -90,12 +97,13 @@ const messageHistory = {
   metadata: {
     timestamps: messages.map(m => m.created_at),
     edits: messages.filter(m => m.edited_at),
-    reactions: messages.filter(m => m.reactions?.length > 0)
-  }
-}
+    reactions: messages.filter(m => m.reactions?.length > 0),
+  },
+};
 ```
 
 **B. Conversation Pattern Analysis**
+
 ```javascript
 {
   conversation_patterns: {
@@ -112,6 +120,7 @@ const messageHistory = {
 ```
 
 **C. Topic Continuity Tracking**
+
 ```javascript
 {
   active_topics: [
@@ -131,6 +140,7 @@ const messageHistory = {
 ```
 
 **D. Conversation Summaries**
+
 ```javascript
 // Generate periodic summaries for long conversations
 {
@@ -151,6 +161,7 @@ const messageHistory = {
 ### 3. User Profile Data Integration
 
 #### Current State
+
 - ❌ User profile data exists but **not used** in mediation
 - ❌ Missing: occupation, parenting philosophy, personal growth goals
 - ❌ Missing: household members, communication preferences
@@ -158,6 +169,7 @@ const messageHistory = {
 #### Improvements Needed
 
 **A. Full Profile Integration**
+
 ```javascript
 // In userContext.formatContextForAI()
 {
@@ -166,18 +178,18 @@ const messageHistory = {
     name: "John Doe",
     occupation: "Mail carrier",
     work_schedule: "5am-5pm, Mon-Fri",
-    
+
     // Parenting context
     parenting_philosophy: "I like to have fun with my kids",
     personal_growth_goals: "Better communication, less conflict",
-    
+
     // Communication style
     communication_style: "Brief, direct",
     preferred_communication_times: "Evenings after 6pm",
-    
+
     // Household
     household_members: ["New partner: Jane"],
-    
+
     // Location context
     address: "City, State" // For timezone/scheduling context
   }
@@ -185,6 +197,7 @@ const messageHistory = {
 ```
 
 **B. Context-Aware Coaching**
+
 - Reference user's occupation when discussing scheduling
 - Acknowledge their parenting philosophy in rewrites
 - Consider their communication preferences (brief vs. detailed)
@@ -197,6 +210,7 @@ const messageHistory = {
 ### 4. Temporal & Situational Awareness
 
 #### Current State
+
 - ❌ No time-based context
 - ❌ No awareness of special dates
 - ❌ No day-of-week patterns
@@ -205,6 +219,7 @@ const messageHistory = {
 #### Improvements Needed
 
 **A. Temporal Context**
+
 ```javascript
 {
   temporal_context: {
@@ -226,6 +241,7 @@ const messageHistory = {
 ```
 
 **B. Situational Awareness**
+
 ```javascript
 {
   situational_context: {
@@ -248,6 +264,7 @@ const messageHistory = {
 ```
 
 **C. Pattern-Based Timing**
+
 - Recognize when conversations typically happen
 - Understand stress patterns (Monday mornings, Friday evenings)
 - Adapt coaching tone based on time context
@@ -260,6 +277,7 @@ const messageHistory = {
 ### 5. Relationship Dynamics & Learning
 
 #### Current State
+
 - ✅ Basic relationship insights (communication style, topics)
 - ❌ Not persistent (lost on restart)
 - ❌ Doesn't learn from intervention outcomes
@@ -268,6 +286,7 @@ const messageHistory = {
 #### Improvements Needed
 
 **A. Persistent Relationship Insights**
+
 ```javascript
 // Store in database instead of memory
 CREATE TABLE relationship_insights (
@@ -301,6 +320,7 @@ CREATE TABLE relationship_insights (
 ```
 
 **B. Intervention Learning**
+
 ```javascript
 {
   intervention_learning: {
@@ -330,6 +350,7 @@ CREATE TABLE relationship_insights (
 ```
 
 **C. Adaptive Coaching**
+
 - Learn what types of interventions work for each user
 - Adapt coaching style based on past success
 - Avoid repeating unsuccessful approaches
@@ -342,6 +363,7 @@ CREATE TABLE relationship_insights (
 ### 6. Task & Activity Context
 
 #### Current State
+
 - ❌ Task context available but **not used** in mediation
 - ❌ Can't reference ongoing parenting tasks
 - ❌ No connection between tasks and messages
@@ -349,6 +371,7 @@ CREATE TABLE relationship_insights (
 #### Improvements Needed
 
 **A. Active Task Integration**
+
 ```javascript
 {
   task_context: {
@@ -378,6 +401,7 @@ CREATE TABLE relationship_insights (
 ```
 
 **B. Task-Aware Mediation**
+
 - Reference active tasks in rewrites when relevant
 - Understand task-related context in messages
 - Connect messages to ongoing responsibilities
@@ -390,6 +414,7 @@ CREATE TABLE relationship_insights (
 ## 📊 Implementation Roadmap
 
 ### Phase 1: Quick Wins (1-2 days) 🔴 HIGH PRIORITY
+
 1. **User Profile Integration**
    - Include occupation, parenting philosophy, communication preferences
    - Reference in context building
@@ -406,6 +431,7 @@ CREATE TABLE relationship_insights (
    - **Impact:** Medium - Better context
 
 ### Phase 2: Enhanced Context (3-5 days) 🟡 MEDIUM PRIORITY
+
 4. **Persistent Relationship Insights**
    - Store in database
    - Load on conversation start
@@ -422,6 +448,7 @@ CREATE TABLE relationship_insights (
    - **Impact:** High - Adaptive coaching
 
 ### Phase 3: Advanced Features (1-2 weeks) 🟢 LOWER PRIORITY
+
 7. **Temporal Awareness**
    - Time of day, day of week
    - Special dates, holidays
@@ -442,6 +469,7 @@ CREATE TABLE relationship_insights (
 ## 🎯 Success Metrics
 
 Track improvements with:
+
 - **Intervention Acceptance Rate** - % of rewrites accepted (target: >70%)
 - **User Satisfaction** - Feedback on helpfulness (target: >4.5/5)
 - **Voice Preservation** - User recognition of their voice in rewrites
@@ -453,6 +481,7 @@ Track improvements with:
 ## 💡 Example: Enhanced Context in Action
 
 ### Before (Current):
+
 ```
 User Context: dad - Co-parenting with: mom; Shared custody of: Sarah (age 9)
 
@@ -462,6 +491,7 @@ dad: Sure, what time works for you?
 ```
 
 ### After (Enhanced):
+
 ```
 User Context: dad (John Doe)
 - Co-parenting with: mom
@@ -510,6 +540,7 @@ Conversation Patterns:
 ## 🔧 Technical Implementation Notes
 
 ### Database Schema Additions
+
 ```sql
 -- Relationship insights persistence
 CREATE TABLE relationship_insights (
@@ -536,6 +567,7 @@ CREATE TABLE intervention_outcomes (
 ```
 
 ### Code Changes Required
+
 1. **userContext.js** - Add profile data to `formatContextForAI()`
 2. **mediator.js** - Increase message history, add pattern analysis
 3. **mediationContext.js** - Include voice signature, temporal context
@@ -557,14 +589,4 @@ CREATE TABLE intervention_outcomes (
 
 ---
 
-*Last Updated: December 8, 2025*
-
-
-
-
-
-
-
-
-
-
+_Last Updated: December 8, 2025_

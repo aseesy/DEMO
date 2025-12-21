@@ -1,9 +1,9 @@
 /**
  * Unit Tests: AI Mediator
- * 
+ *
  * Tests for core AI mediation system.
  * Uses mocks for OpenAI client, database, and external dependencies.
- * 
+ *
  * @module src/liaizen/core/__tests__/mediator.test
  */
 
@@ -32,7 +32,7 @@ const userContext = require('../../context/userContext');
 describe('AI Mediator', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Initialize state manager with mock context
     const mockContext = {
       escalationState: new Map(),
@@ -43,7 +43,7 @@ describe('AI Mediator', () => {
       cacheMaxSize: 100,
     };
     stateManager.initialize(mockContext);
-    
+
     // Clear mediator's internal cache by getting context and clearing it
     const context = mediator.getContext();
     if (context.messageAnalysisCache) {
@@ -114,10 +114,10 @@ describe('AI Mediator', () => {
 
     it('should use cached analysis if available', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
-      
+
       // Mock cache hit
       const cachedResult = { type: 'cached', action: 'STAY_SILENT' };
-      const mockContext = stateManager.initialize({ 
+      const mockContext = stateManager.initialize({
         escalationState: new Map(),
         emotionalState: new Map(),
         policyState: new Map(),
@@ -125,13 +125,13 @@ describe('AI Mediator', () => {
         cacheMaxAge: 300000,
         cacheMaxSize: 100,
       });
-      
+
       // This test would need access to internal cache, so we'll test the behavior
       // by ensuring OpenAI is not called when cache exists
       // (Cache implementation is internal, so we test the public behavior)
-      
+
       const result = await mediator.analyzeMessage(mockMessage, mockRecentMessages);
-      
+
       // If cache works, OpenAI might not be called
       // This is a simplified test - full cache test would require exposing cache
     });
@@ -139,21 +139,30 @@ describe('AI Mediator', () => {
     it('should call OpenAI for analysis when needed', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
       openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              action: 'STAY_SILENT',
-              escalation: { riskLevel: 'low', confidence: 50 },
-              emotion: { currentEmotion: 'neutral', stressLevel: 30 },
-            }),
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                action: 'STAY_SILENT',
+                escalation: { riskLevel: 'low', confidence: 50 },
+                emotion: { currentEmotion: 'neutral', stressLevel: 30 },
+              }),
+            },
           },
-        }],
+        ],
       });
 
       // Mock userContext
       userContext.formatContextForAI.mockResolvedValue('User context');
 
-      const result = await mediator.analyzeMessage(mockMessage, mockRecentMessages, [], [], null, 'room-123');
+      const result = await mediator.analyzeMessage(
+        mockMessage,
+        mockRecentMessages,
+        [],
+        [],
+        null,
+        'room-123'
+      );
 
       // Should call OpenAI (languageAnalyzer and codeLayer are optional)
       expect(openaiClient.createChatCompletion).toHaveBeenCalled();
@@ -164,21 +173,30 @@ describe('AI Mediator', () => {
     it('should return STAY_SILENT result when AI says to stay silent', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
       openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              action: 'STAY_SILENT',
-              escalation: { riskLevel: 'low', confidence: 50 },
-              emotion: { currentEmotion: 'neutral', stressLevel: 30 },
-            }),
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                action: 'STAY_SILENT',
+                escalation: { riskLevel: 'low', confidence: 50 },
+                emotion: { currentEmotion: 'neutral', stressLevel: 30 },
+              }),
+            },
           },
-        }],
+        ],
       });
 
       // Mock userContext
       userContext.formatContextForAI.mockResolvedValue('User context');
 
-      const result = await mediator.analyzeMessage(mockMessage, mockRecentMessages, [], [], null, 'room-123');
+      const result = await mediator.analyzeMessage(
+        mockMessage,
+        mockRecentMessages,
+        [],
+        [],
+        null,
+        'room-123'
+      );
 
       expect(result).toBeNull(); // STAY_SILENT returns null
     });
@@ -186,27 +204,36 @@ describe('AI Mediator', () => {
     it('should return INTERVENE result with rewrites', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
       openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              action: 'INTERVENE',
-              escalation: { riskLevel: 'high', confidence: 90 },
-              emotion: { currentEmotion: 'frustrated', stressLevel: 80 },
-              intervention: {
-                validation: 'This message shows accusatory language.',
-                insight: 'Accusatory language can escalate conflict.',
-                rewrite1: 'I feel frustrated about the schedule change.',
-                rewrite2: 'Can we discuss the schedule issue?',
-              },
-            }),
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                action: 'INTERVENE',
+                escalation: { riskLevel: 'high', confidence: 90 },
+                emotion: { currentEmotion: 'frustrated', stressLevel: 80 },
+                intervention: {
+                  validation: 'This message shows accusatory language.',
+                  insight: 'Accusatory language can escalate conflict.',
+                  rewrite1: 'I feel frustrated about the schedule change.',
+                  rewrite2: 'Can we discuss the schedule issue?',
+                },
+              }),
+            },
           },
-        }],
+        ],
       });
 
       // Mock userContext
       userContext.formatContextForAI.mockResolvedValue('User context');
 
-      const result = await mediator.analyzeMessage(mockMessage, mockRecentMessages, [], [], null, 'room-123');
+      const result = await mediator.analyzeMessage(
+        mockMessage,
+        mockRecentMessages,
+        [],
+        [],
+        null,
+        'room-123'
+      );
 
       expect(result).toBeDefined();
       expect(result.type).toBe('ai_intervention');
@@ -234,7 +261,14 @@ describe('AI Mediator', () => {
         id: 'error-test-' + Date.now(),
       };
 
-      const result = await mediator.analyzeMessage(uniqueMessage, mockRecentMessages, [], [], null, 'room-123');
+      const result = await mediator.analyzeMessage(
+        uniqueMessage,
+        mockRecentMessages,
+        [],
+        [],
+        null,
+        'room-123'
+      );
 
       // Should fail open (return null) on non-retryable error
       expect(result).toBeNull();
@@ -279,11 +313,13 @@ describe('AI Mediator', () => {
       // Names must start with capital letter and be longer than MIN_MESSAGE_LENGTH (1)
       // "John" (4 chars) and "Sarah" (5 chars) both pass: length > 1 && starts with [A-Z]
       openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [{
-          message: {
-            content: 'John\nSarah',
+        choices: [
+          {
+            message: {
+              content: 'John\nSarah',
+            },
           },
-        }],
+        ],
       });
 
       const result = await mediator.detectNamesInMessage('I talked to John and Sarah today');
@@ -297,9 +333,7 @@ describe('AI Mediator', () => {
         // If names are detected, verify they're valid
         expect(result.length).toBeGreaterThanOrEqual(1);
         // At least one of the names should be in the result
-        const hasValidName = result.some(name => 
-          name.length > 1 && /^[A-Z]/.test(name)
-        );
+        const hasValidName = result.some(name => name.length > 1 && /^[A-Z]/.test(name));
         expect(hasValidName).toBe(true);
       } else {
         // If empty, the filtering might be stricter than expected - that's also valid
@@ -311,11 +345,13 @@ describe('AI Mediator', () => {
     it('should exclude existing contacts', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
       openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [{
-          message: {
-            content: 'NONE',
+        choices: [
+          {
+            message: {
+              content: 'NONE',
+            },
           },
-        }],
+        ],
       });
 
       const result = await mediator.detectNamesInMessage(
@@ -330,11 +366,13 @@ describe('AI Mediator', () => {
     it('should return empty array for NONE response', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
       openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [{
-          message: {
-            content: 'NONE',
+        choices: [
+          {
+            message: {
+              content: 'NONE',
+            },
           },
-        }],
+        ],
       });
 
       const result = await mediator.detectNamesInMessage('No names here');
@@ -364,11 +402,13 @@ describe('AI Mediator', () => {
     it('should generate contact suggestion', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
       openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [{
-          message: {
-            content: 'Would you like to add John to your contacts?',
+        choices: [
+          {
+            message: {
+              content: 'Would you like to add John to your contacts?',
+            },
           },
-        }],
+        ],
       });
 
       const result = await mediator.generateContactSuggestion('John', 'Context');
@@ -415,17 +455,19 @@ describe('AI Mediator', () => {
     it('should extract relationship insights', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
       openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              communicationStyle: 'formal',
-              commonTopics: ['schedule', 'children'],
-              tensionPoints: ['pickup times'],
-              positivePatterns: ['clear communication'],
-              questionsToAsk: ['What works well?'],
-            }),
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                communicationStyle: 'formal',
+                commonTopics: ['schedule', 'children'],
+                tensionPoints: ['pickup times'],
+                positivePatterns: ['clear communication'],
+                questionsToAsk: ['What works well?'],
+              }),
+            },
           },
-        }],
+        ],
       });
 
       // extractRelationshipInsights uses dbSafe internally but it's wrapped in try/catch
@@ -465,7 +507,7 @@ describe('AI Mediator', () => {
     it('should limit recent messages to max', () => {
       const { MESSAGE } = require('../../../utils/constants');
       const maxMessages = MESSAGE.MAX_RECENT_MESSAGES;
-      
+
       // Add more than max messages
       for (let i = 0; i < maxMessages + 5; i++) {
         mediator.updateContext({
@@ -501,7 +543,7 @@ describe('AI Mediator', () => {
   describe('recordInterventionFeedback', () => {
     it('should record helpful feedback', () => {
       const roomId = 'room-123';
-      
+
       // First add an intervention
       stateManager.updatePolicyState(roomId, {
         type: 'intervene',
@@ -518,7 +560,7 @@ describe('AI Mediator', () => {
 
     it('should record unhelpful feedback', () => {
       const roomId = 'room-123';
-      
+
       // First add an intervention
       stateManager.updatePolicyState(roomId, {
         type: 'intervene',
@@ -538,7 +580,7 @@ describe('AI Mediator', () => {
     it('should return false if communicationProfile not available', async () => {
       // Mock communicationProfile to be null
       jest.resetModules();
-      
+
       const result = await mediator.recordAcceptedRewrite('user1', {
         original: 'Original',
         rewrite: 'Rewrite',
@@ -581,10 +623,16 @@ describe('AI Mediator', () => {
     it('should handle missing roomId', async () => {
       openaiClient.isConfigured.mockReturnValue(false);
 
-      const result = await mediator.analyzeMessage(mockMessage, mockRecentMessages, [], [], null, null);
+      const result = await mediator.analyzeMessage(
+        mockMessage,
+        mockRecentMessages,
+        [],
+        [],
+        null,
+        null
+      );
 
       expect(result).toBeNull();
     });
   });
 });
-

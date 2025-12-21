@@ -1,6 +1,6 @@
 /**
  * Structured Logger for Production
- * 
+ *
  * Features:
  * - Log levels (error, warn, info, debug)
  * - Structured JSON output in production
@@ -12,13 +12,13 @@ const LOG_LEVELS = {
   ERROR: 'error',
   WARN: 'warn',
   INFO: 'info',
-  DEBUG: 'debug'
+  DEBUG: 'debug',
 };
 
 const ERROR_TYPES = {
   RETRYABLE: 'retryable',
   FATAL: 'fatal',
-  OPERATIONAL: 'operational'
+  OPERATIONAL: 'operational',
 };
 
 class Logger {
@@ -43,7 +43,7 @@ class Logger {
       message,
       timestamp: new Date().toISOString(),
       ...this.context,
-      ...metadata
+      ...metadata,
     };
 
     if (error) {
@@ -52,7 +52,7 @@ class Logger {
         stack: error.stack,
         name: error.name,
         code: error.code,
-        type: this._categorizeError(error)
+        type: this._categorizeError(error),
       };
     }
 
@@ -69,7 +69,7 @@ class Logger {
       message,
       timestamp: new Date().toISOString(),
       ...this.context,
-      ...metadata
+      ...metadata,
     });
   }
 
@@ -82,7 +82,7 @@ class Logger {
       message,
       timestamp: new Date().toISOString(),
       ...this.context,
-      ...metadata
+      ...metadata,
     });
   }
 
@@ -96,7 +96,7 @@ class Logger {
         message,
         timestamp: new Date().toISOString(),
         ...this.context,
-        ...metadata
+        ...metadata,
       });
     }
   }
@@ -143,12 +143,13 @@ class Logger {
       console.log(JSON.stringify(entry));
     } else {
       // Pretty print for development
-      const emoji = {
-        error: '❌',
-        warn: '⚠️',
-        info: '✅',
-        debug: '🔍'
-      }[entry.level] || '📝';
+      const emoji =
+        {
+          error: '❌',
+          warn: '⚠️',
+          info: '✅',
+          debug: '🔍',
+        }[entry.level] || '📝';
       console.log(`${emoji} [${entry.level.toUpperCase()}] ${entry.message}`, entry);
     }
   }
@@ -157,13 +158,12 @@ class Logger {
 // Create default logger instance
 const defaultLogger = new Logger({
   service: 'chat-server',
-  environment: process.env.NODE_ENV || 'development'
+  environment: process.env.NODE_ENV || 'development',
 });
 
 module.exports = {
   Logger,
   defaultLogger,
   ERROR_TYPES,
-  LOG_LEVELS
+  LOG_LEVELS,
 };
-

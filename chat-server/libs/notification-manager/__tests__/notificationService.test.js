@@ -32,13 +32,16 @@ describe('Notification Service', () => {
 
       const db = createMockDb([mockNotification]);
 
-      const result = await notificationService.createNotification({
-        userId: 'user1',
-        type: 'coparent_invitation',
-        title: 'Test Title',
-        message: 'Test message',
-        data: { key: 'value' },
-      }, db);
+      const result = await notificationService.createNotification(
+        {
+          userId: 'user1',
+          type: 'coparent_invitation',
+          title: 'Test Title',
+          message: 'Test message',
+          data: { key: 'value' },
+        },
+        db
+      );
 
       expect(result).toEqual(mockNotification);
       expect(db.query).toHaveBeenCalledWith(
@@ -51,10 +54,13 @@ describe('Notification Service', () => {
       const db = createMockDb([]);
 
       await expect(
-        notificationService.createNotification({
-          type: 'test',
-          title: 'Test',
-        }, db)
+        notificationService.createNotification(
+          {
+            type: 'test',
+            title: 'Test',
+          },
+          db
+        )
       ).rejects.toThrow('userId is required');
     });
 
@@ -62,10 +68,13 @@ describe('Notification Service', () => {
       const db = createMockDb([]);
 
       await expect(
-        notificationService.createNotification({
-          userId: 'user1',
-          title: 'Test',
-        }, db)
+        notificationService.createNotification(
+          {
+            userId: 'user1',
+            title: 'Test',
+          },
+          db
+        )
       ).rejects.toThrow('type is required');
     });
 
@@ -73,10 +82,13 @@ describe('Notification Service', () => {
       const db = createMockDb([]);
 
       await expect(
-        notificationService.createNotification({
-          userId: 'user1',
-          type: 'test',
-        }, db)
+        notificationService.createNotification(
+          {
+            userId: 'user1',
+            type: 'test',
+          },
+          db
+        )
       ).rejects.toThrow('title is required');
     });
   });
@@ -92,12 +104,15 @@ describe('Notification Service', () => {
 
       const db = createMockDb([mockNotification]);
 
-      const result = await notificationService.createInvitationNotification({
-        userId: 'user1',
-        inviterName: 'Alex',
-        invitationId: 123,
-        invitationToken: 'token123',
-      }, db);
+      const result = await notificationService.createInvitationNotification(
+        {
+          userId: 'user1',
+          inviterName: 'Alex',
+          invitationId: 123,
+          invitationToken: 'token123',
+        },
+        db
+      );
 
       expect(result.type).toBe('coparent_invitation');
       const callArgs = db.query.mock.calls[0];
@@ -107,12 +122,15 @@ describe('Notification Service', () => {
     it('should include inviter name in message', async () => {
       const db = createMockDb([{ id: 1 }]);
 
-      await notificationService.createInvitationNotification({
-        userId: 'user1',
-        inviterName: 'Jordan',
-        invitationId: 123,
-        invitationToken: 'token123',
-      }, db);
+      await notificationService.createInvitationNotification(
+        {
+          userId: 'user1',
+          inviterName: 'Jordan',
+          invitationId: 123,
+          invitationToken: 'token123',
+        },
+        db
+      );
 
       const callArgs = db.query.mock.calls[0];
       expect(callArgs[1][3]).toContain('Jordan');
@@ -122,9 +140,12 @@ describe('Notification Service', () => {
       const db = createMockDb([]);
 
       await expect(
-        notificationService.createInvitationNotification({
-          userId: 'user1',
-        }, db)
+        notificationService.createInvitationNotification(
+          {
+            userId: 'user1',
+          },
+          db
+        )
       ).rejects.toThrow('userId, inviterName, and invitationId are required');
     });
   });
@@ -139,12 +160,15 @@ describe('Notification Service', () => {
 
       const db = createMockDb([mockNotification]);
 
-      const result = await notificationService.createInvitationAcceptedNotification({
-        userId: 'inviter1',
-        inviteeName: 'Jordan',
-        invitationId: 123,
-        roomId: 'room123',
-      }, db);
+      const result = await notificationService.createInvitationAcceptedNotification(
+        {
+          userId: 'inviter1',
+          inviteeName: 'Jordan',
+          invitationId: 123,
+          roomId: 'room123',
+        },
+        db
+      );
 
       expect(result.type).toBe('invitation_accepted');
     });
@@ -152,12 +176,15 @@ describe('Notification Service', () => {
     it('should include room ID in data', async () => {
       const db = createMockDb([{ id: 1 }]);
 
-      await notificationService.createInvitationAcceptedNotification({
-        userId: 'inviter1',
-        inviteeName: 'Jordan',
-        invitationId: 123,
-        roomId: 'room123',
-      }, db);
+      await notificationService.createInvitationAcceptedNotification(
+        {
+          userId: 'inviter1',
+          inviteeName: 'Jordan',
+          invitationId: 123,
+          roomId: 'room123',
+        },
+        db
+      );
 
       const callArgs = db.query.mock.calls[0];
       const dataParam = JSON.parse(callArgs[1][4]);
@@ -175,11 +202,14 @@ describe('Notification Service', () => {
 
       const db = createMockDb([mockNotification]);
 
-      const result = await notificationService.createInvitationDeclinedNotification({
-        userId: 'inviter1',
-        inviteeName: 'Jordan',
-        invitationId: 123,
-      }, db);
+      const result = await notificationService.createInvitationDeclinedNotification(
+        {
+          userId: 'inviter1',
+          inviteeName: 'Jordan',
+          invitationId: 123,
+        },
+        db
+      );
 
       expect(result.type).toBe('invitation_declined');
     });
@@ -187,10 +217,13 @@ describe('Notification Service', () => {
     it('should work without invitee name', async () => {
       const db = createMockDb([{ id: 1 }]);
 
-      await notificationService.createInvitationDeclinedNotification({
-        userId: 'inviter1',
-        invitationId: 123,
-      }, db);
+      await notificationService.createInvitationDeclinedNotification(
+        {
+          userId: 'inviter1',
+          invitationId: 123,
+        },
+        db
+      );
 
       const callArgs = db.query.mock.calls[0];
       expect(callArgs[1][3]).toContain('declined');
@@ -243,9 +276,9 @@ describe('Notification Service', () => {
     it('should throw error for missing params', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        notificationService.getNotifications(null, db)
-      ).rejects.toThrow('userId and db are required');
+      await expect(notificationService.getNotifications(null, db)).rejects.toThrow(
+        'userId and db are required'
+      );
     });
   });
 
@@ -286,9 +319,9 @@ describe('Notification Service', () => {
     it('should throw error for non-existent notification', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        notificationService.markAsRead(999, 'user1', db)
-      ).rejects.toThrow('Notification not found');
+      await expect(notificationService.markAsRead(999, 'user1', db)).rejects.toThrow(
+        'Notification not found'
+      );
     });
   });
 
@@ -330,17 +363,17 @@ describe('Notification Service', () => {
     it('should throw error for non-existent notification', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        notificationService.recordAction(999, 'user1', 'accepted', db)
-      ).rejects.toThrow('Notification not found');
+      await expect(notificationService.recordAction(999, 'user1', 'accepted', db)).rejects.toThrow(
+        'Notification not found'
+      );
     });
 
     it('should throw error for missing params', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        notificationService.recordAction(1, null, 'accepted', db)
-      ).rejects.toThrow('notificationId, userId, action, and db are required');
+      await expect(notificationService.recordAction(1, null, 'accepted', db)).rejects.toThrow(
+        'notificationId, userId, action, and db are required'
+      );
     });
   });
 
@@ -361,17 +394,23 @@ describe('Notification Service', () => {
     it('should throw error for missing params', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        notificationService.deleteOldNotifications(null, db)
-      ).rejects.toThrow('daysOld and db are required');
+      await expect(notificationService.deleteOldNotifications(null, db)).rejects.toThrow(
+        'daysOld and db are required'
+      );
     });
   });
 
   describe('NOTIFICATION_TYPES', () => {
     it('should have all expected types', () => {
-      expect(notificationService.NOTIFICATION_TYPES.COPARENT_INVITATION).toBe('coparent_invitation');
-      expect(notificationService.NOTIFICATION_TYPES.INVITATION_ACCEPTED).toBe('invitation_accepted');
-      expect(notificationService.NOTIFICATION_TYPES.INVITATION_DECLINED).toBe('invitation_declined');
+      expect(notificationService.NOTIFICATION_TYPES.COPARENT_INVITATION).toBe(
+        'coparent_invitation'
+      );
+      expect(notificationService.NOTIFICATION_TYPES.INVITATION_ACCEPTED).toBe(
+        'invitation_accepted'
+      );
+      expect(notificationService.NOTIFICATION_TYPES.INVITATION_DECLINED).toBe(
+        'invitation_declined'
+      );
       expect(notificationService.NOTIFICATION_TYPES.WELCOME).toBe('welcome');
       expect(notificationService.NOTIFICATION_TYPES.SYSTEM).toBe('system');
     });

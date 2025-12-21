@@ -78,7 +78,8 @@ class CodebaseContextServer {
         },
         {
           name: 'get_common_patterns',
-          description: 'Get common coding patterns (components, modals, navigation, buttons, forms)',
+          description:
+            'Get common coding patterns (components, modals, navigation, buttons, forms)',
           inputSchema: {
             type: 'object',
             properties: {
@@ -162,7 +163,8 @@ class CodebaseContextServer {
           uri: 'liaizen://codebase-context',
           name: 'LiaiZen Codebase Context',
           mimeType: 'application/json',
-          description: 'Complete codebase context including architecture, patterns, and conventions',
+          description:
+            'Complete codebase context including architecture, patterns, and conventions',
         },
         {
           uri: 'liaizen://architecture',
@@ -180,7 +182,7 @@ class CodebaseContextServer {
     }));
 
     // Read resource
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    this.server.setRequestHandler(ReadResourceRequestSchema, async request => {
       const context = await this.loadContext();
 
       switch (request.params.uri) {
@@ -220,7 +222,7 @@ class CodebaseContextServer {
     });
 
     // Handle tool calls
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async request => {
       const { name, arguments: args } = request.params;
 
       switch (name) {
@@ -297,7 +299,8 @@ class CodebaseContextServer {
 
   async getFileStructure(area) {
     const context = await this.loadContext();
-    const structure = area === 'all' ? context.fileStructure : { [area]: context.fileStructure[area] };
+    const structure =
+      area === 'all' ? context.fileStructure : { [area]: context.fileStructure[area] };
     return {
       content: [
         {
@@ -322,7 +325,8 @@ class CodebaseContextServer {
 
   async getCommonPatterns(pattern) {
     const context = await this.loadContext();
-    const patterns = pattern === 'all' ? context.commonPatterns : { [pattern]: context.commonPatterns[pattern] };
+    const patterns =
+      pattern === 'all' ? context.commonPatterns : { [pattern]: context.commonPatterns[pattern] };
     return {
       content: [
         {
@@ -388,9 +392,10 @@ class CodebaseContextServer {
       content: [
         {
           type: 'text',
-          text: results.length > 0
-            ? JSON.stringify(results, null, 2)
-            : `No results found for: ${query}`,
+          text:
+            results.length > 0
+              ? JSON.stringify(results, null, 2)
+              : `No results found for: ${query}`,
         },
       ],
     };

@@ -31,14 +31,15 @@
   "license": "MIT",
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "neo4j-driver": "^5.27.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
     "express-rate-limit": "^6.7.0",
     "helmet": "^7.0.0",
+    "isomorphic-dompurify": "^2.30.0",
     "jsonwebtoken": "^9.0.2",
+    "neo4j-driver": "^5.27.0",
     "nodemailer": "^6.9.7",
     "openai": "^6.7.0",
     "pg": "^8.16.3",
@@ -50,7 +51,8 @@
     "jest": "^30.2.0",
     "jscpd": "^4.0.5",
     "madge": "^8.0.0",
-    "nodemon": "^2.0.22"
+    "nodemon": "^2.0.22",
+    "supertest": "^7.1.4"
   },
   "engines": {
     "node": ">=20.0.0"

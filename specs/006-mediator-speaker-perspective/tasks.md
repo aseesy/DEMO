@@ -9,17 +9,17 @@
 
 ## Task Overview
 
-| Task | Type | Priority | Complexity | Dependencies |
-|------|------|----------|------------|--------------|
-| Task 1 | infrastructure | critical | small | none |
-| Task 2 | infrastructure | critical | small | Task 1 |
-| Task 3 | infrastructure | critical | small | Task 1 |
-| Task 4 | feature | high | medium | none |
-| Task 5 | feature | high | small | Task 4 |
-| Task 6 | feature | high | small | Task 4 |
-| Task 7 | integration | high | medium | Tasks 1-3 |
-| Task 8 | documentation | medium | small | none |
-| Task 9 | testing | high | medium | Tasks 1-7 |
+| Task   | Type           | Priority | Complexity | Dependencies |
+| ------ | -------------- | -------- | ---------- | ------------ |
+| Task 1 | infrastructure | critical | small      | none         |
+| Task 2 | infrastructure | critical | small      | Task 1       |
+| Task 3 | infrastructure | critical | small      | Task 1       |
+| Task 4 | feature        | high     | medium     | none         |
+| Task 5 | feature        | high     | small      | Task 4       |
+| Task 6 | feature        | high     | small      | Task 4       |
+| Task 7 | integration    | high     | medium     | Tasks 1-3    |
+| Task 8 | documentation  | medium   | small      | none         |
+| Task 9 | testing        | high     | medium     | Tasks 1-7    |
 
 ---
 
@@ -37,13 +37,14 @@ Create the main rewrite validator module that detects receiver-perspective patte
 
 ### File Operations
 
-| File | Action |
-|------|--------|
+| File                                          | Action |
+| --------------------------------------------- | ------ |
 | `chat-server/libs/rewrite-validator/index.js` | CREATE |
 
 ### Implementation Details
 
 Create `chat-server/libs/rewrite-validator/index.js` with:
+
 - `RECEIVER_INDICATORS` array of regex patterns for receiver perspective detection
 - `SENDER_INDICATORS` array of regex patterns for sender perspective validation
 - `validateRewritePerspective(rewrite, originalMessage)` function
@@ -75,13 +76,14 @@ Create the fallback rewrites module with pre-approved sender-perspective alterna
 
 ### File Operations
 
-| File | Action |
-|------|--------|
+| File                                              | Action |
+| ------------------------------------------------- | ------ |
 | `chat-server/libs/rewrite-validator/fallbacks.js` | CREATE |
 
 ### Implementation Details
 
 Create `chat-server/libs/rewrite-validator/fallbacks.js` with:
+
 - `FALLBACK_REWRITES` object with categories: attack, blame, demand, threat, triangulation, generic
 - Each category has: `rewrite1`, `rewrite2`, `tip`
 - `detectCategory(originalMessage, languageAnalysis)` function
@@ -111,13 +113,14 @@ Create comprehensive unit tests for the rewrite validator and fallback modules.
 
 ### File Operations
 
-| File | Action |
-|------|--------|
+| File                                                             | Action |
+| ---------------------------------------------------------------- | ------ |
 | `chat-server/libs/rewrite-validator/__tests__/validator.test.js` | CREATE |
 
 ### Implementation Details
 
 Create test file with:
+
 - Tests for `validateRewritePerspective`:
   - 10+ receiver-perspective rewrites that should FAIL
   - 10+ sender-perspective rewrites that should PASS
@@ -154,8 +157,8 @@ Enhance the AI prompt in `aiMediator.js` to explicitly clarify sender/receiver r
 
 ### File Operations
 
-| File | Action |
-|------|--------|
+| File                        | Action |
+| --------------------------- | ------ |
 | `chat-server/aiMediator.js` | MODIFY |
 
 ### Implementation Details
@@ -210,8 +213,8 @@ Add concrete examples showing correct vs incorrect rewrites to the AI prompt.
 
 ### File Operations
 
-| File | Action |
-|------|--------|
+| File                        | Action |
+| --------------------------- | ------ |
 | `chat-server/aiMediator.js` | MODIFY |
 
 ### Implementation Details
@@ -272,8 +275,8 @@ Update the system message in the OpenAI API call to reinforce sender perspective
 
 ### File Operations
 
-| File | Action |
-|------|--------|
+| File                        | Action |
+| --------------------------- | ------ |
 | `chat-server/aiMediator.js` | MODIFY |
 
 ### Implementation Details
@@ -281,7 +284,7 @@ Update the system message in the OpenAI API call to reinforce sender perspective
 Update line 536-537 system message content to include:
 
 ```javascript
-content: 'You are LiaiZen - a communication COACH for co-parents. CONSTITUTION RULES: 1) Talk about LANGUAGE/PHRASING, never emotions ("this phrasing implies blame" not "you\'re angry"). 2) NO psychological labels (narcissist, manipulative, insecure - PROHIBITED). 3) Child-centric when child mentioned. 4) Use 1-2-3 framework: ADDRESS (what phrasing does) + ONE TIP (max 10 words) + TWO REWRITES (different approaches). CRITICAL: Rewrites are ALTERNATIVE messages the SENDER could send INSTEAD - NOT responses the receiver would send back. Only use "you/your" - NEVER "we/us/our/both". Respond ONLY with valid JSON.'
+content: 'You are LiaiZen - a communication COACH for co-parents. CONSTITUTION RULES: 1) Talk about LANGUAGE/PHRASING, never emotions ("this phrasing implies blame" not "you\'re angry"). 2) NO psychological labels (narcissist, manipulative, insecure - PROHIBITED). 3) Child-centric when child mentioned. 4) Use 1-2-3 framework: ADDRESS (what phrasing does) + ONE TIP (max 10 words) + TWO REWRITES (different approaches). CRITICAL: Rewrites are ALTERNATIVE messages the SENDER could send INSTEAD - NOT responses the receiver would send back. Only use "you/your" - NEVER "we/us/our/both". Respond ONLY with valid JSON.';
 ```
 
 ### Acceptance Criteria
@@ -307,13 +310,14 @@ Integrate the rewrite validator into the AI mediation flow, applying fallbacks w
 
 ### File Operations
 
-| File | Action |
-|------|--------|
+| File                        | Action |
+| --------------------------- | ------ |
 | `chat-server/aiMediator.js` | MODIFY |
 
 ### Implementation Details
 
 1. **Add require statement** after line 28:
+
 ```javascript
 let rewriteValidator;
 try {
@@ -326,6 +330,7 @@ try {
 ```
 
 2. **Add validation logic** after line 655 (inside `if (action === 'INTERVENE')` block, after field validation):
+
 ```javascript
 // Validate rewrite perspective (Feature 006)
 if (rewriteValidator) {
@@ -387,8 +392,8 @@ Add Principle IV (Sender Perspective Primacy) to the AI mediation constitution.
 
 ### File Operations
 
-| File | Action |
-|------|--------|
+| File                                       | Action |
+| ------------------------------------------ | ------ |
 | `chat-server/ai-mediation-constitution.md` | MODIFY |
 
 ### Implementation Details
@@ -403,6 +408,7 @@ Insert after Principle III (~line 78):
 **Mandate**: All rewrites MUST be written from the sender's perspective as alternative phrasings.
 
 **Critical Understanding**:
+
 - Rewrites are what the SENDER could send INSTEAD of their original message
 - Rewrites are NOT responses the receiver would send back
 - Rewrites express the sender's underlying intent in a better way
@@ -410,25 +416,26 @@ Insert after Principle III (~line 78):
 
 **Prohibited Rewrite Patterns** (indicate receiver perspective):
 
-| Pattern | Why Prohibited | Example |
-|---------|----------------|---------|
-| "I understand you're..." | Receiver empathy response | Responding to received attack |
-| "That hurt me..." | Receiver reaction | Processing received insult |
-| "When you said that..." | Receiver reflection | Discussing what was heard |
-| "I don't appreciate..." | Receiver boundary-setting | Responding to mistreatment |
-| "Can you explain what you meant?" | Receiver clarification | Asking about received message |
+| Pattern                           | Why Prohibited            | Example                       |
+| --------------------------------- | ------------------------- | ----------------------------- |
+| "I understand you're..."          | Receiver empathy response | Responding to received attack |
+| "That hurt me..."                 | Receiver reaction         | Processing received insult    |
+| "When you said that..."           | Receiver reflection       | Discussing what was heard     |
+| "I don't appreciate..."           | Receiver boundary-setting | Responding to mistreatment    |
+| "Can you explain what you meant?" | Receiver clarification    | Asking about received message |
 
 **Required Rewrite Patterns** (indicate sender perspective):
 
-| Pattern | Why Required | Example |
-|---------|--------------|---------|
-| "I'm feeling..." | Sender emotional expression | Sender states their state |
-| "I need..." | Sender need statement | Sender states their requirement |
-| "I've noticed..." | Sender observation | Sender shares their concern |
-| "Can we..." | Sender request/invitation | Sender proposes collaboration |
-| "Something isn't working..." | Sender problem statement | Sender identifies issue |
+| Pattern                      | Why Required                | Example                         |
+| ---------------------------- | --------------------------- | ------------------------------- |
+| "I'm feeling..."             | Sender emotional expression | Sender states their state       |
+| "I need..."                  | Sender need statement       | Sender states their requirement |
+| "I've noticed..."            | Sender observation          | Sender shares their concern     |
+| "Can we..."                  | Sender request/invitation   | Sender proposes collaboration   |
+| "Something isn't working..." | Sender problem statement    | Sender identifies issue         |
 
 **Perspective Test**: Before accepting any rewrite, apply this test:
+
 > "Is this what the SENDER could say instead of their original message? Or is this what the RECEIVER would say after receiving that message?"
 
 **Rationale**: Rewrites must be actionable alternatives for the person being coached. A rewrite that sounds like a response is useless to the sender who needs a better way to express their own concern.
@@ -462,18 +469,20 @@ Run all unit tests and perform manual verification of the integration.
 ### File Operations
 
 | File | Action |
-|------|--------|
-| N/A | TEST |
+| ---- | ------ |
+| N/A  | TEST   |
 
 ### Implementation Details
 
 1. **Run unit tests**:
+
 ```bash
 cd chat-server
 npm test -- libs/rewrite-validator/__tests__/validator.test.js
 ```
 
 2. **Verify server starts**:
+
 ```bash
 npm run dev
 # Check for "✅ AI Mediator: Rewrite validator library loaded"
@@ -550,6 +559,6 @@ cd chat-server && npm test
 
 ## Changelog
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2025-11-26 | Initial task breakdown |
+| Version | Date       | Changes                |
+| ------- | ---------- | ---------------------- |
+| 1.0.0   | 2025-11-26 | Initial task breakdown |

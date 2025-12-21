@@ -12,18 +12,21 @@ This document describes the advanced AI mediator features that make LiaiZen a tr
 ### 1. ✅ Conflict Escalation Prediction
 
 **What It Does**:
+
 - Analyzes conversation patterns in real-time
 - Tracks escalation indicators (accusatory language, triangulation, comparisons, blaming)
 - Calculates escalation scores that decay over time
 - Provides risk assessments (low/medium/high/critical) with confidence levels
 
 **How It Works**:
+
 - `conflictPredictor.js` monitors each message for conflict patterns
 - Tracks pattern counts per room (accusatory, triangulation, comparison, blaming)
 - Uses AI to assess overall escalation risk based on conversation context
 - Provides urgency recommendations (none/gentle/moderate/urgent)
 
 **Integration**:
+
 - Runs before AI mediator analysis
 - Escalation risk is passed to AI mediator for context-aware intervention
 - High-risk conversations trigger more proactive intervention
@@ -31,18 +34,21 @@ This document describes the advanced AI mediator features that make LiaiZen a tr
 ### 2. ✅ Proactive Coaching (Before Sending)
 
 **What It Does**:
+
 - Analyzes draft messages as users type (debounced)
 - Provides real-time feedback before message is sent
 - Offers alternative rewrites that are more collaborative
 - Learns from previously flagged messages
 
 **How It Works**:
+
 - `proactiveCoach.js` analyzes draft text when user pauses typing (1 second delay)
 - Only analyzes messages with 10+ characters
 - Considers recent conversation history, user context, and flagged messages
 - Returns risk assessment, issues, coaching message, and rewrite options
 
 **UI Features**:
+
 - Orange banner appears above input when risk is detected
 - Shows coaching message and specific issues
 - Provides clickable rewrite options
@@ -51,12 +57,14 @@ This document describes the advanced AI mediator features that make LiaiZen a tr
 ### 3. ✅ Real-Time Message Rewrite Suggestions
 
 **What It Does**:
+
 - Provides two alternative rewrites for problematic drafts
 - Rewrites are child-focused, collaborative, and respectful
 - One-click application to input field
 - Clears coaching banner when rewrite is selected
 
 **User Experience**:
+
 - User types message → System analyzes → Shows coaching banner
 - User clicks rewrite → Message replaces draft → User can edit or send
 - Non-intrusive: Only shows when risk is detected
@@ -64,12 +72,14 @@ This document describes the advanced AI mediator features that make LiaiZen a tr
 ### 4. ✅ Escalation-Aware Intervention
 
 **What It Does**:
+
 - AI mediator receives escalation risk assessment
 - Adjusts intervention urgency based on escalation level
 - More proactive intervention for high-risk conversations
 - Tracks escalation patterns over time
 
 **Integration Points**:
+
 - Escalation assessment runs before AI analysis
 - Risk level, confidence, reasons, and urgency passed to AI
 - AI mediator uses this context to make better intervention decisions
@@ -77,12 +87,14 @@ This document describes the advanced AI mediator features that make LiaiZen a tr
 ### 5. ✅ Personalized Learning from Flags
 
 **What It Does**:
+
 - Tracks what each user finds problematic
 - Uses flagged messages to understand user-specific triggers
 - Adapts coaching and intervention to individual preferences
 - Stores flag reasons for long-term learning
 
 **Learning Flow**:
+
 1. User flags message with reason
 2. Reason saved to `message_flags` table
 3. Flagged messages included in proactive coaching context
@@ -93,18 +105,21 @@ This document describes the advanced AI mediator features that make LiaiZen a tr
 ### New Components
 
 **`conflictPredictor.js`**:
+
 - Pattern detection (regex + AI analysis)
 - Escalation score calculation
 - Risk assessment with confidence levels
 - Room state tracking
 
 **`proactiveCoach.js`**:
+
 - Draft message analysis
 - Context-aware coaching generation
 - Rewrite generation
 - Learning from flagged messages
 
 **Database Tables**:
+
 - `message_flags`: Stores flag records with reasons
 - `user_intervention_preferences`: User preferences (future use)
 - `escalation_tracking`: Escalation history (future use)
@@ -112,10 +127,12 @@ This document describes the advanced AI mediator features that make LiaiZen a tr
 ### Socket Events
 
 **New Events**:
+
 - `analyze_draft`: Client requests draft analysis
 - `draft_analysis`: Server returns coaching suggestions
 
 **Enhanced Events**:
+
 - `send_message`: Now includes escalation assessment
 - `message_flagged`: Includes flag reasons for learning
 
@@ -159,11 +176,13 @@ This document describes the advanced AI mediator features that make LiaiZen a tr
 ## Future Enhancements
 
 ### Personalized Intervention Styles (Pending)
+
 - User preferences for intervention frequency
 - Preferred tone (warm, direct, gentle)
 - Coaching level (minimal, moderate, comprehensive)
 
 ### Communication Pattern Learning (Pending)
+
 - Long-term pattern recognition
 - Relationship-specific insights
 - Predictive conflict prevention
@@ -183,4 +202,3 @@ This document describes the advanced AI mediator features that make LiaiZen a tr
 3. **Rewrite Quality**: Verify rewrites are collaborative and child-focused
 4. **Flag Learning**: Test that flagged messages improve future coaching
 5. **Performance**: Ensure debouncing prevents excessive API calls
-

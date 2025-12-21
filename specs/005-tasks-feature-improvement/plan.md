@@ -41,14 +41,15 @@ if (existingTasks.length === 0) {
 
 **Tasks to Create**:
 
-| Task Title | Priority | Type | Auto-Complete Condition |
-|------------|----------|------|------------------------|
-| Welcome to LiaiZen | medium | onboarding | Manual |
-| Complete Your Profile | high | onboarding | Profile complete |
-| Invite Your Co-Parent | high | onboarding | Co-parent connected |
-| Add Your Children | medium | onboarding | Has child contact |
+| Task Title            | Priority | Type       | Auto-Complete Condition |
+| --------------------- | -------- | ---------- | ----------------------- |
+| Welcome to LiaiZen    | medium   | onboarding | Manual                  |
+| Complete Your Profile | high     | onboarding | Profile complete        |
+| Invite Your Co-Parent | high     | onboarding | Co-parent connected     |
+| Add Your Children     | medium   | onboarding | Has child contact       |
 
 **Logic**:
+
 ```javascript
 async function backfillOnboardingTasks(userId) {
   const now = new Date().toISOString();
@@ -63,10 +64,14 @@ async function backfillOnboardingTasks(userId) {
   const hasCoParent = await checkUserHasCoParent(userId);
 
   // Check if user has child contacts
-  const childContacts = await dbSafe.safeSelect('contacts', {
-    user_id: userId,
-    relationship_type: 'child'
-  }, { limit: 1 });
+  const childContacts = await dbSafe.safeSelect(
+    'contacts',
+    {
+      user_id: userId,
+      relationship_type: 'child',
+    },
+    { limit: 1 }
+  );
   const hasChildren = childContacts.length > 0;
 
   // Define onboarding tasks
@@ -76,37 +81,42 @@ async function backfillOnboardingTasks(userId) {
       description: 'LiaiZen is contextual and adapts to your unique situation...',
       priority: 'medium',
       type: 'onboarding',
-      status: 'open' // Always open - manual completion
+      status: 'open', // Always open - manual completion
     },
     {
       title: 'Complete Your Profile',
       description: 'Help LiaiZen understand the dynamics of your co-parenting situation...',
       priority: 'high',
       type: 'onboarding',
-      status: user.first_name && user.email_verified ? 'completed' : 'open'
+      status: user.first_name && user.email_verified ? 'completed' : 'open',
     },
     {
       title: 'Invite Your Co-Parent',
-      description: 'Connect with your co-parent to start communicating on LiaiZen.\n\nClick this task to send an invite or enter a code you received.',
+      description:
+        'Connect with your co-parent to start communicating on LiaiZen.\n\nClick this task to send an invite or enter a code you received.',
       priority: 'high',
       type: 'onboarding',
-      status: hasCoParent ? 'completed' : 'open'
+      status: hasCoParent ? 'completed' : 'open',
     },
     {
       title: 'Add Your Children',
       description: 'Add your children as contacts...',
       priority: 'medium',
       type: 'onboarding',
-      status: hasChildren ? 'completed' : 'open'
-    }
+      status: hasChildren ? 'completed' : 'open',
+    },
   ];
 
   // Insert tasks that don't exist
   for (const task of onboardingTasks) {
-    const existing = await dbSafe.safeSelect('tasks', {
-      user_id: userId,
-      title: task.title
-    }, { limit: 1 });
+    const existing = await dbSafe.safeSelect(
+      'tasks',
+      {
+        user_id: userId,
+        title: task.title,
+      },
+      { limit: 1 }
+    );
 
     if (existing.length === 0) {
       await dbSafe.safeInsert('tasks', {
@@ -114,7 +124,7 @@ async function backfillOnboardingTasks(userId) {
         ...task,
         created_at: now,
         updated_at: now,
-        completed_at: task.status === 'completed' ? now : null
+        completed_at: task.status === 'completed' ? now : null,
       });
     }
   }
@@ -129,7 +139,7 @@ async function backfillOnboardingTasks(userId) {
 async function checkUserHasCoParent(userId) {
   // Check pairing_sessions for completed pairing
   const pairings = await dbSafe.safeSelect('pairing_sessions', {
-    status: 'completed'
+    status: 'completed',
   });
 
   // Check if user is initiator or invitee in any completed pairing
@@ -143,7 +153,7 @@ async function checkUserHasCoParent(userId) {
   const roomMembers = await dbSafe.safeSelect('room_members', { user_id: userId });
   for (const member of roomMembers) {
     const otherMembers = await dbSafe.safeSelect('room_members', {
-      room_id: member.room_id
+      room_id: member.room_id,
     });
     if (otherMembers.length === 2) {
       return true;
@@ -165,9 +175,18 @@ async function checkUserHasCoParent(userId) {
 **Purpose**: Modal that opens when user clicks "Invite Your Co-Parent" task. Contains both "Send Invite" and "Have a Code?" functionality.
 
 **Structure**:
+
 ```jsx
 import React from 'react';
-import { Modal, ModalContent, ModalHeader, ModalTitle, ModalBody, ModalFooter, ModalCloseButton } from './ui/Modal/Modal';
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+} from './ui/Modal/Modal';
 import { usePairing } from '../hooks/usePairing';
 
 export function InviteTaskModal({ isOpen, onClose, onSuccess }) {
@@ -186,7 +205,7 @@ export function InviteTaskModal({ isOpen, onClose, onSuccess }) {
     isValidating,
     error,
     clearError,
-    buildInviteUrl
+    buildInviteUrl,
   } = usePairing();
 
   // Tab: Send Invite
@@ -262,6 +281,7 @@ export function InviteTaskModal({ isOpen, onClose, onSuccess }) {
 ### 2.2 SendInviteTab Sub-component
 
 **Features**:
+
 - Method selector (Email, Link, Code icons)
 - Email input field (for email method)
 - Generate button
@@ -275,6 +295,7 @@ export function InviteTaskModal({ isOpen, onClose, onSuccess }) {
 ### 2.3 HaveCodeTab Sub-component
 
 **Features**:
+
 - Code input field with LZ- prefix hint
 - Format validation (LZ-XXXXXX)
 - Validate button → shows inviter name
@@ -290,6 +311,7 @@ export function InviteTaskModal({ isOpen, onClose, onSuccess }) {
 **File**: `chat-client-vite/src/hooks/useTasks.js` (line 65)
 
 **Current Code**:
+
 ```javascript
 // Only limit to 5 if no search is active
 if (!taskSearch) {
@@ -301,6 +323,7 @@ if (!taskSearch) {
 ```
 
 **New Code**:
+
 ```javascript
 // Show all tasks (pagination handled in UI if needed)
 setTasks(sorted);
@@ -314,7 +337,7 @@ console.log(`[useTasks] Loaded ${sorted.length} tasks`);
 **Add**: Expose a way to handle special task types (onboarding tasks that open modals)
 
 ```javascript
-const getTaskAction = React.useCallback((task) => {
+const getTaskAction = React.useCallback(task => {
   // Special handling for invite task
   if (task.title === 'Invite Your Co-Parent' && task.status !== 'completed') {
     return { type: 'modal', modal: 'invite' };
@@ -338,24 +361,26 @@ return {
 **File**: `chat-client-vite/src/ChatRoom.jsx` (lines 1145-1243)
 
 **Remove**:
-```jsx
-{/* Co-Parent Connection Cards - Always visible at top when no co-parent */}
-{!hasCoParentConnected && (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {/* Send Invite Card */}
-    <div className="rounded-xl border-2 border-emerald-400 ...">
-      ...
-    </div>
 
-    {/* Enter Invite Code Card */}
-    <div className="rounded-xl border-2 border-teal-400 ...">
-      ...
+```jsx
+{
+  /* Co-Parent Connection Cards - Always visible at top when no co-parent */
+}
+{
+  !hasCoParentConnected && (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Send Invite Card */}
+      <div className="rounded-xl border-2 border-emerald-400 ...">...</div>
+
+      {/* Enter Invite Code Card */}
+      <div className="rounded-xl border-2 border-teal-400 ...">...</div>
     </div>
-  </div>
-)}
+  );
+}
 ```
 
 **Also Remove**:
+
 - Lines 1246-1261: Error message and acceptance notification sections (related to standalone invite)
 
 ### 4.2 Add InviteTaskModal Integration
@@ -363,30 +388,35 @@ return {
 **File**: `chat-client-vite/src/ChatRoom.jsx`
 
 **Add State**:
+
 ```javascript
 const [showInviteModal, setShowInviteModal] = React.useState(false);
 ```
 
 **Add Modal to JSX**:
+
 ```jsx
-{showInviteModal && (
-  <InviteTaskModal
-    isOpen={showInviteModal}
-    onClose={() => setShowInviteModal(false)}
-    onSuccess={() => {
-      setShowInviteModal(false);
-      loadTasks(); // Refresh tasks
-      // Trigger co-parent connection refresh
-    }}
-  />
-)}
+{
+  showInviteModal && (
+    <InviteTaskModal
+      isOpen={showInviteModal}
+      onClose={() => setShowInviteModal(false)}
+      onSuccess={() => {
+        setShowInviteModal(false);
+        loadTasks(); // Refresh tasks
+        // Trigger co-parent connection refresh
+      }}
+    />
+  );
+}
 ```
 
 ### 4.3 Wire Task Click to Modal
 
 **In Task List Section**:
+
 ```javascript
-const handleTaskClick = (task) => {
+const handleTaskClick = task => {
   const action = getTaskAction(task);
   if (action.type === 'modal' && action.modal === 'invite') {
     setShowInviteModal(true);
@@ -401,12 +431,14 @@ const handleTaskClick = (task) => {
 ## Implementation Order
 
 ### Step 1: Backend (Estimated: 2-3 hours)
+
 1. Add `checkUserHasCoParent` helper function
 2. Add `backfillOnboardingTasks` function
 3. Integrate backfill into GET /api/tasks
 4. Test with existing users
 
 ### Step 2: InviteTaskModal (Estimated: 3-4 hours)
+
 1. Create base modal component with tabs
 2. Implement SendInviteTab with method selector
 3. Implement HaveCodeTab with validation
@@ -414,17 +446,20 @@ const handleTaskClick = (task) => {
 5. Test all invite flows
 
 ### Step 3: Hook Improvements (Estimated: 1 hour)
+
 1. Remove 5-task limit from useTasks.js
 2. Add getTaskAction helper
 3. Test task loading
 
 ### Step 4: Dashboard Integration (Estimated: 2 hours)
+
 1. Remove standalone invite UI from ChatRoom.jsx
 2. Add InviteTaskModal import and state
 3. Wire task click handler
 4. Test end-to-end flow
 
 ### Step 5: Testing & Polish (Estimated: 2 hours)
+
 1. Test new user flow (tasks appear)
 2. Test existing user flow (tasks backfilled)
 3. Test invite generation (all 3 methods)
@@ -436,12 +471,12 @@ const handleTaskClick = (task) => {
 
 ## Files to Modify
 
-| File | Action | Description |
-|------|--------|-------------|
-| `chat-server/server.js` | Modify | Add backfill logic to GET /api/tasks |
-| `chat-client-vite/src/hooks/useTasks.js` | Modify | Remove 5-task limit, add getTaskAction |
-| `chat-client-vite/src/components/InviteTaskModal.jsx` | Create | New modal component |
-| `chat-client-vite/src/ChatRoom.jsx` | Modify | Remove standalone invite UI, add modal |
+| File                                                  | Action | Description                            |
+| ----------------------------------------------------- | ------ | -------------------------------------- |
+| `chat-server/server.js`                               | Modify | Add backfill logic to GET /api/tasks   |
+| `chat-client-vite/src/hooks/useTasks.js`              | Modify | Remove 5-task limit, add getTaskAction |
+| `chat-client-vite/src/components/InviteTaskModal.jsx` | Create | New modal component                    |
+| `chat-client-vite/src/ChatRoom.jsx`                   | Modify | Remove standalone invite UI, add modal |
 
 ---
 
@@ -454,12 +489,12 @@ const handleTaskClick = (task) => {
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| Duplicate tasks from backfill | Check for existing task by title before creating |
-| Modal conflicts with existing modals | Use consistent modal pattern from Modal.jsx |
-| Task not auto-completing | Ensure autoCompleteOnboardingTasks runs after pairing completes |
-| Performance with many tasks | Consider pagination in future if needed |
+| Risk                                 | Mitigation                                                      |
+| ------------------------------------ | --------------------------------------------------------------- |
+| Duplicate tasks from backfill        | Check for existing task by title before creating                |
+| Modal conflicts with existing modals | Use consistent modal pattern from Modal.jsx                     |
+| Task not auto-completing             | Ensure autoCompleteOnboardingTasks runs after pairing completes |
+| Performance with many tasks          | Consider pagination in future if needed                         |
 
 ---
 

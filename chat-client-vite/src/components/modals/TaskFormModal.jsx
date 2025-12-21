@@ -129,13 +129,14 @@ export function TaskFormModal({
                 </label>
                 <textarea
                   value={aiTaskDetails}
-                  onChange={(e) => setAiTaskDetails(e.target.value)}
+                  onChange={e => setAiTaskDetails(e.target.value)}
                   placeholder="e.g., Schedule pediatrician appointment for Emma next week"
                   className="w-full px-3 py-2.5 sm:px-3 sm:py-2 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-teal-medium text-sm min-h-[100px]"
                   rows={4}
                 />
                 <p className="mt-1 text-[10px] sm:text-xs text-gray-500">
-                  AI will generate a structured task with title, description, priority, and due date.
+                  AI will generate a structured task with title, description, priority, and due
+                  date.
                 </p>
               </div>
               <Button
@@ -146,11 +147,23 @@ export function TaskFormModal({
                 size="medium"
                 fullWidth
                 className="py-3 sm:py-2.5 text-sm"
-                icon={!isGeneratingTask && (
-                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                )}
+                icon={
+                  !isGeneratingTask && (
+                    <svg
+                      className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  )
+                }
               >
                 Generate Task
               </Button>
@@ -165,8 +178,8 @@ export function TaskFormModal({
                 <input
                   type="text"
                   value={taskFormData.title}
-                  onChange={(e) =>
-                    setTaskFormData((prev) => ({
+                  onChange={e =>
+                    setTaskFormData(prev => ({
                       ...prev,
                       title: e.target.value,
                     }))
@@ -181,8 +194,8 @@ export function TaskFormModal({
                 </label>
                 <textarea
                   value={taskFormData.description}
-                  onChange={(e) =>
-                    setTaskFormData((prev) => ({
+                  onChange={e =>
+                    setTaskFormData(prev => ({
                       ...prev,
                       description: e.target.value,
                     }))
@@ -198,8 +211,8 @@ export function TaskFormModal({
                   </label>
                   <select
                     value={taskFormData.priority}
-                    onChange={(e) =>
-                      setTaskFormData((prev) => ({
+                    onChange={e =>
+                      setTaskFormData(prev => ({
                         ...prev,
                         priority: e.target.value,
                       }))
@@ -218,8 +231,8 @@ export function TaskFormModal({
                   <input
                     type="date"
                     value={taskFormData.due_date || ''}
-                    onChange={(e) =>
-                      setTaskFormData((prev) => ({
+                    onChange={e =>
+                      setTaskFormData(prev => ({
                         ...prev,
                         due_date: e.target.value,
                       }))
@@ -234,8 +247,8 @@ export function TaskFormModal({
                 </label>
                 <select
                   value={taskFormData.assigned_to || 'self'}
-                  onChange={(e) =>
-                    setTaskFormData((prev) => ({
+                  onChange={e =>
+                    setTaskFormData(prev => ({
                       ...prev,
                       assigned_to: e.target.value,
                     }))
@@ -244,7 +257,7 @@ export function TaskFormModal({
                 >
                   <option value="self">Self (me)</option>
                   <option value="">No one (unassigned)</option>
-                  {contacts.map((contact) => (
+                  {contacts.map(contact => (
                     <option key={contact.id} value={contact.id}>
                       {contact.contact_name} ({contact.relationship || 'Contact'})
                     </option>
@@ -256,24 +269,33 @@ export function TaskFormModal({
                   Add People for Context
                 </label>
                 <div className="space-y-1.5 sm:space-y-2 max-h-32 sm:max-h-40 overflow-y-auto">
-                  {contacts.map((contact) => {
-                    const isSelected = Array.isArray(taskFormData.related_people) && taskFormData.related_people.includes(contact.id.toString());
+                  {contacts.map(contact => {
+                    const isSelected =
+                      Array.isArray(taskFormData.related_people) &&
+                      taskFormData.related_people.includes(contact.id.toString());
                     return (
-                      <label key={contact.id} className="flex items-center gap-1.5 sm:gap-2 cursor-pointer py-0.5">
+                      <label
+                        key={contact.id}
+                        className="flex items-center gap-1.5 sm:gap-2 cursor-pointer py-0.5"
+                      >
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={(e) => {
-                            const currentPeople = Array.isArray(taskFormData.related_people) ? taskFormData.related_people : [];
+                          onChange={e => {
+                            const currentPeople = Array.isArray(taskFormData.related_people)
+                              ? taskFormData.related_people
+                              : [];
                             if (e.target.checked) {
-                              setTaskFormData((prev) => ({
+                              setTaskFormData(prev => ({
                                 ...prev,
                                 related_people: [...currentPeople, contact.id.toString()],
                               }));
                             } else {
-                              setTaskFormData((prev) => ({
+                              setTaskFormData(prev => ({
                                 ...prev,
-                                related_people: currentPeople.filter((id) => id !== contact.id.toString()),
+                                related_people: currentPeople.filter(
+                                  id => id !== contact.id.toString()
+                                ),
                               }));
                             }
                           }}
@@ -286,7 +308,9 @@ export function TaskFormModal({
                     );
                   })}
                   {contacts.length === 0 && (
-                    <p className="text-[10px] sm:text-xs text-gray-500">No contacts available. Add contacts to assign tasks.</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">
+                      No contacts available. Add contacts to assign tasks.
+                    </p>
                   )}
                 </div>
               </div>
@@ -301,12 +325,13 @@ export function TaskFormModal({
               variant="secondary"
               className="flex-1"
             >
-              {editingTask ? (taskFormData.title === 'Welcome to LiaiZen' ? 'OK' : 'Update') : 'Create'}
+              {editingTask
+                ? taskFormData.title === 'Welcome to LiaiZen'
+                  ? 'OK'
+                  : 'Update'
+                : 'Create'}
             </Button>
-            <Button
-              onClick={handleClose}
-              variant="tertiary"
-            >
+            <Button onClick={handleClose} variant="tertiary">
               Cancel
             </Button>
           </div>
@@ -315,4 +340,3 @@ export function TaskFormModal({
     </div>
   );
 }
-

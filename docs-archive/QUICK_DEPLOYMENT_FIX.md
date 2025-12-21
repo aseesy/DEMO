@@ -23,7 +23,7 @@
 ### Step 3: Clear Browser Cache
 
 1. **Open your site**: https://www.coparentliaizen.com
-2. **Hard refresh**: 
+2. **Hard refresh**:
    - Windows: `Ctrl + Shift + R`
    - Mac: `Cmd + Shift + R`
 3. **Or use incognito/private window** to test
@@ -75,6 +75,7 @@
 ### Verify Files Are in Repo
 
 Run this locally to verify:
+
 ```bash
 git log --oneline -1
 # Should show: d1a13f5 Fix database schema and Google Places API issues
@@ -105,4 +106,3 @@ git show HEAD:chat-client-vite/src/components/ProfilePanel.jsx | grep -A 5 "goog
 - [ ] Hard refreshed browser (or incognito)
 - [ ] Profile page shows error icon (not spinner) in address field
 - [ ] Profile save works with first name
-

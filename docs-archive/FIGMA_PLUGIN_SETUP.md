@@ -30,6 +30,7 @@ This compiles the TypeScript code to JavaScript in the `dist/` directory.
 ### 4. Configure Backend URL
 
 In the plugin UI:
+
 - Enter your backend API URL (default: `http://localhost:3001`)
 - For production: `https://demo-production-6dcd.up.railway.app` or `https://coparentliaizen.com`
 - Click "Update API URL"
@@ -156,6 +157,5 @@ The plugin communicates with your backend at:
 
 ---
 
-*Last Updated: 2025-01-23*
-*Project: LiaiZen Co-Parenting Platform*
-
+_Last Updated: 2025-01-23_
+_Project: LiaiZen Co-Parenting Platform_

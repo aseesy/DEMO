@@ -1,7 +1,13 @@
 const dbSafe = require('../../../dbSafe');
 const { defaultLogger } = require('../../utils/logger');
 const { OperationalError } = require('../../utils/errors');
-const { VALIDATION, DATABASE, ARRAY_LIMITS, CONFIDENCE, ESCALATION } = require('../../utils/constants');
+const {
+  VALIDATION,
+  DATABASE,
+  ARRAY_LIMITS,
+  CONFIDENCE,
+  ESCALATION,
+} = require('../../utils/constants');
 
 /**
  * Feedback learning system for adaptive improvement
@@ -19,16 +25,20 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
   const logger = defaultLogger.child({
     operation: 'recordExplicitFeedback',
     username,
-    feedbackType
+    feedbackType,
   });
 
   try {
-    const db = await require('../../../db').getDb();
-    
+    const db = require('../../../dbPostgres');
+
     // Get user ID
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: DATABASE.DEFAULT_LIMIT });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: username.toLowerCase() },
+      { limit: DATABASE.DEFAULT_LIMIT }
+    );
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       logger.warn('User not found for feedback recording', { username });
       return {
@@ -36,8 +46,8 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
         error: {
           code: 'USER_NOT_FOUND',
           message: 'User not found',
-          type: 'operational'
-        }
+          type: 'operational',
+        },
       };
     }
 
@@ -47,21 +57,19 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
     try {
       await dbSafe.safeSelect('user_feedback', { user_id: userId }, { limit: 1 });
     } catch (e) {
-      // Table doesn't exist, create it
-      logger.info('Creating user_feedback table', { userId });
-      db.run(`
+      // Table doesn't exist or other error, try to create it
+      logger.info('Ensuring user_feedback table exists', { userId });
+      await db.query(`
         CREATE TABLE IF NOT EXISTS user_feedback (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER NOT NULL,
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           feedback_type TEXT NOT NULL,
           context_json TEXT,
           reason TEXT,
-          created_at TEXT NOT NULL DEFAULT (datetime('now')),
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
         )
       `);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_feedback_user ON user_feedback(user_id)`);
-      require('../../../db').saveDatabase();
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_feedback_user ON user_feedback(user_id)`);
     }
 
     // Record feedback
@@ -70,23 +78,22 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
       feedback_type: feedbackType,
       context_json: JSON.stringify(context),
       reason: reason,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     });
 
     logger.info('Feedback recorded successfully', {
       userId,
       feedbackType,
-      hasReason: !!reason
+      hasReason: !!reason,
     });
 
     return { success: true };
-
   } catch (error) {
     logger.error('Failed to record explicit feedback', error, {
       username,
       feedbackType,
       hasContext: !!context,
-      hasReason: !!reason
+      hasReason: !!reason,
     });
 
     // Return structured error instead of silent failure
@@ -95,9 +102,10 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
       error: {
         code: 'FEEDBACK_RECORDING_FAILED',
         message: 'Failed to record feedback',
-        type: error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' ? 'retryable' : 'operational',
-        retryable: error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED'
-      }
+        type:
+          error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' ? 'retryable' : 'operational',
+        retryable: error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED',
+      },
     };
   }
 }
@@ -112,29 +120,29 @@ async function recordImplicitFeedback(username, implicitType, context) {
   const logger = defaultLogger.child({
     operation: 'recordImplicitFeedback',
     username,
-    implicitType
+    implicitType,
   });
 
   try {
     const result = await recordExplicitFeedback(username, `implicit_${implicitType}`, context);
     if (!result.success) {
       logger.warn('Failed to record implicit feedback', {
-        error: result.error
+        error: result.error,
       });
     }
     return result;
   } catch (error) {
     logger.error('Error recording implicit feedback', error, {
       username,
-      implicitType
+      implicitType,
     });
     return {
       success: false,
       error: {
         code: 'IMPLICIT_FEEDBACK_RECORDING_FAILED',
         message: 'Failed to record implicit feedback',
-        type: 'operational'
-      }
+        type: 'operational',
+      },
     };
   }
 }
@@ -147,15 +155,17 @@ async function recordImplicitFeedback(username, implicitType, context) {
 async function getFeedbackSummary(username) {
   const logger = defaultLogger.child({
     operation: 'getFeedbackSummary',
-    username
+    username,
   });
 
   try {
-    const db = await require('../../../db').getDb();
-    
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: DATABASE.DEFAULT_LIMIT });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: username.toLowerCase() },
+      { limit: DATABASE.DEFAULT_LIMIT }
+    );
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       logger.warn('User not found for feedback summary', { username });
       return null;
@@ -166,14 +176,18 @@ async function getFeedbackSummary(username) {
     // Get recent feedback (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - VALIDATION.FEEDBACK_LOOKBACK_DAYS);
-    
-    const feedbackResult = await dbSafe.safeSelect('user_feedback', {
-      user_id: userId
-    }, {
-      orderBy: 'created_at',
-      orderDirection: 'DESC',
-      limit: DATABASE.FEEDBACK_QUERY_LIMIT
-    });
+
+    const feedbackResult = await dbSafe.safeSelect(
+      'user_feedback',
+      {
+        user_id: userId,
+      },
+      {
+        orderBy: 'created_at',
+        orderDirection: 'DESC',
+        limit: DATABASE.FEEDBACK_QUERY_LIMIT,
+      }
+    );
 
     const feedbacks = dbSafe.parseResult(feedbackResult);
 
@@ -184,8 +198,12 @@ async function getFeedbackSummary(username) {
 
     feedbacks.forEach(f => {
       feedbackCounts[f.feedback_type] = (feedbackCounts[f.feedback_type] || 0) + 1;
-      
-      if (f.feedback_type === 'not_helpful' || f.feedback_type === 'flag' || f.feedback_type.startsWith('implicit_')) {
+
+      if (
+        f.feedback_type === 'not_helpful' ||
+        f.feedback_type === 'flag' ||
+        f.feedback_type.startsWith('implicit_')
+      ) {
         recentNegative.push(f);
       } else if (f.feedback_type === 'helpful') {
         recentPositive.push(f);
@@ -198,20 +216,19 @@ async function getFeedbackSummary(username) {
       recentNegative: recentNegative.slice(0, ARRAY_LIMITS.RECENT_NEGATIVE_FEEDBACK),
       recentPositive: recentPositive.slice(0, ARRAY_LIMITS.RECENT_POSITIVE_FEEDBACK),
       negativeRatio: feedbacks.length > 0 ? recentNegative.length / feedbacks.length : 0,
-      lastFeedback: feedbacks[0] || null
+      lastFeedback: feedbacks[0] || null,
     };
 
     logger.debug('Feedback summary retrieved', {
       userId,
       totalFeedback: summary.totalFeedback,
-      negativeRatio: summary.negativeRatio
+      negativeRatio: summary.negativeRatio,
     });
 
     return summary;
-
   } catch (error) {
     logger.error('Error getting feedback summary', error, {
-      username
+      username,
     });
     return null;
   }
@@ -229,13 +246,13 @@ async function generateAdaptationRecommendations(username) {
       interventionFrequency: 'moderate',
       interventionStyle: 'moderate',
       preferredTone: 'warm',
-      confidence: 0
+      confidence: 0,
     };
   }
 
   // If high negative ratio, be more conservative
   const shouldBeConservative = summary.negativeRatio > ESCALATION.CONSERVATIVE_THRESHOLD;
-  
+
   // Analyze what types of interventions were not helpful
   const unhelpfulTypes = summary.recentNegative
     .map(f => {
@@ -256,8 +273,11 @@ async function generateAdaptationRecommendations(username) {
     interventionStyle: interventionStyle,
     preferredTone: 'warm',
     avoidTypes: [...new Set(unhelpfulTypes)],
-    confidence: Math.min(CONFIDENCE.MAX_CONFIDENCE, summary.totalFeedback * CONFIDENCE.FEEDBACK_MULTIPLIER),
-    reasoning: `Based on ${summary.totalFeedback} feedback points, ${shouldBeConservative ? 'being more conservative' : 'maintaining moderate approach'}`
+    confidence: Math.min(
+      CONFIDENCE.MAX_CONFIDENCE,
+      summary.totalFeedback * CONFIDENCE.FEEDBACK_MULTIPLIER
+    ),
+    reasoning: `Based on ${summary.totalFeedback} feedback points, ${shouldBeConservative ? 'being more conservative' : 'maintaining moderate approach'}`,
   };
 }
 
@@ -265,6 +285,5 @@ module.exports = {
   recordExplicitFeedback,
   recordImplicitFeedback,
   getFeedbackSummary,
-  generateAdaptationRecommendations
+  generateAdaptationRecommendations,
 };
-

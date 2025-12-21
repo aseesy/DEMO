@@ -92,6 +92,7 @@ Instead of 4-5 separate calls, make ONE call that returns ALL information:
 ### Step 1: Update aiMediator.js ✅
 
 **Changes**:
+
 1. Replace `const openai = new OpenAI()` with `const openaiClient = require('./openaiClient')`
 2. Add pattern detection logic from conflictPredictor (regex patterns for escalation)
 3. Add emotional state tracking from emotionalModel (maintain state per room)
@@ -104,6 +105,7 @@ Instead of 4-5 separate calls, make ONE call that returns ALL information:
 ### Step 2: Simplify server.js ✅
 
 **Before** (server.js lines 720-750):
+
 ```javascript
 const conflictPredictor = require('./conflictPredictor');
 const emotionalModel = require('./emotionalModel');
@@ -122,6 +124,7 @@ const intervention = await aiMediator.analyzeAndIntervene(...all params...);
 ```
 
 **After** (simplified):
+
 ```javascript
 // Single call - gets everything
 const mediationResult = await aiMediator.analyzeMessage(
@@ -144,6 +147,7 @@ const mediationResult = await aiMediator.analyzeMessage(
 ### Step 3: Archive Deprecated Modules ✅
 
 Move to `/deprecated/` folder (don't delete - keep for reference):
+
 - `conflictPredictor.js`
 - `emotionalModel.js`
 - `interventionPolicy.js`
@@ -153,28 +157,31 @@ Keep their logic integrated into aiMediator.js
 ### Step 4: Update Other Modules ✅
 
 **proactiveCoach.js**:
+
 - Change `const openai = new OpenAI()` to `const openaiClient = require('./openaiClient')`
 - Replace `openai.chat.completions.create()` with `openaiClient.createChatCompletion()`
 
 **threadManager.js**:
+
 - Change `const openai = new OpenAI()` to `const openaiClient = require('./openaiClient')`
 - Replace `openai.chat.completions.create()` with `openaiClient.createChatCompletion()`
 
 **feedbackLearner.js** (if it uses OpenAI):
+
 - Same pattern
 
 ## Expected Results
 
 ### Performance Improvements
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **OpenAI clients** | 7 instances | 1 instance | **86% reduction** |
-| **API calls/message** | 4-5 calls | 1 call | **80% reduction** |
-| **Latency** | 3-4 seconds | 0.8-1 second | **75% faster** |
-| **Token usage** | ~1800 tokens | ~800 tokens | **55% reduction** |
-| **API cost/message** | ~$0.0036 | ~$0.0016 | **55% savings** |
-| **Memory usage** | ~50MB | ~10MB | **80% reduction** |
+| Metric                | Before       | After        | Improvement       |
+| --------------------- | ------------ | ------------ | ----------------- |
+| **OpenAI clients**    | 7 instances  | 1 instance   | **86% reduction** |
+| **API calls/message** | 4-5 calls    | 1 call       | **80% reduction** |
+| **Latency**           | 3-4 seconds  | 0.8-1 second | **75% faster**    |
+| **Token usage**       | ~1800 tokens | ~800 tokens  | **55% reduction** |
+| **API cost/message**  | ~$0.0036     | ~$0.0016     | **55% savings**   |
+| **Memory usage**      | ~50MB        | ~10MB        | **80% reduction** |
 
 ### Code Quality Improvements
 
@@ -188,6 +195,7 @@ Keep their logic integrated into aiMediator.js
 ## Migration Strategy
 
 ### Phase 1 (No Breaking Changes)
+
 1. Create `openaiClient.js` ✅ **DONE**
 2. Update `aiMediator.js` to use shared client (no logic changes yet)
 3. Update `proactiveCoach.js` to use shared client
@@ -195,6 +203,7 @@ Keep their logic integrated into aiMediator.js
 5. Test - everything should work exactly the same
 
 ### Phase 2 (Consolidation)
+
 6. Add pattern detection to `aiMediator.js`
 7. Add emotional tracking to `aiMediator.js`
 8. Add policy logic to `aiMediator.js`
@@ -202,6 +211,7 @@ Keep their logic integrated into aiMediator.js
 10. Test thoroughly
 
 ### Phase 3 (Cleanup)
+
 11. Update `server.js` to use simplified flow
 12. Move deprecated modules to `/deprecated/` folder
 13. Update documentation
@@ -223,6 +233,7 @@ Keep their logic integrated into aiMediator.js
 ## Rollback Plan
 
 If issues occur:
+
 1. Keep `/deprecated/` folder with original files
 2. Revert `server.js` to use original modules
 3. Restore original `aiMediator.js` from git
@@ -233,12 +244,14 @@ All original files are backed up in git history.
 ## Success Criteria
 
 ✅ **Must Have**:
+
 - Single OpenAI client instance
 - 1 API call per message (down from 4-5)
 - No regression in mediation quality
 - All tests passing
 
 ⭐ **Nice to Have**:
+
 - 50%+ cost reduction
 - 50%+ latency reduction
 - Cleaner codebase

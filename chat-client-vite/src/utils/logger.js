@@ -99,5 +99,5 @@ export const logDebug = (message, data) => logger.debug(message, data);
 export const logInfo = (message, data) => logger.info(message, data);
 export const logWarn = (message, data) => logger.warn(message, data);
 export const logError = (message, error) => logger.error(message, error);
-export const logApiError = (endpoint, status, message) => logger.apiError(endpoint, status, message);
-
+export const logApiError = (endpoint, status, message) =>
+  logger.apiError(endpoint, status, message);

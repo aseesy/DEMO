@@ -7,6 +7,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 ## Pre-Implementation Setup
 
 ### Development Environment
+
 - [ ] Create feature branch: `feature/010-user-profile-comprehensive`
 - [ ] Set up local SQLite database for testing
 - [ ] Install dependencies: `joi` (validation), `crypto` (encryption - built-in)
@@ -20,6 +21,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 ## Phase 1: Database Migration (Week 1)
 
 ### Migration Script Creation
+
 - [x] Create migration file: `chat-server/migrations/010_user_profile_comprehensive.sql`
 - [x] Add all new columns to `users` table (see spec Database Schema section)
   - [x] Personal: `preferred_name`, `pronouns`, `birthdate`, `language`, `timezone`, `phone`, `city`, `state`, `zip`
@@ -44,6 +46,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] SQL: `INSERT INTO user_privacy_settings (user_id, personal_info_visible, work_info_visible, ...) SELECT id, true, false, false, false, true FROM users WHERE id NOT IN (SELECT user_id FROM user_privacy_settings)`
 
 ### Testing Migration
+
 - [ ] Backup development database: `cp chat-server/chat.db chat-server/chat.db.backup`
 - [ ] Run migration: `npm run migrate` (or manual execution)
 - [ ] Verify all columns added: `SELECT * FROM users LIMIT 1;`
@@ -51,6 +54,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 - [ ] Test rollback script: `chat-server/migrations/010-user-profile-comprehensive-rollback.sql`
 
 ### PostgreSQL Migration (Production)
+
 - [ ] Create PostgreSQL version of migration (convert SQLite to PostgreSQL syntax)
 - [ ] Test on staging database
 - [ ] Schedule production migration window
@@ -60,10 +64,12 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 ## Phase 2: Backend API Development (Week 2-3)
 
 ### Profile Routes Module
+
 - [x] Create `chat-server/routes/profile.js`
 - [x] Create `chat-server/src/utils/profileHelpers.js`
 
 ### Encryption Module
+
 - [ ] Create `chat-server/encryption.js`
   - [ ] `encrypt(text)` function (AES-256-GCM)
   - [ ] `decrypt(encryptedText)` function
@@ -73,6 +79,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
     - [ ] Test error handling (invalid ciphertext)
 
 ### Profile Utilities Module
+
 - [ ] Create `chat-server/profileUtils.js`
   - [ ] `loadUserProfile(userId)` - Fetch full profile from database
   - [ ] `updateUserProfile(userId, updates)` - Partial update with validation
@@ -84,6 +91,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] `logAuditEvent(userId, fieldName, action, sharedWithUserId, ipAddress, userAgent)` - Audit logging
 
 ### Input Validation
+
 - [ ] Create `chat-server/validators/profileValidator.js`
   - [ ] Define Joi schema (see spec Appendix A)
   - [ ] `validateProfileUpdate(updates)` function
@@ -93,6 +101,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Unit tests: `chat-server/__tests__/profileValidator.test.js`
 
 ### API Endpoints in `chat-server/routes/profile.js`
+
 - [x] **GET /api/profile/me**
   - [x] Authentication check (JWT required)
   - [x] Load user profile from database (dynamic column fetch)
@@ -135,12 +144,14 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Return JSON response
 
 ### Authorization Helper
+
 - [ ] Create `authorizeCoParentAccess(requesterId, targetUserId)` function
   - [ ] Query `room_members` table to find shared room
   - [ ] Return true if shared room exists, false otherwise
   - [ ] Used in GET /api/profile/shared/:userId
 
 ### Unit Tests (Backend)
+
 - [ ] `chat-server/__tests__/profile.test.js`
   - [ ] GET /api/profile returns user profile
   - [ ] PUT /api/profile validates input (age < 18 rejected)
@@ -156,6 +167,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 ## Phase 3: Frontend UI Development (Week 4-5)
 
 ### Shared Hooks
+
 - [x] Enhanced `chat-client-vite/src/hooks/useProfile.js`
   - [x] Add all new profile fields for state management
   - [x] Add `loadPrivacySettings()` function
@@ -176,6 +188,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Load audit log
 
 ### ProfileWizard Component
+
 - [x] Create `chat-client-vite/src/components/profile/ProfileWizard.jsx`
   - [x] 5-step wizard (Personal, Work, Health, Financial, Background)
   - [x] Progress indicator (Step X of 5, percentage bar)
@@ -186,6 +199,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [x] Mobile responsive design
 
 ### Section Components
+
 - [x] Create `chat-client-vite/src/components/profile/PersonalInfoForm.jsx`
   - [x] Input fields: first_name, last_name, preferred_name
   - [x] Dropdown: pronouns (he/him, she/her, they/them, other/custom)
@@ -238,6 +252,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [x] All fields optional with clear indication
 
 ### Privacy Settings Component
+
 - [x] Create `chat-client-vite/src/components/profile/PrivacySettings.jsx`
   - [x] Section toggles (Personal, Work, Background = Shared/Private)
   - [x] Locked sections (Health, Financial = Always Private with explanation)
@@ -248,6 +263,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [x] Visual indicators (green for shared, lock icon for private)
 
 ### Profile Completion Widget
+
 - [ ] Create `chat-client-vite/src/components/profile/ProfileCompletionWidget.jsx`
   - [ ] Circular progress indicator (0-100%)
   - [ ] "Your profile is X% complete" text
@@ -257,6 +273,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Dismissible after first view (localStorage flag)
 
 ### Integration with Existing ProfilePanel
+
 - [ ] Enhance `chat-client-vite/src/components/ProfilePanel.jsx`
   - [ ] Add collapsible sections for new profile categories
   - [ ] Add "Privacy Settings" link in header
@@ -264,12 +281,14 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Ensure mobile responsiveness
 
 ### UI Components Library (if needed)
+
 - [ ] Multi-select component (for health conditions, etc.)
 - [ ] Button group component (for flexibility, income level)
 - [ ] Tooltip component (for "Why we ask" explanations)
 - [ ] Progress indicator component (circular percentage)
 
 ### Unit Tests (Frontend)
+
 - [ ] `chat-client-vite/src/__tests__/ProfileWizard.test.jsx`
   - [ ] Renders step 1 (Personal Info)
   - [ ] Validates birthdate (must be 18+)
@@ -288,6 +307,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 ## Phase 4: AI Integration (Week 6)
 
 ### Mediator Enhancement
+
 - [ ] Modify `chat-server/src/liaizen/core/mediator.js`
   - [ ] Import `profileUtils`
   - [ ] In `analyzeMessage()` function, before AI call:
@@ -298,7 +318,9 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Update AI prompt template with "PROFILE-AWARE COACHING" section (see spec Appendix C)
 
 ### AI Prompt Template Update
+
 - [ ] Add profile context section to system prompt:
+
   ```
   SENDER CONTEXT (private):
   - Work schedule: ${senderProfile.work_schedule}
@@ -322,11 +344,13 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   ```
 
 ### Profile Context Optimization
+
 - [ ] Implement token limit (500 tokens max for profile context)
 - [ ] Prioritize most relevant fields (work > health > financial > background)
 - [ ] Test different context combinations to ensure quality interventions
 
 ### Integration Testing
+
 - [ ] Test AI mediation with profile context:
   - [ ] User with "9-5 weekdays" schedule gets time-aware suggestions
   - [ ] User with "chronic pain" limitation gets empathetic coaching
@@ -339,6 +363,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Health/financial data influences tone but is never revealed
 
 ### Communication Profile Integration
+
 - [ ] Update `chat-server/src/liaizen/context/communication-profile/index.js`
   - [ ] Add `enrichCommunicationProfile(userId, explicitProfile)` function
   - [ ] Merge explicit profile data with learned communication profile
@@ -349,6 +374,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 ## Phase 5: Testing & Quality Assurance (Week 7)
 
 ### Unit Tests
+
 - [x] Backend profile CRUD tests (completed in Phase 2)
 - [x] Frontend component tests (completed in Phase 3)
 - [ ] Additional edge cases:
@@ -359,6 +385,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Very long textareas (max length enforcement)
 
 ### Integration Tests
+
 - [ ] End-to-end profile wizard flow:
   - [ ] New user completes wizard → Profile saved → Completion percentage updates
   - [ ] User skips sections → Partial completion recorded
@@ -375,6 +402,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Verify no privacy leaks (AI doesn't reveal private details)
 
 ### Security Testing
+
 - [ ] **Privacy Breach Testing:**
   - [ ] Attempt to access another user's profile without co-parent relationship → 403 error
   - [ ] Attempt to access health/financial data via shared profile → Empty fields returned
@@ -391,6 +419,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Valid token but wrong user → 403 error
 
 ### Accessibility Testing
+
 - [ ] **WCAG 2.1 AA Compliance:**
   - [ ] Run axe-core on all profile components
   - [ ] Verify form labels properly associated with inputs
@@ -406,6 +435,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Test landscape orientation
 
 ### Performance Testing
+
 - [ ] **API Latency:**
   - [ ] GET /api/profile < 200ms (90th percentile)
   - [ ] PUT /api/profile < 300ms (90th percentile)
@@ -420,6 +450,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] Test with 10,000 user profiles (ensure scalability)
 
 ### User Acceptance Testing (UAT)
+
 - [ ] Recruit 5-10 beta users
 - [ ] Provide ProfileWizard walkthrough
 - [ ] Collect feedback on:
@@ -434,18 +465,21 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 ## Phase 6: Documentation & Launch Prep
 
 ### Developer Documentation
+
 - [ ] Update `CLAUDE.md` with profile system overview
 - [ ] Document API endpoints in README
 - [ ] Add JSDoc comments to `profileUtils.js` functions
 - [ ] Create migration guide for existing users
 
 ### User-Facing Documentation
+
 - [ ] Create Help Center article: "Understanding Your Profile"
 - [ ] Create Help Center article: "Privacy Settings Explained"
 - [ ] Create in-app tooltips for all profile fields
 - [ ] Create video tutorial for ProfileWizard
 
 ### Monitoring & Alerts
+
 - [ ] Set up logging for profile API endpoints
 - [ ] Create dashboard for profile completion metrics
 - [ ] Set up alerts for:
@@ -454,6 +488,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
   - [ ] High API error rates (>5% of requests)
 
 ### Deployment Checklist
+
 - [ ] **Staging Deployment:**
   - [ ] Deploy backend + database migration to staging
   - [ ] Deploy frontend to staging
@@ -476,6 +511,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 ## Post-Launch Tasks
 
 ### Week 1 Post-Launch
+
 - [ ] Monitor adoption metrics:
   - [ ] % of new users who start ProfileWizard
   - [ ] % of new users who complete ≥50% of profile
@@ -485,6 +521,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 - [ ] Fix critical bugs within 24 hours
 
 ### Week 2-4 Post-Launch
+
 - [ ] Analyze AI mediation improvement:
   - [ ] Compare escalation scores (complete profiles vs incomplete)
   - [ ] Measure intervention relevance (manual review of 100 interventions)
@@ -493,6 +530,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 - [ ] A/B test ProfileWizard vs. inline profile completion
 
 ### Month 2-3 Post-Launch
+
 - [ ] Implement profile completion nudges (email reminders)
 - [ ] Add profile insights dashboard (monthly summary for users)
 - [ ] Consider bulk privacy settings (change all sections at once)
@@ -503,6 +541,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 ## Definition of Done
 
 ### Code Quality
+
 - [x] All unit tests passing (>90% code coverage)
 - [x] All integration tests passing
 - [x] No ESLint errors or warnings
@@ -510,6 +549,7 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 - [x] Code reviewed by senior engineer
 
 ### Functionality
+
 - [x] ProfileWizard guides new users through onboarding
 - [x] Privacy settings page functional with preview mode
 - [x] Health data encrypted at rest
@@ -517,24 +557,28 @@ This checklist provides a step-by-step guide for implementing Feature 010 accord
 - [x] No privacy leaks (co-parent cannot access private fields)
 
 ### Quality
+
 - [x] WCAG 2.1 AA accessibility compliance
 - [x] Mobile responsive (375px width minimum)
 - [x] API latency < 300ms (90th percentile)
 - [x] Zero security vulnerabilities (penetration test passed)
 
 ### Documentation
+
 - [x] API endpoints documented
 - [x] User-facing help articles published
 - [x] In-app tooltips added
 - [x] Migration guide created
 
 ### Deployment
+
 - [x] Deployed to staging and tested
 - [x] Deployed to production successfully
 - [x] Monitoring dashboards configured
 - [x] Alerts configured for critical errors
 
 ### Metrics (30 days post-launch)
+
 - [ ] Profile completion rate ≥70% (users with ≥50% profile completion)
 - [ ] AI mediation improvement: 15% reduction in escalation for complete profiles
 - [ ] User satisfaction: "AI understands my situation" rating ≥3.8 (baseline 3.2)

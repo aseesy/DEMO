@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from '../index.js';
 
-
 /**
  * Toast Notification Component
  * Displays in-app message notifications like WhatsApp/Messenger
@@ -27,15 +26,23 @@ export function Toast({ toast, onDismiss, onClick }) {
       <div className="toast-content">
         <div className="toast-header">
           <div className="toast-avatar">
-            <svg className="w-5 h-5 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            <svg
+              className="w-5 h-5 text-teal-medium"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
             </svg>
           </div>
-          <div className="toast-sender">
-            {toast.sender}
-          </div>
+          <div className="toast-sender">{toast.sender}</div>
           <Button
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               onDismiss(toast.id);
             }}
@@ -45,17 +52,18 @@ export function Toast({ toast, onDismiss, onClick }) {
             aria-label="Dismiss notification"
             icon={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             }
           />
         </div>
-        <div className="toast-message">
-          {toast.message}
-        </div>
-        <div className="toast-timestamp">
-          {toast.timestamp}
-        </div>
+        <div className="toast-message">{toast.message}</div>
+        <div className="toast-timestamp">{toast.timestamp}</div>
       </div>
     </div>
   );
@@ -70,13 +78,8 @@ export function ToastContainer({ toasts, onDismiss, onClick }) {
 
   return (
     <div className="toast-container" aria-live="polite" aria-atomic="false">
-      {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          toast={toast}
-          onDismiss={onDismiss}
-          onClick={onClick}
-        />
+      {toasts.map(toast => (
+        <Toast key={toast.id} toast={toast} onDismiss={onDismiss} onClick={onClick} />
       ))}
     </div>
   );

@@ -9,7 +9,7 @@ This document shows how to apply the new error handling and logging pattern to e
 ```javascript
 async function analyzeMessage(message, recentMessages, participantUsernames = [], existingContacts = [], contactContextForAI = null, roomId = null, taskContextForAI = null, flaggedMessagesContext = null, roleContext = null) {
   // ... existing code ...
-  
+
   } catch (error) {
     console.error('❌ Error in AI mediator:', error.message);
     return null;
@@ -18,6 +18,7 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
 ```
 
 **Problems**:
+
 - No error context (user, room, message)
 - No error categorization
 - No stack trace
@@ -29,22 +30,31 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
 const { defaultLogger } = require('../utils/logger');
 const { OperationalError, RetryableError } = require('../utils/errors');
 
-async function analyzeMessage(message, recentMessages, participantUsernames = [], existingContacts = [], contactContextForAI = null, roomId = null, taskContextForAI = null, flaggedMessagesContext = null, roleContext = null) {
+async function analyzeMessage(
+  message,
+  recentMessages,
+  participantUsernames = [],
+  existingContacts = [],
+  contactContextForAI = null,
+  roomId = null,
+  taskContextForAI = null,
+  flaggedMessagesContext = null,
+  roleContext = null
+) {
   const logger = defaultLogger.child({
     operation: 'analyzeMessage',
     roomId,
     messageId: message?.id,
-    username: message?.username
+    username: message?.username,
   });
 
   try {
     // ... existing code ...
-    
   } catch (error) {
     logger.error('AI mediator analysis failed', error, {
       messageLength: message?.length,
       recentMessagesCount: recentMessages?.length,
-      hasContacts: existingContacts?.length > 0
+      hasContacts: existingContacts?.length > 0,
     });
 
     // Categorize error for appropriate handling
@@ -62,7 +72,7 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
       errorType: error.name,
       errorCode: error.code,
       roomId,
-      username: message?.username
+      username: message?.username,
     });
 
     return null;
@@ -71,6 +81,7 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
 ```
 
 **Improvements**:
+
 - ✅ Structured logging with context
 - ✅ Error categorization (retryable vs fatal)
 - ✅ Full error details (stack, code, type)
@@ -86,16 +97,19 @@ async function analyzeMessage(message, recentMessages, participantUsernames = []
 async function recordExplicitFeedback(username, feedbackType, context, reason = null) {
   try {
     const db = await require('../../../db').getDb();
-    
+
     // Get user ID
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: username.toLowerCase() },
+      { limit: 1 }
+    );
     const users = dbSafe.parseResult(userResult);
-    if (users.length === 0) return;  // ❌ Silent failure
+    if (users.length === 0) return; // ❌ Silent failure
 
     // ... rest of code ...
 
     console.log(`📝 Recorded ${feedbackType} feedback from ${username}`);
-
   } catch (error) {
     console.error('Error recording explicit feedback:', error.message);
     // ❌ Silent failure - caller doesn't know operation failed
@@ -104,6 +118,7 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
 ```
 
 **Problems**:
+
 - Silent failure (no return value indicating success/failure)
 - No error context
 - No retry mechanism
@@ -119,16 +134,20 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
   const logger = defaultLogger.child({
     operation: 'recordExplicitFeedback',
     username,
-    feedbackType
+    feedbackType,
   });
 
   try {
     const db = await require('../../../db').getDb();
-    
+
     // Get user ID
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: username.toLowerCase() },
+      { limit: 1 }
+    );
     const users = dbSafe.parseResult(userResult);
-    
+
     if (users.length === 0) {
       logger.warn('User not found for feedback recording', { username });
       return {
@@ -136,8 +155,8 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
         error: {
           code: 'USER_NOT_FOUND',
           message: 'User not found',
-          type: 'operational'
-        }
+          type: 'operational',
+        },
       };
     }
 
@@ -170,23 +189,22 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
       feedback_type: feedbackType,
       context_json: JSON.stringify(context),
       reason: reason,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     });
 
     logger.info('Feedback recorded successfully', {
       userId,
       feedbackType,
-      hasReason: !!reason
+      hasReason: !!reason,
     });
 
     return { success: true };
-
   } catch (error) {
     logger.error('Failed to record explicit feedback', error, {
       username,
       feedbackType,
       hasContext: !!context,
-      hasReason: !!reason
+      hasReason: !!reason,
     });
 
     // Return structured error instead of silent failure
@@ -195,15 +213,17 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
       error: {
         code: 'FEEDBACK_RECORDING_FAILED',
         message: 'Failed to record feedback',
-        type: error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' ? 'retryable' : 'operational',
-        retryable: error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED'
-      }
+        type:
+          error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' ? 'retryable' : 'operational',
+        retryable: error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED',
+      },
     };
   }
 }
 ```
 
 **Improvements**:
+
 - ✅ Returns structured result (success/error)
 - ✅ Distinguishes between error types (user not found vs database error)
 - ✅ Full error context for debugging
@@ -218,7 +238,7 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
 ```javascript
 socket.on('send_message', async ({ text, isPreApprovedRewrite, originalRewrite, bypassMediation }) => {
   // ... existing code ...
-  
+
   // Broadcast message normally if AI fails
   messageStore.saveMessage({
     ...message,
@@ -237,6 +257,7 @@ socket.on('send_message', async ({ text, isPreApprovedRewrite, originalRewrite, 
 ```
 
 **Problems**:
+
 - Promise chain without proper error handling
 - Vague error message to client
 - No error categorization
@@ -248,90 +269,93 @@ socket.on('send_message', async ({ text, isPreApprovedRewrite, originalRewrite, 
 const { defaultLogger } = require('./src/utils/logger');
 const { OperationalError, RetryableError } = require('./src/utils/errors');
 
-socket.on('send_message', async ({ text, isPreApprovedRewrite, originalRewrite, bypassMediation }) => {
-  const requestId = `${socket.id}-${Date.now()}`;
-  const logger = defaultLogger.child({
-    operation: 'send_message',
-    socketId: socket.id,
-    requestId,
-    username: user?.username,
-    roomId: user?.roomId
-  });
-
-  try {
-    // ... existing code for message processing ...
-
-    // Handle message saving with proper error handling
-    try {
-      await messageStore.saveMessage({
-        ...message,
-        roomId: user.roomId
-      });
-      logger.info('Message saved successfully', {
-        messageId: message.id,
-        roomId: user.roomId
-      });
-    } catch (saveError) {
-      logger.error('Failed to save message to database', saveError, {
-        messageId: message.id,
-        roomId: user.roomId,
-        textLength: text?.length
-      });
-
-      // Emit error to client but don't block message broadcast
-      // This is a "best effort" approach - message is sent but may not persist
-      socket.emit('error', {
-        code: 'MESSAGE_SAVE_FAILED',
-        message: 'Message sent but may not be saved. Please try again.',
-        retryable: true,
-        requestId
-      });
-    }
-
-    // Broadcast to room
-    io.to(user.roomId).emit('new_message', message);
-
-  } catch (error) {
-    logger.error('Error in send_message handler', error, {
-      textLength: text?.length,
-      bypassMediation,
+socket.on(
+  'send_message',
+  async ({ text, isPreApprovedRewrite, originalRewrite, bypassMediation }) => {
+    const requestId = `${socket.id}-${Date.now()}`;
+    const logger = defaultLogger.child({
+      operation: 'send_message',
+      socketId: socket.id,
+      requestId,
       username: user?.username,
       roomId: user?.roomId,
-      requestId
     });
 
-    // Categorize error for appropriate client handling
-    let errorResponse;
-    if (error instanceof RetryableError) {
-      errorResponse = {
-        code: error.code,
-        message: error.message,
-        retryable: true,
-        requestId
-      };
-    } else if (error instanceof OperationalError) {
-      errorResponse = {
-        code: error.code || 'MESSAGE_SEND_FAILED',
-        message: error.message || 'Failed to send message. Please try again.',
-        retryable: false,
-        requestId
-      };
-    } else {
-      // Unknown error - be conservative
-      errorResponse = {
-        code: 'MESSAGE_SEND_FAILED',
-        message: 'An unexpected error occurred. Please try again.',
-        retryable: true,  // Allow retry for unknown errors
-        requestId
-      };
-    }
+    try {
+      // ... existing code for message processing ...
 
-    socket.emit('error', errorResponse);
+      // Handle message saving with proper error handling
+      try {
+        await messageStore.saveMessage({
+          ...message,
+          roomId: user.roomId,
+        });
+        logger.info('Message saved successfully', {
+          messageId: message.id,
+          roomId: user.roomId,
+        });
+      } catch (saveError) {
+        logger.error('Failed to save message to database', saveError, {
+          messageId: message.id,
+          roomId: user.roomId,
+          textLength: text?.length,
+        });
+
+        // Emit error to client but don't block message broadcast
+        // This is a "best effort" approach - message is sent but may not persist
+        socket.emit('error', {
+          code: 'MESSAGE_SAVE_FAILED',
+          message: 'Message sent but may not be saved. Please try again.',
+          retryable: true,
+          requestId,
+        });
+      }
+
+      // Broadcast to room
+      io.to(user.roomId).emit('new_message', message);
+    } catch (error) {
+      logger.error('Error in send_message handler', error, {
+        textLength: text?.length,
+        bypassMediation,
+        username: user?.username,
+        roomId: user?.roomId,
+        requestId,
+      });
+
+      // Categorize error for appropriate client handling
+      let errorResponse;
+      if (error instanceof RetryableError) {
+        errorResponse = {
+          code: error.code,
+          message: error.message,
+          retryable: true,
+          requestId,
+        };
+      } else if (error instanceof OperationalError) {
+        errorResponse = {
+          code: error.code || 'MESSAGE_SEND_FAILED',
+          message: error.message || 'Failed to send message. Please try again.',
+          retryable: false,
+          requestId,
+        };
+      } else {
+        // Unknown error - be conservative
+        errorResponse = {
+          code: 'MESSAGE_SEND_FAILED',
+          message: 'An unexpected error occurred. Please try again.',
+          retryable: true, // Allow retry for unknown errors
+          requestId,
+        };
+      }
+
+      socket.emit('error', errorResponse);
+    }
   }
-});
+);
 ```
 
 **Improvements**:
+
 - ✅ Request ID for tracking
 - ✅ Structured error responses with codes
 - ✅ Error categorization (retryable vs fatal)
@@ -345,7 +369,7 @@ socket.on('send_message', async ({ text, isPreApprovedRewrite, originalRewrite, 
 ### Before (Current Code)
 
 ```javascript
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('❌ Uncaught Exception:', error);
   console.error('Stack:', error.stack);
   // Don't exit immediately - let the server try to handle it
@@ -360,6 +384,7 @@ process.on('unhandledRejection', (reason, promise) => {
 ```
 
 **Problems**:
+
 - Doesn't exit in production (should exit after logging)
 - No graceful shutdown
 - No error reporting to monitoring service
@@ -387,7 +412,7 @@ async function gracefulShutdown(signal) {
   try {
     // Close server
     if (server) {
-      await new Promise((resolve) => {
+      await new Promise(resolve => {
         server.close(() => {
           defaultLogger.info('HTTP server closed');
           resolve();
@@ -407,10 +432,10 @@ async function gracefulShutdown(signal) {
 }
 
 // Uncaught exception handler
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   defaultLogger.error('Uncaught exception - fatal error', error, {
     fatal: true,
-    requiresRestart: true
+    requiresRestart: true,
   });
 
   // In production, exit after logging
@@ -425,7 +450,7 @@ process.on('unhandledRejection', (reason, promise) => {
   defaultLogger.error('Unhandled promise rejection', reason, {
     promise: promise.toString(),
     fatal: false,
-    requiresRestart: false
+    requiresRestart: false,
   });
 
   // In production, log and continue (but monitor these)
@@ -441,6 +466,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 ```
 
 **Improvements**:
+
 - ✅ Graceful shutdown with timeout
 - ✅ Proper exit in production
 - ✅ Structured logging for monitoring
@@ -469,4 +495,3 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 ---
 
 **Last Updated**: 2025-01-27
-

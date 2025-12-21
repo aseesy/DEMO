@@ -3,6 +3,7 @@
 ## File Naming Conventions
 
 ### ✅ Permanent Documentation
+
 - **Reference docs**: `*_REFERENCE.md` or `*_GUIDE.md`
 - **Specifications**: `specs/**/spec.md`, `plan.md`, `tasks.md`
 - **Policies**: `policies/*.md`
@@ -10,6 +11,7 @@
 - **Troubleshooting**: `docs/TROUBLESHOOTING.md`
 
 ### ❌ Temporary/Historical Files
+
 - **DO NOT USE** in root: `*_COMPLETE.md`, `*_SUMMARY.md`, `*_RESULTS.md`, `*_PROGRESS.md`
 - These should go to `docs-archive/` after completion
 - Use git commits for completion tracking instead
@@ -17,12 +19,14 @@
 ## When to Create New Docs
 
 ### ✅ Create New Documentation
+
 - Feature specifications (specs/)
 - Policy updates (policies/)
 - Setup guides (docs/)
-- Reference documentation (root with *_REFERENCE.md)
+- Reference documentation (root with \*\_REFERENCE.md)
 
 ### ❌ Don't Create New Files For
+
 - One-time completion reports → Use git commits
 - Test summaries → Use test output/reports/
 - Scan results → Use reports/ directory
@@ -53,8 +57,8 @@
 ## Pre-Commit Checklist
 
 Before committing markdown files:
+
 - [ ] Is this a completion report? → Move to docs-archive/
 - [ ] Is this a one-time summary? → Consider git commit message instead
 - [ ] Does this duplicate existing docs? → Merge instead
 - [ ] Is this actively maintained? → Keep in root/docs/
-

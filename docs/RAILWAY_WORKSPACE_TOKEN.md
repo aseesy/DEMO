@@ -1,6 +1,7 @@
 # Railway Workspace Token Setup
 
 ## Problem
+
 Railway CLI shows "Available options can not be empty" when trying to link a project.
 
 ## Solution: Use Workspace Token
@@ -15,6 +16,7 @@ Railway CLI shows "Available options can not be empty" when trying to link a pro
 ### Step 2: Set Token as Environment Variable
 
 **For zsh (macOS default):**
+
 ```bash
 # Add to ~/.zshrc
 echo 'export RAILWAY_TOKEN=your_token_here' >> ~/.zshrc
@@ -22,6 +24,7 @@ source ~/.zshrc
 ```
 
 **Or set it for current session:**
+
 ```bash
 export RAILWAY_TOKEN=your_token_here
 ```
@@ -66,11 +69,12 @@ If CLI continues to have issues, you can manage everything through the Railway D
 ## Troubleshooting
 
 **If token doesn't work:**
+
 - Make sure token is copied correctly (no extra spaces)
 - Check token hasn't expired
 - Try creating a new token
 
 **If still can't link:**
+
 - Try logging out and back in: `railway logout` then `railway login`
 - Check Railway status: https://status.railway.app
-

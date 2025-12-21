@@ -6,6 +6,7 @@
 **Input**: User description: "{{USER_DESCRIPTION}}"
 
 ## Execution Flow (main)
+
 ```
 1. Parse user description from Input
    → Feature: {{FEATURE_SUMMARY}}
@@ -30,6 +31,7 @@
 ---
 
 ## ⚡ Quick Guidelines
+
 - ✅ Focus on WHAT users need and WHY
 - ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
 - 👥 Written for business stakeholders, not developers
@@ -42,6 +44,7 @@
 {{FEATURE_OVERVIEW}}
 
 This feature supports LiaiZen's mission to improve co-parenting communication through better tools and AI-powered mediation. All features must prioritize:
+
 - **Child-centered outcomes**: Every feature should ultimately benefit children's wellbeing
 - **Conflict reduction**: Features should help reduce misunderstandings and tensions
 - **Privacy and security**: Co-parenting data is sensitive and must be protected
@@ -58,27 +61,27 @@ As a **{{USER_TYPE}}** (separated parent, co-parent, or child-focused profession
 ### Acceptance Scenarios
 
 #### Scenario 1: {{SCENARIO_NAME}}
+
 1. **Given** {{PRECONDITION}}, **When** {{ACTION}}, **Then** {{EXPECTED_OUTCOME}}
 2. **Given** {{PRECONDITION}}, **When** {{ACTION}}, **Then** {{EXPECTED_OUTCOME}}
 
 #### Scenario 2: {{SCENARIO_NAME}}
+
 1. **Given** {{PRECONDITION}}, **When** {{ACTION}}, **Then** {{EXPECTED_OUTCOME}}
 
 ### Edge Cases
 
 #### Co-Parenting Specific Considerations
+
 - **What happens when** one co-parent is unavailable or unresponsive?
   - System must handle gracefully without blocking the other parent
   - Must maintain audit trail for legal/custody purposes
-  
 - **What happens when** communication becomes hostile or inappropriate?
   - AI mediation must flag and suggest rewrites
   - System must provide conflict resolution resources
-  
 - **What happens when** children's information needs to be shared?
   - Must comply with privacy regulations (COPPA, GDPR)
   - Must allow selective information sharing between co-parents
-  
 - **What happens when** a co-parent connection is pending or rejected?
   - System must handle invitation states clearly
   - Must preserve user experience for both parties
@@ -142,12 +145,14 @@ As a **{{USER_TYPE}}** (separated parent, co-parent, or child-focused profession
 ## Review & Acceptance Checklist
 
 ### Content Quality
+
 - [ ] No implementation details (languages, frameworks, APIs) - Tech details in planning phase
 - [ ] Focused on user value and co-parenting needs - Features support better communication
 - [ ] Written for non-technical stakeholders - Plain language user scenarios
 - [ ] All mandatory sections completed
 
 ### Requirement Completeness
+
 - [ ] No [NEEDS CLARIFICATION] markers remain
 - [ ] Requirements are testable and unambiguous - All FRs have measurable criteria
 - [ ] Success criteria are measurable - Specific, quantifiable outcomes
@@ -155,6 +160,7 @@ As a **{{USER_TYPE}}** (separated parent, co-parent, or child-focused profession
 - [ ] Dependencies and assumptions identified - External dependencies noted
 
 ### Co-Parenting Domain Validation
+
 - [ ] Features support child-centered outcomes
 - [ ] Privacy and security considerations addressed
 - [ ] Conflict reduction mechanisms included
@@ -195,5 +201,4 @@ As a **{{USER_TYPE}}** (separated parent, co-parent, or child-focused profession
 
 ---
 
-*Specification for coparentliaizen.com - Better Co-Parenting Through Better Communication*
-
+_Specification for coparentliaizen.com - Better Co-Parenting Through Better Communication_

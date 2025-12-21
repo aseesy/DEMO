@@ -55,11 +55,13 @@ export const Select = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const selectRef = useRef(null);
-  const inputId = props.id || `select-${label?.toLowerCase().replace(/\s+/g, '-') || Math.random().toString(36).substr(2, 9)}`;
+  const inputId =
+    props.id ||
+    `select-${label?.toLowerCase().replace(/\s+/g, '-') || Math.random().toString(36).substr(2, 9)}`;
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = event => {
       if (selectRef.current && !selectRef.current.contains(event.target)) {
         setIsOpen(false);
         setSearchQuery('');
@@ -73,11 +75,10 @@ export const Select = ({
   }, [isOpen]);
 
   // Filter options based on search query
-  const filteredOptions = searchable && searchQuery
-    ? options.filter(option =>
-        option.label.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : options;
+  const filteredOptions =
+    searchable && searchQuery
+      ? options.filter(option => option.label.toLowerCase().includes(searchQuery.toLowerCase()))
+      : options;
 
   // Get selected option label(s)
   const getSelectedLabel = () => {
@@ -92,7 +93,7 @@ export const Select = ({
   };
 
   // Handle option selection
-  const handleSelect = (optionValue) => {
+  const handleSelect = optionValue => {
     if (multiple) {
       const currentValues = value || [];
       const newValues = currentValues.includes(optionValue)
@@ -107,7 +108,7 @@ export const Select = ({
   };
 
   // Handle keyboard navigation
-  const handleKeyDown = (e) => {
+  const handleKeyDown = e => {
     if (e.key === 'Escape') {
       setIsOpen(false);
       setSearchQuery('');
@@ -122,10 +123,7 @@ export const Select = ({
       <div className={fullWidth ? 'w-full' : ''}>
         {/* Label */}
         {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-semibold text-gray-700 mb-1.5"
-          >
+          <label htmlFor={inputId} className="block text-sm font-semibold text-gray-700 mb-1.5">
             {label}
             {required && <span className="text-red-500 ml-1">*</span>}
           </label>
@@ -136,7 +134,7 @@ export const Select = ({
           id={inputId}
           name={name || inputId}
           value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={e => onChange(e.target.value)}
           onBlur={onBlur}
           required={required}
           disabled={disabled}
@@ -144,16 +142,18 @@ export const Select = ({
             error
               ? 'border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-500/20'
               : disabled
-              ? 'border-gray-300'
-              : 'border-gray-300 focus:border-teal-medium focus:ring-2 focus:ring-teal-medium/20'
+                ? 'border-gray-300'
+                : 'border-gray-300 focus:border-teal-medium focus:ring-2 focus:ring-teal-medium/20'
           } ${className}`}
           aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
+          aria-describedby={
+            error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
+          }
           aria-required={required}
           {...props}
         >
           {placeholder && <option value="">{placeholder}</option>}
-          {options.map((option) => (
+          {options.map(option => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -163,9 +163,17 @@ export const Select = ({
         {/* Error / Helper text */}
         <div className="mt-1.5">
           {error && (
-            <p id={`${inputId}-error`} className="text-sm text-red-600 flex items-start gap-1.5" role="alert">
+            <p
+              id={`${inputId}-error`}
+              className="text-sm text-red-600 flex items-start gap-1.5"
+              role="alert"
+            >
               <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span>{error}</span>
             </p>
@@ -186,10 +194,7 @@ export const Select = ({
     <div className={fullWidth ? 'w-full' : ''} ref={selectRef}>
       {/* Label */}
       {label && (
-        <label
-          htmlFor={inputId}
-          className="block text-sm font-semibold text-gray-700 mb-1.5"
-        >
+        <label htmlFor={inputId} className="block text-sm font-semibold text-gray-700 mb-1.5">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -207,16 +212,22 @@ export const Select = ({
             error
               ? 'border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-500/20'
               : disabled
-              ? 'border-gray-300'
-              : 'border-gray-300 focus:border-teal-medium focus:ring-2 focus:ring-teal-medium/20'
+                ? 'border-gray-300'
+                : 'border-gray-300 focus:border-teal-medium focus:ring-2 focus:ring-teal-medium/20'
           } ${className}`}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
+          aria-describedby={
+            error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
+          }
           aria-required={required}
         >
-          <span className={!value || (multiple && value.length === 0) ? 'text-gray-400' : 'text-gray-900'}>
+          <span
+            className={
+              !value || (multiple && value.length === 0) ? 'text-gray-400' : 'text-gray-900'
+            }
+          >
             {getSelectedLabel()}
           </span>
           <svg
@@ -238,10 +249,10 @@ export const Select = ({
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Search..."
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-teal-medium"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={e => e.stopPropagation()}
                 />
               </div>
             )}
@@ -249,7 +260,7 @@ export const Select = ({
             {/* Options list */}
             <div className="overflow-y-auto max-h-48" role="listbox">
               {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => {
+                filteredOptions.map(option => {
                   const isSelected = multiple
                     ? value && value.includes(option.value)
                     : value === option.value;
@@ -260,24 +271,34 @@ export const Select = ({
                       type="button"
                       onClick={() => handleSelect(option.value)}
                       className={`w-full px-4 py-2 text-left text-base hover:bg-teal-lightest transition-colors flex items-center justify-between ${
-                        isSelected ? 'bg-teal-lightest text-teal-dark font-semibold' : 'text-gray-900'
+                        isSelected
+                          ? 'bg-teal-lightest text-teal-dark font-semibold'
+                          : 'text-gray-900'
                       }`}
                       role="option"
                       aria-selected={isSelected}
                     >
                       <span>{option.label}</span>
                       {isSelected && (
-                        <svg className="w-5 h-5 text-teal-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-5 h-5 text-teal-dark"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                       )}
                     </button>
                   );
                 })
               ) : (
-                <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                  No options found
-                </div>
+                <div className="px-4 py-3 text-sm text-gray-500 text-center">No options found</div>
               )}
             </div>
           </div>
@@ -287,9 +308,17 @@ export const Select = ({
       {/* Error / Helper text */}
       <div className="mt-1.5">
         {error && (
-          <p id={`${inputId}-error`} className="text-sm text-red-600 flex items-start gap-1.5" role="alert">
+          <p
+            id={`${inputId}-error`}
+            className="text-sm text-red-600 flex items-start gap-1.5"
+            role="alert"
+          >
             <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
             </svg>
             <span>{error}</span>
           </p>

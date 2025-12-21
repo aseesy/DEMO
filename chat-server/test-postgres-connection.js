@@ -34,7 +34,7 @@ try {
     port: url.port || 5432,
     database: url.pathname.slice(1), // Remove leading /
     user: url.username,
-    password: url.password ? '***' : 'none'
+    password: url.password ? '***' : 'none',
   };
   console.log('📊 Parsed Connection Details:');
   console.log(`   Host: ${parsed.host}`);
@@ -53,20 +53,23 @@ try {
 // Test connection
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  connectionTimeoutMillis: 5000
+  connectionTimeoutMillis: 5000,
 });
 
 console.log('🔄 Attempting to connect...');
 
-pool.query('SELECT NOW() as current_time, version() as pg_version')
+pool
+  .query('SELECT NOW() as current_time, version() as pg_version')
   .then(result => {
     console.log('✅ Connection successful!');
     console.log('');
     console.log('📊 Database Info:');
     console.log(`   Current Time: ${result.rows[0].current_time}`);
-    console.log(`   PostgreSQL Version: ${result.rows[0].pg_version.split(' ')[0]} ${result.rows[0].pg_version.split(' ')[1]}`);
+    console.log(
+      `   PostgreSQL Version: ${result.rows[0].pg_version.split(' ')[0]} ${result.rows[0].pg_version.split(' ')[1]}`
+    );
     console.log('');
-    
+
     // Test if tables exist
     return pool.query(`
       SELECT table_name 
@@ -97,7 +100,7 @@ pool.query('SELECT NOW() as current_time, version() as pg_version')
     console.error(`   Message: ${err.message}`);
     console.error(`   Code: ${err.code || 'N/A'}`);
     console.error('');
-    
+
     // Provide helpful error messages
     if (err.code === 'ECONNREFUSED') {
       console.error('💡 Troubleshooting:');
@@ -126,18 +129,7 @@ pool.query('SELECT NOW() as current_time, version() as pg_version')
       console.error('   3. Check firewall/network settings');
       console.error('   4. Verify database exists');
     }
-    
+
     pool.end();
     process.exit(1);
   });
-
-
-
-
-
-
-
-
-
-
-

@@ -33,10 +33,9 @@ router.post('/', async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
 
     // Check if email already exists
-    const existing = await db.query(
-      'SELECT id, created_at FROM waitlist WHERE email = $1',
-      [cleanEmail]
-    );
+    const existing = await db.query('SELECT id, created_at FROM waitlist WHERE email = $1', [
+      cleanEmail,
+    ]);
 
     if (existing.rows.length > 0) {
       // Already on waitlist - get their position
@@ -49,7 +48,7 @@ router.post('/', async (req, res) => {
         success: true,
         alreadyOnList: true,
         position: parseInt(position.rows[0].pos, 10),
-        message: "You're already on the waitlist!"
+        message: "You're already on the waitlist!",
       });
     }
 
@@ -70,9 +69,8 @@ router.post('/', async (req, res) => {
     res.status(201).json({
       success: true,
       position: position,
-      message: "You're on the list!"
+      message: "You're on the list!",
     });
-
   } catch (error) {
     console.error('Waitlist signup error:', error);
 
@@ -81,7 +79,7 @@ router.post('/', async (req, res) => {
       return res.status(200).json({
         success: true,
         alreadyOnList: true,
-        message: "You're already on the waitlist!"
+        message: "You're already on the waitlist!",
       });
     }
 
@@ -113,23 +111,19 @@ router.get('/position/:email', async (req, res) => {
   try {
     const email = req.params.email.trim().toLowerCase();
 
-    const entry = await db.query(
-      'SELECT created_at FROM waitlist WHERE email = $1',
-      [email]
-    );
+    const entry = await db.query('SELECT created_at FROM waitlist WHERE email = $1', [email]);
 
     if (entry.rows.length === 0) {
       return res.status(404).json({ error: 'Email not found on waitlist' });
     }
 
-    const position = await db.query(
-      'SELECT COUNT(*) as pos FROM waitlist WHERE created_at <= $1',
-      [entry.rows[0].created_at]
-    );
+    const position = await db.query('SELECT COUNT(*) as pos FROM waitlist WHERE created_at <= $1', [
+      entry.rows[0].created_at,
+    ]);
 
     res.json({
       position: parseInt(position.rows[0].pos, 10),
-      email: email
+      email: email,
     });
   } catch (error) {
     console.error('Waitlist position error:', error);

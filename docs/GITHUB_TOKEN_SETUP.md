@@ -18,6 +18,7 @@ The GitHub MCP server requires a GitHub Personal Access Token to be set as an en
 ### Option A: Shell Profile (Recommended - Persistent)
 
 **For zsh (macOS default):**
+
 ```bash
 # Add to ~/.zshrc
 echo 'export GITHUB_TOKEN=your_token_here' >> ~/.zshrc
@@ -25,6 +26,7 @@ source ~/.zshrc
 ```
 
 **For bash:**
+
 ```bash
 # Add to ~/.bashrc or ~/.bash_profile
 echo 'export GITHUB_TOKEN=your_token_here' >> ~/.bashrc
@@ -32,6 +34,7 @@ source ~/.bashrc
 ```
 
 **To verify:**
+
 ```bash
 echo $GITHUB_TOKEN
 ```
@@ -54,6 +57,7 @@ GITHUB_TOKEN=your_token_here
 ```
 
 Then load it before starting Cursor:
+
 ```bash
 export $(cat .env | xargs)
 cursor .
@@ -64,11 +68,13 @@ cursor .
 After setting the token, restart Cursor and test:
 
 **Test in Cursor:**
+
 ```
 Show me the last 5 commits in this repository
 ```
 
 Or test in terminal:
+
 ```bash
 curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user
 ```
@@ -94,6 +100,7 @@ curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user
 ## Troubleshooting
 
 **Token not working?**
+
 1. Verify token is set: `echo $GITHUB_TOKEN`
 2. Check token hasn't expired
 3. Verify token has correct scopes
@@ -101,6 +108,7 @@ curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user
 5. Check Cursor's MCP logs for errors
 
 **Cursor can't find environment variable?**
+
 - Try Option B (Cursor-specific environment)
 - Or set it directly in the MCP config (less secure):
   ```json
@@ -128,4 +136,3 @@ source ~/.zshrc
 echo "✅ GitHub token added to ~/.zshrc"
 echo "Restart Cursor for changes to take effect"
 ```
-

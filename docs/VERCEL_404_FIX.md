@@ -3,6 +3,7 @@
 ## ⚠️ The Problem
 
 Getting 404 errors on Vercel for all routes:
+
 - `GET 404 /`
 - `GET 404 /favicon.ico`
 - `GET 404 /robots.txt`
@@ -149,6 +150,7 @@ Vercel needs to know how to serve your static files. Since you have a static HTM
 **Issue**: Still getting 404 errors after updating vercel.json
 
 **Solution**:
+
 1. **Verify vercel.json is Deployed**:
    - Check if vercel.json is in the deployed files
    - Verify vercel.json is in the root of chat-client directory
@@ -169,6 +171,7 @@ Vercel needs to know how to serve your static files. Since you have a static HTM
 **Issue**: Files are not being deployed to Vercel
 
 **Solution**:
+
 1. **Check .vercelignore**:
    - Verify files are not being ignored
    - Check if .vercelignore exists and what it contains
@@ -188,6 +191,7 @@ Vercel needs to know how to serve your static files. Since you have a static HTM
 **Issue**: Getting build errors in Vercel
 
 **Solution**:
+
 1. **Check Build Logs**:
    - Go to Vercel Dashboard → Deployments → Latest → Logs
    - Look for build errors
@@ -223,4 +227,3 @@ Vercel needs to know how to serve your static files. Since you have a static HTM
 ---
 
 **Next Steps: Update vercel.json, verify Vercel project settings, and redeploy. Your static files should now be served correctly!** 🚀
-

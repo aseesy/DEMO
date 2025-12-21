@@ -9,6 +9,7 @@
 ## Common Causes
 
 ### 1. **Missing Environment Variables**
+
 The following environment variables must be set in your Railway/production environment:
 
 ```bash
@@ -18,22 +19,27 @@ GOOGLE_REDIRECT_URI=https://coparentliaizen.com/auth/google/callback
 ```
 
 ### 2. **Incorrect Client ID or Secret**
+
 - Client ID or Secret may be incorrect
 - Credentials may have been regenerated in Google Cloud Console
 - Copy/paste errors when setting environment variables
 
 ### 3. **Redirect URI Mismatch**
+
 The redirect URI in your code must **exactly match** what's configured in Google Cloud Console:
 
 **Required in Google Cloud Console:**
+
 - `https://coparentliaizen.com/auth/google/callback`
 - `https://www.coparentliaizen.com/auth/google/callback` (if using www)
 
 **Check in code:**
+
 - `GOOGLE_REDIRECT_URI` environment variable
 - Or default: `${APP_URL}/auth/google/callback`
 
 ### 4. **OAuth Client Not Configured**
+
 The OAuth client may not be properly set up in Google Cloud Console.
 
 ## Quick Fix Steps
@@ -41,6 +47,7 @@ The OAuth client may not be properly set up in Google Cloud Console.
 ### Step 1: Verify Environment Variables
 
 **In Railway Dashboard:**
+
 1. Go to your service → **Variables** tab
 2. Verify these variables exist:
    - `GOOGLE_CLIENT_ID`
@@ -48,6 +55,7 @@ The OAuth client may not be properly set up in Google Cloud Console.
    - `GOOGLE_REDIRECT_URI` (optional, has default)
 
 **Check values:**
+
 - `GOOGLE_CLIENT_ID` should look like: `123456789-abcdefghijklmnop.apps.googleusercontent.com`
 - `GOOGLE_CLIENT_SECRET` should be a long string (not empty)
 
@@ -71,11 +79,13 @@ The OAuth client may not be properly set up in Google Cloud Console.
 ### Step 3: Update Environment Variables (if needed)
 
 **If credentials changed:**
+
 1. Get new Client ID and Secret from Google Cloud Console
 2. Update in Railway Dashboard → Variables
 3. Redeploy service (or restart)
 
 **If redirect URI changed:**
+
 1. Update `GOOGLE_REDIRECT_URI` in Railway
 2. Update redirect URI in Google Cloud Console to match
 3. Save both
@@ -91,12 +101,14 @@ The OAuth client may not be properly set up in Google Cloud Console.
 ### Check Server Logs
 
 Look for these log messages:
+
 - `Google OAuth error:` - Shows the actual error
 - Missing `GOOGLE_CLIENT_ID` - Will show undefined/null
 
 ### Verify Redirect URI Match
 
 **In Google Cloud Console:**
+
 ```
 Authorized redirect URIs:
 ✅ https://coparentliaizen.com/auth/google/callback
@@ -104,11 +116,13 @@ Authorized redirect URIs:
 ```
 
 **In Railway Environment:**
+
 ```bash
 GOOGLE_REDIRECT_URI=https://coparentliaizen.com/auth/google/callback
 ```
 
 **Must match exactly:**
+
 - ✅ Same protocol (https)
 - ✅ Same domain
 - ✅ Same path
@@ -158,8 +172,8 @@ If any are empty or undefined, that's the problem!
 ## Need Help?
 
 If the issue persists:
+
 1. Check Railway deployment logs for errors
 2. Verify all environment variables are set correctly
 3. Double-check Google Cloud Console configuration
 4. Ensure redirect URIs match exactly
-

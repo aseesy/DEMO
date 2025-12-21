@@ -44,7 +44,7 @@ async function getRelationshipContext(senderId, receiverId, roomId) {
     return {
       metrics,
       insights,
-      formattedContext: formatForAI(metrics, insights)
+      formattedContext: formatForAI(metrics, insights),
     };
   } catch (error) {
     console.error('❌ GraphContext: Failed to get relationship context:', error.message);
@@ -72,7 +72,7 @@ async function getRelationshipMetrics(senderId, receiverId, roomId) {
     const result = await neo4jClient._executeCypher(query, {
       senderId: require('neo4j-driver').int(senderId),
       receiverId: require('neo4j-driver').int(receiverId),
-      roomId
+      roomId,
     });
 
     if (result.records.length === 0) {
@@ -86,7 +86,7 @@ async function getRelationshipMetrics(senderId, receiverId, roomId) {
       lastInteraction: record.get('lastInteraction'),
       relationshipCreatedAt: record.get('relationshipCreatedAt'),
       senderUsername: record.get('senderUsername'),
-      receiverUsername: record.get('receiverUsername')
+      receiverUsername: record.get('receiverUsername'),
     };
   } catch (error) {
     console.error('❌ GraphContext: Neo4j query failed:', error.message);
@@ -103,7 +103,7 @@ function analyzeRelationship(metrics) {
     communicationIntensity: 'unknown',
     interventionRate: 0,
     interventionTrend: 'unknown',
-    healthIndicator: 'unknown'
+    healthIndicator: 'unknown',
   };
 
   // Calculate relationship age
@@ -172,15 +172,21 @@ function formatForAI(metrics, insights) {
   }
 
   // Communication patterns
-  parts.push(`Communication level: ${insights.communicationIntensity} (${metrics.messageCount || 0} messages exchanged)`);
+  parts.push(
+    `Communication level: ${insights.communicationIntensity} (${metrics.messageCount || 0} messages exchanged)`
+  );
 
   // Intervention history
   if (metrics.interventionCount > 0) {
-    parts.push(`AI coaching history: ${metrics.interventionCount} interventions (${insights.interventionRate}% of messages)`);
+    parts.push(
+      `AI coaching history: ${metrics.interventionCount} interventions (${insights.interventionRate}% of messages)`
+    );
 
     // Add guidance based on intervention rate
     if (insights.healthIndicator === 'high-conflict') {
-      parts.push('NOTE: This is a high-conflict relationship. Be especially gentle and constructive.');
+      parts.push(
+        'NOTE: This is a high-conflict relationship. Be especially gentle and constructive.'
+      );
     } else if (insights.healthIndicator === 'challenging') {
       parts.push('NOTE: This relationship has ongoing challenges. Focus on de-escalation.');
     } else if (insights.healthIndicator === 'needs support') {
@@ -244,7 +250,7 @@ async function updateMetrics(userId1, userId2, roomId, update = {}) {
     await neo4jClient._executeCypher(query, {
       userId1: neo4j.int(userId1),
       userId2: neo4j.int(userId2),
-      roomId
+      roomId,
     });
 
     return true;
@@ -278,7 +284,7 @@ async function getInterventionEffectiveness(userId) {
 
     const neo4j = require('neo4j-driver');
     const result = await neo4jClient._executeCypher(query, {
-      userId: neo4j.int(userId)
+      userId: neo4j.int(userId),
     });
 
     if (result.records.length === 0) {
@@ -290,9 +296,10 @@ async function getInterventionEffectiveness(userId) {
       totalMessages: record.get('totalMessages') || 0,
       totalInterventions: record.get('totalInterventions') || 0,
       relationshipCount: record.get('relationshipCount') || 0,
-      overallInterventionRate: record.get('totalMessages') > 0
-        ? Math.round((record.get('totalInterventions') / record.get('totalMessages')) * 100)
-        : 0
+      overallInterventionRate:
+        record.get('totalMessages') > 0
+          ? Math.round((record.get('totalInterventions') / record.get('totalMessages')) * 100)
+          : 0,
     };
   } catch (error) {
     console.error('❌ GraphContext: Failed to get intervention effectiveness:', error.message);
@@ -306,5 +313,5 @@ module.exports = {
   analyzeRelationship,
   formatForAI,
   updateMetrics,
-  getInterventionEffectiveness
+  getInterventionEffectiveness,
 };

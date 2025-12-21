@@ -17,10 +17,14 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
     const now = new Date().toISOString();
 
     // Get or create stats record for this user-room combination
-    const statsResult = await dbSafe.safeSelect('communication_stats', {
-      user_id: userId,
-      room_id: roomId
-    }, { limit: 1 });
+    const statsResult = await dbSafe.safeSelect(
+      'communication_stats',
+      {
+        user_id: userId,
+        room_id: roomId,
+      },
+      { limit: 1 }
+    );
 
     const stats = dbSafe.parseResult(statsResult);
 
@@ -36,10 +40,12 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
         total_interventions: hadIntervention ? 1 : 0,
         last_message_date: now,
         last_intervention_date: hadIntervention ? now : null,
-        updated_at: now
+        updated_at: now,
       });
 
-      console.log(`📊 Created communication stats for user ${userId} in room ${roomId}: ${hadIntervention ? 'intervention' : '+1 streak'}`);
+      console.log(
+        `📊 Created communication stats for user ${userId} in room ${roomId}: ${hadIntervention ? 'intervention' : '+1 streak'}`
+      );
     } else {
       // Update existing stats
       const currentStats = stats[0];
@@ -51,7 +57,9 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
 
       if (hadIntervention) {
         // Intervention breaks the streak - add current streak to total
-        console.log(`🚫 Streak ended for user ${userId}: was at ${currentStats.current_streak}, adding to total`);
+        console.log(
+          `🚫 Streak ended for user ${userId}: was at ${currentStats.current_streak}, adding to total`
+        );
         newStreak = 0;
         newTotalInterventions += 1;
       } else {
@@ -79,15 +87,17 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
           total_interventions: newTotalInterventions,
           last_message_date: now,
           last_intervention_date: hadIntervention ? now : currentStats.last_intervention_date,
-          updated_at: now
+          updated_at: now,
         },
         {
           user_id: userId,
-          room_id: roomId
+          room_id: roomId,
         }
       );
 
-      console.log(`📊 Updated stats for user ${userId}: streak=${newStreak}, best=${newBestStreak}, positive=${newTotalPositive}, interventions=${newTotalInterventions}`);
+      console.log(
+        `📊 Updated stats for user ${userId}: streak=${newStreak}, best=${newBestStreak}, positive=${newTotalPositive}, interventions=${newTotalInterventions}`
+      );
     }
 
     return true;
@@ -105,7 +115,7 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
 async function getUserStats(userId) {
   try {
     const statsResult = await dbSafe.safeSelect('communication_stats', {
-      user_id: userId
+      user_id: userId,
     });
 
     const stats = dbSafe.parseResult(statsResult);
@@ -117,31 +127,35 @@ async function getUserStats(userId) {
         totalPositive: 0,
         totalMessages: 0,
         totalInterventions: 0,
-        successRate: 0
+        successRate: 0,
       };
     }
 
     // Aggregate stats across all rooms
-    const aggregated = stats.reduce((acc, stat) => {
-      return {
-        currentStreak: Math.max(acc.currentStreak, stat.current_streak),
-        bestStreak: Math.max(acc.bestStreak, stat.best_streak),
-        totalPositive: acc.totalPositive + stat.total_positive_messages,
-        totalMessages: acc.totalMessages + stat.total_messages,
-        totalInterventions: acc.totalInterventions + stat.total_interventions
-      };
-    }, {
-      currentStreak: 0,
-      bestStreak: 0,
-      totalPositive: 0,
-      totalMessages: 0,
-      totalInterventions: 0
-    });
+    const aggregated = stats.reduce(
+      (acc, stat) => {
+        return {
+          currentStreak: Math.max(acc.currentStreak, stat.current_streak),
+          bestStreak: Math.max(acc.bestStreak, stat.best_streak),
+          totalPositive: acc.totalPositive + stat.total_positive_messages,
+          totalMessages: acc.totalMessages + stat.total_messages,
+          totalInterventions: acc.totalInterventions + stat.total_interventions,
+        };
+      },
+      {
+        currentStreak: 0,
+        bestStreak: 0,
+        totalPositive: 0,
+        totalMessages: 0,
+        totalInterventions: 0,
+      }
+    );
 
     // Calculate success rate (percentage of messages without intervention)
-    aggregated.successRate = aggregated.totalMessages > 0
-      ? Math.round((aggregated.totalPositive / aggregated.totalMessages) * 100)
-      : 0;
+    aggregated.successRate =
+      aggregated.totalMessages > 0
+        ? Math.round((aggregated.totalPositive / aggregated.totalMessages) * 100)
+        : 0;
 
     return aggregated;
   } catch (error) {
@@ -158,10 +172,14 @@ async function getUserStats(userId) {
  */
 async function getRoomStats(userId, roomId) {
   try {
-    const statsResult = await dbSafe.safeSelect('communication_stats', {
-      user_id: userId,
-      room_id: roomId
-    }, { limit: 1 });
+    const statsResult = await dbSafe.safeSelect(
+      'communication_stats',
+      {
+        user_id: userId,
+        room_id: roomId,
+      },
+      { limit: 1 }
+    );
 
     const stats = dbSafe.parseResult(statsResult);
 
@@ -172,7 +190,7 @@ async function getRoomStats(userId, roomId) {
         totalPositive: 0,
         totalMessages: 0,
         totalInterventions: 0,
-        successRate: 0
+        successRate: 0,
       };
     }
 
@@ -184,11 +202,12 @@ async function getRoomStats(userId, roomId) {
       totalPositive: stat.total_positive_messages,
       totalMessages: stat.total_messages,
       totalInterventions: stat.total_interventions,
-      successRate: stat.total_messages > 0
-        ? Math.round((stat.total_positive_messages / stat.total_messages) * 100)
-        : 0,
+      successRate:
+        stat.total_messages > 0
+          ? Math.round((stat.total_positive_messages / stat.total_messages) * 100)
+          : 0,
       lastMessageDate: stat.last_message_date,
-      lastInterventionDate: stat.last_intervention_date
+      lastInterventionDate: stat.last_intervention_date,
     };
   } catch (error) {
     console.error('Error getting room stats:', error);
@@ -199,5 +218,5 @@ async function getRoomStats(userId, roomId) {
 module.exports = {
   updateCommunicationStats,
   getUserStats,
-  getRoomStats
+  getRoomStats,
 };

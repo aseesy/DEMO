@@ -153,13 +153,17 @@ function formatSenderContext(context) {
 
   // Intervention history
   if (stats.total_interventions > 0) {
-    parts.push(`AI interventions: ${stats.total_interventions} total, ${((stats.acceptance_rate || 0) * 100).toFixed(0)}% accepted`);
+    parts.push(
+      `AI interventions: ${stats.total_interventions} total, ${((stats.acceptance_rate || 0) * 100).toFixed(0)}% accepted`
+    );
   }
 
   // Recent successful rewrites (what worked before)
   if (sender.recent_accepted_rewrites?.length > 0) {
     const example = sender.recent_accepted_rewrites[0];
-    parts.push(`Recent successful rewrite: "${example.original?.substring(0, 30)}..." → "${example.rewrite?.substring(0, 30)}..."`);
+    parts.push(
+      `Recent successful rewrite: "${example.original?.substring(0, 30)}..." → "${example.rewrite?.substring(0, 30)}..."`
+    );
   }
 
   // Coaching notes

@@ -75,9 +75,7 @@ describe('Temporal Decay Module', () => {
 
     it('should add _weight property to items', () => {
       const now = new Date();
-      const items = [
-        { value: 'test', timestamp: now.toISOString() },
-      ];
+      const items = [{ value: 'test', timestamp: now.toISOString() }];
 
       const result = temporalDecay.applyDecay(items, 'timestamp');
 
@@ -109,9 +107,7 @@ describe('Temporal Decay Module', () => {
 
     it('should use default timestamp field', () => {
       const now = new Date();
-      const items = [
-        { value: 'test', timestamp: now.toISOString() },
-      ];
+      const items = [{ value: 'test', timestamp: now.toISOString() }];
 
       const result = temporalDecay.applyDecay(items);
 
@@ -182,7 +178,10 @@ describe('Temporal Decay Module', () => {
         last_profile_update: now.toISOString(),
         successful_rewrites: [
           { original: 'test1', accepted_at: now.toISOString() },
-          { original: 'test2', accepted_at: new Date(now - 100 * 24 * 60 * 60 * 1000).toISOString() }, // expired
+          {
+            original: 'test2',
+            accepted_at: new Date(now - 100 * 24 * 60 * 60 * 1000).toISOString(),
+          }, // expired
         ],
       };
 

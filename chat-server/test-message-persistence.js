@@ -29,18 +29,28 @@ const colors = {
   red: '\x1b[31m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
-  cyan: '\x1b[36m'
+  cyan: '\x1b[36m',
 };
 
 function log(emoji, color, message) {
   console.log(`${emoji} ${color}${message}${colors.reset}`);
 }
 
-function success(message) { log('✅', colors.green, message); }
-function error(message) { log('❌', colors.red, message); }
-function info(message) { log('ℹ️ ', colors.blue, message); }
-function warning(message) { log('⚠️ ', colors.yellow, message); }
-function step(message) { log('📋', colors.cyan, message); }
+function success(message) {
+  log('✅', colors.green, message);
+}
+function error(message) {
+  log('❌', colors.red, message);
+}
+function info(message) {
+  log('ℹ️ ', colors.blue, message);
+}
+function warning(message) {
+  log('⚠️ ', colors.yellow, message);
+}
+function step(message) {
+  log('📋', colors.cyan, message);
+}
 
 async function testProductionServer() {
   console.log('\n' + '='.repeat(60));
@@ -55,11 +65,13 @@ async function testProductionServer() {
   try {
     const https = require('https');
     const response = await new Promise((resolve, reject) => {
-      https.get(`${PRODUCTION_URL}/health`, (res) => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => resolve({ status: res.statusCode, data }));
-      }).on('error', reject);
+      https
+        .get(`${PRODUCTION_URL}/health`, res => {
+          let data = '';
+          res.on('data', chunk => (data += chunk));
+          res.on('end', () => resolve({ status: res.statusCode, data }));
+        })
+        .on('error', reject);
     });
 
     if (response.status === 200) {
@@ -81,11 +93,13 @@ async function testProductionServer() {
   try {
     const https = require('https');
     const response = await new Promise((resolve, reject) => {
-      https.get(`${PRODUCTION_URL}/api/info`, (res) => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => resolve({ status: res.statusCode, data }));
-      }).on('error', reject);
+      https
+        .get(`${PRODUCTION_URL}/api/info`, res => {
+          let data = '';
+          res.on('data', chunk => (data += chunk));
+          res.on('end', () => resolve({ status: res.statusCode, data }));
+        })
+        .on('error', reject);
     });
 
     if (response.status === 200) {
@@ -107,7 +121,7 @@ async function testProductionServer() {
     step('\nTest 3: Database Connection');
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: 5000
+      connectionTimeoutMillis: 5000,
     });
 
     try {
@@ -131,9 +145,20 @@ async function testProductionServer() {
 
           // Required columns for persistence
           const requiredColumns = [
-            'id', 'type', 'username', 'text', 'timestamp',
-            'room_id', 'thread_id', 'socket_id', 'private',
-            'flagged', 'validation', 'tip1', 'tip2', 'rewrite'
+            'id',
+            'type',
+            'username',
+            'text',
+            'timestamp',
+            'room_id',
+            'thread_id',
+            'socket_id',
+            'private',
+            'flagged',
+            'validation',
+            'tip1',
+            'tip2',
+            'rewrite',
           ];
 
           const existingColumns = tableCheck.rows.map(row => row.column_name);
@@ -152,7 +177,9 @@ async function testProductionServer() {
           console.log('\n   Column Details:');
           tableCheck.rows.forEach(col => {
             const nullable = col.is_nullable === 'YES' ? 'NULL' : 'NOT NULL';
-            console.log(`   ${colors.cyan}- ${col.column_name}${colors.reset} (${col.data_type}, ${nullable})`);
+            console.log(
+              `   ${colors.cyan}- ${col.column_name}${colors.reset} (${col.data_type}, ${nullable})`
+            );
           });
         } else {
           error('Messages table does not exist!');
@@ -184,7 +211,9 @@ async function testProductionServer() {
           sampleResult.rows.forEach((msg, i) => {
             const preview = msg.text.substring(0, 50) + (msg.text.length > 50 ? '...' : '');
             console.log(`   ${i + 1}. [${msg.username}] ${preview}`);
-            console.log(`      Room: ${msg.room_id || 'none'}, Time: ${new Date(msg.timestamp).toLocaleString()}`);
+            console.log(
+              `      Room: ${msg.room_id || 'none'}, Time: ${new Date(msg.timestamp).toLocaleString()}`
+            );
           });
         } else {
           info('No messages in database yet');
@@ -215,7 +244,9 @@ async function testProductionServer() {
     console.log(`\n${colors.bright}${colors.green}🎉 All tests passed!${colors.reset}`);
 
     if (!process.env.DATABASE_URL) {
-      console.log(`\n${colors.yellow}💡 To test database persistence, set DATABASE_URL environment variable${colors.reset}`);
+      console.log(
+        `\n${colors.yellow}💡 To test database persistence, set DATABASE_URL environment variable${colors.reset}`
+      );
     } else {
       console.log(`\n${colors.green}✅ Message persistence is working correctly!${colors.reset}`);
     }

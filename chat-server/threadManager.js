@@ -8,7 +8,7 @@ async function createThread(roomId, title, createdBy, initialMessageId = null) {
   try {
     const db = require('./dbPostgres');
     const threadId = `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     await dbSafe.safeInsert('threads', {
       id: threadId,
       room_id: roomId,
@@ -18,7 +18,7 @@ async function createThread(roomId, title, createdBy, initialMessageId = null) {
       updated_at: new Date().toISOString(),
       message_count: initialMessageId ? 1 : 0,
       last_message_at: initialMessageId ? new Date().toISOString() : null,
-      is_archived: 0
+      is_archived: 0,
     });
 
     // If initial message provided, associate it with the thread
@@ -40,13 +40,11 @@ async function createThread(roomId, title, createdBy, initialMessageId = null) {
 async function getThreadsForRoom(roomId, includeArchived = false) {
   try {
     const db = require('./dbPostgres');
-    const whereClause = includeArchived 
-      ? { room_id: roomId }
-      : { room_id: roomId, is_archived: 0 };
-    
+    const whereClause = includeArchived ? { room_id: roomId } : { room_id: roomId, is_archived: 0 };
+
     const result = await dbSafe.safeSelect('threads', whereClause, {
       orderBy: 'updated_at',
-      orderDirection: 'DESC'
+      orderDirection: 'DESC',
     });
 
     return dbSafe.parseResult(result);
@@ -62,12 +60,13 @@ async function getThreadsForRoom(roomId, includeArchived = false) {
 async function getThreadMessages(threadId, limit = 50) {
   try {
     const db = require('./dbPostgres');
-    const result = await dbSafe.safeSelect('messages', 
+    const result = await dbSafe.safeSelect(
+      'messages',
       { thread_id: threadId, private: 0, flagged: 0 },
       {
         orderBy: 'timestamp',
         orderDirection: 'ASC',
-        limit: limit
+        limit: limit,
       }
     );
 
@@ -84,24 +83,28 @@ async function getThreadMessages(threadId, limit = 50) {
 async function addMessageToThread(messageId, threadId) {
   try {
     const db = require('./dbPostgres');
-    
+
     // Update message
     await dbSafe.safeUpdate('messages', { thread_id: threadId }, { id: messageId });
-    
+
     // Update thread stats
     const threadResult = await dbSafe.safeSelect('threads', { id: threadId }, { limit: 1 });
     const threads = dbSafe.parseResult(threadResult);
-    
+
     if (threads.length > 0) {
       const messageResult = await dbSafe.safeSelect('messages', { id: messageId }, { limit: 1 });
       const messages = dbSafe.parseResult(messageResult);
       const message = messages[0];
-      
-      await dbSafe.safeUpdate('threads', {
-        message_count: (threads[0].message_count || 0) + 1,
-        last_message_at: message?.timestamp || new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }, { id: threadId });
+
+      await dbSafe.safeUpdate(
+        'threads',
+        {
+          message_count: (threads[0].message_count || 0) + 1,
+          last_message_at: message?.timestamp || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { id: threadId }
+      );
     }
 
     // PostgreSQL auto-commits, no manual save needed
@@ -118,21 +121,25 @@ async function addMessageToThread(messageId, threadId) {
 async function removeMessageFromThread(messageId) {
   try {
     await dbSafe.safeUpdate('messages', { thread_id: null }, { id: messageId });
-    
+
     // Update thread stats
     const messageResult = await dbSafe.safeSelect('messages', { id: messageId }, { limit: 1 });
     const messages = dbSafe.parseResult(messageResult);
     const threadId = messages[0]?.thread_id;
-    
+
     if (threadId) {
       const threadResult = await dbSafe.safeSelect('threads', { id: threadId }, { limit: 1 });
       const threads = dbSafe.parseResult(threadResult);
-      
+
       if (threads.length > 0) {
-        await dbSafe.safeUpdate('threads', {
-          message_count: Math.max(0, (threads[0].message_count || 1) - 1),
-          updated_at: new Date().toISOString()
-        }, { id: threadId });
+        await dbSafe.safeUpdate(
+          'threads',
+          {
+            message_count: Math.max(0, (threads[0].message_count || 1) - 1),
+            updated_at: new Date().toISOString(),
+          },
+          { id: threadId }
+        );
       }
     }
 
@@ -149,10 +156,14 @@ async function removeMessageFromThread(messageId) {
  */
 async function updateThreadTitle(threadId, newTitle) {
   try {
-    await dbSafe.safeUpdate('threads', {
-      title: newTitle,
-      updated_at: new Date().toISOString()
-    }, { id: threadId });
+    await dbSafe.safeUpdate(
+      'threads',
+      {
+        title: newTitle,
+        updated_at: new Date().toISOString(),
+      },
+      { id: threadId }
+    );
 
     // PostgreSQL auto-commits, no manual save needed
     return true;
@@ -167,10 +178,14 @@ async function updateThreadTitle(threadId, newTitle) {
  */
 async function archiveThread(threadId, archived = true) {
   try {
-    await dbSafe.safeUpdate('threads', {
-      is_archived: archived ? 1 : 0,
-      updated_at: new Date().toISOString()
-    }, { id: threadId });
+    await dbSafe.safeUpdate(
+      'threads',
+      {
+        is_archived: archived ? 1 : 0,
+        updated_at: new Date().toISOString(),
+      },
+      { id: threadId }
+    );
 
     // PostgreSQL auto-commits, no manual save needed
     return true;
@@ -192,10 +207,13 @@ async function suggestThreadForMessage(message, recentMessages, roomId) {
   try {
     // Get existing threads for this room
     const existingThreads = await getThreadsForRoom(roomId, false);
-    
+
     // Analyze recent messages (last 10) to understand context
-    const recentContext = recentMessages.slice(-10).map(m => `${m.username}: ${m.text}`).join('\n');
-    
+    const recentContext = recentMessages
+      .slice(-10)
+      .map(m => `${m.username}: ${m.text}`)
+      .join('\n');
+
     const prompt = `Analyze this co-parenting message and determine if it:
 1. Starts a NEW topic/thread (e.g., discussing pickup times, school events, medical appointments)
 2. Belongs to an EXISTING thread (continuing a previous conversation)
@@ -206,7 +224,14 @@ Current message: ${message.username}: "${message.text}"
 Recent conversation:
 ${recentContext}
 
-${existingThreads.length > 0 ? `Existing threads:\n${existingThreads.slice(0, 5).map(t => `- ${t.title} (${t.message_count} messages)`).join('\n')}` : 'No existing threads'}
+${
+  existingThreads.length > 0
+    ? `Existing threads:\n${existingThreads
+        .slice(0, 5)
+        .map(t => `- ${t.title} (${t.message_count} messages)`)
+        .join('\n')}`
+    : 'No existing threads'
+}
 
 Respond in JSON:
 {
@@ -222,15 +247,16 @@ Respond in JSON:
       messages: [
         {
           role: 'system',
-          content: 'You are an expert at analyzing co-parenting conversations to identify distinct topics and threads. Respond only with valid JSON.'
+          content:
+            'You are an expert at analyzing co-parenting conversations to identify distinct topics and threads. Respond only with valid JSON.',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       temperature: 0.3,
-      max_tokens: 300
+      max_tokens: 300,
     });
 
     const response = completion.choices[0].message.content.trim();
@@ -243,7 +269,7 @@ Respond in JSON:
         threadTitle: suggestion.threadTitle || null,
         threadId: suggestion.threadId || null,
         confidence: suggestion.confidence,
-        reasoning: suggestion.reasoning
+        reasoning: suggestion.reasoning,
       };
     }
 
@@ -277,6 +303,5 @@ module.exports = {
   updateThreadTitle,
   archiveThread,
   suggestThreadForMessage,
-  getThread
+  getThread,
 };
-

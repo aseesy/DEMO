@@ -146,4 +146,3 @@ PASS src/liaizen/context/communication-profile/__tests__/profilePersister.test.j
 **Status**: ✅ Complete  
 **Risk**: Zero  
 **Tests**: All passing
-

@@ -3,6 +3,7 @@
 ## ⚠️ CRITICAL WARNING ⚠️
 
 This will **permanently delete ALL user data** from the production database:
+
 - All users
 - All messages
 - All conversation history
@@ -14,6 +15,7 @@ This will **permanently delete ALL user data** from the production database:
 ## Prerequisites
 
 1. **Backup First** (if needed):
+
    ```bash
    # Create a backup before wiping (optional but recommended)
    pg_dump $DATABASE_URL > backup_$(date +%Y%m%d_%H%M%S).sql
@@ -116,6 +118,7 @@ psql $DATABASE_URL < backup_YYYYMMDD_HHMMSS.sql
 ## Development vs Production
 
 The same script works for both:
+
 - **Development**: Uses local `DATABASE_URL` from `.env`
 - **Production**: Uses production `DATABASE_URL` from environment
 

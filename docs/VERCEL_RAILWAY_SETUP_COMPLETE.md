@@ -14,6 +14,7 @@
 ### Step 1: Rename Vercel Project to "DEMO" (Optional)
 
 **Option A: Rename in Dashboard**
+
 1. Go to https://vercel.com/dashboard
 2. Find project "chat-client"
 3. Settings → General → Project Name
@@ -21,6 +22,7 @@
 5. Save
 
 **Option B: Create New Project**
+
 - See `docs/VERCEL_PROJECT_RENAME.md` for details
 
 ### Step 2: Configure Railway Backend
@@ -56,6 +58,7 @@
      ```
 
 2. **Commit and Push**:
+
    ```bash
    git add chat-client/config.js
    git commit -m "Update Railway domain in config"
@@ -111,17 +114,20 @@ JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 ## 🎯 Custom Domain Setup (Later)
 
 ### Important: Domain Setup
+
 - **Domain (`coparentliaizen.com`) goes to Vercel** (frontend)
 - **Railway uses its default domain** (backend) - no custom domain needed
 - **Frontend connects to Railway domain** via `config.js`
 
 ### Vercel Domain
+
 1. Vercel Dashboard → Project → Settings → Domains
 2. Add `coparentliaizen.com` and `www.coparentliaizen.com`
 3. Vercel will provide DNS records
 4. **Remove domain from Railway** (if added) - Railway should use its default domain
 
 ### Hostinger DNS
+
 1. Go to Hostinger DNS Zone Editor
 2. **Remove any DNS records pointing to Railway** (if any)
 3. Add DNS records from Vercel:
@@ -144,4 +150,3 @@ See `docs/DOMAIN_SETUP.md` for detailed domain configuration guide.
 ---
 
 **Once Railway backend is deployed, update `config.js` with the Railway domain and you're done!** 🚀
-

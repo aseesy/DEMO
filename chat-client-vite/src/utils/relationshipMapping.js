@@ -25,7 +25,7 @@ const DISPLAY_TO_STORAGE = {
   "My Partner's Friend": 'partner-friend',
   'My Family': 'my family',
   'My Friend': 'my friend',
-  'Other': 'other',
+  Other: 'other',
 };
 
 /**
@@ -38,17 +38,17 @@ const STORAGE_TO_DISPLAY = Object.fromEntries(
 // Add common variations for backwards compatibility
 const STORAGE_VARIATIONS = {
   'co-parent': 'My Co-Parent',
-  'coparent': 'My Co-Parent',
+  coparent: 'My Co-Parent',
   'my co-parent': 'My Co-Parent',
   'my child': 'My Child',
-  'child': 'My Child',
+  child: 'My Child',
   'my partner': 'My Partner',
-  'partner': 'My Partner',
+  partner: 'My Partner',
   'my family': 'My Family',
-  'family': 'My Family',
+  family: 'My Family',
   'my friend': 'My Friend',
-  'friend': 'My Friend',
-  'other': 'Other',
+  friend: 'My Friend',
+  other: 'Other',
 };
 
 /**
@@ -104,7 +104,7 @@ export function isChildRelationship(relationship) {
   return (
     lower === 'my child' ||
     lower === 'child' ||
-    lower.includes('child') && !lower.includes('partner')
+    (lower.includes('child') && !lower.includes('partner'))
   );
 }
 
@@ -121,7 +121,7 @@ export function isCoParentRelationship(relationship) {
     lower === 'co-parent' ||
     lower === 'coparent' ||
     lower === 'my co-parent' ||
-    lower.includes('co-parent') && !lower.includes('partner')
+    (lower.includes('co-parent') && !lower.includes('partner'))
   );
 }
 

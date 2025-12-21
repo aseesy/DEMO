@@ -166,10 +166,12 @@ function buildCodeLayerPromptSection(parsed) {
   sections.push('\nCommunication patterns detected in this message:\n');
 
   // List fired axioms with human-readable descriptions
-  for (const axiom of parsed.axioms_fired) {
-    sections.push(`• ${axiom.name}`);
-    if (axiom.intent_impact_delta) {
-      sections.push(`  What this means: ${axiom.intent_impact_delta}`);
+  if (parsed.axiomsFired && Array.isArray(parsed.axiomsFired)) {
+    for (const axiom of parsed.axiomsFired) {
+      sections.push(`• ${axiom.name}`);
+      if (axiom.intent_impact_delta) {
+        sections.push(`  What this means: ${axiom.intent_impact_delta}`);
+      }
     }
   }
 
@@ -189,15 +191,15 @@ function buildCodeLayerPromptSection(parsed) {
  */
 const FORBIDDEN_EMOTIONAL_TERMS = [
   "you're angry",
-  "you seem frustrated",
-  "you feel",
+  'you seem frustrated',
+  'you feel',
   "you're upset",
   "you're hurt",
   "you're defensive",
   "you're being",
-  "you might feel",
-  "you may feel",
-  "you could feel"
+  'you might feel',
+  'you may feel',
+  'you could feel',
 ];
 
 /**
@@ -226,11 +228,9 @@ function validateAIResponse(aiResponse, parsed) {
     const axiomIds = parsed.axiomsFired.map(a => a.id);
     const axiomNames = parsed.axiomsFired.map(a => a.name.toLowerCase());
 
-    const hasAxiomReference = axiomIds.some(id =>
-      intervention.personalMessage.includes(id)
-    ) || axiomNames.some(name =>
-      intervention.personalMessage.toLowerCase().includes(name)
-    );
+    const hasAxiomReference =
+      axiomIds.some(id => intervention.personalMessage.includes(id)) ||
+      axiomNames.some(name => intervention.personalMessage.toLowerCase().includes(name));
 
     if (!hasAxiomReference) {
       errors.push(`personalMessage should reference fired Axiom(s): ${axiomIds.join(', ')}`);
@@ -271,7 +271,7 @@ function validateAIResponse(aiResponse, parsed) {
   return {
     valid: errors.length === 0,
     errors,
-    response: aiResponse
+    response: aiResponse,
   };
 }
 
@@ -290,7 +290,7 @@ async function analyzeWithCodeLayer(messageText, context = {}) {
   if (!codeLayer) {
     return {
       parsed: null,
-      quickPass: { canPass: false, reason: 'code_layer_not_available' }
+      quickPass: { canPass: false, reason: 'code_layer_not_available' },
     };
   }
 
@@ -304,14 +304,16 @@ async function analyzeWithCodeLayer(messageText, context = {}) {
     // Log analysis results
     console.log(`[CodeLayer] Analyzed: "${messageText.substring(0, 50)}..."`);
     console.log(`[CodeLayer] Axioms: ${parsed.axiomsFired.map(a => a.id).join(', ') || 'none'}`);
-    console.log(`[CodeLayer] Conflict: ${parsed.assessment.conflict_potential}, QuickPass: ${quickPass.canPass}`);
+    console.log(
+      `[CodeLayer] Conflict: ${parsed.assessment.conflict_potential}, QuickPass: ${quickPass.canPass}`
+    );
 
     return { parsed, quickPass };
   } catch (error) {
     console.error('[CodeLayerIntegration] Analysis error:', error.message);
     return {
       parsed: null,
-      quickPass: { canPass: false, reason: 'analysis_error', error: error.message }
+      quickPass: { canPass: false, reason: 'analysis_error', error: error.message },
     };
   }
 }
@@ -329,7 +331,7 @@ const metrics = {
   aiCallCount: 0,
   axiomFireCounts: {},
   avgLatencyMs: 0,
-  latencySamples: []
+  latencySamples: [],
 };
 
 /**
@@ -347,8 +349,10 @@ function recordMetrics(parsed, quickPass) {
   }
 
   // Track axiom fire counts
-  for (const axiom of parsed.axioms_fired) {
-    metrics.axiomFireCounts[axiom.id] = (metrics.axiomFireCounts[axiom.id] || 0) + 1;
+  if (parsed.axiomsFired && Array.isArray(parsed.axiomsFired)) {
+    for (const axiom of parsed.axiomsFired) {
+      metrics.axiomFireCounts[axiom.id] = (metrics.axiomFireCounts[axiom.id] || 0) + 1;
+    }
   }
 
   // Track latency
@@ -356,7 +360,8 @@ function recordMetrics(parsed, quickPass) {
   if (metrics.latencySamples.length > 100) {
     metrics.latencySamples.shift();
   }
-  metrics.avgLatencyMs = metrics.latencySamples.reduce((a, b) => a + b, 0) / metrics.latencySamples.length;
+  metrics.avgLatencyMs =
+    metrics.latencySamples.reduce((a, b) => a + b, 0) / metrics.latencySamples.length;
 }
 
 /**
@@ -365,12 +370,14 @@ function recordMetrics(parsed, quickPass) {
 function getMetrics() {
   return {
     ...metrics,
-    quickPassRate: metrics.totalAnalyzed > 0
-      ? (metrics.quickPassCount / metrics.totalAnalyzed * 100).toFixed(1) + '%'
-      : '0%',
-    aiCallRate: metrics.totalAnalyzed > 0
-      ? (metrics.aiCallCount / metrics.totalAnalyzed * 100).toFixed(1) + '%'
-      : '0%'
+    quickPassRate:
+      metrics.totalAnalyzed > 0
+        ? ((metrics.quickPassCount / metrics.totalAnalyzed) * 100).toFixed(1) + '%'
+        : '0%',
+    aiCallRate:
+      metrics.totalAnalyzed > 0
+        ? ((metrics.aiCallCount / metrics.totalAnalyzed) * 100).toFixed(1) + '%'
+        : '0%',
   };
 }
 
@@ -399,5 +406,5 @@ module.exports = {
 
   // Check if Code Layer is available
   isAvailable: () => codeLayer !== null,
-  getVersion: () => codeLayer ? codeLayer.VERSION : null
+  getVersion: () => (codeLayer ? codeLayer.VERSION : null),
 };

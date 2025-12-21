@@ -3,6 +3,7 @@
 ## Technical Context (from Codebase Analysis)
 
 ### Architecture
+
 - **Frontend**: React 18 + Vite, Tailwind CSS
 - **Backend**: Node.js + Express.js, Socket.io
 - **Database**: PostgreSQL via `pg` pool (`chat-server/dbPostgres.js`)
@@ -10,18 +11,20 @@
 - **Deployment**: Vercel (frontend), Railway (backend)
 
 ### Key Files
-| File | Purpose |
-|------|---------|
-| `chat-server/auth.js` | User creation, invitation registration |
-| `chat-server/dbSafe.js` | SQL injection prevention, parameterized queries |
-| `chat-server/dbPostgres.js` | PostgreSQL connection pool |
-| `chat-server/roomManager.js` | Room creation, membership |
-| `chat-server/libs/invitation-manager/` | Invitation token/code management |
-| `chat-client-vite/src/components/AcceptInvitationPage.jsx` | Invitation acceptance UI |
-| `chat-client-vite/src/components/LoginSignup.jsx` | Registration UI |
-| `chat-client-vite/src/hooks/useAuth.js` | Authentication hook |
+
+| File                                                       | Purpose                                         |
+| ---------------------------------------------------------- | ----------------------------------------------- |
+| `chat-server/auth.js`                                      | User creation, invitation registration          |
+| `chat-server/dbSafe.js`                                    | SQL injection prevention, parameterized queries |
+| `chat-server/dbPostgres.js`                                | PostgreSQL connection pool                      |
+| `chat-server/roomManager.js`                               | Room creation, membership                       |
+| `chat-server/libs/invitation-manager/`                     | Invitation token/code management                |
+| `chat-client-vite/src/components/AcceptInvitationPage.jsx` | Invitation acceptance UI                        |
+| `chat-client-vite/src/components/LoginSignup.jsx`          | Registration UI                                 |
+| `chat-client-vite/src/hooks/useAuth.js`                    | Authentication hook                             |
 
 ### Existing Patterns
+
 - **Database Queries**: Use `dbSafe.safeSelect()`, `dbSafe.safeInsert()`, `dbSafe.safeUpdate()`
 - **Error Handling**: Try-catch with console.error, throw for API handlers
 - **Migrations**: Non-blocking SQL files in `chat-server/migrations/`
@@ -32,10 +35,13 @@
 ## Implementation Phases
 
 ### Phase 1: Fix Critical Contact Creation Bug (CRITICAL)
+
 **Priority**: Immediate - Currently breaking all invitation acceptances
 
 #### Problem
+
 Code in `auth.js:884-895` inserts `owner_id` but `contacts` table only has `user_id`:
+
 ```javascript
 // CURRENT (BROKEN)
 await dbSafe.safeInsert('contacts', {
@@ -47,7 +53,9 @@ await dbSafe.safeInsert('contacts', {
 ```
 
 #### Solution: Use Existing Schema Correctly
+
 The `contacts` table schema is:
+
 ```sql
 CREATE TABLE contacts (
   id SERIAL PRIMARY KEY,
@@ -71,32 +79,32 @@ await dbSafe.safeInsert('contacts', {
   owner_id: user.id,
   user_id: acceptResult.inviterId,
   relationship: 'co-parent',
-  created_at: new Date().toISOString()
+  created_at: new Date().toISOString(),
 });
 await dbSafe.safeInsert('contacts', {
   owner_id: acceptResult.inviterId,
   user_id: user.id,
   relationship: 'co-parent',
-  created_at: new Date().toISOString()
+  created_at: new Date().toISOString(),
 });
 
 // CHANGE TO:
 // Add inviter to new user's contacts
 await dbSafe.safeInsert('contacts', {
-  user_id: user.id,  // Owner of contact list
+  user_id: user.id, // Owner of contact list
   contact_name: inviterUser.display_name || inviterUser.username,
   contact_email: inviterUser.email,
   relationship: 'co-parent',
-  created_at: new Date().toISOString()
+  created_at: new Date().toISOString(),
 });
 
 // Add new user to inviter's contacts
 await dbSafe.safeInsert('contacts', {
-  user_id: acceptResult.inviterId,  // Owner of contact list
+  user_id: acceptResult.inviterId, // Owner of contact list
   contact_name: displayName || user.username,
   contact_email: user.email,
   relationship: 'co-parent',
-  created_at: new Date().toISOString()
+  created_at: new Date().toISOString(),
 });
 ```
 
@@ -105,6 +113,7 @@ Location: Lines 1044-1062 (`registerFromShortCode` function) - Same fix
 Location: Lines 1140-1166 (`acceptInvitationForExistingUser` function) - Same fix
 
 #### Validation
+
 - [ ] Contact records created with correct schema
 - [ ] Both users can see each other in Contacts panel
 - [ ] No console errors during invitation acceptance
@@ -112,9 +121,11 @@ Location: Lines 1140-1166 (`acceptInvitationForExistingUser` function) - Same fi
 ---
 
 ### Phase 2: Add Transaction Wrapper for Atomic Registration (HIGH)
+
 **Priority**: High - Prevents partial/orphaned records
 
 #### Problem
+
 Registration operations are not atomic. If room creation fails after user creation, user exists but has no room.
 
 #### Solution: Add PostgreSQL Transaction Support to dbSafe
@@ -237,7 +248,7 @@ async function registerFromInvitation(params, db) {
   }
 
   // Execute all DB operations in a single transaction
-  return await dbSafe.withTransaction(async (client) => {
+  return await dbSafe.withTransaction(async client => {
     // 1. Create user
     const user = await createUserWithEmailTx(client, email, password, displayName, context);
 
@@ -269,7 +280,7 @@ async function registerFromInvitation(params, db) {
       contact_name: inviterUser.display_name || inviterUser.username,
       contact_email: inviterUser.email,
       relationship: 'co-parent',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     });
 
     await dbSafe.safeInsertWithClient(client, 'contacts', {
@@ -277,7 +288,7 @@ async function registerFromInvitation(params, db) {
       contact_name: displayName || user.username,
       contact_email: emailLower,
       relationship: 'co-parent',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     });
 
     // 6. Create notification for inviter
@@ -285,7 +296,7 @@ async function registerFromInvitation(params, db) {
       userId: acceptResult.inviterId,
       inviteeName: displayName || user.username,
       invitationId: acceptResult.invitationId,
-      roomId: sharedRoom?.roomId || null
+      roomId: sharedRoom?.roomId || null,
     });
 
     // All succeeded - transaction will commit
@@ -295,25 +306,26 @@ async function registerFromInvitation(params, db) {
         id: user.id,
         username: user.username,
         email: user.email,
-        displayName: displayName || user.username
+        displayName: displayName || user.username,
       },
       coParent: {
         id: acceptResult.inviterId,
         displayName: inviterUser.display_name,
-        emailDomain: inviterUser.email?.split('@')[1]?.split('.')[0]
+        emailDomain: inviterUser.email?.split('@')[1]?.split('.')[0],
       },
       room: sharedRoom,
       sync: {
         contactsCreated: true,
         roomJoined: true,
-        notificationSent: true
-      }
+        notificationSent: true,
+      },
     };
   });
 }
 ```
 
 #### Error Codes
+
 Add structured error responses:
 
 ```javascript
@@ -333,15 +345,18 @@ const RegistrationError = {
 ---
 
 ### Phase 3: Fix Username Generation Race Condition (MEDIUM)
+
 **Priority**: Medium - Rare but possible under high concurrency
 
 #### Problem
+
 Username uniqueness check and insert are not atomic:
+
 ```javascript
 // CURRENT (RACE CONDITION)
 while (true) {
   const existing = await dbSafe.safeSelect('users', { username }, { limit: 1 });
-  if (existing.length === 0) break;  // <- Another request could insert here
+  if (existing.length === 0) break; // <- Another request could insert here
   username = `${baseUsername}${counter++}`;
 }
 // User creation happens AFTER loop - possible duplicate key error
@@ -363,7 +378,10 @@ const crypto = require('crypto');
  */
 async function createUserWithUniqueUsername(client, baseEmail, userData, maxRetries = 5) {
   // Extract base username from email
-  let base = baseEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+  let base = baseEmail
+    .split('@')[0]
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
   if (base.length < 3) base = 'user';
   base = base.substring(0, 12); // Leave room for suffix
 
@@ -374,7 +392,9 @@ async function createUserWithUniqueUsername(client, baseEmail, userData, maxRetr
     const username = `${base}${suffix}`.substring(0, 20);
 
     try {
-      const columns = Object.keys({ username, ...userData }).map(c => `"${c}"`).join(', ');
+      const columns = Object.keys({ username, ...userData })
+        .map(c => `"${c}"`)
+        .join(', ');
       const values = [username, ...Object.values(userData)];
       const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
@@ -401,9 +421,11 @@ async function createUserWithUniqueUsername(client, baseEmail, userData, maxRetr
 ---
 
 ### Phase 4: Add Display Name Disambiguation (MEDIUM)
+
 **Priority**: Medium - Improves UX when names collide
 
 #### Problem
+
 Multiple users can have the same display name, causing confusion.
 
 #### Solution: Add Helper Functions and UI Updates
@@ -422,9 +444,8 @@ function getDisambiguatedDisplay(user, contextUsers = []) {
   const displayName = user.display_name || user.username;
 
   // Check if any other user has the same display name
-  const hasDuplicate = contextUsers.some(other =>
-    other.id !== user.id &&
-    (other.display_name || other.username) === displayName
+  const hasDuplicate = contextUsers.some(
+    other => other.id !== user.id && (other.display_name || other.username) === displayName
   );
 
   if (!hasDuplicate) {
@@ -469,12 +490,12 @@ function disambiguateContacts(contacts) {
       const domain = contact.contact_email.split('@')[1]?.split('.')[0];
       return {
         ...contact,
-        displayName: `${contact.contact_name} (${domain || contact.contact_email})`
+        displayName: `${contact.contact_name} (${domain || contact.contact_email})`,
       };
     }
     return {
       ...contact,
-      displayName: contact.contact_name
+      displayName: contact.contact_name,
     };
   });
 }
@@ -486,11 +507,10 @@ const disambiguatedContacts = disambiguateContacts(contacts);
 **File: `chat-client-vite/src/components/ProfilePanel.jsx`**
 
 Always show email below display name:
+
 ```jsx
 <div className="profile-header">
-  <h2 className="text-xl font-semibold text-[#275559]">
-    {user.display_name || user.username}
-  </h2>
+  <h2 className="text-xl font-semibold text-[#275559]">{user.display_name || user.username}</h2>
   <p className="text-sm text-gray-600">{user.email}</p>
   <p className="text-xs text-gray-400">User ID: {user.id}</p>
 </div>
@@ -499,6 +519,7 @@ Always show email below display name:
 ---
 
 ### Phase 5: Improve Invitation Acceptance UI (MEDIUM)
+
 **Priority**: Medium - Better UX and error handling
 
 #### Changes to AcceptInvitationPage.jsx
@@ -506,22 +527,24 @@ Always show email below display name:
 **1. Show Inviter Info During Registration**
 
 ```jsx
-{validationResult?.valid && (
-  <div className="mb-6 p-4 bg-[#275559]/10 rounded-lg border border-[#275559]/20">
-    <p className="text-sm text-[#275559] mb-1">You've been invited by:</p>
-    <p className="font-semibold text-[#275559]">
-      {validationResult.inviterName || 'Your co-parent'}
-      {validationResult.inviterEmailDomain && (
-        <span className="font-normal text-gray-600 ml-1">
-          ({validationResult.inviterEmailDomain})
-        </span>
-      )}
-    </p>
-    <p className="text-xs text-gray-500 mt-2">
-      Not your co-parent? Don't proceed with this invitation.
-    </p>
-  </div>
-)}
+{
+  validationResult?.valid && (
+    <div className="mb-6 p-4 bg-[#275559]/10 rounded-lg border border-[#275559]/20">
+      <p className="text-sm text-[#275559] mb-1">You've been invited by:</p>
+      <p className="font-semibold text-[#275559]">
+        {validationResult.inviterName || 'Your co-parent'}
+        {validationResult.inviterEmailDomain && (
+          <span className="font-normal text-gray-600 ml-1">
+            ({validationResult.inviterEmailDomain})
+          </span>
+        )}
+      </p>
+      <p className="text-xs text-gray-500 mt-2">
+        Not your co-parent? Don't proceed with this invitation.
+      </p>
+    </div>
+  );
+}
 ```
 
 **2. Add Confirmation Step for Short Codes**
@@ -531,125 +554,114 @@ const [isConfirmingInviter, setIsConfirmingInviter] = useState(false);
 const [confirmedInviter, setConfirmedInviter] = useState(false);
 
 // Before showing signup form for short codes:
-{shortCode && validationResult?.valid && !confirmedInviter && (
-  <div className="space-y-4">
-    <h2 className="text-xl font-semibold text-[#275559]">
-      Confirm Your Co-Parent
-    </h2>
-    <p className="text-gray-700">
-      You're accepting an invitation from:
-    </p>
-    <div className="p-4 bg-white rounded-lg border-2 border-[#275559]">
-      <p className="font-bold text-lg text-[#275559]">
-        {validationResult.inviterName}
-      </p>
-      {validationResult.inviterEmailDomain && (
-        <p className="text-sm text-gray-600">
-          Email: ...@{validationResult.inviterEmailDomain}
-        </p>
-      )}
+{
+  shortCode && validationResult?.valid && !confirmedInviter && (
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold text-[#275559]">Confirm Your Co-Parent</h2>
+      <p className="text-gray-700">You're accepting an invitation from:</p>
+      <div className="p-4 bg-white rounded-lg border-2 border-[#275559]">
+        <p className="font-bold text-lg text-[#275559]">{validationResult.inviterName}</p>
+        {validationResult.inviterEmailDomain && (
+          <p className="text-sm text-gray-600">Email: ...@{validationResult.inviterEmailDomain}</p>
+        )}
+      </div>
+      <div className="flex gap-4">
+        <Button onClick={() => setConfirmedInviter(true)} className="flex-1">
+          Yes, this is my co-parent
+        </Button>
+        <Button variant="outline" onClick={() => navigate('/')} className="flex-1">
+          No, wrong person
+        </Button>
+      </div>
     </div>
-    <div className="flex gap-4">
-      <Button
-        onClick={() => setConfirmedInviter(true)}
-        className="flex-1"
-      >
-        Yes, this is my co-parent
-      </Button>
-      <Button
-        variant="outline"
-        onClick={() => navigate('/')}
-        className="flex-1"
-      >
-        No, wrong person
-      </Button>
-    </div>
-  </div>
-)}
+  );
+}
 ```
 
 **3. Better Error States**
 
 ```jsx
 const errorMessages = {
-  'REG_001': {
+  REG_001: {
     title: 'Email Already Registered',
     message: 'This email is already associated with an account.',
     action: 'Try logging in instead.',
-    actionButton: { label: 'Go to Login', href: '/signin' }
+    actionButton: { label: 'Go to Login', href: '/signin' },
   },
-  'REG_002': {
+  REG_002: {
     title: 'Invalid Invitation',
     message: 'This invitation link is not valid.',
-    action: 'Ask your co-parent to send a new invitation.'
+    action: 'Ask your co-parent to send a new invitation.',
   },
-  'REG_003': {
+  REG_003: {
     title: 'Invitation Expired',
     message: 'This invitation has expired.',
-    action: 'Ask your co-parent to send a new invitation.'
+    action: 'Ask your co-parent to send a new invitation.',
   },
-  'REG_004': {
+  REG_004: {
     title: 'Already Accepted',
     message: 'This invitation has already been used.',
     action: 'If this was you, try logging in.',
-    actionButton: { label: 'Go to Login', href: '/signin' }
+    actionButton: { label: 'Go to Login', href: '/signin' },
   },
-  'REG_008': {
+  REG_008: {
     title: 'Inviter Not Found',
     message: 'The account that sent this invitation no longer exists.',
-    action: 'Contact support if you need assistance.'
+    action: 'Contact support if you need assistance.',
   },
-  'NETWORK_ERROR': {
+  NETWORK_ERROR: {
     title: 'Connection Error',
     message: 'Unable to reach the server.',
     action: 'Check your internet connection and try again.',
-    actionButton: { label: 'Retry', onClick: () => window.location.reload() }
-  }
+    actionButton: { label: 'Retry', onClick: () => window.location.reload() },
+  },
 };
 
 // Render error:
-{formError && (
-  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-    <h3 className="font-semibold text-red-800">
-      {errorMessages[formError.code]?.title || 'Error'}
-    </h3>
-    <p className="text-red-700 mt-1">
-      {errorMessages[formError.code]?.message || formError.message}
-    </p>
-    <p className="text-sm text-red-600 mt-2">
-      {errorMessages[formError.code]?.action}
-    </p>
-    {errorMessages[formError.code]?.actionButton && (
-      <Button
-        variant="outline"
-        className="mt-3"
-        onClick={errorMessages[formError.code].actionButton.onClick}
-        href={errorMessages[formError.code].actionButton.href}
-      >
-        {errorMessages[formError.code].actionButton.label}
-      </Button>
-    )}
-  </div>
-)}
+{
+  formError && (
+    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+      <h3 className="font-semibold text-red-800">
+        {errorMessages[formError.code]?.title || 'Error'}
+      </h3>
+      <p className="text-red-700 mt-1">
+        {errorMessages[formError.code]?.message || formError.message}
+      </p>
+      <p className="text-sm text-red-600 mt-2">{errorMessages[formError.code]?.action}</p>
+      {errorMessages[formError.code]?.actionButton && (
+        <Button
+          variant="outline"
+          className="mt-3"
+          onClick={errorMessages[formError.code].actionButton.onClick}
+          href={errorMessages[formError.code].actionButton.href}
+        >
+          {errorMessages[formError.code].actionButton.label}
+        </Button>
+      )}
+    </div>
+  );
+}
 ```
 
 **4. Success State with Animation**
 
 ```jsx
-{successMessage && (
-  <div className="text-center py-8 animate-fade-in">
-    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#6dd4b0] flex items-center justify-center">
-      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-      </svg>
+{
+  successMessage && (
+    <div className="text-center py-8 animate-fade-in">
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#6dd4b0] flex items-center justify-center">
+        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <h2 className="text-2xl font-bold text-[#275559] mb-2">Connected!</h2>
+      <p className="text-gray-700">
+        You and {validationResult?.inviterName} can now message each other.
+      </p>
+      <p className="text-sm text-gray-500 mt-4">Redirecting to chat...</p>
     </div>
-    <h2 className="text-2xl font-bold text-[#275559] mb-2">Connected!</h2>
-    <p className="text-gray-700">
-      You and {validationResult?.inviterName} can now message each other.
-    </p>
-    <p className="text-sm text-gray-500 mt-4">Redirecting to chat...</p>
-  </div>
-)}
+  );
+}
 ```
 
 ---
@@ -723,6 +735,7 @@ COMMENT ON COLUMN co_parent_relationships.status IS 'active, paused, ended';
 ### POST /api/auth/register-with-invite
 
 **New Response Structure:**
+
 ```json
 {
   "success": true,
@@ -750,6 +763,7 @@ COMMENT ON COLUMN co_parent_relationships.status IS 'active, paused, ended';
 ```
 
 **Error Response:**
+
 ```json
 {
   "success": false,
@@ -764,6 +778,7 @@ COMMENT ON COLUMN co_parent_relationships.status IS 'active, paused, ended';
 ### GET /api/invitations/validate/:token
 
 **Enhanced Response:**
+
 ```json
 {
   "valid": true,
@@ -782,14 +797,14 @@ COMMENT ON COLUMN co_parent_relationships.status IS 'active, paused, ended';
 
 Per LiaiZen design patterns:
 
-| Element | Value |
-|---------|-------|
-| Primary Color | `#275559` |
-| Success Color | `#6dd4b0` |
-| Error Background | `bg-red-50` |
-| Button Shape | `rounded-lg` (squoval) |
-| Min Touch Target | `min-h-[44px]` |
-| Card Style | `bg-white/80` with border |
+| Element                | Value                          |
+| ---------------------- | ------------------------------ |
+| Primary Color          | `#275559`                      |
+| Success Color          | `#6dd4b0`                      |
+| Error Background       | `bg-red-50`                    |
+| Button Shape           | `rounded-lg` (squoval)         |
+| Min Touch Target       | `min-h-[44px]`                 |
+| Card Style             | `bg-white/80` with border      |
 | Font Weight (Headings) | `font-semibold` or `font-bold` |
 
 ---
@@ -797,12 +812,14 @@ Per LiaiZen design patterns:
 ## Testing Checklist
 
 ### Unit Tests
+
 - [ ] `createUserWithUniqueUsername` generates unique usernames
 - [ ] `getDisambiguatedDisplay` adds email domain when needed
 - [ ] Transaction rollback works on failure
 - [ ] Contact creation uses correct schema
 
 ### Integration Tests
+
 - [ ] Full registration flow with token invitation
 - [ ] Full registration flow with short code
 - [ ] Existing user accepting invitation
@@ -810,6 +827,7 @@ Per LiaiZen design patterns:
 - [ ] Room creation failure triggers rollback
 
 ### Manual Tests
+
 1. **Happy Path - Token Invite**
    - User A creates invitation
    - User B clicks link, registers
@@ -878,5 +896,5 @@ Per LiaiZen design patterns:
 
 ---
 
-*Plan created: 2025-11-25*
-*Based on Specification: 005-user-account-invite-flow*
+_Plan created: 2025-11-25_
+_Based on Specification: 005-user-account-invite-flow_

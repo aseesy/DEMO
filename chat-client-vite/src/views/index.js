@@ -7,4 +7,4 @@
 
 export { SettingsView } from './SettingsView';
 export { DashboardView } from './DashboardView';
-export { ChatView } from './ChatView';
+export { default as ChatView } from './ChatView';

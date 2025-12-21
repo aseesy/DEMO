@@ -9,7 +9,7 @@ This document explains how all the pieces of your multi-user chat room work toge
 ## High-Level Architecture
 
 ```
-Users (Browsers) 
+Users (Browsers)
        ↓
 Frontend (React on port 3000)
        ↓
@@ -25,18 +25,21 @@ In-Memory Storage
 ## Key Components
 
 ### 1. Frontend (React Client)
+
 - What users see and interact with
 - Sends/receives messages via WebSocket
 - Validates input locally
 - Shows real-time updates
 
 ### 2. Backend (Node.js Server)
+
 - Handles all connections
 - Validates all data
 - Broadcasts messages to users
 - Manages user sessions
 
 ### 3. WebSockets
+
 - Real-time bidirectional communication
 - Instant message delivery
 - Persistent connection

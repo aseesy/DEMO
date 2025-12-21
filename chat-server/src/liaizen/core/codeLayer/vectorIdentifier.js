@@ -31,7 +31,7 @@ const CHARACTER_PATTERNS = [
   /\byou\s+(seem|sound|act)\s+like\b/gi,
   /\b(selfish|irresponsible|unreliable|lazy|controlling|manipulative)\b/gi,
   /\byou\s+don't\s+care\b/gi,
-  /\byou\s+only\s+(care|think)\s+about\s+(yourself|your)\b/gi
+  /\byou\s+only\s+(care|think)\s+about\s+(yourself|your)\b/gi,
 ];
 
 /**
@@ -45,7 +45,7 @@ const COMPETENCE_PATTERNS = [
   /\byou\s+weren't\s+able\b/gi,
   /\bincapable\b/gi,
   /\byou\s+can't\s+even\b/gi,
-  /\byou\s+always\s+(mess up|screw up|drop the ball)\b/gi
+  /\byou\s+always\s+(mess up|screw up|drop the ball)\b/gi,
 ];
 
 /**
@@ -59,7 +59,7 @@ const AUTONOMY_PATTERNS = [
   /\bit's\s+my\s+(decision|choice|call)\b/gi,
   /\byou\s+have\s+no\s+(right|say|choice)\b/gi,
   /\bi'll\s+(allow|let|permit)\b/gi,
-  /\byou\s+need\s+my\s+(permission|approval)\b/gi
+  /\byou\s+need\s+my\s+(permission|approval)\b/gi,
 ];
 
 /**
@@ -73,7 +73,7 @@ const PARENTING_PATTERNS = [
   /\bthe\s+way\s+you\s+(raise|parent|discipline)\b/gi,
   /\byou\s+(let|allow|make)\s+(her|him|them)\b/gi,
   /\bat\s+your\s+house\b/gi,
-  /\bwhen\s+(she's|he's|they're)\s+with\s+you\b/gi
+  /\bwhen\s+(she's|he's|they're)\s+with\s+you\b/gi,
 ];
 
 // ============================================================================
@@ -93,7 +93,7 @@ const CHILD_INSTRUMENT_PATTERNS = [
   /\b(she's|he's|they're|she has|he has|they have)\s+(been\s+)?(upset|sad|worried|anxious|confused|crying|struggling)\b/gi,
   /\bwhat\s+(she|he|they)\s+(said|told me|wants)\b/gi,
   /\b(since|after|because|when)\s+you\b.*\b(she|he|they|kids?|children?)\b/gi,
-  /\b(she|he|they|kids?|children?)\b.*\b(since|after|because|when)\s+you\b/gi
+  /\b(she|he|they|kids?|children?)\b.*\b(since|after|because|when)\s+you\b/gi,
 ];
 
 /**
@@ -105,7 +105,7 @@ const MONEY_INSTRUMENT_PATTERNS = [
   /\$\d+/gi,
   /\b(expense|expenses|cost|costs|bill|bills|fees?)\b/gi,
   /\bfinancial(ly)?\b/gi,
-  /\b(split|reimburse|contribute)\b/gi
+  /\b(split|reimburse|contribute)\b/gi,
 ];
 
 /**
@@ -116,7 +116,7 @@ const SCHEDULE_INSTRUMENT_PATTERNS = [
   /\b(pickup|drop-?off|visitation)\b/gi,
   /\b(schedule|calendar)\b/gi,
   /\bon\s+(my|your)\s+(days?|time)\b/gi,
-  /\bduring\s+(my|your)\s+(time|custody)\b/gi
+  /\bduring\s+(my|your)\s+(time|custody)\b/gi,
 ];
 
 /**
@@ -127,7 +127,7 @@ const THIRD_PARTY_INSTRUMENT_PATTERNS = [
   /\b(teacher|doctor|coach)\s+(said|told|mentioned|thinks)\b/gi,
   /\beveryone\s+(knows|says|thinks)\b/gi,
   /\b(my\s+)?(mom|dad|mother|father|sister|brother|family)\s+(said|told|thinks)\b/gi,
-  /\b(friends|neighbors|people)\s+(say|think|told)\b/gi
+  /\b(friends|neighbors|people)\s+(say|think|told)\b/gi,
 ];
 
 // ============================================================================
@@ -144,7 +144,7 @@ const ATTACK_AIM_PATTERNS = [
   /\bthanks\s+to\s+you\b/gi,
   /\byou('re| are)\s+(the\s+)?(worst|terrible|awful)\b/gi,
   /\bhow\s+could\s+you\b/gi,
-  /\bwhat\s+were\s+you\s+thinking\b/gi
+  /\bwhat\s+were\s+you\s+thinking\b/gi,
 ];
 
 /**
@@ -156,7 +156,7 @@ const CONTROL_AIM_PATTERNS = [
   /\byou\s+will\b/gi,
   /\byou('re| are)\s+going\s+to\b/gi,
   /\bmake\s+sure\s+you\b/gi,
-  /\bi\s+(decide|say|determine|allow)\b/gi
+  /\bi\s+(decide|say|determine|allow)\b/gi,
 ];
 
 /**
@@ -167,7 +167,7 @@ const INFORM_AIM_PATTERNS = [
   /\bi\s+wanted\s+to\s+(let\s+you\s+know|tell\s+you|inform\s+you)\b/gi,
   /\b(practice|game|appointment|event)\s+is\s+(at|on)\b/gi,
   /\bfor\s+your\s+information\b/gi,
-  /\bheads\s+up\b/gi
+  /\bheads\s+up\b/gi,
 ];
 
 /**
@@ -181,7 +181,7 @@ const REQUEST_AIM_PATTERNS = [
   /\bplease\b/gi,
   /\bi\s+(need|want|would\s+like)\b/gi,
   /\bis\s+it\s+possible\b/gi,
-  /\bwould\s+it\s+be\s+possible\b/gi
+  /\bwould\s+it\s+be\s+possible\b/gi,
 ];
 
 /**
@@ -194,7 +194,7 @@ const DEFEND_AIM_PATTERNS = [
   /\bi\s+never\s+(said|did|meant)\b/gi,
   /\byou('re| are)\s+(wrong|mistaken)\b/gi,
   /\bactually\b/gi,
-  /\bto\s+be\s+(fair|clear|honest)\b/gi
+  /\bto\s+be\s+(fair|clear|honest)\b/gi,
 ];
 
 // ============================================================================
@@ -230,7 +230,7 @@ function detectTarget(tokens, conceptual, text) {
     [TARGETS.CHARACTER]: countPatternMatches(textLower, CHARACTER_PATTERNS),
     [TARGETS.COMPETENCE]: countPatternMatches(textLower, COMPETENCE_PATTERNS),
     [TARGETS.AUTONOMY]: countPatternMatches(textLower, AUTONOMY_PATTERNS),
-    [TARGETS.PARENTING]: countPatternMatches(textLower, PARENTING_PATTERNS)
+    [TARGETS.PARENTING]: countPatternMatches(textLower, PARENTING_PATTERNS),
   };
 
   // Boost based on domain
@@ -268,7 +268,7 @@ function detectInstrument(tokens, conceptual, text) {
     [INSTRUMENTS.CHILD]: countPatternMatches(textLower, CHILD_INSTRUMENT_PATTERNS),
     [INSTRUMENTS.MONEY]: countPatternMatches(textLower, MONEY_INSTRUMENT_PATTERNS),
     [INSTRUMENTS.SCHEDULE]: countPatternMatches(textLower, SCHEDULE_INSTRUMENT_PATTERNS),
-    [INSTRUMENTS.THIRD_PARTY]: countPatternMatches(textLower, THIRD_PARTY_INSTRUMENT_PATTERNS)
+    [INSTRUMENTS.THIRD_PARTY]: countPatternMatches(textLower, THIRD_PARTY_INSTRUMENT_PATTERNS),
   };
 
   // Boost based on third party references
@@ -313,19 +313,17 @@ function detectAim(tokens, markers, text) {
     [AIMS.CONTROL]: countPatternMatches(textLower, CONTROL_AIM_PATTERNS),
     [AIMS.INFORM]: countPatternMatches(textLower, INFORM_AIM_PATTERNS),
     [AIMS.REQUEST]: countPatternMatches(textLower, REQUEST_AIM_PATTERNS),
-    [AIMS.DEFEND]: countPatternMatches(textLower, DEFEND_AIM_PATTERNS)
+    [AIMS.DEFEND]: countPatternMatches(textLower, DEFEND_AIM_PATTERNS),
   };
 
   // Boost attack score if pattern markers suggest it
   if (markers.pattern_markers) {
-    const blameMarkers = markers.pattern_markers.filter(m =>
-      m.type === 'blame' || m.type === 'global_statement' || m.type === 'character_attack'
+    const blameMarkers = markers.pattern_markers.filter(
+      m => m.type === 'blame' || m.type === 'global_statement' || m.type === 'character_attack'
     );
     scores[AIMS.ATTACK] += blameMarkers.length * 2;
 
-    const evaluativeMarkers = markers.pattern_markers.filter(m =>
-      m.type === 'evaluative'
-    );
+    const evaluativeMarkers = markers.pattern_markers.filter(m => m.type === 'evaluative');
     scores[AIMS.CONTROL] += evaluativeMarkers.length;
   }
 
@@ -388,9 +386,9 @@ function identify(tokens, conceptual, markers, context = {}, text = '') {
         receiver: context.receiverId || 'unknown',
         target: TARGETS.UNCLEAR,
         instrument: null,
-        aim: AIMS.INFORM
+        aim: AIMS.INFORM,
       },
-      latencyMs: Date.now() - startTime
+      latencyMs: Date.now() - startTime,
     };
   }
 
@@ -399,12 +397,12 @@ function identify(tokens, conceptual, markers, context = {}, text = '') {
     receiver: context.receiverId || 'unknown',
     target: detectTarget(tokens, conceptual, text),
     instrument: detectInstrument(tokens, conceptual, text),
-    aim: detectAim(tokens, markers, text)
+    aim: detectAim(tokens, markers, text),
   };
 
   return {
     vector,
-    latencyMs: Date.now() - startTime
+    latencyMs: Date.now() - startTime,
   };
 }
 
@@ -424,8 +422,7 @@ function isChildAsInstrument(vector) {
  */
 function isHostileVector(vector) {
   return (
-    vector.aim === AIMS.ATTACK ||
-    (vector.aim === AIMS.CONTROL && vector.target !== TARGETS.UNCLEAR)
+    vector.aim === AIMS.ATTACK || (vector.aim === AIMS.CONTROL && vector.target !== TARGETS.UNCLEAR)
   );
 }
 
@@ -462,5 +459,5 @@ module.exports = {
   CONTROL_AIM_PATTERNS,
   INFORM_AIM_PATTERNS,
   REQUEST_AIM_PATTERNS,
-  DEFEND_AIM_PATTERNS
+  DEFEND_AIM_PATTERNS,
 };

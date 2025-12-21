@@ -8,9 +8,14 @@
  * Constitutional Compliance:
  *   - Principle I (Library-First): Standalone module
  *   - Principle III (Contract-First): Clear interface definitions
+ *
+ * ARCHITECTURE:
+ *   - Business logic only - no direct SQL queries
+ *   - Database access via invitationRepository
  */
 
 const crypto = require('crypto');
+const { invitationRepository } = require('../../src/repositories/postgres');
 
 /**
  * Token configuration
@@ -84,78 +89,89 @@ function calculateExpiration(days = TOKEN_CONFIG.expirationDays) {
 }
 
 /**
- * Check if an email belongs to an existing user
+ * Get user by email
+ *
+ * NAMING: Using `get*` + descriptive suffix for consistency with codebase convention.
+ *
  * @param {string} email - Email to check
- * @param {object} db - Database connection
+ * @param {object} db - Database connection for dependency injection
  * @returns {Promise<object|null>} User object or null
  */
-async function findExistingUser(email, db) {
-  if (!email || !db) return null;
+async function getUserByEmail(email, db) {
+  if (!email) return null;
 
   const normalizedEmail = email.toLowerCase().trim();
 
-  const result = await db.query(
-    'SELECT id, username, email FROM users WHERE LOWER(email) = $1',
-    [normalizedEmail]
-  );
+  // Use injected db if provided (for testing), otherwise use repository
+  if (db) {
+    const result = await db.query(
+      'SELECT * FROM users WHERE LOWER(email) = $1 LIMIT 1',
+      [normalizedEmail]
+    );
+    return result.rows[0] || null;
+  }
 
-  return result.rows.length > 0 ? result.rows[0] : null;
+  // Fall back to repository for production
+  const { PostgresUserRepository } = require('../../src/repositories/postgres');
+  const userRepo = new PostgresUserRepository();
+  return userRepo.findByEmail(email);
 }
 
 /**
- * Check if user has already invited this email (active invitation exists)
+ * Get active invitation by inviter and email
+ *
+ * NAMING: Using `get*` + descriptive suffix for consistency with codebase convention.
+ *
  * @param {string} inviterId - Inviter's user ID
  * @param {string} inviteeEmail - Invitee's email
- * @param {object} db - Database connection
+ * @param {object} db - Database connection for dependency injection
  * @returns {Promise<object|null>} Existing invitation or null
  */
-async function findExistingInvitation(inviterId, inviteeEmail, db) {
-  if (!inviterId || !inviteeEmail || !db) return null;
+async function getActiveInvitationByEmail(inviterId, inviteeEmail, db) {
+  if (!inviterId || !inviteeEmail) return null;
 
-  const normalizedEmail = inviteeEmail.toLowerCase().trim();
-
-  const result = await db.query(
-    `SELECT * FROM invitations
-     WHERE inviter_id = $1
-     AND LOWER(invitee_email) = $2
-     AND status = $3
-     AND expires_at > CURRENT_TIMESTAMP`,
-    [inviterId, normalizedEmail, INVITATION_STATUS.PENDING]
+  // Use repository for database access
+  return invitationRepository.findActiveByInviterAndEmail(
+    inviterId,
+    inviteeEmail,
+    INVITATION_STATUS.PENDING,
+    db
   );
-
-  return result.rows.length > 0 ? result.rows[0] : null;
 }
 
 /**
  * Check if inviter has already reached co-parent limit (1 for MVP)
  * @param {string} inviterId - Inviter's user ID
- * @param {object} db - Database connection
+ * @param {object} db - Database connection for dependency injection
  * @returns {Promise<boolean>} True if limit reached
  */
 async function hasReachedCoparentLimit(inviterId, db) {
-  if (!inviterId || !db) return false;
+  if (!inviterId) return false;
 
-  // Count accepted invitations (both sent and received)
-  const result = await db.query(
-    `SELECT COUNT(*) as count FROM invitations
-     WHERE (inviter_id = $1 OR invitee_id = $1)
-     AND status = $2
-     AND invitation_type = $3`,
-    [inviterId, INVITATION_STATUS.ACCEPTED, INVITATION_TYPE.COPARENT]
+  // Use repository for database access
+  const count = await invitationRepository.countAcceptedForUser(
+    inviterId,
+    INVITATION_TYPE.COPARENT,
+    db
   );
 
-  return parseInt(result.rows[0].count, 10) >= 1;
+  return count >= 1;
 }
 
 /**
  * Create a new invitation
+ *
+ * CQS NOTE: This function returns generated data (token, shortCode) that cannot be
+ * retrieved later since only hashes are stored. This is an intentional exception
+ * to Command Query Separation - the returned token is ephemeral, not a database read.
+ *
  * @param {object} params - Invitation parameters
  * @param {string} params.inviterId - User ID of the person sending the invitation
  * @param {string} params.inviteeEmail - Email of the person being invited
  * @param {string} [params.roomId] - Optional room ID if room is pre-created
  * @param {string} [params.invitationType] - Type of invitation (default: coparent)
- * @param {object} db - Database connection
- * @returns {Promise<object>} Created invitation with raw token
+ * @param {object} db - Database connection (kept for backward compatibility)
+ * @returns {Promise<object>} Created invitation with raw token (ephemeral - cannot be retrieved later)
  */
 async function createInvitation(params, db) {
   const {
@@ -165,20 +181,17 @@ async function createInvitation(params, db) {
     invitationType = INVITATION_TYPE.COPARENT,
   } = params;
 
-  // Validation
+  // Validation (business rules)
   if (!inviterId) {
     throw new Error('inviterId is required');
   }
   if (!inviteeEmail) {
     throw new Error('inviteeEmail is required');
   }
-  if (!db) {
-    throw new Error('database connection is required');
-  }
 
   const normalizedEmail = inviteeEmail.toLowerCase().trim();
 
-  // Check if inviter has reached co-parent limit (MVP: 1)
+  // Business rule: Check if inviter has reached co-parent limit (MVP: 1)
   if (invitationType === INVITATION_TYPE.COPARENT) {
     const limitReached = await hasReachedCoparentLimit(inviterId, db);
     if (limitReached) {
@@ -186,14 +199,14 @@ async function createInvitation(params, db) {
     }
   }
 
-  // Check for existing active invitation
-  const existingInvitation = await findExistingInvitation(inviterId, normalizedEmail, db);
+  // Business rule: Check for existing active invitation
+  const existingInvitation = await getActiveInvitationByEmail(inviterId, normalizedEmail, db);
   if (existingInvitation) {
     throw new Error('An active invitation already exists for this email');
   }
 
   // Check if invitee is an existing user
-  const existingUser = await findExistingUser(normalizedEmail, db);
+  const existingUser = await getUserByEmail(normalizedEmail, db);
 
   // Generate secure token and short code
   const token = generateToken();
@@ -201,27 +214,18 @@ async function createInvitation(params, db) {
   const shortCode = generateShortCode();
   const expiresAt = calculateExpiration();
 
-  // Insert invitation
-  const result = await db.query(
-    `INSERT INTO invitations (
-      token_hash, inviter_id, invitee_email, invitee_id,
-      status, room_id, invitation_type, expires_at, short_code
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    RETURNING *`,
-    [
-      tokenHash,
-      inviterId,
-      normalizedEmail,
-      existingUser?.id || null,
-      INVITATION_STATUS.PENDING,
-      roomId,
-      invitationType,
-      expiresAt,
-      shortCode,
-    ]
-  );
-
-  const invitation = result.rows[0];
+  // Use repository for database insert
+  const invitation = await invitationRepository.createInvitation({
+    tokenHash,
+    inviterId,
+    inviteeEmail: normalizedEmail,
+    inviteeId: existingUser?.id || null,
+    status: INVITATION_STATUS.PENDING,
+    roomId,
+    invitationType,
+    expiresAt,
+    shortCode,
+  }, db);
 
   return {
     invitation,
@@ -234,41 +238,50 @@ async function createInvitation(params, db) {
 
 /**
  * Cancel an invitation
+ *
+ * CQS NOTE: Returns the cancelled invitation for convenience. Use getInvitationById()
+ * from invitationValidator if you need to query the invitation separately.
+ *
  * @param {number} invitationId - Invitation ID
  * @param {string} inviterId - User ID (must match inviter_id for authorization)
- * @param {object} db - Database connection
- * @returns {Promise<object>} Cancelled invitation
+ * @param {object} db - Database connection for dependency injection
+ * @returns {Promise<object>} Cancelled invitation (for convenience)
  */
 async function cancelInvitation(invitationId, inviterId, db) {
-  if (!invitationId || !inviterId || !db) {
-    throw new Error('invitationId, inviterId, and db are required');
+  if (!invitationId || !inviterId) {
+    throw new Error('invitationId and inviterId are required');
   }
 
-  const result = await db.query(
-    `UPDATE invitations
-     SET status = $1
-     WHERE id = $2 AND inviter_id = $3 AND status = $4
-     RETURNING *`,
-    [INVITATION_STATUS.CANCELLED, invitationId, inviterId, INVITATION_STATUS.PENDING]
+  // Use repository for database update
+  const invitation = await invitationRepository.updateStatusByInviter(
+    invitationId,
+    inviterId,
+    INVITATION_STATUS.PENDING,
+    INVITATION_STATUS.CANCELLED,
+    db
   );
 
-  if (result.rows.length === 0) {
+  if (!invitation) {
     throw new Error('Invitation not found or cannot be cancelled');
   }
 
-  return result.rows[0];
+  return invitation;
 }
 
 /**
  * Resend an invitation (generates new token)
+ *
+ * CQS NOTE: Returns the new token which is ephemeral (only hash stored).
+ * This is an intentional exception to Command Query Separation.
+ *
  * @param {number} invitationId - Invitation ID
  * @param {string} inviterId - User ID (must match inviter_id)
- * @param {object} db - Database connection
- * @returns {Promise<object>} Updated invitation with new token
+ * @param {object} db - Database connection for dependency injection
+ * @returns {Promise<object>} Updated invitation with new token (ephemeral)
  */
 async function resendInvitation(invitationId, inviterId, db) {
-  if (!invitationId || !inviterId || !db) {
-    throw new Error('invitationId, inviterId, and db are required');
+  if (!invitationId || !inviterId) {
+    throw new Error('invitationId and inviterId are required');
   }
 
   // Generate new token
@@ -276,28 +289,23 @@ async function resendInvitation(invitationId, inviterId, db) {
   const tokenHash = hashToken(token);
   const expiresAt = calculateExpiration();
 
-  const result = await db.query(
-    `UPDATE invitations
-     SET token_hash = $1, expires_at = $2, status = $3
-     WHERE id = $4 AND inviter_id = $5 AND status IN ($6, $7)
-     RETURNING *`,
-    [
-      tokenHash,
-      expiresAt,
-      INVITATION_STATUS.PENDING,
-      invitationId,
-      inviterId,
-      INVITATION_STATUS.PENDING,
-      INVITATION_STATUS.EXPIRED,
-    ]
+  // Use repository for database update
+  const invitation = await invitationRepository.updateTokenAndExpiration(
+    invitationId,
+    inviterId,
+    tokenHash,
+    expiresAt,
+    INVITATION_STATUS.PENDING,
+    [INVITATION_STATUS.PENDING, INVITATION_STATUS.EXPIRED],
+    db
   );
 
-  if (result.rows.length === 0) {
+  if (!invitation) {
     throw new Error('Invitation not found or cannot be resent');
   }
 
   return {
-    invitation: result.rows[0],
+    invitation,
     token,
   };
 }
@@ -306,8 +314,11 @@ module.exports = {
   createInvitation,
   cancelInvitation,
   resendInvitation,
-  findExistingUser,
-  findExistingInvitation,
+  getUserByEmail,
+  getActiveInvitationByEmail,
+  // Deprecated aliases - use getUserByEmail/getActiveInvitationByEmail instead
+  findExistingUser: getUserByEmail,
+  findExistingInvitation: getActiveInvitationByEmail,
   hasReachedCoparentLimit,
   generateToken,
   generateShortCode,

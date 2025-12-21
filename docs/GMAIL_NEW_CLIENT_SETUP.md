@@ -66,7 +66,7 @@ This guide will walk you through creating a new Gmail OAuth 2.0 client ID and se
      - Select it
    - Click "Update"
    - Click "Save and Continue"
-   
+
    **Note:** You can use the same OAuth Client ID for both Gmail email sending and Google Sign-In, or create separate ones for better security isolation.
 
 5. **Test Users (Step 3):**
@@ -101,7 +101,7 @@ This guide will walk you through creating a new Gmail OAuth 2.0 client ID and se
      - Add: `https://coparentliaizen.com/auth/google/callback` (for production Google Sign-In)
      - Add: `https://www.coparentliaizen.com/auth/google/callback` (for www subdomain Google Sign-In)
    - Click "Create"
-   
+
    **Note:** For Google Sign-In (user authentication), you need production domains because:
    - Users will sign in through the browser on your Vercel frontend
    - Google redirects back to your frontend with the authorization code
@@ -121,6 +121,7 @@ You have two options for generating a refresh token:
 ### Option A: Use the Included Script (Recommended)
 
 1. **Update the script with your new Client ID:**
+
    ```bash
    cd chat-server
    # Edit generate-gmail-refresh-token.js
@@ -128,6 +129,7 @@ You have two options for generating a refresh token:
    ```
 
 2. **Run the script:**
+
    ```bash
    node generate-gmail-refresh-token.js
    ```
@@ -203,6 +205,7 @@ If you want to hardcode the Client ID in the refresh token generator script:
 ## Step 8: Test Email Functionality
 
 1. **Restart your server:**
+
    ```bash
    cd chat-server
    node server.js
@@ -221,26 +224,31 @@ If you want to hardcode the Client ID in the refresh token generator script:
 ## Troubleshooting
 
 ### "Invalid client" error
+
 - Verify Client ID and Client Secret are correct
 - Make sure there are no extra spaces
 - Ensure you copied the complete values
 
 ### "Redirect URI mismatch" error
+
 - Go back to Google Cloud Console → Credentials
 - Check that your redirect URI is added in "Authorized redirect URIs"
 - The URI must match exactly (including `http://` vs `https://`)
 
 ### "Access denied" or "Invalid grant"
+
 - Your refresh token may have expired (rare, but can happen)
 - Regenerate the refresh token using the steps above
 - Make sure you're using the correct Gmail account
 
 ### "OAuth2 authentication failed"
+
 - Verify all environment variables are set correctly
 - Check that the refresh token was generated for the correct Gmail account
 - Make sure the OAuth consent screen is properly configured
 
 ### Emails going to spam
+
 - Gmail may flag emails from new accounts as spam initially
 - Consider setting up SPF/DKIM records for your domain (advanced)
 - For production, consider using a dedicated email service (SendGrid, Mailgun, etc.)
@@ -308,4 +316,3 @@ This is simpler but less secure than OAuth. OAuth is recommended for production.
 ---
 
 **Need Help?** Check the main Gmail setup guide: `docs/GMAIL_SETUP.md`
-

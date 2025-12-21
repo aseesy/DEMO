@@ -14,10 +14,10 @@
  */
 
 const THRESHOLDS = {
-  FULL: 30,       // 0-30 days: full weight (1.0)
-  REDUCED: 60,    // 31-60 days: reduced weight (0.7)
-  MINIMAL: 90,    // 61-90 days: minimal weight (0.3)
-  EXPIRED: 90,    // >90 days: expired (0.0)
+  FULL: 30, // 0-30 days: full weight (1.0)
+  REDUCED: 60, // 31-60 days: reduced weight (0.7)
+  MINIMAL: 90, // 61-90 days: minimal weight (0.3)
+  EXPIRED: 90, // >90 days: expired (0.0)
 };
 
 const WEIGHTS = {
@@ -101,10 +101,7 @@ function getDecayedPatterns(profile) {
   const triggers = profile.triggers || {};
 
   // Apply decay to successful rewrites
-  const decayedRewrites = applyDecay(
-    profile.successful_rewrites || [],
-    'accepted_at'
-  );
+  const decayedRewrites = applyDecay(profile.successful_rewrites || [], 'accepted_at');
 
   // Apply decay to recent interventions
   const interventionHistory = profile.intervention_history || {};

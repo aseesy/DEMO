@@ -19,9 +19,12 @@ function getApiBaseUrl() {
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
 
-    // Development - use localhost:3001
+    // Development - use same hostname as frontend but port 3001
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      return 'http://localhost:3001';
+      const hostname = window.location.hostname || 'localhost';
+      const url = `http://${hostname}:3001`;
+      console.log(`[config] Development environment detected. Origin: ${origin}, API URL: ${url}`);
+      return url;
     }
 
     // Production domains - use Railway API
@@ -35,5 +38,3 @@ function getApiBaseUrl() {
 }
 
 export const API_BASE_URL = getApiBaseUrl();
-
-

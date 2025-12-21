@@ -1,6 +1,6 @@
 /**
  * Figma Design Generator
- * 
+ *
  * Generates fully-styled design pages from component data
  * Creates pixel-perfect designs matching the actual app
  */
@@ -21,12 +21,7 @@ class FigmaDesignGenerator extends FigmaGenerator {
     try {
       const fs = require('fs');
       const path = require('path');
-      const tokensPath = path.join(
-        __dirname,
-        '..',
-        '.design-tokens-mcp',
-        'tokens.json'
-      );
+      const tokensPath = path.join(__dirname, '..', '.design-tokens-mcp', 'tokens.json');
       return JSON.parse(fs.readFileSync(tokensPath, 'utf-8'));
     } catch (error) {
       console.warn('Could not load design tokens:', error.message);
@@ -44,14 +39,19 @@ class FigmaDesignGenerator extends FigmaGenerator {
       width: 1440, // Desktop width
       height: 2000, // Will auto-size based on content
       background: { r: 0.9, g: 0.96, b: 0.96 }, // teal-lightest background
-      fills: [{ 
-        type: 'GRADIENT_LINEAR',
-        gradientStops: [
-          { position: 0, color: this.hexToRgb('#E6F7F5') }, // teal-lightest
-          { position: 1, color: { r: 1, g: 1, b: 1 } } // white
-        ],
-        gradientTransform: [[1, 0, 0], [0, 1, 0]]
-      }],
+      fills: [
+        {
+          type: 'GRADIENT_LINEAR',
+          gradientStops: [
+            { position: 0, color: this.hexToRgb('#E6F7F5') }, // teal-lightest
+            { position: 1, color: { r: 1, g: 1, b: 1 } }, // white
+          ],
+          gradientTransform: [
+            [1, 0, 0],
+            [0, 1, 0],
+          ],
+        },
+      ],
       children: this.generateStyledElements(component.structure, {
         x: 0,
         y: 0,
@@ -75,7 +75,7 @@ class FigmaDesignGenerator extends FigmaGenerator {
    */
   generateStyledElements(structure, bounds) {
     const elements = [];
-    
+
     if (!structure || !structure.children) return elements;
 
     let currentY = 0;
@@ -110,24 +110,31 @@ class FigmaDesignGenerator extends FigmaGenerator {
 
     // Apply full styling
     const styles = this.parseTailwindClasses(element.attributes?.className || '');
-    
+
     // Background color or gradient
     const className = element.attributes?.className || '';
     if (this.hasGradient(element)) {
       const gradient = this.parseGradient(className);
-      styledElement.fills = [{
-        type: 'GRADIENT_LINEAR',
-        gradientStops: [
-          { position: 0, color: this.hexToRgb(gradient.from) },
-          { position: 1, color: this.hexToRgb(gradient.to) },
-        ],
-        gradientTransform: [[1, 0, 0], [0, 1, 0]],
-      }];
+      styledElement.fills = [
+        {
+          type: 'GRADIENT_LINEAR',
+          gradientStops: [
+            { position: 0, color: this.hexToRgb(gradient.from) },
+            { position: 1, color: this.hexToRgb(gradient.to) },
+          ],
+          gradientTransform: [
+            [1, 0, 0],
+            [0, 1, 0],
+          ],
+        },
+      ];
     } else if (styles.backgroundColor && styles.backgroundColor !== 'gradient') {
-      styledElement.fills = [{
-        type: 'SOLID',
-        color: this.hexToRgb(styles.backgroundColor),
-      }];
+      styledElement.fills = [
+        {
+          type: 'SOLID',
+          color: this.hexToRgb(styles.backgroundColor),
+        },
+      ];
     } else if (element.type === 'div' && !styles.backgroundColor) {
       // Default white background for containers
       styledElement.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
@@ -136,10 +143,12 @@ class FigmaDesignGenerator extends FigmaGenerator {
     // Border - parse border color from className
     if (this.hasBorder(element)) {
       const borderColor = this.parseBorderColor(className);
-      styledElement.strokes = [{
-        type: 'SOLID',
-        color: this.hexToRgb(borderColor),
-      }];
+      styledElement.strokes = [
+        {
+          type: 'SOLID',
+          color: this.hexToRgb(borderColor),
+        },
+      ];
       // Get border width from className (border-2 = 2px)
       const borderWidthMatch = className.match(/border-(\d+)/);
       styledElement.strokeWeight = borderWidthMatch ? parseInt(borderWidthMatch[1]) : 1;
@@ -158,27 +167,31 @@ class FigmaDesignGenerator extends FigmaGenerator {
       styledElement.fontFamily = 'Inter';
       styledElement.fontWeight = this.getFontWeight(element, styles);
       styledElement.textAlignHorizontal = this.getTextAlign(element, styles);
-      
+
       if (styles.textColor) {
-        styledElement.fills = [{
-          type: 'SOLID',
-          color: this.hexToRgb(styles.textColor),
-        }];
+        styledElement.fills = [
+          {
+            type: 'SOLID',
+            color: this.hexToRgb(styles.textColor),
+          },
+        ];
       }
     }
 
     // Shadows - parse shadow size from className
     if (this.hasShadow(element)) {
       const shadow = this.parseShadow(className);
-      styledElement.effects = [{
-        type: 'DROP_SHADOW',
-        color: shadow.color,
-        offset: shadow.offset,
-        radius: shadow.radius,
-        spread: shadow.spread || 0,
-        visible: true,
-        blendMode: 'NORMAL',
-      }];
+      styledElement.effects = [
+        {
+          type: 'DROP_SHADOW',
+          color: shadow.color,
+          offset: shadow.offset,
+          radius: shadow.radius,
+          spread: shadow.spread || 0,
+          visible: true,
+          blendMode: 'NORMAL',
+        },
+      ];
     }
 
     // Padding
@@ -426,4 +439,3 @@ class FigmaDesignGenerator extends FigmaGenerator {
 }
 
 module.exports = FigmaDesignGenerator;
-

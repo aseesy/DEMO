@@ -24,11 +24,13 @@
 ## 🔧 Current Configuration
 
 ### Vercel Frontend
+
 - **Should point to**: `https://demo-production-6dcd.up.railway.app` (LiaiZen Demo)
 - **Environment Variable**: `VITE_API_URL` in Vercel dashboard
 - **Check**: Vercel Dashboard → Settings → Environment Variables → `VITE_API_URL`
 
 ### Railway Backend (LiaiZen Demo)
+
 - **Project**: LiaiZen Demo
 - **Service**: positive-recreation
 - **Domain**: `demo-production-6dcd.up.railway.app`
@@ -55,10 +57,10 @@
 1. **Go to Railway Dashboard**: https://railway.app/dashboard
 2. **Open "LiaiZen Demo" project**
 3. **Open "positive-recreation" service**
-3. **Check Settings → Source**:
+4. **Check Settings → Source**:
    - Root Directory: `chat-server`
    - Branch: `main` (or your production branch)
-4. **Check Variables**:
+5. **Check Variables**:
    - `FRONTEND_URL`: Should include Vercel domains
    - `DATABASE_URL`: Should be set (PostgreSQL)
    - `JWT_SECRET`: Should be set
@@ -78,6 +80,7 @@
 **⚠️ Warning**: Make sure this is the unused one before deleting!
 
 **To verify it's unused:**
+
 - Check Vercel `VITE_API_URL` - does it point to `demo-production-80ef` or `web-production-40b92d`?
 - If NO, then it's safe to delete
 - If YES, then you need to update Vercel first
@@ -116,4 +119,3 @@ curl https://demo-production-6dcd.up.railway.app/health
 **Don't use**: LiaiZen/production → `demo-production-80ef.up.railway.app` / `web-production-40b92d.up.railway.app`
 
 Make sure Vercel is pointing to LiaiZen Demo Railway, and you can safely delete the unused LiaiZen/production deployment.
-

@@ -16,6 +16,7 @@ This policy establishes standards and procedures for code review within the SDD 
 ## Constitutional Alignment
 
 This policy enforces:
+
 - **Principle II**: Test-First Development - Reviews verify tests exist
 - **Principle III**: Contract-First Design - Reviews check contract compliance
 - **Principle VI**: Git Operation Approval - Reviews gate all merges
@@ -27,6 +28,7 @@ This policy enforces:
 ## Scope
 
 All code changes require review before merging to main branches, including:
+
 - Feature implementations
 - Bug fixes
 - Refactoring
@@ -42,18 +44,19 @@ All code changes require review before merging to main branches, including:
 
 ### Minimum Reviewers
 
-| Change Type | Minimum Reviewers | Special Requirements |
-|-------------|------------------|---------------------|
-| Feature code | 1 | Must include domain expert |
-| Bug fix | 1 | Original author if available |
-| Refactoring | 1 | Architect review if major |
-| Security-related | 2 | security-specialist must review |
-| Infrastructure | 1 | devops-engineer must review |
-| Breaking change | 2 | Team consensus required |
+| Change Type      | Minimum Reviewers | Special Requirements            |
+| ---------------- | ----------------- | ------------------------------- |
+| Feature code     | 1                 | Must include domain expert      |
+| Bug fix          | 1                 | Original author if available    |
+| Refactoring      | 1                 | Architect review if major       |
+| Security-related | 2                 | security-specialist must review |
+| Infrastructure   | 1                 | devops-engineer must review     |
+| Breaking change  | 2                 | Team consensus required         |
 
 ### Reviewer Qualifications
 
 Reviewers must:
+
 - ✅ Have domain expertise in the changed area
 - ✅ Understand the constitutional principles
 - ✅ Be familiar with the project codebase
@@ -122,6 +125,7 @@ Reviewers must:
 ### 1. Author Preparation
 
 Before requesting review:
+
 1. Run all tests locally (`npm test` or equivalent)
 2. Run linter (`npm run lint`)
 3. Run constitutional compliance check: `.specify/scripts/bash/constitutional-check.sh`
@@ -132,6 +136,7 @@ Before requesting review:
 ### 2. Review Request
 
 Create pull request with:
+
 - **Title**: Clear, concise description
 - **Description**:
   - What changed and why
@@ -144,6 +149,7 @@ Create pull request with:
 ### 3. Reviewer Responsibilities
 
 Reviewers must:
+
 1. Review within **24 hours** (or notify of delay)
 2. Use review checklist above
 3. Leave constructive, actionable feedback
@@ -153,6 +159,7 @@ Reviewers must:
 ### 4. Addressing Feedback
 
 Authors must:
+
 1. Respond to all comments
 2. Make requested changes or explain why not
 3. Request re-review after updates
@@ -161,6 +168,7 @@ Authors must:
 ### 5. Approval & Merge
 
 Requirements for merge:
+
 - ✅ All required approvals received
 - ✅ All CI/CD checks passing
 - ✅ All conversations resolved
@@ -176,6 +184,7 @@ Requirements for merge:
 ### For Reviewers
 
 **DO**:
+
 - ✅ Be respectful and constructive
 - ✅ Explain the "why" behind suggestions
 - ✅ Praise good code
@@ -184,6 +193,7 @@ Requirements for merge:
 - ✅ Focus on important issues first
 
 **DON'T**:
+
 - ❌ Nitpick style if linter handles it
 - ❌ Block on personal preference (unless constitutional)
 - ❌ Request changes without explanation
@@ -193,6 +203,7 @@ Requirements for merge:
 ### For Authors
 
 **DO**:
+
 - ✅ Keep PRs small and focused
 - ✅ Respond promptly to feedback
 - ✅ Be open to suggestions
@@ -200,6 +211,7 @@ Requirements for merge:
 - ✅ Test thoroughly before requesting review
 
 **DON'T**:
+
 - ❌ Submit huge PRs (>500 lines)
 - ❌ Mix unrelated changes
 - ❌ Get defensive about feedback
@@ -211,6 +223,7 @@ Requirements for merge:
 ## Review Priorities
 
 ### P0: Blocking Issues (Must Fix)
+
 - Constitutional violations
 - Security vulnerabilities
 - Breaking changes without migration
@@ -218,6 +231,7 @@ Requirements for merge:
 - Critical bugs
 
 ### P1: Important Issues (Should Fix)
+
 - Performance regressions
 - Poor error handling
 - Missing documentation
@@ -225,6 +239,7 @@ Requirements for merge:
 - Incomplete test coverage
 
 ### P2: Nice to Have (Optional)
+
 - Style improvements (if not automated)
 - Refactoring opportunities
 - Future enhancements
@@ -237,6 +252,7 @@ Requirements for merge:
 ### Security Review
 
 For security-related changes:
+
 1. **Mandatory**: security-specialist review
 2. **Threat Model**: Document attack vectors
 3. **Security Tests**: Include security-specific tests
@@ -246,6 +262,7 @@ For security-related changes:
 ### Architectural Review
 
 For significant architectural changes:
+
 1. **ADR Required**: Architectural Decision Record
 2. **Team Discussion**: Synchronous meeting
 3. **Consensus**: Agreement from architects
@@ -255,6 +272,7 @@ For significant architectural changes:
 ### Dependency Review
 
 For dependency updates:
+
 1. **Justification**: Why is update needed?
 2. **Security Audit**: No known vulnerabilities
 3. **License Check**: Compatible licenses
@@ -268,6 +286,7 @@ For dependency updates:
 ### Automated Checks
 
 Required before review:
+
 - **Linting**: ESLint, Prettier, or equivalent
 - **Tests**: All tests must pass
 - **Coverage**: Code coverage threshold
@@ -277,6 +296,7 @@ Required before review:
 ### Review Aids
 
 Use these tools to assist review:
+
 - **GitHub PR**: For code review interface
 - **Constitutional Check**: Automated principle verification
 - **Spec Validation**: For specification changes
@@ -288,6 +308,7 @@ Use these tools to assist review:
 ## Metrics & Tracking
 
 Track the following metrics:
+
 - **Review Time**: Time from PR creation to first review
 - **Merge Time**: Time from PR creation to merge
 - **Review Rounds**: Number of review cycles
@@ -295,6 +316,7 @@ Track the following metrics:
 - **Defect Escape**: Bugs found in code review vs production
 
 **Targets**:
+
 - First review within 24 hours
 - Merge within 3 business days
 - ≥95% test coverage on new code
@@ -305,6 +327,7 @@ Track the following metrics:
 ## Escalation
 
 If review blocked or contentious:
+
 1. **Discussion**: Schedule synchronous discussion
 2. **Mediation**: Involve team lead or architect
 3. **Decision**: Team consensus or lead decision
@@ -317,6 +340,7 @@ If review blocked or contentious:
 ### Emergency Hotfixes
 
 For production-critical bugs:
+
 - Single reviewer acceptable
 - Merge immediately after approval
 - Post-merge review within 24 hours
@@ -325,6 +349,7 @@ For production-critical bugs:
 ### Documentation-Only Changes
 
 For pure documentation updates:
+
 - Single reviewer acceptable
 - Faster approval acceptable
 - Focus on accuracy and clarity
@@ -334,6 +359,7 @@ For pure documentation updates:
 ## Continuous Improvement
 
 This policy is reviewed quarterly. Suggest improvements via:
+
 1. Team retrospectives
 2. PR to this policy document
 3. Discussion in team meetings
@@ -343,6 +369,7 @@ This policy is reviewed quarterly. Suggest improvements via:
 ## Appendix A: Review Comment Templates
 
 ### Blocking Issue
+
 ```
 🚨 BLOCKING: [Issue description]
 
@@ -354,6 +381,7 @@ Why: [Explanation]
 ```
 
 ### Suggestion
+
 ```
 💡 SUGGESTION: [Suggestion description]
 
@@ -363,6 +391,7 @@ Benefits: [Why this is better]
 ```
 
 ### Question
+
 ```
 ❓ QUESTION: [Question]
 
@@ -370,6 +399,7 @@ Context: [Why you're asking]
 ```
 
 ### Praise
+
 ```
 ✅ NICE: [What's good]
 

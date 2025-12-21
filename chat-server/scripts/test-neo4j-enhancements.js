@@ -39,12 +39,14 @@ async function testNeo4jEnhancements() {
     const result = await neo4jClient.updateRelationshipMetadata(1, 2, 'test_room', {
       messageCount: 10,
       lastInteraction: new Date(),
-      interventionCount: 2
+      interventionCount: 2,
     });
     if (result) {
       console.log('   ✅ Relationship metadata update successful\n');
     } else {
-      console.log('   ⚠️  Relationship metadata update returned false (relationship may not exist)\n');
+      console.log(
+        '   ⚠️  Relationship metadata update returned false (relationship may not exist)\n'
+      );
     }
   } catch (error) {
     console.log(`   ⚠️  Relationship metadata update: ${error.message}\n`);
@@ -73,7 +75,9 @@ async function testNeo4jEnhancements() {
   try {
     const validation = await dbSyncValidator.runFullValidation();
     console.log(`   ✅ Sync validation complete:`);
-    console.log(`      Relationships: ${validation.relationships.checked} checked, ${validation.relationships.discrepancies?.length || 0} discrepancies`);
+    console.log(
+      `      Relationships: ${validation.relationships.checked} checked, ${validation.relationships.discrepancies?.length || 0} discrepancies`
+    );
     console.log(`      Overall valid: ${validation.overall.valid}\n`);
   } catch (error) {
     console.log(`   ⚠️  Sync validation: ${error.message}\n`);
@@ -87,7 +91,9 @@ async function testNeo4jEnhancements() {
     if (syncResult) {
       console.log('   ✅ Relationship sync successful\n');
     } else {
-      console.log('   ⚠️  Relationship sync returned false (room may not exist or not a co-parent room)\n');
+      console.log(
+        '   ⚠️  Relationship sync returned false (room may not exist or not a co-parent room)\n'
+      );
     }
   } catch (error) {
     console.log(`   ⚠️  Relationship sync: ${error.message}\n`);
@@ -101,4 +107,3 @@ testNeo4jEnhancements().catch(error => {
   console.error('❌ Test failed:', error);
   process.exit(1);
 });
-

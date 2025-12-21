@@ -1,5 +1,10 @@
 import React from 'react';
-import { getErrorMessage, logError, retryWithBackoff, isRetryableError } from '../utils/errorHandler.jsx';
+import {
+  getErrorMessage,
+  logError,
+  retryWithBackoff,
+  isRetryableError,
+} from '../utils/errorHandler.jsx';
 
 /**
  * InvitationContext - Centralized invitation state management
@@ -74,54 +79,53 @@ export function InvitationProvider({ children }) {
    * IMPORTANT: Always uses the passed parameters, not stored state
    * This ensures URL tokens take priority over cached values
    */
-  const validateInvitation = React.useCallback(async (inviteToken, inviteCode) => {
-    setIsValidating(true);
-    setError(null);
+  const validateInvitation = React.useCallback(
+    async (inviteToken, inviteCode) => {
+      setIsValidating(true);
+      setError(null);
 
-    const inviteKey = inviteToken || inviteCode;
-    if (!inviteKey) {
-      const errorInfo = getErrorMessage({ code: 'TOKEN_REQUIRED' });
-      setError(errorInfo);
-      setValidationResult({ valid: false, code: 'TOKEN_REQUIRED' });
-      setIsValidating(false);
-      return { valid: false, code: 'TOKEN_REQUIRED' };
-    }
+      const inviteKey = inviteToken || inviteCode;
+      if (!inviteKey) {
+        const errorInfo = getErrorMessage({ code: 'TOKEN_REQUIRED' });
+        setError(errorInfo);
+        setValidationResult({ valid: false, code: 'TOKEN_REQUIRED' });
+        setIsValidating(false);
+        return { valid: false, code: 'TOKEN_REQUIRED' };
+      }
 
-    // CRITICAL FIX: Clear stale sessionStorage if we're validating a new token/code
-    // This ensures URL parameters always take priority over cached values
-    const currentStoredToken = sessionStorage.getItem('invitation_token');
-    const currentStoredCode = sessionStorage.getItem('invitation_code');
+      // CRITICAL FIX: Clear stale sessionStorage if we're validating a new token/code
+      // This ensures URL parameters always take priority over cached values
+      const currentStoredToken = sessionStorage.getItem('invitation_token');
+      const currentStoredCode = sessionStorage.getItem('invitation_code');
 
-    if (inviteToken && currentStoredToken && currentStoredToken !== inviteToken) {
-      // New token from URL is different from cached token - clear the cache
-      sessionStorage.removeItem('invitation_token');
-      sessionStorage.removeItem('invitation_code');
-    } else if (inviteCode && currentStoredCode && currentStoredCode !== inviteCode) {
-      // New code from URL is different from cached code - clear the cache
-      sessionStorage.removeItem('invitation_token');
-      sessionStorage.removeItem('invitation_code');
-    }
+      if (inviteToken && currentStoredToken && currentStoredToken !== inviteToken) {
+        // New token from URL is different from cached token - clear the cache
+        sessionStorage.removeItem('invitation_token');
+        sessionStorage.removeItem('invitation_code');
+      } else if (inviteCode && currentStoredCode && currentStoredCode !== inviteCode) {
+        // New code from URL is different from cached code - clear the cache
+        sessionStorage.removeItem('invitation_token');
+        sessionStorage.removeItem('invitation_code');
+      }
 
-    // Save the current token/code to sessionStorage
-    if (inviteToken) {
-      saveInvitationState(inviteToken, null);
-    } else if (inviteCode) {
-      saveInvitationState(null, inviteCode);
-    }
+      // Save the current token/code to sessionStorage
+      if (inviteToken) {
+        saveInvitationState(inviteToken, null);
+      } else if (inviteCode) {
+        saveInvitationState(null, inviteCode);
+      }
 
-    try {
-      const { apiGet } = await import('../apiClient.js');
+      try {
+        const { apiGet } = await import('../apiClient.js');
 
-      // Use invitations API endpoints (matches how ChatRoom.jsx creates invitations)
-      // The /api/invitations/create creates entries in the invitations table,
-      // so we validate against the same table using these endpoints
-      const endpoint = inviteCode
-        ? `/api/invitations/validate-code/${encodeURIComponent(inviteCode)}`
-        : `/api/invitations/validate/${encodeURIComponent(inviteToken)}`;
+        // Use invitations API endpoints (matches how ChatRoom.jsx creates invitations)
+        // The /api/invitations/create creates entries in the invitations table,
+        // so we validate against the same table using these endpoints
+        const endpoint = inviteCode
+          ? `/api/invitations/validate-code/${encodeURIComponent(inviteCode)}`
+          : `/api/invitations/validate/${encodeURIComponent(inviteToken)}`;
 
-      const response = await retryWithBackoff(
-        () => apiGet(endpoint),
-        {
+        const response = await retryWithBackoff(() => apiGet(endpoint), {
           maxRetries: 3,
           shouldRetry: (error, statusCode) => {
             // Don't retry 4xx errors (except 429 rate limit)
@@ -130,31 +134,40 @@ export function InvitationProvider({ children }) {
             }
             return isRetryableError(error, statusCode);
           },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint });
+          logError(data, {
+            endpoint,
+            operation: 'validate_invitation',
+            token: inviteToken || inviteCode,
+          });
+          setError(errorInfo);
+          setValidationResult({ valid: false, ...data, errorInfo });
+          return { valid: false, ...data, errorInfo };
         }
-      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint });
-        logError(data, { endpoint, operation: 'validate_invitation', token: inviteToken || inviteCode });
+        setValidationResult(data);
+        return data;
+      } catch (err) {
+        const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: 'validate_invitation' });
+        logError(err, {
+          endpoint: 'validate_invitation',
+          operation: 'validate_invitation',
+          token: inviteToken || inviteCode,
+        });
         setError(errorInfo);
-        setValidationResult({ valid: false, ...data, errorInfo });
-        return { valid: false, ...data, errorInfo };
+        setValidationResult({ valid: false, code: 'NETWORK_ERROR', errorInfo });
+        return { valid: false, code: 'NETWORK_ERROR', errorInfo };
+      } finally {
+        setIsValidating(false);
       }
-
-      setValidationResult(data);
-      return data;
-    } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: 'validate_invitation' });
-      logError(err, { endpoint: 'validate_invitation', operation: 'validate_invitation', token: inviteToken || inviteCode });
-      setError(errorInfo);
-      setValidationResult({ valid: false, code: 'NETWORK_ERROR', errorInfo });
-      return { valid: false, code: 'NETWORK_ERROR', errorInfo };
-    } finally {
-      setIsValidating(false);
-    }
-  }, [saveInvitationState]);
+    },
+    [saveInvitationState]
+  );
 
   /**
    * Restore invitation state on mount
@@ -181,8 +194,8 @@ export function InvitationProvider({ children }) {
     error,
 
     // Actions
-    setToken: (newToken) => saveInvitationState(newToken, null),
-    setShortCode: (newCode) => saveInvitationState(null, newCode),
+    setToken: newToken => saveInvitationState(newToken, null),
+    setShortCode: newCode => saveInvitationState(null, newCode),
     validateInvitation,
     clearInvitationState,
     setError,

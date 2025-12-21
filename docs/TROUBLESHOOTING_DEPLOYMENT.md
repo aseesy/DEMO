@@ -26,7 +26,7 @@
 
 The changes might be cached:
 
-1. **Hard Refresh**: 
+1. **Hard Refresh**:
    - Chrome/Edge: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
    - Firefox: `Ctrl+F5` (Windows) or `Cmd+Shift+R` (Mac)
    - Safari: `Cmd+Option+R`
@@ -135,6 +135,7 @@ Check if Railway deployed the migration:
 **Symptom**: Build completes but changes don't appear
 
 **Fix**:
+
 1. Go to Vercel → Settings → General
 2. Set Root Directory to: `chat-client-vite`
 3. Save and redeploy
@@ -144,6 +145,7 @@ Check if Railway deployed the migration:
 **Symptom**: Old code still running
 
 **Fix**:
+
 1. Redeploy with "Use existing Build Cache" = OFF
 2. Or clear browser cache
 
@@ -152,6 +154,7 @@ Check if Railway deployed the migration:
 **Symptom**: Features not working (but code is deployed)
 
 **Fix**:
+
 1. Add missing environment variables in Vercel
 2. Redeploy after adding
 
@@ -160,6 +163,7 @@ Check if Railway deployed the migration:
 **Symptom**: Database errors persist
 
 **Fix**:
+
 1. Check Railway logs for migration errors
 2. Manually run migration: `node chat-server/run-migration.js`
 3. Or restart Railway service to trigger migration
@@ -177,4 +181,3 @@ If changes still don't appear after trying all above:
    - Railway deployment URL
    - Screenshot of what you're seeing
    - Browser console errors (if any)
-

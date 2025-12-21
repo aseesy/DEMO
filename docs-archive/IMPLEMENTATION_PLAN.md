@@ -24,6 +24,7 @@
 ### Architecture (from Codebase Context MCP)
 
 **Frontend:**
+
 - Path: `chat-client-vite/`
 - Framework: React 18+ with Vite
 - Styling: Tailwind CSS v4
@@ -32,6 +33,7 @@
 - Deployment: Vercel
 
 **Component Organization** (from Codebase Context MCP):
+
 ```
 chat-client-vite/src/
 ├── components/              # React components
@@ -47,14 +49,15 @@ chat-client-vite/src/
 ### Design System (from Design Tokens MCP)
 
 **Colors** (`.design-tokens-mcp/tokens.json`):
+
 ```json
 {
   "teal": {
-    "lightest": "#E6F7F5",  // Subtle backgrounds
-    "light": "#C5E8E4",      // Borders, soft backgrounds
-    "medium": "#4DA8B0",     // Interactive elements (per Codebase Context)
-    "dark": "#275559",       // Primary actions (per Codebase Context)
-    "darkest": "#1f4447"     // Hover states
+    "lightest": "#E6F7F5", // Subtle backgrounds
+    "light": "#C5E8E4", // Borders, soft backgrounds
+    "medium": "#4DA8B0", // Interactive elements (per Codebase Context)
+    "dark": "#275559", // Primary actions (per Codebase Context)
+    "darkest": "#1f4447" // Hover states
   },
   "ui": {
     "background": "#FFFFFF",
@@ -67,7 +70,7 @@ chat-client-vite/src/
     }
   },
   "semantic": {
-    "success": "#10b981",    // Note: App uses #46BD92/#6dd4b0 - needs update
+    "success": "#10b981", // Note: App uses #46BD92/#6dd4b0 - needs update
     "warning": "#f59e0b",
     "error": "#ef4444",
     "info": "#3b82f6"
@@ -76,12 +79,15 @@ chat-client-vite/src/
 ```
 
 **Spacing Scale** (from Design Tokens MCP):
+
 - xs: 4px, sm: 8px, md: 16px, lg: 24px, xl: 32px, 2xl: 48px, 3xl: 64px
 
 **Border Radius** (from Design Tokens MCP):
+
 - sm: 6px, md: 8px, lg: 12px, xl: 16px, 2xl: 24px, full: 9999px
 
 **Typography** (from Design Tokens MCP):
+
 - Font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif
 - Sizes: xs (12px) → 4xl (36px)
 - Weights: normal (400), medium (500), semibold (600), bold (700)
@@ -89,16 +95,18 @@ chat-client-vite/src/
 ### Common Patterns (from Codebase Context MCP)
 
 **Buttons** (line 99-106):
+
 ```jsx
 // Current pattern in codebase (to be replaced):
-primary: "bg-[#275559] text-white hover:bg-[#1f4447]"
-secondary: "bg-[#4DA8B0] text-white hover:bg-[#3d8a92]"
-success: "bg-[#6dd4b0] text-black"
-shape: "rounded-lg (not rounded-full)"
-minHeight: "44px (touch-friendly per best practices line 348)"
+primary: 'bg-[#275559] text-white hover:bg-[#1f4447]';
+secondary: 'bg-[#4DA8B0] text-white hover:bg-[#3d8a92]';
+success: 'bg-[#6dd4b0] text-black';
+shape: 'rounded-lg (not rounded-full)';
+minHeight: '44px (touch-friendly per best practices line 348)';
 ```
 
 **Modals** (line 74-84):
+
 ```jsx
 // Current pattern:
 zIndex: "z-[100]"
@@ -112,13 +120,14 @@ container: "max-h-full"
 ```
 
 **Forms** (line 107-113):
+
 ```jsx
 // Current pattern:
-inputHeight: "min-h-[44px]"  // Touch-friendly
-borderStyle: "border-2 border-gray-200"
-focusStyle: "focus:border-[#275559]"
-borderRadius: "rounded-lg sm:rounded-xl"
-mobileFont: "16px"  // Prevents iOS zoom
+inputHeight: 'min-h-[44px]'; // Touch-friendly
+borderStyle: 'border-2 border-gray-200';
+focusStyle: 'focus:border-[#275559]';
+borderRadius: 'rounded-lg sm:rounded-xl';
+mobileFont: '16px'; // Prevents iOS zoom
 ```
 
 ### Best Practices (from Codebase Context MCP, lines 345-360)
@@ -140,6 +149,7 @@ mobileFont: "16px"  // Prevents iOS zoom
 ### Existing Component Files (from file structure scan):
 
 **Main Components** (chat-client-vite/src/components/):
+
 - LandingPage.jsx (1,401 lines) - ⚠️ Needs major refactor
 - ContactsPanel.jsx (816 lines) - ⚠️ Needs refactor
 - Navigation.jsx (443 lines)
@@ -152,6 +162,7 @@ mobileFont: "16px"  // Prevents iOS zoom
 - Toast.jsx (needs review)
 
 **Modal Components** (chat-client-vite/src/components/modals/):
+
 - TaskFormModal.jsx
 - AddActivityModal.jsx
 - FlaggingModal.jsx
@@ -181,6 +192,7 @@ mobileFont: "16px"  // Prevents iOS zoom
 **Location:** `chat-client-vite/src/components/ui/`
 
 **Files to Create:**
+
 ```bash
 chat-client-vite/src/components/ui/
 ├── Button/
@@ -196,6 +208,7 @@ chat-client-vite/src/components/ui/
 ```
 
 **Commands:**
+
 ```bash
 cd /Users/athenasees/Desktop/chat/chat-client-vite/src/components
 mkdir -p ui/Button ui/Modal ui/Input
@@ -206,6 +219,7 @@ touch ui/index.js
 ```
 
 **Validation:**
+
 - [ ] Folder structure created
 - [ ] All index.js files present for clean imports
 
@@ -218,6 +232,7 @@ touch ui/index.js
 **Design Spec** (using Design Tokens MCP):
 
 **Variants:**
+
 - `primary`: bg-teal-dark (#275559) with hover:bg-teal-darkest (#1f4447)
 - `secondary`: bg-teal-medium (#4DA8B0) with hover:bg-teal-dark
 - `tertiary`: border-teal-dark with hover:bg-teal-lightest
@@ -225,11 +240,13 @@ touch ui/index.js
 - `danger`: bg-semantic-error with hover states
 
 **Sizes:**
+
 - `small`: px-3 py-2 text-sm (per spacing tokens)
 - `medium`: px-4 py-3 text-base (default, per spacing tokens)
 - `large`: px-6 py-4 text-lg (per spacing tokens)
 
 **Required Props:**
+
 ```jsx
 {
   variant: 'primary' | 'secondary' | 'tertiary' | 'ghost' | 'danger',
@@ -246,6 +263,7 @@ touch ui/index.js
 ```
 
 **Implementation Requirements:**
+
 - Use tokens from tailwind.config.js (teal-dark, teal-medium, etc.)
 - Min height: 44px (touch-friendly per best practices)
 - Border radius: rounded-lg (per design tokens)
@@ -255,6 +273,7 @@ touch ui/index.js
 - Loading: Show spinner with animation
 
 **Component Code:**
+
 ```jsx
 // src/components/ui/Button/Button.jsx
 import React from 'react';
@@ -262,7 +281,8 @@ import React from 'react';
 const variants = {
   primary: 'bg-teal-dark text-white hover:bg-teal-darkest disabled:bg-gray-400',
   secondary: 'bg-teal-medium text-white hover:bg-teal-dark disabled:bg-gray-400',
-  tertiary: 'border-2 border-teal-dark text-teal-dark hover:bg-teal-lightest disabled:border-gray-400 disabled:text-gray-400',
+  tertiary:
+    'border-2 border-teal-dark text-teal-dark hover:bg-teal-lightest disabled:border-gray-400 disabled:text-gray-400',
   ghost: 'text-teal-dark hover:bg-teal-lightest disabled:text-gray-400',
   danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400',
 };
@@ -287,13 +307,15 @@ export const Button = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = 'font-semibold rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2';
+  const baseClasses =
+    'font-semibold rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2';
 
   const variantClasses = variants[variant] || variants.primary;
   const sizeClasses = sizes[size] || sizes.medium;
   const widthClass = fullWidth ? 'w-full' : '';
 
-  const combinedClasses = `${baseClasses} ${variantClasses} ${sizeClasses} ${widthClass} ${className}`.trim();
+  const combinedClasses =
+    `${baseClasses} ${variantClasses} ${sizeClasses} ${widthClass} ${className}`.trim();
 
   return (
     <button
@@ -306,9 +328,25 @@ export const Button = ({
     >
       {loading ? (
         <>
-          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <svg
+            className="animate-spin h-5 w-5"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
           </svg>
           <span>Loading...</span>
         </>
@@ -327,6 +365,7 @@ export default Button;
 ```
 
 **Export File:**
+
 ```jsx
 // src/components/ui/Button/index.js
 export { Button } from './Button';
@@ -334,6 +373,7 @@ export default Button;
 ```
 
 **Testing Checklist:**
+
 - [ ] All 5 variants render correctly
 - [ ] All 3 sizes render correctly
 - [ ] fullWidth prop works
@@ -356,6 +396,7 @@ export default Button;
 **Design Spec** (using Codebase Context MCP modal pattern):
 
 **Required Props:**
+
 ```jsx
 {
   isOpen: boolean,
@@ -372,6 +413,7 @@ export default Button;
 ```
 
 **Implementation Requirements** (from Codebase Context MCP):
+
 - Z-index: z-modal (100, per design tokens)
 - Backdrop: bg-black/40
 - Positioning: fixed inset-0, flex items-center justify-center
@@ -385,6 +427,7 @@ export default Button;
 - Body scroll lock: prevent scrolling body when modal open
 
 **Component Code:**
+
 ```jsx
 // src/components/ui/Modal/Modal.jsx
 import React, { useEffect } from 'react';
@@ -413,7 +456,7 @@ export const Modal = ({
   useEffect(() => {
     if (!isOpen || !closeOnEsc) return;
 
-    const handleEscape = (e) => {
+    const handleEscape = e => {
       if (e.key === 'Escape') onClose();
     };
 
@@ -444,16 +487,19 @@ export const Modal = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
-      aria-describedby={subtitle ? "modal-subtitle" : undefined}
+      aria-describedby={subtitle ? 'modal-subtitle' : undefined}
     >
       <div
         className={`bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full ${sizeClass} flex flex-col max-h-full my-auto ${className}`}
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-ui-border flex items-center justify-between flex-shrink-0">
           <div>
-            <h3 id="modal-title" className="text-base sm:text-lg font-semibold text-ui-text-primary">
+            <h3
+              id="modal-title"
+              className="text-base sm:text-lg font-semibold text-ui-text-primary"
+            >
               {title}
             </h3>
             {subtitle && (
@@ -469,16 +515,19 @@ export const Modal = ({
               aria-label="Close modal"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           )}
         </div>
 
         {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">{children}</div>
 
         {/* Footer */}
         {footer && (
@@ -495,6 +544,7 @@ export default Modal;
 ```
 
 **Export File:**
+
 ```jsx
 // src/components/ui/Modal/index.js
 export { Modal } from './Modal';
@@ -502,6 +552,7 @@ export default Modal;
 ```
 
 **Testing Checklist:**
+
 - [ ] Modal opens and closes
 - [ ] Escape key closes modal (if enabled)
 - [ ] Overlay click closes modal (if enabled)
@@ -526,6 +577,7 @@ export default Modal;
 **Design Spec** (using Codebase Context MCP form pattern):
 
 **Required Props:**
+
 ```jsx
 {
   type: 'text' | 'email' | 'password' | 'tel' | 'number' | 'url',
@@ -545,6 +597,7 @@ export default Modal;
 ```
 
 **Implementation Requirements** (from Codebase Context MCP form pattern):
+
 - Min height: 44px (touch-friendly per best practices)
 - Border: border-2 border-ui-border (gray-200)
 - Focus: focus:border-teal-dark focus:ring-2 focus:ring-teal-medium/20
@@ -556,6 +609,7 @@ export default Modal;
 - Disabled: bg-gray-100 cursor-not-allowed
 
 **Component Code:**
+
 ```jsx
 // src/components/ui/Input/Input.jsx
 import React from 'react';
@@ -579,7 +633,8 @@ export const Input = ({
 }) => {
   const inputId = props.id || `input-${label?.toLowerCase().replace(/\s+/g, '-') || Math.random()}`;
 
-  const baseInputClasses = 'px-4 py-3 border-2 rounded-lg transition-all text-base text-ui-text-primary placeholder-ui-text-tertiary min-h-[44px] focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed';
+  const baseInputClasses =
+    'px-4 py-3 border-2 rounded-lg transition-all text-base text-ui-text-primary placeholder-ui-text-tertiary min-h-[44px] focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed';
 
   const borderClasses = error
     ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
@@ -592,10 +647,7 @@ export const Input = ({
   return (
     <div className={fullWidth ? 'w-full' : ''}>
       {label && (
-        <label
-          htmlFor={inputId}
-          className="block text-sm font-medium text-ui-text-primary mb-2"
-        >
+        <label htmlFor={inputId} className="block text-sm font-medium text-ui-text-primary mb-2">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -620,7 +672,9 @@ export const Input = ({
           className={inputClasses}
           style={icon && iconPosition === 'left' ? { paddingLeft: '2.5rem' } : {}}
           aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
+          aria-describedby={
+            error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
+          }
           aria-required={required}
           {...props}
         />
@@ -651,6 +705,7 @@ export default Input;
 ```
 
 **Export File:**
+
 ```jsx
 // src/components/ui/Input/index.js
 export { Input } from './Input';
@@ -658,6 +713,7 @@ export default Input;
 ```
 
 **Testing Checklist:**
+
 - [ ] All input types work (text, email, password, etc.)
 - [ ] Label renders and links to input (for accessibility)
 - [ ] Required indicator shows (red asterisk)
@@ -683,6 +739,7 @@ export default Input;
 **Purpose:** Clean imports for all UI components
 
 **Code:**
+
 ```js
 // src/components/ui/index.js
 export { Button } from './Button';
@@ -691,6 +748,7 @@ export { Input } from './Input';
 ```
 
 **Usage Example:**
+
 ```jsx
 // Before:
 import Button from './components/ui/Button/Button';
@@ -701,6 +759,7 @@ import { Button, Modal, Input } from './components/ui';
 ```
 
 **Validation:**
+
 - [ ] Can import all components from single import
 - [ ] No errors in VSCode/editor
 
@@ -711,6 +770,7 @@ import { Button, Modal, Input } from './components/ui';
 **Goal:** Replace 50 most-used hardcoded color instances with token classes
 
 **Priority Files** (from analysis):
+
 1. LoginSignup.jsx (214 lines, ~7 color instances)
 2. ContactsPanel.jsx (816 lines, ~15 color instances)
 3. Navigation.jsx (443 lines, ~8 color instances)
@@ -720,6 +780,7 @@ import { Button, Modal, Input } from './components/ui';
 **Find & Replace Strategy:**
 
 **Primary Teal (#275559 → teal-dark):**
+
 ```bash
 # Find: bg-[#275559]
 # Replace: bg-teal-dark
@@ -732,6 +793,7 @@ import { Button, Modal, Input } from './components/ui';
 ```
 
 **Darkest Teal (#1f4447 → teal-darkest):**
+
 ```bash
 # Find: bg-[#1f4447]
 # Replace: bg-teal-darkest
@@ -741,6 +803,7 @@ import { Button, Modal, Input } from './components/ui';
 ```
 
 **Medium Teal (#4DA8B0 → teal-medium):**
+
 ```bash
 # Find: bg-[#4DA8B0]
 # Replace: bg-teal-medium
@@ -750,6 +813,7 @@ import { Button, Modal, Input } from './components/ui';
 ```
 
 **Success/Focus Colors (#46BD92, #6dd4b0):**
+
 ```bash
 # Note: These aren't in Design Tokens MCP yet
 # Need to add to tokens.json first, OR use teal-medium as alternative
@@ -762,6 +826,7 @@ import { Button, Modal, Input } from './components/ui';
 ```
 
 **UI Colors:**
+
 ```bash
 # Find: border-[#E5E7EB]
 # Replace: border-ui-border
@@ -774,6 +839,7 @@ import { Button, Modal, Input } from './components/ui';
 ```
 
 **Process per File:**
+
 1. Open file in editor
 2. Use Find & Replace (Cmd+H / Ctrl+H)
 3. Replace all instances of one color at a time
@@ -781,6 +847,7 @@ import { Button, Modal, Input } from './components/ui';
 5. Commit changes with message: "refactor: replace hardcoded colors in [filename]"
 
 **Validation per File:**
+
 - [ ] No hardcoded hex colors remain (`bg-[#` search returns 0)
 - [ ] Visual regression test passed (compare before/after screenshots)
 - [ ] All hover states work
@@ -794,6 +861,7 @@ import { Button, Modal, Input } from './components/ui';
 ## 🔄 Phase 1 Summary
 
 **Deliverables:**
+
 - ✅ Button component with 5 variants, 3 sizes
 - ✅ Modal component with accessibility features
 - ✅ Input component with validation states
@@ -806,6 +874,7 @@ import { Button, Modal, Input } from './components/ui';
 **Completion:** End of Week 1
 
 **Success Metrics:**
+
 - [ ] All 3 components pass testing checklists
 - [ ] Can use `import { Button, Modal, Input } from './components/ui'`
 - [ ] 50 hardcoded color instances eliminated
@@ -856,6 +925,7 @@ import { Button, Modal, Input } from './components/ui';
 **Replacement Pattern:**
 
 **Before:**
+
 ```jsx
 <button
   className="w-full mt-2 bg-[#275559] text-white py-3 rounded-lg font-semibold text-base shadow-sm hover:bg-[#1f4447] transition-colors disabled:bg-gray-400"
@@ -867,6 +937,7 @@ import { Button, Modal, Input } from './components/ui';
 ```
 
 **After:**
+
 ```jsx
 import { Button } from '../components/ui';
 
@@ -879,10 +950,11 @@ import { Button } from '../components/ui';
   loading={loading}
 >
   Submit
-</Button>
+</Button>;
 ```
 
 **Process per File:**
+
 1. Add import: `import { Button } from '../components/ui';` (adjust path)
 2. Find first button element
 3. Determine variant (primary/secondary/tertiary/ghost/danger)
@@ -895,6 +967,7 @@ import { Button } from '../components/ui';
 10. Commit: "refactor: replace buttons with Button component in [filename]"
 
 **Validation per File:**
+
 - [ ] All buttons replaced
 - [ ] Visual regression test passed
 - [ ] All onClick handlers work
@@ -913,6 +986,7 @@ import { Button } from '../components/ui';
 **Strategy:** Wrap existing content with new Modal component
 
 **Files to Refactor:**
+
 1. ProfileTaskModal.jsx (smallest)
 2. WelcomeModal.jsx
 3. FlaggingModal.jsx
@@ -923,26 +997,28 @@ import { Button } from '../components/ui';
 **Refactor Pattern:**
 
 **Before:**
+
 ```jsx
-{isOpen && (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 pb-24 md:pb-4 overflow-y-auto">
-    <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl flex flex-col max-h-full my-auto">
-      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-base sm:text-lg font-semibold">Add Task</h3>
-        <button onClick={onClose}>×</button>
-      </div>
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
-        {/* Content */}
-      </div>
-      <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex gap-2 justify-end">
-        {/* Footer buttons */}
+{
+  isOpen && (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 pb-24 md:pb-4 overflow-y-auto">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl flex flex-col max-h-full my-auto">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 className="text-base sm:text-lg font-semibold">Add Task</h3>
+          <button onClick={onClose}>×</button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">{/* Content */}</div>
+        <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex gap-2 justify-end">
+          {/* Footer buttons */}
+        </div>
       </div>
     </div>
-  </div>
-)}
+  );
+}
 ```
 
 **After:**
+
 ```jsx
 import { Modal, Button } from '../ui';
 
@@ -953,16 +1029,21 @@ import { Modal, Button } from '../ui';
   size="medium"
   footer={
     <>
-      <Button variant="ghost" onClick={onClose}>Cancel</Button>
-      <Button variant="primary" onClick={handleSave}>Save</Button>
+      <Button variant="ghost" onClick={onClose}>
+        Cancel
+      </Button>
+      <Button variant="primary" onClick={handleSave}>
+        Save
+      </Button>
     </>
   }
 >
   {/* Content (unchanged) */}
-</Modal>
+</Modal>;
 ```
 
 **Process per File:**
+
 1. Add import: `import { Modal, Button } from '../ui';`
 2. Identify modal structure (overlay, container, header, content, footer)
 3. Extract title from header
@@ -974,6 +1055,7 @@ import { Modal, Button } from '../ui';
 9. Commit: "refactor: replace modal wrapper in [filename]"
 
 **Validation per File:**
+
 - [ ] Modal opens and closes correctly
 - [ ] Escape key closes (if enabled)
 - [ ] Overlay click closes (if enabled)
@@ -993,6 +1075,7 @@ import { Modal, Button } from '../ui';
 **Strategy:** Replace all text inputs with Input component
 
 **Files with Forms:**
+
 1. LoginSignup.jsx (email, password inputs)
 2. ProfilePanel.jsx (name, email, phone, etc.)
 3. ContactsPanel.jsx (search, contact form fields)
@@ -1002,6 +1085,7 @@ import { Modal, Button } from '../ui';
 **Replacement Pattern:**
 
 **Before:**
+
 ```jsx
 <div>
   <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-2">
@@ -1013,16 +1097,15 @@ import { Modal, Button } from '../ui';
     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#275559] transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px]"
     placeholder="you@example.com"
     value={email}
-    onChange={(e) => setEmail(e.target.value)}
+    onChange={e => setEmail(e.target.value)}
     required
   />
-  {errors.email && (
-    <p className="mt-2 text-sm text-red-500">{errors.email}</p>
-  )}
+  {errors.email && <p className="mt-2 text-sm text-red-500">{errors.email}</p>}
 </div>
 ```
 
 **After:**
+
 ```jsx
 import { Input } from '../components/ui';
 
@@ -1031,13 +1114,14 @@ import { Input } from '../components/ui';
   label="Email Address"
   placeholder="you@example.com"
   value={email}
-  onChange={(e) => setEmail(e.target.value)}
+  onChange={e => setEmail(e.target.value)}
   error={errors.email}
   required
-/>
+/>;
 ```
 
 **Process per File:**
+
 1. Add import: `import { Input } from '../components/ui';`
 2. Find all input elements
 3. Identify input type (text, email, password, etc.)
@@ -1048,6 +1132,7 @@ import { Input } from '../components/ui';
 8. Commit: "refactor: replace inputs with Input component in [filename]"
 
 **Validation per File:**
+
 - [ ] All inputs replaced
 - [ ] Labels render and link correctly
 - [ ] Required indicators show
@@ -1070,6 +1155,7 @@ import { Input } from '../components/ui';
 **Strategy:** Systematic grep and replace across entire codebase
 
 **Find All Remaining Hardcoded Colors:**
+
 ```bash
 cd /Users/athenasees/Desktop/chat/chat-client-vite/src
 grep -r "bg-\[#" . --include="*.jsx" --include="*.js" | wc -l
@@ -1078,6 +1164,7 @@ grep -r "border-\[#" . --include="*.jsx" --include="*.js" | wc -l
 ```
 
 **Replacement Commands:**
+
 ```bash
 # Find & Replace in VSCode (Cmd+Shift+H):
 # Search in: chat-client-vite/src
@@ -1111,6 +1198,7 @@ text-\[#9ca3af\] → text-ui-text-tertiary
 ```
 
 **Process:**
+
 1. Run find command to count remaining instances
 2. Use global find & replace in VSCode
 3. Replace one color pattern at a time
@@ -1119,6 +1207,7 @@ text-\[#9ca3af\] → text-ui-text-tertiary
 6. Commit: "refactor: complete color token migration"
 
 **Validation:**
+
 - [ ] Zero hardcoded hex colors remain
 - [ ] Build succeeds with no errors
 - [ ] All pages load correctly
@@ -1132,6 +1221,7 @@ text-\[#9ca3af\] → text-ui-text-tertiary
 ## 🔄 Phase 2 Summary
 
 **Deliverables:**
+
 - ✅ All 45 buttons replaced with Button component
 - ✅ All 6 modals refactored with Modal component
 - ✅ All 30+ inputs replaced with Input component
@@ -1143,6 +1233,7 @@ text-\[#9ca3af\] → text-ui-text-tertiary
 **Completion:** End of Week 2
 
 **Success Metrics:**
+
 - [ ] Token usage: 50% → 90%+
 - [ ] Button duplicates: 45 → 1 component
 - [ ] Modal duplicates: 6 → 1 component
@@ -1196,6 +1287,7 @@ text-\[#9ca3af\] → text-ui-text-tertiary
 **Goal:** Replace arbitrary spacing with token-based spacing
 
 **Find Arbitrary Spacing Values:**
+
 ```bash
 grep -r "px-\[" chat-client-vite/src --include="*.jsx" | wc -l
 grep -r "py-\[" chat-client-vite/src --include="*.jsx" | wc -l
@@ -1204,6 +1296,7 @@ grep -r "mb-\[" chat-client-vite/src --include="*.jsx" | wc -l
 ```
 
 **Replacement Strategy:**
+
 ```bash
 # Round to nearest token value:
 px-\[18px\] → px-4 (16px) or px-5 (20px)
@@ -1241,6 +1334,7 @@ mb-\[22px\] → mb-6 (24px) or mb-5 (20px)
 ## 🔄 Phase 3 Summary
 
 **Deliverables:**
+
 - ✅ 6 additional UI components (optional)
 - ✅ Spacing standardization complete
 - ✅ Component documentation
@@ -1255,6 +1349,7 @@ mb-\[22px\] → mb-6 (24px) or mb-5 (20px)
 ### Pre-Deployment Checklist
 
 **Code Quality:**
+
 - [ ] Zero hardcoded hex colors (`grep -r "bg-\[#"` returns 0)
 - [ ] < 10 arbitrary Tailwind values (`grep -r "px-\["` < 10)
 - [ ] All buttons use `<Button>` component
@@ -1264,6 +1359,7 @@ mb-\[22px\] → mb-6 (24px) or mb-5 (20px)
 - [ ] No console errors
 
 **Visual Regression:**
+
 - [ ] Homepage loads correctly
 - [ ] Login/signup page matches design
 - [ ] Dashboard displays correctly
@@ -1275,6 +1371,7 @@ mb-\[22px\] → mb-6 (24px) or mb-5 (20px)
 - [ ] Focus states visible
 
 **Mobile Testing:**
+
 - [ ] All pages load on iPhone/Android
 - [ ] Touch targets ≥ 44px
 - [ ] No iOS zoom on input focus (font ≥ 16px)
@@ -1283,6 +1380,7 @@ mb-\[22px\] → mb-6 (24px) or mb-5 (20px)
 - [ ] Buttons responsive (full-width on mobile)
 
 **Accessibility:**
+
 - [ ] Keyboard navigation works
 - [ ] Focus visible on all interactive elements
 - [ ] ARIA labels correct
@@ -1290,6 +1388,7 @@ mb-\[22px\] → mb-6 (24px) or mb-5 (20px)
 - [ ] Color contrast ≥ 4.5:1 (WCAG AA)
 
 **Performance:**
+
 - [ ] Build size acceptable (< 500KB JS)
 - [ ] No layout shifts
 - [ ] Fast input response
@@ -1300,31 +1399,34 @@ mb-\[22px\] → mb-6 (24px) or mb-5 (20px)
 
 ### Quantitative Metrics
 
-| Metric | Before | Target | Verification |
-|--------|--------|--------|--------------|
-| Hardcoded Colors | 120+ | 0 | `grep -r "bg-\[#"` = 0 |
-| Arbitrary Values | ~200 | < 10 | `grep -r "\["` < 10 |
-| Button Components | 45 | 1-2 | Count `<Button` uses |
-| Modal Components | 6 | 1 | Count `<Modal` uses |
-| Input Components | 30+ | 1-2 | Count `<Input` uses |
-| Token Usage | 30% | 95%+ | Code review |
-| Build Errors | N/A | 0 | `npm run build` |
+| Metric            | Before | Target | Verification           |
+| ----------------- | ------ | ------ | ---------------------- |
+| Hardcoded Colors  | 120+   | 0      | `grep -r "bg-\[#"` = 0 |
+| Arbitrary Values  | ~200   | < 10   | `grep -r "\["` < 10    |
+| Button Components | 45     | 1-2    | Count `<Button` uses   |
+| Modal Components  | 6      | 1      | Count `<Modal` uses    |
+| Input Components  | 30+    | 1-2    | Count `<Input` uses    |
+| Token Usage       | 30%    | 95%+   | Code review            |
+| Build Errors      | N/A    | 0      | `npm run build`        |
 
 ### Qualitative Goals
 
 ✅ **Developer Experience:**
+
 - New features use design system by default
 - Design changes = token updates only
 - Component props self-documenting
 - Consistent coding patterns
 
 ✅ **Brand Consistency:**
+
 - All teal colors from tokens
 - Consistent button styling
 - Consistent spacing rhythm
 - Consistent typography
 
 ✅ **Maintainability:**
+
 - Monthly maintenance: 8-12h → 2-3h (75% reduction)
 - Bug count: -60% (estimated)
 - Feature implementation: -40% faster (estimated)
@@ -1380,12 +1482,14 @@ touch ui/index.js
 ```
 
 ### This Week (Phase 1):
+
 - Create Button, Modal, Input components
 - Replace 20 most-used buttons
 - Refactor 2 smallest modals
 - Replace 50 hardcoded colors
 
 ### This Month (Phases 1-2):
+
 - Complete all component migrations
 - Achieve 95%+ token usage
 - Zero hardcoded colors
@@ -1396,11 +1500,13 @@ touch ui/index.js
 ## 📞 Support & Questions
 
 **Documentation:**
+
 - Design System Audit: `DESIGN_SYSTEM_AUDIT.md`
 - Inconsistencies Guide: `DESIGN_INCONSISTENCIES_EXAMPLES.md`
 - Quick Reference: `QUICK_REFERENCE_GUIDE.md`
 
 **For Implementation Questions:**
+
 - Refer to Codebase Context MCP for patterns
 - Refer to Design Tokens MCP for values
 - Check CLAUDE.md for project conventions
@@ -1409,4 +1515,4 @@ touch ui/index.js
 
 **End of Implementation Plan**
 
-*This is a living document - update as implementation progresses.*
+_This is a living document - update as implementation progresses._

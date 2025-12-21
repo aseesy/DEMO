@@ -15,7 +15,7 @@ chat-server/libs/communication-profile/mediationContext.js - Context building fo
 chat-server/libs/communication-profile/profileLoader.js - Loads user communication profiles
 chat-server/libs/communication-profile/profilePersister.js - Saves/updates communication profiles
 chat-server/libs/communication-profile/temporalDecay.js - Temporal decay logic for profiles
-chat-server/libs/communication-profile/__tests__/mediationContext.test.js - Tests for mediation context
+chat-server/libs/communication-profile/**tests**/mediationContext.test.js - Tests for mediation context
 Language Analysis
 chat-server/libs/language-analyzer/index.js - Language analysis library
 specs/005-language-analyzer/spec.md - Language analyzer specification

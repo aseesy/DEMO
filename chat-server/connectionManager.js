@@ -36,7 +36,7 @@ async function emailExists(email) {
   if (!validateEmail(email)) {
     return false;
   }
-  
+
   const emailLower = email.trim().toLowerCase();
   const result = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
   return dbSafe.parseResult(result).length > 0;
@@ -49,20 +49,20 @@ async function getUserByEmail(email) {
   if (!validateEmail(email)) {
     return null;
   }
-  
+
   const emailLower = email.trim().toLowerCase();
   const result = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
   const users = dbSafe.parseResult(result);
-  
+
   if (users.length === 0) {
     return null;
   }
-  
+
   const user = users[0];
   return {
     id: user.id,
     username: user.username,
-    email: user.email
+    email: user.email,
   };
 }
 
@@ -74,31 +74,29 @@ async function createPendingConnection(inviterId, inviteeEmail) {
   if (!validateEmail(inviteeEmail)) {
     throw new Error('Invalid email format');
   }
-  
+
   const token = generateInviteToken();
   const now = new Date().toISOString();
   // Token expires in 7 days
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const emailLower = inviteeEmail.trim().toLowerCase();
-  
+
   try {
     // Check if there's already a pending connection from this inviter to this email
-    // Use safeExec for complex query with datetime comparison
-    const db = await getDb();
     const existingQuery = `SELECT * FROM pending_connections 
-      WHERE inviter_id = ${parseInt(inviterId)} 
-      AND invitee_email = ${dbSafe.escapeSQL(emailLower)}
+      WHERE inviter_id = $1 
+      AND invitee_email = $2
       AND status = 'pending'
-      AND datetime(expires_at) > datetime('now')
+      AND expires_at > NOW()
       LIMIT 1`;
-    
-    const existing = db.exec(existingQuery);
-    
-    if (existing.length > 0 && existing[0].values.length > 0) {
+
+    const existingResult = await dbModule.query(existingQuery, [parseInt(inviterId), emailLower]);
+    const existing = existingResult.rows;
+
+    if (existing.length > 0) {
       // Return existing pending connection
-      const connections = dbSafe.parseResult(existing);
-      const connection = connections[0];
-      
+      const connection = existing[0];
+
       return {
         id: connection.id,
         token: connection.token,
@@ -107,10 +105,10 @@ async function createPendingConnection(inviterId, inviteeEmail) {
         status: connection.status,
         expiresAt: connection.expires_at,
         createdAt: connection.created_at,
-        isNew: false
+        isNew: false,
       };
     }
-    
+
     // Create new pending connection using safe insert
     const connectionId = await dbSafe.safeInsert('pending_connections', {
       inviter_id: inviterId,
@@ -118,9 +116,9 @@ async function createPendingConnection(inviterId, inviteeEmail) {
       token: token,
       status: 'pending',
       expires_at: expiresAt,
-      created_at: now
+      created_at: now,
     });
-    
+
     return {
       id: connectionId,
       token,
@@ -129,7 +127,7 @@ async function createPendingConnection(inviterId, inviteeEmail) {
       status: 'pending',
       expiresAt,
       createdAt: now,
-      isNew: true
+      isNew: true,
     };
   } catch (error) {
     console.error('Error creating pending connection:', error);
@@ -144,24 +142,23 @@ async function validateConnectionToken(token) {
   if (!token || typeof token !== 'string') {
     return null;
   }
-  
-  // Use safeExec for complex query with datetime comparison
-  const db = await getDb();
+
+  // Use parameterized query for security and PostgreSQL compatibility
   const query = `SELECT * FROM pending_connections
-    WHERE token = ${dbSafe.escapeSQL(token)}
+    WHERE token = $1
     AND status = 'pending'
-    AND datetime(expires_at) > datetime('now')
+    AND expires_at > NOW()
     LIMIT 1`;
-  
-  const result = db.exec(query);
-  const connections = dbSafe.parseResult(result);
-  
+
+  const result = await dbModule.query(query, [token]);
+  const connections = result.rows;
+
   if (connections.length === 0) {
     return null;
   }
-  
+
   const connection = connections[0];
-  
+
   return {
     id: connection.id,
     token: connection.token,
@@ -169,7 +166,7 @@ async function validateConnectionToken(token) {
     inviteeEmail: connection.invitee_email,
     status: connection.status,
     expiresAt: connection.expires_at,
-    createdAt: connection.created_at
+    createdAt: connection.created_at,
   };
 }
 
@@ -182,81 +179,101 @@ async function acceptPendingConnection(token, userId) {
   if (!connection) {
     throw new Error('Invalid or expired invitation token');
   }
-  
+
   const now = new Date().toISOString();
-  
+
   try {
     // Get inviter's room
     const inviterRoom = await roomManager.getUserRoom(connection.inviterId);
     if (!inviterRoom) {
       throw new Error('Inviter does not have a room');
     }
-    
+
     // Get invitee's room (may not exist yet for new users)
     let inviteeRoom = await roomManager.getUserRoom(userId);
-    
+
     // Add invitee to inviter's room (if not already a member) using safe queries
-    const existingMember = await dbSafe.safeSelect('room_members', {
-      room_id: inviterRoom.roomId,
-      user_id: userId
-    }, { limit: 1 });
-    
+    const existingMember = await dbSafe.safeSelect(
+      'room_members',
+      {
+        room_id: inviterRoom.roomId,
+        user_id: userId,
+      },
+      { limit: 1 }
+    );
+
     if (dbSafe.parseResult(existingMember).length === 0) {
       await dbSafe.safeInsert('room_members', {
         room_id: inviterRoom.roomId,
         user_id: userId,
         role: 'member',
-        joined_at: now
+        joined_at: now,
       });
     }
-    
+
     // If invitee has a room, add inviter to invitee's room
     if (inviteeRoom) {
-      const inviterExisting = await dbSafe.safeSelect('room_members', {
-        room_id: inviteeRoom.roomId,
-        user_id: connection.inviterId
-      }, { limit: 1 });
-      
+      const inviterExisting = await dbSafe.safeSelect(
+        'room_members',
+        {
+          room_id: inviteeRoom.roomId,
+          user_id: connection.inviterId,
+        },
+        { limit: 1 }
+      );
+
       if (dbSafe.parseResult(inviterExisting).length === 0) {
         await dbSafe.safeInsert('room_members', {
           room_id: inviteeRoom.roomId,
           user_id: connection.inviterId,
           role: 'member',
-          joined_at: now
+          joined_at: now,
         });
       }
     }
-    
+
     // Mark connection as accepted using safe update
-    await dbSafe.safeUpdate('pending_connections', {
-      status: 'accepted',
-      accepted_at: now
-    }, { token: token });
-    
+    await dbSafe.safeUpdate(
+      'pending_connections',
+      {
+        status: 'accepted',
+        accepted_at: now,
+      },
+      { token: token }
+    );
+
     // Create co-parent contacts for both users
     try {
       // Get inviter user info
-      const inviterResult = await dbSafe.safeSelect('users', { id: connection.inviterId }, { limit: 1 });
+      const inviterResult = await dbSafe.safeSelect(
+        'users',
+        { id: connection.inviterId },
+        { limit: 1 }
+      );
       const inviterUsers = dbSafe.parseResult(inviterResult);
-      
+
       // Get invitee user info
       const inviteeResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
       const inviteeUsers = dbSafe.parseResult(inviteeResult);
-      
+
       if (inviterUsers.length > 0 && inviteeUsers.length > 0) {
         const inviter = inviterUsers[0];
         const invitee = inviteeUsers[0];
-        
+
         // Check if contact already exists for inviter (by name or email)
-        const inviterContactCheck = await dbSafe.safeSelect('contacts', {
-          user_id: connection.inviterId,
-          contact_name: invitee.username
-        }, { limit: 1 });
-        
+        const inviterContactCheck = await dbSafe.safeSelect(
+          'contacts',
+          {
+            user_id: connection.inviterId,
+            contact_name: invitee.username,
+          },
+          { limit: 1 }
+        );
+
         const inviterContacts = dbSafe.parseResult(inviterContactCheck);
-        const inviterHasContact = inviterContacts.length > 0 && 
-          inviterContacts.some(c => c.relationship === 'co-parent');
-        
+        const inviterHasContact =
+          inviterContacts.length > 0 && inviterContacts.some(c => c.relationship === 'co-parent');
+
         if (!inviterHasContact) {
           // Create contact for inviter (invitee is their co-parent)
           await dbSafe.safeInsert('contacts', {
@@ -276,21 +293,27 @@ async function acceptPendingConnection(token, userId) {
             neglect_abuse_concerns: null,
             additional_thoughts: null,
             created_at: now,
-            updated_at: now
+            updated_at: now,
           });
-          console.log(`✅ Created co-parent contact for ${inviter.username}: ${invitee.username} (linked_user_id: ${userId})`);
+          console.log(
+            `✅ Created co-parent contact for ${inviter.username}: ${invitee.username} (linked_user_id: ${userId})`
+          );
         }
-        
+
         // Check if contact already exists for invitee (by name or email)
-        const inviteeContactCheck = await dbSafe.safeSelect('contacts', {
-          user_id: userId,
-          contact_name: inviter.username
-        }, { limit: 1 });
-        
+        const inviteeContactCheck = await dbSafe.safeSelect(
+          'contacts',
+          {
+            user_id: userId,
+            contact_name: inviter.username,
+          },
+          { limit: 1 }
+        );
+
         const inviteeContacts = dbSafe.parseResult(inviteeContactCheck);
-        const inviteeHasContact = inviteeContacts.length > 0 && 
-          inviteeContacts.some(c => c.relationship === 'co-parent');
-        
+        const inviteeHasContact =
+          inviteeContacts.length > 0 && inviteeContacts.some(c => c.relationship === 'co-parent');
+
         if (!inviteeHasContact) {
           // Create contact for invitee (inviter is their co-parent)
           await dbSafe.safeInsert('contacts', {
@@ -310,14 +333,16 @@ async function acceptPendingConnection(token, userId) {
             neglect_abuse_concerns: null,
             additional_thoughts: null,
             created_at: now,
-            updated_at: now
+            updated_at: now,
           });
-          console.log(`✅ Created co-parent contact for ${invitee.username}: ${inviter.username} (linked_user_id: ${connection.inviterId})`);
+          console.log(
+            `✅ Created co-parent contact for ${invitee.username}: ${inviter.username} (linked_user_id: ${connection.inviterId})`
+          );
         }
-        
+
         // Save database after creating contacts
         // PostgreSQL auto-commits, no manual save needed
-        
+
         // Note: Auto-complete onboarding tasks will be called from the server endpoint
         // that calls this function, to avoid circular dependencies
       }
@@ -325,11 +350,11 @@ async function acceptPendingConnection(token, userId) {
       // Log error but don't fail the connection if contact creation fails
       console.error('Error creating co-parent contacts:', contactError);
     }
-    
+
     return {
       success: true,
       inviterRoom: inviterRoom.roomId,
-      inviteeRoom: inviteeRoom ? inviteeRoom.roomId : null
+      inviteeRoom: inviteeRoom ? inviteeRoom.roomId : null,
     };
   } catch (error) {
     console.error('Error accepting pending connection:', error);
@@ -338,49 +363,23 @@ async function acceptPendingConnection(token, userId) {
 }
 
 /**
- * Get pending connections for a user (as inviter or invitee)
+ * Role options for pending connection queries
+ * @enum {string}
  */
-async function getPendingConnections(userId, includeInviter = true, includeInvitee = true) {
-  const results = [];
-  
-  // Get connections where user is inviter
-  if (includeInviter) {
-    const db = await getDb();
-    const query = `SELECT * FROM pending_connections 
-      WHERE inviter_id = ${parseInt(userId)}
-      AND status = 'pending' 
-      AND datetime(expires_at) > datetime('now')
-      ORDER BY created_at DESC`;
-    
-    const inviterResult = db.exec(query);
-    const connections = dbSafe.parseResult(inviterResult);
-    results.push(...connections);
-  }
-  
-  // Get connections where user is invitee
-  if (includeInvitee) {
-    // Get user's email first using safe select
-    const userResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
-    const users = dbSafe.parseResult(userResult);
-    
-    if (users.length > 0 && users[0].email) {
-      const userEmail = users[0].email.toLowerCase();
-      const db = await getDb();
-      const query = `SELECT * FROM pending_connections 
-        WHERE invitee_email = ${dbSafe.escapeSQL(userEmail)}
-        AND status = 'pending' 
-        AND datetime(expires_at) > datetime('now')
-        ORDER BY created_at DESC`;
-      
-      const inviteeResult = db.exec(query);
-      const connections = dbSafe.parseResult(inviteeResult);
-      results.push(...connections);
-    }
-  }
-  
-  // Remove duplicates and format
+const CONNECTION_ROLE = {
+  INVITER: 'inviter',
+  INVITEE: 'invitee',
+  ALL: 'all',
+};
+
+/**
+ * Format raw connection rows into consistent objects
+ * @param {Array} rows - Raw database rows
+ * @returns {Array} Formatted connection objects
+ */
+function formatConnections(rows) {
   const uniqueConnections = new Map();
-  results.forEach(conn => {
+  rows.forEach(conn => {
     if (!uniqueConnections.has(conn.id)) {
       uniqueConnections.set(conn.id, {
         id: conn.id,
@@ -389,12 +388,110 @@ async function getPendingConnections(userId, includeInviter = true, includeInvit
         inviteeEmail: conn.invitee_email,
         status: conn.status,
         expiresAt: conn.expires_at,
-        createdAt: conn.created_at
+        createdAt: conn.created_at,
       });
     }
   });
-  
   return Array.from(uniqueConnections.values());
+}
+
+/**
+ * Get pending connections where user is the inviter
+ * @param {number} userId - User ID
+ * @returns {Promise<Array>} Connections sent by this user
+ */
+async function getPendingConnectionsAsInviter(userId) {
+  const query = `SELECT * FROM pending_connections
+    WHERE inviter_id = $1
+    AND status = 'pending'
+    AND expires_at > NOW()
+    ORDER BY created_at DESC`;
+
+  const result = await dbModule.query(query, [parseInt(userId)]);
+  return formatConnections(result.rows);
+}
+
+/**
+ * Get pending connections where user is the invitee
+ * @param {number} userId - User ID
+ * @returns {Promise<Array>} Invitations received by this user
+ */
+async function getPendingConnectionsAsInvitee(userId) {
+  // Get user's email first
+  const userResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
+  const users = dbSafe.parseResult(userResult);
+
+  if (users.length === 0 || !users[0].email) {
+    return [];
+  }
+
+  const userEmail = users[0].email.toLowerCase();
+  const query = `SELECT * FROM pending_connections
+    WHERE invitee_email = $1
+    AND status = 'pending'
+    AND expires_at > NOW()
+    ORDER BY created_at DESC`;
+
+  const result = await dbModule.query(query, [userEmail]);
+  return formatConnections(result.rows);
+}
+
+/**
+ * Get pending connections for a user
+ * @param {number} userId - User ID
+ * @param {Object} options - Query options
+ * @param {string} options.role - Role filter: 'inviter', 'invitee', or 'all' (default: 'all')
+ * @returns {Promise<Array>} Matching pending connections
+ *
+ * @example
+ * // Get all pending connections
+ * await getPendingConnections(userId);
+ *
+ * // Get only invitations sent by user
+ * await getPendingConnections(userId, { role: CONNECTION_ROLE.INVITER });
+ *
+ * // Get only invitations received by user
+ * await getPendingConnections(userId, { role: CONNECTION_ROLE.INVITEE });
+ */
+async function getPendingConnections(userId, options = {}) {
+  const { role = CONNECTION_ROLE.ALL } = options;
+
+  switch (role) {
+    case CONNECTION_ROLE.INVITER:
+      return getPendingConnectionsAsInviter(userId);
+
+    case CONNECTION_ROLE.INVITEE:
+      return getPendingConnectionsAsInvitee(userId);
+
+    case CONNECTION_ROLE.ALL:
+    default: {
+      const [asInviter, asInvitee] = await Promise.all([
+        getPendingConnectionsAsInviter(userId),
+        getPendingConnectionsAsInvitee(userId),
+      ]);
+      // Merge and deduplicate
+      return formatConnections([
+        ...asInviter.map(c => ({
+          id: c.id,
+          inviter_id: c.inviterId,
+          invitee_email: c.inviteeEmail,
+          token: c.token,
+          status: c.status,
+          expires_at: c.expiresAt,
+          created_at: c.createdAt,
+        })),
+        ...asInvitee.map(c => ({
+          id: c.id,
+          inviter_id: c.inviterId,
+          invitee_email: c.inviteeEmail,
+          token: c.token,
+          status: c.status,
+          expires_at: c.expiresAt,
+          created_at: c.createdAt,
+        })),
+      ]);
+    }
+  }
 }
 
 module.exports = {
@@ -404,6 +501,11 @@ module.exports = {
   createPendingConnection,
   validateConnectionToken,
   acceptPendingConnection,
-  getPendingConnections
+  // Unified function with options object (replaces boolean flags)
+  getPendingConnections,
+  // Specific role-based functions for direct access
+  getPendingConnectionsAsInviter,
+  getPendingConnectionsAsInvitee,
+  // Role enum for type-safe queries
+  CONNECTION_ROLE,
 };
-

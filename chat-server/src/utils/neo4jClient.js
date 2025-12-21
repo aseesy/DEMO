@@ -33,20 +33,18 @@ let driver = null;
  */
 function getDriver() {
   if (!isNeo4jConfigured) {
-    throw new Error('Neo4j is not configured. Set NEO4J_URI and NEO4J_PASSWORD environment variables.');
+    throw new Error(
+      'Neo4j is not configured. Set NEO4J_URI and NEO4J_PASSWORD environment variables.'
+    );
   }
 
   if (!driver) {
-    driver = neo4j.driver(
-      NEO4J_URI,
-      neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD),
-      {
-        maxConnectionLifetime: 3 * 60 * 60 * 1000, // 3 hours
-        maxConnectionPoolSize: 50,
-        connectionAcquisitionTimeout: 2 * 60 * 1000, // 2 minutes
-        disableLosslessIntegers: true // Return integers as JavaScript numbers
-      }
-    );
+    driver = neo4j.driver(NEO4J_URI, neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD), {
+      maxConnectionLifetime: 3 * 60 * 60 * 1000, // 3 hours
+      maxConnectionPoolSize: 50,
+      connectionAcquisitionTimeout: 2 * 60 * 1000, // 2 minutes
+      disableLosslessIntegers: true, // Return integers as JavaScript numbers
+    });
   }
 
   return driver;
@@ -106,7 +104,7 @@ async function createUserNode(userId, username, email, displayName = null) {
 
     const params = {
       userId: neo4j.int(userId),
-      username: username
+      username: username,
     };
 
     const result = await executeCypher(query, params);
@@ -177,19 +175,24 @@ async function createCoParentRelationship(userId1, userId2, roomId, roomName = n
     const params = {
       userId1: neo4j.int(userId1),
       userId2: neo4j.int(userId2),
-      roomId: roomId
+      roomId: roomId,
     };
 
     const result = await executeCypher(query, params);
 
     if (result.records.length > 0) {
-      console.log(`✅ Created Neo4j co-parent relationship: User ${userId1} <-> User ${userId2} (Room: ${roomId})`);
+      console.log(
+        `✅ Created Neo4j co-parent relationship: User ${userId1} <-> User ${userId2} (Room: ${roomId})`
+      );
       return result.records[0].toObject();
     }
 
     throw new Error('Neo4j query returned no results');
   } catch (error) {
-    console.error(`❌ Failed to create Neo4j co-parent relationship for users ${userId1} and ${userId2}:`, error.message);
+    console.error(
+      `❌ Failed to create Neo4j co-parent relationship for users ${userId1} and ${userId2}:`,
+      error.message
+    );
     return null;
   }
 }
@@ -217,13 +220,15 @@ async function endCoParentRelationship(userId1, userId2) {
 
     const params = {
       userId1: neo4j.int(userId1),
-      userId2: neo4j.int(userId2)
+      userId2: neo4j.int(userId2),
     };
 
     const result = await executeCypher(query, params);
 
     if (result.records.length > 0) {
-      console.log(`✅ Deactivated Neo4j co-parent relationship: User ${userId1} <-> User ${userId2}`);
+      console.log(
+        `✅ Deactivated Neo4j co-parent relationship: User ${userId1} <-> User ${userId2}`
+      );
       return true;
     }
 
@@ -251,8 +256,10 @@ async function getCoParents(userId, authenticatedUserId = null) {
 
   // PRIVACY: Verify user can only query their own relationships
   if (authenticatedUserId !== null && userId !== authenticatedUserId) {
-    console.error(`❌ PRIVACY VIOLATION: User ${authenticatedUserId} attempted to query relationships for user ${userId}`);
-    throw new Error('Unauthorized: Cannot query other users\' relationships');
+    console.error(
+      `❌ PRIVACY VIOLATION: User ${authenticatedUserId} attempted to query relationships for user ${userId}`
+    );
+    throw new Error("Unauthorized: Cannot query other users' relationships");
   }
 
   try {
@@ -267,7 +274,7 @@ async function getCoParents(userId, authenticatedUserId = null) {
     return result.records.map(record => ({
       userId: record.get('userId'),
       username: record.get('username'),
-      roomId: record.get('roomId')
+      roomId: record.get('roomId'),
     }));
   } catch (error) {
     console.error(`❌ Failed to query co-parents for user ${userId}:`, error.message);
@@ -359,8 +366,10 @@ async function updateRelationshipMetadata(userId1, userId2, roomId, metadata = {
       userId2: neo4j.int(userId2),
       roomId,
       messageCount: metadata.messageCount || 0,
-      lastInteraction: metadata.lastInteraction ? new Date(metadata.lastInteraction).toISOString() : null,
-      interventionCount: metadata.interventionCount || 0
+      lastInteraction: metadata.lastInteraction
+        ? new Date(metadata.lastInteraction).toISOString()
+        : null,
+      interventionCount: metadata.interventionCount || 0,
     };
 
     const result = await executeCypher(query, params);
@@ -385,8 +394,10 @@ async function getCoParentsWithMetrics(userId, authenticatedUserId = null) {
 
   // PRIVACY: Verify user can only query their own relationships
   if (authenticatedUserId !== null && userId !== authenticatedUserId) {
-    console.error(`❌ PRIVACY VIOLATION: User ${authenticatedUserId} attempted to query relationships for user ${userId}`);
-    throw new Error('Unauthorized: Cannot query other users\' relationships');
+    console.error(
+      `❌ PRIVACY VIOLATION: User ${authenticatedUserId} attempted to query relationships for user ${userId}`
+    );
+    throw new Error("Unauthorized: Cannot query other users' relationships");
   }
 
   try {
@@ -412,7 +423,7 @@ async function getCoParentsWithMetrics(userId, authenticatedUserId = null) {
       messageCount: record.get('messageCount') || 0,
       lastInteraction: record.get('lastInteraction'),
       interventionCount: record.get('interventionCount') || 0,
-      relationshipCreatedAt: record.get('relationshipCreatedAt')
+      relationshipCreatedAt: record.get('relationshipCreatedAt'),
     }));
   } catch (error) {
     console.error(`❌ Failed to query co-parents with metrics for user ${userId}:`, error.message);
@@ -435,7 +446,7 @@ async function getRelationshipNetwork(userId, maxDepth = 2, authenticatedUserId 
 
   // PRIVACY: Verify user can only query their own network
   if (authenticatedUserId !== null && userId !== authenticatedUserId) {
-    throw new Error('Unauthorized: Cannot query other users\' networks');
+    throw new Error("Unauthorized: Cannot query other users' networks");
   }
 
   try {
@@ -458,7 +469,7 @@ async function getRelationshipNetwork(userId, maxDepth = 2, authenticatedUserId 
       userId: record.get('userId'),
       username: record.get('username'),
       distance: record.get('distance'),
-      roomIds: record.get('roomIds') || []
+      roomIds: record.get('roomIds') || [],
     }));
   } catch (error) {
     console.error(`❌ Failed to query relationship network for user ${userId}:`, error.message);
@@ -481,7 +492,7 @@ async function getActiveRelationships(userId, minMessages = 10, authenticatedUse
 
   // PRIVACY: Verify user can only query their own relationships
   if (authenticatedUserId !== null && userId !== authenticatedUserId) {
-    throw new Error('Unauthorized: Cannot query other users\' relationships');
+    throw new Error("Unauthorized: Cannot query other users' relationships");
   }
 
   try {
@@ -504,7 +515,7 @@ async function getActiveRelationships(userId, minMessages = 10, authenticatedUse
       username: record.get('username'),
       roomId: record.get('roomId'),
       messageCount: record.get('messageCount') || 0,
-      lastInteraction: record.get('lastInteraction')
+      lastInteraction: record.get('lastInteraction'),
     }));
   } catch (error) {
     console.error(`❌ Failed to query active relationships for user ${userId}:`, error.message);
@@ -565,5 +576,5 @@ module.exports = {
   isAvailable,
   isNeo4jConfigured,
   // Internal - exported for testing only
-  _executeCypher: executeCypher
+  _executeCypher: executeCypher,
 };

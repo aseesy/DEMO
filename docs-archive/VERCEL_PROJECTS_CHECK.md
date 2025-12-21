@@ -3,6 +3,7 @@
 ## The Situation
 
 You have **two Vercel projects**:
+
 1. **"chat-client"** - One Vercel project
 2. **"chat"** - Another Vercel project
 
@@ -96,6 +97,7 @@ The active project should have recent deployments:
 ## 🎯 Which One Should You Use?
 
 **The active project should have:**
+
 - ✅ Custom domain configured (`coparentliaizen.com`)
 - ✅ Connected to your GitHub repo
 - ✅ Root directory set to `chat-client-vite` (or correct path)
@@ -103,6 +105,7 @@ The active project should have recent deployments:
 - ✅ Recent deployments
 
 **The unused project will likely have:**
+
 - ❌ No custom domain (or different domain)
 - ❌ Not connected to GitHub (or connected to wrong repo)
 - ❌ Wrong root directory
@@ -145,6 +148,7 @@ If you want to keep the active one but rename it:
 Use this checklist to identify the active project:
 
 **"chat-client" project:**
+
 - [ ] Has custom domain `coparentliaizen.com`?
 - [ ] Connected to GitHub repo?
 - [ ] Root directory is `chat-client-vite`?
@@ -152,6 +156,7 @@ Use this checklist to identify the active project:
 - [ ] Recent deployments?
 
 **"chat" project:**
+
 - [ ] Has custom domain `coparentliaizen.com`?
 - [ ] Connected to GitHub repo?
 - [ ] Root directory is `chat-client-vite`?
@@ -171,23 +176,14 @@ Use this checklist to identify the active project:
 ## 💡 Recommendation
 
 Based on your codebase structure:
+
 - Your frontend code is in `chat-client-vite/` directory
 - The `vercel.json` is in `chat-client-vite/`
 - The active project should be named **"chat-client"** or similar
 
 **Most likely scenario:**
+
 - **"chat-client"** = Active project (serving production)
 - **"chat"** = Old/unused project (can be deleted)
 
 But verify using the checklist above before deleting anything!
-
-
-
-
-
-
-
-
-
-
-

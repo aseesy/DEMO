@@ -28,36 +28,42 @@ This document defines the standards, workflows, and requirements for creating an
 ### Department Classifications
 
 #### Architecture Department
+
 **Purpose**: High-level system design and technical planning
 **Typical Agents**: system-architect, solution-designer, integration-specialist
 **Tool Access**: Read, Grep, Glob, WebSearch, TodoWrite
 **Memory Focus**: Patterns, decisions, references
 
 #### Engineering Department
+
 **Purpose**: Code implementation and development
 **Typical Agents**: backend-engineer, frontend-engineer, devops-engineer
 **Tool Access**: Full development tools (Read, Write, Edit, MultiEdit, Bash, Grep, Glob)
 **Memory Focus**: Standards, snippets, troubleshooting
 
 #### Quality Department
+
 **Purpose**: Testing, review, and quality assurance
 **Typical Agents**: test-architect, qa-engineer, code-reviewer, security-auditor
 **Tool Access**: Read, Grep, Glob, Bash (limited), WebSearch
 **Memory Focus**: Test patterns, checklists, metrics
 
 #### Data Department
+
 **Purpose**: Database and data pipeline management
 **Typical Agents**: data-architect, database-engineer, analytics-engineer
 **Tool Access**: Read, Edit, Bash (SQL focus), Grep, Glob
 **Memory Focus**: Schemas, migrations, optimizations
 
 #### Product Department
+
 **Purpose**: Requirements analysis and user experience
 **Typical Agents**: product-analyst, ux-researcher, requirements-analyst
 **Tool Access**: Read, WebSearch, TodoWrite
 **Memory Focus**: Personas, journeys, feedback
 
 #### Operations Department
+
 **Purpose**: Deployment, monitoring, and incident response
 **Typical Agents**: release-manager, incident-responder, documentation-specialist
 **Tool Access**: Read, Bash, Grep, TodoWrite
@@ -66,6 +72,7 @@ This document defines the standards, workflows, and requirements for creating an
 ## Agent Creation Workflow
 
 ### Phase 1: Analysis
+
 1. Review request for agent purpose and capabilities
 2. Analyze existing agents to avoid duplication
 3. Determine appropriate department classification
@@ -73,6 +80,7 @@ This document defines the standards, workflows, and requirements for creating an
 5. Identify memory requirements and references
 
 ### Phase 2: Configuration
+
 1. Generate agent definition file with YAML frontmatter
 2. Include constitutional reference (mandatory)
 3. Define specialized system prompt
@@ -80,6 +88,7 @@ This document defines the standards, workflows, and requirements for creating an
 5. Configure memory path references
 
 ### Phase 3: Validation
+
 1. Verify constitutional compliance
 2. Check tool access appropriateness
 3. Validate memory structure creation
@@ -87,6 +96,7 @@ This document defines the standards, workflows, and requirements for creating an
 5. Test agent invocation
 
 ### Phase 4: Documentation
+
 1. Update agent registry
 2. Create initial memory structure
 3. Document in department index
@@ -98,10 +108,10 @@ This document defines the standards, workflows, and requirements for creating an
 
 ```yaml
 ---
-name: agent-identifier        # Kebab-case, unique
-description: Clear purpose    # One-line description
-tools: Tool1, Tool2          # Restricted by department
-model: inherit               # Usually inherit, specify when needed
+name: agent-identifier # Kebab-case, unique
+description: Clear purpose # One-line description
+tools: Tool1, Tool2 # Restricted by department
+model: inherit # Usually inherit, specify when needed
 ---
 ```
 
@@ -133,8 +143,8 @@ model: inherit               # Usually inherit, specify when needed
 
 ## Tool Access Matrix
 
-| Department    | Read | Write | Edit | Bash | Grep | Glob | WebSearch | TodoWrite | MCP Tools |
-|--------------|------|-------|------|------|------|------|-----------|-----------|-----------|
+| Department   | Read | Write | Edit | Bash | Grep | Glob | WebSearch | TodoWrite | MCP Tools |
+| ------------ | ---- | ----- | ---- | ---- | ---- | ---- | --------- | --------- | --------- |
 | Architecture | ✅   | ❌    | ❌   | ⚠️   | ✅   | ✅   | ✅        | ✅        | ⚠️        |
 | Engineering  | ✅   | ✅    | ✅   | ✅   | ✅   | ✅   | ✅        | ✅        | ✅        |
 | Quality      | ✅   | ❌    | ⚠️   | ⚠️   | ✅   | ✅   | ✅        | ✅        | ❌        |
@@ -147,12 +157,14 @@ Legend: ✅ Full Access | ⚠️ Limited/Conditional | ❌ No Access
 ## Naming Conventions
 
 ### Agent Files
+
 - Format: `role-function.md`
 - Examples: `backend-engineer.md`, `test-architect.md`
 - Use kebab-case exclusively
 - Keep names concise but descriptive
 
 ### Memory Folders
+
 - Mirror agent structure
 - Use plural forms for categories
 - Examples: `patterns/`, `decisions/`, `standards/`
@@ -160,13 +172,16 @@ Legend: ✅ Full Access | ⚠️ Limited/Conditional | ❌ No Access
 ## Constitutional Compliance
 
 ### Mandatory Elements
+
 1. Every agent MUST reference constitution.md
 2. Git operations restrictions MUST be included
 3. Test-first principles MUST be emphasized
 4. Library-first approach MUST be mentioned
 
 ### Update Protocol
+
 When constitution.md changes:
+
 1. Run `update-all-agents.sh` script
 2. Validate all agents for compliance
 3. Update agent-governance.md if needed
@@ -175,12 +190,14 @@ When constitution.md changes:
 ## Quality Gates
 
 ### Pre-Creation Checks
+
 - [ ] Purpose clearly defined
 - [ ] No duplicate functionality
 - [ ] Department classification appropriate
 - [ ] Tool access justified
 
 ### Post-Creation Validation
+
 - [ ] Constitution reference present
 - [ ] Git restrictions included
 - [ ] Memory paths valid
@@ -190,10 +207,12 @@ When constitution.md changes:
 ## Audit and Compliance
 
 ### Creation Log
+
 All agent creations logged to:
 `.docs/agents/audit/creation-log.json`
 
 ### Regular Reviews
+
 - Monthly: Tool access audit
 - Quarterly: Agent effectiveness review
 - Annually: Policy update assessment
@@ -209,6 +228,7 @@ All agent creations logged to:
 ## Exceptions
 
 Exceptions require:
+
 - Written justification
 - Architecture team approval
 - Time-bound exception period

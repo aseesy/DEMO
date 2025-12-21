@@ -3,6 +3,7 @@
 ## ⚠️ Error: ERR_CERT_COMMON_NAME_INVALID
 
 This error means the SSL certificate doesn't match the domain, usually because:
+
 1. DNS is not pointing to Vercel correctly
 2. Domain is not properly configured in Vercel
 3. SSL certificate hasn't been provisioned yet
@@ -86,10 +87,11 @@ This error means the SSL certificate doesn't match the domain, usually because:
    - Check CNAME for www points to Vercel
 
 2. **Check from Terminal**:
+
    ```bash
    # Check A record
    dig coparentliaizen.com A
-   
+
    # Check CNAME record
    dig www.coparentliaizen.com CNAME
    ```
@@ -144,6 +146,7 @@ This error means the SSL certificate doesn't match the domain, usually because:
 **Issue**: DNS still points to Railway or other service
 
 **Solution**:
+
 1. **Check DNS Records**:
    - Verify A record points to Vercel IP
    - Verify CNAME points to Vercel
@@ -159,6 +162,7 @@ This error means the SSL certificate doesn't match the domain, usually because:
 **Issue**: SSL certificate hasn't been provisioned yet
 
 **Solution**:
+
 1. **Wait for SSL Provisioning**:
    - Vercel automatically provisions SSL
    - Usually takes 5-15 minutes after DNS is configured
@@ -179,6 +183,7 @@ This error means the SSL certificate doesn't match the domain, usually because:
 **Issue**: Domain is not configured in Vercel
 
 **Solution**:
+
 1. **Add Domain to Vercel**:
    - Go to **Settings** → **Domains**
    - Click **Add Domain**
@@ -194,6 +199,7 @@ This error means the SSL certificate doesn't match the domain, usually because:
 **Issue**: Some DNS records point to Railway, others to Vercel
 
 **Solution**:
+
 1. **Remove All Railway DNS Records**:
    - Remove A records pointing to Railway
    - Remove CNAME records pointing to Railway
@@ -224,4 +230,3 @@ This error means the SSL certificate doesn't match the domain, usually because:
 ---
 
 **Next Steps: Verify DNS is pointing to Vercel, then wait for SSL certificate to be provisioned!** 🔒
-

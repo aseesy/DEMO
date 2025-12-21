@@ -14,23 +14,27 @@ function generateInterventionExplanation(intervention, emotionalState, escalatio
   const parts = [];
 
   if (intervention.type === 'ai_intervention') {
-    parts.push("I noticed this message could escalate conflict.");
-    
+    parts.push('I noticed this message could escalate conflict.');
+
     if (emotionalState && emotionalState.participant) {
-      parts.push(`Your co-parent's stress level is ${emotionalState.participant.stressLevel}/100 and ${emotionalState.participant.stressTrajectory}.`);
+      parts.push(
+        `Your co-parent's stress level is ${emotionalState.participant.stressLevel}/100 and ${emotionalState.participant.stressTrajectory}.`
+      );
     }
-    
+
     if (escalationAssessment && escalationAssessment.riskLevel !== 'low') {
       parts.push(`The conversation shows ${escalationAssessment.riskLevel} escalation risk.`);
     }
-    
+
     if (intervention.whyMediation) {
       parts.push(`Specifically: ${intervention.whyMediation.substring(0, 100)}...`);
     }
-    
+
     parts.push("I've provided some suggestions to help communicate more effectively.");
   } else if (intervention.type === 'ai_comment') {
-    parts.push("I'm sharing an observation that might be helpful for your co-parenting communication.");
+    parts.push(
+      "I'm sharing an observation that might be helpful for your co-parenting communication."
+    );
   }
 
   return parts.join(' ');
@@ -44,12 +48,14 @@ function generateInterventionExplanation(intervention, emotionalState, escalatio
  */
 function checkInterventionConfidence(intervention, confidenceThreshold = 60) {
   const confidence = intervention.confidence || 0;
-  
+
   if (confidence < confidenceThreshold) {
-    console.log(`⚠️ Intervention confidence (${confidence}%) below threshold (${confidenceThreshold}%) - considering fallback`);
+    console.log(
+      `⚠️ Intervention confidence (${confidence}%) below threshold (${confidenceThreshold}%) - considering fallback`
+    );
     return false;
   }
-  
+
   return true;
 }
 
@@ -67,7 +73,8 @@ function assessDegradationNeed(intervention, emotionalState, confidence) {
       shouldDegrade: true,
       reason: 'Low confidence in intervention',
       fallbackAction: 'monitor_only',
-      message: 'I\'m not certain about this situation. I\'ll monitor the conversation and step in if needed.'
+      message:
+        "I'm not certain about this situation. I'll monitor the conversation and step in if needed.",
     };
   }
 
@@ -77,7 +84,8 @@ function assessDegradationNeed(intervention, emotionalState, confidence) {
       shouldDegrade: true,
       reason: 'Unclear emotional state',
       fallbackAction: 'gentle_suggestion',
-      message: 'I want to help, but I\'m not entirely sure about the best approach here. Would you like some gentle suggestions?'
+      message:
+        "I want to help, but I'm not entirely sure about the best approach here. Would you like some gentle suggestions?",
     };
   }
 
@@ -86,7 +94,7 @@ function assessDegradationNeed(intervention, emotionalState, confidence) {
     shouldDegrade: false,
     reason: 'Sufficient confidence',
     fallbackAction: null,
-    message: null
+    message: null,
   };
 }
 
@@ -102,20 +110,20 @@ function generateOverrideOptions(intervention) {
       {
         action: 'send_anyway',
         label: 'Send message anyway',
-        description: 'I understand the risk, but want to send this message'
+        description: 'I understand the risk, but want to send this message',
       },
       {
         action: 'edit_first',
         label: 'Edit first',
-        description: 'I\'ll revise the message before sending'
+        description: "I'll revise the message before sending",
       },
       {
         action: 'get_more_help',
         label: 'Get more help',
-        description: 'I\'d like additional coaching'
-      }
+        description: "I'd like additional coaching",
+      },
     ],
-    explanation: generateInterventionExplanation(intervention, null, null)
+    explanation: generateInterventionExplanation(intervention, null, null),
   };
 }
 
@@ -131,7 +139,9 @@ function validateInterventionSafety(intervention, context) {
 
   // Check for potential misinterpretation
   if (!intervention.validation || intervention.validation.length < 20) {
-    warnings.push('Intervention validation seems too brief - may not adequately validate user feelings');
+    warnings.push(
+      'Intervention validation seems too brief - may not adequately validate user feelings'
+    );
   }
 
   // Check for tone policing
@@ -154,7 +164,12 @@ function validateInterventionSafety(intervention, context) {
     safe: errors.length === 0,
     warnings: warnings,
     errors: errors,
-    recommendation: errors.length > 0 ? 'block_intervention' : warnings.length > 0 ? 'proceed_with_caution' : 'proceed'
+    recommendation:
+      errors.length > 0
+        ? 'block_intervention'
+        : warnings.length > 0
+          ? 'proceed_with_caution'
+          : 'proceed',
   };
 }
 
@@ -163,6 +178,5 @@ module.exports = {
   checkInterventionConfidence,
   assessDegradationNeed,
   generateOverrideOptions,
-  validateInterventionSafety
+  validateInterventionSafety,
 };
-

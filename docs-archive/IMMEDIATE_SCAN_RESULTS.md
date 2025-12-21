@@ -34,12 +34,14 @@ Files over 500 lines (harder to maintain):
 ### 2. **Magic Numbers/Strings** (Needs Constants)
 
 Common patterns found:
+
 - Timeout values (5000, 3000, 2000, etc.)
 - Length validations (3, 5, 10, 50, etc.)
 - Status codes
 - Default values
 
 **Recommendation**: Create constants file:
+
 ```javascript
 // src/utils/constants.js
 export const TIMEOUTS = {
@@ -58,6 +60,7 @@ export const VALIDATION = {
 ### 3. **Repeated Validation Patterns**
 
 Found multiple instances of:
+
 - Length checks: `if (!username || username.length < 3)`
 - Email validation patterns
 - User existence checks
@@ -69,11 +72,13 @@ Found multiple instances of:
 ## 🎯 Priority Actions
 
 ### **Immediate** (Do Now)
+
 1. ✅ **Split `mediator.js`** (1,402 lines) - Highest priority
 2. ✅ **Split `profileHelpers.js`** (923 lines)
 3. ✅ **Extract magic numbers** to constants file
 
 ### **Short Term** (This Week)
+
 4. ⚠️ **Install scanning tools**:
    ```bash
    npm install -D jscpd madge dependency-cruiser
@@ -82,6 +87,7 @@ Found multiple instances of:
 6. ⚠️ **Run circular dependency scan** with madge
 
 ### **Medium Term** (Next Sprint)
+
 7. ⚠️ **Set up ESLint rules** for:
    - Max file length (500 lines)
    - Max function complexity (10)
@@ -105,4 +111,3 @@ Would you like me to:
 **Scan Date**: 2025-01-27  
 **Files Scanned**: 58  
 **Issues Found**: 3 high-priority
-

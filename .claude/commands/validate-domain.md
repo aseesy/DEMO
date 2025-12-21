@@ -5,6 +5,7 @@ description: Validate feature specifications and implementations against coparen
 **AGENT REQUIREMENT**: This command can be executed by any agent, but domain validation is best handled by agents with co-parenting domain knowledge.
 
 **If specialized validation is needed**, delegate to appropriate agent:
+
 ```
 Use the Task tool to invoke specialized agent:
 - subagent_type: "specification-agent" (for spec validation)
@@ -70,7 +71,7 @@ Given the feature specification or implementation provided as an argument, do th
 **Note**: This command does NOT modify files - it only validates and reports. All recommendations are suggestions for manual review.
 
 **Usage Examples**:
+
 - `/validate-domain spec.md` - Validate a feature specification
 - `/validate-domain specs/001-feature-name/` - Validate entire feature directory
 - `/validate-domain --component ContactsPanel.jsx` - Validate a specific component
-

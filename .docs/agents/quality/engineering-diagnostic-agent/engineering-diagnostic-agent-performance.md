@@ -8,14 +8,14 @@
 
 ## Performance Targets
 
-| Metric | Target | Current |
-|--------|--------|---------|
-| Root cause accuracy | > 90% | N/A |
-| Actionable recommendations | 100% | N/A |
-| False positive rate | < 5% | N/A |
-| Response time (simple) | < 2s | N/A |
-| Response time (complex) | < 10s | N/A |
-| User satisfaction | > 4/5 | N/A |
+| Metric                     | Target | Current |
+| -------------------------- | ------ | ------- |
+| Root cause accuracy        | > 90%  | N/A     |
+| Actionable recommendations | 100%   | N/A     |
+| False positive rate        | < 5%   | N/A     |
+| Response time (simple)     | < 2s   | N/A     |
+| Response time (complex)    | < 10s  | N/A     |
+| User satisfaction          | > 4/5  | N/A     |
 
 ---
 
@@ -23,35 +23,35 @@
 
 ### By Error Category
 
-| Category | Total | Correctly Diagnosed | Accuracy |
-|----------|-------|---------------------|----------|
-| CORS | 0 | 0 | N/A |
-| Authentication | 0 | 0 | N/A |
-| Database | 0 | 0 | N/A |
-| WebSocket | 0 | 0 | N/A |
-| Frontend | 0 | 0 | N/A |
-| Backend | 0 | 0 | N/A |
-| Infrastructure | 0 | 0 | N/A |
+| Category       | Total | Correctly Diagnosed | Accuracy |
+| -------------- | ----- | ------------------- | -------- |
+| CORS           | 0     | 0                   | N/A      |
+| Authentication | 0     | 0                   | N/A      |
+| Database       | 0     | 0                   | N/A      |
+| WebSocket      | 0     | 0                   | N/A      |
+| Frontend       | 0     | 0                   | N/A      |
+| Backend        | 0     | 0                   | N/A      |
+| Infrastructure | 0     | 0                   | N/A      |
 
 ### By Handoff Target
 
-| Target Agent | Handoffs | Correct Assignment |
-|--------------|----------|-------------------|
-| frontend-specialist | 0 | N/A |
-| backend-architect | 0 | N/A |
-| database-specialist | 0 | N/A |
-| security-specialist | 0 | N/A |
-| devops-engineer | 0 | N/A |
-| performance-engineer | 0 | N/A |
-| testing-specialist | 0 | N/A |
+| Target Agent         | Handoffs | Correct Assignment |
+| -------------------- | -------- | ------------------ |
+| frontend-specialist  | 0        | N/A                |
+| backend-architect    | 0        | N/A                |
+| database-specialist  | 0        | N/A                |
+| security-specialist  | 0        | N/A                |
+| devops-engineer      | 0        | N/A                |
+| performance-engineer | 0        | N/A                |
+| testing-specialist   | 0        | N/A                |
 
 ---
 
 ## Session Log
 
 | Date | Duration | Issues Diagnosed | Handoffs | Notes |
-|------|----------|------------------|----------|-------|
-| - | - | - | - | - |
+| ---- | -------- | ---------------- | -------- | ----- |
+| -    | -        | -                | -        | -     |
 
 ---
 
@@ -60,8 +60,8 @@
 ### Monthly Summary
 
 | Month | Diagnostics | Accuracy | Avg Response Time |
-|-------|-------------|----------|-------------------|
-| - | - | - | - |
+| ----- | ----------- | -------- | ----------------- |
+| -     | -           | -        | -                 |
 
 ---
 
@@ -73,4 +73,4 @@ Track areas where diagnostic accuracy can be improved:
 
 ---
 
-*Last Updated: 2025-11-26*
+_Last Updated: 2025-11-26_

@@ -1,8 +1,8 @@
 /**
  * Unit Tests: State Manager
- * 
+ *
  * Tests for conversation state management (escalation, emotional, policy state).
- * 
+ *
  * @module src/liaizen/core/__tests__/stateManager.test
  */
 
@@ -210,7 +210,7 @@ describe('State Manager', () => {
 
     it('should decay score after decay interval', () => {
       const roomId = 'room-123';
-      
+
       // Set up state with old negative time
       const state = stateManager.initializeEscalationState(roomId);
       state.escalationScore = 10;
@@ -224,7 +224,7 @@ describe('State Manager', () => {
 
     it('should not decay score if within decay interval', () => {
       const roomId = 'room-123';
-      
+
       // Set up state with recent negative time
       const state = stateManager.initializeEscalationState(roomId);
       state.escalationScore = 10;
@@ -238,7 +238,7 @@ describe('State Manager', () => {
 
     it('should not allow negative escalation score', () => {
       const roomId = 'room-123';
-      
+
       // Set up state with score of 1 and old negative time
       const state = stateManager.initializeEscalationState(roomId);
       state.escalationScore = 1;
@@ -346,8 +346,11 @@ describe('State Manager', () => {
       const username = 'user1';
 
       // Add more than MAX_RECENT_TRIGGERS
-      const manyTriggers = Array.from({ length: MESSAGE.MAX_RECENT_TRIGGERS + 5 }, (_, i) => `trigger-${i}`);
-      
+      const manyTriggers = Array.from(
+        { length: MESSAGE.MAX_RECENT_TRIGGERS + 5 },
+        (_, i) => `trigger-${i}`
+      );
+
       stateManager.updateEmotionalState(roomId, username, {
         currentEmotion: 'frustrated',
         stressLevel: 75,
@@ -390,9 +393,10 @@ describe('State Manager', () => {
       const emotionalState = stateManager.initializeEmotionalState(roomId);
       // Recalculate to ensure it's updated
       const allStressLevels = Object.values(emotionalState.participants).map(p => p.stressLevel);
-      const avgStress = allStressLevels.length > 0
-        ? allStressLevels.reduce((a, b) => a + b, 0) / allStressLevels.length
-        : 0;
+      const avgStress =
+        allStressLevels.length > 0
+          ? allStressLevels.reduce((a, b) => a + b, 0) / allStressLevels.length
+          : 0;
       expect(avgStress).toBe(50); // (80 + 20) / 2
       expect(emotionalState.escalationRisk).toBe(50);
     });
@@ -638,10 +642,10 @@ describe('State Manager', () => {
       // Should create intervention with defaults
       const policyState = stateManager.initializePolicyState(roomId);
       expect(policyState.interventionHistory.length).toBeGreaterThan(0);
-      const lastIntervention = policyState.interventionHistory[policyState.interventionHistory.length - 1];
+      const lastIntervention =
+        policyState.interventionHistory[policyState.interventionHistory.length - 1];
       expect(lastIntervention.type).toBe('intervene');
       expect(lastIntervention.escalationRisk).toBe('unknown');
     });
   });
 });
-

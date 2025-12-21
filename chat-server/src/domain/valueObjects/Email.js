@@ -1,9 +1,9 @@
 /**
  * Email Value Object
- * 
+ *
  * Immutable, validated email address wrapper.
  * Provides type safety and automatic validation.
- * 
+ *
  * @module domain/valueObjects/Email
  */
 
@@ -31,7 +31,7 @@ class Email {
 
     // Normalize to lowercase
     this.value = trimmed.toLowerCase();
-    
+
     // Make immutable
     Object.freeze(this);
   }
@@ -81,4 +81,3 @@ class Email {
 }
 
 module.exports = Email;
-

@@ -11,24 +11,27 @@
 ## Key Findings at a Glance
 
 ### Design System Status
+
 - Tokens: Defined 95% (missing documentation for undocumented colors)
 - Token Usage: Only 30% (70% hardcoded values used instead)
 - Component Library: None (opportunities for 5+ reusable components)
 
 ### Critical Issues
+
 1. **120+ hardcoded color instances** should use token classes
 2. **27+ button duplicates** should be 1 reusable component
 3. **6 modal duplicates** should be 1 reusable wrapper
 4. **30+ input duplicates** should be 1 reusable component
 
 ### Quick Metrics
-| Metric | Current | Target |
-|--------|---------|--------|
-| Hardcoded Colors | 120+ | 0 |
-| Arbitrary Tailwind Values | ~200 | <10 |
-| Button Components | 45 | 1 |
-| Modal Wrappers | 6 | 1 |
-| Input Fields | 30+ | 1 |
+
+| Metric                    | Current | Target |
+| ------------------------- | ------- | ------ |
+| Hardcoded Colors          | 120+    | 0      |
+| Arbitrary Tailwind Values | ~200    | <10    |
+| Button Components         | 45      | 1      |
+| Modal Wrappers            | 6       | 1      |
+| Input Fields              | 30+     | 1      |
 
 ---
 
@@ -74,6 +77,7 @@
 ## Token System Reference
 
 ### Color Tokens Available
+
 ```
 bg-teal-lightest   → #E6F7F5
 bg-teal-light      → #C5E8E4
@@ -83,6 +87,7 @@ bg-teal-darkest    → #1f4447  (use this!)
 ```
 
 ### Spacing Tokens Available
+
 ```
 gap-xs, gap-sm, gap-md, gap-lg, gap-xl, gap-2xl, gap-3xl
 p-xs, p-sm, p-md, p-lg, p-xl, p-2xl, p-3xl
@@ -90,6 +95,7 @@ p-xs, p-sm, p-md, p-lg, p-xl, p-2xl, p-3xl
 ```
 
 ### Border Radius Tokens
+
 ```
 rounded-sm   → 6px
 rounded-md   → 8px
@@ -100,6 +106,7 @@ rounded-full → 9999px
 ```
 
 ### Shadow Tokens
+
 ```
 shadow-sm, shadow-md, shadow-lg, shadow-xl, shadow-2xl
 ```
@@ -109,6 +116,7 @@ shadow-sm, shadow-md, shadow-lg, shadow-xl, shadow-2xl
 ## Component Creation Roadmap
 
 ### Phase 1: Critical (Week 1)
+
 ```jsx
 // 1. Button Component (2-3 hours)
 components/ui/Button.jsx
@@ -127,6 +135,7 @@ Variants: text, email, password, select, textarea
 ```
 
 ### Phase 2: High Priority (Week 2)
+
 ```jsx
 // 4. Card Component (2 hours)
 components/ui/Card.jsx
@@ -141,15 +150,16 @@ Find/Replace: hover:bg-[#1f4447] → hover:bg-teal-darkest
 ```
 
 ### Phase 3: Nice to Have (Week 3)
+
 ```jsx
 // 6. Badge/Chip Component
-components/ui/Badge.jsx
+components / ui / Badge.jsx;
 
 // 7. Icon Button Component
-components/ui/IconButton.jsx
+components / ui / IconButton.jsx;
 
 // 8. Form Label/Help Text
-components/ui/FormField.jsx
+components / ui / FormField.jsx;
 ```
 
 ---
@@ -158,31 +168,35 @@ components/ui/FormField.jsx
 
 When refactoring colors, use this mapping:
 
-| Hardcoded | Token Class | Usage |
-|-----------|------------|-------|
-| #4DA8B0 | bg-teal-medium | Interactive elements, icons |
-| #275559 | bg-teal-dark | Primary buttons, dark backgrounds |
-| #1f4447 | hover:bg-teal-darkest | Hover states for dark teal |
-| #E6F7F5 | bg-teal-lightest | Light backgrounds, subtle fills |
-| #C5E8E4 | bg-teal-light | Borders, soft backgrounds |
-| #6dd4b0 | TBD (undocumented) | Icon backgrounds - needs token |
-| #3d8a92 | TBD (undocumented) | Hover states - needs token |
-| #D4F0EC | bg-teal-light | Badge backgrounds |
-| #A8D9D3 | TBD (undocumented) | Borders - needs token |
+| Hardcoded | Token Class           | Usage                             |
+| --------- | --------------------- | --------------------------------- |
+| #4DA8B0   | bg-teal-medium        | Interactive elements, icons       |
+| #275559   | bg-teal-dark          | Primary buttons, dark backgrounds |
+| #1f4447   | hover:bg-teal-darkest | Hover states for dark teal        |
+| #E6F7F5   | bg-teal-lightest      | Light backgrounds, subtle fills   |
+| #C5E8E4   | bg-teal-light         | Borders, soft backgrounds         |
+| #6dd4b0   | TBD (undocumented)    | Icon backgrounds - needs token    |
+| #3d8a92   | TBD (undocumented)    | Hover states - needs token        |
+| #D4F0EC   | bg-teal-light         | Badge backgrounds                 |
+| #A8D9D3   | TBD (undocumented)    | Borders - needs token             |
 
 ---
 
 ## Code Examples for Refactoring
 
 ### Before (Current - Bad)
+
 ```jsx
-<button className="w-full px-4 py-3 bg-[#275559] text-white rounded-lg 
-                   hover:bg-[#1f4447] font-semibold">
+<button
+  className="w-full px-4 py-3 bg-[#275559] text-white rounded-lg 
+                   hover:bg-[#1f4447] font-semibold"
+>
   Click me
 </button>
 ```
 
 ### After (Good - Using Components)
+
 ```jsx
 <Button variant="primary" size="large" className="w-full">
   Click me
@@ -190,9 +204,12 @@ When refactoring colors, use this mapping:
 ```
 
 ### Intermediate Step (Using Tokens Only)
+
 ```jsx
-<button className="w-full px-4 py-3 bg-teal-dark text-white rounded-lg 
-                   hover:bg-teal-darkest font-semibold">
+<button
+  className="w-full px-4 py-3 bg-teal-dark text-white rounded-lg 
+                   hover:bg-teal-darkest font-semibold"
+>
   Click me
 </button>
 ```
@@ -204,16 +221,19 @@ When refactoring colors, use this mapping:
 ### Recommended Spacing Rules
 
 **For Padding:**
+
 - Small interactive elements: `p-3` (12px)
 - Medium containers: `p-4` (16px)
 - Large sections: `p-6` (24px)
 
 **For Gaps:**
+
 - Tight groups: `gap-2` (8px)
 - Normal spacing: `gap-4` (16px) - use instead of gap-3
 - Relaxed spacing: `gap-6` (24px)
 
 **For Margins:**
+
 - Small: `mb-3`, `mt-3` (12px)
 - Medium: `mb-4`, `mt-4` (16px)
 - Large: `mb-6`, `mt-6` (24px)
@@ -223,6 +243,7 @@ When refactoring colors, use this mapping:
 ## Checklist for Implementation
 
 ### Phase 1 Checklist
+
 - [ ] Create `components/ui/` directory
 - [ ] Create Button component
 - [ ] Create Modal wrapper component
@@ -232,6 +253,7 @@ When refactoring colors, use this mapping:
 - [ ] Document new components
 
 ### Phase 2 Checklist
+
 - [ ] Create Input component
 - [ ] Create Card component
 - [ ] Replace all remaining hardcoded colors (120+ instances)
@@ -240,6 +262,7 @@ When refactoring colors, use this mapping:
 - [ ] Create Storybook entries
 
 ### Phase 3 Checklist
+
 - [ ] Create Badge/Chip component
 - [ ] Create IconButton component
 - [ ] Remove unused CSS (App.css)
@@ -276,18 +299,21 @@ When refactoring colors, use this mapping:
 ## Testing After Refactoring
 
 ### Visual Regression Testing
+
 - [ ] Screenshot all pages before/after
 - [ ] Compare side-by-side
 - [ ] Check mobile (iPhone 12, Pixel 5)
 - [ ] Check tablet (iPad, Android tablet)
 
 ### Functional Testing
+
 - [ ] All buttons clickable
 - [ ] All inputs focusable
 - [ ] All modals open/close
 - [ ] All forms submittable
 
 ### Accessibility Testing
+
 - [ ] Keyboard navigation works
 - [ ] Focus states visible
 - [ ] Color contrast acceptable
@@ -298,15 +324,18 @@ When refactoring colors, use this mapping:
 ## Resources & References
 
 ### Files to Study
+
 - `/Users/athenasees/Desktop/chat/.design-tokens-mcp/tokens.json`
 - `/Users/athenasees/Desktop/chat/chat-client-vite/tailwind.config.js`
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/index.css`
 
 ### Related Audit Documents
+
 - DESIGN_SYSTEM_AUDIT.md (full audit)
 - DESIGN_INCONSISTENCIES_EXAMPLES.md (code examples)
 
 ### Tools
+
 - Tailwind CSS Docs: https://tailwindcss.com/docs
 - Component Design Patterns: https://www.designsystems.com/
 
@@ -315,6 +344,7 @@ When refactoring colors, use this mapping:
 ## Contact & Questions
 
 For questions about this audit:
+
 1. Check DESIGN_SYSTEM_AUDIT.md for detailed explanation
 2. Check DESIGN_INCONSISTENCIES_EXAMPLES.md for code examples
 3. Review this guide for quick reference

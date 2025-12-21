@@ -50,19 +50,19 @@ These are **manual steps** in Google Analytics that take ~2-3 hours total.
 2. Click **Create custom dimension** for each:
 
 #### User-Scoped Dimensions:
+
 - **Name:** `user_type`
   - Scope: User
   - Description: User engagement level (new_user, returning_user, active_user)
-  
 - **Name:** `has_coparent`
   - Scope: User
   - Description: Whether user has co-parent connected (true/false)
 
 #### Event-Scoped Dimensions:
+
 - **Name:** `intervention_type`
   - Scope: Event
   - Description: Type of AI intervention (tone, clarity, safety, legal, other)
-  
 - **Name:** `task_priority`
   - Scope: Event
   - Description: Task priority level (low, medium, high, urgent)
@@ -83,28 +83,33 @@ These are **manual steps** in Google Analytics that take ~2-3 hours total.
 Create these 5 audiences:
 
 #### 1. High-Value Users
-- **Condition:** 
+
+- **Condition:**
   - `message_sent` events > 50
   - AND `task_completed` > 10
 - **Use:** Identify power users
 
 #### 2. AI Feature Adopters
-- **Condition:** 
+
+- **Condition:**
   - `rewrite_used` events > 5
 - **Use:** Target users who engage with AI features
 
 #### 3. At-Risk Users
-- **Condition:** 
+
+- **Condition:**
   - Last `message_sent` > 30 days ago
 - **Use:** Re-engagement campaigns
 
 #### 4. New Users (First 7 Days)
-- **Condition:** 
+
+- **Condition:**
   - `days_since_signup` < 7
 - **Use:** Onboarding optimization
 
 #### 5. Co-Parent Connected
-- **Condition:** 
+
+- **Condition:**
   - `has_coparent` = true
 - **Use:** Compare multi-user vs single-user behavior
 
@@ -122,18 +127,22 @@ Create these 5 audiences:
 Create these 4 alerts:
 
 #### 1. Conversion Rate Drop
+
 - **Condition:** Conversion rate drops > 20% vs previous week
 - **Notification:** Email
 
 #### 2. Error Spike
+
 - **Condition:** Exception events > 10 in 1 hour
 - **Notification:** Email
 
 #### 3. Traffic Drop
+
 - **Condition:** Sessions drop > 30% vs previous day
 - **Notification:** Email
 
 #### 4. New User Signups
+
 - **Condition:** `sign_up` events > 5 in 1 hour
 - **Notification:** Email (good news!)
 
@@ -150,13 +159,14 @@ Create these 4 alerts:
 3. Add these steps:
 
 **Funnel Steps:**
+
 1. `section_view` (hero) - Landing page viewed
 2. `cta_click` (hero) - CTA clicked
 3. `sign_up` - User signed up
 4. `message_sent` - First message sent
 5. `contact_added` - Co-parent connected
 
-4. Save as "User Onboarding Funnel"
+6. Save as "User Onboarding Funnel"
 
 **Done when:** Funnel created and showing data
 
@@ -167,6 +177,7 @@ Create these 4 alerts:
 **Why:** Test and verify tracking in real-time.
 
 **Option 1: Chrome Extension (Recommended)**
+
 1. Install [Google Analytics Debugger](https://chrome.google.com/webstore/detail/google-analytics-debugger/jnkmfdileelhofjcijamephohjechhna) Chrome extension
 2. Enable it
 3. Go to **Admin** → **DebugView** in GA4
@@ -187,11 +198,13 @@ Already implemented! Just check browser console for analytics logs.
 2. Create "User Engagement Dashboard":
 
 **Dimensions:**
+
 - User type
 - Days since signup
 - Has co-parent
 
 **Metrics:**
+
 - Messages sent
 - Sessions
 - Average session duration
@@ -262,17 +275,20 @@ After completing all steps, verify:
 ## 🆘 Troubleshooting
 
 ### Events Not Showing in GA4:
+
 - ✅ Check browser console for analytics logs
 - ✅ Verify `VITE_GA_MEASUREMENT_ID` is set in `.env`
 - ✅ Check ad blockers (they may block GA)
 - ✅ Wait 24-48 hours for standard reports (Realtime shows immediately)
 
 ### Custom Dimensions Not Populating:
+
 - ✅ Wait 24-48 hours (normal delay)
 - ✅ Verify dimension names match exactly
 - ✅ Check that events are firing with dimension values
 
 ### Audiences Not Populating:
+
 - ✅ Wait 24-48 hours (normal delay)
 - ✅ Verify audience conditions are correct
 - ✅ Check that user properties are being set
@@ -291,20 +307,16 @@ After completing all steps, verify:
 ## 🎯 Priority Order
 
 **Do First (High Impact, Low Effort):**
+
 1. ✅ Mark events as conversions (15 min)
 2. ✅ Set up DebugView (15 min)
 3. ✅ Create conversion funnel (30 min)
 
-**Do Next (Medium Impact, Medium Effort):**
-4. ✅ Create custom dimensions (30 min)
-5. ✅ Create audiences (1 hour)
-6. ✅ Set up alerts (30 min)
+**Do Next (Medium Impact, Medium Effort):** 4. ✅ Create custom dimensions (30 min) 5. ✅ Create audiences (1 hour) 6. ✅ Set up alerts (30 min)
 
-**Do Last (Nice to Have):**
-7. ✅ Create custom report (30 min)
+**Do Last (Nice to Have):** 7. ✅ Create custom report (30 min)
 
 ---
 
 **Total Time:** ~2-3 hours  
 **Status:** Ready to start! Begin with Step 1.
-

@@ -13,11 +13,13 @@
 ### 1.1 Problem Statement
 
 **Current State (Gap Analysis)**:
+
 - **What exists now**: Simple pattern matching → Generic detection ("name-calling detected") → Canned tip → Pre-written suggestion
 - **What was designed (on paper)**: Message → Parse → Vector → Axioms → Derive → Assess → Transform → Conscience voice
 - **The Gap**: The sophisticated architecture described in documentation (Primitives, Axioms, Communication Vectors, Intent vs. Impact analysis) is NOT implemented in the actual code
 
 **Current Implementation Issues**:
+
 1. **Shallow Pattern Matching**: Regex-based detection with no understanding of context or structure
 2. **Generic Interventions**: One-size-fits-all responses that lack specificity and nuance
 3. **No Structural Understanding**: Cannot distinguish between "You're a great friend" (positive) vs "You're so irresponsible" (attack)
@@ -30,6 +32,7 @@
 **Core Principle**: Code handles structure, AI handles nuance.
 
 **CODE LAYER** (deterministic, fast, zero-cost):
+
 - Parse linguistic surface (tokens, markers, structure)
 - Map to conceptual primitives (Subject/Object/Relation, Direction/Grip)
 - Identify communication vector (Sender/Receiver/Target/Instrument)
@@ -38,6 +41,7 @@
 - Extract structural features (absolutes, softeners, contrast markers)
 
 **AI LAYER** (nuanced, contextual, requires judgment):
+
 - Receive structured object from code layer
 - Apply user context (profiles, history, relationship dynamics)
 - Derive the legitimate need behind the message
@@ -71,6 +75,7 @@
 ### 2.1 As a User Sending a Message
 
 **User Story 1: Structural Pattern Detection**
+
 ```
 As a co-parent writing a message,
 When I write "You NEVER help with homework",
@@ -82,6 +87,7 @@ Then the system should:
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Code layer identifies "never" as absolute within <10ms
 - [ ] Axiom check completes within <20ms
 - [ ] AI receives structured object with `linguistic.intensifiers: ["never"]`
@@ -91,6 +97,7 @@ Then the system should:
 ---
 
 **User Story 2: Axiom-Based Intervention (Displaced Accusation)**
+
 ```
 As a co-parent,
 When I write "She's been upset since you changed the schedule",
@@ -103,6 +110,7 @@ Then the system should:
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Code detects pattern: `[Child emotion] + [Receiver action]`
 - [ ] Axiom 001 appears in `axioms_fired` array
 - [ ] Assessment includes `child_as_instrument: true`
@@ -112,6 +120,7 @@ Then the system should:
 ---
 
 **User Story 3: Clean Message Pass-Through**
+
 ```
 As a co-parent,
 When I write "Can you pick her up at 3pm?",
@@ -123,6 +132,7 @@ Then the system should:
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Code detects: specific + actionable + no softener
 - [ ] `axioms_fired` includes AXIOM D001
 - [ ] `assessment.transmit: true`
@@ -132,6 +142,7 @@ Then the system should:
 ---
 
 **User Story 4: Positive Context Pre-Filter**
+
 ```
 As a co-parent,
 When I write "You're a great parent",
@@ -143,6 +154,7 @@ Then the system should:
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Positive pattern detected in <5ms
 - [ ] No Axioms fire (clean message)
 - [ ] Message passes without AI analysis
@@ -153,6 +165,7 @@ Then the system should:
 ### 2.2 As a System Administrator
 
 **User Story 5: Axiom Configuration**
+
 ```
 As a system administrator,
 When I need to add a new Axiom,
@@ -163,6 +176,7 @@ Then I should be able to:
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Axioms defined in `/axioms/` directory
 - [ ] Each axiom has test suite
 - [ ] Adding axiom doesn't require AI re-tuning
@@ -170,6 +184,7 @@ Then I should be able to:
 ---
 
 **User Story 6: Performance Monitoring**
+
 ```
 As a system administrator,
 When messages are analyzed,
@@ -181,6 +196,7 @@ Then I should see metrics for:
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Metrics exported to monitoring system
 - [ ] Dashboard shows axiom fire rates
 - [ ] Alerts if AI call rate >60%
@@ -192,24 +208,27 @@ Then I should see metrics for:
 ### 3.1 Code Layer Components
 
 #### 3.1.1 Tokenizer
+
 **Purpose**: Break message into tagged linguistic units
 
 **Input**: Raw message text
 **Output**: Array of tokens with metadata
 
 **Example**:
+
 ```javascript
-Input: "You NEVER help with homework"
+Input: 'You NEVER help with homework';
 Output: [
-  { word: "You", pos: "pronoun", addressee: true },
-  { word: "NEVER", pos: "adverb", type: "intensifier", absolute: true },
-  { word: "help", pos: "verb", action: true },
-  { word: "with", pos: "preposition" },
-  { word: "homework", pos: "noun", domain: "child_education" }
-]
+  { word: 'You', pos: 'pronoun', addressee: true },
+  { word: 'NEVER', pos: 'adverb', type: 'intensifier', absolute: true },
+  { word: 'help', pos: 'verb', action: true },
+  { word: 'with', pos: 'preposition' },
+  { word: 'homework', pos: 'noun', domain: 'child_education' },
+];
 ```
 
 **Requirements**:
+
 - [ ] Parse pronouns (I, you, she/he)
 - [ ] Identify intensifiers (always, never, very)
 - [ ] Tag softeners (just, only, simply)
@@ -220,9 +239,11 @@ Output: [
 ---
 
 #### 3.1.2 Marker Detector
+
 **Purpose**: Find linguistic markers (softeners, intensifiers, pattern markers)
 
 **Detects**:
+
 - **Softeners**: "just", "only", "simply", "kind of"
 - **Intensifiers**: "very", "always", "never", "every time"
 - **Pattern Markers**: "always", "never", "every time" (for absolutes)
@@ -230,6 +251,7 @@ Output: [
 - **Negations**: "not", "never", "no"
 
 **Example**:
+
 ```javascript
 Input: "I'm just worried, but you never listen"
 Output: {
@@ -242,6 +264,7 @@ Output: {
 ```
 
 **Requirements**:
+
 - [ ] Regex-based detection for speed
 - [ ] Case-insensitive matching
 - [ ] Position tracking (where in sentence)
@@ -250,9 +273,11 @@ Output: {
 ---
 
 #### 3.1.3 Primitive Mapper
+
 **Purpose**: Map tokens to conceptual primitives
 
 **Primitives**:
+
 1. **Metaphysical**:
    - SUBJECT: The "I" (speaker)
    - OBJECT: The "It" or "Them"
@@ -267,6 +292,7 @@ Output: {
      - Love = Toward + Other + Releasing
 
 **Example**:
+
 ```javascript
 Input: "You need to change your behavior"
 Output: {
@@ -280,6 +306,7 @@ Output: {
 ```
 
 **Requirements**:
+
 - [ ] Detect pronouns (I/you/she/he)
 - [ ] Identify temporal markers (past/present/future)
 - [ ] Classify epistemic stance (fact/interpretation)
@@ -289,20 +316,23 @@ Output: {
 ---
 
 #### 3.1.4 Vector Identifier
+
 **Purpose**: Determine communication vector (who → who → what)
 
 **Structure**:
+
 ```typescript
 interface CommunicationVector {
-  sender: string;           // user ID
-  receiver: string;         // coparent ID
-  target: string;           // what's being aimed at (character/competence/autonomy)
+  sender: string; // user ID
+  receiver: string; // coparent ID
+  target: string; // what's being aimed at (character/competence/autonomy)
   instrument: string | null; // what's used to deliver (child, schedule, money, etc.)
-  aim: string;              // intended effect (control, inform, attack, request)
+  aim: string; // intended effect (control, inform, attack, request)
 }
 ```
 
 **Example**:
+
 ```javascript
 Input: "She said you forgot to sign the permission slip"
 Output: {
@@ -315,6 +345,7 @@ Output: {
 ```
 
 **Requirements**:
+
 - [ ] Extract sender/receiver from context
 - [ ] Identify target: character, competence, autonomy, parenting
 - [ ] Detect instrument: child, money, schedule, other parent, third party
@@ -324,22 +355,25 @@ Output: {
 ---
 
 #### 3.1.5 Axiom Checker
+
 **Purpose**: Check which Axioms fire based on patterns
 
 **Axiom Structure**:
+
 ```typescript
 interface Axiom {
-  id: string;               // "AXIOM_001"
-  name: string;             // "Displaced Accusation"
-  category: string;         // "indirect_communication"
-  pattern: Function;        // Detection logic
-  confidence: number;       // 0-100
+  id: string; // "AXIOM_001"
+  name: string; // "Displaced Accusation"
+  category: string; // "indirect_communication"
+  pattern: Function; // Detection logic
+  confidence: number; // 0-100
 }
 ```
 
 **Axiom Categories**:
 
 **A. Indirect Communication** (Attacks Disguised as Peace)
+
 - AXIOM 001: Displaced Accusation
 - AXIOM 002: False Offering
 - AXIOM 003: Innocent Inquiry
@@ -352,25 +386,29 @@ interface Axiom {
 - AXIOM 016: Hypothetical Accusation
 
 **B. Context Triggered** (Situational Logic)
+
 - AXIOM C001: Proximity Claim
 - AXIOM C002: New Partner Threat
 - AXIOM C005: Fresh Separation
 - AXIOM C007: Income Leverage
 
 **C. Direct Communication** (Clean)
+
 - AXIOM D001: Clean Request
 - AXIOM D002: Clean Information
 
 **Example Implementation**:
+
 ```javascript
 // AXIOM 001: Displaced Accusation
 // Pattern: Reports [negative state] of [Child] + Linked to [Receiver Domain] + [Softener]
 function checkAxiom001(parsed) {
   const hasChildReference = parsed.conceptual.third_party.some(p => p.relationship === 'child');
-  const hasNegativeState = parsed.linguistic.tokens.some(t =>
-    t.emotion === 'negative' && t.subject === 'child'
+  const hasNegativeState = parsed.linguistic.tokens.some(
+    t => t.emotion === 'negative' && t.subject === 'child'
   );
-  const linkedToReceiver = parsed.vector.target === 'receiver' ||
+  const linkedToReceiver =
+    parsed.vector.target === 'receiver' ||
     parsed.linguistic.tokens.some(t => t.addressee && t.follows === 'child_state');
   const hasSoftener = parsed.linguistic.softeners.length > 0;
 
@@ -384,8 +422,8 @@ function checkAxiom001(parsed) {
         child_mentioned: true,
         negative_state: true,
         linked_to_receiver: true,
-        softener_used: hasSoftener
-      }
+        softener_used: hasSoftener,
+      },
     };
   }
 
@@ -394,6 +432,7 @@ function checkAxiom001(parsed) {
 ```
 
 **Requirements**:
+
 - [ ] Implement all 15 Axioms from constitution
 - [ ] Each Axiom returns confidence score
 - [ ] Evidence tracking (what triggered the Axiom)
@@ -403,20 +442,23 @@ function checkAxiom001(parsed) {
 ---
 
 #### 3.1.6 Assessment Generator
+
 **Purpose**: Evaluate harm potential and transmission decision
 
 **Output Structure**:
+
 ```typescript
 interface Assessment {
   conflict_potential: 'low' | 'moderate' | 'high';
-  attack_surface: string[];  // character, competence, autonomy, parenting
+  attack_surface: string[]; // character, competence, autonomy, parenting
   child_as_instrument: boolean;
   deniability: 'low' | 'high';
-  transmit: boolean;         // can this go through as-is?
+  transmit: boolean; // can this go through as-is?
 }
 ```
 
 **Logic**:
+
 ```javascript
 function generateAssessment(parsed) {
   const axiomsFired = parsed.axioms_fired.filter(a => a.fired);
@@ -434,8 +476,10 @@ function generateAssessment(parsed) {
   const attack_surface = [];
   if (parsed.vector.target === 'character') attack_surface.push('character');
   if (parsed.vector.target === 'competence') attack_surface.push('competence');
-  if (parsed.linguistic.pattern_markers.includes('never') ||
-      parsed.linguistic.pattern_markers.includes('always')) {
+  if (
+    parsed.linguistic.pattern_markers.includes('never') ||
+    parsed.linguistic.pattern_markers.includes('always')
+  ) {
     attack_surface.push('autonomy'); // Absolutes remove agency
   }
 
@@ -456,12 +500,13 @@ function generateAssessment(parsed) {
     attack_surface,
     child_as_instrument,
     deniability,
-    transmit
+    transmit,
   };
 }
 ```
 
 **Requirements**:
+
 - [ ] Risk scoring based on Axioms fired
 - [ ] Attack surface identification
 - [ ] Child involvement flagging
@@ -482,31 +527,31 @@ interface ParsedMessage {
 
   // Linguistic (from Tokenizer + Marker Detector)
   linguistic: {
-    tokens: Token[];           // each word tagged
-    softeners: string[];       // "just", "only", etc.
-    intensifiers: string[];    // "very", "always", "never"
+    tokens: Token[]; // each word tagged
+    softeners: string[]; // "just", "only", etc.
+    intensifiers: string[]; // "very", "always", "never"
     pattern_markers: string[]; // "always", "never", "every time"
-    contrast_markers: string[];// "but", "however"
-    negations: string[];       // "not", "never"
+    contrast_markers: string[]; // "but", "however"
+    negations: string[]; // "not", "never"
   };
 
   // Conceptual (from Primitive Mapper)
   conceptual: {
-    speaker: boolean;          // "I" present
-    addressee: boolean;        // "you" present
+    speaker: boolean; // "I" present
+    addressee: boolean; // "you" present
     third_party: ThirdParty[]; // who else is referenced
     temporal: 'past' | 'present' | 'future';
     epistemic: 'fact' | 'interpretation' | 'unknown';
-    domain: string;            // whose space/responsibility
+    domain: string; // whose space/responsibility
   };
 
   // Communication Vector (from Vector Identifier)
   vector: {
-    sender: string;            // user id
-    receiver: string;          // coparent id
-    target: string;            // character, competence, autonomy, parenting
+    sender: string; // user id
+    receiver: string; // coparent id
+    target: string; // character, competence, autonomy, parenting
     instrument: string | null; // child, money, schedule, etc.
-    aim: string;               // attack, control, inform, request
+    aim: string; // attack, control, inform, request
   };
 
   // Axioms (from Axiom Checker)
@@ -515,35 +560,35 @@ interface ParsedMessage {
   // Assessment (from Assessment Generator)
   assessment: {
     conflict_potential: 'low' | 'moderate' | 'high';
-    attack_surface: string[];  // character, competence, autonomy, parenting
+    attack_surface: string[]; // character, competence, autonomy, parenting
     child_as_instrument: boolean;
     deniability: 'low' | 'high';
-    transmit: boolean;         // can this go through as-is?
+    transmit: boolean; // can this go through as-is?
   };
 }
 
 interface Token {
   word: string;
-  pos: string;              // part of speech
-  addressee?: boolean;      // is "you"
-  speaker?: boolean;        // is "I"
-  emotion?: string;         // positive, negative, neutral
-  absolute?: boolean;       // is absolute (always/never)
-  softener?: boolean;       // is softener (just/only)
+  pos: string; // part of speech
+  addressee?: boolean; // is "you"
+  speaker?: boolean; // is "I"
+  emotion?: string; // positive, negative, neutral
+  absolute?: boolean; // is absolute (always/never)
+  softener?: boolean; // is softener (just/only)
 }
 
 interface ThirdParty {
-  reference: string;        // "she", "the teacher", "Emma"
-  relationship?: string;    // "child", "professional", "family"
-  role?: string;           // what role they play in the message
+  reference: string; // "she", "the teacher", "Emma"
+  relationship?: string; // "child", "professional", "family"
+  role?: string; // what role they play in the message
 }
 
 interface AxiomResult {
-  id: string;               // "AXIOM_001"
-  name: string;             // "Displaced Accusation"
-  confidence: number;       // 0-100
+  id: string; // "AXIOM_001"
+  name: string; // "Displaced Accusation"
+  confidence: number; // 0-100
   fired: boolean;
-  evidence?: object;        // what triggered it
+  evidence?: object; // what triggered it
 }
 ```
 
@@ -554,6 +599,7 @@ interface AxiomResult {
 #### 3.3.1 AI System Prompt Structure
 
 **Template**:
+
 ```
 # SYSTEM ROLE
 You are LiaiZen's Observer - you receive STRUCTURED ANALYSIS from the code layer
@@ -630,6 +676,7 @@ Output:
 #### 3.3.2 Context Integration
 
 **User Profile Context**:
+
 ```javascript
 // Passed to AI along with ParsedMessage
 {
@@ -659,6 +706,7 @@ Output:
 #### 3.3.3 AI Output Validation
 
 **Required Fields**:
+
 ```typescript
 interface AIResponse {
   action: 'STAY_SILENT' | 'INTERVENE' | 'COMMENT';
@@ -670,16 +718,17 @@ interface AIResponse {
   };
 
   intervention?: {
-    personalMessage: string;  // REQUIRED if action=INTERVENE
-    tip1: string;             // REQUIRED if action=INTERVENE
-    rewrite1: string;         // REQUIRED if action=INTERVENE
-    rewrite2: string;         // REQUIRED if action=INTERVENE
-    comment?: string;         // REQUIRED if action=COMMENT
+    personalMessage: string; // REQUIRED if action=INTERVENE
+    tip1: string; // REQUIRED if action=INTERVENE
+    rewrite1: string; // REQUIRED if action=INTERVENE
+    rewrite2: string; // REQUIRED if action=INTERVENE
+    comment?: string; // REQUIRED if action=COMMENT
   };
 }
 ```
 
 **Validation Rules**:
+
 - [ ] `personalMessage` must reference at least one Axiom
 - [ ] `personalMessage` must explain Intent vs Impact Delta
 - [ ] `personalMessage` must NOT diagnose emotions
@@ -696,6 +745,7 @@ interface AIResponse {
 ### 4.1 mediator.js Integration
 
 **Current Function**:
+
 ```javascript
 async function analyzeMessage(message, recentMessages, ...) {
   // Current: Direct AI call with prompt
@@ -704,6 +754,7 @@ async function analyzeMessage(message, recentMessages, ...) {
 ```
 
 **New Flow**:
+
 ```javascript
 async function analyzeMessage(message, recentMessages, roleContext, ...) {
   // 1. CODE LAYER ANALYSIS
@@ -737,6 +788,7 @@ async function analyzeMessage(message, recentMessages, roleContext, ...) {
 **Location**: `/chat-server/src/liaizen/core/codeLayer/`
 
 **Structure**:
+
 ```
 codeLayer/
 ├── index.js              # Main entry point
@@ -753,6 +805,7 @@ codeLayer/
 ```
 
 **Main Entry Point**:
+
 ```javascript
 // codeLayer/index.js
 const tokenizer = require('./tokenizer');
@@ -784,7 +837,7 @@ async function parse(messageText, context) {
     markers,
     conceptual,
     vector,
-    context
+    context,
   });
 
   // 6. Generate assessment
@@ -792,7 +845,7 @@ async function parse(messageText, context) {
     axioms_fired,
     vector,
     markers,
-    conceptual
+    conceptual,
   });
 
   const latency = Date.now() - startTime;
@@ -805,7 +858,7 @@ async function parse(messageText, context) {
       intensifiers: markers.intensifiers,
       pattern_markers: markers.pattern_markers,
       contrast_markers: markers.contrast_markers,
-      negations: markers.negations
+      negations: markers.negations,
     },
     conceptual,
     vector,
@@ -813,8 +866,8 @@ async function parse(messageText, context) {
     assessment,
     meta: {
       version: '1.0.0',
-      latency_ms: latency
-    }
+      latency_ms: latency,
+    },
   };
 }
 
@@ -824,6 +877,7 @@ module.exports = { parse };
 ### 4.3 constitution.md Updates
 
 **Add Section**:
+
 ```markdown
 ## Part VII: Code Layer Integration
 
@@ -832,6 +886,7 @@ module.exports = { parse };
 All Axioms MUST be implemented in code before being referenced by AI.
 
 **Axiom Structure**:
+
 - ID: Unique identifier (e.g., AXIOM_001)
 - Name: Human-readable name
 - Category: indirect_communication, contextual, clean
@@ -841,6 +896,7 @@ All Axioms MUST be implemented in code before being referenced by AI.
 
 **AI References**:
 When AI cites an Axiom, it MUST:
+
 1. Use the exact Axiom ID (e.g., "AXIOM 001")
 2. Include the Axiom name (e.g., "Displaced Accusation")
 3. Explain the structural pattern detected
@@ -857,17 +913,17 @@ will land as triangulation, putting the child between you."
 
 ### 5.1 Performance
 
-| Component | Target | Max Acceptable |
-|-----------|--------|----------------|
-| Tokenizer | <10ms | 20ms |
-| Marker Detector | <5ms | 10ms |
-| Primitive Mapper | <15ms | 30ms |
-| Vector Identifier | <20ms | 40ms |
-| Axiom Checker (all) | <30ms | 60ms |
-| Assessment Generator | <10ms | 20ms |
-| **Total Code Layer** | **<100ms** | **150ms** |
-| AI Call | <300ms | 500ms |
-| **Total End-to-End** | **<400ms** | **650ms** |
+| Component            | Target     | Max Acceptable |
+| -------------------- | ---------- | -------------- |
+| Tokenizer            | <10ms      | 20ms           |
+| Marker Detector      | <5ms       | 10ms           |
+| Primitive Mapper     | <15ms      | 30ms           |
+| Vector Identifier    | <20ms      | 40ms           |
+| Axiom Checker (all)  | <30ms      | 60ms           |
+| Assessment Generator | <10ms      | 20ms           |
+| **Total Code Layer** | **<100ms** | **150ms**      |
+| AI Call              | <300ms     | 500ms          |
+| **Total End-to-End** | **<400ms** | **650ms**      |
 
 ### 5.2 Scalability
 
@@ -886,10 +942,12 @@ will land as triangulation, putting the child between you."
 ### 5.4 Cost Efficiency
 
 **Current Cost** (per 1000 messages):
+
 - AI calls: 1000 messages × $0.002 = $2.00
 - Total: $2.00/1000 messages
 
 **Target Cost** (per 1000 messages):
+
 - AI calls: 400 messages × $0.002 = $0.80
 - Code layer: 1000 messages × $0.00001 = $0.01
 - Total: $0.81/1000 messages
@@ -908,37 +966,37 @@ will land as triangulation, putting the child between you."
 
 ### 6.1 Accuracy Metrics
 
-| Metric | Baseline | Target | Measurement |
-|--------|----------|--------|-------------|
-| Precision (true positives / total interventions) | 75% | 95% | Manual review of 500 interventions |
-| Recall (caught / total harmful) | 85% | 90% | Review of flagged messages |
-| False Positive Rate | 25% | <5% | User feedback "unhelpful" |
-| False Negative Rate | 15% | <10% | Post-send escalation tracking |
+| Metric                                           | Baseline | Target | Measurement                        |
+| ------------------------------------------------ | -------- | ------ | ---------------------------------- |
+| Precision (true positives / total interventions) | 75%      | 95%    | Manual review of 500 interventions |
+| Recall (caught / total harmful)                  | 85%      | 90%    | Review of flagged messages         |
+| False Positive Rate                              | 25%      | <5%    | User feedback "unhelpful"          |
+| False Negative Rate                              | 15%      | <10%   | Post-send escalation tracking      |
 
 ### 6.2 Performance Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Code Layer Latency (p50) | <50ms | Instrumentation |
-| Code Layer Latency (p95) | <100ms | Instrumentation |
+| Metric                   | Target | Measurement       |
+| ------------------------ | ------ | ----------------- |
+| Code Layer Latency (p50) | <50ms  | Instrumentation   |
+| Code Layer Latency (p95) | <100ms | Instrumentation   |
 | End-to-End Latency (p50) | <300ms | End-to-end timing |
 | End-to-End Latency (p95) | <500ms | End-to-end timing |
 
 ### 6.3 User Satisfaction Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Intervention Helpfulness | >80% "helpful" | In-app rating |
-| Rewrite Acceptance Rate | >60% | Track accepted rewrites |
-| Transparency Score | >75% "understood why" | Post-intervention survey |
+| Metric                   | Target                | Measurement              |
+| ------------------------ | --------------------- | ------------------------ |
+| Intervention Helpfulness | >80% "helpful"        | In-app rating            |
+| Rewrite Acceptance Rate  | >60%                  | Track accepted rewrites  |
+| Transparency Score       | >75% "understood why" | Post-intervention survey |
 
 ### 6.4 Business Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Cost per 1000 messages | <$1.00 | API usage tracking |
-| AI Call Rate | <40% | Monitoring dashboard |
-| Axiom Coverage | 100% | Code audit |
+| Metric                 | Target | Measurement          |
+| ---------------------- | ------ | -------------------- |
+| Cost per 1000 messages | <$1.00 | API usage tracking   |
+| AI Call Rate           | <40%   | Monitoring dashboard |
+| Axiom Coverage         | 100%   | Code audit           |
 
 ---
 
@@ -947,6 +1005,7 @@ will land as triangulation, putting the child between you."
 ### 7.1 Axiom Test Cases
 
 #### Test Case 1: AXIOM 001 (Displaced Accusation)
+
 ```javascript
 // POSITIVE (should fire)
 "She's been crying since you picked her up"
@@ -967,6 +1026,7 @@ will land as triangulation, putting the child between you."
 ```
 
 #### Test Case 2: AXIOM 004 (Weaponized Agreement)
+
 ```javascript
 // POSITIVE (should fire)
 "I agree we should be consistent, but you never follow through"
@@ -987,6 +1047,7 @@ will land as triangulation, putting the child between you."
 ```
 
 #### Test Case 3: AXIOM D001 (Clean Request)
+
 ```javascript
 // POSITIVE (should fire)
 "Can you pick her up at 3pm?"
@@ -1009,6 +1070,7 @@ will land as triangulation, putting the child between you."
 ### 7.2 Integration Test Scenarios
 
 #### Scenario 1: High-Conflict Message
+
 ```javascript
 Input: "You NEVER think about anyone but yourself"
 
@@ -1049,6 +1111,7 @@ Expected AI Response:
 ```
 
 #### Scenario 2: Clean Logistical Message
+
 ```javascript
 Input: "Can you pick her up at 3pm tomorrow?"
 
@@ -1067,6 +1130,7 @@ Expected Result: Message passes without AI call (instant delivery)
 ```
 
 #### Scenario 3: Positive Message
+
 ```javascript
 Input: "You're a great dad"
 
@@ -1091,6 +1155,7 @@ Expected Result: Pre-approved, no AI call
 ### 7.3 Edge Cases
 
 #### Edge Case 1: Context-Dependent Pattern
+
 ```javascript
 Input: "You're my best friend"
 
@@ -1102,6 +1167,7 @@ Expected: INTERVENE (sarcasm detected)
 ```
 
 #### Edge Case 2: Mixed Signals
+
 ```javascript
 Input: "I appreciate you helping, but you always do it wrong"
 
@@ -1112,6 +1178,7 @@ Expected:
 ```
 
 #### Edge Case 3: Child-Protective Language
+
 ```javascript
 Input: "Let me handle the money talk with your mom - you don't need to worry about that"
 
@@ -1127,9 +1194,11 @@ Expected: Different handling based on recipient
 ## 8. Implementation Phases
 
 ### Phase 1: Code Layer Foundation (Week 1-2)
+
 **Goal**: Build core parsing infrastructure
 
 **Deliverables**:
+
 - [ ] Tokenizer implementation
 - [ ] Marker Detector implementation
 - [ ] Primitive Mapper implementation
@@ -1137,14 +1206,17 @@ Expected: Different handling based on recipient
 - [ ] Performance benchmarks
 
 **Success Criteria**:
+
 - All components <20ms latency
-- >95% accuracy on test corpus
+- > 95% accuracy on test corpus
 - 100% test coverage
 
 ### Phase 2: Axiom System (Week 3-4)
+
 **Goal**: Implement all documented Axioms
 
 **Deliverables**:
+
 - [ ] AXIOM 001-016 (Indirect Communication)
 - [ ] AXIOM C001-C007 (Contextual)
 - [ ] AXIOM D001-D002 (Clean)
@@ -1152,47 +1224,57 @@ Expected: Different handling based on recipient
 - [ ] Test suite for each Axiom
 
 **Success Criteria**:
+
 - All Axioms implemented
 - <30ms total check time
-- >90% precision/recall per Axiom
+- > 90% precision/recall per Axiom
 
 ### Phase 3: Vector & Assessment (Week 5)
+
 **Goal**: Complete code layer analysis
 
 **Deliverables**:
+
 - [ ] Vector Identifier
 - [ ] Assessment Generator
 - [ ] ParsedMessage integration
 - [ ] End-to-end code layer tests
 
 **Success Criteria**:
+
 - <100ms total code layer latency
 - Correct transmission decisions >95%
 
 ### Phase 4: AI Integration (Week 6-7)
+
 **Goal**: Connect code layer to AI
 
 **Deliverables**:
+
 - [ ] AI prompt template with ParsedMessage
 - [ ] Context builder
 - [ ] Response validator
 - [ ] Fallback handling
 
 **Success Criteria**:
+
 - AI references Axioms correctly
 - Response validation catches errors
 - Graceful degradation works
 
 ### Phase 5: Deployment & Monitoring (Week 8)
+
 **Goal**: Production rollout with observability
 
 **Deliverables**:
+
 - [ ] Metrics dashboard
 - [ ] A/B test framework (hybrid vs. legacy)
 - [ ] Performance monitoring
 - [ ] Cost tracking
 
 **Success Criteria**:
+
 - <1% error rate
 - Cost savings >50%
 - User satisfaction >80%
@@ -1202,45 +1284,55 @@ Expected: Different handling based on recipient
 ## 9. Risks & Mitigation
 
 ### Risk 1: Code Layer Complexity
+
 **Risk**: Axiom logic becomes too complex, hard to maintain
 
 **Mitigation**:
+
 - Modular design (one file per Axiom)
 - Comprehensive tests
 - Documentation requirements
 - Code review process
 
 ### Risk 2: Performance Degradation
+
 **Risk**: Code layer slower than expected
 
 **Mitigation**:
+
 - Performance benchmarks in CI/CD
 - Profiling tools integrated
 - Caching strategies
 - Async processing where possible
 
 ### Risk 3: False Positives
+
 **Risk**: Code layer flags clean messages
 
 **Mitigation**:
+
 - Conservative thresholds
 - A/B testing with legacy system
 - User feedback loop
 - Manual review of edge cases
 
 ### Risk 4: AI Prompt Drift
+
 **Risk**: AI stops referencing Axioms correctly
 
 **Mitigation**:
+
 - Automated validation
 - Prompt versioning
 - Regular audits
 - Examples in prompt
 
 ### Risk 5: Context Gaps
+
 **Risk**: Missing context leads to wrong decisions
 
 **Mitigation**:
+
 - Comprehensive context passing
 - Fallback to AI for ambiguous cases
 - User override options
@@ -1251,21 +1343,25 @@ Expected: Different handling based on recipient
 ## 10. Future Enhancements
 
 ### 10.1 Machine Learning Integration
+
 - **Goal**: Train ML models on Axiom patterns
 - **Benefit**: Even faster pattern detection
 - **Timeline**: Q2 2026
 
 ### 10.2 User-Customizable Axioms
+
 - **Goal**: Allow users to define custom patterns
 - **Benefit**: Personalized mediation
 - **Timeline**: Q3 2026
 
 ### 10.3 Multi-Language Support
+
 - **Goal**: Axiom system works in Spanish, French, etc.
 - **Benefit**: Expand user base
 - **Timeline**: Q4 2026
 
 ### 10.4 Relationship State Machine
+
 - **Goal**: Track relationship state over time
 - **Benefit**: Adaptive thresholds based on relationship health
 - **Timeline**: Q1 2027
@@ -1276,24 +1372,24 @@ Expected: Different handling based on recipient
 
 ### 11.1 Axiom Reference Table
 
-| Axiom ID | Name | Category | Pattern Summary |
-|----------|------|----------|-----------------|
-| AXIOM_001 | Displaced Accusation | Indirect | Child state + Receiver link + Softener |
-| AXIOM_002 | False Offering | Indirect | Offer + Conditionality + Burden |
-| AXIOM_003 | Innocent Inquiry | Indirect | Question + Receiver action + Softener |
-| AXIOM_004 | Weaponized Agreement | Indirect | Agreement + "But" + Negative |
-| AXIOM_005 | Virtuous Self-Reference | Indirect | Self-praise + Conflict context |
-| AXIOM_007 | Pre-emptive Denial | Indirect | Denial + Contrast |
-| AXIOM_008 | Reluctant Compliance | Indirect | Agreement + Hesitation + Sigh |
-| AXIOM_010 | Child as Messenger | Indirect | Child quote + Negative about receiver |
-| AXIOM_012 | Concerned Question | Indirect | Child state question + Follows receiver time |
-| AXIOM_016 | Hypothetical Accusation | Indirect | "Imagine if..." + Mirrors receiver |
-| AXIOM_C001 | Proximity Claim | Contextual | Sender closer + Logistics claim |
-| AXIOM_C002 | New Partner Threat | Contextual | New partner + Child confusion |
-| AXIOM_C005 | Fresh Separation | Contextual | Separation <12mo + High volatility |
-| AXIOM_C007 | Income Leverage | Contextual | Income disparity + Financial offer |
-| AXIOM_D001 | Clean Request | Clean | Specific + Actionable + No softener |
-| AXIOM_D002 | Clean Information | Clean | Verifiable fact + Relevant + No markers |
+| Axiom ID   | Name                    | Category   | Pattern Summary                              |
+| ---------- | ----------------------- | ---------- | -------------------------------------------- |
+| AXIOM_001  | Displaced Accusation    | Indirect   | Child state + Receiver link + Softener       |
+| AXIOM_002  | False Offering          | Indirect   | Offer + Conditionality + Burden              |
+| AXIOM_003  | Innocent Inquiry        | Indirect   | Question + Receiver action + Softener        |
+| AXIOM_004  | Weaponized Agreement    | Indirect   | Agreement + "But" + Negative                 |
+| AXIOM_005  | Virtuous Self-Reference | Indirect   | Self-praise + Conflict context               |
+| AXIOM_007  | Pre-emptive Denial      | Indirect   | Denial + Contrast                            |
+| AXIOM_008  | Reluctant Compliance    | Indirect   | Agreement + Hesitation + Sigh                |
+| AXIOM_010  | Child as Messenger      | Indirect   | Child quote + Negative about receiver        |
+| AXIOM_012  | Concerned Question      | Indirect   | Child state question + Follows receiver time |
+| AXIOM_016  | Hypothetical Accusation | Indirect   | "Imagine if..." + Mirrors receiver           |
+| AXIOM_C001 | Proximity Claim         | Contextual | Sender closer + Logistics claim              |
+| AXIOM_C002 | New Partner Threat      | Contextual | New partner + Child confusion                |
+| AXIOM_C005 | Fresh Separation        | Contextual | Separation <12mo + High volatility           |
+| AXIOM_C007 | Income Leverage         | Contextual | Income disparity + Financial offer           |
+| AXIOM_D001 | Clean Request           | Clean      | Specific + Actionable + No softener          |
+| AXIOM_D002 | Clean Information       | Clean      | Verifiable fact + Relevant + No markers      |
 
 ### 11.2 Glossary
 
@@ -1318,12 +1414,14 @@ Expected: Different handling based on recipient
 
 **Document Status**: Draft for Review
 **Next Steps**:
+
 1. Technical review by engineering team
 2. Product review for business alignment
 3. Constitutional compliance check
 4. Approval for Phase 1 implementation
 
 **Questions for Discussion**:
+
 1. Are all 15 Axioms from the constitution sufficiently defined?
 2. Is the 100ms code layer latency target realistic?
 3. Should we implement all Axioms in Phase 2 or prioritize subset?
@@ -1331,4 +1429,4 @@ Expected: Different handling based on recipient
 
 ---
 
-*This specification complies with LiaiZen Constitutional Principles and Spec-Driven Development methodology.*
+_This specification complies with LiaiZen Constitutional Principles and Spec-Driven Development methodology._

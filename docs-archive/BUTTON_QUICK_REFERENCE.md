@@ -15,22 +15,21 @@ import { Button } from './ui';
 ## Common Patterns
 
 ### Primary CTA
+
 ```jsx
 <Button variant="primary">Get Started</Button>
 ```
 
 ### Save Button
+
 ```jsx
-<Button
-  variant="primary"
-  loading={isSaving}
-  disabled={isSaving}
->
+<Button variant="primary" loading={isSaving} disabled={isSaving}>
   Save
 </Button>
 ```
 
 ### Cancel Button
+
 ```jsx
 <Button variant="tertiary" onClick={onCancel}>
   Cancel
@@ -38,6 +37,7 @@ import { Button } from './ui';
 ```
 
 ### Delete Button
+
 ```jsx
 <Button variant="danger" onClick={handleDelete}>
   Delete
@@ -45,39 +45,31 @@ import { Button } from './ui';
 ```
 
 ### Close Button (×)
+
 ```jsx
-<Button
-  variant="ghost"
-  size="small"
-  onClick={onClose}
-  aria-label="Close"
->
+<Button variant="ghost" size="small" onClick={onClose} aria-label="Close">
   ×
 </Button>
 ```
 
 ### Icon Button
+
 ```jsx
-<Button
-  variant="ghost"
-  icon={<EditIcon />}
-  onClick={handleEdit}
->
+<Button variant="ghost" icon={<EditIcon />} onClick={handleEdit}>
   Edit
 </Button>
 ```
 
 ### Loading Button
+
 ```jsx
-<Button
-  loading={isLoading}
-  disabled={isLoading}
->
+<Button loading={isLoading} disabled={isLoading}>
   Submit
 </Button>
 ```
 
 ### Full Width
+
 ```jsx
 <Button variant="primary" fullWidth>
   Create Account
@@ -85,11 +77,9 @@ import { Button } from './ui';
 ```
 
 ### Toggle Button
+
 ```jsx
-<Button
-  variant={isActive ? 'secondary' : 'tertiary'}
-  onClick={handleToggle}
->
+<Button variant={isActive ? 'secondary' : 'tertiary'} onClick={handleToggle}>
   {label}
 </Button>
 ```
@@ -98,24 +88,24 @@ import { Button } from './ui';
 
 ## Quick Variant Guide
 
-| Use Case | Variant |
-|----------|---------|
-| Main action | `primary` |
+| Use Case         | Variant     |
+| ---------------- | ----------- |
+| Main action      | `primary`   |
 | Secondary action | `secondary` |
-| Cancel/Back | `tertiary` |
-| Close/Hide | `ghost` |
-| Delete/Remove | `danger` |
+| Cancel/Back      | `tertiary`  |
+| Close/Hide       | `ghost`     |
+| Delete/Remove    | `danger`    |
 
 ---
 
 ## Quick Size Guide
 
-| Context | Size |
-|---------|------|
-| Hero CTA | `large` |
+| Context      | Size     |
+| ------------ | -------- |
+| Hero CTA     | `large`  |
 | Most buttons | `medium` |
-| Modal footer | `small` |
-| Cards | `small` |
+| Modal footer | `small`  |
+| Cards        | `small`  |
 
 ---
 

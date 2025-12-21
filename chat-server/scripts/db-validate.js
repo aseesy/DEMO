@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * Database Schema Validation Script
- * 
+ *
  * Validates that PostgreSQL schema matches expected structure.
  * Catches schema drift before it causes production issues.
- * 
+ *
  * Usage: npm run db:validate
  */
 
@@ -54,13 +54,16 @@ async function validateSchema() {
       }
 
       // Get columns for this table
-      const columnsResult = await db.query(`
+      const columnsResult = await db.query(
+        `
         SELECT column_name, data_type 
         FROM information_schema.columns 
         WHERE table_schema = 'public' 
         AND table_name = $1
         ORDER BY ordinal_position
-      `, [tableName]);
+      `,
+        [tableName]
+      );
 
       const existingColumns = columnsResult.rows.map(row => row.column_name);
       const missingColumns = requiredColumns.filter(col => !existingColumns.includes(col));
@@ -69,7 +72,7 @@ async function validateSchema() {
         invalidTables.push({
           table: tableName,
           missingColumns,
-          existingColumns
+          existingColumns,
         });
       } else {
         validTables.push(tableName);
@@ -112,7 +115,7 @@ async function validateSchema() {
 
     // Final status
     const hasErrors = missingTables.length > 0 || invalidTables.length > 0;
-    
+
     if (hasErrors) {
       console.log('❌ Schema validation FAILED');
       console.log('\n💡 Run migrations to fix schema issues:');
@@ -122,7 +125,6 @@ async function validateSchema() {
       console.log('✅ Schema validation PASSED');
       process.exit(0);
     }
-
   } catch (error) {
     console.error('❌ Schema validation error:', error.message);
     console.error('\n💡 Check your DATABASE_URL environment variable');
@@ -132,4 +134,3 @@ async function validateSchema() {
 
 // Run validation
 validateSchema();
-

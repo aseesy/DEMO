@@ -8,62 +8,62 @@
 
 ## Demographics
 
-| Attribute | Value |
-|-----------|-------|
-| **Name** | Athena |
-| **Role** | Parent of Vira |
+| Attribute               | Value                                              |
+| ----------------------- | -------------------------------------------------- |
+| **Name**                | Athena                                             |
+| **Role**                | Parent of Vira                                     |
 | **Communication Style** | Highly responsible, mature, organizational thinker |
-| **Primary Function** | Handles many planning/logistical tasks |
+| **Primary Function**    | Handles many planning/logistical tasks             |
 
 ---
 
 ## Family Situation
 
-| Attribute | Value |
-|-----------|-------|
-| **Co-Parent** | Yashir |
-| **Child** | Vira |
-| **Relationship Dynamic** | High tension, communication style mismatch |
-| **Key Challenge** | Avoiding being mischaracterized as controlling or combative |
+| Attribute                | Value                                                       |
+| ------------------------ | ----------------------------------------------------------- |
+| **Co-Parent**            | Yashir                                                      |
+| **Child**                | Vira                                                        |
+| **Relationship Dynamic** | High tension, communication style mismatch                  |
+| **Key Challenge**        | Avoiding being mischaracterized as controlling or combative |
 
 ---
 
 ## Personality Traits
 
-| Trait | Description |
-|-------|-------------|
-| **Logical** | Thinks through situations systematically |
-| **Reflective** | Considers multiple perspectives before responding |
-| **Introspective** | Self-aware and examines her own patterns |
-| **Empathic but firm** | Cares deeply but maintains boundaries |
-| **Resilient** | Able to bounce back from difficult interactions |
-| **Values fairness** | Strong commitment to accountability and equity |
+| Trait                 | Description                                       |
+| --------------------- | ------------------------------------------------- |
+| **Logical**           | Thinks through situations systematically          |
+| **Reflective**        | Considers multiple perspectives before responding |
+| **Introspective**     | Self-aware and examines her own patterns          |
+| **Empathic but firm** | Cares deeply but maintains boundaries             |
+| **Resilient**         | Able to bounce back from difficult interactions   |
+| **Values fairness**   | Strong commitment to accountability and equity    |
 
 ---
 
 ## Core Values
 
-| Value | Description |
-|-------|-------------|
-| **Stability for her child** | Prioritizes Vira's emotional and physical safety |
-| **Respectful communication** | Believes in mature, adult-level dialogue |
-| **Clarity in agreements** | Needs explicit, documented understandings |
-| **Predictability and structure** | Values consistency and planning |
-| **Emotional safety** | Wants communication to feel safe, not threatening |
-| **Personal responsibility** | Takes ownership of her actions and words |
+| Value                            | Description                                       |
+| -------------------------------- | ------------------------------------------------- |
+| **Stability for her child**      | Prioritizes Vira's emotional and physical safety  |
+| **Respectful communication**     | Believes in mature, adult-level dialogue          |
+| **Clarity in agreements**        | Needs explicit, documented understandings         |
+| **Predictability and structure** | Values consistency and planning                   |
+| **Emotional safety**             | Wants communication to feel safe, not threatening |
+| **Personal responsibility**      | Takes ownership of her actions and words          |
 
 ---
 
 ## Strengths
 
-| Strength | Impact |
-|---------|-------|
-| **Thinks before speaking** | Reduces reactive communication |
-| **Good at planning and coordination** | Effective at logistics and organization |
-| **Able to hold calm during conflict** | Maintains composure under pressure |
-| **Tries to avoid emotional escalation** | De-escalates rather than escalates |
-| **Capable of self-reflection** | Can recognize and adjust her own patterns |
-| **Focused on solutions** | Problem-solving oriented |
+| Strength                                | Impact                                    |
+| --------------------------------------- | ----------------------------------------- |
+| **Thinks before speaking**              | Reduces reactive communication            |
+| **Good at planning and coordination**   | Effective at logistics and organization   |
+| **Able to hold calm during conflict**   | Maintains composure under pressure        |
+| **Tries to avoid emotional escalation** | De-escalates rather than escalates        |
+| **Capable of self-reflection**          | Can recognize and adjust her own patterns |
+| **Focused on solutions**                | Problem-solving oriented                  |
 
 ---
 
@@ -71,38 +71,39 @@
 
 When pressured or attacked, Athena may:
 
-| Behavior | Trigger | Impact |
-|----------|---------|--------|
-| **Over-explains** | Feeling misunderstood or mischaracterized | Can be perceived as defensive or controlling |
-| **Tries to defend intentions** | When her motives are questioned | May sound like she's making excuses |
-| **Over-apologizes** | Wanting to avoid conflict | Can undermine her own authority |
-| **Internalizes blame** | Takes responsibility even when not fully at fault | Can lead to self-doubt |
-| **Second-guesses requests** | Worried about being seen as "too much" | May not advocate for what she needs |
+| Behavior                       | Trigger                                           | Impact                                       |
+| ------------------------------ | ------------------------------------------------- | -------------------------------------------- |
+| **Over-explains**              | Feeling misunderstood or mischaracterized         | Can be perceived as defensive or controlling |
+| **Tries to defend intentions** | When her motives are questioned                   | May sound like she's making excuses          |
+| **Over-apologizes**            | Wanting to avoid conflict                         | Can undermine her own authority              |
+| **Internalizes blame**         | Takes responsibility even when not fully at fault | Can lead to self-doubt                       |
+| **Second-guesses requests**    | Worried about being seen as "too much"            | May not advocate for what she needs          |
 
 ### Key Insight
+
 > Not because she lacks confidence — but because she is often trying to avoid being mischaracterized as controlling or combative.
 
 ---
 
 ## Social / Relational Style
 
-| Aspect | Description |
-|--------|-------------|
-| **Communication preference** | Wants communication to feel cooperative |
-| **Decision-making** | Wants co-parenting decisions to be logical and child-centered |
-| **Conflict approach** | Avoids toxic dynamics |
-| **Information sharing** | Prefers transparency and fact-based discussion |
+| Aspect                       | Description                                                   |
+| ---------------------------- | ------------------------------------------------------------- |
+| **Communication preference** | Wants communication to feel cooperative                       |
+| **Decision-making**          | Wants co-parenting decisions to be logical and child-centered |
+| **Conflict approach**        | Avoids toxic dynamics                                         |
+| **Information sharing**      | Prefers transparency and fact-based discussion                |
 
 ---
 
 ## Technology Behavior
 
-| Behavior | Description |
-|----------|-------------|
-| **Written communication** | Comfortable with text-based messaging |
-| **UI preferences** | Appreciates clear, well-organized interfaces |
-| **Feedback style** | Responds best to constructive suggestions |
-| **Data needs** | Values tracking, logging, and clarity of shared records |
+| Behavior                  | Description                                             |
+| ------------------------- | ------------------------------------------------------- |
+| **Written communication** | Comfortable with text-based messaging                   |
+| **UI preferences**        | Appreciates clear, well-organized interfaces            |
+| **Feedback style**        | Responds best to constructive suggestions               |
+| **Data needs**            | Values tracking, logging, and clarity of shared records |
 
 ---
 
@@ -120,40 +121,41 @@ When pressured or attacked, Athena may:
 
 ### Characteristics
 
-| Trait | Description |
-|-------|-------------|
-| **Calm reasoning** | Uses logic and facts to communicate |
-| **Clarifying** | Seeks to ensure understanding |
-| **Structured** | Organizes thoughts clearly |
-| **Cooperative tone** | Frames things as collaboration |
-| **Avoids escalation** | De-escalates rather than escalates |
+| Trait                 | Description                         |
+| --------------------- | ----------------------------------- |
+| **Calm reasoning**    | Uses logic and facts to communicate |
+| **Clarifying**        | Seeks to ensure understanding       |
+| **Structured**        | Organizes thoughts clearly          |
+| **Cooperative tone**  | Frames things as collaboration      |
+| **Avoids escalation** | De-escalates rather than escalates  |
 
 ### Example Messages (Unmediated)
 
-| What She Types | What She Means | How Yashir Hears It |
-|---------------|---------------|-------------------|
-| "Just to clarify, are we agreeing to..." | "I want to make sure we're on the same page" | "You're correcting me" |
-| "I think we should consider..." | "Here's a logical option" | "You're telling me what to do" |
-| "For Vira's stability, could we..." | "This is about our child's wellbeing" | "You're using Vira to control me" |
-| "I want to make sure we're aligned on..." | "Let's confirm we understand each other" | "You're managing me" |
+| What She Types                            | What She Means                               | How Yashir Hears It               |
+| ----------------------------------------- | -------------------------------------------- | --------------------------------- |
+| "Just to clarify, are we agreeing to..."  | "I want to make sure we're on the same page" | "You're correcting me"            |
+| "I think we should consider..."           | "Here's a logical option"                    | "You're telling me what to do"    |
+| "For Vira's stability, could we..."       | "This is about our child's wellbeing"        | "You're using Vira to control me" |
+| "I want to make sure we're aligned on..." | "Let's confirm we understand each other"     | "You're managing me"              |
 
 ---
 
 ## Pain Points
 
-| Pain Point | Impact |
-|------------|--------|
-| **Being mischaracterized** | Feels like she can't communicate without being seen as controlling |
-| **Words being weaponized** | Her careful communication gets twisted |
-| **Over-explaining** | Feels she must justify every request |
-| **Second-guessing herself** | Questions whether her needs are "too much" |
-| **Avoiding escalation** | Sometimes doesn't advocate strongly enough |
+| Pain Point                  | Impact                                                             |
+| --------------------------- | ------------------------------------------------------------------ |
+| **Being mischaracterized**  | Feels like she can't communicate without being seen as controlling |
+| **Words being weaponized**  | Her careful communication gets twisted                             |
+| **Over-explaining**         | Feels she must justify every request                               |
+| **Second-guessing herself** | Questions whether her needs are "too much"                         |
+| **Avoiding escalation**     | Sometimes doesn't advocate strongly enough                         |
 
 ---
 
 ## Likely Behaviors in App
 
 ### Message Patterns
+
 - May write **longer, explanatory messages** to avoid misunderstanding
 - Uses **"just to clarify"** language frequently
 - Structures messages with **logical reasoning**
@@ -161,15 +163,17 @@ When pressured or attacked, Athena may:
 - Tries to **frame everything as collaborative**
 
 ### Trigger Words She Uses
-| Word/Phrase | Underlying Emotion | Risk |
-|-------------|-------------------|------|
-| "just to clarify" | Wanting to ensure understanding | Sounds like correction |
-| "for Vira's sake" | Child-centered thinking | Can sound manipulative |
-| "I think we should" | Collaborative suggestion | Can sound like direction |
-| "to make sure" | Seeking confirmation | Can sound like micromanagement |
-| "I want to ensure" | Responsibility and care | Can sound controlling |
+
+| Word/Phrase         | Underlying Emotion              | Risk                           |
+| ------------------- | ------------------------------- | ------------------------------ |
+| "just to clarify"   | Wanting to ensure understanding | Sounds like correction         |
+| "for Vira's sake"   | Child-centered thinking         | Can sound manipulative         |
+| "I think we should" | Collaborative suggestion        | Can sound like direction       |
+| "to make sure"      | Seeking confirmation            | Can sound like micromanagement |
+| "I want to ensure"  | Responsibility and care         | Can sound controlling          |
 
 ### Response to AI Suggestions
+
 - May initially **resist shorter messages** (feels incomplete)
 - More receptive to suggestions framed as **"this preserves your intent but reduces defensiveness"**
 - Responds well to **"this version is clearer without sounding directive"**
@@ -180,6 +184,7 @@ When pressured or attacked, Athena may:
 ## What Athena Needs From LiaiZen
 
 ### Core Needs
+
 1. **Tools for structure** - Documentation, recordkeeping, clear timestamps, confirmation systems
 2. **Shared calendars** - Version tracking of plans
 3. **Tools for neutral communication** - Ways to express needs without sounding controlling
@@ -188,14 +193,15 @@ When pressured or attacked, Athena may:
 
 ### AI Coaching Language for Athena
 
-| Instead of... | Try framing as... |
-|---------------|-------------------|
-| "This sounds controlling" | "This version preserves your intent while reducing defensiveness" |
-| "You're over-explaining" | "This shorter version maintains clarity without the extra context" |
-| "That's too long" | "Here's a version that's direct while still being respectful" |
-| "Don't apologize" | "This version states your need without apology" |
+| Instead of...             | Try framing as...                                                  |
+| ------------------------- | ------------------------------------------------------------------ |
+| "This sounds controlling" | "This version preserves your intent while reducing defensiveness"  |
+| "You're over-explaining"  | "This shorter version maintains clarity without the extra context" |
+| "That's too long"         | "Here's a version that's direct while still being respectful"      |
+| "Don't apologize"         | "This version states your need without apology"                    |
 
 ### UI/UX Considerations
+
 - **Micro-UI element**: "This message may be perceived as directive"
 - **Tone indicator**: Show when clarifying language reads as correction
 - **Structure tools**: Clear documentation, timestamps, version tracking
@@ -205,13 +211,13 @@ When pressured or attacked, Athena may:
 
 ## Success Criteria for Athena
 
-| Metric | Current State | Target State |
-|--------|---------------|--------------|
-| Messages perceived as controlling | Frequent | Rare |
-| Over-explanation frequency | High | Low |
-| Confidence in requests | Low (second-guessing) | High |
-| Being mischaracterized | Frequent | Rare |
-| Mutual respect in communication | Inconsistent | Consistent |
+| Metric                            | Current State         | Target State |
+| --------------------------------- | --------------------- | ------------ |
+| Messages perceived as controlling | Frequent              | Rare         |
+| Over-explanation frequency        | High                  | Low          |
+| Confidence in requests            | Low (second-guessing) | High         |
+| Being mischaracterized            | Frequent              | Rare         |
+| Mutual respect in communication   | Inconsistent          | Consistent   |
 
 ---
 
@@ -232,12 +238,14 @@ When pressured or attacked, Athena may:
 ## Design Implications
 
 ### For AI Mediation
+
 - Detect **clarifying language** that may read as correction
 - Recognize **over-explanation patterns** and suggest concise alternatives
 - Preserve her **logical structure** while reducing **defensive triggers**
 - Frame suggestions as **"preserving intent while reducing defensiveness"**
 
 ### For UX
+
 - **Structure tools** - Documentation, calendars, version tracking
 - **Clear timestamps** - For accountability and recordkeeping
 - **Confirmation systems** - Ways to verify agreements
@@ -245,6 +253,7 @@ When pressured or attacked, Athena may:
 - **Validation** - Acknowledge legitimate concerns
 
 ### For Onboarding
+
 - Position AI as **clarity and structure tool**
 - Emphasize **documentation and recordkeeping**
 - Show how it **prevents mischaracterization**
@@ -255,14 +264,16 @@ When pressured or attacked, Athena may:
 ## Relationship to Yashir
 
 ### Dynamic Summary
-| Athena's Perspective | Yashir's Perspective |
-|---------------------|---------------------|
-| "I'm clarifying to ensure understanding" | "She's correcting me" |
+
+| Athena's Perspective                       | Yashir's Perspective          |
+| ------------------------------------------ | ----------------------------- |
+| "I'm clarifying to ensure understanding"   | "She's correcting me"         |
 | "I want logical, child-centered decisions" | "She's telling me what to do" |
-| "I need structure and predictability" | "She's trying to control me" |
-| "I'm trying to avoid escalation" | "She's attacking me" |
+| "I need structure and predictability"      | "She's trying to control me"  |
+| "I'm trying to avoid escalation"           | "She's attacking me"          |
 
 ### Communication Loop to Break
+
 ```
 Athena: Clarifying/logical message →
 Yashir: Perceives as correction/direction →
@@ -273,7 +284,9 @@ Yashir: Perceives as more control →
 ```
 
 ### LiaiZen's Role
+
 **Not to take sides** - but to help break the loop by:
+
 - Helping Athena communicate clarity without sounding directive
 - Helping Yashir receive information without perceiving attack
 - Creating space for both to be heard and respected
@@ -293,11 +306,11 @@ Yashir: Perceives as more control →
 ---
 
 ## Related Personas
+
 - **Yashir** (Paired) - Her co-parent, strong-willed and reactive
 - **Ben** (Similar) - Also struggles with being perceived as controlling
 - **Sarah** (Similar) - High-conflict mother with different dynamic
 
 ---
 
-*Persona for coparentliaizen.com - Better Co-Parenting Through Better Communication*
-
+_Persona for coparentliaizen.com - Better Co-Parenting Through Better Communication_

@@ -8,26 +8,26 @@
 
 ## Demographics
 
-| Attribute | Value |
-|-----------|-------|
-| **Name** | Erika |
-| **Age** | ~40s |
-| **Role** | Mother, educated professional |
-| **Education** | Master's degree |
-| **Children** | Luca (8), Maia (14) |
+| Attribute           | Value                            |
+| ------------------- | -------------------------------- |
+| **Name**            | Erika                            |
+| **Age**             | ~40s                             |
+| **Role**            | Mother, educated professional    |
+| **Education**       | Master's degree                  |
+| **Children**        | Luca (8), Maia (14)              |
 | **Recovery Status** | Sober since 2023 (8-month rehab) |
 
 ---
 
 ## Family Situation
 
-| Attribute | Value |
-|-----------|-------|
-| **Marital Status** | Divorced (finalized after recovery) |
-| **Co-Parent** | Ben |
-| **Custody** | Shared (arrangement TBD) |
-| **Relationship Dynamic** | High tension, historic resentment |
-| **Key History** | PPD, alcoholism, recovery, divorce |
+| Attribute                | Value                               |
+| ------------------------ | ----------------------------------- |
+| **Marital Status**       | Divorced (finalized after recovery) |
+| **Co-Parent**            | Ben                                 |
+| **Custody**              | Shared (arrangement TBD)            |
+| **Relationship Dynamic** | High tension, historic resentment   |
+| **Key History**          | PPD, alcoholism, recovery, divorce  |
 
 ---
 
@@ -41,15 +41,16 @@ She completed an 8-month rehab program in 2023 and is now rebuilding her life wi
 
 ## Psychological Drivers
 
-| Driver | Description |
-|--------|-------------|
-| **Need for emotional safety** | Primary driver in all interactions |
-| **Fear of judgment** | Worried about being defined by past addiction |
+| Driver                        | Description                                   |
+| ----------------------------- | --------------------------------------------- |
+| **Need for emotional safety** | Primary driver in all interactions            |
+| **Fear of judgment**          | Worried about being defined by past addiction |
 | **Sensitivity to inadequacy** | Hyper-aware of implications she's not capable |
-| **Internalizes conflict** | Takes criticism inward, carries it |
-| **Desire to prove herself** | Deep need to be seen as a capable parent |
+| **Internalizes conflict**     | Takes criticism inward, carries it            |
+| **Desire to prove herself**   | Deep need to be seen as a capable parent      |
 
 ### Core Wound
+
 > "I carried an invisible burden you never saw"
 
 Erika feels that her emotional and mental health struggles were never acknowledged as real labor. She was pushed past her limits and then blamed for breaking. She now lives with the fear that Ben will always see her through the lens of her lowest moment.
@@ -59,41 +60,43 @@ Erika feels that her emotional and mental health struggles were never acknowledg
 ## Communication Style
 
 ### Characteristics
-| Trait | Description |
-|-------|-------------|
-| **Indirect when unsafe** | Hesitates to be direct when feeling vulnerable |
-| **Defensive** | Can become protective when sensing criticism |
-| **Over-explains** | Justifies decisions to preempt judgment |
-| **Apologetic/deferential** | Uses softening language excessively |
-| **Avoids confrontation** | Sidesteps conflict but keeps emotional memory |
-| **Long emotional memory** | Remembers past hurts in detail |
+
+| Trait                      | Description                                    |
+| -------------------------- | ---------------------------------------------- |
+| **Indirect when unsafe**   | Hesitates to be direct when feeling vulnerable |
+| **Defensive**              | Can become protective when sensing criticism   |
+| **Over-explains**          | Justifies decisions to preempt judgment        |
+| **Apologetic/deferential** | Uses softening language excessively            |
+| **Avoids confrontation**   | Sidesteps conflict but keeps emotional memory  |
+| **Long emotional memory**  | Remembers past hurts in detail                 |
 
 ### Example Messages (Unmediated)
 
-| What She Types | What She Means | How It Sounds |
-|----------------|----------------|---------------|
-| "I'm sorry, I hope this is okay" | "I'm making a reasonable request" | Weak, uncertain, seeking permission |
-| "I'm trying my best here" | "Please recognize my effort" | Defensive, expecting criticism |
-| "If that works for you, maybe..." | "I'd like to propose this" | Indirect, hard to understand |
-| "I just thought maybe we could" | "I have an idea" | Tentative, lacking confidence |
+| What She Types                    | What She Means                    | How It Sounds                       |
+| --------------------------------- | --------------------------------- | ----------------------------------- |
+| "I'm sorry, I hope this is okay"  | "I'm making a reasonable request" | Weak, uncertain, seeking permission |
+| "I'm trying my best here"         | "Please recognize my effort"      | Defensive, expecting criticism      |
+| "If that works for you, maybe..." | "I'd like to propose this"        | Indirect, hard to understand        |
+| "I just thought maybe we could"   | "I have an idea"                  | Tentative, lacking confidence       |
 
 ---
 
 ## Pain Points
 
-| Pain Point | Impact |
-|------------|--------|
-| Feels permanently marked by alcoholism | Expects Ben to always doubt her |
-| Questions about parental competence | Hyper-sensitive to any implication |
-| Must constantly "prove" herself | Exhausting vigilance |
-| Sensitive to perceived accusation | Even neutral messages feel like judgment |
-| Emotional labor invisible | Feels contributions aren't recognized |
+| Pain Point                             | Impact                                   |
+| -------------------------------------- | ---------------------------------------- |
+| Feels permanently marked by alcoholism | Expects Ben to always doubt her          |
+| Questions about parental competence    | Hyper-sensitive to any implication       |
+| Must constantly "prove" herself        | Exhausting vigilance                     |
+| Sensitive to perceived accusation      | Even neutral messages feel like judgment |
+| Emotional labor invisible              | Feels contributions aren't recognized    |
 
 ---
 
 ## Likely Behaviors in App
 
 ### Message Patterns
+
 - Sends messages with **self-doubt embedded**
 - May **misinterpret neutral logistics** as judgment
 - Needs reassurance that **neutrality ≠ criticism**
@@ -101,15 +104,17 @@ Erika feels that her emotional and mental health struggles were never acknowledg
 - Uses **apologetic framing** even when unnecessary
 
 ### Trigger Words She Uses (Signs of Insecurity)
-| Word/Phrase | Underlying Emotion | What It Signals |
-|-------------|-------------------|-----------------|
-| "I'm sorry" | Preemptive defense | Expecting criticism |
-| "I'm trying" | Fear of inadequacy | Anticipating judgment |
-| "I hope this is okay" | Seeking approval | Lacks confidence |
-| "Maybe we could" | Avoiding assertion | Fear of rejection |
-| "If you think..." | Deferring | Not trusting own judgment |
+
+| Word/Phrase           | Underlying Emotion | What It Signals           |
+| --------------------- | ------------------ | ------------------------- |
+| "I'm sorry"           | Preemptive defense | Expecting criticism       |
+| "I'm trying"          | Fear of inadequacy | Anticipating judgment     |
+| "I hope this is okay" | Seeking approval   | Lacks confidence          |
+| "Maybe we could"      | Avoiding assertion | Fear of rejection         |
+| "If you think..."     | Deferring          | Not trusting own judgment |
 
 ### Response to AI Suggestions
+
 - **Eager adopter** - wants help communicating clearly
 - Receptive to suggestions that **build confidence**
 - May need **encouragement to be direct**
@@ -120,6 +125,7 @@ Erika feels that her emotional and mental health struggles were never acknowledg
 ## What Erika Needs From LiaiZen
 
 ### Core Needs
+
 1. **Confidence-supporting message reframes**
 2. **Help asserting boundaries** respectfully
 3. **Protection from language that implies blame** (in messages she receives)
@@ -127,14 +133,15 @@ Erika feels that her emotional and mental health struggles were never acknowledg
 
 ### AI Coaching Language for Erika
 
-| Instead of... | Try framing as... |
-|---------------|-------------------|
-| "Be more direct" | "Here's a version that speaks from capability rather than apology" |
-| "You're being defensive" | "This reframe expresses your point without needing to justify it" |
-| "Stop apologizing" | "You can make this request confidently - you have the right to ask" |
-| "That's too indirect" | "Here's a clearer version that says what you actually need" |
+| Instead of...            | Try framing as...                                                   |
+| ------------------------ | ------------------------------------------------------------------- |
+| "Be more direct"         | "Here's a version that speaks from capability rather than apology"  |
+| "You're being defensive" | "This reframe expresses your point without needing to justify it"   |
+| "Stop apologizing"       | "You can make this request confidently - you have the right to ask" |
+| "That's too indirect"    | "Here's a clearer version that says what you actually need"         |
 
 ### UI/UX Considerations
+
 - **Micro-UI element**: "This message sounds apologetic or deferential"
 - **Confidence indicator**: Show when language is undermining her position
 - **Direct request templates**: Help her ask clearly without apology
@@ -144,13 +151,13 @@ Erika feels that her emotional and mental health struggles were never acknowledg
 
 ## Success Criteria for Erika
 
-| Metric | Current State | Target State |
-|--------|---------------|--------------|
-| Apologetic language in messages | Frequent | Occasional (when appropriate) |
-| Direct requests | Rare | Regular |
-| Defensive responses to Ben | Frequent | Rare |
-| Confidence in parenting communication | Low | High |
-| Misinterpreting neutral messages | Often | Rarely |
+| Metric                                | Current State | Target State                  |
+| ------------------------------------- | ------------- | ----------------------------- |
+| Apologetic language in messages       | Frequent      | Occasional (when appropriate) |
+| Direct requests                       | Rare          | Regular                       |
+| Defensive responses to Ben            | Frequent      | Rare                          |
+| Confidence in parenting communication | Low           | High                          |
+| Misinterpreting neutral messages      | Often         | Rarely                        |
 
 ---
 
@@ -171,18 +178,21 @@ Erika feels that her emotional and mental health struggles were never acknowledg
 ## Design Implications
 
 ### For AI Mediation
+
 - Detect **apologetic/deferential patterns** and offer confident alternatives
 - Help her **distinguish logistics from judgment** in Ben's messages
 - Build **assertion language** that feels authentic to her
 - Frame suggestions as **empowering**, not correcting
 
 ### For UX
+
 - **Supportive tone** - she's receptive to help
 - **Confidence-building framing** - "You can ask for this directly"
 - **Charitable interpretation** - help her read Ben's messages neutrally
 - **No judgment** - she's already judging herself
 
 ### For Onboarding
+
 - Position AI as **communication partner**, not judge
 - Emphasize **building confidence** in expression
 - Show how it **protects her dignity**
@@ -193,14 +203,16 @@ Erika feels that her emotional and mental health struggles were never acknowledg
 ## Relationship to Ben
 
 ### Dynamic Summary
-| Erika's Perspective | Ben's Perspective |
-|---------------------|-------------------|
-| "I carried an invisible burden you never saw" | "I carried the burden and you broke" |
-| Felt pressured into second child | Felt betrayed by her resistance |
-| Values emotional safety and respect | Values reliability and efficiency |
-| Wants to be seen as capable | Wants to be acknowledged for sacrifice |
+
+| Erika's Perspective                           | Ben's Perspective                      |
+| --------------------------------------------- | -------------------------------------- |
+| "I carried an invisible burden you never saw" | "I carried the burden and you broke"   |
+| Felt pressured into second child              | Felt betrayed by her resistance        |
+| Values emotional safety and respect           | Values reliability and efficiency      |
+| Wants to be seen as capable                   | Wants to be acknowledged for sacrifice |
 
 ### Communication Loop to Break
+
 ```
 Ben: Direct/efficient message →
 Erika: Perceives as judgment/accusation →
@@ -211,7 +223,9 @@ Ben: More assertive message →
 ```
 
 ### LiaiZen's Role
+
 **Not to take sides** - but to gently unblock the loop of historic resentment by:
+
 - Helping Erika communicate from confidence, not apology
 - Helping Erika receive Ben's messages without perceiving attack
 - Creating space for both to be heard
@@ -233,14 +247,18 @@ Ben: More assertive message →
 ## Recovery Context
 
 ### Important for Product Team
+
 Erika's recovery from alcoholism is **not a character flaw** - it's medical history. She:
+
 - Completed treatment successfully
 - Has maintained sobriety
 - Is actively rebuilding her life
 - Deserves dignity in all product interactions
 
 ### Design Principle
+
 **Never assume addiction defines capability.** The platform should:
+
 - Not reference or flag recovery status
 - Treat her as a capable adult
 - Support her confidence without patronizing
@@ -249,10 +267,11 @@ Erika's recovery from alcoholism is **not a character flaw** - it's medical hist
 ---
 
 ## Related Personas
+
 - **Ben** (Paired) - Her co-parent, logistics-focused father
 - **Sarah** (Similar) - High-conflict mother with different dynamic
 - **Jessica** (Overlap) - Attorney who sees clients like Erika
 
 ---
 
-*Persona for coparentliaizen.com - Better Co-Parenting Through Better Communication*
+_Persona for coparentliaizen.com - Better Co-Parenting Through Better Communication_

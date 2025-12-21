@@ -1,6 +1,7 @@
 import React from 'react';
 import { apiGet, apiPost, apiPut } from '../apiClient.js';
 import { toBackendRelationship, toDisplayRelationship } from '../utils/relationshipMapping.js';
+import { getDefaultContactFormData } from '../utils/contactFormDefaults.js';
 
 export function useContacts(username, isAuthenticated = true) {
   const [contacts, setContacts] = React.useState([]);
@@ -8,45 +9,7 @@ export function useContacts(username, isAuthenticated = true) {
   const [showContactForm, setShowContactForm] = React.useState(false);
   const [contactSearch, setContactSearch] = React.useState('');
   const [editingContact, setEditingContact] = React.useState(null);
-  const [contactFormData, setContactFormData] = React.useState({
-    contact_name: '',
-    contact_email: '',
-    relationship: '',
-    separation_date: '',
-    separation_details: '',
-    address: '',
-    difficult_aspects: '',
-    friction_situations: '',
-    legal_matters: '',
-    safety_concerns: '',
-    substance_mental_health: '',
-    additional_thoughts: '',
-    other_parent: '',
-    child_age: '',
-    child_birthdate: '',
-    school: '',
-    phone: '',
-    partner_duration: '',
-    has_children: '',
-    custody_arrangement: '',
-    linked_contact_id: '',
-    // Child health fields
-    child_health_physical_conditions: '',
-    child_health_allergies: '',
-    child_health_medications: '',
-    child_health_doctor: '',
-    child_health_mental_conditions: '',
-    child_health_mental_diagnosis: '',
-    child_health_mental_treatment: '',
-    child_health_therapist: '',
-    child_health_developmental_delays: '',
-    child_health_developmental_supports: '',
-    // Co-parent financial and work fields
-    coparent_pays_child_support: '',
-    coparent_receives_child_support: '',
-    coparent_work_schedule: '',
-    coparent_work_flexibility: '',
-  });
+  const [contactFormData, setContactFormData] = React.useState(getDefaultContactFormData());
   const [isSavingContact, setIsSavingContact] = React.useState(false);
   const [error, setError] = React.useState('');
 
@@ -57,7 +20,7 @@ export function useContacts(username, isAuthenticated = true) {
 
     if (pending === 'add_coparent') {
       resetForm();
-      setContactFormData((prev) => ({
+      setContactFormData(prev => ({
         ...prev,
         relationship: 'My Co-Parent',
       }));
@@ -76,7 +39,7 @@ export function useContacts(username, isAuthenticated = true) {
       const data = JSON.parse(addContactData);
       if (data.name) {
         resetForm();
-        setContactFormData((prev) => ({
+        setContactFormData(prev => ({
           ...prev,
           contact_name: data.name,
           notes: data.context || '',
@@ -90,37 +53,40 @@ export function useContacts(username, isAuthenticated = true) {
     localStorage.removeItem('liaizen_add_contact');
   }, []);
 
-  const loadContacts = React.useCallback(async (isAuthenticated = true) => {
-    if (!username || !isAuthenticated) {
-      // Silently skip if no username or not authenticated (e.g., on landing page)
-      // This prevents race conditions during auth verification
-      setContacts([]);
-      return;
-    }
-    setIsLoadingContacts(true);
-    try {
-      const response = await apiGet(`/api/contacts?username=${encodeURIComponent(username)}`);
-      if (response.ok) {
-        const data = await response.json();
-        const contactsList = data.contacts || [];
-        // Debug log commented out to reduce console noise
-        // console.log('Contacts loaded:', contactsList.length, 'contacts for', username);
-        setContacts(contactsList);
-      } else if (response.status === 401) {
-        // User not authenticated - silently ignore
+  const loadContacts = React.useCallback(
+    async (isAuthenticated = true) => {
+      if (!username || !isAuthenticated) {
+        // Silently skip if no username or not authenticated (e.g., on landing page)
+        // This prevents race conditions during auth verification
         setContacts([]);
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Failed to load contacts:', response.status, errorData);
-        setError(`Failed to load contacts: ${errorData.error || 'Unknown error'}`);
+        return;
       }
-    } catch (err) {
-      console.error('Error loading contacts (Vite):', err);
-      setError('Failed to load contacts');
-    } finally {
-      setIsLoadingContacts(false);
-    }
-  }, [username, isAuthenticated]);
+      setIsLoadingContacts(true);
+      try {
+        const response = await apiGet(`/api/contacts?username=${encodeURIComponent(username)}`);
+        if (response.ok) {
+          const data = await response.json();
+          const contactsList = data.contacts || [];
+          // Debug log commented out to reduce console noise
+          // console.log('Contacts loaded:', contactsList.length, 'contacts for', username);
+          setContacts(contactsList);
+        } else if (response.status === 401) {
+          // User not authenticated - silently ignore
+          setContacts([]);
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('Failed to load contacts:', response.status, errorData);
+          setError(`Failed to load contacts: ${errorData.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        console.error('Error loading contacts (Vite):', err);
+        setError('Failed to load contacts');
+      } finally {
+        setIsLoadingContacts(false);
+      }
+    },
+    [username, isAuthenticated]
+  );
 
   React.useEffect(() => {
     loadContacts(isAuthenticated);
@@ -144,45 +110,7 @@ export function useContacts(username, isAuthenticated = true) {
 
   const resetForm = () => {
     setEditingContact(null);
-    setContactFormData({
-      contact_name: '',
-      contact_email: '',
-      relationship: '',
-      notes: '',
-      separation_date: '',
-      address: '',
-      difficult_aspects: '',
-      friction_situations: '',
-      legal_matters: '',
-      safety_concerns: '',
-      substance_mental_health: '',
-      additional_thoughts: '',
-      other_parent: '',
-      child_age: '',
-      child_birthdate: '',
-      school: '',
-      phone: '',
-      partner_duration: '',
-      has_children: '',
-      custody_arrangement: '',
-      linked_contact_id: '',
-      // Child health fields
-      child_health_physical_conditions: '',
-      child_health_allergies: '',
-      child_health_medications: '',
-      child_health_doctor: '',
-      child_health_mental_conditions: '',
-      child_health_mental_diagnosis: '',
-      child_health_mental_treatment: '',
-      child_health_therapist: '',
-      child_health_developmental_delays: '',
-      child_health_developmental_supports: '',
-      // Co-parent financial and work fields
-      coparent_pays_child_support: '',
-      coparent_receives_child_support: '',
-      coparent_work_schedule: '',
-      coparent_work_flexibility: '',
-    });
+    setContactFormData(getDefaultContactFormData());
   };
 
   const saveContact = async () => {
@@ -210,7 +138,11 @@ export function useContacts(username, isAuthenticated = true) {
         relationship: relationshipValue,
       };
 
-      console.log('Saving contact:', { username, contact_name: contactFormData.contact_name, relationship: relationshipValue });
+      console.log('Saving contact:', {
+        username,
+        contact_name: contactFormData.contact_name,
+        relationship: relationshipValue,
+      });
 
       const response = await method(path, payload);
 
@@ -247,15 +179,14 @@ export function useContacts(username, isAuthenticated = true) {
     } catch (err) {
       console.error('Error saving contact (Vite):', err);
       setError(
-        err.message ||
-          'Failed to save contact. Please check your connection and try again.'
+        err.message || 'Failed to save contact. Please check your connection and try again.'
       );
     } finally {
       setIsSavingContact(false);
     }
   };
 
-  const deleteContact = async (contactId) => {
+  const deleteContact = async contactId => {
     if (!username) return;
     if (!window.confirm('Are you sure you want to delete this contact?')) return;
     try {
@@ -275,7 +206,7 @@ export function useContacts(username, isAuthenticated = true) {
     }
   };
 
-  const editContact = (contact) => {
+  const editContact = contact => {
     setEditingContact(contact);
     // Normalize relationship values to match dropdown options using utility
     const relationshipDisplay = toDisplayRelationship(contact.relationship);
@@ -339,5 +270,3 @@ export function useContacts(username, isAuthenticated = true) {
     resetForm,
   };
 }
-
-

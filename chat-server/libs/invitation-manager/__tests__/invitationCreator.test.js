@@ -76,10 +76,9 @@ describe('Invitation Creator', () => {
       const result = await invitationCreator.findExistingUser('alex@test.com', db);
 
       expect(result).toEqual(mockUser);
-      expect(db.query).toHaveBeenCalledWith(
-        expect.stringContaining('LOWER(email)'),
-        ['alex@test.com']
-      );
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('LOWER(email)'), [
+        'alex@test.com',
+      ]);
     });
 
     it('should normalize email to lowercase', async () => {
@@ -150,14 +149,17 @@ describe('Invitation Creator', () => {
       // Mock: no limit reached, no existing invitation, no existing user
       db.query
         .mockResolvedValueOnce({ rows: [{ count: '0' }], rowCount: 1 }) // hasReachedCoparentLimit
-        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // findExistingInvitation
-        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // findExistingUser
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // getActiveInvitationByEmail
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // getUserByEmail
         .mockResolvedValueOnce({ rows: [{ id: 1, invitee_email: 'new@test.com' }], rowCount: 1 }); // INSERT
 
-      const result = await invitationCreator.createInvitation({
-        inviterId: 'user1',
-        inviteeEmail: 'new@test.com',
-      }, db);
+      const result = await invitationCreator.createInvitation(
+        {
+          inviterId: 'user1',
+          inviteeEmail: 'new@test.com',
+        },
+        db
+      );
 
       expect(result.invitation).toBeDefined();
       expect(result.token).toBeDefined();
@@ -171,13 +173,16 @@ describe('Invitation Creator', () => {
       db.query
         .mockResolvedValueOnce({ rows: [{ count: '0' }], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [], rowCount: 0 })
-        .mockResolvedValueOnce({ rows: [existingUser], rowCount: 1 }) // findExistingUser
+        .mockResolvedValueOnce({ rows: [existingUser], rowCount: 1 }) // getUserByEmail
         .mockResolvedValueOnce({ rows: [{ id: 1, invitee_id: 'existing123' }], rowCount: 1 });
 
-      const result = await invitationCreator.createInvitation({
-        inviterId: 'user1',
-        inviteeEmail: 'jordan@test.com',
-      }, db);
+      const result = await invitationCreator.createInvitation(
+        {
+          inviterId: 'user1',
+          inviteeEmail: 'jordan@test.com',
+        },
+        db
+      );
 
       expect(result.isExistingUser).toBe(true);
       expect(result.existingUser).toEqual(existingUser);
@@ -187,10 +192,13 @@ describe('Invitation Creator', () => {
       const db = createMockDb([{ count: '1' }]);
 
       await expect(
-        invitationCreator.createInvitation({
-          inviterId: 'user1',
-          inviteeEmail: 'test@test.com',
-        }, db)
+        invitationCreator.createInvitation(
+          {
+            inviterId: 'user1',
+            inviteeEmail: 'test@test.com',
+          },
+          db
+        )
       ).rejects.toThrow('Co-parent limit reached');
     });
 
@@ -198,13 +206,16 @@ describe('Invitation Creator', () => {
       const db = createMockDb([]);
       db.query
         .mockResolvedValueOnce({ rows: [{ count: '0' }], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [{ id: 1 }], rowCount: 1 }); // findExistingInvitation
+        .mockResolvedValueOnce({ rows: [{ id: 1 }], rowCount: 1 }); // getActiveInvitationByEmail
 
       await expect(
-        invitationCreator.createInvitation({
-          inviterId: 'user1',
-          inviteeEmail: 'test@test.com',
-        }, db)
+        invitationCreator.createInvitation(
+          {
+            inviterId: 'user1',
+            inviteeEmail: 'test@test.com',
+          },
+          db
+        )
       ).rejects.toThrow('active invitation already exists');
     });
 
@@ -212,9 +223,12 @@ describe('Invitation Creator', () => {
       const db = createMockDb([]);
 
       await expect(
-        invitationCreator.createInvitation({
-          inviteeEmail: 'test@test.com',
-        }, db)
+        invitationCreator.createInvitation(
+          {
+            inviteeEmail: 'test@test.com',
+          },
+          db
+        )
       ).rejects.toThrow('inviterId is required');
     });
 
@@ -222,9 +236,12 @@ describe('Invitation Creator', () => {
       const db = createMockDb([]);
 
       await expect(
-        invitationCreator.createInvitation({
-          inviterId: 'user1',
-        }, db)
+        invitationCreator.createInvitation(
+          {
+            inviterId: 'user1',
+          },
+          db
+        )
       ).rejects.toThrow('inviteeEmail is required');
     });
 
@@ -236,10 +253,13 @@ describe('Invitation Creator', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 })
         .mockResolvedValueOnce({ rows: [{ id: 1, invitee_email: 'test@test.com' }], rowCount: 1 });
 
-      await invitationCreator.createInvitation({
-        inviterId: 'user1',
-        inviteeEmail: '  TEST@TEST.COM  ',
-      }, db);
+      await invitationCreator.createInvitation(
+        {
+          inviterId: 'user1',
+          inviteeEmail: '  TEST@TEST.COM  ',
+        },
+        db
+      );
 
       // Check that INSERT was called with lowercase email
       const insertCall = db.query.mock.calls[3];
@@ -259,9 +279,9 @@ describe('Invitation Creator', () => {
     it('should throw error for non-existent invitation', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        invitationCreator.cancelInvitation(999, 'user1', db)
-      ).rejects.toThrow('Invitation not found or cannot be cancelled');
+      await expect(invitationCreator.cancelInvitation(999, 'user1', db)).rejects.toThrow(
+        'Invitation not found or cannot be cancelled'
+      );
     });
   });
 
@@ -279,9 +299,9 @@ describe('Invitation Creator', () => {
     it('should throw error for non-existent invitation', async () => {
       const db = createMockDb([]);
 
-      await expect(
-        invitationCreator.resendInvitation(999, 'user1', db)
-      ).rejects.toThrow('Invitation not found or cannot be resent');
+      await expect(invitationCreator.resendInvitation(999, 'user1', db)).rejects.toThrow(
+        'Invitation not found or cannot be resent'
+      );
     });
   });
 

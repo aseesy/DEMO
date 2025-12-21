@@ -20,7 +20,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
     splitType: 'equal',
     splitPercentage: '',
     paidBy: '',
-    notes: ''
+    notes: '',
   });
 
   // Initialize form when editing
@@ -42,7 +42,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
         splitType: activity.split_type || 'equal',
         splitPercentage: activity.split_percentage || '',
         paidBy: activity.paid_by || '',
-        notes: activity.notes || ''
+        notes: activity.notes || '',
       });
     } else {
       // Reset form for new activity
@@ -62,21 +62,21 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
         splitType: 'equal',
         splitPercentage: '',
         paidBy: '',
-        notes: ''
+        notes: '',
       });
     }
   }, [activity, isOpen]);
 
-  const handleDayToggle = (day) => {
+  const handleDayToggle = day => {
     setFormData(prev => ({
       ...prev,
       daysOfWeek: prev.daysOfWeek.includes(day)
         ? prev.daysOfWeek.filter(d => d !== day)
-        : [...prev.daysOfWeek, day]
+        : [...prev.daysOfWeek, day],
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
     onSave(formData);
   };
@@ -90,8 +90,18 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
         <div className="border-b-2 border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <svg
+                className="w-4 h-4 text-teal-medium"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
             </div>
             <h3 className="text-lg font-bold text-teal-medium">
@@ -120,7 +130,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
               <input
                 type="text"
                 value={formData.activityName}
-                onChange={(e) => setFormData({ ...formData, activityName: e.target.value })}
+                onChange={e => setFormData({ ...formData, activityName: e.target.value })}
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                 placeholder="e.g., Soccer Practice"
                 required
@@ -134,7 +144,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
               </label>
               <textarea
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium text-sm resize-none"
                 rows={2}
                 placeholder="Brief description of the activity"
@@ -175,7 +185,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   <input
                     type="time"
                     value={formData.startTime}
-                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    onChange={e => setFormData({ ...formData, startTime: e.target.value })}
                     className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                   />
                 </div>
@@ -186,7 +196,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   <input
                     type="time"
                     value={formData.endTime}
-                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    onChange={e => setFormData({ ...formData, endTime: e.target.value })}
                     className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                   />
                 </div>
@@ -200,7 +210,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   </label>
                   <select
                     value={formData.recurrence}
-                    onChange={(e) => setFormData({ ...formData, recurrence: e.target.value })}
+                    onChange={e => setFormData({ ...formData, recurrence: e.target.value })}
                     className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                     required
                   >
@@ -217,7 +227,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   <input
                     type="date"
                     value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    onChange={e => setFormData({ ...formData, startDate: e.target.value })}
                     className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                     required
                   />
@@ -229,7 +239,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   <input
                     type="date"
                     value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    onChange={e => setFormData({ ...formData, endDate: e.target.value })}
                     className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                   />
                 </div>
@@ -245,7 +255,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                 <input
                   type="text"
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  onChange={e => setFormData({ ...formData, location: e.target.value })}
                   className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                   placeholder="e.g., Community Center"
                 />
@@ -257,7 +267,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                 <input
                   type="text"
                   value={formData.instructorContact}
-                  onChange={(e) => setFormData({ ...formData, instructorContact: e.target.value })}
+                  onChange={e => setFormData({ ...formData, instructorContact: e.target.value })}
                   className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium text-sm"
                   placeholder="e.g., Coach Name: (555) 123-4567"
                 />
@@ -270,15 +280,13 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-teal-medium mb-1">
-                    Cost
-                  </label>
+                  <label className="block text-sm font-medium text-teal-medium mb-1">Cost</label>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
                     value={formData.cost}
-                    onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                    onChange={e => setFormData({ ...formData, cost: e.target.value })}
                     className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                     placeholder="0.00"
                   />
@@ -289,7 +297,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   </label>
                   <select
                     value={formData.costFrequency}
-                    onChange={(e) => setFormData({ ...formData, costFrequency: e.target.value })}
+                    onChange={e => setFormData({ ...formData, costFrequency: e.target.value })}
                     className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                   >
                     <option value="one-time">One-time</option>
@@ -309,7 +317,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                   </label>
                   <select
                     value={formData.splitType}
-                    onChange={(e) => setFormData({ ...formData, splitType: e.target.value })}
+                    onChange={e => setFormData({ ...formData, splitType: e.target.value })}
                     className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                   >
                     <option value="equal">Equal Split (50/50)</option>
@@ -327,7 +335,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                       min="0"
                       max="100"
                       value={formData.splitPercentage}
-                      onChange={(e) => setFormData({ ...formData, splitPercentage: e.target.value })}
+                      onChange={e => setFormData({ ...formData, splitPercentage: e.target.value })}
                       className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                       placeholder="50"
                     />
@@ -341,7 +349,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
                     <input
                       type="text"
                       value={formData.paidBy}
-                      onChange={(e) => setFormData({ ...formData, paidBy: e.target.value })}
+                      onChange={e => setFormData({ ...formData, paidBy: e.target.value })}
                       className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm"
                       placeholder="e.g., Mom"
                     />
@@ -352,12 +360,10 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-semibold text-teal-medium mb-1.5">
-                Notes
-              </label>
+              <label className="block text-sm font-semibold text-teal-medium mb-1.5">Notes</label>
               <textarea
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={e => setFormData({ ...formData, notes: e.target.value })}
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-medium text-sm resize-none"
                 rows={2}
                 placeholder="Any additional notes..."
@@ -367,12 +373,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, activity = null, isS
 
           {/* Footer Actions */}
           <div className="border-t-2 border-gray-200 px-4 py-3 flex gap-2 justify-end flex-shrink-0">
-            <Button
-              type="button"
-              variant="tertiary"
-              size="small"
-              onClick={onClose}
-            >
+            <Button type="button" variant="tertiary" size="small" onClick={onClose}>
               Cancel
             </Button>
             <Button

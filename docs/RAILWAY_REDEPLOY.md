@@ -141,4 +141,3 @@ If Railway hasn't auto-deployed or you want to trigger a redeploy:
 ---
 
 **Railway should auto-deploy after git push. Check Railway Dashboard to verify deployment status!** 🚂
-

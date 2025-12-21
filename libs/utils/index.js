@@ -1,6 +1,6 @@
 /**
  * Utility Functions Library
- * 
+ *
  * Shared utility functions that can be used across the application.
  */
 
@@ -70,4 +70,3 @@ export function isEmpty(value) {
   if (typeof value === 'object') return Object.keys(value).length === 0;
   return false;
 }
-

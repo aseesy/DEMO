@@ -15,7 +15,13 @@
  */
 
 const crypto = require('crypto');
-const { PAIRING_STATUS, INVITE_TYPE, PAIRING_CONFIG, hashToken, logPairingAction } = require('./pairingCreator');
+const {
+  PAIRING_STATUS,
+  INVITE_TYPE,
+  PAIRING_CONFIG,
+  hashToken,
+  logPairingAction,
+} = require('./pairingCreator');
 
 /**
  * Upsert a co-parent contact (insert or update if exists)
@@ -24,9 +30,10 @@ const { PAIRING_STATUS, INVITE_TYPE, PAIRING_CONFIG, hashToken, logPairingAction
  * @param {number} userId - User who will have this contact
  * @param {string} contactName - Name of the contact
  * @param {string} contactEmail - Email of the contact
+ * @param {number} linkedUserId - Optional user ID of the co-parent
  */
-async function upsertCoParentContact(db, userId, contactName, contactEmail) {
-  // First check if contact already exists
+async function upsertCoParentContact(db, userId, contactName, contactEmail, linkedUserId = null) {
+  // First check if contact already exists by email
   const existing = await db.query(
     'SELECT id FROM contacts WHERE user_id = $1 AND LOWER(contact_email) = LOWER($2)',
     [userId, contactEmail]
@@ -35,16 +42,16 @@ async function upsertCoParentContact(db, userId, contactName, contactEmail) {
   if (existing.rows.length > 0) {
     // Update existing contact to co-parent
     await db.query(
-      `UPDATE contacts SET relationship = 'co-parent', contact_name = $1, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2`,
-      [contactName, existing.rows[0].id]
+      `UPDATE contacts SET relationship = 'co-parent', contact_name = $1, linked_user_id = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [contactName, linkedUserId, existing.rows[0].id]
     );
   } else {
     // Insert new contact
     await db.query(
-      `INSERT INTO contacts (user_id, contact_name, contact_email, relationship, created_at)
-       VALUES ($1, $2, $3, 'co-parent', CURRENT_TIMESTAMP)`,
-      [userId, contactName, contactEmail]
+      `INSERT INTO contacts (user_id, contact_name, contact_email, relationship, linked_user_id, created_at)
+       VALUES ($1, $2, $3, 'co-parent', $4, CURRENT_TIMESTAMP)`,
+      [userId, contactName, contactEmail, linkedUserId]
     );
   }
 }
@@ -66,11 +73,36 @@ const VALIDATION_CODE = {
   DB_REQUIRED: 'DB_REQUIRED',
 };
 
+// ============================================================================
+// PURE SIDE-EFFECT FUNCTIONS (explicit mutations)
+// ============================================================================
+
+/**
+ * Mark a pairing session as expired
+ * SIDE EFFECT: Updates database record
+ *
+ * @param {object} db - Database connection
+ * @param {number} pairingId - Pairing session ID to expire
+ * @returns {Promise<void>}
+ */
+async function markSessionExpired(db, pairingId) {
+  await db.query('UPDATE pairing_sessions SET status = $1 WHERE id = $2', [
+    PAIRING_STATUS.EXPIRED,
+    pairingId,
+  ]);
+}
+
+// ============================================================================
+// PURE VALIDATION FUNCTIONS (no side effects - read-only)
+// ============================================================================
+
 /**
  * Validate a pairing token (for email/link invitations)
+ * PURE FUNCTION: Read-only validation, no database mutations
+ *
  * @param {string} token - Raw invitation token
  * @param {object} db - Database connection
- * @returns {Promise<object>} Validation result
+ * @returns {Promise<object>} Validation result with `needsExpiration` flag if expired
  */
 async function validateToken(token, db) {
   if (!token) {
@@ -93,7 +125,7 @@ async function validateToken(token, db) {
 
   // Find pairing by token hash
   const result = await db.query(
-    `SELECT ps.*, u.username as initiator_username, u.email as initiator_email
+    `SELECT ps.*, u.username as initiator_username, u.email as initiator_email, u.first_name as initiator_first_name, u.display_name as initiator_display_name
      FROM pairing_sessions ps
      JOIN users u ON ps.parent_a_id = u.id
      WHERE ps.invite_token = $1`,
@@ -138,28 +170,27 @@ async function validateToken(token, db) {
     };
   }
 
-  // Check expiration
+  // Check expiration - NO SIDE EFFECT, just flag it
   const now = new Date();
   const expiresAt = new Date(pairing.expires_at);
   if (now > expiresAt) {
-    // Update status to expired
-    await db.query(
-      'UPDATE pairing_sessions SET status = $1 WHERE id = $2',
-      [PAIRING_STATUS.EXPIRED, pairing.id]
-    );
-
     return {
       valid: false,
       error: 'This invitation has expired',
       code: VALIDATION_CODE.EXPIRED,
-      pairing: { ...pairing, status: PAIRING_STATUS.EXPIRED },
+      pairing,
+      needsExpiration: true, // Flag for caller to handle mutation
     };
   }
 
   return {
     valid: true,
     pairing,
-    initiatorName: pairing.invited_by_username || pairing.initiator_username,
+    initiatorName:
+      pairing.invited_by_username ||
+      pairing.initiator_first_name ||
+      pairing.initiator_display_name ||
+      pairing.initiator_username,
     initiatorEmail: pairing.initiator_email,
     pairingCode: pairing.pairing_code,
     expiresAt: pairing.expires_at,
@@ -167,10 +198,36 @@ async function validateToken(token, db) {
 }
 
 /**
- * Validate a pairing code (for quick pairing)
- * @param {string} code - Pairing code (e.g., "LZ-842396")
+ * Validate token AND update expired status if needed
+ * SIDE EFFECT: May update database if session is expired
+ *
+ * Use this when you want the old behavior where validation also marks expired.
+ * Prefer validateToken() + explicit markSessionExpired() for clearer code.
+ *
+ * @param {string} token - Raw invitation token
  * @param {object} db - Database connection
  * @returns {Promise<object>} Validation result
+ */
+async function validateTokenAndExpire(token, db) {
+  const result = await validateToken(token, db);
+
+  if (result.needsExpiration && result.pairing) {
+    await markSessionExpired(db, result.pairing.id);
+    // Update the returned pairing to reflect the change
+    result.pairing = { ...result.pairing, status: PAIRING_STATUS.EXPIRED };
+    delete result.needsExpiration;
+  }
+
+  return result;
+}
+
+/**
+ * Validate a pairing code (for quick pairing)
+ * PURE FUNCTION: Read-only validation, no database mutations
+ *
+ * @param {string} code - Pairing code (e.g., "LZ-842396")
+ * @param {object} db - Database connection
+ * @returns {Promise<object>} Validation result with `needsExpiration` flag if expired
  */
 async function validateCode(code, db) {
   if (!code) {
@@ -194,7 +251,7 @@ async function validateCode(code, db) {
 
   // Find pairing by code
   const result = await db.query(
-    `SELECT ps.*, u.username as initiator_username, u.email as initiator_email
+    `SELECT ps.*, u.username as initiator_username, u.email as initiator_email, u.first_name as initiator_first_name, u.display_name as initiator_display_name
      FROM pairing_sessions ps
      JOIN users u ON ps.parent_a_id = u.id
      WHERE ps.pairing_code = $1`,
@@ -239,32 +296,54 @@ async function validateCode(code, db) {
     };
   }
 
-  // Check expiration
+  // Check expiration - NO SIDE EFFECT, just flag it
   const now = new Date();
   const expiresAt = new Date(pairing.expires_at);
   if (now > expiresAt) {
-    // Update status to expired
-    await db.query(
-      'UPDATE pairing_sessions SET status = $1 WHERE id = $2',
-      [PAIRING_STATUS.EXPIRED, pairing.id]
-    );
-
     return {
       valid: false,
       error: 'This pairing code has expired',
       code: VALIDATION_CODE.EXPIRED,
-      pairing: { ...pairing, status: PAIRING_STATUS.EXPIRED },
+      pairing,
+      needsExpiration: true, // Flag for caller to handle mutation
     };
   }
 
   return {
     valid: true,
     pairing,
-    initiatorName: pairing.invited_by_username || pairing.initiator_username,
+    initiatorName:
+      pairing.invited_by_username ||
+      pairing.initiator_first_name ||
+      pairing.initiator_display_name ||
+      pairing.initiator_username,
     initiatorEmail: pairing.initiator_email,
     pairingCode: pairing.pairing_code,
     expiresAt: pairing.expires_at,
   };
+}
+
+/**
+ * Validate code AND update expired status if needed
+ * SIDE EFFECT: May update database if session is expired
+ *
+ * Use this when you want the old behavior where validation also marks expired.
+ * Prefer validateCode() + explicit markSessionExpired() for clearer code.
+ *
+ * @param {string} code - Pairing code
+ * @param {object} db - Database connection
+ * @returns {Promise<object>} Validation result
+ */
+async function validateCodeAndExpire(code, db) {
+  const result = await validateCode(code, db);
+
+  if (result.needsExpiration && result.pairing) {
+    await markSessionExpired(db, result.pairing.id);
+    result.pairing = { ...result.pairing, status: PAIRING_STATUS.EXPIRED };
+    delete result.needsExpiration;
+  }
+
+  return result;
 }
 
 /**
@@ -320,18 +399,17 @@ async function acceptPairing(params, db, roomManager) {
   const now = new Date();
   const expiresAt = new Date(pairing.expires_at);
   if (now > expiresAt) {
-    await db.query(
-      'UPDATE pairing_sessions SET status = $1 WHERE id = $2',
-      [PAIRING_STATUS.EXPIRED, pairingId]
-    );
+    await db.query('UPDATE pairing_sessions SET status = $1 WHERE id = $2', [
+      PAIRING_STATUS.EXPIRED,
+      pairingId,
+    ]);
     throw new Error('This invitation has expired');
   }
 
   // Get acceptor info
-  const acceptorResult = await db.query(
-    'SELECT id, username, email FROM users WHERE id = $1',
-    [acceptorId]
-  );
+  const acceptorResult = await db.query('SELECT id, username, email FROM users WHERE id = $1', [
+    acceptorId,
+  ]);
 
   if (acceptorResult.rows.length === 0) {
     throw new Error('Acceptor user not found');
@@ -372,19 +450,25 @@ async function acceptPairing(params, db, roomManager) {
 
   // Create mutual contacts using upsert pattern
   try {
-    // Add acceptor as contact for initiator
-    await upsertCoParentContact(db, pairing.parent_a_id, acceptor.username, acceptor.email);
-
     // Get initiator info for contact
     const initiatorResult = await db.query(
-      'SELECT username, email FROM users WHERE id = $1',
+      'SELECT id, username, email, first_name, display_name FROM users WHERE id = $1',
       [pairing.parent_a_id]
     );
+    const initiator = initiatorResult.rows[0];
+    const initiatorName =
+      initiator?.first_name ||
+      initiator?.display_name ||
+      initiator?.username ||
+      pairing.initiator_username;
 
-    if (initiatorResult.rows.length > 0) {
-      const initiator = initiatorResult.rows[0];
-      // Add initiator as contact for acceptor
-      await upsertCoParentContact(db, acceptorId, initiator.username, initiator.email);
+    // Add acceptor as contact for initiator
+    const acceptorName = acceptor.first_name || acceptor.display_name || acceptor.username;
+    await upsertCoParentContact(db, pairing.parent_a_id, acceptorName, acceptor.email, acceptorId);
+
+    // Add initiator as contact for acceptor
+    if (initiator) {
+      await upsertCoParentContact(db, acceptorId, initiatorName, initiator.email, initiator.id);
     }
     console.log(`✅ Created mutual co-parent contacts for pairing ${pairingId}`);
   } catch (error) {
@@ -410,6 +494,8 @@ async function acceptPairing(params, db, roomManager) {
 
 /**
  * Accept a pairing by token
+ * Uses validateTokenAndExpire to mark expired tokens during acceptance flow
+ *
  * @param {string} token - Raw invitation token
  * @param {string} acceptorId - User ID accepting
  * @param {object} db - Database connection
@@ -417,20 +503,27 @@ async function acceptPairing(params, db, roomManager) {
  * @returns {Promise<object>} Acceptance result
  */
 async function acceptByToken(token, acceptorId, db, roomManager) {
-  const validation = await validateToken(token, db);
+  // Use the version with side effects - acceptance is when we want to mark expired
+  const validation = await validateTokenAndExpire(token, db);
 
   if (!validation.valid) {
     throw new Error(validation.error);
   }
 
-  return acceptPairing({
-    pairingId: validation.pairing.id,
-    acceptorId,
-  }, db, roomManager);
+  return acceptPairing(
+    {
+      pairingId: validation.pairing.id,
+      acceptorId,
+    },
+    db,
+    roomManager
+  );
 }
 
 /**
  * Accept a pairing by code
+ * Uses validateCodeAndExpire to mark expired codes during acceptance flow
+ *
  * @param {string} code - Pairing code
  * @param {string} acceptorId - User ID accepting
  * @param {object} db - Database connection
@@ -438,16 +531,21 @@ async function acceptByToken(token, acceptorId, db, roomManager) {
  * @returns {Promise<object>} Acceptance result
  */
 async function acceptByCode(code, acceptorId, db, roomManager) {
-  const validation = await validateCode(code, db);
+  // Use the version with side effects - acceptance is when we want to mark expired
+  const validation = await validateCodeAndExpire(code, db);
 
   if (!validation.valid) {
     throw new Error(validation.error);
   }
 
-  return acceptPairing({
-    pairingId: validation.pairing.id,
-    acceptorId,
-  }, db, roomManager);
+  return acceptPairing(
+    {
+      pairingId: validation.pairing.id,
+      acceptorId,
+    },
+    db,
+    roomManager
+  );
 }
 
 /**
@@ -601,9 +699,16 @@ async function getPairingStatus(userId, db) {
 }
 
 module.exports = {
-  // Validation functions
+  // Pure validation functions (no side effects - read-only)
   validateToken,
   validateCode,
+
+  // Validation with side effects (explicitly named)
+  validateTokenAndExpire,
+  validateCodeAndExpire,
+
+  // Explicit mutation functions
+  markSessionExpired,
 
   // Acceptance functions
   acceptPairing,

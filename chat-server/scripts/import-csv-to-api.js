@@ -11,12 +11,13 @@ const https = require('https');
 
 // Configuration
 const API_URL = 'https://demo-production-6dcd.up.railway.app';
-const JWT_SECRET = '54bfbcbe62a187dc870d6b16f135527061fa1c96c8ea9e8b14ab975b9d542ea9ef14fdfdc3a78c0fefe1781d295d31d823573da7c26a67d794400d18f3d6b702';
+const JWT_SECRET =
+  '54bfbcbe62a187dc870d6b16f135527061fa1c96c8ea9e8b14ab975b9d542ea9ef14fdfdc3a78c0fefe1781d295d31d823573da7c26a67d794400d18f3d6b702';
 
 // User mapping
 const USER_MAP = {
-  'Athena': 'athenasees',
-  'Yashir': 'yashir91lora'
+  Athena: 'athenasees',
+  Yashir: 'yashir91lora',
 };
 
 // Room ID (from your shared room)
@@ -67,7 +68,7 @@ function parseCSV(filePath) {
         messages.push({
           username,
           text: text.trim(),
-          timestamp: new Date(timestamp.replace(' ', 'T') + 'Z').toISOString()
+          timestamp: new Date(timestamp.replace(' ', 'T') + 'Z').toISOString(),
         });
       }
     }
@@ -80,7 +81,7 @@ async function sendBatch(messages, batchNum, totalBatches) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify({
       messages,
-      roomId: ROOM_ID
+      roomId: ROOM_ID,
     });
 
     const url = new URL(`${API_URL}/api/import/messages`);
@@ -93,13 +94,13 @@ async function sendBatch(messages, batchNum, totalBatches) {
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(data),
-        'Authorization': `Bearer ${JWT_SECRET}`
-      }
+        Authorization: `Bearer ${JWT_SECRET}`,
+      },
     };
 
-    const req = https.request(options, (res) => {
+    const req = https.request(options, res => {
       let body = '';
-      res.on('data', chunk => body += chunk);
+      res.on('data', chunk => (body += chunk));
       res.on('end', () => {
         try {
           const result = JSON.parse(body);

@@ -50,4 +50,3 @@ domain/
 ---
 
 **Note**: This directory will be created during Phase 1 of the domain model migration.
-

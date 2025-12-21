@@ -9,16 +9,29 @@ const openaiClient = require('../core/client');
  * @param {Array} flaggedMessages - Previously flagged messages for learning
  * @returns {Promise<Object>} - Coaching suggestions and rewrite options
  */
-async function analyzeDraftMessage(draftText, recentMessages = [], userContext = {}, contactContext = null, flaggedMessages = []) {
+async function analyzeDraftMessage(
+  draftText,
+  recentMessages = [],
+  userContext = {},
+  contactContext = null,
+  flaggedMessages = []
+) {
   if (!openaiClient.isConfigured() || !draftText || draftText.trim().length === 0) {
     return null;
   }
 
   try {
-    const recentHistory = recentMessages.slice(-5).map(m => `${m.username}: ${m.text}`).join('\n');
-    const flaggedContext = flaggedMessages.length > 0
-      ? `\n\nPreviously flagged messages (learn from these):\n${flaggedMessages.slice(0, 3).map(f => `"${f.text}" - Flagged because: ${f.reason}`).join('\n')}`
-      : '';
+    const recentHistory = recentMessages
+      .slice(-5)
+      .map(m => `${m.username}: ${m.text}`)
+      .join('\n');
+    const flaggedContext =
+      flaggedMessages.length > 0
+        ? `\n\nPreviously flagged messages (learn from these):\n${flaggedMessages
+            .slice(0, 3)
+            .map(f => `"${f.text}" - Flagged because: ${f.reason}`)
+            .join('\n')}`
+        : '';
 
     const prompt = `You are a proactive communication coach helping a co-parent craft a better message before they send it.
 
@@ -53,15 +66,16 @@ If the message is fine as-is, set shouldSend to true and provide minimal feedbac
       messages: [
         {
           role: 'system',
-          content: 'You are a warm, supportive communication coach for co-parents. Help them communicate more effectively while being encouraging and non-judgmental. Respond only with valid JSON.'
+          content:
+            'You are a warm, supportive communication coach for co-parents. Help them communicate more effectively while being encouraging and non-judgmental. Respond only with valid JSON.',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       temperature: 0.4,
-      max_tokens: 500
+      max_tokens: 500,
     });
 
     const response = completion.choices[0].message.content.trim();
@@ -73,9 +87,8 @@ If the message is fine as-is, set shouldSend to true and provide minimal feedbac
       coachingMessage: coaching.coachingMessage || '',
       rewrite1: coaching.rewrite1 || null,
       rewrite2: coaching.rewrite2 || null,
-      shouldSend: coaching.shouldSend !== false // Default to true if not specified
+      shouldSend: coaching.shouldSend !== false, // Default to true if not specified
     };
-
   } catch (error) {
     console.error('Error in proactive coaching:', error.message);
     return null;
@@ -83,6 +96,5 @@ If the message is fine as-is, set shouldSend to true and provide minimal feedbac
 }
 
 module.exports = {
-  analyzeDraftMessage
+  analyzeDraftMessage,
 };
-

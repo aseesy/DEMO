@@ -27,6 +27,7 @@
 ### Step 3: Verify Variables Are Set
 
 After adding, you should see both variables in the list:
+
 - ✅ `GOOGLE_CLIENT_ID` = `your-client-id.apps.googleusercontent.com`
 - ✅ `GOOGLE_CLIENT_SECRET` = `your-secret-value`
 
@@ -49,6 +50,7 @@ After adding, you should see both variables in the list:
 Make sure your Google OAuth client has these redirect URIs configured:
 
 **In Google Cloud Console:**
+
 - Go to: https://console.cloud.google.com/apis/credentials
 - Click on your OAuth Client ID
 - Under "Authorized redirect URIs", add:
@@ -63,14 +65,17 @@ Make sure your Google OAuth client has these redirect URIs configured:
 ### Common Mistakes
 
 ❌ **Wrong variable name:**
+
 - Not: `GOOGLE_CLIENTID` or `google_client_id`
 - Must be: `GOOGLE_CLIENT_ID` (exact case)
 
 ❌ **Missing values:**
+
 - Make sure both variables have values (not empty)
 - Copy the entire Client ID and Secret
 
 ❌ **Extra spaces:**
+
 - Don't add spaces before/after the values
 - Paste directly without trimming
 
@@ -96,6 +101,7 @@ Make sure your Google OAuth client has these redirect URIs configured:
 ### Getting "invalid_client" Error?
 
 This means the credentials are incorrect:
+
 - Double-check Client ID matches Google Cloud Console
 - Double-check Client Secret matches Google Cloud Console
 - Make sure you copied the entire values (no truncation)
@@ -110,4 +116,3 @@ This means the credentials are incorrect:
 - [ ] Verified both variables are in the list
 - [ ] Waited for auto-redeploy to complete
 - [ ] Tested Google sign-in (no 500 error)
-

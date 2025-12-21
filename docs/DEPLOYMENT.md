@@ -16,6 +16,7 @@ Complete guide to deploy LiaiZen to production using Railway (backend) and Verce
 ### Why Railway?
 
 **Pros:**
+
 - ✅ Automatic SSL (HTTPS out of the box)
 - ✅ Easy deployments (connect GitHub, auto-deploy on push)
 - ✅ Built-in monitoring (logs and metrics)
@@ -24,6 +25,7 @@ Complete guide to deploy LiaiZen to production using Railway (backend) and Verce
 - ✅ WebSocket support (Socket.io works perfectly)
 
 **Cons:**
+
 - ⚠️ Ephemeral filesystem (files lost on redeploy - use PostgreSQL)
 - ⚠️ Cost: $5-20/month after free tier
 - ⚠️ Less control (can't SSH into server)
@@ -47,21 +49,22 @@ Complete guide to deploy LiaiZen to production using Railway (backend) and Verce
 
 3. **Add Environment Variables:**
    Go to **Variables** tab and add:
+
    ```env
    NODE_ENV=production
    PORT=3001
    FRONTEND_URL=https://coparentliaizen.com,https://www.coparentliaizen.com,https://*.vercel.app
-   
+
    # Email Configuration
    EMAIL_SERVICE=gmail
    GMAIL_USER=info@liaizen.com
    GMAIL_APP_PASSWORD=your_app_password
    EMAIL_FROM=info@liaizen.com
    APP_NAME=LiaiZen
-   
+
    # AI Moderation
    OPENAI_API_KEY=sk-your-openai-api-key
-   
+
    # Security
    JWT_SECRET=your-super-secret-jwt-key-min-32-chars
    ```
@@ -93,6 +96,7 @@ Complete guide to deploy LiaiZen to production using Railway (backend) and Verce
 Railway auto-deploys when you push to main branch, or manually trigger from dashboard.
 
 **Check deployment:**
+
 - View logs in Railway dashboard
 - Verify: `✅ PostgreSQL pool connected`
 - Test: `https://your-railway-domain.up.railway.app/health`
@@ -116,6 +120,7 @@ vercel
 ```
 
 **When prompted:**
+
 - Set up and deploy? → **Yes**
 - Link to existing project? → **No**
 - Project name? → `liaizen` (or your preference)
@@ -155,6 +160,7 @@ Or promote deployment from Vercel dashboard.
 ## ✅ Post-Deployment Checklist
 
 ### Backend (Railway)
+
 - [ ] HTTPS working (`https://your-domain.com`)
 - [ ] Health endpoint responds (`/health`)
 - [ ] PostgreSQL connected (check logs)
@@ -164,6 +170,7 @@ Or promote deployment from Vercel dashboard.
 - [ ] AI moderation working
 
 ### Frontend (Vercel)
+
 - [ ] Site loads at custom domain
 - [ ] API calls to Railway backend work
 - [ ] WebSocket connections work
@@ -171,6 +178,7 @@ Or promote deployment from Vercel dashboard.
 - [ ] SSL certificate active
 
 ### Integration
+
 - [ ] Frontend can connect to backend
 - [ ] CORS configured correctly
 - [ ] Real-time messaging works
@@ -185,6 +193,7 @@ Or promote deployment from Vercel dashboard.
 **Problem:** `DATABASE_URL not set` error
 
 **Solution:**
+
 1. Verify PostgreSQL service is connected to chat-server service
 2. Check **Variables** → **Connected Variables** for `DATABASE_URL`
 3. If missing, manually add `DATABASE_URL` from PostgreSQL service → **Connect** tab
@@ -194,6 +203,7 @@ Or promote deployment from Vercel dashboard.
 **Problem:** Frontend can't connect to backend
 
 **Solution:**
+
 1. Verify `FRONTEND_URL` in Railway includes Vercel domains
 2. Check Railway logs for CORS warnings
 3. Ensure frontend domain matches allowed origins
@@ -203,6 +213,7 @@ Or promote deployment from Vercel dashboard.
 **Problem:** Socket.io connections fail
 
 **Solution:**
+
 1. Verify Railway supports WebSockets (it does by default)
 2. Check CORS settings in `server.js`
 3. Ensure `FRONTEND_URL` includes your Vercel domain
@@ -213,6 +224,7 @@ Or promote deployment from Vercel dashboard.
 **Problem:** Domain doesn't resolve
 
 **Solution:**
+
 1. Wait 5-15 minutes for DNS propagation
 2. Verify DNS records in Hostinger match Railway/Vercel requirements
 3. Check domain settings in Railway/Vercel dashboards
@@ -223,6 +235,7 @@ Or promote deployment from Vercel dashboard.
 **Problem:** Variables not accessible in code
 
 **Solution:**
+
 1. Check variable names match exactly (case-sensitive)
 2. Redeploy after adding variables
 3. Check logs for errors
@@ -233,12 +246,14 @@ Or promote deployment from Vercel dashboard.
 ## 💰 Pricing
 
 ### Railway
+
 - **Free Tier**: $5 credit/month
 - **Hobby Plan**: $5/month + usage
 - **Pro Plan**: $20/month + usage
 - **Typical Cost**: ~$15-20/month (backend + PostgreSQL)
 
 ### Vercel
+
 - **Free Tier**: Unlimited for personal projects
 - **Pro Plan**: $20/month for teams
 - **Typical Cost**: Free for most use cases
@@ -299,4 +314,3 @@ vercel logs
 ---
 
 **Ready to deploy?** Start with Railway backend setup, then deploy frontend to Vercel! 🚀
-

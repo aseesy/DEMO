@@ -10,6 +10,7 @@
 ## Task Organization
 
 Tasks are organized by phase and dependency order. Each task includes:
+
 - **Priority**: critical | high | medium | low
 - **Complexity**: small (1-2h) | medium (2-4h) | large (4-8h) | x-large (8h+)
 - **Dependencies**: Task IDs that must be completed first
@@ -20,23 +21,27 @@ Tasks are organized by phase and dependency order. Each task includes:
 ## Phase 1: Database Schema Extension (Foundation)
 
 ### Task 1.1: Create Database Migration File
+
 **Type:** infrastructure
 **Priority:** critical
 **Complexity:** medium (2-3h)
 **Dependencies:** None
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-server/migrations/010_user_profile_comprehensive.js`
 
 **Description:**
 Create migration file to add 40+ new columns to the `users` table, create `user_profile_privacy` table, and create `profile_audit_log` table.
 
 **Deliverables:**
+
 - Migration file with up() and down() functions
 - All 40+ new columns added to users table
 - Privacy settings table created
 - Audit log table created
 
 **Acceptance Criteria:**
+
 - [ ] Migration file exists at correct path
 - [ ] All personal info columns added (preferred_name, pronouns, birthdate, language, timezone, phone, city, state, zip)
 - [ ] All work columns added (employment_status, employer, work_schedule, schedule_flexibility, commute_time, travel_required)
@@ -51,21 +56,23 @@ Create migration file to add 40+ new columns to the `users` table, create `user_
 - [ ] Rollback function (down) properly reverses all changes
 
 **Technical Notes:**
+
 ```javascript
 // Migration structure
 module.exports = {
-  up: async (db) => {
+  up: async db => {
     // Add columns in batches to avoid timeout
     // Create privacy table
     // Create audit log table
   },
-  down: async (db) => {
+  down: async db => {
     // Rollback all changes
-  }
+  },
 };
 ```
 
 **Code Snippet - Column Additions:**
+
 ```sql
 -- Personal Information
 ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_name TEXT;
@@ -77,22 +84,26 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS birthdate TEXT;
 ---
 
 ### Task 1.2: Update SQLite Database Schema (db.js)
+
 **Type:** infrastructure
 **Priority:** critical
 **Complexity:** medium (2-3h)
 **Dependencies:** Task 1.1
 **Files to Modify:**
+
 - `/Users/athenasees/Desktop/chat/chat-server/db.js`
 
 **Description:**
 Add new columns to the SQLite initialization script in db.js with proper migration checks (similar to existing profile column migrations starting at line 158).
 
 **Deliverables:**
+
 - All new columns added with migration safety checks
 - Privacy table initialization added
 - Audit log table initialization added
 
 **Acceptance Criteria:**
+
 - [ ] Personal info columns added to users table with try/catch migration pattern
 - [ ] Work columns added with migration safety
 - [ ] Health columns added (marked for encryption)
@@ -108,6 +119,7 @@ Add new columns to the SQLite initialization script in db.js with proper migrati
 
 **Technical Notes:**
 Follow the existing migration pattern:
+
 ```javascript
 const profileColumns = [
   'preferred_name',
@@ -132,17 +144,20 @@ for (const column of profileColumns) {
 ---
 
 ### Task 1.3: Create Profile Helper Utilities Module
+
 **Type:** infrastructure
 **Priority:** critical
 **Complexity:** large (4-6h)
 **Dependencies:** Task 1.1, Task 1.2
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-server/src/utils/profileHelpers.js`
 
 **Description:**
 Create comprehensive helper functions for encryption, privacy filtering, completion calculation, and default settings.
 
 **Deliverables:**
+
 - Encryption/decryption functions for sensitive fields
 - Privacy filtering logic
 - Profile completion calculator
@@ -150,6 +165,7 @@ Create comprehensive helper functions for encryption, privacy filtering, complet
 - Audit logging helpers
 
 **Acceptance Criteria:**
+
 - [ ] encryptSensitiveFields() function encrypts health and financial data
 - [ ] decryptSensitiveFields() function decrypts on read
 - [ ] filterProfileByPrivacy() respects user privacy settings
@@ -166,6 +182,7 @@ Create comprehensive helper functions for encryption, privacy filtering, complet
 - [ ] Error handling for encryption failures
 
 **Technical Notes:**
+
 ```javascript
 const crypto = require('crypto');
 
@@ -182,7 +199,7 @@ const SENSITIVE_FIELDS = [
   'finance_income_level',
   'finance_debt_stress',
   'finance_support_paying',
-  'finance_support_receiving'
+  'finance_support_receiving',
 ];
 
 function encryptSensitiveFields(data) {
@@ -208,23 +225,27 @@ function calculateProfileCompletion(profile) {
 ## Phase 2: Backend API Implementation
 
 ### Task 2.1: Update GET /api/user/profile Endpoint
+
 **Type:** feature
 **Priority:** critical
 **Complexity:** medium (3-4h)
 **Dependencies:** Task 1.3
 **Files to Modify:**
+
 - `/Users/athenasees/Desktop/chat/chat-server/server.js` (around line 6010)
 
 **Description:**
 Extend the existing profile GET endpoint to include privacy filtering, new fields, and audit logging.
 
 **Deliverables:**
+
 - Privacy-aware profile retrieval
 - Support for viewing own vs. co-parent profiles
 - Audit logging for profile views
 - All 40+ new fields returned
 
 **Acceptance Criteria:**
+
 - [ ] Endpoint accepts optional `username` query parameter
 - [ ] Returns full profile data for own profile (decrypted)
 - [ ] Returns filtered profile for co-parent view (respects privacy settings)
@@ -243,6 +264,7 @@ Extend the existing profile GET endpoint to include privacy filtering, new field
 - [ ] Proper error handling and logging
 
 **Code Changes:**
+
 ```javascript
 // Around line 6010 in server.js
 app.get('/api/user/profile', async (req, res) => {
@@ -251,8 +273,11 @@ app.get('/api/user/profile', async (req, res) => {
     const requestingUser = req.user?.username;
 
     // Fetch user
-    const userResult = await dbSafe.safeSelect('users',
-      { username: username.toLowerCase() }, { limit: 1 });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: username.toLowerCase() },
+      { limit: 1 }
+    );
     const users = dbSafe.parseResult(userResult);
 
     if (!users.length) {
@@ -260,8 +285,11 @@ app.get('/api/user/profile', async (req, res) => {
     }
 
     // Fetch privacy settings
-    const privacyResult = await dbSafe.safeSelect('user_profile_privacy',
-      { user_id: users[0].id }, { limit: 1 });
+    const privacyResult = await dbSafe.safeSelect(
+      'user_profile_privacy',
+      { user_id: users[0].id },
+      { limit: 1 }
+    );
     const privacy = dbSafe.parseResult(privacyResult);
     const privacySettings = privacy[0] || getDefaultPrivacySettings();
 
@@ -279,7 +307,7 @@ app.get('/api/user/profile', async (req, res) => {
     res.json({
       ...profile,
       privacySettings: isOwnProfile ? privacySettings : null,
-      isOwnProfile
+      isOwnProfile,
     });
   } catch (error) {
     console.error('Error fetching profile:', error);
@@ -291,17 +319,20 @@ app.get('/api/user/profile', async (req, res) => {
 ---
 
 ### Task 2.2: Update PUT /api/user/profile Endpoint
+
 **Type:** feature
 **Priority:** critical
 **Complexity:** large (4-6h)
 **Dependencies:** Task 1.3, Task 2.1
 **Files to Modify:**
+
 - `/Users/athenasees/Desktop/chat/chat-server/server.js` (around line 6049)
 
 **Description:**
 Extend the existing profile PUT endpoint to handle all new fields, encryption, validation, completion tracking, and audit logging.
 
 **Deliverables:**
+
 - Accept and validate all new profile fields
 - Encrypt sensitive fields before storage
 - Calculate and update completion percentage
@@ -309,6 +340,7 @@ Extend the existing profile PUT endpoint to handle all new fields, encryption, v
 - Auto-complete onboarding tasks at 50% threshold
 
 **Acceptance Criteria:**
+
 - [ ] Accepts all 40+ new profile fields in request body
 - [ ] Validates field lengths (max 500 chars for text, max 2000 for textareas)
 - [ ] Validates email format if provided
@@ -327,6 +359,7 @@ Extend the existing profile PUT endpoint to handle all new fields, encryption, v
 - [ ] Transaction safety (rollback on error)
 
 **Code Changes:**
+
 ```javascript
 // Around line 6049 in server.js
 app.put('/api/user/profile', async (req, res) => {
@@ -340,8 +373,11 @@ app.put('/api/user/profile', async (req, res) => {
     }
 
     // Get user
-    const userResult = await dbSafe.safeSelect('users',
-      { username: currentUsername.toLowerCase() }, { limit: 1 });
+    const userResult = await dbSafe.safeSelect(
+      'users',
+      { username: currentUsername.toLowerCase() },
+      { limit: 1 }
+    );
     const users = dbSafe.parseResult(userResult);
 
     if (!users.length) {
@@ -362,13 +398,17 @@ app.put('/api/user/profile', async (req, res) => {
     // Calculate completion
     const completionPct = calculateProfileCompletion({
       ...user,
-      ...profileData
+      ...profileData,
     });
 
-    await dbSafe.safeUpdate('users', {
-      profile_completion_percentage: completionPct,
-      profile_last_updated: new Date().toISOString()
-    }, { id: user.id });
+    await dbSafe.safeUpdate(
+      'users',
+      {
+        profile_completion_percentage: completionPct,
+        profile_last_updated: new Date().toISOString(),
+      },
+      { id: user.id }
+    );
 
     // Auto-complete onboarding task
     if (completionPct >= 50) {
@@ -380,7 +420,7 @@ app.put('/api/user/profile', async (req, res) => {
     res.json({
       success: true,
       completionPercentage: completionPct,
-      message: 'Profile updated successfully'
+      message: 'Profile updated successfully',
     });
   } catch (error) {
     console.error('Error updating profile:', error);
@@ -390,6 +430,7 @@ app.put('/api/user/profile', async (req, res) => {
 ```
 
 **Validation Function:**
+
 ```javascript
 function validateProfileFields(data) {
   // Email validation
@@ -423,22 +464,26 @@ function validateProfileFields(data) {
 ---
 
 ### Task 2.3: Create Privacy Settings Endpoints
+
 **Type:** feature
 **Priority:** high
 **Complexity:** medium (3-4h)
 **Dependencies:** Task 1.3, Task 2.1
 **Files to Modify:**
+
 - `/Users/athenasees/Desktop/chat/chat-server/server.js` (add new endpoints after profile endpoints)
 
 **Description:**
 Create three new endpoints for managing profile privacy settings.
 
 **Deliverables:**
+
 - GET /api/user/profile/privacy - Fetch privacy settings
 - PUT /api/user/profile/privacy - Update privacy settings
 - GET /api/user/profile/preview-coparent-view - Preview filtered profile
 
 **Acceptance Criteria:**
+
 - [ ] GET /api/user/profile/privacy returns current settings or defaults
 - [ ] PUT /api/user/profile/privacy accepts section visibility fields
 - [ ] PUT /api/user/profile/privacy accepts field_overrides JSON
@@ -452,13 +497,17 @@ Create three new endpoints for managing profile privacy settings.
 - [ ] Proper error handling for all endpoints
 
 **Code Snippet:**
+
 ```javascript
 // GET /api/user/profile/privacy
 app.get('/api/user/profile/privacy', verifyAuth, async (req, res) => {
   try {
     const userId = req.user.id;
-    const privacyResult = await dbSafe.safeSelect('user_profile_privacy',
-      { user_id: userId }, { limit: 1 });
+    const privacyResult = await dbSafe.safeSelect(
+      'user_profile_privacy',
+      { user_id: userId },
+      { limit: 1 }
+    );
     const privacy = dbSafe.parseResult(privacyResult);
 
     res.json(privacy[0] || getDefaultPrivacySettings());
@@ -472,19 +521,28 @@ app.get('/api/user/profile/privacy', verifyAuth, async (req, res) => {
 app.put('/api/user/profile/privacy', verifyAuth, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { personal_visibility, work_visibility, health_visibility,
-            financial_visibility, background_visibility, field_overrides } = req.body;
+    const {
+      personal_visibility,
+      work_visibility,
+      health_visibility,
+      financial_visibility,
+      background_visibility,
+      field_overrides,
+    } = req.body;
 
     // Prevent changing health/financial visibility (always private)
     if (health_visibility === 'shared' || financial_visibility === 'shared') {
       return res.status(400).json({
-        error: 'Health and financial information must remain private'
+        error: 'Health and financial information must remain private',
       });
     }
 
     // Upsert privacy settings
-    const existing = await dbSafe.safeSelect('user_profile_privacy',
-      { user_id: userId }, { limit: 1 });
+    const existing = await dbSafe.safeSelect(
+      'user_profile_privacy',
+      { user_id: userId },
+      { limit: 1 }
+    );
 
     const settingsData = {
       personal_visibility: personal_visibility || 'shared',
@@ -493,7 +551,7 @@ app.put('/api/user/profile/privacy', verifyAuth, async (req, res) => {
       financial_visibility: 'private', // Force private
       background_visibility: background_visibility || 'shared',
       field_overrides: JSON.stringify(field_overrides || {}),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     if (existing.length > 0) {
@@ -502,7 +560,7 @@ app.put('/api/user/profile/privacy', verifyAuth, async (req, res) => {
       await dbSafe.safeInsert('user_profile_privacy', {
         user_id: userId,
         ...settingsData,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       });
     }
 
@@ -526,8 +584,11 @@ app.get('/api/user/profile/preview-coparent-view', verifyAuth, async (req, res) 
     const userResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
     const users = dbSafe.parseResult(userResult);
 
-    const privacyResult = await dbSafe.safeSelect('user_profile_privacy',
-      { user_id: userId }, { limit: 1 });
+    const privacyResult = await dbSafe.safeSelect(
+      'user_profile_privacy',
+      { user_id: userId },
+      { limit: 1 }
+    );
     const privacy = dbSafe.parseResult(privacyResult);
 
     // Return profile as co-parent would see it (isOwnProfile = false)
@@ -550,23 +611,27 @@ app.get('/api/user/profile/preview-coparent-view', verifyAuth, async (req, res) 
 ## Phase 3: Frontend Profile Wizard
 
 ### Task 3.1: Create ProfileWizard Component
+
 **Type:** feature
 **Priority:** critical
 **Complexity:** large (5-6h)
 **Dependencies:** Task 2.2
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/ProfileWizard.jsx`
 
 **Description:**
 Create multi-step wizard component with 5 steps: Personal, Work, Health, Financial, Background.
 
 **Deliverables:**
+
 - Wizard navigation with progress bar
 - Step validation and auto-save
 - Skip functionality for each step
 - Integration with useProfile hook
 
 **Acceptance Criteria:**
+
 - [ ] Component renders 5-step progress indicator
 - [ ] Progress bar shows completion percentage visually
 - [ ] Each step has icon and title
@@ -584,6 +649,7 @@ Create multi-step wizard component with 5 steps: Personal, Work, Health, Financi
 - [ ] Touch-friendly (44px minimum touch targets)
 
 **Code Snippet:**
+
 ```jsx
 import React from 'react';
 import { useProfile } from '../hooks/useProfile';
@@ -593,7 +659,7 @@ const STEPS = [
   { id: 'work', title: 'Work & Schedule', icon: '💼' },
   { id: 'health', title: 'Health & Wellbeing', icon: '❤️' },
   { id: 'financial', title: 'Financial Context', icon: '💰' },
-  { id: 'background', title: 'Background', icon: '🏠' }
+  { id: 'background', title: 'Background', icon: '🏠' },
 ];
 
 export function ProfileWizard({ onComplete, initialStep = 0 }) {
@@ -632,9 +698,7 @@ export function ProfileWizard({ onComplete, initialStep = 0 }) {
 
       {/* Navigation */}
       <div className="flex justify-between mt-6">
-        <button onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}>
-          Back
-        </button>
+        <button onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}>Back</button>
         <button onClick={handleSkip}>Skip for now</button>
         <button onClick={handleNext} disabled={isSaving}>
           {isSaving ? 'Saving...' : currentStep === STEPS.length - 1 ? 'Complete' : 'Continue'}
@@ -648,23 +712,27 @@ export function ProfileWizard({ onComplete, initialStep = 0 }) {
 ---
 
 ### Task 3.2: Create PersonalInfoForm Component
+
 **Type:** feature
 **Priority:** high
 **Complexity:** medium (2-3h)
 **Dependencies:** Task 3.1
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/profile/PersonalInfoForm.jsx`
 
 **Description:**
 Create form for personal information step (first/last name, preferred name, pronouns, birthdate, language, timezone, phone, location).
 
 **Deliverables:**
+
 - Form fields for all personal data
 - Proper input types (date picker, select dropdowns)
 - Real-time validation
 - Character count for text inputs
 
 **Acceptance Criteria:**
+
 - [ ] First name input (required, 2-50 chars)
 - [ ] Last name input (required, 2-50 chars)
 - [ ] Preferred name input with hint text
@@ -681,19 +749,18 @@ Create form for personal information step (first/last name, preferred name, pron
 - [ ] Touch-friendly on mobile
 
 **Code Snippet:**
+
 ```jsx
 export function PersonalInfoForm({ profileData, updateField }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-[#275559] mb-1.5">
-            First Name
-          </label>
+          <label className="block text-sm font-medium text-[#275559] mb-1.5">First Name</label>
           <input
             type="text"
             value={profileData.first_name || ''}
-            onChange={(e) => updateField('first_name', e.target.value)}
+            onChange={e => updateField('first_name', e.target.value)}
             className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0] focus:ring-2 focus:ring-[#4DA8B0]/20 transition-all"
             placeholder="Your first name"
           />
@@ -702,19 +769,15 @@ export function PersonalInfoForm({ profileData, updateField }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#275559] mb-1.5">
-          Preferred Name
-        </label>
+        <label className="block text-sm font-medium text-[#275559] mb-1.5">Preferred Name</label>
         <input
           type="text"
           value={profileData.preferred_name || ''}
-          onChange={(e) => updateField('preferred_name', e.target.value)}
+          onChange={e => updateField('preferred_name', e.target.value)}
           className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0]"
           placeholder="What should we call you?"
         />
-        <p className="text-sm text-gray-500 mt-1">
-          This is how LiaiZen will address you
-        </p>
+        <p className="text-sm text-gray-500 mt-1">This is how LiaiZen will address you</p>
       </div>
 
       {/* Pronouns, birthdate, language, timezone, location */}
@@ -726,17 +789,20 @@ export function PersonalInfoForm({ profileData, updateField }) {
 ---
 
 ### Task 3.3: Create WorkScheduleForm Component
+
 **Type:** feature
 **Priority:** high
 **Complexity:** medium (2-3h)
 **Dependencies:** Task 3.1
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/profile/WorkScheduleForm.jsx`
 
 **Description:**
 Create form for work and schedule information with privacy notice.
 
 **Deliverables:**
+
 - Employment status dropdown
 - Occupation input
 - Work schedule textarea
@@ -746,6 +812,7 @@ Create form for work and schedule information with privacy notice.
 - Privacy notice banner
 
 **Acceptance Criteria:**
+
 - [ ] Privacy notice displayed prominently (blue banner with lock icon)
 - [ ] Notice states "private by default, AI-only"
 - [ ] Employment status dropdown (employed, self-employed, unemployed, student, retired, disability)
@@ -759,6 +826,7 @@ Create form for work and schedule information with privacy notice.
 - [ ] Mobile responsive
 
 **Code Snippet:**
+
 ```jsx
 export function WorkScheduleForm({ profileData, updateField }) {
   return (
@@ -767,18 +835,16 @@ export function WorkScheduleForm({ profileData, updateField }) {
       <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
         <span className="text-blue-600">🔒</span>
         <p className="text-sm text-blue-800">
-          Work information is <strong>private by default</strong>.
-          Only LiaiZen AI uses this to understand your availability constraints.
+          Work information is <strong>private by default</strong>. Only LiaiZen AI uses this to
+          understand your availability constraints.
         </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#275559] mb-1.5">
-          Employment Status
-        </label>
+        <label className="block text-sm font-medium text-[#275559] mb-1.5">Employment Status</label>
         <select
           value={profileData.employment_status || ''}
-          onChange={(e) => updateField('employment_status', e.target.value)}
+          onChange={e => updateField('employment_status', e.target.value)}
           className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#4DA8B0]"
         >
           <option value="">Select status</option>
@@ -800,17 +866,20 @@ export function WorkScheduleForm({ profileData, updateField }) {
 ---
 
 ### Task 3.4: Create HealthWellbeingForm Component
+
 **Type:** feature
 **Priority:** high
 **Complexity:** large (4-5h)
 **Dependencies:** Task 3.1
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/profile/HealthWellbeingForm.jsx`
 
 **Description:**
 Create sensitive health information form with strong privacy emphasis and conditional fields.
 
 **Deliverables:**
+
 - Prominent privacy notice (never shared with co-parent)
 - Physical health section
 - Mental health section
@@ -819,6 +888,7 @@ Create sensitive health information form with strong privacy emphasis and condit
 - Conditional fields based on selections
 
 **Acceptance Criteria:**
+
 - [ ] Extra-prominent privacy notice (purple banner with lock icon)
 - [ ] Notice states "strictly confidential, never shared"
 - [ ] Physical health conditions multi-select
@@ -834,6 +904,7 @@ Create sensitive health information form with strong privacy emphasis and condit
 - [ ] Mobile-friendly layout
 
 **Code Snippet:**
+
 ```jsx
 export function HealthWellbeingForm({ profileData, updateField }) {
   return (
@@ -842,12 +913,10 @@ export function HealthWellbeingForm({ profileData, updateField }) {
       <div className="flex items-start gap-2 p-4 bg-purple-50 rounded-lg border border-purple-200">
         <span className="text-purple-600 text-xl">🔐</span>
         <div>
-          <p className="text-sm font-medium text-purple-900 mb-1">
-            Strictly Confidential
-          </p>
+          <p className="text-sm font-medium text-purple-900 mb-1">Strictly Confidential</p>
           <p className="text-sm text-purple-800">
-            This information is <strong>never shared with your co-parent</strong>.
-            It helps LiaiZen understand your situation and provide more empathetic support.
+            This information is <strong>never shared with your co-parent</strong>. It helps LiaiZen
+            understand your situation and provide more empathetic support.
           </p>
         </div>
       </div>
@@ -881,17 +950,20 @@ export function HealthWellbeingForm({ profileData, updateField }) {
 ---
 
 ### Task 3.5: Create FinancialContextForm Component
+
 **Type:** feature
 **Priority:** high
 **Complexity:** medium (3-4h)
 **Dependencies:** Task 3.1
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/profile/FinancialContextForm.jsx`
 
 **Description:**
 Create financial information form with privacy protections and range-based inputs.
 
 **Deliverables:**
+
 - Privacy notice
 - Income level ranges (not exact amounts)
 - Income stability selector
@@ -902,6 +974,7 @@ Create financial information form with privacy protections and range-based input
 - Child support fields
 
 **Acceptance Criteria:**
+
 - [ ] Privacy notice (private, AI-only)
 - [ ] Income level dropdown (ranges: <25k, 25-50k, 50-75k, 75-100k, 100k+, prefer not to say)
 - [ ] Income stability dropdown (very stable, stable, somewhat unstable, very unstable)
@@ -916,6 +989,7 @@ Create financial information form with privacy protections and range-based input
 - [ ] Non-judgmental language
 
 **Code Snippet:**
+
 ```jsx
 export function FinancialContextForm({ profileData, updateField }) {
   return (
@@ -924,8 +998,8 @@ export function FinancialContextForm({ profileData, updateField }) {
       <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
         <span className="text-blue-600">🔒</span>
         <p className="text-sm text-blue-800">
-          Financial information is <strong>strictly private</strong>.
-          Used only by AI to understand financial stress and constraints.
+          Financial information is <strong>strictly private</strong>. Used only by AI to understand
+          financial stress and constraints.
         </p>
       </div>
 
@@ -935,7 +1009,7 @@ export function FinancialContextForm({ profileData, updateField }) {
         </label>
         <select
           value={profileData.finance_income_level || ''}
-          onChange={(e) => updateField('finance_income_level', e.target.value)}
+          onChange={e => updateField('finance_income_level', e.target.value)}
           className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#4DA8B0]"
         >
           <option value="">Select range</option>
@@ -957,17 +1031,20 @@ export function FinancialContextForm({ profileData, updateField }) {
 ---
 
 ### Task 3.6: Create BackgroundForm Component
+
 **Type:** feature
 **Priority:** medium
 **Complexity:** medium (2-3h)
 **Dependencies:** Task 3.1
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/profile/BackgroundForm.jsx`
 
 **Description:**
 Create background information form for cultural context and education.
 
 **Deliverables:**
+
 - Birthplace and upbringing inputs
 - Family origin textarea
 - Culture and religion inputs
@@ -975,6 +1052,7 @@ Create background information form for cultural context and education.
 - Education section
 
 **Acceptance Criteria:**
+
 - [ ] Birthplace input
 - [ ] Where raised input (if different)
 - [ ] Family origin textarea (cultural/ethnic background)
@@ -992,23 +1070,27 @@ Create background information form for cultural context and education.
 ---
 
 ### Task 3.7: Create PrivacySettings Component
+
 **Type:** feature
 **Priority:** high
 **Complexity:** large (4-5h)
 **Dependencies:** Task 2.3
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/profile/PrivacySettings.jsx`
 
 **Description:**
 Create privacy settings panel with section visibility toggles and preview feature.
 
 **Deliverables:**
+
 - Section visibility toggles
 - Locked indicators for health/financial
 - Preview modal showing co-parent view
 - Visual feedback for changes
 
 **Acceptance Criteria:**
+
 - [ ] Loads current privacy settings on mount
 - [ ] Displays 5 sections (Personal, Work, Health, Financial, Background)
 - [ ] Each section shows icon, name, fields included
@@ -1025,6 +1107,7 @@ Create privacy settings panel with section visibility toggles and preview featur
 - [ ] Mobile responsive layout
 
 **Code Snippet:**
+
 ```jsx
 import React from 'react';
 import { apiGet, apiPut } from '../../apiClient';
@@ -1058,16 +1141,28 @@ export function PrivacySettings() {
   };
 
   const sections = [
-    { id: 'personal', label: 'Personal Information', icon: '👤',
-      fields: 'Name, pronouns, location' },
-    { id: 'work', label: 'Work & Schedule', icon: '💼',
-      fields: 'Employment, schedule' },
-    { id: 'health', label: 'Health & Wellbeing', icon: '❤️',
-      fields: 'Physical health, mental health', locked: true },
-    { id: 'financial', label: 'Financial Context', icon: '💰',
-      fields: 'Income, housing', locked: true },
-    { id: 'background', label: 'Background', icon: '🏠',
-      fields: 'Education, culture' }
+    {
+      id: 'personal',
+      label: 'Personal Information',
+      icon: '👤',
+      fields: 'Name, pronouns, location',
+    },
+    { id: 'work', label: 'Work & Schedule', icon: '💼', fields: 'Employment, schedule' },
+    {
+      id: 'health',
+      label: 'Health & Wellbeing',
+      icon: '❤️',
+      fields: 'Physical health, mental health',
+      locked: true,
+    },
+    {
+      id: 'financial',
+      label: 'Financial Context',
+      icon: '💰',
+      fields: 'Income, housing',
+      locked: true,
+    },
+    { id: 'background', label: 'Background', icon: '🏠', fields: 'Education, culture' },
   ];
 
   return (
@@ -1082,23 +1177,27 @@ export function PrivacySettings() {
 ---
 
 ### Task 3.8: Extend useProfile Hook
+
 **Type:** feature
 **Priority:** critical
 **Complexity:** medium (2-3h)
 **Dependencies:** Task 2.2
 **Files to Modify:**
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/hooks/useProfile.js`
 
 **Description:**
 Extend the existing useProfile hook to handle all 40+ new fields and provide helper methods.
 
 **Deliverables:**
+
 - Add all new fields to profileData state
 - Add updateField helper function
 - Add calculateCompletion helper
 - Maintain backward compatibility
 
 **Acceptance Criteria:**
+
 - [ ] All 40+ new fields added to initial profileData state
 - [ ] loadProfile fetches all new fields from API
 - [ ] saveProfile sends all new fields to API
@@ -1109,6 +1208,7 @@ Extend the existing useProfile hook to handle all 40+ new fields and provide hel
 - [ ] Error handling for missing fields
 
 **Code Changes:**
+
 ```javascript
 // In useProfile.js
 export function useProfile(username) {
@@ -1181,22 +1281,31 @@ export function useProfile(username) {
   const updateField = (fieldName, value) => {
     setProfileData(prev => ({
       ...prev,
-      [fieldName]: value
+      [fieldName]: value,
     }));
   };
 
   // Calculate local completion (for real-time feedback)
   const calculateCompletion = () => {
     const requiredFields = [
-      'first_name', 'last_name', 'birthdate', 'pronouns', 'timezone',
-      'occupation', 'employment_status', 'work_schedule',
-      'health_physical_conditions', 'health_mental_conditions',
-      'finance_income_level', 'finance_housing_status',
-      'education_level', 'background_culture'
+      'first_name',
+      'last_name',
+      'birthdate',
+      'pronouns',
+      'timezone',
+      'occupation',
+      'employment_status',
+      'work_schedule',
+      'health_physical_conditions',
+      'health_mental_conditions',
+      'finance_income_level',
+      'finance_housing_status',
+      'education_level',
+      'background_culture',
     ];
 
-    const filledCount = requiredFields.filter(field =>
-      profileData[field] && profileData[field].trim()
+    const filledCount = requiredFields.filter(
+      field => profileData[field] && profileData[field].trim()
     ).length;
 
     return Math.round((filledCount / requiredFields.length) * 100);
@@ -1215,22 +1324,26 @@ export function useProfile(username) {
 ---
 
 ### Task 3.9: Integrate Wizard into ProfilePanel
+
 **Type:** feature
 **Priority:** medium
 **Complexity:** small (1-2h)
 **Dependencies:** Task 3.1, Task 3.8
 **Files to Modify:**
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/ProfilePanel.jsx`
 
 **Description:**
 Add a button to launch the ProfileWizard modal from the existing ProfilePanel.
 
 **Deliverables:**
+
 - "Complete Profile Wizard" button
 - Modal wrapper for wizard
 - Profile completion progress indicator
 
 **Acceptance Criteria:**
+
 - [ ] Button displayed in ProfilePanel header
 - [ ] Button shows when profile is <100% complete
 - [ ] Button opens modal with ProfileWizard
@@ -1246,23 +1359,27 @@ Add a button to launch the ProfileWizard modal from the existing ProfilePanel.
 ## Phase 4: AI Integration
 
 ### Task 4.1: Update AI Mediator Context Building
+
 **Type:** feature
 **Priority:** high
 **Complexity:** large (4-6h)
 **Dependencies:** Task 1.3, Task 2.2
 **Files to Modify:**
+
 - `/Users/athenasees/Desktop/chat/chat-server/src/liaizen/core/mediator.js` (around line 395-410)
 
 **Description:**
 Extend the buildUserContext function to incorporate comprehensive profile data for personalized mediation.
 
 **Deliverables:**
+
 - Profile data loaded from database
 - Sensitive fields decrypted for AI context
 - Concise context generation (max 500 tokens)
 - Privacy-preserving prompts (indirect references only)
 
 **Acceptance Criteria:**
+
 - [ ] Fetches user profile data with all new fields
 - [ ] Decrypts health and financial data for AI use only
 - [ ] Builds concise context string (<500 tokens)
@@ -1278,6 +1395,7 @@ Extend the buildUserContext function to incorporate comprehensive profile data f
 - [ ] No performance degradation (caching considered)
 
 **Code Changes:**
+
 ```javascript
 // In mediator.js, around line 395
 async function buildUserContext(userId) {
@@ -1299,8 +1417,8 @@ async function buildUserContext(userId) {
   if (profile.work_schedule || profile.schedule_flexibility) {
     contextParts.push(
       `Work: ${profile.employment_status || 'employed'}, ` +
-      `schedule: ${profile.work_schedule || 'standard'}, ` +
-      `flexibility: ${profile.schedule_flexibility || 'medium'}`
+        `schedule: ${profile.work_schedule || 'standard'}, ` +
+        `flexibility: ${profile.schedule_flexibility || 'medium'}`
     );
   }
 
@@ -1323,16 +1441,16 @@ async function buildUserContext(userId) {
   }
 
   // Financial stress (general level only)
-  if (profile.finance_debt_stress === 'significant' ||
-      profile.finance_debt_stress === 'overwhelming') {
+  if (
+    profile.finance_debt_stress === 'significant' ||
+    profile.finance_debt_stress === 'overwhelming'
+  ) {
     contextParts.push('Experiencing financial stress');
   }
 
   // Cultural context
   if (profile.background_culture || profile.background_religion) {
-    contextParts.push(
-      `Cultural background: ${profile.background_culture || 'not specified'}`
-    );
+    contextParts.push(`Cultural background: ${profile.background_culture || 'not specified'}`);
   }
 
   // Communication preferences (if set)
@@ -1340,9 +1458,7 @@ async function buildUserContext(userId) {
     contextParts.push(`Prefers ${profile.communication_style} communication`);
   }
 
-  return contextParts.length > 0
-    ? contextParts.join('. ')
-    : null;
+  return contextParts.length > 0 ? contextParts.join('. ') : null;
 }
 
 // Inject into mediation (existing function, extend it)
@@ -1371,23 +1487,27 @@ async function mediateMessage(message, senderContext, receiverContext) {
 ---
 
 ### Task 4.2: Create Profile-Aware Coaching Examples
+
 **Type:** docs
 **Priority:** medium
 **Complexity:** small (1-2h)
 **Dependencies:** Task 4.1
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-server/src/liaizen/policies/profile-coaching-examples.md`
 
 **Description:**
 Document examples of how profile data enhances AI coaching without violating privacy.
 
 **Deliverables:**
+
 - Example scenarios for work schedule context
 - Example scenarios for health considerations
 - Example scenarios for financial stress
 - Example scenarios for cultural sensitivity
 
 **Acceptance Criteria:**
+
 - [ ] At least 3 work schedule examples
 - [ ] At least 3 health context examples (indirect only)
 - [ ] At least 3 financial stress examples (no amounts)
@@ -1397,12 +1517,14 @@ Document examples of how profile data enhances AI coaching without violating pri
 - [ ] Markdown formatting for readability
 
 **Example Content:**
+
 ```markdown
 # Profile-Aware Coaching Examples
 
 ## Work Schedule Context
 
 ### Scenario 1: Evening Worker
+
 **USER PROFILE:** Works evenings (5pm-1am), low flexibility
 **MESSAGE:** "Why can't you pick up tomorrow at 4pm?"
 **GENERIC COACHING:** "Consider offering flexibility in timing."
@@ -1412,6 +1534,7 @@ Try: 'I have a work conflict at 4pm. Could we do 6pm, or would morning work bett
 ## Health Considerations
 
 ### Scenario 2: Anxiety Management
+
 **USER PROFILE:** Has anxiety, in therapy
 **MESSAGE:** "This is stressing me out and you don't even care!"
 **PROFILE-AWARE COACHING:** "Take a breath. The phrasing 'you don't even care' may escalate.
@@ -1420,6 +1543,7 @@ Try: 'I'm feeling overwhelmed by this situation. Can we find a solution together
 ## Financial Stress
 
 ### Scenario 3: Debt Stress
+
 **USER PROFILE:** Significant debt stress, receiving support
 **MESSAGE:** "You never pay your fair share!"
 **PROFILE-AWARE COACHING:** "Financial discussions can be sensitive. Consider focusing on specifics:
@@ -1431,17 +1555,20 @@ Try: 'I'm feeling overwhelmed by this situation. Can we find a solution together
 ## Phase 5: Testing & Validation
 
 ### Task 5.1: Backend API Tests
+
 **Type:** test
 **Priority:** high
 **Complexity:** large (5-6h)
 **Dependencies:** Task 2.1, Task 2.2, Task 2.3
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/profile.test.js`
 
 **Description:**
 Create comprehensive test suite for all profile API endpoints.
 
 **Deliverables:**
+
 - Tests for GET /api/user/profile
 - Tests for PUT /api/user/profile
 - Tests for privacy endpoints
@@ -1449,6 +1576,7 @@ Create comprehensive test suite for all profile API endpoints.
 - Tests for privacy filtering
 
 **Acceptance Criteria:**
+
 - [ ] Test: GET returns full profile for own user
 - [ ] Test: GET filters by privacy settings for other users
 - [ ] Test: GET never exposes health data to other users
@@ -1469,6 +1597,7 @@ Create comprehensive test suite for all profile API endpoints.
 - [ ] Uses Supertest for HTTP testing
 
 **Code Structure:**
+
 ```javascript
 const request = require('supertest');
 const app = require('../server');
@@ -1513,12 +1642,10 @@ describe('Profile API', () => {
     });
 
     test('encrypts sensitive fields', async () => {
-      const response = await request(app)
-        .put('/api/user/profile')
-        .send({
-          currentUsername: 'testuser',
-          health_mental_conditions: 'anxiety,depression'
-        });
+      const response = await request(app).put('/api/user/profile').send({
+        currentUsername: 'testuser',
+        health_mental_conditions: 'anxiety,depression',
+      });
 
       // Verify database has encrypted value
       const db = await getDb();
@@ -1530,7 +1657,7 @@ describe('Profile API', () => {
         .put('/api/user/profile')
         .send({
           currentUsername: 'testuser',
-          preferred_name: 'a'.repeat(600) // Exceeds max
+          preferred_name: 'a'.repeat(600), // Exceeds max
         });
 
       expect(response.status).toBe(400);
@@ -1550,11 +1677,9 @@ describe('Profile API', () => {
     });
 
     test('prevents toggling health/financial visibility', async () => {
-      const response = await request(app)
-        .put('/api/user/profile/privacy')
-        .send({
-          health_visibility: 'shared' // Attempt to share
-        });
+      const response = await request(app).put('/api/user/profile/privacy').send({
+        health_visibility: 'shared', // Attempt to share
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.error).toMatch(/must remain private/);
@@ -1570,23 +1695,27 @@ describe('Profile API', () => {
 ---
 
 ### Task 5.2: Frontend Component Tests
+
 **Type:** test
 **Priority:** medium
 **Complexity:** medium (3-4h)
 **Dependencies:** Task 3.1, Task 3.7
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/__tests__/ProfileWizard.test.jsx`
 
 **Description:**
 Create tests for ProfileWizard and PrivacySettings components.
 
 **Deliverables:**
+
 - ProfileWizard rendering tests
 - Navigation tests
 - Save/skip tests
 - PrivacySettings tests
 
 **Acceptance Criteria:**
+
 - [ ] Test: ProfileWizard renders all 5 steps
 - [ ] Test: Can navigate between steps
 - [ ] Test: Skip button advances without saving
@@ -1602,6 +1731,7 @@ Create tests for ProfileWizard and PrivacySettings components.
 - [ ] All tests pass
 
 **Code Structure:**
+
 ```jsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProfileWizard } from '../ProfileWizard';
@@ -1640,23 +1770,27 @@ describe('ProfileWizard', () => {
 ---
 
 ### Task 5.3: Integration Tests
+
 **Type:** test
 **Priority:** medium
 **Complexity:** medium (3-4h)
 **Dependencies:** Task 5.1, Task 5.2
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/profile-integration.test.js`
 
 **Description:**
 Create end-to-end integration tests for complete profile workflows.
 
 **Deliverables:**
+
 - Full profile creation flow test
 - Privacy settings flow test
 - AI mediation with profile test
 - Profile update flow test
 
 **Acceptance Criteria:**
+
 - [ ] Test: User creates account → fills profile wizard → profile saved with correct completion %
 - [ ] Test: User updates privacy settings → co-parent views profile → sees filtered data only
 - [ ] Test: User with work schedule → sends message about availability → AI uses context
@@ -1672,11 +1806,13 @@ Create end-to-end integration tests for complete profile workflows.
 ## Phase 6: Deployment & Documentation
 
 ### Task 6.1: Environment Configuration
+
 **Type:** infrastructure
 **Priority:** critical
 **Complexity:** small (1h)
 **Dependencies:** Task 1.3
 **Files to Modify:**
+
 - Railway environment variables
 - Vercel environment variables
 
@@ -1684,10 +1820,12 @@ Create end-to-end integration tests for complete profile workflows.
 Add encryption key and other required environment variables to production.
 
 **Deliverables:**
+
 - PROFILE_ENCRYPTION_KEY generated and added
 - Environment variables documented
 
 **Acceptance Criteria:**
+
 - [ ] PROFILE_ENCRYPTION_KEY generated (32-byte random key)
 - [ ] Key added to Railway (backend)
 - [ ] Key added to Vercel (frontend, if needed)
@@ -1697,6 +1835,7 @@ Add encryption key and other required environment variables to production.
 - [ ] Documentation updated with deployment steps
 
 **Commands:**
+
 ```bash
 # Generate encryption key
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -1711,6 +1850,7 @@ railway variables
 ---
 
 ### Task 6.2: Database Migration Execution
+
 **Type:** infrastructure
 **Priority:** critical
 **Complexity:** medium (2-3h)
@@ -1721,12 +1861,14 @@ railway variables
 Execute database migrations on staging and production.
 
 **Deliverables:**
+
 - Migration run on staging
 - Migration verified on staging
 - Migration run on production
 - Rollback plan documented
 
 **Acceptance Criteria:**
+
 - [ ] Backup of production database created
 - [ ] Migration tested on local database
 - [ ] Migration run on staging environment
@@ -1739,6 +1881,7 @@ Execute database migrations on staging and production.
 - [ ] Migration logged in deployment log
 
 **Migration Steps:**
+
 ```bash
 # 1. Backup production database
 railway run pg_dump > backup-$(date +%Y%m%d).sql
@@ -1765,6 +1908,7 @@ railway logs --tail
 ---
 
 ### Task 6.3: Frontend Deployment
+
 **Type:** infrastructure
 **Priority:** high
 **Complexity:** small (1h)
@@ -1775,11 +1919,13 @@ railway logs --tail
 Deploy frontend changes to Vercel production.
 
 **Deliverables:**
+
 - Frontend deployed to production
 - Smoke tests passed
 - No console errors
 
 **Acceptance Criteria:**
+
 - [ ] Code merged to main branch
 - [ ] Vercel build successful
 - [ ] ProfileWizard accessible in UI
@@ -1790,6 +1936,7 @@ Deploy frontend changes to Vercel production.
 - [ ] Performance metrics acceptable (Lighthouse >90)
 
 **Deployment:**
+
 ```bash
 # Build locally first
 cd chat-client-vite
@@ -1808,6 +1955,7 @@ git push origin main
 ---
 
 ### Task 6.4: Backend Deployment
+
 **Type:** infrastructure
 **Priority:** high
 **Complexity:** small (1h)
@@ -1818,11 +1966,13 @@ git push origin main
 Deploy backend changes to Railway production.
 
 **Deliverables:**
+
 - Backend deployed to production
 - API endpoints tested
 - Health check passed
 
 **Acceptance Criteria:**
+
 - [ ] Code merged to main branch
 - [ ] Railway build successful
 - [ ] Migration run (Task 6.2)
@@ -1835,6 +1985,7 @@ Deploy backend changes to Railway production.
 - [ ] Encryption/decryption working
 
 **Deployment:**
+
 ```bash
 # Deploy to Railway (automatic on push)
 git push origin main
@@ -1849,23 +2000,27 @@ curl https://demo-production-6dcd.up.railway.app/api/user/profile?username=testu
 ---
 
 ### Task 6.5: User Documentation
+
 **Type:** docs
 **Priority:** medium
 **Complexity:** medium (2-3h)
 **Dependencies:** Task 6.3
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/docs/user-guide-profile-wizard.md`
 
 **Description:**
 Create user-facing documentation for the profile wizard feature.
 
 **Deliverables:**
+
 - Profile wizard guide
 - Privacy settings guide
 - FAQ section
 - Screenshots
 
 **Acceptance Criteria:**
+
 - [ ] Introduction to profile wizard
 - [ ] Step-by-step guide for each wizard step
 - [ ] Privacy settings explanation
@@ -1881,23 +2036,27 @@ Create user-facing documentation for the profile wizard feature.
 ---
 
 ### Task 6.6: Developer Documentation
+
 **Type:** docs
 **Priority:** medium
 **Complexity:** small (1-2h)
 **Dependencies:** All implementation tasks
 **Files to Create:**
+
 - `/Users/athenasees/Desktop/chat/docs/dev-guide-profile-system.md`
 
 **Description:**
 Create developer documentation for the profile system architecture.
 
 **Deliverables:**
+
 - Architecture overview
 - API documentation
 - Database schema
 - Security notes
 
 **Acceptance Criteria:**
+
 - [ ] Architecture diagram (database, backend, frontend)
 - [ ] API endpoint documentation (all routes)
 - [ ] Request/response examples
@@ -1914,6 +2073,7 @@ Create developer documentation for the profile system architecture.
 ## Task Summary
 
 ### Total Tasks: 32
+
 - **Phase 1 (Database):** 3 tasks (8-11 hours)
 - **Phase 2 (Backend API):** 3 tasks (10-14 hours)
 - **Phase 3 (Frontend):** 9 tasks (25-32 hours)
@@ -1924,6 +2084,7 @@ Create developer documentation for the profile system architecture.
 ### Estimated Total Time: 67-90 hours
 
 ### Critical Path:
+
 1. Task 1.1 → Task 1.2 → Task 1.3 (Database foundation)
 2. Task 2.1 → Task 2.2 (Backend API)
 3. Task 3.8 → Task 3.1 (Frontend foundation)
@@ -1933,6 +2094,7 @@ Create developer documentation for the profile system architecture.
 7. Task 6.1 → Task 6.2 → Task 6.3, 6.4 (Deployment)
 
 ### Parallelization Opportunities:
+
 - Tasks 3.2-3.6 (form components) can be built simultaneously
 - Tasks 5.1 and 5.2 (backend/frontend tests) can be done in parallel
 - Tasks 6.3 and 6.4 (frontend/backend deployment) can be done together
@@ -1943,24 +2105,29 @@ Create developer documentation for the profile system architecture.
 ## Implementation Priority Recommendations
 
 ### Week 1 (Foundation):
+
 - Task 1.1, 1.2, 1.3 (Database)
 - Task 2.1, 2.2 (Backend API core)
 
 ### Week 2 (Frontend Core):
+
 - Task 3.8 (Extend useProfile)
 - Task 3.1 (ProfileWizard)
 - Task 3.2, 3.3 (Personal & Work forms)
 
 ### Week 3 (Frontend Complete):
+
 - Task 3.4, 3.5, 3.6 (Health, Financial, Background forms)
 - Task 3.7 (Privacy Settings)
 - Task 2.3 (Privacy API endpoints)
 
 ### Week 4 (Integration & Testing):
+
 - Task 4.1, 4.2 (AI integration)
 - Task 5.1, 5.2, 5.3 (All tests)
 
 ### Week 5 (Deployment):
+
 - Task 6.1-6.6 (All deployment and docs)
 
 ---
@@ -1968,6 +2135,7 @@ Create developer documentation for the profile system architecture.
 ## Risk Mitigation
 
 ### High-Risk Tasks:
+
 1. **Task 1.2** (Database migration) - Risk: Data loss
    - Mitigation: Test on staging first, backup before production
 
@@ -1978,6 +2146,7 @@ Create developer documentation for the profile system architecture.
    - Mitigation: Extensive testing, code review, indirect references only
 
 ### Dependencies:
+
 - All frontend tasks depend on backend API being deployed
 - AI tasks depend on database schema being in place
 - Deployment tasks depend on all tests passing
@@ -1987,6 +2156,7 @@ Create developer documentation for the profile system architecture.
 ## Success Criteria
 
 ### Feature is Complete When:
+
 - [ ] All 40+ profile fields can be edited
 - [ ] Privacy settings prevent health/financial sharing
 - [ ] AI mediation uses profile context appropriately

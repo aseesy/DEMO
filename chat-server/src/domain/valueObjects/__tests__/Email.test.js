@@ -1,6 +1,6 @@
 /**
  * Unit Tests: Email Value Object
- * 
+ *
  * @module domain/valueObjects/__tests__/Email.test
  */
 
@@ -153,18 +153,17 @@ describe('Email', () => {
     it('should not allow value modification', () => {
       const email = new Email('test@example.com');
       const originalValue = email.value;
-      
+
       // Try to modify (will fail silently in non-strict mode, throw in strict mode)
       try {
         email.value = 'hacked@example.com';
       } catch (e) {
         // In strict mode, this will throw - that's fine
       }
-      
+
       // Verify value didn't change
       expect(email.value).toBe(originalValue);
       expect(email.value).toBe('test@example.com');
     });
   });
 });
-

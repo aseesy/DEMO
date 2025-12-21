@@ -5,6 +5,7 @@
 Frontend is loading but showing error: "Unable to connect to chat server. Please check if the server is running."
 
 This means:
+
 - ✅ Frontend is loading (Vercel is working)
 - ✅ Backend is accessible (Railway is responding)
 - ❌ Socket.io connection is failing (likely CORS issue)
@@ -14,9 +15,11 @@ This means:
 ### Step 1: Verify Railway Backend is Running
 
 1. **Test Railway Backend**:
+
    ```bash
    curl https://demo-production-6dcd.up.railway.app
    ```
+
    Should return: `{"name":"Multi-User Chat Server",...}`
 
 2. **Check Railway Logs**:
@@ -113,6 +116,7 @@ This means:
 **Issue**: Still getting "Unable to connect to chat server" error
 
 **Solution**:
+
 1. **Check Railway Backend**:
    - Verify Railway backend is running
    - Check Railway logs for errors
@@ -134,6 +138,7 @@ This means:
 **Issue**: Seeing CORS errors in browser console
 
 **Solution**:
+
 1. **Update FRONTEND_URL**:
    - Add your Vercel domain to `FRONTEND_URL`
    - Include both `coparentliaizen.com` and `www.coparentliaizen.com`
@@ -154,6 +159,7 @@ This means:
 **Issue**: Socket.io connection is timing out
 
 **Solution**:
+
 1. **Check Railway Backend**:
    - Verify Railway backend is running
    - Check Railway logs for errors
@@ -174,6 +180,7 @@ This means:
 **Issue**: Railway backend is not accessible
 
 **Solution**:
+
 1. **Check Railway Deployment**:
    - Go to Railway Dashboard → Deployments
    - Verify latest deployment is successful
@@ -211,4 +218,3 @@ This means:
 ---
 
 **Next Steps: Update Railway FRONTEND_URL to include your Vercel domain, then test the connection!** 🚀
-

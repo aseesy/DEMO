@@ -1,6 +1,6 @@
 /**
  * Delete All Users and Their Data
- * 
+ *
  * WARNING: This script permanently deletes ALL users and ALL their associated data:
  * - User accounts (name, email, password, profile)
  * - Chat messages
@@ -11,9 +11,9 @@
  * - Communication stats
  * - Profile data
  * - All other user-related data
- * 
+ *
  * This action CANNOT be undone!
- * 
+ *
  * Usage: node chat-server/scripts/delete-all-users.js [--confirm]
  */
 
@@ -50,7 +50,7 @@ async function getTableCounts() {
   ];
 
   const counts = {};
-  
+
   for (const table of tables) {
     try {
       const result = await pool.query(`SELECT COUNT(*) as count FROM ${table}`);
@@ -60,7 +60,7 @@ async function getTableCounts() {
       counts[table] = 0;
     }
   }
-  
+
   return counts;
 }
 
@@ -83,7 +83,7 @@ async function deleteAllUsers() {
 
     // Delete in order (respecting foreign key constraints)
     // Tables with CASCADE will be deleted automatically, but we'll be explicit
-    
+
     console.log('🗑️  Deleting data...');
 
     // 1. Delete messages (may reference rooms/users)
@@ -214,7 +214,6 @@ async function deleteAllUsers() {
 
     const totalDeleted = beforeCounts.users || 0;
     console.log(`\n✅ Deletion complete. Removed ${totalDeleted} user(s) and all associated data.`);
-
   } catch (error) {
     // Rollback on error
     await pool.query('ROLLBACK');
@@ -259,4 +258,3 @@ async function main() {
 }
 
 main();
-

@@ -20,6 +20,7 @@ This policy establishes security standards and practices for the SDD Framework, 
 Security is not optional. All inputs must be validated and sanitized. All outputs must be properly escaped.
 
 ### Requirements
+
 - ✅ All user inputs validated against expected schemas
 - ✅ All external data sanitized before use
 - ✅ All outputs escaped for their context (HTML, SQL, shell, etc.)
@@ -34,6 +35,7 @@ Security is not optional. All inputs must be validated and sanitized. All output
 ### Defense in Depth
 
 Never rely on a single security control:
+
 - Multiple layers of security
 - Fail securely (deny by default)
 - Least privilege access
@@ -42,6 +44,7 @@ Never rely on a single security control:
 ### Security by Default
 
 Security must be the default:
+
 - Secure configurations out of the box
 - Opt-in for less secure options
 - Clear warnings for security implications
@@ -50,6 +53,7 @@ Security must be the default:
 ### Zero Trust
 
 Never trust, always verify:
+
 - Verify every request
 - Authenticate every user
 - Authorize every action
@@ -64,6 +68,7 @@ Never trust, always verify:
 **Threat**: Users access unauthorized resources
 
 **Mitigations**:
+
 - ✅ Enforce authorization on every endpoint
 - ✅ Deny by default, allow by exception
 - ✅ Use role-based access control (RBAC)
@@ -71,6 +76,7 @@ Never trust, always verify:
 - ✅ Test authorization with different roles
 
 **Example**:
+
 ```typescript
 // ✅ GOOD: Check authorization
 app.get('/api/users/:id', authenticate, (req, res) => {
@@ -91,6 +97,7 @@ app.get('/api/users/:id', authenticate, (req, res) => {
 **Threat**: Sensitive data exposed due to weak crypto
 
 **Mitigations**:
+
 - ✅ Use strong algorithms (AES-256, bcrypt, Argon2)
 - ✅ Never roll your own crypto
 - ✅ Encrypt data at rest and in transit
@@ -98,6 +105,7 @@ app.get('/api/users/:id', authenticate, (req, res) => {
 - ✅ Rotate keys regularly
 
 **Example**:
+
 ```typescript
 // ✅ GOOD: bcrypt for passwords
 import bcrypt from 'bcrypt';
@@ -113,6 +121,7 @@ const hash = md5(password); // ❌ Weak, not salted
 **Threat**: SQL, NoSQL, Command, LDAP injection
 
 **Mitigations**:
+
 - ✅ Use parameterized queries
 - ✅ Use ORM/query builders
 - ✅ Validate and sanitize ALL inputs
@@ -120,17 +129,13 @@ const hash = md5(password); // ❌ Weak, not salted
 - ✅ Escape special characters
 
 **Example**:
+
 ```typescript
 // ✅ GOOD: Parameterized query
-const users = await db.query(
-  'SELECT * FROM users WHERE email = $1',
-  [email]
-);
+const users = await db.query('SELECT * FROM users WHERE email = $1', [email]);
 
 // ❌ BAD: String concatenation
-const users = await db.query(
-  `SELECT * FROM users WHERE email = '${email}'`
-);
+const users = await db.query(`SELECT * FROM users WHERE email = '${email}'`);
 ```
 
 ### 4. Insecure Design
@@ -138,6 +143,7 @@ const users = await db.query(
 **Threat**: Missing security requirements
 
 **Mitigations**:
+
 - ✅ Threat model during design
 - ✅ Define security requirements in specs
 - ✅ Security review before implementation
@@ -149,6 +155,7 @@ const users = await db.query(
 **Threat**: Default credentials, verbose errors, unnecessary features
 
 **Mitigations**:
+
 - ✅ Disable default accounts
 - ✅ Remove unnecessary features/endpoints
 - ✅ Use security headers
@@ -156,14 +163,17 @@ const users = await db.query(
 - ✅ Keep dependencies updated
 
 **Example**:
+
 ```typescript
 // ✅ GOOD: Security headers
-app.use(helmet({
-  contentSecurityPolicy: true,
-  hsts: true,
-  noSniff: true,
-  xssFilter: true
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: true,
+    hsts: true,
+    noSniff: true,
+    xssFilter: true,
+  })
+);
 
 // ✅ GOOD: Hide errors in production
 app.use((err, req, res, next) => {
@@ -180,6 +190,7 @@ app.use((err, req, res, next) => {
 **Threat**: Using libraries with known vulnerabilities
 
 **Mitigations**:
+
 - ✅ Regular dependency audits (`npm audit`)
 - ✅ Automated dependency updates (Dependabot)
 - ✅ Pin dependency versions
@@ -187,6 +198,7 @@ app.use((err, req, res, next) => {
 - ✅ Remove unused dependencies
 
 **Commands**:
+
 ```bash
 # Audit dependencies
 npm audit
@@ -203,6 +215,7 @@ npm update
 **Threat**: Weak authentication, session hijacking
 
 **Mitigations**:
+
 - ✅ Implement multi-factor authentication (MFA)
 - ✅ Strong password requirements
 - ✅ Secure session management
@@ -210,6 +223,7 @@ npm update
 - ✅ No default credentials
 
 **Example**:
+
 ```typescript
 // ✅ GOOD: Rate limiting
 import rateLimit from 'express-rate-limit';
@@ -217,7 +231,7 @@ import rateLimit from 'express-rate-limit';
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 attempts
-  message: 'Too many login attempts'
+  message: 'Too many login attempts',
 });
 
 app.post('/api/login', loginLimiter, loginHandler);
@@ -228,6 +242,7 @@ app.post('/api/login', loginLimiter, loginHandler);
 **Threat**: Unsigned updates, insecure CI/CD
 
 **Mitigations**:
+
 - ✅ Code signing
 - ✅ Verify package integrity (checksums)
 - ✅ Secure CI/CD pipelines
@@ -239,6 +254,7 @@ app.post('/api/login', loginLimiter, loginHandler);
 **Threat**: Attacks go undetected
 
 **Mitigations**:
+
 - ✅ Log all authentication events
 - ✅ Log authorization failures
 - ✅ Log input validation failures
@@ -246,13 +262,14 @@ app.post('/api/login', loginLimiter, loginHandler);
 - ✅ Set up alerts for suspicious activity
 
 **Example**:
+
 ```typescript
 // ✅ GOOD: Security logging
 logger.warn('Failed login attempt', {
   email,
   ip: req.ip,
   userAgent: req.get('user-agent'),
-  timestamp: new Date()
+  timestamp: new Date(),
 });
 
 // Set up alerts
@@ -266,6 +283,7 @@ if (failedAttempts > 10) {
 **Threat**: Attacker tricks server into making requests
 
 **Mitigations**:
+
 - ✅ Validate and sanitize URLs
 - ✅ Use allow-lists for allowed hosts
 - ✅ Disable redirects
@@ -273,6 +291,7 @@ if (failedAttempts > 10) {
 - ✅ Don't return raw responses
 
 **Example**:
+
 ```typescript
 // ✅ GOOD: Validate URL
 const allowedHosts = ['api.example.com'];
@@ -297,6 +316,7 @@ fetch(userProvidedURL); // ❌ SSRF vulnerability
 ### Validation Requirements
 
 **ALL inputs must be validated**:
+
 - User form data
 - URL parameters
 - Query strings
@@ -321,7 +341,7 @@ import { z } from 'zod';
 const UserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(100),
-  age: z.number().int().min(13).max(120)
+  age: z.number().int().min(13).max(120),
 });
 
 // Validate input
@@ -343,24 +363,28 @@ function createUser(input: unknown) {
 ### Context-Aware Escaping
 
 **HTML Context**:
+
 ```typescript
 import escape from 'escape-html';
 const safe = escape(userInput);
 ```
 
 **SQL Context**:
+
 ```typescript
 // Use parameterized queries
 db.query('SELECT * FROM users WHERE id = $1', [userId]);
 ```
 
 **JavaScript Context**:
+
 ```typescript
 // Use JSON.stringify
 const safe = JSON.stringify(userInput);
 ```
 
 **Shell Context**:
+
 ```typescript
 import { execFile } from 'child_process';
 // Use execFile with array, not string concatenation
@@ -392,6 +416,7 @@ const apiKey = 'sk_live_12345'; // ❌ NEVER DO THIS
 ### Git Pre-commit Hook
 
 Prevent committing secrets:
+
 ```bash
 #!/bin/sh
 # .git/hooks/pre-commit
@@ -405,6 +430,7 @@ fi
 ### Scanning Tools
 
 Use secret scanning:
+
 - git-secrets
 - truffleHog
 - GitHub secret scanning
@@ -424,11 +450,12 @@ Use secret scanning:
 ### Authorization Patterns
 
 **Role-Based Access Control (RBAC)**:
+
 ```typescript
 enum Role {
   Admin = 'admin',
   User = 'user',
-  Guest = 'guest'
+  Guest = 'guest',
 }
 
 function requireRole(role: Role) {
@@ -444,6 +471,7 @@ app.get('/admin', requireRole(Role.Admin), adminHandler);
 ```
 
 **Row-Level Security (RLS)**:
+
 ```sql
 -- PostgreSQL RLS
 CREATE POLICY user_isolation ON documents
@@ -458,26 +486,28 @@ CREATE POLICY user_isolation ON documents
 ### Required Headers
 
 ```typescript
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https:']
-    }
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  },
-  frameguard: {
-    action: 'deny'
-  },
-  noSniff: true,
-  xssFilter: true
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+      },
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+    frameguard: {
+      action: 'deny',
+    },
+    noSniff: true,
+    xssFilter: true,
+  })
+);
 ```
 
 ---
@@ -487,11 +517,13 @@ app.use(helmet({
 ### Regular Audits
 
 **Schedule**:
+
 - Weekly: Automated audits in CI
 - Monthly: Manual review of audit results
 - Quarterly: Major dependency updates
 
 **Process**:
+
 1. Run `npm audit`
 2. Review vulnerabilities
 3. Update dependencies
@@ -511,26 +543,31 @@ app.use(helmet({
 ## Secure Development Lifecycle
 
 ### Design Phase
+
 - Threat modeling
 - Security requirements in specs
 - Privacy impact assessment
 
 ### Development Phase
+
 - Secure coding practices
 - Code review with security focus
 - SAST (Static Application Security Testing)
 
 ### Testing Phase
+
 - Security unit tests
 - DAST (Dynamic Application Security Testing)
 - Penetration testing
 
 ### Deployment Phase
+
 - Security scan before deploy
 - Secrets management
 - Security monitoring
 
 ### Maintenance Phase
+
 - Patch management
 - Incident response
 - Security updates
@@ -558,11 +595,13 @@ app.use(helmet({
 ### Notification Requirements
 
 **Internal**:
+
 - Security team immediately
 - Management within 1 hour
 - Development team within 4 hours
 
 **External**:
+
 - Affected users within 72 hours (GDPR)
 - Regulatory bodies as required
 - Security researchers (if disclosed)
@@ -574,6 +613,7 @@ app.use(helmet({
 ### Required Training
 
 All team members must complete:
+
 - OWASP Top 10 training (annually)
 - Secure coding practices (annually)
 - Social engineering awareness (quarterly)

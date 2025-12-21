@@ -21,7 +21,7 @@ export function setUserID(userId) {
   }
 
   window.gtag('config', import.meta.env.VITE_GA_MEASUREMENT_ID || '', {
-    user_id: userId
+    user_id: userId,
   });
 }
 
@@ -128,7 +128,11 @@ export function trackConnectionError(errorType, errorMessage) {
 }
 
 // Enhanced message sent tracking with additional context
-export function trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, additionalParams = {}) {
+export function trackMessageSentEnhanced(
+  messageLength,
+  isPreApprovedRewrite,
+  additionalParams = {}
+) {
   if (!window.gtag) {
     return;
   }
@@ -226,4 +230,3 @@ export function trackVideoEngagement(videoTitle, action, progress) {
 
   console.log('Analytics: Video engagement', { videoTitle, action, progress });
 }
-

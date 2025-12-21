@@ -24,11 +24,13 @@ You now have a **complete, production-ready multi-user chat room** with:
 ### Step 2: Run the Setup Script
 
 **On Mac/Linux:**
+
 - Open Terminal
 - Navigate to this folder
 - Run: `./setup.sh`
 
 **On Windows:**
+
 - Open Command Prompt or PowerShell
 - Navigate to this folder
 - Run: `setup.bat`
@@ -40,17 +42,21 @@ This will automatically install everything you need.
 **You need TWO terminal windows:**
 
 **Terminal 1 - Start the Backend:**
+
 ```
 cd chat-server
 npm start
 ```
+
 You should see: "✅ Chat server running on port 3001"
 
 **Terminal 2 - Start the Frontend:**
+
 ```
 cd chat-client
 npm start
 ```
+
 You should see: "Starting up http-server..."
 
 **Open your browser to:** http://localhost:3000
@@ -91,6 +97,7 @@ You should see: "Starting up http-server..."
 **Current Setup:** Perfect for 10-100 users
 
 **To Scale Further:**
+
 - Add Redis for distributed state (1,000+ users)
 - Use a database for message persistence
 - Add load balancing for multiple servers
@@ -131,6 +138,7 @@ A: Yes! They can access it at `http://YOUR-IP-ADDRESS:3000`. To find your IP, ru
 
 **Q: Is this ready for production/real users?**
 A: The code is production-ready, but for real deployment you'll want:
+
 - A proper hosting service (AWS, DigitalOcean, Heroku)
 - HTTPS (secure connection)
 - A domain name
@@ -141,6 +149,7 @@ A: Absolutely! The frontend uses Tailwind CSS. You can modify colors, layout, an
 
 **Q: How do I add more features?**
 A: The README has a section on extending the application with features like:
+
 - File sharing
 - Private messages
 - User authentication
@@ -148,6 +157,7 @@ A: The README has a section on extending the application with features like:
 
 **Q: What if I get errors?**
 A: Check the Troubleshooting section in README.md. Most issues are:
+
 - Port already in use (change the port number)
 - Node.js not installed (install from nodejs.org)
 - Dependencies not installed (run setup script again)
@@ -157,16 +167,19 @@ A: Check the Troubleshooting section in README.md. Most issues are:
 ## Next Steps
 
 ### For Learning:
+
 - Read through `server.js` to understand the backend
 - Explore `ChatRoom.jsx` to see how the UI works
 - Check the full README.md for in-depth explanations
 
 ### For Customization:
+
 - Change colors and styling in ChatRoom.jsx
 - Modify message limits in server.js
 - Add your own features!
 
 ### For Production Deployment:
+
 - Set up a cloud hosting account (AWS, DigitalOcean, etc.)
 - Configure environment variables for production
 - Set up a database (PostgreSQL or MongoDB)

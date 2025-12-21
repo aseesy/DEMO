@@ -5,6 +5,7 @@ Creates a comprehensive Product Requirements Document (PRD) that can serve as **
 ## Purpose
 
 A PRD provides structured requirements documentation for:
+
 - **Project initialization** - Establish product vision, goals, and strategy
 - **Major features** - Document complex feature requirements before development
 - **Product pivots** - Re-define product direction and priorities
@@ -18,11 +19,13 @@ A PRD provides structured requirements documentation for:
 **Use this command whenever you need structured requirements documentation**:
 
 ### At Project Start (Recommended First Step)
+
 - **Primary Use**: Initialize new projects with complete product foundation
 - **Result**: SSOT that guides constitution customization, agent creation, and all feature work
 - **Workflow**: Create PRD → Customize constitution → Create agents → Begin features
 
 ### During Development (Anytime)
+
 - **Major Features**: Document complex features before /specify
 - **New Modules**: Define requirements for significant new capabilities
 - **Product Changes**: Document pivots, re-scoping, or strategic shifts
@@ -30,6 +33,7 @@ A PRD provides structured requirements documentation for:
 - **Stakeholder Communication**: Formalize requirements and decisions
 
 ### For Specific Needs
+
 - **Compliance**: Create documentation for audits or regulatory requirements
 - **Fundraising**: Document product vision and roadmap for investors
 - **Planning**: Think through product strategy before committing to implementation
@@ -38,6 +42,7 @@ A PRD provides structured requirements documentation for:
 ## Flexibility
 
 **PRDs are flexible documents - use what you need**:
+
 - Can be project-wide or feature-specific
 - Can cover entire product or single module
 - Can be detailed or high-level based on need
@@ -45,6 +50,7 @@ A PRD provides structured requirements documentation for:
 - Multiple PRDs can exist (e.g., project PRD + major feature PRDs)
 
 **Typical workflow for project initialization**:
+
 ```
 1. /create-prd "MyProject"     ← Create project-wide PRD (SSOT)
 2. Complete PRD with prd-specialist agent
@@ -58,6 +64,7 @@ A PRD provides structured requirements documentation for:
 ## Usage
 
 ### Basic Usage
+
 ```
 /create-prd
 ```
@@ -65,6 +72,7 @@ A PRD provides structured requirements documentation for:
 Interactive mode - will prompt for project name
 
 ### With Project Name
+
 ```
 /create-prd MyAwesomeProject
 ```
@@ -100,6 +108,7 @@ Creates PRD with project name pre-filled
 ### How specification-agent Uses PRD
 
 When you run `/specify` for a feature, the specification-agent:
+
 - References PRD personas for user story context
 - Pulls acceptance criteria patterns from PRD features
 - Uses PRD success metrics for validation
@@ -108,6 +117,7 @@ When you run `/specify` for a feature, the specification-agent:
 ### How planning-agent Uses PRD
 
 When you run `/plan` for a feature, the planning-agent:
+
 - Reads constitutional customizations from PRD
 - References technical constraints for architecture decisions
 - Uses integration requirements from PRD
@@ -117,6 +127,7 @@ When you run `/plan` for a feature, the planning-agent:
 ### Constitution Customization
 
 After PRD approval:
+
 1. Open `.specify/memory/constitution.md`
 2. For each of 14 principles, add project-specific guidance from PRD
 3. Document exceptions from PRD
@@ -167,11 +178,13 @@ After PRD approval:
 **All 14 principles must be addressed**:
 
 ### Immutable Principles (Customize application, not the principle itself)
+
 1. **Library-First Architecture** - How does this apply to your project?
 2. **Test-First Development (TDD)** - Your testing philosophy?
 3. **Contract-First Design** - Your API standards (OpenAPI, GraphQL, etc.)?
 
 ### Quality & Safety Principles
+
 4. **Idempotent Operations** - Which operations need idempotency?
 5. **Progressive Enhancement** - Your feature flag strategy?
 6. **Git Operation Approval** - Keep as-is (NO automatic git ops)
@@ -180,6 +193,7 @@ After PRD approval:
 9. **Dependency Management** - Your approval process for dependencies?
 
 ### Workflow & Delegation Principles
+
 10. **Agent Delegation Protocol** - Custom agents you'll need for this project?
 11. **Input Validation & Output Sanitization** - Your validation standards?
 12. **Design System Compliance** - Your UI/UX principles? Existing design system?
@@ -191,6 +205,7 @@ After PRD approval:
 The PRD creation invokes the **prd-specialist agent** automatically. This agent:
 
 **Helps you with**:
+
 - Asking clarifying questions about vision and goals
 - Structuring user personas realistically
 - Prioritizing features (ruthlessly!)
@@ -199,6 +214,7 @@ The PRD creation invokes the **prd-specialist agent** automatically. This agent:
 - Identifying custom agents needed
 
 **Prevents common mistakes**:
+
 - Vague success metrics ("improve user satisfaction" → "NPS > 40")
 - Generic personas ("John, a developer" → "Sarah, mid-level backend engineer...")
 - Scope creep (including every feature in MVP)
@@ -210,6 +226,7 @@ The PRD creation invokes the **prd-specialist agent** automatically. This agent:
 Before finalizing, verify:
 
 **Completeness**:
+
 - [ ] Executive summary clearly states vision, problem, success metrics
 - [ ] All user personas documented with goals and pain points
 - [ ] Core features have acceptance criteria
@@ -219,6 +236,7 @@ Before finalizing, verify:
 - [ ] Open questions identified with owners and deadlines
 
 **Clarity**:
+
 - [ ] All requirements are testable and measurable
 - [ ] Success metrics are quantifiable (not "good" or "fast")
 - [ ] Personas are specific and realistic
@@ -226,12 +244,14 @@ Before finalizing, verify:
 - [ ] No implementation details (WHAT/WHY only, not HOW)
 
 **Alignment**:
+
 - [ ] Goals align with vision and problem statement
 - [ ] Features support defined user journeys
 - [ ] Success metrics measure stated goals
 - [ ] Constitutional principles don't conflict
 
 **Actionability**:
+
 - [ ] specification-agent can extract user stories
 - [ ] planning-agent has sufficient constraints
 - [ ] Each feature can become a spec
@@ -239,6 +259,7 @@ Before finalizing, verify:
 - [ ] Risks have mitigation plans
 
 **Stakeholder Review**:
+
 - [ ] Product owner approved
 - [ ] Technical feasibility validated
 - [ ] Legal/compliance reviewed (if applicable)
@@ -246,12 +267,14 @@ Before finalizing, verify:
 ## Next Steps After PRD
 
 1. **Update Constitution**
+
    ```bash
    # Edit .specify/memory/constitution.md
    # Add project-specific guidance from PRD
    ```
 
 2. **Create Custom Agents** (from Principle X in PRD)
+
    ```bash
    /create-agent agent-name "Purpose from PRD"
    ```
@@ -334,6 +357,7 @@ Before finalizing, verify:
 ## Remember
 
 The PRD is your north star. It:
+
 - Guides all feature specifications
 - Informs all implementation planning
 - Customizes the framework for your needs
@@ -344,6 +368,7 @@ Invest time here to save time everywhere else in the project!
 ---
 
 **Related Commands**:
+
 - `/specify` - Create feature specifications (references PRD)
 - `/plan` - Generate implementation plans (references PRD)
 - `/create-agent` - Create custom agents (identified in PRD)

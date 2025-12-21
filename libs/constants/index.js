@@ -1,6 +1,6 @@
 /**
  * Constants Library
- * 
+ *
  * Application-wide constants and configuration values.
  */
 
@@ -72,4 +72,3 @@ export const DATE_FORMATS = {
   TIME: 'HH:mm',
   DATETIME: 'MMM DD, YYYY HH:mm',
 };
-

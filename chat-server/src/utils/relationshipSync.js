@@ -1,9 +1,9 @@
 /**
  * Relationship Metadata Sync Job
- * 
+ *
  * Periodically syncs relationship metadata from PostgreSQL to Neo4j.
  * This strengthens Neo4j with activity data from PostgreSQL.
- * 
+ *
  * Runs as a background job to keep Neo4j relationship metadata up-to-date.
  */
 
@@ -18,7 +18,7 @@ let isRunning = false;
 /**
  * Sync metadata for a specific room
  * Called after messages are saved to keep Neo4j up-to-date
- * 
+ *
  * @param {string} roomId - Room ID to sync
  */
 async function syncRoomMetadata(roomId) {
@@ -67,7 +67,7 @@ async function syncAllRelationships() {
       try {
         await dbSyncValidator.syncRelationshipMetadata(roomId);
         synced++;
-        
+
         // Small delay to avoid overwhelming Neo4j
         if (synced % 10 === 0) {
           await new Promise(resolve => setTimeout(resolve, 100));
@@ -87,7 +87,7 @@ async function syncAllRelationships() {
 
 /**
  * Start periodic sync job
- * 
+ *
  * @param {number} intervalMinutes - Sync interval in minutes (default: 60)
  */
 function startSyncJob(intervalMinutes = 60) {
@@ -111,11 +111,14 @@ function startSyncJob(intervalMinutes = 60) {
   }, 30000);
 
   // Then run periodically
-  syncInterval = setInterval(() => {
-    syncAllRelationships().catch(err => {
-      console.error('⚠️  Periodic sync failed:', err.message);
-    });
-  }, intervalMinutes * 60 * 1000);
+  syncInterval = setInterval(
+    () => {
+      syncAllRelationships().catch(err => {
+        console.error('⚠️  Periodic sync failed:', err.message);
+      });
+    },
+    intervalMinutes * 60 * 1000
+  );
 }
 
 /**
@@ -133,6 +136,5 @@ module.exports = {
   syncRoomMetadata,
   syncAllRelationships,
   startSyncJob,
-  stopSyncJob
+  stopSyncJob,
 };
-

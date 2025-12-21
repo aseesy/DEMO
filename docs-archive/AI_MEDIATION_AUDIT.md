@@ -6,7 +6,9 @@
 ## Current Architecture Issues
 
 ### 1. **Multiple OpenAI Client Initializations** ❌
+
 Every module creates its own OpenAI client:
+
 - `aiMediator.js` (line 5)
 - `conflictPredictor.js` (line 4)
 - `emotionalModel.js` (line 4)
@@ -20,6 +22,7 @@ Every module creates its own OpenAI client:
 ### 2. **Overlapping Functionality** ⚠️
 
 #### aiMediator.js (730 lines)
+
 - **PRIMARY MEDIATOR** - Main message analysis and intervention
 - Functions:
   - `analyzeAndIntervene()` - Main mediation logic
@@ -30,6 +33,7 @@ Every module creates its own OpenAI client:
   - `updateContext()` / `getContext()` - Context management
 
 #### conflictPredictor.js (~150 lines estimated)
+
 - **HELPER MODULE** - Escalation risk assessment
 - Functions:
   - `assessEscalationRisk()` - Analyzes escalation risk (low/medium/high)
@@ -37,6 +41,7 @@ Every module creates its own OpenAI client:
 - **Overlap**: aiMediator ALREADY has conflict detection in its prompt
 
 #### emotionalModel.js (~200 lines estimated)
+
 - **HELPER MODULE** - Emotional state tracking
 - Functions:
   - `analyzeEmotionalState()` - Tracks emotional trajectory
@@ -44,6 +49,7 @@ Every module creates its own OpenAI client:
 - **Overlap**: aiMediator ALREADY handles emotional context
 
 #### interventionPolicy.js (~150 lines estimated)
+
 - **HELPER MODULE** - Adaptive intervention policies
 - Functions:
   - `generateInterventionPolicy()` - Decides intervention approach
@@ -53,6 +59,7 @@ Every module creates its own OpenAI client:
 - **Overlap**: aiMediator ALREADY decides intervention type (STAY_SILENT/INTERVENE/COMMENT)
 
 #### proactiveCoach.js (~90 lines)
+
 - **STANDALONE** - Draft message coaching (before sending)
 - Functions:
   - `analyzeDraftMessage()` - Analyzes draft messages
@@ -60,11 +67,13 @@ Every module creates its own OpenAI client:
 - **Status**: ✅ Legitimate separate use case (pre-send coaching)
 
 #### threadManager.js
+
 - **UTILITY** - Thread organization (NOT mediation)
 - Functions: Thread CRUD operations
 - **Status**: ✅ Separate concern, uses OpenAI for thread title suggestions only
 
 #### feedbackLearner.js
+
 - **HELPER MODULE** - Learning from user feedback
 - Functions:
   - `recordExplicitFeedback()` - Records user feedback
@@ -73,6 +82,7 @@ Every module creates its own OpenAI client:
 ### 3. **Confusing Data Flow** 🔀
 
 Current message flow:
+
 ```
 1. Message received (server.js:720)
 2. conflictPredictor.assessEscalationRisk()
@@ -84,6 +94,7 @@ Current message flow:
 ```
 
 **Problems**:
+
 - Multiple sequential OpenAI calls (4-5 API calls per message!)
 - Duplicate analysis (conflict/emotion analyzed twice)
 - Confusing which module makes final decision
@@ -92,9 +103,11 @@ Current message flow:
 ## Optimization Strategy
 
 ### Phase 1: Consolidate OpenAI Client ✅
+
 **Goal**: Single shared OpenAI client
 
 **Action**:
+
 1. Create `openaiClient.js` with singleton pattern
 2. Update all modules to import from this client
 3. Add request rate limiting and retry logic
@@ -102,9 +115,11 @@ Current message flow:
 **Estimated Savings**: 6 fewer client instances, better rate limit handling
 
 ### Phase 2: Merge Helper Modules into aiMediator ✅
+
 **Goal**: Single source of truth for mediation logic
 
 **Actions**:
+
 1. **Merge conflictPredictor** into aiMediator:
    - Move escalation risk assessment INTO main prompt
    - Use structured output to get risk level
@@ -127,15 +142,19 @@ Current message flow:
 **Result**: 1 OpenAI call instead of 4-5 per message
 
 ### Phase 3: Keep Separate Concerns ✅
+
 **Modules to KEEP separate**:
+
 - ✅ `proactiveCoach.js` - Different use case (pre-send)
 - ✅ `threadManager.js` - Different concern (organization)
 - ✅ `aiMediator.js` - Core mediation (after consolidation)
 
 ### Phase 4: Optimize State Management ✅
+
 **Goal**: Unified context/state management
 
 **Actions**:
+
 1. Single state cache in aiMediator
 2. Single database table for AI state
 3. Clear context invalidation strategy
@@ -172,13 +191,13 @@ Current message flow:
 
 ## Expected Performance Improvements
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| OpenAI clients | 7 | 1 | 85% reduction |
-| API calls per message | 4-5 | 1 | 80% reduction |
-| Memory usage | ~50MB | ~10MB | 80% reduction |
-| Average latency | 3-4s | 0.8-1s | 75% faster |
-| Code maintainability | ⭐⭐ | ⭐⭐⭐⭐⭐ | Much clearer |
+| Metric                | Before | After      | Improvement   |
+| --------------------- | ------ | ---------- | ------------- |
+| OpenAI clients        | 7      | 1          | 85% reduction |
+| API calls per message | 4-5    | 1          | 80% reduction |
+| Memory usage          | ~50MB  | ~10MB      | 80% reduction |
+| Average latency       | 3-4s   | 0.8-1s     | 75% faster    |
+| Code maintainability  | ⭐⭐   | ⭐⭐⭐⭐⭐ | Much clearer  |
 
 ## Implementation Order
 
@@ -195,14 +214,17 @@ Current message flow:
 ## Risk Assessment
 
 **Low Risk Changes**:
+
 - Creating shared OpenAI client
 - Merging redundant modules
 
 **Medium Risk**:
+
 - Changing server.js flow
 - State migration
 
 **Mitigation**:
+
 - Incremental changes with testing
 - Keep backups of original files
 - Test each phase before moving to next
@@ -210,19 +232,23 @@ Current message flow:
 ## Files to Modify
 
 ### Create New:
+
 - `chat-server/openaiClient.js`
 
 ### Modify:
+
 - `chat-server/aiMediator.js` (consolidate logic)
 - `chat-server/server.js` (simplify flow)
 - `chat-server/feedbackLearner.js` (simplify)
 
 ### Archive (move to /deprecated/):
+
 - `chat-server/conflictPredictor.js`
 - `chat-server/emotionalModel.js`
 - `chat-server/interventionPolicy.js`
 
 ### Keep As-Is:
+
 - `chat-server/proactiveCoach.js` ✅
 - `chat-server/threadManager.js` ✅
 - `chat-server/userContext.js` ✅

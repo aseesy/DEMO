@@ -16,16 +16,18 @@ The frontend was deployed to Vercel but linked to an existing project "chat-clie
 If you want a completely fresh project:
 
 1. **Delete .vercel directory**:
+
    ```bash
    rm -rf chat-client/.vercel
    ```
 
 2. **Deploy with new project**:
+
    ```bash
    cd chat-client
    vercel
    ```
-   
+
    When prompted:
    - **Link to existing project?** → No
    - **What's your project's name?** → `demo`
@@ -45,4 +47,3 @@ If you want a completely fresh project:
 ---
 
 **Note**: The project name doesn't affect functionality - it's just for organization in Vercel dashboard. The deployment URL is automatically generated.
-

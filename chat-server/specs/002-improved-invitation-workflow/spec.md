@@ -18,10 +18,12 @@ The invitation system has a **complete backend implementation** but an **incompl
 After thorough investigation, here are the **specific issues** preventing the invitation workflow from functioning:
 
 #### Issue 1: No `/accept-invite` Route
+
 **Location**: `chat-client-vite/src/App.jsx:25-43`
 **Problem**: When a new user clicks the email link `https://coparentliaizen.com/accept-invite?token=TOKEN`, there is no route handler. The app returns a 404 or falls through to the root route.
 
 **Evidence**: Current routes are:
+
 - `/` - ChatRoom
 - `/signin` - LoginSignup
 - `/auth/google/callback` - GoogleOAuthCallback
@@ -32,10 +34,12 @@ After thorough investigation, here are the **specific issues** preventing the in
 **Missing**: `/accept-invite` route
 
 #### Issue 2: Wrong Signup Endpoint Called
+
 **Location**: `chat-client-vite/src/hooks/useAuth.js:195-258`
 **Problem**: `handleSignup()` calls `/api/auth/signup` instead of `/api/auth/register` (with co-parent email) or `/api/auth/register-from-invite` (for invited users).
 
 **Evidence**:
+
 ```javascript
 // Current (wrong for invitation flow):
 const response = await apiPost('/api/auth/signup', {
@@ -46,12 +50,15 @@ const response = await apiPost('/api/auth/signup', {
 ```
 
 **Should use**:
+
 - `/api/auth/register` for inviting user (requires `coParentEmail`)
 - `/api/auth/register-from-invite` for invited user (requires `token`)
 
 #### Issue 3: No Token Validation Before Signup
+
 **Location**: `chat-client-vite/src/components/LoginSignup.jsx`
 **Problem**: When a user has a pending invite code, the frontend never:
+
 1. Validates the token via `GET /api/invitations/validate/:token`
 2. Pre-fills the invitee's email from the invitation
 3. Shows who invited them or what room they're joining
@@ -59,41 +66,50 @@ const response = await apiPost('/api/auth/signup', {
 **Evidence**: The component only stores the invite code in localStorage but never uses it.
 
 #### Issue 4: Room Join Endpoint Mismatch
+
 **Location**: `chat-client-vite/src/ChatRoom.jsx:604-612`
 **Problem**: The frontend calls `/api/room/join` with `{ inviteCode, username }`, but the backend expects the invitation workflow to use `/api/invitations/accept` with a proper invitation token.
 
 **Evidence**:
+
 ```javascript
 // Frontend calls this (ChatRoom.jsx:604):
 fetch(`${API_BASE_URL}/api/room/join`, {
-  body: JSON.stringify({ inviteCode: pendingInviteCode, username })
+  body: JSON.stringify({ inviteCode: pendingInviteCode, username }),
 });
 
 // Backend expects this (server.js:3154):
-POST /api/invitations/accept
-{ token: INVITATION_TOKEN }
+POST / api / invitations / accept;
+{
+  token: INVITATION_TOKEN;
+}
 ```
 
 #### Issue 5: No UI for Inviting a Co-Parent
+
 **Location**: Entire frontend
 **Problem**: There is no component or UI for an authenticated user to invite their co-parent. The registration flow requires a `coParentEmail` but there's no form field for it.
 
 **Evidence**: `LoginSignup.jsx` only has email, password, and username fields during signup. No co-parent email field.
 
 #### Issue 6: No In-App Notifications UI
+
 **Location**: Entire frontend
 **Problem**: When an existing user receives an invitation, a notification is created in the database, but there's no UI to display it. Users never see "Alice invited you to co-parent."
 
 **Evidence**:
+
 - Backend creates notifications via `notificationManager.createInvitationNotification()`
 - No `NotificationsPanel` or notification display component exists
 - No bell icon or notification indicator in the UI
 
 #### Issue 7: No Invitation Management UI
+
 **Location**: Entire frontend
 **Problem**: Users cannot view, resend, or cancel their sent invitations.
 
 **Evidence**: Backend has these endpoints but no frontend uses them:
+
 - `GET /api/invitations` - List sent/received invitations
 - `POST /api/invitations/resend/:id` - Resend expired invitation
 - `DELETE /api/invitations/:id` - Cancel pending invitation
@@ -103,11 +119,13 @@ POST /api/invitations/accept
 ## User Stories
 
 ### US-1: New User Registration with Co-Parent Invitation
+
 **As a** new user
 **I want to** create an account and immediately invite my co-parent
 **So that** we can start using LiaiZen together
 
 **Acceptance Criteria**:
+
 - [ ] Registration form includes a required "Co-Parent Email" field
 - [ ] Upon successful registration, an invitation is sent to the co-parent's email
 - [ ] User sees confirmation that invitation was sent
@@ -116,11 +134,13 @@ POST /api/invitations/accept
 - [ ] Clear messaging about the 1 co-parent limit (MVP)
 
 ### US-2: Accept Invitation as New User (via Email Link)
+
 **As a** person who received a co-parent invitation email
 **I want to** click the link, create an account, and join my co-parent's room
 **So that** I can start communicating with my co-parent
 
 **Acceptance Criteria**:
+
 - [ ] `/accept-invite?token=TOKEN` route exists and renders properly
 - [ ] Token is validated before showing signup form
 - [ ] Inviter's name and email are displayed ("Alice invited you")
@@ -131,11 +151,13 @@ POST /api/invitations/accept
 - [ ] Error states: expired token, already accepted, invalid token, cancelled
 
 ### US-3: Accept Invitation as Existing User (via In-App Notification)
+
 **As an** existing LiaiZen user who received a co-parent invitation
 **I want to** see the invitation in my notifications and accept or decline it
 **So that** I can connect with my co-parent without leaving the app
 
 **Acceptance Criteria**:
+
 - [ ] Notification bell icon shows unread count
 - [ ] Notifications panel displays invitation with inviter name
 - [ ] Accept button triggers `/api/invitations/accept`
@@ -146,11 +168,13 @@ POST /api/invitations/accept
 - [ ] Notification marked as actioned after response
 
 ### US-4: View and Manage Sent Invitations
+
 **As a** user who has invited a co-parent
 **I want to** see the status of my invitation and resend if needed
 **So that** I know if my co-parent received the invite and can retry if necessary
 
 **Acceptance Criteria**:
+
 - [ ] Invitation status visible in profile or settings
 - [ ] Shows: invitee email, status (pending/accepted/declined/expired), sent date
 - [ ] Resend button available for pending/expired invitations
@@ -158,11 +182,13 @@ POST /api/invitations/accept
 - [ ] Success/error feedback for all actions
 
 ### US-5: Invite Co-Parent After Initial Registration
+
 **As an** existing user who didn't invite a co-parent during signup
 **I want to** invite my co-parent from my dashboard
 **So that** I can connect with them later
 
 **Acceptance Criteria**:
+
 - [ ] "Invite Co-Parent" button visible when no co-parent is connected
 - [ ] Form to enter co-parent's email
 - [ ] Validation and error handling
@@ -179,6 +205,7 @@ POST /api/invitations/accept
 **Query Parameter**: `token` (required)
 
 **Component Flow**:
+
 1. On mount, extract `token` from URL
 2. Call `GET /api/invitations/validate/:token`
 3. **If valid**: Show invitation details + signup form
@@ -195,6 +222,7 @@ POST /api/invitations/accept
 | `CANCELLED` | Inviter cancelled | Error: "Invitation cancelled" |
 
 **Signup Form Fields**:
+
 - Email (pre-filled, read-only - from invitation)
 - Password (required, min 8 chars)
 - Confirm Password (must match)
@@ -202,6 +230,7 @@ POST /api/invitations/accept
 - Terms checkbox
 
 **Submit Action**:
+
 - Call `POST /api/auth/register-from-invite`
 - Body: `{ token, email, password, displayName }`
 - On success: Store auth, redirect to dashboard
@@ -212,12 +241,14 @@ POST /api/invitations/accept
 **When**: User is on `/signin` in signup mode without an invite token
 
 **Additional Field**:
+
 - Co-Parent Email (required)
   - Label: "Invite your co-parent"
   - Helper: "They'll receive an email to join your shared room"
   - Validation: Valid email, not same as user email
 
 **Submit Endpoint**: `POST /api/auth/register`
+
 ```json
 {
   "email": "user@example.com",
@@ -229,6 +260,7 @@ POST /api/invitations/accept
 ```
 
 **Response Handling**:
+
 - Show success message with invitation status
 - If co-parent is existing user: "We've notified them in-app"
 - If co-parent is new: "We've sent them an email invitation"
@@ -236,11 +268,13 @@ POST /api/invitations/accept
 ### FR-3: Notifications System
 
 **Notification Bell (Header)**:
+
 - Location: Top navigation bar
 - Shows unread count badge (red circle with number)
 - Click opens NotificationsPanel
 
 **NotificationsPanel Component**:
+
 - Lists all notifications, newest first
 - Invitation notifications show:
   - Inviter name and avatar placeholder
@@ -262,6 +296,7 @@ POST /api/invitations/accept
 **Location**: Profile Panel or dedicated Invitations tab
 
 **Sent Invitations Section**:
+
 - Title: "Your Invitations"
 - List of invitations with:
   - Invitee email
@@ -270,6 +305,7 @@ POST /api/invitations/accept
   - Actions: Resend (if pending/expired), Cancel (if pending)
 
 **Invite Co-Parent Section** (if no co-parent connected):
+
 - "Invite your co-parent" heading
 - Email input field
 - Send Invitation button
@@ -278,6 +314,7 @@ POST /api/invitations/accept
 ### FR-5: Correct API Integration
 
 **Remove/Replace**:
+
 - Remove usage of `/api/room/join` for invitation acceptance
 - Remove usage of `/api/auth/signup` for registration (use `/api/auth/register`)
 
@@ -300,23 +337,27 @@ POST /api/invitations/accept
 ## Non-Functional Requirements
 
 ### NFR-1: Security
+
 - Invitation tokens must never be logged or exposed in client-side errors
 - Token validation should be rate-limited to prevent brute force
 - Email pre-fill on accept page must match invitation exactly (case-insensitive)
 - All invitation actions require authentication except token validation
 
 ### NFR-2: Performance
+
 - Token validation should return within 500ms
 - Notifications should load within 1 second
 - Real-time notification updates via existing Socket.io connection
 
 ### NFR-3: Usability
+
 - Clear error messages for all failure states
 - Loading states for all async operations
 - Success confirmations for all actions
 - Mobile-responsive design (44px minimum touch targets)
 
 ### NFR-4: Accessibility
+
 - All buttons have accessible labels
 - Error messages announced to screen readers
 - Focus management on modal open/close
@@ -327,12 +368,14 @@ POST /api/invitations/accept
 ## Technical Constraints
 
 ### Architecture
+
 - React 18 functional components with hooks
 - Tailwind CSS for styling (follow existing design system)
 - Socket.io for real-time notification updates
 - JWT authentication (existing implementation)
 
 ### Design System (from existing components)
+
 - Primary color: `teal-medium` (#4DA8B0)
 - Success: `emerald-500`
 - Error: `red-500`
@@ -342,6 +385,7 @@ POST /api/invitations/accept
 - Min touch target: 44px
 
 ### API Integration
+
 - Base URL: From `config.js` (`API_BASE_URL`)
 - Auth header: `Authorization: Bearer {token}` from localStorage
 - Credentials: `credentials: 'include'` for cookies
@@ -437,6 +481,7 @@ POST /api/invitations/accept
 ## Dependencies
 
 ### Backend (Already Implemented)
+
 - `/api/auth/register` - Registration with invitation
 - `/api/auth/register-from-invite` - Registration from invitation
 - `/api/invitations/*` - All invitation endpoints
@@ -446,6 +491,7 @@ POST /api/invitations/accept
 - `emailService.js` - Email sending
 
 ### Frontend (To Be Implemented)
+
 - All components listed in Implementation Components
 - All hooks listed in Implementation Components
 - Route changes in App.jsx
@@ -456,6 +502,7 @@ POST /api/invitations/accept
 ## Appendix: API Reference
 
 ### POST /api/auth/register
+
 ```typescript
 Request: {
   email: string;
@@ -472,6 +519,7 @@ Response: {
 ```
 
 ### POST /api/auth/register-from-invite
+
 ```typescript
 Request: {
   token: string;
@@ -489,6 +537,7 @@ Response: {
 ```
 
 ### GET /api/invitations/validate/:token
+
 ```typescript
 Response: {
   valid: boolean;
@@ -500,17 +549,27 @@ Response: {
 ```
 
 ### POST /api/invitations/accept
+
 ```typescript
-Request: { token: string }
+Request: {
+  token: string;
+}
 Response: {
   success: boolean;
-  invitation: { id, status };
-  room: { id, name };
-  coParent: { id, username, email };
+  invitation: {
+    (id, status);
+  }
+  room: {
+    (id, name);
+  }
+  coParent: {
+    (id, username, email);
+  }
 }
 ```
 
 ### GET /api/notifications
+
 ```typescript
 Query: { unreadOnly?: boolean; type?: string; limit?: number; offset?: number }
 Response: {

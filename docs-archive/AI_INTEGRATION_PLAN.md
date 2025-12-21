@@ -1,24 +1,29 @@
 # LiaiZen AI Integration Plan
+
 ## Problem: Disconnected AI Features
 
 ### Current State (Fragmented)
 
 #### 1. **aiMediator.js** - Post-Send Intervention
+
 - **What it does**: Analyzes messages AFTER user clicks send
 - **UI**: Big modal pop-up blocking the chat
 - **Issue**: Disruptive, feels like punishment
 
 #### 2. **proactiveCoach.js** - Pre-Send Coaching
+
 - **What it does**: Analyzes draft before sending
 - **UI**: Currently not connected to frontend!
 - **Issue**: Backend exists but no UI integration
 
 #### 3. **contactIntelligence.js** - Contact Detection
+
 - **What it does**: Detects people mentioned in messages
 - **UI**: Modal pop-up after sending
 - **Issue**: Separate from conversation flow
 
 #### 4. **Task Generation** - AI Task Assistant
+
 - **What it does**: Generates tasks from descriptions
 - **UI**: Works in task modal
 - **Issue**: Only in one place, not context-aware
@@ -28,11 +33,13 @@
 ## Solution: Unified AI Assistant "Alex"
 
 ### Design Philosophy
+
 **AI should be a helpful co-pilot, not a disruptive moderator**
 
 ### Proposed Integration
 
 #### 1. **Inline Message Preview** (Replace Pop-up)
+
 Instead of blocking modal, show inline suggestion:
 
 ```
@@ -49,12 +56,14 @@ Instead of blocking modal, show inline suggestion:
 ```
 
 **Benefits**:
+
 - Non-blocking
 - Shows BEFORE sending (proactive)
 - User stays in conversation flow
 - Easy to accept or dismiss
 
 #### 2. **Smart Compose Bar** (Real-time)
+
 As user types, show subtle indicators:
 
 ```
@@ -66,12 +75,14 @@ As user types, show subtle indicators:
 ```
 
 **Features**:
+
 - Color-coded (green/yellow/red)
 - Only shows when needed
 - Doesn't interrupt typing
 - Optional auto-suggestions
 
 #### 3. **Conversation Insights Panel** (Sidebar)
+
 Subtle, always-visible panel showing:
 
 ```
@@ -89,12 +100,14 @@ Subtle, always-visible panel showing:
 ```
 
 **Benefits**:
+
 - Context-aware
 - Non-intrusive
 - Builds over conversation
 - Actionable insights
 
 #### 4. **Unified AI Context**
+
 All AI features share conversation context:
 
 - **Message Analysis** → Tone detection
@@ -107,11 +120,14 @@ All AI features share conversation context:
 ## Implementation Plan
 
 ### Phase 1: Remove Disruptive Pop-ups ✅ DONE
+
 - [x] Disable AI intervention modal
 - [x] Keep backend analysis running
 
 ### Phase 2: Add Inline Message Preview (PRIORITY)
+
 **Files to modify**:
+
 1. `chat-client-vite/src/ChatRoom.jsx`
    - Add message preview component
    - Connect to proactiveCoach.js
@@ -124,6 +140,7 @@ All AI features share conversation context:
    - "Use Suggestion" / "Send Anyway" buttons
 
 **Backend** (already exists):
+
 ```javascript
 // proactiveCoach.js
 async function analyzeDraftMessage(draftText, recentMessages, userContext, contactContext) {
@@ -132,31 +149,38 @@ async function analyzeDraftMessage(draftText, recentMessages, userContext, conta
 ```
 
 **Frontend** (needs to be added):
+
 ```javascript
 // When user types, debounce and call:
 const coaching = await fetch('/api/analyze-draft', {
   method: 'POST',
-  body: JSON.stringify({ draftText, roomId, username })
+  body: JSON.stringify({ draftText, roomId, username }),
 });
 
 // Show inline preview if riskLevel > 'low'
 ```
 
 ### Phase 3: Smart Compose Bar
+
 Add real-time indicators as user types:
+
 - Green dot: Good tone
 - Yellow dot: Needs improvement
 - Red dot: Problematic
 
 ### Phase 4: Conversation Insights Panel
+
 Right sidebar (desktop) or collapsible (mobile):
+
 - Sentiment graph
 - Key topics
 - Action items (auto-detected)
 - Relationship health score
 
 ### Phase 5: Context-Aware Task Generation
+
 When AI detects actionable items in conversation:
+
 - Show subtle notification
 - "I noticed you mentioned picking up Emma at 3pm. Create task?"
 - One-click task creation
@@ -166,6 +190,7 @@ When AI detects actionable items in conversation:
 ## UI Mockups
 
 ### Current (Disruptive):
+
 ```
 ┌─────────────────────────────────────┐
 │ FULL SCREEN MODAL OVERLAY (z-100)  │
@@ -182,6 +207,7 @@ When AI detects actionable items in conversation:
 ```
 
 ### Proposed (Integrated):
+
 ```
 ┌─────────────────────────────────────┬─────────┐
 │ Chat Messages                       │ Insights│
@@ -207,6 +233,7 @@ When AI detects actionable items in conversation:
 ## Technical Architecture
 
 ### Unified AI Manager
+
 Create single service that coordinates all AI features:
 
 ```javascript
@@ -223,7 +250,7 @@ class AIManager {
     const [moderation, coaching, contacts] = await Promise.all([
       this.mediator.analyzeMessage(text, context),
       this.coach.analyzeDraftMessage(text, context.recentMessages),
-      this.contactIntel.detectContactMentions(text, context.contacts)
+      this.contactIntel.detectContactMentions(text, context.contacts),
     ]);
 
     // Unified response
@@ -231,7 +258,7 @@ class AIManager {
       shouldBlock: moderation.shouldBlock,
       suggestions: coaching.rewrites,
       detectedContacts: contacts.detectedPeople,
-      insights: this.generateInsights(moderation, coaching, contacts)
+      insights: this.generateInsights(moderation, coaching, contacts),
     };
   }
 
@@ -241,13 +268,14 @@ class AIManager {
       tone: moderation.tone,
       riskLevel: coaching.riskLevel,
       actionItems: this.extractActionItems(contacts),
-      relationshipHealth: this.assessRelationship(moderation)
+      relationshipHealth: this.assessRelationship(moderation),
     };
   }
 }
 ```
 
 ### Frontend AI Context
+
 Single React context for all AI features:
 
 ```javascript
@@ -283,24 +311,28 @@ export function AIProvider({ children }) {
 ## Migration Path
 
 ### Week 1: Foundation
+
 - [x] Disable disruptive modals ✅
 - [ ] Create AIManager backend service
 - [ ] Create AIContext frontend provider
 - [ ] Add inline MessagePreview component
 
 ### Week 2: Core Features
+
 - [ ] Connect proactiveCoach to frontend
 - [ ] Add real-time draft analysis
 - [ ] Implement "Use Suggestion" flow
 - [ ] Add subtle tone indicators
 
 ### Week 3: Enhanced UX
+
 - [ ] Add Conversation Insights panel
 - [ ] Implement context-aware task detection
 - [ ] Add relationship health metrics
 - [ ] Polish animations and transitions
 
 ### Week 4: Testing & Refinement
+
 - [ ] User testing
 - [ ] Performance optimization
 - [ ] A/B test inline vs modal
@@ -311,18 +343,21 @@ export function AIProvider({ children }) {
 ## Success Metrics
 
 ### Current (Disruptive Modal)
+
 - Users feel punished ❌
 - High abandonment rate ❌
 - AI seems adversarial ❌
 - Low trust in AI ❌
 
 ### Goal (Integrated AI)
+
 - Users feel supported ✅
 - High suggestion adoption ✅
 - AI feels collaborative ✅
 - High trust in AI ✅
 
 ### Quantitative Metrics
+
 - **Suggestion Accept Rate**: Target 60%+
 - **Message Edit Rate**: Target 40%+
 - **Time to Send**: Reduce by 20%
@@ -334,22 +369,15 @@ export function AIProvider({ children }) {
 ## Next Steps
 
 **Immediate (Today)**:
+
 1. ✅ Disable disruptive AI modal
 2. ⏳ Create AIManager.js backend service
 3. ⏳ Create MessagePreview.jsx component
 4. ⏳ Connect proactiveCoach to frontend
 
-**This Week**:
-5. Add real-time draft analysis
-6. Implement inline suggestions
-7. Test with real users
-8. Iterate based on feedback
+**This Week**: 5. Add real-time draft analysis 6. Implement inline suggestions 7. Test with real users 8. Iterate based on feedback
 
-**This Month**:
-9. Add Conversation Insights panel
-10. Implement context-aware features
-11. Polish and optimize
-12. Full rollout
+**This Month**: 9. Add Conversation Insights panel 10. Implement context-aware features 11. Polish and optimize 12. Full rollout
 
 ---
 

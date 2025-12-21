@@ -18,6 +18,7 @@ allowed-tools: Read, Bash, Grep
 ## When to Use
 
 Activate this skill when:
+
 - Need to identify which domains/agents are involved in work
 - User asks "which agent should handle this?"
 - Determining delegation strategy (single vs multi-agent)
@@ -34,11 +35,13 @@ Activate this skill when:
 ### Step 1: Load Agent Collaboration Reference
 
 **Read the agent collaboration triggers document**:
+
 ```bash
 Read: .specify/memory/agent-collaboration-triggers.md
 ```
 
 **Understand the 11 domains**:
+
 1. **Frontend** - UI, components, client-side
 2. **Backend** - APIs, servers, business logic
 3. **Database** - Schema, queries, data modeling
@@ -54,16 +57,19 @@ Read: .specify/memory/agent-collaboration-triggers.md
 ### Step 2: Analyze Text for Domain Keywords
 
 **If analyzing a file**:
+
 ```bash
 .specify/scripts/bash/detect-phase-domain.sh --file PATH_TO_FILE
 ```
 
 **If analyzing user text**:
+
 ```bash
 echo "TEXT_TO_ANALYZE" | .specify/scripts/bash/detect-phase-domain.sh --text
 ```
 
 **Script performs keyword-based detection**:
+
 - Counts domain keyword occurrences
 - Scores each domain (weighted by keyword frequency)
 - Identifies significant domains (threshold: 3+ keywords)
@@ -84,6 +90,7 @@ echo "TEXT_TO_ANALYZE" | .specify/scripts/bash/detect-phase-domain.sh --text
 ### Step 3: Interpret Detection Results
 
 **Parse JSON output**:
+
 ```json
 {
   "detected_domains": ["frontend", "backend", "database"],
@@ -105,6 +112,7 @@ echo "TEXT_TO_ANALYZE" | .specify/scripts/bash/detect-phase-domain.sh --text
 ```
 
 **Domain Count Rules**:
+
 - **0 domains**: Generic work, no specialist needed
 - **1 domain**: Single-agent delegation
 - **2 domains**: Single or dual-agent delegation (evaluate complexity)
@@ -113,26 +121,31 @@ echo "TEXT_TO_ANALYZE" | .specify/scripts/bash/detect-phase-domain.sh --text
 ### Step 4: Determine Delegation Strategy
 
 **Single-Agent Delegation**:
+
 - One significant domain detected
 - Work is contained within domain
 - No cross-domain dependencies
 
 **Example**: "Implement user profile card component"
+
 - Domain: frontend
 - Agent: frontend-specialist
 - Strategy: single-agent
 
 **Multi-Agent Delegation**:
+
 - Multiple significant domains (3+)
 - Work spans domain boundaries
 - Requires coordination
 
 **Example**: "Implement user registration with email verification"
+
 - Domains: backend, database, security, integration
 - Agents: backend-architect, database-specialist, security-specialist, task-orchestrator
 - Strategy: multi-agent (orchestrator coordinates)
 
 **task-orchestrator Required When**:
+
 - 3+ significant domains detected
 - Complex cross-domain coordination needed
 - Multiple specialists must work together
@@ -141,26 +154,28 @@ echo "TEXT_TO_ANALYZE" | .specify/scripts/bash/detect-phase-domain.sh --text
 
 **Agent Mapping** (from agent collaboration reference):
 
-| Domain | Specialist Agent | Department |
-|--------|-----------------|------------|
-| Frontend | frontend-specialist | Engineering |
-| Backend | backend-architect | Architecture |
-| Database | database-specialist | Data |
-| Testing | testing-specialist | Quality |
-| Security | security-specialist | Quality |
-| Performance | performance-engineer | Operations |
-| DevOps | devops-engineer | Operations |
-| Architecture | backend-architect, subagent-architect | Architecture |
-| Specification | specification-agent | Product |
-| Tasks | tasks-agent | Product |
-| Integration | backend-architect, devops-engineer | Multiple |
+| Domain        | Specialist Agent                      | Department   |
+| ------------- | ------------------------------------- | ------------ |
+| Frontend      | frontend-specialist                   | Engineering  |
+| Backend       | backend-architect                     | Architecture |
+| Database      | database-specialist                   | Data         |
+| Testing       | testing-specialist                    | Quality      |
+| Security      | security-specialist                   | Quality      |
+| Performance   | performance-engineer                  | Operations   |
+| DevOps        | devops-engineer                       | Operations   |
+| Architecture  | backend-architect, subagent-architect | Architecture |
+| Specification | specification-agent                   | Product      |
+| Tasks         | tasks-agent                           | Product      |
+| Integration   | backend-architect, devops-engineer    | Multiple     |
 
 **Coordination Agent**:
+
 - **task-orchestrator** (Product dept): Coordinates multi-agent workflows
 
 ### Step 6: Report Detection Results
 
 **Provide comprehensive domain analysis**:
+
 ```
 🔍 Domain Detection Results
 
@@ -199,6 +214,7 @@ Next Step:
 ## Constitutional Compliance
 
 ### Principle X: Agent Delegation Protocol
+
 **This skill IMPLEMENTS Principle X**:
 
 - Analyzes task domain
@@ -207,12 +223,14 @@ Next Step:
 - Ensures specialized work → specialized agents
 
 **Principle X Workflow** (4 mandatory steps):
+
 1. READ CONSTITUTION ✅
 2. ANALYZE TASK DOMAIN ✅ (this skill)
 3. DELEGATION DECISION ✅ (this skill)
 4. EXECUTION (agent executes)
 
 **Critical Triggers** from Principle X:
+
 - "test" → testing-specialist
 - "database" → database-specialist
 - "API" → backend-architect
@@ -228,6 +246,7 @@ Next Step:
 **User Request**: "Implement a loading spinner component for React"
 
 **Skill Execution**:
+
 1. Load agent collaboration reference
 2. Analyze text: "loading spinner component React"
 3. Detect keywords: component (frontend), React (frontend), UI (frontend)
@@ -238,6 +257,7 @@ Next Step:
    - Agents: frontend-specialist
 
 **Output**:
+
 ```
 🔍 Domain Detection Results
 
@@ -253,6 +273,7 @@ Rationale: Pure frontend UI component work
 **User Request**: "Build user authentication with email, password, JWT tokens, and PostgreSQL storage"
 
 **Skill Execution**:
+
 1. Load reference
 2. Analyze text
 3. Detect keywords:
@@ -266,6 +287,7 @@ Rationale: Pure frontend UI component work
    - Agents: backend-architect, database-specialist, security-specialist, task-orchestrator
 
 **Output**:
+
 ```
 🔍 Domain Detection Results
 
@@ -285,6 +307,7 @@ Rationale: 3 domains require specialist coordination
 **User Request**: "Update README with installation instructions"
 
 **Skill Execution**:
+
 1. Load reference
 2. Analyze text: "README installation instructions"
 3. Detect keywords: documentation (general)
@@ -294,6 +317,7 @@ Rationale: 3 domains require specialist coordination
    - Can be handled without specialist
 
 **Output**:
+
 ```
 🔍 Domain Detection Results
 
@@ -307,17 +331,21 @@ Rationale: No specialized domain work detected
 ## Agent Collaboration
 
 ### task-orchestrator
+
 **When to suggest**: 3+ significant domains detected
 
 **What they do**: Coordinate multiple specialists, manage workflow, ensure integration
 
 ### All Specialist Agents
+
 **When to suggest**: Domain detected matches their specialty
 
 **What they do**: Execute specialized work in their domain
 
 ### Work Session Initiation Protocol
+
 **This skill supports Step 2** of the mandatory 4-step protocol:
+
 1. READ CONSTITUTION (required before this skill)
 2. **ANALYZE TASK DOMAIN** ← THIS SKILL
 3. DELEGATION DECISION (based on this skill's output)
@@ -346,6 +374,7 @@ Verify the skill executed correctly:
 **Cause**: Keywords not in detection dictionary
 
 **Solution**:
+
 - Review `.specify/scripts/bash/detect-phase-domain.sh` keyword lists
 - Add missing keywords to appropriate domain
 - Re-run detection
@@ -355,6 +384,7 @@ Verify the skill executed correctly:
 **Cause**: Ambiguous keywords or keyword overlap
 
 **Solution**:
+
 - Review domain scores (not just presence/absence)
 - Higher score = stronger signal
 - Consider context (not just keywords)
@@ -365,6 +395,7 @@ Verify the skill executed correctly:
 **Cause**: Edge case (2 domains can go either way)
 
 **Solution**:
+
 - Evaluate complexity:
   - Simple integration → single-agent can handle both
   - Complex coordination → use multi-agent with orchestrator
@@ -375,6 +406,7 @@ Verify the skill executed correctly:
 **Cause**: Domain maps to multiple specialists
 
 **Solution**:
+
 - Choose most specific agent
 - Example: "system architecture" could be backend-architect or subagent-architect
   - For implementation architecture → backend-architect

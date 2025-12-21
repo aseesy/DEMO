@@ -17,19 +17,22 @@
 ## 📋 Proposed Module Structure
 
 ### 1. **`mediator.js`** (Main Orchestrator) - ~200 lines
+
 **Purpose**: Main entry point, coordinates all modules
 
 **Responsibilities**:
+
 - Export main `analyzeMessage` function (thin wrapper)
 - Initialize and coordinate sub-modules
 - Handle top-level error handling
 - Maintain backward compatibility
 
 **Exports**:
+
 ```javascript
 module.exports = {
-  analyzeMessage,           // Main entry point
-  detectNamesInMessage,     // Re-exported
+  analyzeMessage, // Main entry point
+  detectNamesInMessage, // Re-exported
   generateContactSuggestion, // Re-exported
   extractRelationshipInsights, // Re-exported
   updateContext,
@@ -42,9 +45,11 @@ module.exports = {
 ---
 
 ### 2. **`messageAnalyzer.js`** - ~300 lines
+
 **Purpose**: Core message analysis logic
 
 **Responsibilities**:
+
 - Pre-filtering (greetings, polite messages, third-party statements, positive sentiment)
 - Code Layer integration
 - Language analysis integration
@@ -53,6 +58,7 @@ module.exports = {
 - Response parsing
 
 **Functions**:
+
 ```javascript
 async function analyzeMessage(message, context) {
   // Pre-filtering
@@ -75,6 +81,7 @@ function detectConflictPatterns(messageText) {
 ```
 
 **Dependencies**:
+
 - `contextBuilder.js` - For building AI prompts
 - `stateManager.js` - For state updates
 - `cacheManager.js` - For caching
@@ -82,9 +89,11 @@ function detectConflictPatterns(messageText) {
 ---
 
 ### 3. **`contextBuilder.js`** - ~250 lines
+
 **Purpose**: Build all context strings for AI prompts
 
 **Responsibilities**:
+
 - Build user context strings
 - Build profile context (comprehensive and role-aware)
 - Build relationship context
@@ -94,6 +103,7 @@ function detectConflictPatterns(messageText) {
 - Build language analysis context
 
 **Functions**:
+
 ```javascript
 async function buildAnalysisContext(message, options) {
   return {
@@ -122,6 +132,7 @@ function buildRelationshipContext(roomId, contactContext, taskContext) {
 ```
 
 **Dependencies**:
+
 - `userContext` module
 - `profileHelpers` module
 - `communicationProfile` module
@@ -130,9 +141,11 @@ function buildRelationshipContext(roomId, contactContext, taskContext) {
 ---
 
 ### 4. **`interventionHandler.js`** - ~200 lines
+
 **Purpose**: Process and validate interventions
 
 **Responsibilities**:
+
 - Validate intervention responses
 - Apply rewrite perspective validation
 - Apply Code Layer response validation
@@ -141,6 +154,7 @@ function buildRelationshipContext(roomId, contactContext, taskContext) {
 - Record interventions to profiles
 
 **Functions**:
+
 ```javascript
 function processIntervention(result, message, parsedMessage, languageAnalysis) {
   // Validate required fields
@@ -162,6 +176,7 @@ function buildInterventionResult(intervention, message, escalation, emotion, cod
 ```
 
 **Dependencies**:
+
 - `rewriteValidator` module
 - `codeLayerIntegration` module
 - `communicationProfile` module
@@ -169,9 +184,11 @@ function buildInterventionResult(intervention, message, escalation, emotion, cod
 ---
 
 ### 5. **`stateManager.js`** - ~150 lines
+
 **Purpose**: Manage conversation state (escalation, emotional, policy)
 
 **Responsibilities**:
+
 - Initialize states
 - Update escalation scores
 - Update emotional states
@@ -180,6 +197,7 @@ function buildInterventionResult(intervention, message, escalation, emotion, cod
 - Manage state decay
 
 **Functions**:
+
 ```javascript
 function initializeEscalationState(roomId) {
   // Initialize escalation state
@@ -207,20 +225,24 @@ function updatePolicyState(roomId, intervention) {
 ```
 
 **Dependencies**:
+
 - Constants for thresholds
 
 ---
 
 ### 6. **`cacheManager.js`** - ~100 lines
+
 **Purpose**: Message analysis caching
 
 **Responsibilities**:
+
 - Generate message hashes
 - Check cache
 - Store cache entries
 - Manage cache size and TTL
 
 **Functions**:
+
 ```javascript
 function generateMessageHash(messageText, senderId, receiverId) {
   // Generate hash for caching
@@ -240,6 +262,7 @@ function cleanupCache() {
 ```
 
 **Dependencies**:
+
 - Constants for cache TTL and size
 
 ---
@@ -247,6 +270,7 @@ function cleanupCache() {
 ## 🔄 Refactoring Steps
 
 ### Phase 1: Extract State Management (Low Risk)
+
 1. Create `stateManager.js`
 2. Move state initialization functions
 3. Move state update functions
@@ -254,30 +278,35 @@ function cleanupCache() {
 5. Test state management
 
 ### Phase 2: Extract Cache Management (Low Risk)
+
 1. Create `cacheManager.js`
 2. Move cache functions
 3. Update `mediator.js` to use new module
 4. Test caching
 
 ### Phase 3: Extract Context Building (Medium Risk)
+
 1. Create `contextBuilder.js`
 2. Move context building logic from `analyzeMessage`
 3. Refactor `analyzeMessage` to use context builder
 4. Test context building
 
 ### Phase 4: Extract Intervention Handling (Medium Risk)
+
 1. Create `interventionHandler.js`
 2. Move intervention processing logic
 3. Refactor `analyzeMessage` to use handler
 4. Test intervention handling
 
 ### Phase 5: Extract Message Analysis (High Risk)
+
 1. Create `messageAnalyzer.js`
 2. Move core analysis logic
 3. Refactor `mediator.js` to orchestrate modules
 4. Test full flow
 
 ### Phase 6: Cleanup (Low Risk)
+
 1. Remove unused code
 2. Update documentation
 3. Add JSDoc comments
@@ -306,12 +335,14 @@ chat-server/src/liaizen/core/
 ## ⚠️ Risk Mitigation
 
 ### Risks
+
 1. **Breaking changes** - Maintain exact same exports
 2. **State management** - Ensure state is shared correctly
 3. **Error handling** - Preserve all error handling
 4. **Performance** - No performance degradation
 
 ### Mitigation
+
 1. **Incremental refactoring** - One module at a time
 2. **Comprehensive testing** - Test after each phase
 3. **Backward compatibility** - Keep same public API
@@ -342,4 +373,3 @@ chat-server/src/liaizen/core/
 **Created**: 2025-01-27  
 **Status**: Proposed  
 **Priority**: High (file is 1,402 lines)
-

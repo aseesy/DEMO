@@ -12,19 +12,23 @@
 ## Overview
 
 ### Business Objective
+
 Create a comprehensive user profile system that captures detailed information about co-parents to enable:
+
 - **Better AI mediation** - Context-aware interventions based on work schedules, stress factors, and communication history
 - **Personalized support** - Tailored coaching based on individual circumstances
 - **Context-aware communication** - AI understands users' limitations, flexibility, and life situations
 - **Privacy-controlled sharing** - Users control what information is shared with their co-parent
 
 ### Success Metrics
+
 - **Profile completion rate**: >70% of users complete at least 50% of profile fields within 30 days
 - **AI mediation improvement**: 15% reduction in conflict escalation for users with complete profiles
 - **User satisfaction**: Profile data contributes to 20% improvement in "AI understands my situation" ratings
 - **Privacy compliance**: Zero incidents of unauthorized profile data sharing
 
 ### User Impact
+
 - Co-parents receive more contextual, empathetic AI coaching
 - AI mediator can reference work schedules, health limitations, and communication preferences
 - Better matching of co-parent expectations and capabilities
@@ -37,11 +41,13 @@ Create a comprehensive user profile system that captures detailed information ab
 ### Epic: Profile Data Capture
 
 #### Story 1: Personal Information Collection
+
 **As a** co-parent user
 **I want to** provide my personal information in a structured way
 **So that** LiaiZen can address me correctly and understand my basic demographics
 
 **Acceptance Criteria:**
+
 - [ ] User can enter first name, last name, preferred name, and pronouns
 - [ ] Birthdate field with date picker (validates age 18+)
 - [ ] Language preference dropdown (English, Spanish, French - expandable)
@@ -51,11 +57,13 @@ Create a comprehensive user profile system that captures detailed information ab
 - [ ] Mobile-friendly form with proper keyboard types (text, date, select)
 
 #### Story 2: Work & Schedule Context
+
 **As a** co-parent user
 **I want to** share my work situation and schedule
 **So that** the AI can understand my availability constraints and flexibility
 
 **Acceptance Criteria:**
+
 - [ ] Employment status selection: employed, self-employed, unemployed, student, retired, disability
 - [ ] Occupation text field (optional)
 - [ ] Employer name (optional, for emergency contact context)
@@ -66,11 +74,13 @@ Create a comprehensive user profile system that captures detailed information ab
 - [ ] All fields clearly marked as "Private - Not shared with co-parent" with lock icon
 
 #### Story 3: Health & Wellbeing Information
+
 **As a** co-parent user
 **I want to** confidentially share health information with the AI
 **So that** LiaiZen can understand my limitations and stress factors
 
 **Acceptance Criteria:**
+
 - [ ] Section clearly labeled "Confidential - Only used by AI for better support"
 - [ ] Physical health: Multi-select conditions (chronic pain, mobility limitations, other)
 - [ ] Physical limitations: Textarea for describing how conditions affect parenting
@@ -84,11 +94,13 @@ Create a comprehensive user profile system that captures detailed information ab
 - [ ] "Why we ask" tooltip for each field explaining how it helps AI support
 
 #### Story 4: Financial Context
+
 **As a** co-parent user
 **I want to** provide general financial context
 **So that** expense discussions can be more realistic and AI can understand financial stress
 
 **Acceptance Criteria:**
+
 - [ ] Income level: Range selection (Under $25k, $25k-$50k, $50k-$75k, $75k-$100k, $100k+, prefer not to say)
 - [ ] Income stability: stable, variable, unstable
 - [ ] Employment benefits: yes/no (helps understand healthcare coverage context)
@@ -102,11 +114,13 @@ Create a comprehensive user profile system that captures detailed information ab
 - [ ] Option to hide entire section
 
 #### Story 5: Background & Context
+
 **As a** co-parent user
 **I want to** share relevant cultural and personal background
 **So that** the AI can understand my communication style and values
 
 **Acceptance Criteria:**
+
 - [ ] Birthplace (city/country)
 - [ ] Where raised (if different)
 - [ ] Family of origin context: Textarea (optional - for understanding family dynamics)
@@ -120,11 +134,13 @@ Create a comprehensive user profile system that captures detailed information ab
 ### Epic: Privacy & Sharing Controls
 
 #### Story 6: Granular Privacy Settings
+
 **As a** co-parent user
 **I want to** control exactly what profile information is shared with my co-parent
 **So that** I can maintain appropriate boundaries while still benefiting from AI support
 
 **Acceptance Criteria:**
+
 - [ ] Privacy settings page accessible from profile
 - [ ] Each profile section has visibility toggle: "Private (AI only)" / "Shared with co-parent"
 - [ ] Default visibility: Work=Private, Health=Private, Financial=Private, Background=Shared (with user confirmation)
@@ -135,11 +151,13 @@ Create a comprehensive user profile system that captures detailed information ab
 - [ ] Confirmation modal before sharing sensitive categories
 
 #### Story 7: Progressive Disclosure
+
 **As a** co-parent user
 **I want to** be guided through profile completion gradually
 **So that** I don't feel overwhelmed by extensive forms
 
 **Acceptance Criteria:**
+
 - [ ] Profile completion wizard with 5 steps (Personal, Work, Health, Financial, Background)
 - [ ] "Skip for now" option on every step
 - [ ] Progress indicator showing completion percentage
@@ -152,11 +170,13 @@ Create a comprehensive user profile system that captures detailed information ab
 ### Epic: AI Integration
 
 #### Story 8: Profile Data in AI Context
+
 **As a** co-parent user
 **I want** the AI mediator to reference my profile data when coaching
 **So that** interventions are personalized to my situation
 
 **Acceptance Criteria:**
+
 - [ ] AI mediator receives user profile context with each message analysis
 - [ ] Work schedule considered in AI suggestions (e.g., "I know you work evenings, could you respond in the morning?")
 - [ ] Health limitations acknowledged (e.g., "Given your mobility constraints, could co-parent handle pickup?")
@@ -166,11 +186,13 @@ Create a comprehensive user profile system that captures detailed information ab
 - [ ] Profile context limited to 500 tokens maximum (prioritize most relevant)
 
 #### Story 9: Communication Profile Learning
+
 **As a** LiaiZen system
 **I want to** build a communication profile based on user interactions and explicit profile data
 **So that** AI coaching becomes increasingly personalized over time
 
 **Acceptance Criteria:**
+
 - [ ] System tracks intervention acceptance rates per user
 - [ ] Preferred communication style inferred from rewrite selections
 - [ ] Stress triggers identified from escalation patterns + health data
@@ -300,17 +322,20 @@ CREATE INDEX idx_profile_audit_timestamp ON profile_sharing_audit(timestamp DESC
 ### Profile Management
 
 #### `GET /api/profile`
+
 **Description:** Get current user's profile data
 **Authentication:** Required (JWT)
 **Authorization:** User can only access their own profile
 
 **Request:**
+
 ```http
 GET /api/profile
 Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -340,7 +365,7 @@ Authorization: Bearer <token>
     "health": {
       "physical_conditions": ["chronic_pain"],
       "physical_limitations": "Difficulty with heavy lifting",
-      "medications": null,  // Only included if user entered
+      "medications": null, // Only included if user entered
       "mental_conditions": ["anxiety"],
       "mental_treatment": "therapy",
       "mental_history": "Relevant background...",
@@ -354,10 +379,10 @@ Authorization: Bearer <token>
       "employment_benefits": true,
       "housing_status": "rent",
       "housing_type": "apartment",
-      "vehicles": [{"type": "car", "description": "2015 Honda Civic"}],
+      "vehicles": [{ "type": "car", "description": "2015 Honda Civic" }],
       "debt_stress": "manageable",
       "support_paying": true,
-      "support_paying_amount": 500.00,
+      "support_paying_amount": 500.0,
       "support_receiving": false,
       "support_receiving_amount": null
     },
@@ -383,6 +408,7 @@ Authorization: Bearer <token>
 ```
 
 **Error Response (401):**
+
 ```json
 {
   "success": false,
@@ -393,11 +419,13 @@ Authorization: Bearer <token>
 ---
 
 #### `PUT /api/profile`
+
 **Description:** Update user's profile data (partial updates allowed)
 **Authentication:** Required (JWT)
 **Authorization:** User can only update their own profile
 
 **Request:**
+
 ```http
 PUT /api/profile
 Authorization: Bearer <token>
@@ -417,16 +445,24 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
   "message": "Profile updated successfully",
   "profile_completion_percentage": 67,
-  "updated_fields": ["personal.preferred_name", "personal.pronouns", "work.employment_status", "work.occupation", "work.schedule_flexibility"]
+  "updated_fields": [
+    "personal.preferred_name",
+    "personal.pronouns",
+    "work.employment_status",
+    "work.occupation",
+    "work.schedule_flexibility"
+  ]
 }
 ```
 
 **Validation Errors (400):**
+
 ```json
 {
   "success": false,
@@ -441,10 +477,12 @@ Content-Type: application/json
 ---
 
 #### `GET /api/profile/privacy`
+
 **Description:** Get privacy settings for current user
 **Authentication:** Required (JWT)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -467,10 +505,12 @@ Content-Type: application/json
 ---
 
 #### `PUT /api/profile/privacy`
+
 **Description:** Update privacy settings
 **Authentication:** Required (JWT)
 
 **Request:**
+
 ```json
 {
   "work_info_visible": true,
@@ -482,6 +522,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -493,11 +534,13 @@ Content-Type: application/json
 ---
 
 #### `GET /api/profile/shared/:userId`
+
 **Description:** Get co-parent's shared profile information
 **Authentication:** Required (JWT)
 **Authorization:** Only accessible if users are connected co-parents
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -518,6 +561,7 @@ Content-Type: application/json
 ```
 
 **Error Response (403):**
+
 ```json
 {
   "success": false,
@@ -528,10 +572,12 @@ Content-Type: application/json
 ---
 
 #### `GET /api/profile/completion-status`
+
 **Description:** Get profile completion status and suggestions
 **Authentication:** Required (JWT)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -582,6 +628,7 @@ Content-Type: application/json
 **Purpose:** Guide new users through initial profile setup
 
 **Features:**
+
 - 5-step wizard (Personal → Work → Health → Financial → Background)
 - Progress indicator (1/5, 2/5, etc.)
 - "Skip for now" on every step
@@ -591,6 +638,7 @@ Content-Type: application/json
 - Final step: Privacy review
 
 **Props:**
+
 ```jsx
 <ProfileWizard
   onComplete={(completionPercentage) => void}
@@ -605,6 +653,7 @@ Content-Type: application/json
 
 **Current State:** ProfilePanel.jsx has basic fields (first_name, last_name, address)
 **Enhancements Needed:**
+
 - Add pronouns dropdown
 - Add birthdate picker (with age validation)
 - Add language selector
@@ -612,6 +661,7 @@ Content-Type: application/json
 - Add preferred_name field
 
 **Example:**
+
 ```jsx
 <PersonalInfoSection
   data={profileData.personal}
@@ -626,6 +676,7 @@ Content-Type: application/json
 ### WorkScheduleSection.jsx (New)
 
 **Fields:**
+
 - Employment status dropdown
 - Occupation text input
 - Employer text input (with privacy tooltip)
@@ -635,6 +686,7 @@ Content-Type: application/json
 - Travel required checkbox + frequency dropdown
 
 **Privacy Indicators:**
+
 - Lock icon next to each field
 - "Private - Not shared with co-parent" badge
 - Tooltip: "This helps AI understand your constraints"
@@ -644,11 +696,13 @@ Content-Type: application/json
 ### HealthWellbeingSection.jsx (New)
 
 **Security:**
+
 - Encrypted data indicator
 - "Confidential - AI support only" header
 - "Why we ask" tooltips for every field
 
 **Fields:**
+
 - Physical conditions multi-select (with "Other" text input)
 - Physical limitations textarea
 - Medications textarea (clearly optional)
@@ -659,6 +713,7 @@ Content-Type: application/json
 - Recovery status (conditional fields)
 
 **UX Considerations:**
+
 - Warm, non-judgmental language
 - "Prefer not to say" option on every field
 - Hide entire section toggle
@@ -669,6 +724,7 @@ Content-Type: application/json
 ### FinancialContextSection.jsx (New)
 
 **Fields:**
+
 - Income level range selector (with "prefer not to say")
 - Income stability dropdown
 - Employment benefits yes/no
@@ -680,6 +736,7 @@ Content-Type: application/json
 - Child support receiving (yes/no + amount)
 
 **Privacy:**
+
 - "Private - Used only for AI expense context" banner
 - Option to hide entire section
 - Lock icons on sensitive fields
@@ -689,6 +746,7 @@ Content-Type: application/json
 ### PrivacySettings.jsx (New)
 
 **Features:**
+
 - Section-level visibility toggles (Personal, Work, Health, Financial, Background)
 - Field-level custom rules (advanced mode)
 - "Preview co-parent view" button (opens modal showing exactly what they see)
@@ -697,6 +755,7 @@ Content-Type: application/json
 - Confirmation modals before enabling sharing
 
 **Layout:**
+
 ```
 [Section: Personal Information] [Toggle: Private/Shared]
   ↳ Fields included: First name, Last name, Pronouns, Language
@@ -717,6 +776,7 @@ Content-Type: application/json
 **Purpose:** Encourage profile completion with gentle nudges
 
 **Display:**
+
 - Circular progress indicator (0-100%)
 - "Your profile is X% complete"
 - "Next step: Add work schedule" (smart suggestion)
@@ -724,6 +784,7 @@ Content-Type: application/json
 - "Complete profile" button → Opens ProfileWizard
 
 **Placement:**
+
 - Dashboard sidebar
 - Profile page header
 - Optional: Dismissible notification after 7 days of inactivity
@@ -739,13 +800,14 @@ Content-Type: application/json
 **Modification:** Enhance `analyzeMessage()` function to include profile context
 
 **Before:**
+
 ```javascript
-const userContextString = userContexts.length > 0
-  ? `\n\nUser Context Information:\n${userContexts.join('\n')}`
-  : '';
+const userContextString =
+  userContexts.length > 0 ? `\n\nUser Context Information:\n${userContexts.join('\n')}` : '';
 ```
 
 **After:**
+
 ```javascript
 // Load user profile data
 const senderProfile = await loadUserProfile(roleContext.senderId);
@@ -754,9 +816,10 @@ const receiverProfile = await loadUserProfile(roleContext.receiverId);
 // Build profile context (respecting privacy settings)
 const profileContext = buildProfileContextForAI(senderProfile, receiverProfile);
 
-const userContextString = userContexts.length > 0
-  ? `\n\nUser Context Information:\n${userContexts.join('\n')}\n\n${profileContext}`
-  : `\n\n${profileContext}`;
+const userContextString =
+  userContexts.length > 0
+    ? `\n\nUser Context Information:\n${userContexts.join('\n')}\n\n${profileContext}`
+    : `\n\n${profileContext}`;
 ```
 
 **New Function: `buildProfileContextForAI()`**
@@ -811,6 +874,7 @@ function buildProfileContextForAI(senderProfile, receiverProfile) {
 **Enhancement:** Update AI system prompt to leverage profile data
 
 **Addition to prompt:**
+
 ```javascript
 === PROFILE-AWARE COACHING ===
 
@@ -837,6 +901,7 @@ CRITICAL: Never explicitly reveal private profile data to the receiver. Use indi
 **Enhancement:** Enrich existing communication profiles with explicit profile data
 
 **New Function in `index.js`:**
+
 ```javascript
 /**
  * Merge explicit profile data with learned communication profile
@@ -853,21 +918,21 @@ async function enrichCommunicationProfile(userId, explicitProfile) {
       work_constraints: {
         schedule: explicitProfile.work_schedule,
         flexibility: explicitProfile.schedule_flexibility,
-        travel: explicitProfile.travel_required
+        travel: explicitProfile.travel_required,
       },
       stress_factors: {
         health: extractHealthStressors(explicitProfile.health),
         financial: explicitProfile.debt_stress,
-        commute: explicitProfile.commute_info
+        commute: explicitProfile.commute_info,
       },
       cultural_context: {
         language: explicitProfile.language,
         background: explicitProfile.cultural_background,
-        values: inferValues(explicitProfile.religion, explicitProfile.background)
-      }
+        values: inferValues(explicitProfile.religion, explicitProfile.background),
+      },
     },
     profile_completion: explicitProfile.profile_completion_percentage,
-    last_updated: explicitProfile.profile_updated_at
+    last_updated: explicitProfile.profile_updated_at,
   };
 }
 ```
@@ -879,6 +944,7 @@ async function enrichCommunicationProfile(userId, explicitProfile) {
 ### Phase 1: Schema Migration (Week 1)
 
 **Steps:**
+
 1. Create migration script: `chat-server/migrations/010-user-profile-comprehensive.sql`
 2. Add all new columns to `users` table (with NULL defaults for backwards compatibility)
 3. Create `user_privacy_settings` table (with default privacy settings for existing users)
@@ -887,6 +953,7 @@ async function enrichCommunicationProfile(userId, explicitProfile) {
 6. Prepare PostgreSQL migration script (for production)
 
 **Migration Script:**
+
 ```sql
 -- Migration: 010-user-profile-comprehensive
 -- Description: Add comprehensive profile fields to users table
@@ -907,6 +974,7 @@ COMMIT;
 ```
 
 **Rollback Plan:**
+
 - Create `010-user-profile-comprehensive-rollback.sql`
 - Store backup of database before migration
 - Test rollback in staging environment
@@ -916,6 +984,7 @@ COMMIT;
 ### Phase 2: Backend API Development (Week 2-3)
 
 **Tasks:**
+
 1. **Create profile utility module:** `chat-server/profileUtils.js`
    - `loadUserProfile(userId)` - Fetch full profile
    - `updateUserProfile(userId, updates)` - Partial update with validation
@@ -948,6 +1017,7 @@ COMMIT;
 ### Phase 3: Frontend UI Development (Week 4-5)
 
 **Tasks:**
+
 1. **Create new components** (see Frontend Components section)
    - ProfileWizard.jsx
    - WorkScheduleSection.jsx
@@ -978,6 +1048,7 @@ COMMIT;
 ### Phase 4: AI Integration (Week 6)
 
 **Tasks:**
+
 1. **Modify mediator.js:**
    - Import profileUtils
    - Load sender/receiver profiles in `analyzeMessage()`
@@ -1004,6 +1075,7 @@ COMMIT;
 ### Phase 5: Testing & Privacy Validation (Week 7)
 
 **Tasks:**
+
 1. **Unit Tests:**
    - Profile CRUD operations
    - Privacy settings enforcement
@@ -1040,10 +1112,12 @@ COMMIT;
 ### Data Protection
 
 #### 1. Encryption at Rest
+
 - **Field:** `health_medications` (most sensitive)
 - **Method:** AES-256-GCM encryption
 - **Key Storage:** Environment variable `PROFILE_ENCRYPTION_KEY` (32-byte random key)
 - **Implementation:**
+
   ```javascript
   // chat-server/encryption.js
   const crypto = require('crypto');
@@ -1072,6 +1146,7 @@ COMMIT;
   ```
 
 #### 2. Access Control
+
 - **Rule:** Users can only access their own full profile
 - **Exception:** Co-parents can access shared fields only
 - **Enforcement:** Middleware checks JWT user_id matches profile owner
@@ -1088,6 +1163,7 @@ COMMIT;
   ```
 
 #### 3. Privacy-Filtered Data Retrieval
+
 ```javascript
 /**
  * Get profile data filtered by privacy settings
@@ -1104,7 +1180,7 @@ async function getSharedProfileData(profile, viewerId) {
     work: {},
     health: {},
     financial: {},
-    background: {}
+    background: {},
   };
 
   // Personal info
@@ -1112,7 +1188,7 @@ async function getSharedProfileData(profile, viewerId) {
     shared.personal = {
       first_name: profile.first_name,
       preferred_name: profile.preferred_name,
-      pronouns: profile.pronouns
+      pronouns: profile.pronouns,
     };
   }
 
@@ -1120,7 +1196,7 @@ async function getSharedProfileData(profile, viewerId) {
   if (privacySettings.work_info_visible) {
     shared.work = {
       occupation: profile.occupation,
-      schedule_flexibility: profile.schedule_flexibility
+      schedule_flexibility: profile.schedule_flexibility,
     };
 
     // Apply custom rules
@@ -1137,7 +1213,7 @@ async function getSharedProfileData(profile, viewerId) {
     shared.background = {
       education_level: profile.education_level,
       education_field: profile.education_field,
-      cultural_background: profile.cultural_background
+      cultural_background: profile.cultural_background,
     };
   }
 
@@ -1146,6 +1222,7 @@ async function getSharedProfileData(profile, viewerId) {
 ```
 
 #### 4. Audit Logging
+
 - **Event:** Every privacy setting change
 - **Event:** Every shared profile view by co-parent
 - **Event:** Every profile field update
@@ -1154,6 +1231,7 @@ async function getSharedProfileData(profile, viewerId) {
 - **Access:** User can view their own audit log via UI
 
 #### 5. Data Retention
+
 - **Profile Data:** Retained until account deletion
 - **Audit Logs:** 90 days
 - **Soft Delete:** Profile marked as deleted but retained for 30 days (recovery period)
@@ -1176,55 +1254,67 @@ const profileSchema = Joi.object({
     last_name: Joi.string().max(50).allow(''),
     preferred_name: Joi.string().max(50).allow(''),
     pronouns: Joi.string().valid('he/him', 'she/her', 'they/them', 'other').allow(''),
-    birthdate: Joi.date().max('now').custom((value, helpers) => {
-      const age = (new Date() - new Date(value)) / (365.25 * 24 * 60 * 60 * 1000);
-      if (age < 18) {
-        return helpers.error('any.invalid', { message: 'Must be 18 years or older' });
-      }
-      return value;
-    }),
+    birthdate: Joi.date()
+      .max('now')
+      .custom((value, helpers) => {
+        const age = (new Date() - new Date(value)) / (365.25 * 24 * 60 * 60 * 1000);
+        if (age < 18) {
+          return helpers.error('any.invalid', { message: 'Must be 18 years or older' });
+        }
+        return value;
+      }),
     language: Joi.string().valid('en', 'es', 'fr').default('en'),
-    timezone: Joi.string().allow('')
+    timezone: Joi.string().allow(''),
   }),
 
   work: Joi.object({
-    employment_status: Joi.string().valid('employed', 'self_employed', 'unemployed', 'student', 'retired', 'disability').allow(''),
+    employment_status: Joi.string()
+      .valid('employed', 'self_employed', 'unemployed', 'student', 'retired', 'disability')
+      .allow(''),
     occupation: Joi.string().max(100).allow(''),
     employer: Joi.string().max(100).allow(''),
     work_schedule: Joi.string().max(500).allow(''),
     schedule_flexibility: Joi.string().valid('high', 'medium', 'low').allow(''),
     commute_info: Joi.string().max(100).allow(''),
     travel_required: Joi.boolean().default(false),
-    travel_frequency: Joi.string().valid('weekly', 'monthly', 'occasional', 'frequent').allow('')
+    travel_frequency: Joi.string().valid('weekly', 'monthly', 'occasional', 'frequent').allow(''),
   }),
 
   health: Joi.object({
     physical_conditions: Joi.array().items(Joi.string().max(50)).max(10),
     physical_limitations: Joi.string().max(1000).allow(''),
-    medications: Joi.string().max(500).allow(''),  // Will be encrypted
+    medications: Joi.string().max(500).allow(''), // Will be encrypted
     mental_conditions: Joi.array().items(Joi.string().max(50)).max(10),
-    mental_treatment: Joi.string().valid('therapy', 'medication', 'both', 'none', 'prefer_not_to_say').allow(''),
+    mental_treatment: Joi.string()
+      .valid('therapy', 'medication', 'both', 'none', 'prefer_not_to_say')
+      .allow(''),
     mental_history: Joi.string().max(1000).allow(''),
     substance_history: Joi.string().valid('none', 'past', 'current').allow(''),
     in_recovery: Joi.boolean().default(false),
-    recovery_duration: Joi.string().max(50).allow('')
+    recovery_duration: Joi.string().max(50).allow(''),
   }),
 
   financial: Joi.object({
-    income_level: Joi.string().valid('under_25k', '25k_50k', '50k_75k', '75k_100k', 'over_100k', 'prefer_not_to_say').allow(''),
+    income_level: Joi.string()
+      .valid('under_25k', '25k_50k', '50k_75k', '75k_100k', 'over_100k', 'prefer_not_to_say')
+      .allow(''),
     income_stability: Joi.string().valid('stable', 'variable', 'unstable').allow(''),
     employment_benefits: Joi.boolean().default(false),
     housing_status: Joi.string().valid('own', 'rent', 'living_with_family', 'unstable').allow(''),
     housing_type: Joi.string().valid('house', 'apartment', 'condo', 'other').allow(''),
-    vehicles: Joi.array().items(Joi.object({
-      type: Joi.string().max(50),
-      description: Joi.string().max(100)
-    })).max(5),
+    vehicles: Joi.array()
+      .items(
+        Joi.object({
+          type: Joi.string().max(50),
+          description: Joi.string().max(100),
+        })
+      )
+      .max(5),
     debt_stress: Joi.string().valid('none', 'manageable', 'significant', 'overwhelming').allow(''),
     support_paying: Joi.boolean().default(false),
     support_paying_amount: Joi.number().min(0).max(999999.99).allow(null),
     support_receiving: Joi.boolean().default(false),
-    support_receiving_amount: Joi.number().min(0).max(999999.99).allow(null)
+    support_receiving_amount: Joi.number().min(0).max(999999.99).allow(null),
   }),
 
   background: Joi.object({
@@ -1236,9 +1326,19 @@ const profileSchema = Joi.object({
     military_service: Joi.boolean().default(false),
     military_branch: Joi.string().max(50).allow(''),
     military_status: Joi.string().valid('veteran', 'active', 'reserve').allow(''),
-    education_level: Joi.string().valid('high_school', 'some_college', 'associates', 'bachelors', 'masters', 'doctorate', 'trade').allow(''),
-    education_field: Joi.string().max(100).allow('')
-  })
+    education_level: Joi.string()
+      .valid(
+        'high_school',
+        'some_college',
+        'associates',
+        'bachelors',
+        'masters',
+        'doctorate',
+        'trade'
+      )
+      .allow(''),
+    education_field: Joi.string().max(100).allow(''),
+  }),
 });
 
 async function validateProfileUpdate(updates) {
@@ -1248,7 +1348,7 @@ async function validateProfileUpdate(updates) {
   } catch (err) {
     return {
       valid: false,
-      errors: err.details.map(d => ({ field: d.path.join('.'), message: d.message }))
+      errors: err.details.map(d => ({ field: d.path.join('.'), message: d.message })),
     };
   }
 }
@@ -1259,6 +1359,7 @@ module.exports = { validateProfileUpdate };
 ---
 
 ### XSS Prevention
+
 - **Sanitize all text inputs** using DOMPurify on frontend and validator.escape() on backend
 - **No HTML rendering** in profile fields (plain text only)
 - **CSP headers** to prevent inline script execution
@@ -1455,6 +1556,7 @@ module.exports = { validateProfileUpdate };
 ### Unit Tests
 
 **Backend (`chat-server/__tests__/profile.test.js`):**
+
 ```javascript
 describe('Profile Management', () => {
   test('GET /api/profile returns user profile', async () => {
@@ -1470,7 +1572,7 @@ describe('Profile Management', () => {
 
   test('PUT /api/profile validates input', async () => {
     const invalidUpdate = {
-      personal: { birthdate: '2010-01-01' }  // Under 18
+      personal: { birthdate: '2010-01-01' }, // Under 18
     };
 
     const response = await request(app)
@@ -1488,7 +1590,7 @@ describe('Profile Management', () => {
       last_name: 'Johnson',
       email: 'alex@example.com',
       address: '123 Main St',
-      occupation: 'Engineer'
+      occupation: 'Engineer',
     };
 
     const percentage = calculateCompletionPercentage(profile);
@@ -1514,7 +1616,7 @@ describe('Privacy Settings', () => {
 
     const sharedData = await getSharedProfileData(userA.profile, userB.id);
 
-    expect(sharedData.work).toEqual({});  // No work info shared
+    expect(sharedData.work).toEqual({}); // No work info shared
   });
 
   test('Audit log captures privacy changes', async () => {
@@ -1524,15 +1626,18 @@ describe('Privacy Settings', () => {
       .send({ work_info_visible: true });
 
     const auditLog = await getAuditLog(userId);
-    expect(auditLog).toContainEqual(expect.objectContaining({
-      action: 'shared',
-      field_name: 'work_info'
-    }));
+    expect(auditLog).toContainEqual(
+      expect.objectContaining({
+        action: 'shared',
+        field_name: 'work_info',
+      })
+    );
   });
 });
 ```
 
 **Frontend (`chat-client-vite/src/__tests__/ProfileWizard.test.jsx`):**
+
 ```javascript
 import { render, screen, fireEvent } from '@testing-library/react';
 import ProfileWizard from '../components/profile/ProfileWizard';
@@ -1574,6 +1679,7 @@ describe('ProfileWizard', () => {
 ### Integration Tests
 
 **Scenario 1: New User Onboarding**
+
 ```javascript
 test('New user completes profile wizard', async () => {
   // 1. User signs up
@@ -1597,11 +1703,12 @@ test('New user completes profile wizard', async () => {
 ```
 
 **Scenario 2: Privacy Settings Enforcement**
+
 ```javascript
 test('Co-parent cannot see private work info', async () => {
   // 1. User A sets work_info to private
   await apiClient.put('/api/profile/privacy', {
-    work_info_visible: false
+    work_info_visible: false,
   });
 
   // 2. User B (co-parent) requests User A's profile
@@ -1613,11 +1720,12 @@ test('Co-parent cannot see private work info', async () => {
 ```
 
 **Scenario 3: AI Mediation with Profile Context**
+
 ```javascript
 test('AI mediator references work schedule in suggestion', async () => {
   // 1. User has work_schedule = "Monday-Friday 9-5"
   await apiClient.put('/api/profile', {
-    work: { work_schedule: 'Monday-Friday 9-5' }
+    work: { work_schedule: 'Monday-Friday 9-5' },
   });
 
   // 2. User sends message requiring response
@@ -1635,6 +1743,7 @@ test('AI mediator references work schedule in suggestion', async () => {
 ### Accessibility Tests
 
 **WCAG 2.1 AA Compliance:**
+
 ```javascript
 import { axe, toHaveNoViolations } from 'jest-axe';
 expect.extend(toHaveNoViolations);
@@ -1665,6 +1774,7 @@ test('Privacy indicators have ARIA labels', () => {
 ### Launch Criteria (MVP)
 
 **Must Have:**
+
 - [ ] Database migration completed (all new columns added)
 - [ ] API endpoints implemented and tested
 - [ ] ProfileWizard guides new users through onboarding
@@ -1676,6 +1786,7 @@ test('Privacy indicators have ARIA labels', () => {
 - [ ] Accessibility audit passed (WCAG 2.1 AA)
 
 **Nice to Have (Post-MVP):**
+
 - [ ] Profile completion nudges (email reminders)
 - [ ] Profile insights dashboard (monthly summary)
 - [ ] Bulk privacy settings (change all sections at once)
@@ -1686,6 +1797,7 @@ test('Privacy indicators have ARIA labels', () => {
 ### Key Performance Indicators (KPIs)
 
 **Adoption Metrics:**
+
 - **Profile Completion Rate:** % of users who complete ≥50% of profile within 30 days
   - **Target:** 70%
   - **Measurement:** Track `profile_completion_percentage` field over time
@@ -1698,6 +1810,7 @@ test('Privacy indicators have ARIA labels', () => {
   - Background: 55%+
 
 **Quality Metrics:**
+
 - **AI Mediation Improvement:** Reduction in conflict escalation for users with complete profiles
   - **Target:** 15% reduction in escalation score
   - **Measurement:** Compare escalation rates for users with >70% profile completion vs <30%
@@ -1707,6 +1820,7 @@ test('Privacy indicators have ARIA labels', () => {
   - **Measurement:** Manual review of 100 random interventions per week
 
 **Privacy Metrics:**
+
 - **Privacy Incidents:** Unauthorized access to private profile data
   - **Target:** 0 incidents
   - **Measurement:** Audit log monitoring + automated alerts
@@ -1716,6 +1830,7 @@ test('Privacy indicators have ARIA labels', () => {
   - **Measurement:** Track `user_privacy_settings.last_updated`
 
 **User Satisfaction:**
+
 - **"AI Understands My Situation" Rating:** Survey question on 1-5 scale
   - **Baseline:** 3.2 (current average)
   - **Target:** 3.8 (+0.6 improvement)
@@ -1726,8 +1841,10 @@ test('Privacy indicators have ARIA labels', () => {
 ## Open Questions & Decisions Needed
 
 ### 1. Multi-Language Support
+
 **Question:** Should health condition dropdowns be localized for Spanish/French users?
 **Options:**
+
 - A. Start with English-only, add localization later
 - B. Include Spanish translations from day 1 (50% of user base)
 - C. Use free-text fields instead of dropdowns for health conditions
@@ -1737,8 +1854,10 @@ test('Privacy indicators have ARIA labels', () => {
 ---
 
 ### 2. Profile Data Portability
+
 **Question:** Should users be able to export their profile data (GDPR/CCPA compliance)?
 **Options:**
+
 - A. Add "Download My Data" button (JSON export)
 - B. Email user data on request (manual process)
 - C. Defer until explicit legal requirement
@@ -1748,10 +1867,12 @@ test('Privacy indicators have ARIA labels', () => {
 ---
 
 ### 3. Co-Parent Profile Matching
+
 **Question:** Should the system suggest filling profile sections based on co-parent's completed sections?
 **Example:** If co-parent shared work schedule, prompt user to share theirs for mutual understanding
 
 **Options:**
+
 - A. Yes - "Your co-parent shared their work schedule. Would you like to share yours?"
 - B. No - Avoid creating pressure or comparison
 - C. Make it opt-in preference
@@ -1761,8 +1882,10 @@ test('Privacy indicators have ARIA labels', () => {
 ---
 
 ### 4. Profile Verification
+
 **Question:** Should sensitive fields (e.g., child support payments) be verified?
 **Options:**
+
 - A. Self-reported only (honor system)
 - B. Optional upload of court documents
 - C. Not applicable - AI context only, not legal record
@@ -1772,10 +1895,12 @@ test('Privacy indicators have ARIA labels', () => {
 ---
 
 ### 5. Historical Profile Changes
+
 **Question:** Should the system track profile changes over time?
 **Use Case:** User's work schedule changes from "9-5 weekdays" to "shift work weekends"
 
 **Options:**
+
 - A. Overwrite previous values (current approach)
 - B. Keep history table (`profile_changes` with timestamps)
 - C. Track changes but don't expose in UI
@@ -1787,11 +1912,13 @@ test('Privacy indicators have ARIA labels', () => {
 ## Risks & Mitigations
 
 ### Risk 1: Low Completion Rates (Health/Financial)
+
 **Risk Level:** High
 **Impact:** AI lacks critical context, mediation quality suffers
 **Likelihood:** 70% (sensitive data, users may skip)
 
 **Mitigation:**
+
 - Provide clear "Why we ask" explanations for every field
 - Show example scenarios where health/financial context improved mediation
 - Offer "hide entire section" option to reduce anxiety
@@ -1801,11 +1928,13 @@ test('Privacy indicators have ARIA labels', () => {
 ---
 
 ### Risk 2: Privacy Breach (Accidental Exposure)
+
 **Risk Level:** Critical
 **Impact:** Loss of user trust, potential legal liability
 **Likelihood:** 15% (coding error, API misconfiguration)
 
 **Mitigation:**
+
 - Comprehensive unit tests for privacy filtering
 - Penetration testing before launch
 - Automated privacy checks in CI/CD pipeline
@@ -1816,11 +1945,13 @@ test('Privacy indicators have ARIA labels', () => {
 ---
 
 ### Risk 3: Performance Degradation (Large Profile Context)
+
 **Risk Level:** Medium
 **Impact:** Slower AI responses, increased API costs
 **Likelihood:** 40% (profile context adds 300-500 tokens per request)
 
 **Mitigation:**
+
 - Limit profile context to 500 tokens maximum
 - Prioritize most relevant fields (work schedule > birthplace)
 - Cache profile context in memory (Redis) for active users
@@ -1830,11 +1961,13 @@ test('Privacy indicators have ARIA labels', () => {
 ---
 
 ### Risk 4: User Overwhelm (Too Many Fields)
+
 **Risk Level:** Medium
 **Impact:** Form abandonment, incomplete profiles
 **Likelihood:** 50% (60+ fields is extensive)
 
 **Mitigation:**
+
 - Progressive disclosure via wizard (5 steps, not single page)
 - "Skip for now" on every step
 - Show completion percentage as motivation
@@ -1885,7 +2018,7 @@ function calculateCompletionPercentage(profile) {
     // Background (15% total)
     education_level: 5,
     cultural_background: 5,
-    family_of_origin: 5
+    family_of_origin: 5,
   };
 
   let totalWeight = 0;
@@ -1979,6 +2112,7 @@ CRITICAL PRIVACY RULES:
 ### D. Sample User Flows
 
 **Flow 1: New User Onboarding**
+
 1. User signs up → ProfileWizard appears
 2. Step 1: Personal info (name, pronouns) → Auto-saves → Next
 3. Step 2: Work schedule → "Skip for now" → Next
@@ -1989,6 +2123,7 @@ CRITICAL PRIVACY RULES:
 8. Week later: Nudge notification "Add work schedule for better AI support"
 
 **Flow 2: Privacy Settings Adjustment**
+
 1. User completes profile (60% done)
 2. Co-parent requests shared room
 3. User wonders "What can they see about me?"
@@ -2001,6 +2136,7 @@ CRITICAL PRIVACY RULES:
 10. Co-parent now sees user's work flexibility in shared profile view
 
 **Flow 3: AI Mediation with Profile Context**
+
 1. User (Alex) has profile: work_schedule="Shift work, weekends", schedule_flexibility="low"
 2. Co-parent (Jordan) sends message: "Can you pick up kids Saturday 10am?"
 3. Alex replies: "You NEVER consider my schedule!"
@@ -2014,6 +2150,7 @@ CRITICAL PRIVACY RULES:
 
 **Specification Author:** Claude (Specification Agent)
 **Review Required From:**
+
 - Product Manager (co-parenting domain expert)
 - Engineering Lead (technical feasibility)
 - Privacy/Security Officer (HIPAA/GDPR compliance)
@@ -2021,11 +2158,13 @@ CRITICAL PRIVACY RULES:
 
 **Estimated Effort:** 7 weeks (1 engineer, 1 designer)
 **Dependencies:**
+
 - Feature 002 (Communication Profiles) - Integration point
 - Database migration tooling
 - OpenAI API quota (increased usage expected)
 
 **Next Steps:**
+
 1. Review this specification with stakeholders
 2. Approve/revise database schema
 3. Create detailed task breakdown in project management tool

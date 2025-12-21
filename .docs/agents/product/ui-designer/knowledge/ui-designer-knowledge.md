@@ -4,32 +4,32 @@ Accumulated knowledge and learnings for design decisions.
 
 ## Approved Design Patterns
 
-*Patterns approved by user for reuse:*
+_Patterns approved by user for reuse:_
 
 - None yet
 
 ## Rejected Patterns
 
-*Patterns explicitly declined:*
+_Patterns explicitly declined:_
 
 - None yet
 
 ## User Preferences
 
-*Documented aesthetic preferences:*
+_Documented aesthetic preferences:_
 
 - None recorded yet
 
 ## Brand Tone Documentation
 
-| Value | Visual Manifestation |
-|-------|---------------------|
-| Dignity | No shaming UI, respectful error states, no judgment in messaging |
-| Calm | Quiet colors, generous whitespace, subtle transitions |
-| Precision | Consistent alignment, clear hierarchy, predictable patterns |
-| Fairness | Symmetric layouts, equal visual weight for co-parents |
-| Neutrality | Neutral color tones, no favoritism in UI emphasis |
-| Respect | Clear controls, easy opt-outs, transparent states |
+| Value      | Visual Manifestation                                             |
+| ---------- | ---------------------------------------------------------------- |
+| Dignity    | No shaming UI, respectful error states, no judgment in messaging |
+| Calm       | Quiet colors, generous whitespace, subtle transitions            |
+| Precision  | Consistent alignment, clear hierarchy, predictable patterns      |
+| Fairness   | Symmetric layouts, equal visual weight for co-parents            |
+| Neutrality | Neutral color tones, no favoritism in UI emphasis                |
+| Respect    | Clear controls, easy opt-outs, transparent states                |
 
 ## Design System Reference
 

@@ -3,7 +3,7 @@
   "qualityGates": {
     "specification": {
       "enabled": true,
-      "threshold": 0.90
+      "threshold": 0.9
     },
     "planning": {
       "enabled": true,
@@ -11,7 +11,7 @@
     },
     "implementation": {
       "enabled": true,
-      "threshold": 0.80
+      "threshold": 0.8
     },
     "testing": {
       "enabled": true,
@@ -47,11 +47,7 @@
       "conflictReduction": true,
       "privacyFirst": true,
       "constitutionPath": "chat-server/src/liaizen/policies/constitution.md",
-      "requiredValidations": [
-        "child-safety",
-        "privacy-compliance",
-        "conflict-reduction"
-      ]
+      "requiredValidations": ["child-safety", "privacy-compliance", "conflict-reduction"]
     }
   },
   "logging": {

@@ -21,6 +21,7 @@ The `/specify` command invokes the **specification-agent** to:
 ## Prerequisites
 
 Before running `/specify`:
+
 - ✅ MCP servers are active (restart Claude Desktop if needed)
 - ✅ You're in the project root: `/Users/athenasees/Desktop/chat`
 - ✅ You have a clear feature idea or requirement
@@ -28,22 +29,26 @@ Before running `/specify`:
 ## Usage
 
 ### Basic Usage (interactive):
+
 ```
 /specify
 ```
 
 This will:
+
 1. Prompt you for feature name and description
 2. Ask for user stories and requirements
 3. Query MCP servers for context
 4. Generate spec.md
 
 ### With Feature Name:
+
 ```
 /specify expense-tracking
 ```
 
 ### With Initial Description:
+
 ```
 /specify expense-tracking --description "Allow co-parents to track and split child-related expenses"
 ```
@@ -53,6 +58,7 @@ This will:
 The specification-agent will **automatically**:
 
 ### Query MCP for Context
+
 ```
 1. "What's the LiaiZen architecture?"
    → Understand technical constraints
@@ -71,6 +77,7 @@ The specification-agent will **automatically**:
 ```
 
 ### Create Specification Sections
+
 - **Overview**: Feature name, objective, success metrics
 - **User Stories**: As a [user], I want to [action], so that [benefit]
 - **Functional Requirements**: Core functionality, business rules
@@ -93,10 +100,12 @@ specs/[feature-id]-[feature-name]/
 # Feature Specification: Expense Tracking
 
 ## Overview
+
 **Feature Name**: Expense Tracking
 **Business Objective**: Allow co-parents to track, categorize, and fairly split child-related expenses
 
 **Technical Context** (from Codebase Context MCP):
+
 - Architecture: React 18 + Vite frontend, Node.js + Express backend
 - Database: SQLite (expenses table will be added)
 - Deployment: Vercel (frontend), Railway (backend)
@@ -106,6 +115,7 @@ specs/[feature-id]-[feature-name]/
 **As a co-parent**, I want to **log child-related expenses**, so that **I can track spending and request reimbursement**.
 
 **Acceptance Criteria**:
+
 - Can add expense with amount, category, date, description
 - Can attach receipt photo
 - Can mark as reimbursable or informational
@@ -114,16 +124,19 @@ specs/[feature-id]-[feature-name]/
 ## Technical Constraints
 
 **Architecture** (Codebase Context MCP):
+
 - Must integrate with existing authentication (JWT + Google OAuth)
 - Must use Socket.io for real-time updates
 - Must follow React functional component + hooks pattern
 
 **Design System** (Design Tokens MCP):
+
 - Colors: Primary #275559, Success #6dd4b0
 - Forms: min-h-[44px] inputs, border-2
 - Buttons: rounded-lg, min-h-[44px]
 
 **API Integration** (Codebase Context MCP):
+
 - Create new endpoints: GET/POST /api/expenses
 - Follow existing API pattern (RESTful, JWT auth)
 ```
@@ -141,6 +154,7 @@ This will invoke **planning-agent** to create an implementation plan.
 ## MCP Server Benefits
 
 The specification-agent **automatically uses MCP servers** to:
+
 - ✅ **Accurate technical constraints** from Codebase Context
 - ✅ **Design system compliance** from Design Tokens
 - ✅ **Existing API patterns** referenced
@@ -150,12 +164,15 @@ The specification-agent **automatically uses MCP servers** to:
 ## Troubleshooting
 
 ### "Feature already exists"
+
 **Solution**: Use a different feature name or update existing spec
 
 ### "MCP servers not responding"
+
 **Solution**: Restart Claude Desktop (Cmd+Q, reopen)
 
 ### "Unclear requirements"
+
 **Solution**: Agent will ask clarifying questions - provide more detail
 
 ## Related Commands

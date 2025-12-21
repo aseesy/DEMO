@@ -1,12 +1,12 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-import { injectGoogleTag } from './utils/injectGoogleTag.js'
-import { initAnalytics } from './utils/analytics.js'
-import { setupGlobalErrorHandler } from './utils/errorHandler.jsx'
-import { trackPagePerformance } from './utils/analyticsEnhancements.js'
-import { runMigrations } from './utils/storageMigration.js'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App.jsx';
+import { injectGoogleTag } from './utils/injectGoogleTag.js';
+import { initAnalytics } from './utils/analytics.js';
+import { setupGlobalErrorHandler } from './utils/errorHandler.jsx';
+import { trackPagePerformance } from './utils/analyticsEnhancements.js';
+import { runMigrations } from './utils/storageMigration.js';
 
 // Initialize error monitoring FIRST - before any other code runs
 // This ensures Safari service worker errors are caught early
@@ -35,7 +35,7 @@ setTimeout(() => {
 }, 1000);
 
 // Detect Safari early to prevent service worker issues
-const isSafari = 
+const isSafari =
   /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
   /^((?!chrome|android).)*safari/i.test(navigator.vendor) ||
   (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome'));
@@ -44,23 +44,29 @@ const isSafari =
 // This fixes Safari issues with service workers intercepting navigation
 // In Safari, completely skip service worker operations to prevent errors
 if ('serviceWorker' in navigator && !isSafari) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const registration of registrations) {
-      registration.unregister().then((success) => {
-        if (success) {
-          console.log('Service worker unregistered');
-        }
-      }).catch((err) => {
-        console.error('Error unregistering service worker:', err);
-      });
-    }
-  }).catch((err) => {
-    console.error('Error getting service worker registrations:', err);
-  });
+  navigator.serviceWorker
+    .getRegistrations()
+    .then(registrations => {
+      for (const registration of registrations) {
+        registration
+          .unregister()
+          .then(success => {
+            if (success) {
+              console.log('Service worker unregistered');
+            }
+          })
+          .catch(err => {
+            console.error('Error unregistering service worker:', err);
+          });
+      }
+    })
+    .catch(err => {
+      console.error('Error getting service worker registrations:', err);
+    });
 
   // Also try to unregister by scope (with null check for Safari)
   navigator.serviceWorker.ready
-    .then((registration) => {
+    .then(registration => {
       if (registration) {
         return registration.unregister();
       }
@@ -75,5 +81,5 @@ if ('serviceWorker' in navigator && !isSafari) {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
-  </StrictMode>,
-)
+  </StrictMode>
+);

@@ -1,6 +1,6 @@
 /**
  * Unit Tests: MessageId Value Object
- * 
+ *
  * @module domain/valueObjects/__tests__/MessageId.test
  */
 
@@ -176,18 +176,17 @@ describe('MessageId', () => {
     it('should not allow value modification', () => {
       const messageId = new MessageId('msg-xyz789');
       const originalValue = messageId.value;
-      
+
       // Try to modify (will fail silently in non-strict mode, throw in strict mode)
       try {
         messageId.value = 'hacked-message-id';
       } catch (e) {
         // In strict mode, this will throw - that's fine
       }
-      
+
       // Verify value didn't change
       expect(messageId.value).toBe(originalValue);
       expect(messageId.value).toBe('msg-xyz789');
     });
   });
 });
-

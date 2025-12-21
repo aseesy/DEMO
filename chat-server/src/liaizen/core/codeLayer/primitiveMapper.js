@@ -25,19 +25,51 @@ const { DOMAINS, TEMPORAL, EPISTEMIC } = require('./types');
  * Past tense indicators
  */
 const PAST_INDICATORS = new Set([
-  'was', 'were', 'had', 'did', 'said', 'told', 'went', 'came',
-  'forgot', 'missed', 'changed', 'cancelled', 'happened',
-  'yesterday', 'last', 'ago', 'before', 'used to', 'back when',
-  'previously', 'earlier', 'already', 'once'
+  'was',
+  'were',
+  'had',
+  'did',
+  'said',
+  'told',
+  'went',
+  'came',
+  'forgot',
+  'missed',
+  'changed',
+  'cancelled',
+  'happened',
+  'yesterday',
+  'last',
+  'ago',
+  'before',
+  'used to',
+  'back when',
+  'previously',
+  'earlier',
+  'already',
+  'once',
 ]);
 
 /**
  * Future tense indicators
  */
 const FUTURE_INDICATORS = new Set([
-  'will', 'would', 'shall', 'going to', 'gonna', 'plan to',
-  'tomorrow', 'next', 'soon', 'later', 'upcoming', 'eventually',
-  'about to', 'intend to', 'hope to', 'expect to'
+  'will',
+  'would',
+  'shall',
+  'going to',
+  'gonna',
+  'plan to',
+  'tomorrow',
+  'next',
+  'soon',
+  'later',
+  'upcoming',
+  'eventually',
+  'about to',
+  'intend to',
+  'hope to',
+  'expect to',
 ]);
 
 /**
@@ -52,7 +84,7 @@ const FUTURE_PATTERNS = [
   /\bwill\s+\w+/gi,
   /\bgoing\s+to\s+\w+/gi,
   /\bplan\s+to\s+\w+/gi,
-  /\babout\s+to\s+\w+/gi
+  /\babout\s+to\s+\w+/gi,
 ];
 
 // ============================================================================
@@ -67,7 +99,7 @@ const FACT_INDICATORS = [
   /\bthe (fact|truth|reality) is\b/gi,
   /\b(actually|clearly|obviously|definitely)\b/gi,
   /\b(happened|occurred|took place)\b/gi,
-  /\bit's (true|false|a fact)\b/gi
+  /\bit's (true|false|a fact)\b/gi,
 ];
 
 /**
@@ -80,7 +112,7 @@ const INTERPRETATION_INDICATORS = [
   /\bin my (opinion|view|experience)\b/gi,
   /\bi'm (worried|concerned|upset|frustrated)\b/gi,
   /\byou (seem|appear|look|sound)\b/gi,
-  /\b(might|could|should|would) be\b/gi
+  /\b(might|could|should|would) be\b/gi,
 ];
 
 // ============================================================================
@@ -93,71 +125,171 @@ const INTERPRETATION_INDICATORS = [
 const DOMAIN_PATTERNS = {
   schedule: {
     keywords: new Set([
-      'pickup', 'pick-up', 'drop-off', 'dropoff', 'custody', 'visitation',
-      'weekend', 'weekday', 'holiday', 'vacation', 'overnight', 'time',
-      'schedule', 'calendar', 'day', 'days', 'week', 'weeks',
-      'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-      'morning', 'afternoon', 'evening', 'night', 'tonight', 'tomorrow', 'today'
+      'pickup',
+      'pick-up',
+      'drop-off',
+      'dropoff',
+      'custody',
+      'visitation',
+      'weekend',
+      'weekday',
+      'holiday',
+      'vacation',
+      'overnight',
+      'time',
+      'schedule',
+      'calendar',
+      'day',
+      'days',
+      'week',
+      'weeks',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+      'morning',
+      'afternoon',
+      'evening',
+      'night',
+      'tonight',
+      'tomorrow',
+      'today',
     ]),
     patterns: [
       /\b(pick|drop)\s*(up|off|her|him|them)\b/gi,
       /\b(my|your|our)\s*(time|day|weekend|week)\b/gi,
-      /\bat\s+\d{1,2}(:\d{2})?\s*(am|pm|o'clock)?\b/gi
-    ]
+      /\bat\s+\d{1,2}(:\d{2})?\s*(am|pm|o'clock)?\b/gi,
+    ],
   },
   money: {
     keywords: new Set([
-      'payment', 'pay', 'paid', 'money', 'expense', 'expenses', 'cost', 'costs',
-      'support', 'child support', 'alimony', 'financial', 'afford',
-      'bill', 'bills', 'fee', 'fees', 'tuition', 'insurance',
-      'medical', 'dental', 'reimburse', 'reimbursement', 'split', 'owe'
+      'payment',
+      'pay',
+      'paid',
+      'money',
+      'expense',
+      'expenses',
+      'cost',
+      'costs',
+      'support',
+      'child support',
+      'alimony',
+      'financial',
+      'afford',
+      'bill',
+      'bills',
+      'fee',
+      'fees',
+      'tuition',
+      'insurance',
+      'medical',
+      'dental',
+      'reimburse',
+      'reimbursement',
+      'split',
+      'owe',
     ]),
     patterns: [
       /\$\d+/gi,
       /\b\d+\s*(dollars|bucks)\b/gi,
       /\bchild\s*support\b/gi,
-      /\b(pay|paid|paying)\s+(for|back|me|you)\b/gi
-    ]
+      /\b(pay|paid|paying)\s+(for|back|me|you)\b/gi,
+    ],
   },
   parenting: {
     keywords: new Set([
-      'homework', 'school', 'discipline', 'bedtime', 'routine', 'rules',
-      'behavior', 'behaviour', 'screen time', 'chores', 'responsibilities',
-      'parenting', 'teaching', 'learning', 'boundaries', 'consequences',
-      'teacher', 'grade', 'grades', 'project', 'assignment', 'education'
+      'homework',
+      'school',
+      'discipline',
+      'bedtime',
+      'routine',
+      'rules',
+      'behavior',
+      'behaviour',
+      'screen time',
+      'chores',
+      'responsibilities',
+      'parenting',
+      'teaching',
+      'learning',
+      'boundaries',
+      'consequences',
+      'teacher',
+      'grade',
+      'grades',
+      'project',
+      'assignment',
+      'education',
     ]),
     patterns: [
       /\b(her|his|their)\s*(homework|grades|behavior|routine|bedtime)\b/gi,
       /\b(at|in|from)\s*school\b/gi,
-      /\bparent-teacher\b/gi
-    ]
+      /\bparent-teacher\b/gi,
+    ],
   },
   character: {
     keywords: new Set([
-      'behavior', 'behaviour', 'attitude', 'personality', 'character',
-      'trait', 'habit', 'habits', 'type', 'kind', 'person', 'selfish',
-      'irresponsible', 'unreliable', 'lazy', 'controlling', 'manipulative'
+      'behavior',
+      'behaviour',
+      'attitude',
+      'personality',
+      'character',
+      'trait',
+      'habit',
+      'habits',
+      'type',
+      'kind',
+      'person',
+      'selfish',
+      'irresponsible',
+      'unreliable',
+      'lazy',
+      'controlling',
+      'manipulative',
     ]),
     patterns: [
       /\byou('re| are)\s+(always|never|so|such|the)\b/gi,
       /\byou('re| are)\s+a\s+\w+\s+(person|parent|father|mother)\b/gi,
       /\b(kind|type|sort)\s+of\s+(person|parent)\b/gi,
-      /\byour\s+(attitude|behavior|personality|way)\b/gi
-    ]
+      /\byour\s+(attitude|behavior|personality|way)\b/gi,
+    ],
   },
   logistics: {
     keywords: new Set([
-      'address', 'location', 'place', 'house', 'home', 'apartment',
-      'car', 'drive', 'driving', 'travel', 'distance', 'miles',
-      'passport', 'documents', 'paperwork', 'forms', 'sign', 'signed',
-      'permission', 'consent', 'arrange', 'arrangements', 'plan', 'plans'
+      'address',
+      'location',
+      'place',
+      'house',
+      'home',
+      'apartment',
+      'car',
+      'drive',
+      'driving',
+      'travel',
+      'distance',
+      'miles',
+      'passport',
+      'documents',
+      'paperwork',
+      'forms',
+      'sign',
+      'signed',
+      'permission',
+      'consent',
+      'arrange',
+      'arrangements',
+      'plan',
+      'plans',
     ]),
     patterns: [
       /\b(sign|fill out|complete)\s+(the|this|that)\s+(form|document|paper)\b/gi,
       /\bpermission\s+(slip|form)\b/gi,
-      /\b(pick|drop)\s*(up|off)\s+at\b/gi
-    ]
-  }
+      /\b(pick|drop)\s*(up|off)\s+at\b/gi,
+    ],
+  },
 };
 
 // ============================================================================
@@ -218,7 +350,7 @@ function detectThirdParty(tokens, text, childNames = []) {
     /\bour child(ren)?\b/gi,
     /\bmy (daughter|son)\b/gi,
     /\byour (daughter|son)\b/gi,
-    /\bour (daughter|son)\b/gi
+    /\bour (daughter|son)\b/gi,
   ];
 
   for (const pattern of childPatterns) {
@@ -423,9 +555,9 @@ function map(tokens, markers, context = {}, text = '') {
         thirdParty: [],
         temporal: TEMPORAL.PRESENT,
         epistemic: EPISTEMIC.UNKNOWN,
-        domain: DOMAINS.GENERAL
+        domain: DOMAINS.GENERAL,
       },
-      latencyMs: Date.now() - startTime
+      latencyMs: Date.now() - startTime,
     };
   }
 
@@ -438,12 +570,12 @@ function map(tokens, markers, context = {}, text = '') {
     thirdParty: detectThirdParty(tokens, text, childNames),
     temporal: detectTemporal(tokens, text),
     epistemic: detectEpistemic(text, markers),
-    domain: detectDomain(tokens, text)
+    domain: detectDomain(tokens, text),
   };
 
   return {
     conceptual,
-    latencyMs: Date.now() - startTime
+    latencyMs: Date.now() - startTime,
   };
 }
 
@@ -456,9 +588,7 @@ function hasChildInvolvement(conceptual) {
   if (!conceptual || !conceptual.third_party) return false;
 
   const childTerms = ['she', 'he', 'they', 'kids', 'children', 'child', 'daughter', 'son'];
-  return conceptual.third_party.some(ref =>
-    childTerms.some(term => ref.includes(term))
-  );
+  return conceptual.third_party.some(ref => childTerms.some(term => ref.includes(term)));
 }
 
 /**
@@ -495,5 +625,5 @@ module.exports = {
   FUTURE_INDICATORS,
   FACT_INDICATORS,
   INTERPRETATION_INDICATORS,
-  DOMAIN_PATTERNS
+  DOMAIN_PATTERNS,
 };

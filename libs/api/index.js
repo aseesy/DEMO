@@ -1,6 +1,6 @@
 /**
  * API Library
- * 
+ *
  * Shared API client code and request handlers.
  */
 
@@ -10,11 +10,7 @@
  * @returns {Object} API client methods
  */
 export function createApiClient(config = {}) {
-  const {
-    baseURL = '',
-    timeout = 30000,
-    headers = {},
-  } = config;
+  const { baseURL = '', timeout = 30000, headers = {} } = config;
 
   /**
    * Make an API request
@@ -51,16 +47,18 @@ export function createApiClient(config = {}) {
 
   return {
     get: (endpoint, options) => request(endpoint, { ...options, method: 'GET' }),
-    post: (endpoint, data, options) => request(endpoint, {
-      ...options,
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-    put: (endpoint, data, options) => request(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
+    post: (endpoint, data, options) =>
+      request(endpoint, {
+        ...options,
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    put: (endpoint, data, options) =>
+      request(endpoint, {
+        ...options,
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
     delete: (endpoint, options) => request(endpoint, { ...options, method: 'DELETE' }),
   };
 }
@@ -87,4 +85,3 @@ export async function handleApiResponse(responsePromise) {
     };
   }
 }
-

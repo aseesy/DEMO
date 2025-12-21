@@ -13,11 +13,13 @@
 **Status**: ✅ No significant duplication found
 
 **Configuration**:
+
 - Minimum lines: 5
 - Minimum tokens: 30
 - Format: Console + JSON
 
 **Results**:
+
 - No duplicate code blocks detected above threshold
 - Codebase appears to have good code reuse practices
 
@@ -30,11 +32,13 @@
 **Status**: ✅ No circular dependencies found
 
 **Results**:
+
 ```
 ✔ No circular dependency found!
 ```
 
 **Analysis**:
+
 - All 61 files processed successfully
 - 4 warnings (likely related to optional dependencies or dynamic requires)
 - Clean dependency graph structure
@@ -75,10 +79,12 @@
 ## 🎯 Recommendations
 
 ### Immediate Actions
+
 1. ✅ **No action needed** for duplication or circular dependencies
 2. ✅ **Continue current practices** - code organization is good
 
 ### Future Scans
+
 1. **Code Complexity** - Run complexity analysis (next scan)
 2. **Magic Numbers** - Continue extracting (already in progress)
 3. **Long Files** - Refactor `mediator.js` (plan ready)
@@ -104,4 +110,3 @@
 
 **Scan Status**: ✅ Complete  
 **Overall Health**: ✅ Good - No critical issues found
-

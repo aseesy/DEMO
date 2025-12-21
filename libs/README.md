@@ -13,6 +13,7 @@ This directory contains reusable libraries and shared code that can be used acro
 ## Usage
 
 These libraries are designed to be:
+
 - **Reusable** - Can be imported and used across different parts of the application
 - **Tested** - Each library should have corresponding tests
 - **Documented** - Clear documentation and examples for each module
@@ -27,4 +28,3 @@ When adding a new library:
 3. Write tests for the library
 4. Update this README with a brief description
 5. Export from the appropriate index file
-

@@ -22,10 +22,11 @@
 ## Implementation Details
 
 ### 1. Notification Flow
+
 ```
 New Message Received (Socket.io)
   ↓
-useChat.on('new_message') 
+useChat.on('new_message')
   ↓
 handleNewMessage callback (ChatRoom.jsx)
   ↓
@@ -41,6 +42,7 @@ Native browser notification appears
 ```
 
 ### 2. Unread Count Flow
+
 ```
 New Message Received
   ↓
@@ -60,6 +62,7 @@ Red dot disappears
 ```
 
 ### 3. Dashboard Updates Flow
+
 ```
 GET /api/dashboard/updates
   ↓
@@ -75,56 +78,71 @@ Return updates array (messages excluded)
 ## Test Cases
 
 ### Test 1: Native Notification Appears
+
 **Steps:**
+
 1. User A grants notification permission
 2. User B sends a message to User A
 3. User A should see native browser notification immediately
 
 **Expected Result:**
+
 - ✅ Notification appears with "New message from [username]"
 - ✅ Notification body shows message text (truncated if > 100 chars)
 - ✅ Notification sound plays
 - ✅ Notification auto-closes after 5 seconds
 
 ### Test 2: Red Dot on Chat Icon
+
 **Steps:**
+
 1. User A is on dashboard view
 2. User B sends a message to User A
 3. Check chat icon in navigation
 
 **Expected Result:**
+
 - ✅ Red dot appears on chat icon
 - ✅ Unread count increments
 - ✅ When User A navigates to chat, red dot disappears
 
 ### Test 3: Messages Not in Dashboard Updates
+
 **Steps:**
+
 1. User A sends message to User B
 2. User B views dashboard
 3. Check UpdatesPanel
 
 **Expected Result:**
+
 - ✅ Message does NOT appear in dashboard updates
 - ✅ Only expenses, agreements, invitations appear
 - ✅ Dashboard updates endpoint returns no message-type updates
 
 ### Test 4: Notification Permission Handling
+
 **Steps:**
+
 1. User denies notification permission
 2. User B sends message to User A
 3. Check behavior
 
 **Expected Result:**
+
 - ✅ No notification appears (permission denied)
 - ✅ Red dot still appears (unread count works)
 - ✅ No errors in console
 
 ### Test 5: Own Messages Don't Trigger Notifications
+
 **Steps:**
+
 1. User A sends message to themselves (if possible) or in same room
 2. Check notifications
 
 **Expected Result:**
+
 - ✅ No notification appears for own messages
 - ✅ Red dot does not appear for own messages
 - ✅ handleNewMessage returns early if message.username === username
@@ -132,6 +150,7 @@ Return updates array (messages excluded)
 ## Code Verification ✅
 
 ### Files Modified:
+
 1. ✅ `chat-client-vite/src/hooks/useNotifications.js`
    - Removed `document.hidden` check
    - Added support for both `message.text` and `message.content`
@@ -159,4 +178,3 @@ Return updates array (messages excluded)
 ## Status: ✅ ALL TESTS PASSING
 
 All requirements implemented and verified.
-

@@ -7,7 +7,16 @@
 
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// JWT_SECRET must be set in environment - no weak fallback allowed
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable must be set');
+}
+
+if (JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be at least 32 characters long');
+}
 
 /**
  * Express middleware to verify JWT token from cookie or Authorization header.
@@ -20,7 +29,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 function authenticate(req, res, next) {
   try {
     // Check for token in cookie or Authorization header
-    const token = req.cookies.auth_token ||
+    const token =
+      req.cookies.auth_token ||
       (req.headers.authorization && req.headers.authorization.replace('Bearer ', ''));
 
     if (!token) {
@@ -62,7 +72,8 @@ function authenticate(req, res, next) {
 function optionalAuth(req, res, next) {
   try {
     // Check for token in cookie or Authorization header
-    const token = req.cookies.auth_token ||
+    const token =
+      req.cookies.auth_token ||
       (req.headers.authorization && req.headers.authorization.replace('Bearer ', ''));
 
     if (token) {
@@ -100,7 +111,7 @@ function generateToken(user, expiresIn = '30d') {
       id: user.id,
       userId: user.id,
       username: user.username,
-      email: user.email
+      email: user.email,
     },
     JWT_SECRET,
     { expiresIn }
@@ -118,7 +129,7 @@ function setAuthCookie(res, token, maxAgeDays = 30) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: maxAgeDays * 24 * 60 * 60 * 1000
+    maxAge: maxAgeDays * 24 * 60 * 60 * 1000,
   });
 }
 
@@ -130,7 +141,7 @@ function clearAuthCookie(res) {
   res.clearCookie('auth_token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    sameSite: 'lax',
   });
 }
 
@@ -141,5 +152,5 @@ module.exports = {
   generateToken,
   setAuthCookie,
   clearAuthCookie,
-  JWT_SECRET
+  // Note: JWT_SECRET intentionally not exported to prevent leaking
 };

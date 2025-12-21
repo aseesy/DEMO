@@ -22,6 +22,7 @@ LiaiZen is currently over-mediating neutral messages while the constitution and 
 The AI Mediation Constitution (`ai-mediation-constitution.md`) is well-defined:
 
 **INTERVENE (5-15% of messages):**
+
 - Direct blame/attacks: "It's YOUR fault", "YOU always..."
 - Name-calling or insults
 - Threats or ultimatums
@@ -30,6 +31,7 @@ The AI Mediation Constitution (`ai-mediation-constitution.md`) is well-defined:
 - Commands disguised as requests
 
 **STAY SILENT (80-90% of messages):**
+
 - Expressing genuine concerns: "I'm worried about..."
 - Asking questions: "Can we discuss..."
 - Sharing information: "The teacher mentioned..."
@@ -39,21 +41,23 @@ The AI Mediation Constitution (`ai-mediation-constitution.md`) is well-defined:
 
 ### What LiaiZen Is ACTUALLY Mediating (Observed Issues)
 
-| Message | Expected | Actual | Issue |
-|---------|----------|--------|-------|
-| "you're my friend" | STAY_SILENT | INTERVENE | False positive - positive sentiment |
-| "I love how you talk to me" | STAY_SILENT | INTERVENE | False positive - compliment |
-| "My friend hates pizza" | STAY_SILENT | INTERVENE | False positive - third party statement |
-| "you suck" | INTERVENE | INTERVENE | Correct |
+| Message                     | Expected    | Actual    | Issue                                  |
+| --------------------------- | ----------- | --------- | -------------------------------------- |
+| "you're my friend"          | STAY_SILENT | INTERVENE | False positive - positive sentiment    |
+| "I love how you talk to me" | STAY_SILENT | INTERVENE | False positive - compliment            |
+| "My friend hates pizza"     | STAY_SILENT | INTERVENE | False positive - third party statement |
+| "you suck"                  | INTERVENE   | INTERVENE | Correct                                |
 
 ### Root Cause Analysis
 
 The problem exists at **THREE layers**:
 
 #### Layer 1: Pre-Filter (Regex-based)
+
 **File**: `chat-server/src/liaizen/core/mediator.js` (lines 216-263)
 
 **Current Pre-Filters:**
+
 1. ✅ Greetings: "hi", "hello", "hey"
 2. ✅ Polite: "thanks", "ok", "yes", "no"
 3. ✅ (NEW) Third-party statements: Talks about friend/teacher but not "you"
@@ -62,9 +66,11 @@ The problem exists at **THREE layers**:
 **Gap**: Pre-filters are growing but reactive. We add patterns AFTER seeing failures.
 
 #### Layer 2: AI Prompt (System Prompt)
+
 **File**: `chat-server/src/liaizen/core/mediator.js` (lines 465-707)
 
 The prompt is comprehensive and well-designed:
+
 - Clear STAY_SILENT vs INTERVENE criteria
 - Expert coach identity
 - Specific examples
@@ -73,7 +79,9 @@ The prompt is comprehensive and well-designed:
 **Gap**: The prompt says 80-90% should STAY_SILENT, but the AI model ignores this.
 
 #### Layer 3: AI Model Behavior (GPT-3.5-turbo)
+
 The AI model (GPT-3.5-turbo) is making decisions that contradict the prompt:
+
 - Flagging neutral statements as "vague complaints"
 - Over-interpreting harmless messages
 - Not respecting the 80-90% STAY_SILENT guideline
@@ -87,11 +95,13 @@ The AI model (GPT-3.5-turbo) is making decisions that contradict the prompt:
 ### Answer: Yes AND No
 
 **YES - LiaiZen's DESIGN understands:**
+
 - The constitution is excellent and thorough
 - The prompt is well-constructed with clear criteria
 - The pre-filters catch known good patterns
 
 **NO - LiaiZen's EXECUTION doesn't follow the design:**
+
 - The AI model over-intervenes despite clear instructions
 - The model interprets neutral statements as problematic
 - The 80-90% STAY_SILENT guideline is not respected
@@ -135,9 +145,10 @@ Add a "should I intervene?" check BEFORE full analysis:
 // First call: Quick binary decision
 const quickCheck = await openai.chat({
   model: 'gpt-3.5-turbo',
-  messages: [{
-    role: 'system',
-    content: `You are a message classifier. Does this message require mediation in a co-parenting conversation?
+  messages: [
+    {
+      role: 'system',
+      content: `You are a message classifier. Does this message require mediation in a co-parenting conversation?
 
 ONLY answer "INTERVENE" if the message contains:
 - Direct insults or name-calling toward the co-parent
@@ -157,8 +168,9 @@ Answer "PASS" for:
 
 Message: "${message.text}"
 
-Answer only: INTERVENE or PASS`
-  }]
+Answer only: INTERVENE or PASS`,
+    },
+  ],
 });
 
 if (quickCheck === 'PASS') return null;
@@ -197,6 +209,7 @@ DEFAULT TO STAY_SILENT. When in doubt, let it through.
 ### Solution 4: Model Upgrade
 
 Consider using GPT-4 or GPT-4-turbo for mediation decisions:
+
 - Better instruction following
 - More nuanced understanding
 - Less likely to over-intervene
@@ -209,21 +222,26 @@ Consider using GPT-4 or GPT-4-turbo for mediation decisions:
 ## Recommended Implementation
 
 ### Phase 1: Immediate Fixes (Already Done in Feature 006)
+
 1. ✅ Added positive sentiment pre-filter
 2. ✅ Added third-party statement pre-filter
 3. ✅ Refined accusatory pattern detection
 
 ### Phase 2: Enhanced Pre-Filters
+
 Add comprehensive "safe pattern" detection:
+
 - Questions
 - Logistics
 - Information sharing
 - Child-focused neutral topics
 
 ### Phase 3: Strengthen AI Prompt
+
 Add explicit "when NOT to intervene" section with concrete examples.
 
 ### Phase 4: Monitor and Tune
+
 - Log all intervention decisions
 - Track false positive rate
 - Continuously add patterns to pre-filter
@@ -232,18 +250,19 @@ Add explicit "when NOT to intervene" section with concrete examples.
 
 ## Success Metrics
 
-| Metric | Current (Estimated) | Target |
-|--------|---------------------|--------|
-| False positive rate | ~30% | < 5% |
-| Messages reaching AI | ~95% | < 20% |
-| STAY_SILENT decisions | ~50% | > 85% |
-| User frustration reports | High | Minimal |
+| Metric                   | Current (Estimated) | Target  |
+| ------------------------ | ------------------- | ------- |
+| False positive rate      | ~30%                | < 5%    |
+| Messages reaching AI     | ~95%                | < 20%   |
+| STAY_SILENT decisions    | ~50%                | > 85%   |
+| User frustration reports | High                | Minimal |
 
 ---
 
 ## Technical Architecture
 
 ### Current Flow
+
 ```
 Message → Pre-Filter (5%) → AI Analysis (95%) → Decision
                 ↓                    ↓
@@ -251,6 +270,7 @@ Message → Pre-Filter (5%) → AI Analysis (95%) → Decision
 ```
 
 ### Proposed Flow
+
 ```
 Message → Pre-Filter (80%+) → AI Analysis (< 20%) → Decision
                 ↓                      ↓
@@ -272,11 +292,11 @@ Only truly problematic messages should reach the AI. The pre-filter should catch
 
 ## Files Involved
 
-| File | Purpose |
-|------|---------|
-| `chat-server/src/liaizen/core/mediator.js` | Main mediation logic, pre-filters |
-| `chat-server/ai-mediation-constitution.md` | Principles and rules |
-| `chat-server/src/liaizen/core/language-analyzer/` | Pattern detection |
+| File                                              | Purpose                           |
+| ------------------------------------------------- | --------------------------------- |
+| `chat-server/src/liaizen/core/mediator.js`        | Main mediation logic, pre-filters |
+| `chat-server/ai-mediation-constitution.md`        | Principles and rules              |
+| `chat-server/src/liaizen/core/language-analyzer/` | Pattern detection                 |
 
 ---
 

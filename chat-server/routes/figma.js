@@ -17,7 +17,7 @@ let FigmaService;
 let ComponentScanner;
 let FigmaGenerator;
 
-router.setHelpers = function(helpers) {
+router.setHelpers = function (helpers) {
   figmaService = helpers.figmaService;
   FigmaService = helpers.FigmaService;
   ComponentScanner = helpers.ComponentScanner;
@@ -37,7 +37,7 @@ router.get('/status', (req, res) => {
     available: !!figmaService,
     message: figmaService
       ? 'Figma API service is available'
-      : 'Figma API service not configured. Set FIGMA_ACCESS_TOKEN environment variable.'
+      : 'Figma API service not configured. Set FIGMA_ACCESS_TOKEN environment variable.',
   });
 });
 
@@ -117,7 +117,7 @@ router.get('/images/:fileKey', async (req, res) => {
     const imageData = await figmaService.getImages(fileKey, nodeIds, {
       format,
       scale: parseFloat(scale),
-      use_absolute_bounds: use_absolute_bounds === 'true'
+      use_absolute_bounds: use_absolute_bounds === 'true',
     });
     res.json(imageData);
   } catch (error) {
@@ -188,7 +188,7 @@ router.post('/extract', (req, res) => {
     res.json({
       fileKey,
       nodeId,
-      valid: !!fileKey
+      valid: !!fileKey,
     });
   } catch (error) {
     console.error('Error extracting Figma data:', error);
@@ -217,8 +217,8 @@ router.post('/sync-tokens', async (req, res) => {
       tokenCount: {
         colors: Object.keys(tokens.colors || {}).length,
         spacing: Object.keys(tokens.spacing || {}).length,
-        typography: Object.keys(tokens.typography || {}).length
-      }
+        typography: Object.keys(tokens.typography || {}).length,
+      },
     });
 
     // TODO: Save tokens to .design-tokens-mcp/tokens.json or merge with existing tokens
@@ -226,7 +226,7 @@ router.post('/sync-tokens', async (req, res) => {
     res.json({
       success: true,
       message: 'Tokens synced successfully',
-      tokens: tokens
+      tokens: tokens,
     });
   } catch (error) {
     console.error('Error syncing tokens:', error);
@@ -253,7 +253,7 @@ router.get('/scan-components', async (req, res) => {
         props: c.props,
         tokens: c.tokens,
         children: c.children.map(ch => ch.name),
-      }))
+      })),
     });
   } catch (error) {
     console.error('Error scanning components:', error);
@@ -273,9 +273,10 @@ router.post('/generate-structure', async (req, res) => {
     const allComponents = await scanner.scanComponents();
 
     // Filter to requested components, or use all if none specified
-    const components = componentNames && componentNames.length > 0
-      ? allComponents.filter(c => componentNames.includes(c.name))
-      : allComponents;
+    const components =
+      componentNames && componentNames.length > 0
+        ? allComponents.filter(c => componentNames.includes(c.name))
+        : allComponents;
 
     // Generate Figma structure
     const generator = new FigmaGenerator(figmaService, fileKey);
@@ -288,7 +289,7 @@ router.post('/generate-structure', async (req, res) => {
       success: true,
       page: figmaPage,
       pluginFormat: pluginFormat,
-      components: components.map(c => c.name)
+      components: components.map(c => c.name),
     });
   } catch (error) {
     console.error('Error generating Figma structure:', error);
@@ -306,7 +307,7 @@ router.post('/sync-components', async (req, res) => {
 
     if (!fileKey && !figmaService) {
       return res.status(400).json({
-        error: 'fileKey is required, or set FIGMA_ACCESS_TOKEN to auto-create file'
+        error: 'fileKey is required, or set FIGMA_ACCESS_TOKEN to auto-create file',
       });
     }
 
@@ -314,9 +315,10 @@ router.post('/sync-components', async (req, res) => {
     const scanner = new ComponentScanner();
     const allComponents = await scanner.scanComponents();
 
-    const components = componentNames && componentNames.length > 0
-      ? allComponents.filter(c => componentNames.includes(c.name))
-      : allComponents;
+    const components =
+      componentNames && componentNames.length > 0
+        ? allComponents.filter(c => componentNames.includes(c.name))
+        : allComponents;
 
     // Generate Figma structure - use design generator for styled pages
     let generator;
@@ -341,8 +343,8 @@ router.post('/sync-components', async (req, res) => {
           category: c.category,
           structure: c.structure,
           styles: c.styles,
-        }))
-      }
+        })),
+      },
     });
   } catch (error) {
     console.error('Error syncing components to Figma:', error);
@@ -361,9 +363,7 @@ router.get('/component/:componentName', async (req, res) => {
     const scanner = new ComponentScanner();
     const components = await scanner.scanComponents();
 
-    const component = components.find(c =>
-      c.name.toLowerCase() === componentName.toLowerCase()
-    );
+    const component = components.find(c => c.name.toLowerCase() === componentName.toLowerCase());
 
     if (!component) {
       return res.status(404).json({ error: 'Component not found' });
@@ -383,7 +383,7 @@ router.get('/component/:componentName', async (req, res) => {
         styles: component.styles,
         tokens: component.tokens,
       },
-      wireframe: wireframe
+      wireframe: wireframe,
     });
   } catch (error) {
     console.error('Error getting component:', error);

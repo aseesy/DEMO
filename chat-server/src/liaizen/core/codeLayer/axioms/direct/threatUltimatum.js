@@ -19,7 +19,11 @@
 
 'use strict';
 
-const { AXIOM_CATEGORIES, createFiringAxiomResult, createNonFiringAxiomResult } = require('../../types');
+const {
+  AXIOM_CATEGORIES,
+  createFiringAxiomResult,
+  createNonFiringAxiomResult,
+} = require('../../types');
 
 // ============================================================================
 // AXIOM METADATA
@@ -217,7 +221,8 @@ function check(parsed, context = {}) {
   };
 
   // Must have at least one threat indicator
-  const hasThreat = evidence.or_else.length > 0 ||
+  const hasThreat =
+    evidence.or_else.length > 0 ||
     evidence.conditional_threats.length > 0 ||
     evidence.legal_threats.length > 0 ||
     evidence.threat_phrases.length > 0;

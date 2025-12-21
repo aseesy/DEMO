@@ -29,15 +29,17 @@ function extractVoiceFromMessage(messageText) {
 
   // Sentence structure analysis
   const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-  const avgSentenceLength = sentences.length > 0
-    ? sentences.reduce((sum, s) => sum + s.trim().split(/\s+/).length, 0) / sentences.length
-    : 0;
+  const avgSentenceLength =
+    sentences.length > 0
+      ? sentences.reduce((sum, s) => sum + s.trim().split(/\s+/).length, 0) / sentences.length
+      : 0;
 
-  const sentenceStructure = avgSentenceLength < 8
-    ? 'short_direct'
-    : avgSentenceLength < 15
-    ? 'moderate'
-    : 'detailed_explanatory';
+  const sentenceStructure =
+    avgSentenceLength < 8
+      ? 'short_direct'
+      : avgSentenceLength < 15
+        ? 'moderate'
+        : 'detailed_explanatory';
 
   // Question frequency
   const questionCount = (text.match(/\?/g) || []).length;
@@ -78,7 +80,10 @@ function extractVoiceFromMessage(messageText) {
   const closing = lastWords.length > 0 ? lastWords : null;
 
   // Extract unique phrases (2-3 word phrases that appear frequently)
-  const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const words = text
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length > 2);
   const phrases = [];
   for (let i = 0; i < words.length - 1; i++) {
     const phrase = `${words[i]} ${words[i + 1]}`;
@@ -147,12 +152,8 @@ function buildVoiceSignature(messages) {
   );
 
   // Collect common starters and closings
-  const starters = signatures
-    .map(s => s.starter)
-    .filter(s => s && s.length > 0);
-  const closings = signatures
-    .map(s => s.closing)
-    .filter(s => s && s.length > 0);
+  const starters = signatures.map(s => s.starter).filter(s => s && s.length > 0);
+  const closings = signatures.map(s => s.closing).filter(s => s && s.length > 0);
 
   // Count frequency
   const starterCounts = {};
@@ -176,8 +177,10 @@ function buildVoiceSignature(messages) {
     .map(([phrase]) => phrase);
 
   // Calculate averages
-  const avgSentenceLength = signatures.reduce((sum, s) => sum + s.avg_sentence_length, 0) / signatures.length;
-  const avgMessageLength = signatures.reduce((sum, s) => sum + s.message_length, 0) / signatures.length;
+  const avgSentenceLength =
+    signatures.reduce((sum, s) => sum + s.avg_sentence_length, 0) / signatures.length;
+  const avgMessageLength =
+    signatures.reduce((sum, s) => sum + s.message_length, 0) / signatures.length;
   const questionHeavyRatio = signatures.filter(s => s.is_question_heavy).length / signatures.length;
 
   return {
@@ -249,7 +252,9 @@ function formatVoiceSignatureForAI(voiceSignature) {
   const parts = [];
 
   parts.push('VOICE SIGNATURE (preserve in rewrites):');
-  parts.push(`- Sentence style: ${voiceSignature.sentence_structure} (avg ${voiceSignature.avg_sentence_length} words/sentence)`);
+  parts.push(
+    `- Sentence style: ${voiceSignature.sentence_structure} (avg ${voiceSignature.avg_sentence_length} words/sentence)`
+  );
   parts.push(`- Formality: ${voiceSignature.formality_level}`);
   parts.push(`- Punctuation: ${voiceSignature.punctuation_style}`);
 
@@ -265,7 +270,9 @@ function formatVoiceSignatureForAI(voiceSignature) {
     parts.push(`- Common closings: ${voiceSignature.common_closings.slice(0, 3).join(', ')}`);
   }
 
-  parts.push('IMPORTANT: Rewrites must match this voice - same formality, sentence structure, and style.');
+  parts.push(
+    'IMPORTANT: Rewrites must match this voice - same formality, sentence structure, and style.'
+  );
 
   return parts.join('\n');
 }
@@ -277,11 +284,3 @@ module.exports = {
   mergeVoiceSignature,
   formatVoiceSignatureForAI,
 };
-
-
-
-
-
-
-
-

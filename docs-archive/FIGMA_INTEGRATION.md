@@ -3,6 +3,7 @@
 ## Overview
 
 This project now includes Figma API integration, allowing you to:
+
 - Read Figma file data and structure
 - Export images and assets from designs
 - Get comments and feedback from Figma files
@@ -78,18 +79,23 @@ curl http://localhost:3001/api/figma/status
 All Figma endpoints are under `/api/figma/`:
 
 ### 1. Check Service Status
+
 ```
 GET /api/figma/status
 ```
+
 Returns whether Figma service is configured and available.
 
 ### 2. Get File Data
+
 ```
 GET /api/figma/file/:fileKey
 ```
+
 Get complete file structure and data.
 
 **Query Parameters:**
+
 - `version` (optional) - Specific file version
 - `ids` (optional) - Comma-separated node IDs to filter
 - `depth` (optional) - Tree depth to return
@@ -98,50 +104,62 @@ Get complete file structure and data.
 - `styles` (optional) - `true` to include style information
 
 **Example:**
+
 ```bash
 curl "http://localhost:3001/api/figma/file/abc123def456?depth=2&styles=true"
 ```
 
 ### 3. Get Specific Nodes
+
 ```
 GET /api/figma/file/:fileKey/nodes?ids=node1,node2
 ```
+
 Get specific nodes from a file.
 
 **Example:**
+
 ```bash
 curl "http://localhost:3001/api/figma/file/abc123def456/nodes?ids=1:2,3:4"
 ```
 
 ### 4. Export Images
+
 ```
 GET /api/figma/images/:fileKey?ids=node1,node2&format=png&scale=2
 ```
+
 Export images from Figma nodes.
 
 **Query Parameters:**
+
 - `ids` (required) - Comma-separated node IDs
 - `format` (optional) - `png`, `jpg`, `svg`, or `pdf` (default: `png`)
 - `scale` (optional) - Scale factor (default: `1`, max: `4`)
 - `use_absolute_bounds` (optional) - `true` to use absolute bounds
 
 **Example:**
+
 ```bash
 curl "http://localhost:3001/api/figma/images/abc123def456?ids=1:2&format=png&scale=2"
 ```
 
 ### 5. Get Comments
+
 ```
 GET /api/figma/file/:fileKey/comments
 ```
+
 Get all comments from a Figma file.
 
 **Example:**
+
 ```bash
 curl "http://localhost:3001/api/figma/file/abc123def456/comments"
 ```
 
 ### 6. Post Comment
+
 ```
 POST /api/figma/file/:fileKey/comments
 Authorization: Bearer <JWT_TOKEN>
@@ -152,9 +170,11 @@ Content-Type: application/json
   "comment_id": null  // Optional: reply to existing comment
 }
 ```
+
 Post a comment to a Figma file (requires authentication).
 
 ### 7. Extract File Key from URL
+
 ```
 POST /api/figma/extract
 Content-Type: application/json
@@ -165,6 +185,7 @@ Content-Type: application/json
 ```
 
 Returns:
+
 ```json
 {
   "fileKey": "abc123def456",
@@ -183,8 +204,8 @@ const response = await fetch('http://localhost:3001/api/figma/extract', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    url: 'https://www.figma.com/file/abc123def456/My-Design'
-  })
+    url: 'https://www.figma.com/file/abc123def456/My-Design',
+  }),
 });
 
 const { fileKey } = await response.json();
@@ -224,11 +245,13 @@ The Figma integration is also available through Model Context Protocol (MCP) for
 The MCP server allows Claude to directly access Figma files. To enable:
 
 1. **Edit MCP Config**:
+
 ```bash
 nano ~/.config/Claude/claude_desktop_config.json
 ```
 
 2. **Add Figma MCP Server** (if package exists):
+
 ```json
 {
   "mcpServers": {
@@ -251,32 +274,38 @@ nano ~/.config/Claude/claude_desktop_config.json
 ## Figma URL Format
 
 Figma URLs follow this pattern:
+
 ```
 https://www.figma.com/file/{FILE_KEY}/{FILE_NAME}?node-id={NODE_ID}
 ```
 
 The service automatically extracts:
+
 - **File Key**: Unique identifier for the file
 - **Node ID**: Specific node/element in the file (optional)
 
 ## Common Use Cases
 
 ### 1. Design-to-Code Sync
+
 - Fetch component specifications from Figma
 - Extract design tokens (colors, spacing, typography)
 - Generate React components based on designs
 
 ### 2. Asset Export
+
 - Export icons and images from Figma
 - Generate optimized assets for web/app use
 - Create asset libraries from design files
 
 ### 3. Design Review
+
 - Read comments from design files
 - Post feedback programmatically
 - Track design iterations
 
 ### 4. Design System Sync
+
 - Extract design tokens from Figma
 - Sync color palettes and typography
 - Keep codebase in sync with designs
@@ -284,6 +313,7 @@ The service automatically extracts:
 ## Rate Limits
 
 Figma API has rate limits:
+
 - **30 requests per second** per access token
 - Be mindful of making too many requests in quick succession
 
@@ -299,6 +329,7 @@ The service includes basic error handling, but you may want to add retry logic f
 ## Troubleshooting
 
 ### Service Not Available
+
 ```
 {"available":false,"message":"Figma API service not configured..."}
 ```
@@ -306,6 +337,7 @@ The service includes basic error handling, but you may want to add retry logic f
 **Solution**: Make sure `FIGMA_ACCESS_TOKEN` is set in your environment variables and server is restarted.
 
 ### Invalid Token Error
+
 ```
 {"error":"Figma API error: Invalid token"}
 ```
@@ -313,16 +345,19 @@ The service includes basic error handling, but you may want to add retry logic f
 **Solution**: Verify your token is correct and hasn't expired. Generate a new token if needed.
 
 ### File Not Found
+
 ```
 {"error":"Figma API error: File not found"}
 ```
 
-**Solution**: 
+**Solution**:
+
 - Verify the file key is correct
 - Ensure the file is accessible with your token
 - Check if the file has been deleted or moved
 
 ### CORS Issues
+
 If accessing from frontend, make sure CORS is configured properly in `server.js`. The existing CORS configuration should handle this.
 
 ## Resources
@@ -333,6 +368,5 @@ If accessing from frontend, make sure CORS is configured properly in `server.js`
 
 ---
 
-*Last Updated: 2025-01-23*
-*Project: LiaiZen Co-Parenting Platform*
-
+_Last Updated: 2025-01-23_
+_Project: LiaiZen Co-Parenting Platform_

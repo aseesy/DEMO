@@ -45,6 +45,7 @@
 ## MCP Servers Available
 
 ### 1. SQLite MCP ✅ (Ready to Use)
+
 - **Status**: Configured, database exists
 - **Database**: `/Users/athenasees/Desktop/chat/chat-server/chat.db` (244KB)
 - **What it does**:
@@ -55,6 +56,7 @@
 - **Test**: "Query the database for all users"
 
 ### 2. GitHub MCP ⚠️ (Needs Token)
+
 - **Status**: Configured, awaiting `GITHUB_TOKEN`
 - **Missing**: GitHub Personal Access Token
 - **What it does**:
@@ -65,6 +67,7 @@
 - **Test**: "Show me the last 5 commits"
 
 ### 3. Filesystem MCP ✅ (Ready to Use)
+
 - **Status**: Configured
 - **Scope**: `/Users/athenasees/Desktop/chat`
 - **What it does**:
@@ -74,6 +77,7 @@
 - **Test**: "Find all files containing 'socket.io'"
 
 ### 4. Fetch MCP ✅ (Ready to Use)
+
 - **Status**: Configured
 - **What it does**:
   - HTTP requests
@@ -82,6 +86,7 @@
 - **Test**: "Fetch http://localhost:3001/api/health"
 
 ### 5. Memory MCP ✅ (Ready to Use)
+
 - **Status**: Configured
 - **What it does**:
   - Persistent context across sessions
@@ -94,6 +99,7 @@
 ### Option 1: Just Need GitHub MCP (5 minutes)
 
 1. **Get GitHub Token**:
+
    ```bash
    # Go to: https://github.com/settings/tokens
    # Create token with 'repo' and 'read:org' scopes
@@ -101,12 +107,14 @@
    ```
 
 2. **Set Environment Variable**:
+
    ```bash
    echo 'export GITHUB_TOKEN=ghp_your_token_here' >> ~/.zshrc
    source ~/.zshrc
    ```
 
 3. **Verify**:
+
    ```bash
    echo $GITHUB_TOKEN
    ```
@@ -139,12 +147,12 @@ cd /Users/athenasees/Desktop/chat
 
 ## Configuration File Locations
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `~/.config/Claude/claude_desktop_config.json` | Claude Code MCP config | ✅ Created |
-| `/Users/athenasees/Desktop/chat/.mcp-config.json` | Project MCP config | ✅ Exists |
-| `/Users/athenasees/Desktop/chat/chat-server/.env` | Server environment | ✅ Complete |
-| `~/.zshrc` | Shell environment | ⚠️ Needs GITHUB_TOKEN |
+| File                                              | Purpose                | Status                |
+| ------------------------------------------------- | ---------------------- | --------------------- |
+| `~/.config/Claude/claude_desktop_config.json`     | Claude Code MCP config | ✅ Created            |
+| `/Users/athenasees/Desktop/chat/.mcp-config.json` | Project MCP config     | ✅ Exists             |
+| `/Users/athenasees/Desktop/chat/chat-server/.env` | Server environment     | ✅ Complete           |
+| `~/.zshrc`                                        | Shell environment      | ⚠️ Needs GITHUB_TOKEN |
 
 ## Testing Checklist
 
@@ -165,6 +173,7 @@ After setup, test these in Claude Code:
 **Problem**: "GitHub MCP server failed to connect"
 
 **Solutions**:
+
 1. Check token is set: `echo $GITHUB_TOKEN`
 2. Verify token scopes at https://github.com/settings/tokens
 3. Restart Claude Code completely
@@ -175,6 +184,7 @@ After setup, test these in Claude Code:
 **Problem**: "Database not found"
 
 **Solutions**:
+
 1. Verify database exists: `ls -la chat-server/chat.db`
 2. Check path in MCP config matches actual location
 3. Ensure database isn't locked by another process
@@ -184,6 +194,7 @@ After setup, test these in Claude Code:
 **Problem**: MCP servers don't appear in Claude Code
 
 **Solutions**:
+
 1. Verify config file location is correct for your OS
 2. Check JSON syntax: `cat ~/.config/Claude/claude_desktop_config.json | python3 -m json.tool`
 3. Restart Claude Code (not just reload)
@@ -191,18 +202,19 @@ After setup, test these in Claude Code:
 
 ## What Each Documentation File Contains
 
-| File | What's Inside | When to Use |
-|------|---------------|-------------|
-| `MCP_KEYS_SETUP.md` | Complete credentials guide | Setting up API keys |
-| `docs/MCP_SETUP.md` | Detailed MCP server setup | Initial configuration |
-| `docs/GITHUB_TOKEN_SETUP.md` | GitHub token step-by-step | GitHub MCP issues |
-| `README_MCP.md` | Quick start guide | Fast setup |
-| `docs/MCP_USAGE_EXAMPLES.md` | Example queries | Learning MCP usage |
-| `MCP_STATUS.md` | This file - current status | Checking what's done |
+| File                         | What's Inside              | When to Use           |
+| ---------------------------- | -------------------------- | --------------------- |
+| `MCP_KEYS_SETUP.md`          | Complete credentials guide | Setting up API keys   |
+| `docs/MCP_SETUP.md`          | Detailed MCP server setup  | Initial configuration |
+| `docs/GITHUB_TOKEN_SETUP.md` | GitHub token step-by-step  | GitHub MCP issues     |
+| `README_MCP.md`              | Quick start guide          | Fast setup            |
+| `docs/MCP_USAGE_EXAMPLES.md` | Example queries            | Learning MCP usage    |
+| `MCP_STATUS.md`              | This file - current status | Checking what's done  |
 
 ## Next Steps
 
 ### Immediate (Required for Full MCP Functionality)
+
 1. **Set up GitHub token** (5 minutes)
    - Follow guide in `MCP_KEYS_SETUP.md`
    - Or use quick command: `./scripts/setup-github-token.sh`
@@ -216,6 +228,7 @@ After setup, test these in Claude Code:
    - Verify all servers respond
 
 ### Optional (Enhancements)
+
 - Set up MCP server monitoring/logging
 - Create custom MCP queries for common tasks
 - Configure additional MCP servers (Brave Search, Slack, etc.)
@@ -233,6 +246,7 @@ After setup, test these in Claude Code:
 **Time to full functionality**: ~5 minutes
 
 **Recommended action**:
+
 ```bash
 # 1. Get GitHub token from: https://github.com/settings/tokens
 # 2. Set it:
@@ -244,5 +258,5 @@ source ~/.zshrc
 
 ---
 
-*Last Updated: 2025-11-19*
-*For questions, see the comprehensive guides in the `docs/` folder*
+_Last Updated: 2025-11-19_
+_For questions, see the comprehensive guides in the `docs/` folder_

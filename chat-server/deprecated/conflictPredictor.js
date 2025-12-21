@@ -2,7 +2,7 @@ const OpenAI = require('openai');
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || ''
+  apiKey: process.env.OPENAI_API_KEY || '',
 });
 
 // Track conversation state per room
@@ -31,30 +31,33 @@ async function assessEscalationRisk(message, recentMessages, roomId) {
           accusatory: 0,
           triangulation: 0,
           comparison: 0,
-          blaming: 0
-        }
+          blaming: 0,
+        },
       });
     }
 
     const state = roomState.get(roomId);
-    
+
     // Analyze recent conversation patterns
     const recentNegative = recentMessages.filter(msg => {
       const text = (msg.text || '').toLowerCase();
-      return text.includes('always') || text.includes('never') || 
-             text.includes('you') && (text.includes('wrong') || text.includes('fault'));
+      return (
+        text.includes('always') ||
+        text.includes('never') ||
+        (text.includes('you') && (text.includes('wrong') || text.includes('fault')))
+      );
     }).length;
 
     // Calculate escalation score based on patterns
     let escalationScore = state.escalationScore;
-    
+
     // Check for escalation indicators
     const text = message.text.toLowerCase();
     const hasAccusatory = /\b(you always|you never|you're|you are)\b/.test(text);
     const hasTriangulation = /\b(she told me|he said|the kids|child.*said)\b/.test(text);
     const hasComparison = /\b(fine with me|never does that|at my house|at your house)\b/.test(text);
     const hasBlaming = /\b(your fault|because of you|you made|you caused)\b/.test(text);
-    
+
     if (hasAccusatory) state.patternCounts.accusatory++;
     if (hasTriangulation) state.patternCounts.triangulation++;
     if (hasComparison) state.patternCounts.comparison++;
@@ -67,10 +70,11 @@ async function assessEscalationRisk(message, recentMessages, roomId) {
     }
 
     // Decay escalation score over time (reduce by 1 every 5 minutes)
-    const timeSinceLastNegative = state.lastNegativeTime 
-      ? Date.now() - state.lastNegativeTime 
+    const timeSinceLastNegative = state.lastNegativeTime
+      ? Date.now() - state.lastNegativeTime
       : Infinity;
-    if (timeSinceLastNegative > 300000) { // 5 minutes
+    if (timeSinceLastNegative > 300000) {
+      // 5 minutes
       escalationScore = Math.max(0, escalationScore - 1);
     }
 
@@ -85,7 +89,10 @@ async function assessEscalationRisk(message, recentMessages, roomId) {
     const prompt = `Analyze this co-parenting message for conflict escalation risk.
 
 Recent conversation context (last 5 messages):
-${recentMessages.slice(-5).map(m => `${m.username}: ${m.text}`).join('\n')}
+${recentMessages
+  .slice(-5)
+  .map(m => `${m.username}: ${m.text}`)
+  .join('\n')}
 
 Current message: ${message.username}: "${message.text}"
 
@@ -111,15 +118,16 @@ Respond in JSON format:
       messages: [
         {
           role: 'system',
-          content: 'You are an expert conflict mediator analyzing co-parenting communication for escalation risk. Respond only with valid JSON.'
+          content:
+            'You are an expert conflict mediator analyzing co-parenting communication for escalation risk. Respond only with valid JSON.',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       temperature: 0.3,
-      max_tokens: 300
+      max_tokens: 300,
     });
 
     const response = completion.choices[0].message.content.trim();
@@ -130,9 +138,8 @@ Respond in JSON format:
       confidence: assessment.confidence || 0,
       reasons: assessment.reasons || [],
       urgency: assessment.urgency || 'none',
-      escalationScore: escalationScore
+      escalationScore: escalationScore,
     };
-
   } catch (error) {
     console.error('Error assessing escalation risk:', error.message);
     return { riskLevel: 'low', confidence: 0, reasons: [], urgency: 'none' };
@@ -159,7 +166,7 @@ function getEscalationTrend(roomId) {
     escalationScore: state.escalationScore,
     patternCounts: { ...state.patternCounts },
     trend: trend,
-    lastNegativeTime: state.lastNegativeTime
+    lastNegativeTime: state.lastNegativeTime,
   };
 }
 
@@ -178,6 +185,5 @@ function resetEscalationTracking(roomId) {
 module.exports = {
   assessEscalationRisk,
   getEscalationTrend,
-  resetEscalationTracking
+  resetEscalationTracking,
 };
-

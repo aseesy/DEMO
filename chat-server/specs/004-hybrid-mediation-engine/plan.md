@@ -10,6 +10,7 @@
 ## Executive Summary
 
 This plan transforms the existing mediation system into a **Hybrid Architecture** where:
+
 - **Code Layer** handles parsing, structure detection, and Axiom checking (deterministic, fast)
 - **AI Layer** handles nuance, context, and conscience voice generation (judgment-based)
 
@@ -21,14 +22,14 @@ This plan transforms the existing mediation system into a **Hybrid Architecture*
 
 ### Current Architecture
 
-| Component | Location | Status |
-|-----------|----------|--------|
-| Main Mediator | `/src/liaizen/core/mediator.js` | Unified AI analyzer (single call) |
-| Language Analyzer | `/src/liaizen/analysis/language-analyzer/` | **Reusable** - has pattern detection |
-| Rewrite Validator | `/src/liaizen/analysis/rewrite-validator/` | **Reusable** - perspective checking |
-| Communication Profile | `/src/liaizen/context/communication-profile/` | **Reusable** - user context |
-| OpenAI Client | `/src/liaizen/core/client.js` | Singleton with rate limiting |
-| Constitution | `/ai-mediation-constitution.md` | Governance document |
+| Component             | Location                                      | Status                               |
+| --------------------- | --------------------------------------------- | ------------------------------------ |
+| Main Mediator         | `/src/liaizen/core/mediator.js`               | Unified AI analyzer (single call)    |
+| Language Analyzer     | `/src/liaizen/analysis/language-analyzer/`    | **Reusable** - has pattern detection |
+| Rewrite Validator     | `/src/liaizen/analysis/rewrite-validator/`    | **Reusable** - perspective checking  |
+| Communication Profile | `/src/liaizen/context/communication-profile/` | **Reusable** - user context          |
+| OpenAI Client         | `/src/liaizen/core/client.js`                 | Singleton with rate limiting         |
+| Constitution          | `/ai-mediation-constitution.md`               | Governance document                  |
 
 ### Existing Pattern Modules (Reusable)
 
@@ -44,6 +45,7 @@ This plan transforms the existing mediation system into a **Hybrid Architecture*
 ```
 
 **Gap Analysis**: These pattern modules are close to what the spec requires but:
+
 1. Missing: **Axiom naming** (AXIOM_001, AXIOM_004, etc.)
 2. Missing: **Communication Vector** (sender/receiver/target/instrument)
 3. Missing: **Transmission decision** (can message pass as-is?)
@@ -65,48 +67,48 @@ This plan transforms the existing mediation system into a **Hybrid Architecture*
  * Passed to AI Layer for contextual processing
  */
 const ParsedMessage = {
-  raw: '',                    // Original message text
+  raw: '', // Original message text
 
   linguistic: {
-    tokens: [],               // Tagged words
-    softeners: [],            // "just", "only", etc.
-    intensifiers: [],         // "very", "always", "never"
-    pattern_markers: [],      // Absolutes
-    contrast_markers: [],     // "but", "however"
-    negations: []             // "not", "never"
+    tokens: [], // Tagged words
+    softeners: [], // "just", "only", etc.
+    intensifiers: [], // "very", "always", "never"
+    pattern_markers: [], // Absolutes
+    contrast_markers: [], // "but", "however"
+    negations: [], // "not", "never"
   },
 
   conceptual: {
-    speaker: false,           // "I" present
-    addressee: false,         // "you" present
-    third_party: [],          // Others mentioned
-    temporal: 'present',      // past/present/future
-    epistemic: 'unknown',     // fact/interpretation
-    domain: 'unclear'         // schedule/money/parenting/character
+    speaker: false, // "I" present
+    addressee: false, // "you" present
+    third_party: [], // Others mentioned
+    temporal: 'present', // past/present/future
+    epistemic: 'unknown', // fact/interpretation
+    domain: 'unclear', // schedule/money/parenting/character
   },
 
   vector: {
-    sender: '',               // User ID
-    receiver: '',             // Coparent ID
-    target: '',               // character/competence/autonomy/parenting
-    instrument: null,         // child/money/schedule (if used)
-    aim: ''                   // attack/control/inform/request
+    sender: '', // User ID
+    receiver: '', // Coparent ID
+    target: '', // character/competence/autonomy/parenting
+    instrument: null, // child/money/schedule (if used)
+    aim: '', // attack/control/inform/request
   },
 
-  axioms_fired: [],           // Array of { id, name, confidence, fired, evidence }
+  axioms_fired: [], // Array of { id, name, confidence, fired, evidence }
 
   assessment: {
     conflict_potential: 'low', // low/moderate/high
-    attack_surface: [],        // What's being attacked
+    attack_surface: [], // What's being attacked
     child_as_instrument: false,
-    deniability: 'low',        // low/high
-    transmit: true             // Can pass without AI?
+    deniability: 'low', // low/high
+    transmit: true, // Can pass without AI?
   },
 
   meta: {
     version: '1.0.0',
-    latency_ms: 0
-  }
+    latency_ms: 0,
+  },
 };
 ```
 
@@ -117,6 +119,7 @@ const ParsedMessage = {
 **Purpose**: Break message into tagged tokens with linguistic metadata
 
 **Implementation Notes**:
+
 - Extend existing `structure.js` logic
 - Add POS tagging (pronoun, verb, noun, adverb)
 - Mark special tokens (addressee, speaker, emotional)
@@ -124,15 +127,14 @@ const ParsedMessage = {
 
 ```javascript
 // Example output
-tokenize("You NEVER help with homework")
-// Returns:
-[
-  { word: "You", pos: "pronoun", addressee: true, index: 0 },
-  { word: "NEVER", pos: "adverb", intensifier: true, absolute: true, index: 1 },
-  { word: "help", pos: "verb", action: true, index: 2 },
-  { word: "with", pos: "preposition", index: 3 },
-  { word: "homework", pos: "noun", domain: "child_education", index: 4 }
-]
+tokenize('You NEVER help with homework')[
+  // Returns:
+  ({ word: 'You', pos: 'pronoun', addressee: true, index: 0 },
+  { word: 'NEVER', pos: 'adverb', intensifier: true, absolute: true, index: 1 },
+  { word: 'help', pos: 'verb', action: true, index: 2 },
+  { word: 'with', pos: 'preposition', index: 3 },
+  { word: 'homework', pos: 'noun', domain: 'child_education', index: 4 })
+];
 ```
 
 #### Step 1.3: Extend Marker Detector
@@ -142,6 +144,7 @@ tokenize("You NEVER help with homework")
 **Purpose**: Extract linguistic markers (consolidate existing pattern modules)
 
 **Implementation**:
+
 - Consolidate `hedging.js` softeners → `softeners[]`
 - Consolidate `globalSpecific.js` absolutes → `intensifiers[]`, `pattern_markers[]`
 - Add `contrast_markers[]` (but, however, although)
@@ -158,10 +161,12 @@ function detect(text, tokens) {
 
   return {
     softeners: hedgeResult.hedges_used || [],
-    intensifiers: globalResult.absolutes_used.filter(a => ['always', 'never', 'every'].includes(a.toLowerCase())),
+    intensifiers: globalResult.absolutes_used.filter(a =>
+      ['always', 'never', 'every'].includes(a.toLowerCase())
+    ),
     pattern_markers: globalResult.absolutes_used,
     contrast_markers: extractContrastMarkers(text),
-    negations: extractNegations(text)
+    negations: extractNegations(text),
   };
 }
 ```
@@ -173,6 +178,7 @@ function detect(text, tokens) {
 **Purpose**: Map tokens to conceptual primitives
 
 **Implementation**:
+
 - Detect speaker presence ("I", "my", "me")
 - Detect addressee presence ("you", "your")
 - Identify third parties (she/he/they + names)
@@ -188,7 +194,7 @@ function map(tokens, markers) {
     third_party: extractThirdParty(tokens),
     temporal: determineTemporal(tokens),
     epistemic: determineEpistemic(tokens, markers),
-    domain: determineDomain(tokens)
+    domain: determineDomain(tokens),
   };
 }
 ```
@@ -204,26 +210,26 @@ function map(tokens, markers) {
 ```javascript
 const AXIOM_REGISTRY = {
   // Indirect Communication (Attacks Disguised as Peace)
-  'AXIOM_001': require('./indirect/displacedAccusation'),
-  'AXIOM_002': require('./indirect/falseOffering'),
-  'AXIOM_003': require('./indirect/innocentInquiry'),
-  'AXIOM_004': require('./indirect/weaponizedAgreement'),
-  'AXIOM_005': require('./indirect/virtuousSelfReference'),
-  'AXIOM_007': require('./indirect/preemptiveDenial'),
-  'AXIOM_008': require('./indirect/reluctantCompliance'),
-  'AXIOM_010': require('./indirect/childAsMessenger'),
-  'AXIOM_012': require('./indirect/concernedQuestion'),
-  'AXIOM_016': require('./indirect/hypotheticalAccusation'),
+  AXIOM_001: require('./indirect/displacedAccusation'),
+  AXIOM_002: require('./indirect/falseOffering'),
+  AXIOM_003: require('./indirect/innocentInquiry'),
+  AXIOM_004: require('./indirect/weaponizedAgreement'),
+  AXIOM_005: require('./indirect/virtuousSelfReference'),
+  AXIOM_007: require('./indirect/preemptiveDenial'),
+  AXIOM_008: require('./indirect/reluctantCompliance'),
+  AXIOM_010: require('./indirect/childAsMessenger'),
+  AXIOM_012: require('./indirect/concernedQuestion'),
+  AXIOM_016: require('./indirect/hypotheticalAccusation'),
 
   // Contextual (Situational)
-  'AXIOM_C001': require('./contextual/proximityClaim'),
-  'AXIOM_C002': require('./contextual/newPartnerThreat'),
-  'AXIOM_C005': require('./contextual/freshSeparation'),
-  'AXIOM_C007': require('./contextual/incomeLeverage'),
+  AXIOM_C001: require('./contextual/proximityClaim'),
+  AXIOM_C002: require('./contextual/newPartnerThreat'),
+  AXIOM_C005: require('./contextual/freshSeparation'),
+  AXIOM_C007: require('./contextual/incomeLeverage'),
 
   // Clean (Positive Patterns)
-  'AXIOM_D001': require('./clean/cleanRequest'),
-  'AXIOM_D002': require('./clean/cleanInformation')
+  AXIOM_D001: require('./clean/cleanRequest'),
+  AXIOM_D002: require('./clean/cleanInformation'),
 };
 ```
 
@@ -247,7 +253,16 @@ const AXIOM_REGISTRY = {
  * 4. Optional: Softener present ("just", "I've noticed")
  */
 
-const NEGATIVE_STATES = ['upset', 'crying', 'worried', 'sad', 'anxious', 'struggling', 'unhappy', 'stressed'];
+const NEGATIVE_STATES = [
+  'upset',
+  'crying',
+  'worried',
+  'sad',
+  'anxious',
+  'struggling',
+  'unhappy',
+  'stressed',
+];
 const RECEIVER_LINKS = ['since you', 'after you', 'because you', 'when you', 'ever since'];
 const CHILD_PRONOUNS = ['she', 'he', 'they', 'the kids', 'the children'];
 
@@ -292,8 +307,8 @@ function check(parsed, context = {}) {
       child_mentioned: true,
       negative_state: NEGATIVE_STATES.find(s => text.includes(s)),
       receiver_link: RECEIVER_LINKS.find(l => text.includes(l)),
-      softener_used: hasSoftener
-    }
+      softener_used: hasSoftener,
+    },
   };
 }
 
@@ -312,7 +327,7 @@ module.exports = { check };
  * Example: "I agree we should be consistent, but you never follow through"
  */
 
-const AGREEMENT_PHRASES = ['i agree', 'you\'re right', 'that\'s true', 'fair point', 'absolutely'];
+const AGREEMENT_PHRASES = ['i agree', "you're right", "that's true", 'fair point', 'absolutely'];
 const CONTRAST_MARKERS = ['but', 'however', 'although', 'though', 'yet'];
 
 function check(parsed, context = {}) {
@@ -327,7 +342,8 @@ function check(parsed, context = {}) {
   }
 
   // 2. Check for contrast marker
-  const hasContrast = linguistic.contrast_markers.length > 0 ||
+  const hasContrast =
+    linguistic.contrast_markers.length > 0 ||
     CONTRAST_MARKERS.some(marker => text.includes(marker));
 
   if (!hasContrast) {
@@ -354,8 +370,8 @@ function check(parsed, context = {}) {
     evidence: {
       agreement: AGREEMENT_PHRASES.find(p => text.includes(p)),
       contrast_marker: CONTRAST_MARKERS.find(m => text.includes(m)),
-      negative_followup: true
-    }
+      negative_followup: true,
+    },
   };
 }
 
@@ -387,7 +403,7 @@ const REQUEST_PATTERNS = [
   /could you .+\?$/i,
   /will you .+\?$/i,
   /would you .+\?$/i,
-  /please .+/i
+  /please .+/i,
 ];
 
 function check(parsed, context = {}) {
@@ -411,8 +427,8 @@ function check(parsed, context = {}) {
   const excessiveSofteners = linguistic.softeners.length > 1;
 
   // 4. Check no negative patterns
-  const hasNegatives = linguistic.intensifiers.length > 0 ||
-    conceptual.epistemic === 'interpretation';
+  const hasNegatives =
+    linguistic.intensifiers.length > 0 || conceptual.epistemic === 'interpretation';
 
   if (isSpecific && !excessiveSofteners && !hasNegatives) {
     return {
@@ -425,8 +441,8 @@ function check(parsed, context = {}) {
         is_request: true,
         is_specific: isSpecific,
         no_excessive_softeners: !excessiveSofteners,
-        no_negatives: !hasNegatives
-      }
+        no_negatives: !hasNegatives,
+      },
     };
   }
 
@@ -474,8 +490,8 @@ async function checkAll(parsed, context = {}) {
     meta: {
       total_checked: Object.keys(AXIOM_REGISTRY).length,
       total_fired: firedAxioms.length,
-      latency_ms: latency
-    }
+      latency_ms: latency,
+    },
   };
 }
 
@@ -498,23 +514,23 @@ module.exports = { checkAll };
 
 const TARGET_PATTERNS = {
   character: ['you are', "you're", 'always', 'never', 'kind of person'],
-  competence: ['you forgot', 'you failed', 'you can\'t', 'you don\'t know'],
+  competence: ['you forgot', 'you failed', "you can't", "you don't know"],
   autonomy: ['you should', 'you need to', 'you have to', 'you must'],
-  parenting: ['as a parent', 'your parenting', 'the way you raise']
+  parenting: ['as a parent', 'your parenting', 'the way you raise'],
 };
 
 const INSTRUMENT_PATTERNS = {
   child: ['she said', 'he told me', 'the kids want', 'they prefer'],
   money: ['child support', 'payment', 'expenses', 'afford'],
   schedule: ['schedule', 'custody', 'your time', 'my time', 'pickup', 'dropoff'],
-  third_party: ['your mother', 'your friend', 'your lawyer', 'people say']
+  third_party: ['your mother', 'your friend', 'your lawyer', 'people say'],
 };
 
 const AIM_PATTERNS = {
   attack: ['you never', 'you always', 'your fault', 'because of you'],
   control: ['you need to', 'you should', 'you have to', 'i expect'],
   inform: ['just wanted to let you know', 'fyi', 'heads up'],
-  request: ['can you', 'could you', 'would you', 'please']
+  request: ['can you', 'could you', 'would you', 'please'],
 };
 
 function identify(tokens, conceptual, context) {
@@ -525,7 +541,7 @@ function identify(tokens, conceptual, context) {
     receiver: context.receiverId || 'unknown',
     target: identifyTarget(text),
     instrument: identifyInstrument(text, conceptual),
-    aim: identifyAim(text)
+    aim: identifyAim(text),
   };
 }
 
@@ -579,9 +595,7 @@ function generate({ axioms_fired, vector, markers, conceptual }) {
   // Conflict potential based on axioms
   let conflict_potential = 'low';
 
-  const indirectAxioms = axioms_fired.filter(a =>
-    a.category === 'indirect_communication'
-  );
+  const indirectAxioms = axioms_fired.filter(a => a.category === 'indirect_communication');
 
   if (indirectAxioms.length > 0) {
     conflict_potential = 'moderate';
@@ -610,9 +624,7 @@ function generate({ axioms_fired, vector, markers, conceptual }) {
 
   // Transmission decision
   const cleanAxioms = axioms_fired.filter(a => a.category === 'clean');
-  const hasOnlyCleanAxioms =
-    axioms_fired.length === cleanAxioms.length &&
-    cleanAxioms.length > 0;
+  const hasOnlyCleanAxioms = axioms_fired.length === cleanAxioms.length && cleanAxioms.length > 0;
 
   const transmit =
     conflict_potential === 'low' &&
@@ -624,7 +636,7 @@ function generate({ axioms_fired, vector, markers, conceptual }) {
     attack_surface,
     child_as_instrument,
     deniability,
-    transmit
+    transmit,
   };
 }
 
@@ -668,15 +680,15 @@ async function parse(messageText, context = {}) {
     raw: messageText,
     linguistic: {
       tokens,
-      ...markers
+      ...markers,
     },
-    conceptual
+    conceptual,
   };
 
   // 5. Identify communication vector
   const vector = vectorIdentifier.identify(tokens, conceptual, {
     ...context,
-    raw: messageText
+    raw: messageText,
   });
 
   // 6. Check all axioms
@@ -687,7 +699,7 @@ async function parse(messageText, context = {}) {
     axioms_fired: axiomResult.axioms_fired,
     vector,
     markers,
-    conceptual
+    conceptual,
   });
 
   const latency = Date.now() - startTime;
@@ -700,7 +712,7 @@ async function parse(messageText, context = {}) {
       intensifiers: markers.intensifiers,
       pattern_markers: markers.pattern_markers,
       contrast_markers: markers.contrast_markers,
-      negations: markers.negations
+      negations: markers.negations,
     },
     conceptual,
     vector,
@@ -710,8 +722,8 @@ async function parse(messageText, context = {}) {
       version: VERSION,
       latency_ms: latency,
       axioms_checked: axiomResult.meta.total_checked,
-      axioms_fired: axiomResult.meta.total_fired
-    }
+      axioms_fired: axiomResult.meta.total_fired,
+    },
   };
 }
 
@@ -835,9 +847,10 @@ function validate(aiResponse, parsed) {
 
     // Check personalMessage references axiom
     if (intervention.personalMessage) {
-      const referencesAxiom = parsed.axioms_fired.some(a =>
-        intervention.personalMessage.includes(a.id) ||
-        intervention.personalMessage.toLowerCase().includes(a.name.toLowerCase())
+      const referencesAxiom = parsed.axioms_fired.some(
+        a =>
+          intervention.personalMessage.includes(a.id) ||
+          intervention.personalMessage.toLowerCase().includes(a.name.toLowerCase())
       );
 
       if (!referencesAxiom && parsed.axioms_fired.length > 0) {
@@ -845,7 +858,7 @@ function validate(aiResponse, parsed) {
       }
 
       // Check no emotional diagnosis
-      const FORBIDDEN = ['you\'re angry', 'you seem frustrated', 'you feel', 'you\'re upset'];
+      const FORBIDDEN = ["you're angry", 'you seem frustrated', 'you feel', "you're upset"];
       if (FORBIDDEN.some(f => intervention.personalMessage.toLowerCase().includes(f))) {
         errors.push('personalMessage contains emotional diagnosis');
       }
@@ -868,7 +881,7 @@ function validate(aiResponse, parsed) {
   return {
     valid: errors.length === 0,
     errors,
-    response: aiResponse
+    response: aiResponse,
   };
 }
 
@@ -893,7 +906,7 @@ const metrics = {
   axioms_fired: axiomResult.axioms_fired.map(a => a.id),
   conflict_potential: assessment.conflict_potential,
   transmit_decision: assessment.transmit,
-  ai_call_required: !assessment.transmit
+  ai_call_required: !assessment.transmit,
 };
 
 // Log for monitoring
@@ -983,13 +996,13 @@ if (shouldUseHybrid(senderId)) {
 
 ## Success Metrics (Week 8)
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
+| Metric                   | Target | Measurement     |
+| ------------------------ | ------ | --------------- |
 | Code Layer Latency (p95) | <100ms | Instrumentation |
-| AI Call Rate | <40% | Monitoring |
-| Axiom Precision | >95% | Manual review |
-| User Satisfaction | >80% | In-app feedback |
-| Cost Reduction | >50% | API usage |
+| AI Call Rate             | <40%   | Monitoring      |
+| Axiom Precision          | >95%   | Manual review   |
+| User Satisfaction        | >80%   | In-app feedback |
+| Cost Reduction           | >50%   | API usage       |
 
 ---
 
@@ -1002,4 +1015,4 @@ if (shouldUseHybrid(senderId)) {
 
 ---
 
-*This plan implements Feature Spec 004 using Spec-Driven Development methodology.*
+_This plan implements Feature Spec 004 using Spec-Driven Development methodology._

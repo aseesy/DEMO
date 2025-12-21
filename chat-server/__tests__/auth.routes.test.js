@@ -21,7 +21,7 @@ jest.mock('../auth', () => ({
 
 jest.mock('../dbSafe', () => ({
   safeSelect: jest.fn(),
-  parseResult: jest.fn((result) => result),
+  parseResult: jest.fn(result => result),
 }));
 
 jest.mock('../dbPostgres', () => ({
@@ -62,7 +62,8 @@ function generateToken(user) {
 }
 
 function verifyAuth(req, res, next) {
-  const token = req.cookies.auth_token ||
+  const token =
+    req.cookies.auth_token ||
     (req.headers.authorization && req.headers.authorization.replace('Bearer ', ''));
 
   if (!token) {
@@ -71,7 +72,11 @@ function verifyAuth(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = { ...decoded, id: decoded.userId || decoded.id, userId: decoded.userId || decoded.id };
+    req.user = {
+      ...decoded,
+      id: decoded.userId || decoded.id,
+      userId: decoded.userId || decoded.id,
+    };
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token' });
@@ -93,8 +98,8 @@ function createTestApp() {
         return res.status(400).json({ error: 'Email and password are required' });
       }
 
-      if (password.length < 4) {
-        return res.status(400).json({ error: 'Password must be at least 4 characters' });
+      if (password.length < 10) {
+        return res.status(400).json({ error: 'Password must be at least 10 characters' });
       }
 
       const user = await auth.createUserWithEmail(email.trim().toLowerCase(), password, {});
@@ -128,7 +133,7 @@ function createTestApp() {
       if (!user) {
         return res.status(401).json({
           error: email ? 'No account found with this email' : 'Invalid username or password',
-          code: email ? 'ACCOUNT_NOT_FOUND' : 'INVALID_CREDENTIALS'
+          code: email ? 'ACCOUNT_NOT_FOUND' : 'INVALID_CREDENTIALS',
         });
       }
 
@@ -151,14 +156,16 @@ function createTestApp() {
   // Verify endpoint
   app.get('/api/auth/verify', verifyAuth, async (req, res) => {
     try {
-      dbSafe.safeSelect.mockResolvedValue([{
-        id: req.user.id,
-        username: req.user.username,
-        email: req.user.email,
-        display_name: 'Test User',
-        first_name: 'Test',
-        last_name: 'User'
-      }]);
+      dbSafe.safeSelect.mockResolvedValue([
+        {
+          id: req.user.id,
+          username: req.user.username,
+          email: req.user.email,
+          display_name: 'Test User',
+          first_name: 'Test',
+          last_name: 'User',
+        },
+      ]);
 
       const userResult = await dbSafe.safeSelect('users', { id: req.user.id }, { limit: 1 });
       const users = userResult;
@@ -175,8 +182,8 @@ function createTestApp() {
           id: freshUser.id,
           username: freshUser.username,
           email: freshUser.email,
-          display_name: freshUser.display_name
-        }
+          display_name: freshUser.display_name,
+        },
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -206,20 +213,23 @@ function createTestApp() {
         return res.status(400).json({ error: 'You cannot invite yourself as a co-parent' });
       }
 
-      const result = await auth.registerWithInvitation({
-        email: email.trim().toLowerCase(),
-        password,
-        displayName,
-        coParentEmail: coParentEmail.trim().toLowerCase(),
-        context: {}
-      }, {});
+      const result = await auth.registerWithInvitation(
+        {
+          email: email.trim().toLowerCase(),
+          password,
+          displayName,
+          coParentEmail: coParentEmail.trim().toLowerCase(),
+          context: {},
+        },
+        {}
+      );
 
       const token = generateToken(result.user);
       res.json({
         success: true,
         user: result.user,
         invitation: result.invitation,
-        token
+        token,
       });
     } catch (error) {
       if (error.message === 'Email already exists') {
@@ -234,7 +244,7 @@ function createTestApp() {
 
 // Helper to make requests
 function makeRequest(app, method, path, body = null, headers = {}) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const req = require('http').request({
       hostname: 'localhost',
       port: 0,
@@ -303,7 +313,7 @@ describe('Auth Routes', () => {
       auth.createUserWithEmail.mockResolvedValue({
         id: 1,
         username: 'newuser',
-        email
+        email,
       });
 
       const req = { body: { email, password } };
@@ -371,9 +381,7 @@ describe('Auth Routes', () => {
       }
 
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ code: 'ACCOUNT_NOT_FOUND' })
-      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'ACCOUNT_NOT_FOUND' }));
     });
 
     test('should return 401 for INVALID_PASSWORD', async () => {
@@ -393,9 +401,7 @@ describe('Auth Routes', () => {
       }
 
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ code: 'INVALID_PASSWORD' })
-      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_PASSWORD' }));
     });
 
     test('should return 401 for OAUTH_ONLY_ACCOUNT', async () => {
@@ -443,7 +449,8 @@ describe('Auth Routes', () => {
       const req = { cookies: {}, headers: {} };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-      const token = req.cookies.auth_token ||
+      const token =
+        req.cookies.auth_token ||
         (req.headers.authorization && req.headers.authorization.replace('Bearer ', ''));
 
       if (!token) {
@@ -458,15 +465,17 @@ describe('Auth Routes', () => {
       const user = { id: 1, username: 'testuser', email: 'test@example.com' };
       const token = generateToken(user);
 
-      dbSafe.safeSelect.mockResolvedValue([{
-        ...user,
-        display_name: 'Test User'
-      }]);
+      dbSafe.safeSelect.mockResolvedValue([
+        {
+          ...user,
+          display_name: 'Test User',
+        },
+      ]);
 
       const req = {
         cookies: {},
         headers: { authorization: `Bearer ${token}` },
-        user: null
+        user: null,
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
@@ -484,8 +493,8 @@ describe('Auth Routes', () => {
           id: users[0].id,
           username: users[0].username,
           email: users[0].email,
-          display_name: users[0].display_name
-        }
+          display_name: users[0].display_name,
+        },
       });
 
       const response = res.json.mock.calls[0][0];
@@ -496,7 +505,7 @@ describe('Auth Routes', () => {
     test('should return 401 for invalid token', async () => {
       const req = {
         cookies: {},
-        headers: { authorization: 'Bearer invalid-token' }
+        headers: { authorization: 'Bearer invalid-token' },
       };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
@@ -517,8 +526,8 @@ describe('Auth Routes', () => {
         body: {
           email: 'test@example.com',
           password: 'validpassword',
-          displayName: 'Test User'
-        }
+          displayName: 'Test User',
+        },
       };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
@@ -535,8 +544,8 @@ describe('Auth Routes', () => {
         body: {
           email: 'test@example.com',
           password: 'validpassword',
-          coParentEmail: 'test@example.com' // Same email
-        }
+          coParentEmail: 'test@example.com', // Same email
+        },
       };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
@@ -553,28 +562,31 @@ describe('Auth Routes', () => {
         id: 1,
         username: 'newuser',
         email: 'newuser@example.com',
-        displayName: 'New User'
+        displayName: 'New User',
       };
 
       const mockInvitation = {
         id: 1,
         inviteeEmail: 'coparent@example.com',
         token: 'invite-token',
-        isExistingUser: false
+        isExistingUser: false,
       };
 
       auth.registerWithInvitation.mockResolvedValue({
         user: mockUser,
-        invitation: mockInvitation
+        invitation: mockInvitation,
       });
 
-      const result = await auth.registerWithInvitation({
-        email: 'newuser@example.com',
-        password: 'validpassword',
-        displayName: 'New User',
-        coParentEmail: 'coparent@example.com',
-        context: {}
-      }, {});
+      const result = await auth.registerWithInvitation(
+        {
+          email: 'newuser@example.com',
+          password: 'validpassword',
+          displayName: 'New User',
+          coParentEmail: 'coparent@example.com',
+          context: {},
+        },
+        {}
+      );
 
       const token = generateToken(result.user);
       const res = { json: jest.fn() };
@@ -583,7 +595,7 @@ describe('Auth Routes', () => {
         success: true,
         user: result.user,
         invitation: result.invitation,
-        token
+        token,
       });
 
       const response = res.json.mock.calls[0][0];
@@ -598,7 +610,7 @@ describe('Auth Routes', () => {
     test('should clear cookie and return success', async () => {
       const res = {
         clearCookie: jest.fn(),
-        json: jest.fn()
+        json: jest.fn(),
       };
 
       res.clearCookie('auth_token');
@@ -607,7 +619,7 @@ describe('Auth Routes', () => {
       expect(res.clearCookie).toHaveBeenCalledWith('auth_token');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
-        message: 'Logged out successfully'
+        message: 'Logged out successfully',
       });
     });
   });

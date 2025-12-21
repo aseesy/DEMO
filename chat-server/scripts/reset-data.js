@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
  * Safe Data Reset Script
- * 
+ *
  * Deletes ONLY user-generated data (conversations, messages, preferences).
  * Keeps schema + system tables intact.
- * 
+ *
  * Usage: npm run reset:data
- * 
+ *
  * WARNING: This will delete all user data. Use only in development!
  */
 
@@ -30,14 +30,17 @@ const SYSTEM_TABLES = [
 async function confirmReset() {
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
   });
 
-  return new Promise((resolve) => {
-    rl.question('⚠️  This will DELETE ALL USER DATA. Are you sure? (type "yes" to confirm): ', (answer) => {
-      rl.close();
-      resolve(answer.toLowerCase() === 'yes');
-    });
+  return new Promise(resolve => {
+    rl.question(
+      '⚠️  This will DELETE ALL USER DATA. Are you sure? (type "yes" to confirm): ',
+      answer => {
+        rl.close();
+        resolve(answer.toLowerCase() === 'yes');
+      }
+    );
   });
 }
 
@@ -70,13 +73,16 @@ async function resetData() {
     for (const table of USER_DATA_TABLES) {
       try {
         // Check if table exists
-        const tableCheck = await db.query(`
+        const tableCheck = await db.query(
+          `
           SELECT EXISTS (
             SELECT FROM information_schema.tables 
             WHERE table_schema = 'public' 
             AND table_name = $1
           )
-        `, [table]);
+        `,
+          [table]
+        );
 
         if (!tableCheck.rows[0].exists) {
           console.log(`⚠️  Table ${table} does not exist, skipping...`);
@@ -99,7 +105,6 @@ async function resetData() {
     console.log('\n✅ Data reset complete!');
     console.log('💡 Schema and system tables are intact.');
     console.log('💡 You may want to run: npm run seed');
-
   } catch (error) {
     console.error('❌ Reset error:', error.message);
     console.error('\n💡 Check your DATABASE_URL environment variable');
@@ -114,4 +119,3 @@ async function resetData() {
 
 // Run reset
 resetData();
-

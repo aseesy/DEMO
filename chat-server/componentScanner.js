@@ -1,6 +1,6 @@
 /**
  * Component Scanner
- * 
+ *
  * Scans React components and extracts design information:
  * - Component structure (JSX hierarchy)
  * - Props and variants
@@ -24,12 +24,7 @@ class ComponentScanner {
    */
   loadDesignTokens() {
     try {
-      const tokensPath = path.join(
-        __dirname,
-        '..',
-        '.design-tokens-mcp',
-        'tokens.json'
-      );
+      const tokensPath = path.join(__dirname, '..', '.design-tokens-mcp', 'tokens.json');
       const tokens = JSON.parse(fs.readFileSync(tokensPath, 'utf-8'));
       return tokens;
     } catch (error) {
@@ -43,13 +38,7 @@ class ComponentScanner {
    */
   async scanComponents() {
     const components = [];
-    const componentsDir = path.join(
-      process.cwd(),
-      '..',
-      'chat-client-vite',
-      'src',
-      'components'
-    );
+    const componentsDir = path.join(process.cwd(), '..', 'chat-client-vite', 'src', 'components');
 
     // Scan UI components
     const uiDir = path.join(componentsDir, 'ui');
@@ -94,19 +83,19 @@ class ComponentScanner {
    */
   scanDirectory(dir, category) {
     const components = [];
-    
+
     if (!fs.existsSync(dir)) return components;
 
     const files = fs.readdirSync(dir, { withFileTypes: true });
 
     files.forEach(file => {
       const filePath = path.join(dir, file.name);
-      
+
       if (file.isDirectory()) {
         // Check for index.js or ComponentName.jsx
         const indexFile = path.join(filePath, 'index.js');
         const componentFile = path.join(filePath, `${file.name}.jsx`);
-        
+
         if (fs.existsSync(indexFile)) {
           const indexContent = fs.readFileSync(indexFile, 'utf-8');
           const exportMatch = indexContent.match(/export.*from ['"](.+?)['"]/);
@@ -137,7 +126,7 @@ class ComponentScanner {
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
       const componentName = this.extractComponentName(content, filename);
-      
+
       if (!componentName) return null;
 
       const component = {
@@ -181,7 +170,7 @@ class ComponentScanner {
    */
   extractProps(content) {
     const props = [];
-    
+
     // Find function parameters
     const paramMatch = content.match(/function\s+\w+\s*\(({[^}]*}|[^)]+)\)/);
     if (paramMatch) {
@@ -226,7 +215,7 @@ class ComponentScanner {
     if (!returnMatch) return structure;
 
     const jsx = returnMatch[1].trim();
-    
+
     // Extract top-level elements
     const elements = this.parseJSXElements(jsx);
     structure.children = elements;
@@ -265,7 +254,7 @@ class ComponentScanner {
    */
   parseAttributes(attrString) {
     const attrs = {};
-    
+
     // Extract className
     const classNameMatch = attrString.match(/className=["']([^"']+)["']/);
     if (classNameMatch) {
@@ -336,7 +325,7 @@ class ComponentScanner {
     };
 
     const styles = this.extractStyles(content);
-    
+
     styles.colors.forEach(color => tokens.colors.add(color));
     styles.spacing.forEach(spacing => tokens.spacing.add(spacing));
     styles.typography.forEach(typography => tokens.typography.add(typography));
@@ -353,7 +342,7 @@ class ComponentScanner {
    */
   extractChildComponents(content) {
     const children = [];
-    
+
     // Find component imports
     const importMatches = content.matchAll(/import\s+{([^}]+)}\s+from\s+['"]([^'"]+)['"]/g);
     for (const match of importMatches) {
@@ -413,4 +402,3 @@ class ComponentScanner {
 }
 
 module.exports = ComponentScanner;
-

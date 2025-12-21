@@ -17,14 +17,17 @@ Already installed and configured in your Claude Desktop app!
 ## Available Tools
 
 ### 1. `get_token`
+
 Get a specific design token value by its path.
 
 **Example:**
+
 ```
 get_token with path: "colors.brand.primary"
 ```
 
 **Returns:**
+
 ```json
 {
   "value": "#275559",
@@ -34,9 +37,11 @@ get_token with path: "colors.brand.primary"
 ```
 
 ### 2. `list_tokens`
+
 List all available design tokens or filter by category.
 
 **Examples:**
+
 ```
 list_tokens (no category = all tokens)
 list_tokens with category: "colors"
@@ -46,9 +51,11 @@ list_tokens with category: "spacing"
 **Returns:** Array of all tokens in the specified category with their paths, values, types, and descriptions.
 
 ### 3. `search_tokens`
+
 Search for design tokens by keyword.
 
 **Example:**
+
 ```
 search_tokens with query: "primary"
 search_tokens with query: "shadow"
@@ -58,9 +65,11 @@ search_tokens with query: "#275559"
 **Returns:** Array of matching tokens.
 
 ### 4. `update_token`
+
 Update a design token value (writes to tokens.json).
 
 **Example:**
+
 ```
 update_token with path: "colors.brand.primary" and value: "#2a5a5e"
 ```
@@ -68,35 +77,43 @@ update_token with path: "colors.brand.primary" and value: "#2a5a5e"
 ## Design Token Categories
 
 ### Colors
+
 - **Brand Colors**: `primary`, `secondary`, `accent`, `focus`
 - **Background Colors**: `light`, `lighter`
 - **UI Colors**: `white`, `gray` (50-900)
 
 ### Spacing
+
 - `xs` (4px) through `3xl` (64px)
 
 ### Border Radius
+
 - `sm` (6px) through `full` (rounded circles)
 
 ### Typography
+
 - **Font Family**: Inter with system fallbacks
 - **Font Size**: `xs` (12px) through `4xl` (36px)
 - **Font Weight**: `normal`, `medium`, `semibold`, `bold`
 
 ### Shadows
+
 - `sm` through `2xl` - various elevation levels
 
 ### Navigation
+
 - **Heights**: Desktop (40px) and Mobile (48px)
 - **Z-Index**: 50
 
 ### Modal
+
 - **Z-Index**: 100 (above navigation)
 - **Padding**: Mobile (96px) and Desktop (16px)
 
 ## Resource URI
 
 Access the complete design token system:
+
 ```
 liaizen://design-tokens
 ```
@@ -147,6 +164,7 @@ After adding this MCP server, **restart Claude Desktop** to load the new configu
 ## Testing
 
 Test the server manually:
+
 ```bash
 cd /Users/athenasees/Desktop/chat/.design-tokens-mcp
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | node index.js

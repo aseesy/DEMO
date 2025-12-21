@@ -3,11 +3,13 @@
 ## 📊 Basic Metrics
 
 ### File Count
+
 - **Total JavaScript files**: (scanning...)
 - **Total lines of code**: (scanning...)
 - **Largest files**: (scanning...)
 
 ### Function Count
+
 - **Total functions**: (scanning...)
 
 ---
@@ -17,18 +19,23 @@
 Based on the recommendations, here are the scans I can run immediately:
 
 ### 1. **Long Files Detection** ✅ (Can run now)
+
 Find files that are too long and hard to maintain.
 
 ### 2. **Code Duplication** ⚠️ (Needs tool)
+
 Requires `jscpd` or similar tool installation.
 
 ### 3. **Circular Dependencies** ⚠️ (Needs tool)
+
 Requires `madge` installation.
 
 ### 4. **Unused Imports** ✅ (Can check manually)
+
 Can grep for require/import patterns.
 
 ### 5. **Magic Numbers/Strings** ✅ (Can scan now)
+
 Can grep for hardcoded values.
 
 ---
@@ -50,7 +57,7 @@ Can grep for hardcoded values.
    - No magic numbers
 
 Would you like me to:
+
 - **Run the quick scans now** (long files, magic numbers)?
 - **Create scripts** for automated scanning?
 - **Set up tooling** (jscpd, madge, etc.)?
-

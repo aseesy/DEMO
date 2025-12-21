@@ -12,7 +12,7 @@ jest.mock('../dbSafe', () => ({
   safeSelect: jest.fn(),
   safeInsert: jest.fn(),
   safeUpdate: jest.fn(),
-  parseResult: jest.fn((result) => result),
+  parseResult: jest.fn(result => result),
   withTransaction: jest.fn(),
 }));
 
@@ -34,7 +34,14 @@ jest.mock('../libs/invitation-manager', () => ({
     token: 'test-invite-token',
     isExistingUser: false,
   }),
-  validateToken: jest.fn().mockResolvedValue({ valid: true, invitation: { id: 1, invitee_email: 'test@example.com', inviter_id: 1 }, inviterName: 'Test User', inviterEmail: 'inviter@example.com' }),
+  validateToken: jest
+    .fn()
+    .mockResolvedValue({
+      valid: true,
+      invitation: { id: 1, invitee_email: 'test@example.com', inviter_id: 1 },
+      inviterName: 'Test User',
+      inviterEmail: 'inviter@example.com',
+    }),
   acceptInvitation: jest.fn().mockResolvedValue({ invitation: { id: 1 }, inviterId: 1 }),
 }));
 
@@ -54,7 +61,10 @@ jest.mock('../src/utils/neo4jClient', () => ({
 
 const dbSafe = require('../dbSafe');
 const auth = require('../auth');
-const { generateToken, authenticate, optionalAuth, JWT_SECRET } = require('../middleware/auth');
+const { generateToken, authenticate, optionalAuth } = require('../middleware/auth');
+
+// Get JWT_SECRET from environment (set in jest.setup.js)
+const JWT_SECRET = process.env.JWT_SECRET;
 
 describe('Authentication Module', () => {
   beforeEach(() => {
@@ -138,8 +148,9 @@ describe('Authentication Module', () => {
       // Mock existing user
       dbSafe.safeSelect.mockResolvedValue([{ id: 1, email }]);
 
-      await expect(auth.createUserWithEmail(email, password, {}))
-        .rejects.toThrow('Email already exists');
+      await expect(auth.createUserWithEmail(email, password, {})).rejects.toThrow(
+        'Email already exists'
+      );
     });
 
     test('should generate username from email', async () => {
@@ -181,12 +192,14 @@ describe('Authentication Module', () => {
       const hashedPassword = await auth.hashPassword(password);
 
       dbSafe.safeSelect
-        .mockResolvedValueOnce([{
-          id: 1,
-          username: 'validuser',
-          email,
-          password_hash: hashedPassword
-        }])
+        .mockResolvedValueOnce([
+          {
+            id: 1,
+            username: 'validuser',
+            email,
+            password_hash: hashedPassword,
+          },
+        ])
         .mockResolvedValueOnce([]); // user_context query
 
       dbSafe.safeUpdate.mockResolvedValue(true);
@@ -211,13 +224,15 @@ describe('Authentication Module', () => {
     });
 
     test('should throw OAUTH_ONLY_ACCOUNT for OAuth users', async () => {
-      dbSafe.safeSelect.mockResolvedValue([{
-        id: 1,
-        username: 'oauthuser',
-        email: 'oauth@example.com',
-        password_hash: null,
-        google_id: 'google-123'
-      }]);
+      dbSafe.safeSelect.mockResolvedValue([
+        {
+          id: 1,
+          username: 'oauthuser',
+          email: 'oauth@example.com',
+          password_hash: null,
+          google_id: 'google-123',
+        },
+      ]);
 
       try {
         await auth.authenticateUserByEmail('oauth@example.com', 'password');
@@ -233,12 +248,14 @@ describe('Authentication Module', () => {
       const wrongPassword = 'wrongPassword';
       const hashedPassword = await auth.hashPassword(correctPassword);
 
-      dbSafe.safeSelect.mockResolvedValue([{
-        id: 1,
-        username: 'testuser',
-        email,
-        password_hash: hashedPassword
-      }]);
+      dbSafe.safeSelect.mockResolvedValue([
+        {
+          id: 1,
+          username: 'testuser',
+          email,
+          password_hash: hashedPassword,
+        },
+      ]);
 
       try {
         await auth.authenticateUserByEmail(email, wrongPassword);
@@ -356,9 +373,11 @@ describe('Authentication Module', () => {
       expect(mockRes.status).toHaveBeenCalledWith(401);
       // Note: The middleware returns 'Invalid token' for all JWT errors including expiration
       // This is acceptable behavior as it doesn't leak information about token validity
-      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
-        error: expect.stringMatching(/Token expired|Invalid token/)
-      }));
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.stringMatching(/Token expired|Invalid token/),
+        })
+      );
     });
 
     test('optionalAuth should allow request without token', () => {
@@ -400,7 +419,10 @@ describe('Authentication Module', () => {
     });
 
     test('createRegistrationError should create error with code', () => {
-      const error = auth.createRegistrationError(auth.RegistrationError.EMAIL_EXISTS, 'test@example.com');
+      const error = auth.createRegistrationError(
+        auth.RegistrationError.EMAIL_EXISTS,
+        'test@example.com'
+      );
 
       expect(error).toBeInstanceOf(Error);
       expect(error.code).toBe('REG_001');
@@ -486,8 +508,9 @@ describe('Registration with Invitation', () => {
       coParentEmail: 'test@example.com', // Same email
     };
 
-    await expect(auth.registerWithInvitation(params, {}))
-      .rejects.toThrow('You cannot invite yourself as a co-parent');
+    await expect(auth.registerWithInvitation(params, {})).rejects.toThrow(
+      'You cannot invite yourself as a co-parent'
+    );
   });
 
   test('registerWithInvitation should require co-parent email', async () => {
@@ -498,8 +521,9 @@ describe('Registration with Invitation', () => {
       coParentEmail: null,
     };
 
-    await expect(auth.registerWithInvitation(params, {}))
-      .rejects.toThrow('Co-parent email is required');
+    await expect(auth.registerWithInvitation(params, {})).rejects.toThrow(
+      'Co-parent email is required'
+    );
   });
 
   test('registerWithInvitation should require database connection', async () => {
@@ -510,8 +534,9 @@ describe('Registration with Invitation', () => {
       coParentEmail: 'coparent@example.com',
     };
 
-    await expect(auth.registerWithInvitation(params, null))
-      .rejects.toThrow('Database connection is required');
+    await expect(auth.registerWithInvitation(params, null)).rejects.toThrow(
+      'Database connection is required'
+    );
   });
 });
 
@@ -520,18 +545,22 @@ describe('Session Verification Integration', () => {
     const username = 'testuser';
 
     dbSafe.safeSelect
-      .mockResolvedValueOnce([{
-        id: 1,
-        username,
-        email: 'test@example.com',
-        display_name: 'Test User'
-      }])
-      .mockResolvedValueOnce([{
-        user_id: username,
-        co_parent: 'Co-Parent Name',
-        children: '[]',
-        contacts: '[]'
-      }]);
+      .mockResolvedValueOnce([
+        {
+          id: 1,
+          username,
+          email: 'test@example.com',
+          display_name: 'Test User',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          user_id: username,
+          co_parent: 'Co-Parent Name',
+          children: '[]',
+          contacts: '[]',
+        },
+      ]);
 
     const user = await auth.getUser(username);
 

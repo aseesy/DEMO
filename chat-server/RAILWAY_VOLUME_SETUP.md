@@ -23,6 +23,7 @@
 After deployment, check your Railway logs for:
 
 ✅ **Good signs:**
+
 ```
 📁 Database path: /data/chat.db
 📁 DB_PATH env var: /data/chat.db
@@ -33,6 +34,7 @@ After deployment, check your Railway logs for:
 ```
 
 ❌ **Bad signs:**
+
 ```
 ⚠️  DB_PATH not set - using default path (ephemeral on Railway/Vercel)
 ❌ Failed to create database directory
@@ -43,16 +45,21 @@ After deployment, check your Railway logs for:
 ## Common Issues
 
 ### Issue: DB_PATH not set
+
 **Solution:** Add `DB_PATH=/data/chat.db` environment variable (replace `/data` with your volume mount path)
 
 ### Issue: Permission denied
+
 **Solution:** Railway volumes should have correct permissions automatically. If not, check volume mount path.
 
 ### Issue: Directory doesn't exist
+
 **Solution:** The code will create it automatically, but verify the volume is mounted correctly.
 
 ### Issue: Database still not persisting
-**Solution:** 
+
+**Solution:**
+
 1. Verify volume is actually mounted (check Railway dashboard)
 2. Check logs for save errors
 3. Verify DB_PATH matches volume mount path exactly
@@ -73,4 +80,3 @@ After deployment, check your Railway logs for:
 - `/mnt/data/chat.db` - Alternative mount point
 
 **Important:** The path must match exactly what Railway shows in the volume mount configuration.
-

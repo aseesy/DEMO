@@ -45,50 +45,61 @@ If you're seeing "An unexpected error occurred", the improved error handling wil
 ### Step 3: Common Error Codes and Fixes
 
 #### `OAUTH_CONFIG_ERROR`
+
 **Meaning:** OAuth credentials not configured  
 **Fix:** Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to Railway Variables
 
 #### `OAUTH_INVALID_CLIENT`
+
 **Meaning:** OAuth credentials are incorrect  
 **Fix:** Verify Client ID and Secret match Google Cloud Console
 
 #### `USER_CREATION_ERROR`
+
 **Meaning:** Failed to create user in database  
 **Possible causes:**
+
 - Database connection issue
 - Username conflict (unlikely with auto-generation)
 - Database constraint violation
 
 **Fix:**
+
 - Check Railway logs for specific database error
 - Verify `DATABASE_URL` is set correctly
 - Check if database is accessible
 
 #### `INVALID_USER_DATA`
+
 **Meaning:** User was created but returned invalid structure  
 **Fix:** Check Railway logs for the actual user object structure
 
 #### `TOKEN_GENERATION_ERROR`
+
 **Meaning:** Failed to generate JWT token  
 **Fix:** Verify `JWT_SECRET` is set in Railway Variables
 
 #### `GOOGLE_USERINFO_ERROR`
+
 **Meaning:** Failed to get user info from Google  
 **Fix:** Check if Google OAuth token is valid
 
 #### `INVALID_GOOGLE_USER`
+
 **Meaning:** Google returned invalid user data  
 **Fix:** Check Railway logs for what Google returned
 
 ### Step 4: Quick Checks
 
 **Verify Environment Variables in Railway:**
+
 - [ ] `GOOGLE_CLIENT_ID` is set
 - [ ] `GOOGLE_CLIENT_SECRET` is set
 - [ ] `JWT_SECRET` is set
 - [ ] `DATABASE_URL` is set (if using PostgreSQL)
 
 **Verify Google Cloud Console:**
+
 - [ ] OAuth client is created
 - [ ] Redirect URIs are configured correctly
 - [ ] Client ID and Secret match Railway variables
@@ -96,6 +107,7 @@ If you're seeing "An unexpected error occurred", the improved error handling wil
 ### Step 5: Test Again
 
 After checking logs and fixing issues:
+
 1. Clear browser cache/cookies
 2. Try signing in with Google again
 3. Check browser console for new error messages
@@ -104,10 +116,10 @@ After checking logs and fixing issues:
 ## Getting Help
 
 If the error persists:
+
 1. Copy the exact error message from browser console
 2. Copy the error from Railway logs
 3. Note the error code (if any)
 4. Check the Network tab response for the actual error details
 
 The improved error handling should now show specific error messages instead of "An unexpected error occurred" for most cases.
-

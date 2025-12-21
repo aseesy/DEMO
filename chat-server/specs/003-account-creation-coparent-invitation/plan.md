@@ -4,6 +4,7 @@
 **Input**: Feature specification from `/Users/athenasees/Desktop/chat/chat-server/specs/003-account-creation-coparent-invitation/spec.md`
 
 ## Execution Flow (/plan command scope)
+
 ```
 1. Load feature spec from Input path
    → Spec found and analyzed
@@ -31,6 +32,7 @@
 This feature extends the existing authentication system to **require** new users to invite their co-parent immediately after account creation. The invitation flow supports both new users (via email) and existing users (via in-app notification). Upon acceptance, both co-parents are automatically connected in a shared private room with equal permissions. MVP is limited to one co-parent per user, with rooms supporting exactly 2 members.
 
 **Key Technical Approach**:
+
 - Extend existing `auth.js` registration flow with mandatory invitation step
 - Create new `invitationManager.js` library to handle secure token generation, validation, and lifecycle management
 - Use existing `emailService.js` for new user email delivery
@@ -47,11 +49,13 @@ This feature extends the existing authentication system to **require** new users
 **Target Platform**: Linux server (Railway production), macOS (local development)
 **Project Type**: web (backend at `/Users/athenasees/Desktop/chat/chat-server/`, frontend at `/Users/athenasees/Desktop/chat/chat-client-vite/`)
 **Performance Goals**:
+
 - Invitation email delivery within 5 minutes (NFR-005)
 - Account creation completes within 3 seconds under normal load (NFR-004)
 - Invitation token validation within 200ms
 
 **Constraints**:
+
 - Must maintain backward compatibility with existing auth flow
 - One co-parent only for MVP (rooms limited to 2 members)
 - Invitation links expire after 7 days
@@ -59,16 +63,19 @@ This feature extends the existing authentication system to **require** new users
 - Accessible via screen readers (WCAG 2.1 AA compliance - NFR-008)
 
 **Scale/Scope**:
+
 - Estimated 100-1000 users in first 3 months
 - ~50% invitation acceptance rate expected within 7 days
 - Database will store invitation history for audit trail compliance
 
 ## Constitution Check
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 ### Part I: Core Immutable Principles
 
 #### Principle I: Library-First Architecture ✅ PASS
+
 - **Requirement**: Every feature must begin as standalone library
 - **Implementation**:
   - `invitationManager.js` created as standalone library with clear API
@@ -77,6 +84,7 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ Feature implemented as library-first
 
 #### Principle II: Test-First Development ✅ PASS (PLANNED)
+
 - **Requirement**: TDD mandatory - write tests before implementation
 - **Implementation**:
   - Contract tests for all API endpoints will be generated in Phase 1
@@ -86,6 +94,7 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ Tests planned before implementation (will be executed in /tasks phase)
 
 #### Principle III: Contract-First Design ✅ PASS (PLANNED)
+
 - **Requirement**: All integration points defined by contracts before implementation
 - **Implementation**:
   - OpenAPI 3.1 contracts for all endpoints (see contracts/ directory)
@@ -96,6 +105,7 @@ This feature extends the existing authentication system to **require** new users
 ### Part II: Quality and Safety Principles
 
 #### Principle IV: Idempotent Operations ✅ PASS
+
 - **Requirement**: Operations safely repeatable without side effects
 - **Implementation**:
   - Re-sending invitation to same email: updates existing invitation token
@@ -104,6 +114,7 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ All operations designed for idempotency
 
 #### Principle V: Progressive Enhancement ✅ PASS
+
 - **Requirement**: Simplest solution first, add complexity only when proven necessary
 - **Implementation**:
   - MVP: One co-parent only (multiple co-parents deferred to future release)
@@ -113,11 +124,13 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ YAGNI applied, complexity justified
 
 #### Principle VI: Git Operation Approval ✅ PASS
+
 - **Requirement**: NO automatic git operations without explicit user approval
 - **Implementation**: This is a planning document only - no git operations performed
 - **Compliance**: ✅ N/A (planning phase - no git operations)
 
 #### Principle VII: Observability and Structured Logging ✅ PASS
+
 - **Requirement**: Structured logs and metrics for debugging/audit trails
 - **Implementation**:
   - All invitation operations logged: creation, validation, acceptance, expiration
@@ -127,6 +140,7 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ Observability built into design
 
 #### Principle VIII: Documentation Synchronization ✅ PASS
+
 - **Requirement**: Documentation stays synchronized with code changes
 - **Implementation**:
   - API endpoints documented in OpenAPI spec (auto-generated docs)
@@ -136,6 +150,7 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ Documentation plan included
 
 #### Principle IX: Dependency Management ✅ PASS
+
 - **Requirement**: Dependencies explicitly declared, version-pinned, regularly audited
 - **Implementation**:
   - No new dependencies required (uses existing bcrypt, nodemailer, pg, crypto)
@@ -146,6 +161,7 @@ This feature extends the existing authentication system to **require** new users
 ### Part III: Workflow and Delegation Principles
 
 #### Principle X: Agent Delegation Protocol ✅ PASS
+
 - **Requirement**: Specialized work delegated to specialized agents
 - **Implementation**:
   - This is planning-agent work (Phase 2 of SDD workflow pipeline)
@@ -154,6 +170,7 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ Appropriate agent for planning work
 
 #### Principle XI: Input Validation and Output Sanitization ✅ PASS
+
 - **Requirement**: All inputs validated, outputs sanitized, secrets never logged
 - **Implementation**:
   - Email validation: RFC 5322 format check (FR-002)
@@ -165,6 +182,7 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ Security validation at every boundary
 
 #### Principle XII: Design System Compliance ✅ PASS
+
 - **Requirement**: UI components comply with design system (WCAG 2.1 AA)
 - **Implementation**:
   - Signup form: Accessible labels, error messages, keyboard navigation
@@ -175,6 +193,7 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ Follows existing design system
 
 #### Principle XIII: Feature Access Control ✅ PASS
+
 - **Requirement**: Access restrictions enforced at backend and frontend
 - **Implementation**:
   - Backend: JWT token validation before all authenticated endpoints
@@ -184,6 +203,7 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ Dual-layer enforcement planned
 
 #### Principle XIV: AI Model Selection Protocol ✅ PASS
+
 - **Requirement**: Use appropriate AI models for tasks
 - **Implementation**: No AI model usage in this feature (pure business logic)
 - **Compliance**: ✅ N/A (no AI integration)
@@ -191,6 +211,7 @@ This feature extends the existing authentication system to **require** new users
 ### Part III-B: Co-Parenting Domain Principles
 
 #### Principle XV: Conflict Reduction First ✅ PASS
+
 - **Requirement**: Prioritize conflict reduction over documentation
 - **Implementation**:
   - Equal permissions: Both co-parents have identical room access (no power imbalance)
@@ -200,6 +221,7 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ Conflict reduction prioritized in design
 
 #### Principle XVI: Privacy by Default ✅ PASS
+
 - **Requirement**: Family data protection, COPPA/GDPR compliance
 - **Implementation**:
   - Email addresses: Only shared with explicit consent (invitation sent)
@@ -210,6 +232,7 @@ This feature extends the existing authentication system to **require** new users
 - **Compliance**: ✅ Privacy requirements met
 
 #### Principle XVII: Neutral Platform Stance ✅ PASS
+
 - **Requirement**: Platform never picks sides between co-parents
 - **Implementation**:
   - Room ownership: No "owner" vs "guest" - both are equal "members"
@@ -223,6 +246,7 @@ This feature extends the existing authentication system to **require** new users
 ## Project Structure
 
 ### Documentation (this feature)
+
 ```
 specs/003-account-creation-coparent-invitation/
 ├── plan.md              # This file (/plan command output)
@@ -239,6 +263,7 @@ specs/003-account-creation-coparent-invitation/
 ### Source Code (repository root)
 
 #### Option 2: Web application (backend + frontend detected)
+
 ```
 chat-server/ (backend)
 ├── invitationManager.js      # NEW: Invitation logic library
@@ -283,9 +308,11 @@ chat-client-vite/ (frontend)
 ## Phase 0: Outline & Research
 
 ### Research Completed
+
 See [research.md](./research.md) for detailed findings.
 
 **Key Decisions**:
+
 1. **Invitation Token Generation**: crypto.randomBytes(32) → base64url (secure, simple)
 2. **Token Storage**: Store hashed token in database (SHA-256) for security
 3. **Email Delivery**: Use existing nodemailer with Gmail/SMTP configuration
@@ -294,6 +321,7 @@ See [research.md](./research.md) for detailed findings.
 6. **Room Architecture**: Extend existing room_members table (no schema changes needed)
 
 **All NEEDS CLARIFICATION from spec resolved**:
+
 - ✅ Password requirements: Min 8 chars, 1 uppercase, 1 number (existing standard)
 - ✅ Invitation timing: Required step immediately after account creation
 - ✅ Multiple co-parents: Not supported in MVP (one co-parent only, rooms limited to 2)
@@ -305,9 +333,11 @@ See [research.md](./research.md) for detailed findings.
 ## Phase 1: Design & Contracts
 
 ### 1. Data Model
+
 See [data-model.md](./data-model.md) for complete entity definitions.
 
 **Key Entities**:
+
 - **User** (extended): Added invitation relationship
 - **Invitation** (new): Token, inviter, invitee email, status, expiration
 - **InAppNotification** (new): User, type, message, read status, invitation reference
@@ -315,9 +345,11 @@ See [data-model.md](./data-model.md) for complete entity definitions.
 - **RoomMember** (existing): No changes needed
 
 ### 2. API Contracts
+
 See [contracts/](./contracts/) directory for OpenAPI specifications.
 
 **Endpoints**:
+
 - `POST /api/auth/register` - Extended with invitation step
 - `POST /api/invitations/send` - Send invitation to co-parent
 - `GET /api/invitations/:token` - Validate invitation token
@@ -326,18 +358,22 @@ See [contracts/](./contracts/) directory for OpenAPI specifications.
 - `PATCH /api/notifications/:id/read` - Mark notification as read
 
 ### 3. Contract Tests
+
 See [contracts/](./contracts/) for test scenario mappings.
 
 **Test Coverage**:
+
 - ✅ One test file per endpoint
 - ✅ Request/response schema validation
 - ✅ Error case coverage (expired token, invalid email, etc.)
 - ✅ All tests will initially fail (no implementation yet)
 
 ### 4. Test Scenarios
+
 See [quickstart.md](./quickstart.md) for detailed test execution steps.
 
 **Integration Scenarios** (from spec.md acceptance criteria):
+
 1. New User Account Creation
 2. Co-Parent Invitation (New User)
 3. Co-Parent Accepts Invitation (Creates Account)
@@ -346,7 +382,9 @@ See [quickstart.md](./quickstart.md) for detailed test execution steps.
 6. Expired Invitation
 
 ### 5. Update CLAUDE.md
+
 The CLAUDE.md file at `/Users/athenasees/Desktop/chat/CLAUDE.md` will be updated incrementally with:
+
 - New API endpoints and their purposes
 - Invitation flow architecture decisions
 - Common troubleshooting patterns (token expiration, email delivery failures)
@@ -356,9 +394,11 @@ The CLAUDE.md file at `/Users/athenasees/Desktop/chat/CLAUDE.md` will be updated
 **Output**: data-model.md, contracts/, failing tests, quickstart.md, CLAUDE.md updated ✅
 
 ## Phase 2: Task Planning Approach
-*This section describes what the /tasks command will do - DO NOT execute during /plan*
+
+_This section describes what the /tasks command will do - DO NOT execute during /plan_
 
 **Task Generation Strategy**:
+
 - Load `.specify/templates/tasks-template.md` as base
 - Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
 - Dependency ordering: Database migrations → Libraries → API routes → Frontend components
@@ -367,18 +407,21 @@ The CLAUDE.md file at `/Users/athenasees/Desktop/chat/CLAUDE.md` will be updated
 **Task Categories**:
 
 **1. Database Tasks**:
+
 - Create migration file: `003_invitations.sql`
 - Add `invitations` table with indexes
 - Add `in_app_notifications` table with indexes
 - Test migration up/down (rollback capability)
 
 **2. Library Tasks** (parallel after migration):
+
 - [P] Create `invitationManager.js` with token generation, validation, expiration
 - [P] Create `notificationManager.js` with CRUD operations
 - [P] Write unit tests for `invitationManager.js`
 - [P] Write unit tests for `notificationManager.js`
 
 **3. Backend API Tasks** (after library tests pass):
+
 - Extend `auth.js` with invitation step in registration flow
 - Extend `emailService.js` with invitation email templates
 - Modify `roomManager.js` to support co-parent room sharing
@@ -387,6 +430,7 @@ The CLAUDE.md file at `/Users/athenasees/Desktop/chat/CLAUDE.md` will be updated
 - Write contract tests for all endpoints
 
 **4. Frontend Tasks** (parallel with backend):
+
 - [P] Create `InvitationForm.jsx` component
 - [P] Create `NotificationBell.jsx` component
 - [P] Create `NotificationPanel.jsx` component
@@ -397,6 +441,7 @@ The CLAUDE.md file at `/Users/athenasees/Desktop/chat/CLAUDE.md` will be updated
 - [P] Add real-time notification listener (Socket.io)
 
 **5. Integration Test Tasks** (after backend + frontend complete):
+
 - Scenario 1: Full signup → invite → accept flow
 - Scenario 2: Existing user invitation → in-app notification
 - Scenario 3: Invitation expiration handling
@@ -404,12 +449,14 @@ The CLAUDE.md file at `/Users/athenasees/Desktop/chat/CLAUDE.md` will be updated
 - Scenario 5: Shared room access validation
 
 **6. Documentation Tasks**:
+
 - Update README.md with invitation flow instructions
 - Update CLAUDE.md with new endpoints and patterns
 - Add API documentation screenshots/examples
 - Create user-facing help article (optional)
 
 **Ordering Strategy**:
+
 ```
 Migration [1] → Libraries [2-5 parallel] → Backend API [6-11] → Frontend [12-19 parallel] → Integration Tests [20-24] → Docs [25-28]
 ```
@@ -419,22 +466,26 @@ Migration [1] → Libraries [2-5 parallel] → Backend API [6-11] → Frontend [
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
 ## Phase 3+: Future Implementation
-*These phases are beyond the scope of the /plan command*
+
+_These phases are beyond the scope of the /plan command_
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)
 **Phase 4**: Implementation (execute tasks.md following TDD workflow)
 **Phase 5**: Validation
+
 - Run all tests (contract, unit, integration)
 - Execute quickstart.md test scenarios manually
 - Performance validation (email delivery within 5 min, account creation within 3 sec)
 - Accessibility validation (WCAG 2.1 AA compliance)
 
 ## Complexity Tracking
-*Fill ONLY if Constitution Check has violations that must be justified*
+
+_Fill ONLY if Constitution Check has violations that must be justified_
 
 **No violations detected** - This section is intentionally left empty.
 
 All complexity decisions align with Progressive Enhancement (Principle V):
+
 - One co-parent only (MVP simplification)
 - Simple token generation (crypto.randomBytes vs JWT)
 - Database-backed notifications (vs separate service)
@@ -442,9 +493,11 @@ All complexity decisions align with Progressive Enhancement (Principle V):
 All decisions have clear justification documented in research.md.
 
 ## Progress Tracking
-*This checklist is updated during execution flow*
+
+_This checklist is updated during execution flow_
 
 **Phase Status**:
+
 - [x] Phase 0: Research complete (/plan command) ✅
 - [x] Phase 1: Design complete (/plan command) ✅
 - [x] Phase 2: Task planning complete (/plan command - approach described) ✅
@@ -453,6 +506,7 @@ All decisions have clear justification documented in research.md.
 - [ ] Phase 5: Validation passed
 
 **Gate Status**:
+
 - [x] Initial Constitution Check: PASS ✅
 - [x] Post-Design Constitution Check: PASS ✅
 - [x] All NEEDS CLARIFICATION resolved ✅
@@ -463,5 +517,6 @@ All decisions have clear justification documented in research.md.
 This plan has been validated against all 17 constitutional principles, all technical unknowns have been resolved, and complete design artifacts (research, data model, contracts, test scenarios) are ready for task generation.
 
 ---
-*Based on Constitution v2.0.0 - See `.specify/memory/constitution.md`*
-*Planning executed by planning-agent per Principle X (Agent Delegation Protocol)*
+
+_Based on Constitution v2.0.0 - See `.specify/memory/constitution.md`_
+_Planning executed by planning-agent per Principle X (Agent Delegation Protocol)_

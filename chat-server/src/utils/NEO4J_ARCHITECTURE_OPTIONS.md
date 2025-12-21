@@ -3,10 +3,12 @@
 ## Scenario Overview
 
 **Current State:**
+
 - Mom A and Dad A have a private co-parenting connection
 - They share a room and can communicate
 
 **Evolving Relationships:**
+
 - Mom A gets a new partner (Mom A's Partner)
 - Dad A might get a new partner (Dad A's Partner)
 - New co-parenting relationships form
@@ -17,17 +19,20 @@
 ### Option 1: Direct Relationship Model (Simple)
 
 **Structure:**
+
 ```cypher
 (:User)-[:CO_PARENT_WITH {roomId: "room_123", createdAt: datetime()}]->(:User)
 ```
 
 **Pros:**
+
 - ✅ Simple and intuitive
 - ✅ Easy to query: `MATCH (u:User)-[:CO_PARENT_WITH]->(c:User)`
 - ✅ Direct representation of relationships
 - ✅ Fast traversal
 
 **Cons:**
+
 - ❌ Doesn't track relationship history (e.g., when Mom A's new partner joins)
 - ❌ Hard to model complex scenarios (e.g., Mom A + Partner + Dad A dynamics)
 - ❌ No way to represent "active" vs "inactive" relationships
@@ -40,6 +45,7 @@
 ### Option 2: Relationship Node Model (Flexible)
 
 **Structure:**
+
 ```cypher
 (:User)-[:PARTICIPATES_IN {role: "co-parent", joinedAt: datetime()}]->(:CoParentRelationship)
 (:CoParentRelationship)-[:HAS_ROOM]->(:Room {roomId: "room_123"})
@@ -47,6 +53,7 @@
 ```
 
 **Pros:**
+
 - ✅ Can track relationship history (when people joined/left)
 - ✅ Supports multiple participants (Mom A, Dad A, Mom A's Partner)
 - ✅ Can store rich metadata on relationship node
@@ -54,6 +61,7 @@
 - ✅ Can mark relationships as active/inactive
 
 **Cons:**
+
 - ⚠️ More complex queries
 - ⚠️ Requires relationship node management
 - ⚠️ Slightly more storage overhead
@@ -61,6 +69,7 @@
 **Use Case:** Best for evolving relationships and complex family structures
 
 **Example Query:**
+
 ```cypher
 // Find all active co-parenting relationships for a user
 MATCH (u:User {userId: 123})-[:PARTICIPATES_IN {role: "co-parent"}]->(r:CoParentRelationship {active: true})
@@ -74,6 +83,7 @@ RETURN r, collect(other) as coParents
 ### Option 3: Room-Centric Model (Aligns with PostgreSQL)
 
 **Structure:**
+
 ```cypher
 (:User)-[:MEMBER_OF {role: "owner", joinedAt: datetime()}]->(:Room {roomId: "room_123", type: "co-parent"})
 (:User)-[:MEMBER_OF {role: "member", joinedAt: datetime()}]->(:Room)
@@ -81,6 +91,7 @@ RETURN r, collect(other) as coParents
 ```
 
 **Pros:**
+
 - ✅ Aligns perfectly with existing PostgreSQL room structure
 - ✅ Easy to sync: when room created in PostgreSQL, create in Neo4j
 - ✅ Room can have metadata (name, type, privacy settings)
@@ -88,6 +99,7 @@ RETURN r, collect(other) as coParents
 - ✅ Can query all members of a room easily
 
 **Cons:**
+
 - ⚠️ Relationships are indirect (through room)
 - ⚠️ Less intuitive for "who is co-parenting with whom" queries
 - ⚠️ Requires room node management
@@ -95,6 +107,7 @@ RETURN r, collect(other) as coParents
 **Use Case:** Best when you want Neo4j to mirror PostgreSQL structure
 
 **Example Query:**
+
 ```cypher
 // Find all co-parents (users in same co-parent room)
 MATCH (u:User {userId: 123})-[:MEMBER_OF]->(r:Room {type: "co-parent"})
@@ -108,6 +121,7 @@ RETURN coParent
 ### Option 4: Hybrid Model (Recommended)
 
 **Structure:**
+
 ```cypher
 // Direct relationship for quick queries
 (:User)-[:CO_PARENT_WITH {roomId: "room_123", active: true, createdAt: datetime()}]->(:User)
@@ -118,6 +132,7 @@ RETURN coParent
 ```
 
 **Pros:**
+
 - ✅ Best of both worlds: direct relationships + room structure
 - ✅ Fast relationship queries: `MATCH (u)-[:CO_PARENT_WITH]->(c)`
 - ✅ Room queries work: `MATCH (u)-[:MEMBER_OF]->(r:Room)`
@@ -125,6 +140,7 @@ RETURN coParent
 - ✅ Supports both relationship and room-based analytics
 
 **Cons:**
+
 - ⚠️ Requires maintaining two structures (relationship + room membership)
 - ⚠️ Need to keep them in sync
 - ⚠️ More storage
@@ -132,6 +148,7 @@ RETURN coParent
 **Use Case:** Best for production - balances performance and flexibility
 
 **Example Queries:**
+
 ```cypher
 // Quick: Find direct co-parents
 MATCH (u:User {userId: 123})-[:CO_PARENT_WITH {active: true}]->(c:User)
@@ -150,6 +167,7 @@ RETURN c, r
 ### Scenario: Mom A + Dad A → Mom A + Dad A + Mom A's Partner
 
 ### Option 2 (Relationship Node) - Best Fit:
+
 ```cypher
 // Original relationship
 (:MomA)-[:PARTICIPATES_IN {role: "co-parent", joinedAt: "2024-01-01"}]->(rel1:CoParentRelationship)
@@ -164,6 +182,7 @@ RETURN c, r
 ```
 
 **Query: Find all co-parents (including new partners):**
+
 ```cypher
 MATCH (momA:User {userId: 1})-[:PARTICIPATES_IN]->(rel:CoParentRelationship {active: true})
 MATCH (rel)<-[:PARTICIPATES_IN]-(coParent:User)
@@ -173,6 +192,7 @@ RETURN rel, collect(coParent) as coParents
 ```
 
 ### Option 4 (Hybrid) - Alternative:
+
 ```cypher
 // Original relationship
 (:MomA)-[:CO_PARENT_WITH {roomId: "room_1", active: true}]->(:DadA)
@@ -185,6 +205,7 @@ RETURN rel, collect(coParent) as coParents
 ```
 
 **Query:**
+
 ```cypher
 MATCH (momA:User {userId: 1})-[:CO_PARENT_WITH {active: true}]->(coParent:User)
 RETURN coParent
@@ -196,12 +217,14 @@ RETURN coParent
 ## Privacy Considerations
 
 ### Room-Based Privacy (Option 3 & 4):
+
 - Each co-parenting relationship = private room
 - Mom A + Dad A = Room 1 (private)
 - Mom A + Mom A's Partner = Room 2 (private)
 - Dad A cannot see Room 2, Mom A's Partner cannot see Room 1
 
 ### Relationship Privacy:
+
 - Relationships are private by default
 - Query only returns relationships user is part of:
   ```cypher
@@ -216,6 +239,7 @@ RETURN coParent
 ### Implementation Plan:
 
 1. **When co-parents connect (room created):**
+
    ```cypher
    // Create bidirectional relationship
    MATCH (u1:User {userId: $userId1})
@@ -232,7 +256,7 @@ RETURN coParent
      createdAt: datetime(),
      relationshipType: "co-parent"
    }]->(u1)
-   
+
    // Create room node and memberships
    CREATE (r:Room {roomId: $roomId, type: "co-parent", name: $roomName})
    CREATE (u1)-[:MEMBER_OF {role: "owner", joinedAt: datetime()}]->(r)
@@ -240,6 +264,7 @@ RETURN coParent
    ```
 
 2. **When relationship ends (room archived):**
+
    ```cypher
    MATCH (u1:User {userId: $userId1})-[r:CO_PARENT_WITH]->(u2:User {userId: $userId2})
    SET r.active = false, r.endedAt = datetime()
@@ -251,6 +276,7 @@ RETURN coParent
    - Original relationship remains active (Mom A still co-parents with Dad A)
 
 ### Benefits:
+
 - ✅ Fast relationship queries
 - ✅ Room structure matches PostgreSQL
 - ✅ Supports evolving relationships
@@ -294,9 +320,9 @@ RETURN coParent
 ```
 
 **Query: Find all of Mom A's co-parents:**
+
 ```cypher
 MATCH (momA:User {userId: 1})-[:CO_PARENT_WITH {active: true}]->(coParent:User)
 RETURN coParent
 // Returns: Dad A, Mom A's Partner
 ```
-

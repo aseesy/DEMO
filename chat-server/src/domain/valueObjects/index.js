@@ -1,8 +1,8 @@
 /**
  * Value Objects Module
- * 
+ *
  * Exports all value object classes for domain model.
- * 
+ *
  * @module domain/valueObjects
  */
 
@@ -15,6 +15,5 @@ module.exports = {
   Email,
   Username,
   RoomId,
-  MessageId
+  MessageId,
 };
-

@@ -9,6 +9,7 @@
 Phase 3 focuses on creating and migrating form input components to complete the design system foundation. This builds directly on Phase 2's success with Button and Modal components.
 
 ### Goals
+
 - Create reusable Input, Textarea, and Select components
 - Migrate all form inputs across the codebase
 - Achieve 95%+ design token usage overall
@@ -16,6 +17,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - Establish consistent form patterns
 
 ### Expected Outcomes
+
 - **Input Components:** 3 new components (Input, Textarea, Select)
 - **Files Migrated:** 6-8 files estimated
 - **Inputs Replaced:** 40+ inputs estimated
@@ -32,6 +34,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 **Purpose:** Standardized text input with validation, error states, and accessibility.
 
 **Features:**
+
 - Multiple types (text, email, password, search, tel, url)
 - Error states with error messages
 - Success states with checkmarks
@@ -44,6 +47,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - 44px minimum touch target
 
 **Props API:**
+
 ```jsx
 <Input
   type="text|email|password|search|tel|url"
@@ -66,6 +70,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ```
 
 **Variants:**
+
 ```jsx
 // Basic input
 <Input
@@ -118,6 +123,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 **Purpose:** Multi-line text input with auto-resize and character counting.
 
 **Features:**
+
 - Auto-resize option
 - Character counter
 - Min/max rows
@@ -127,6 +133,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - iOS-safe font sizing
 
 **Props API:**
+
 ```jsx
 <Textarea
   value={value}
@@ -147,6 +154,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ```
 
 **Examples:**
+
 ```jsx
 // Basic textarea
 <Textarea
@@ -182,6 +190,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 **Purpose:** Dropdown selection with consistent styling and accessibility.
 
 **Features:**
+
 - Native select element (simple)
 - Custom styled select (advanced)
 - Multiple selection support
@@ -192,6 +201,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - Group support
 
 **Props API:**
+
 ```jsx
 <Select
   value={value}
@@ -199,7 +209,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
   label="Field Label"
   options={[
     { value: 'option1', label: 'Option 1' },
-    { value: 'option2', label: 'Option 2' }
+    { value: 'option2', label: 'Option 2' },
   ]}
   placeholder="Select an option..."
   error={errorMessage}
@@ -213,6 +223,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ```
 
 **Examples:**
+
 ```jsx
 // Basic select
 <Select
@@ -257,24 +268,28 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ### Priority 1: High Impact (Essential)
 
 #### 1. LoginSignup.jsx
+
 **Current inputs:** 2 (email, password)
 **Impact:** Critical - Authentication flow
 **Complexity:** Low
 **Time:** 15-20 minutes
 
 **Inputs to migrate:**
+
 - Email input (with validation)
 - Password input (with toggle visibility)
 
 ---
 
 #### 2. ProfilePanel.jsx
+
 **Current inputs:** 5+ (name, phone, address, bio, etc.)
 **Impact:** High - User profile management
 **Complexity:** Medium
 **Time:** 30-40 minutes
 
 **Inputs to migrate:**
+
 - Name input
 - Phone input (with formatting)
 - Address input (Google Places integration)
@@ -284,12 +299,14 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ---
 
 #### 3. ContactsPanel.jsx
+
 **Current inputs:** 6+ (contact name, relationship, phone, email, etc.)
 **Impact:** High - Contact management
 **Complexity:** Medium-High
 **Time:** 40-50 minutes
 
 **Inputs to migrate:**
+
 - Contact name input
 - Relationship select
 - Phone input
@@ -300,12 +317,14 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ---
 
 #### 4. AddActivityModal.jsx
+
 **Current inputs:** 8+ (activity name, description, location, etc.)
 **Impact:** High - Activity creation
 **Complexity:** Medium
 **Time:** 40-50 minutes
 
 **Inputs to migrate:**
+
 - Activity name input
 - Description textarea
 - Time inputs
@@ -318,12 +337,14 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ---
 
 #### 5. TaskFormModal.jsx
+
 **Current inputs:** 4+ (title, description, date, assignees)
 **Impact:** High - Task creation
 **Complexity:** Medium
 **Time:** 30-40 minutes
 
 **Inputs to migrate:**
+
 - Task title input
 - Description textarea
 - Due date input
@@ -335,12 +356,14 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ### Priority 2: Medium Impact (Important)
 
 #### 6. ChatRoom.jsx
+
 **Current inputs:** 2-3 (message input, search)
 **Impact:** Medium - Messaging
 **Complexity:** High (rich text, mentions)
 **Time:** 1-2 hours
 
 **Inputs to migrate:**
+
 - Message input (possibly keep custom for rich text)
 - Search input
 
@@ -349,6 +372,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ### Priority 3: Low Impact (Nice to Have)
 
 #### 7. Other Modal Forms
+
 **Various smaller forms throughout app**
 **Time:** 20-30 minutes each
 
@@ -357,23 +381,27 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ## 🗓️ Suggested Timeline
 
 ### Session 1: Component Creation (2-3 hours)
+
 - **Hour 1:** Create Input component with all features
 - **Hour 2:** Create Textarea component
 - **Hour 3:** Create Select component
 - Add all to UI Showcase
 
 ### Session 2: High Priority Migration (2-3 hours)
+
 - **30 min:** LoginSignup.jsx
 - **40 min:** ProfilePanel.jsx
 - **50 min:** ContactsPanel.jsx
 - **30 min:** Testing and fixes
 
 ### Session 3: Modal Forms (1-2 hours)
+
 - **50 min:** AddActivityModal.jsx
 - **40 min:** TaskFormModal.jsx
 - **30 min:** Testing and documentation
 
 ### Optional Session 4: ChatRoom (1-2 hours)
+
 - ChatRoom.jsx inputs (if appropriate)
 - Final testing
 - Complete Phase 3 report
@@ -385,6 +413,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ### Input Styling
 
 **Base styles:**
+
 - Border: 2px border-gray-200
 - Focus: border-teal-medium with ring
 - Error: border-red-500
@@ -395,23 +424,27 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - Min height: 44px (touch-friendly)
 
 **Label styling:**
+
 - Font weight: font-medium
 - Color: text-teal-dark
 - Size: text-sm
 - Margin: mb-1.5
 
 **Error message styling:**
+
 - Color: text-red-600
 - Size: text-sm
 - Icon: Red exclamation icon
 - Margin: mt-1
 
 **Helper text styling:**
+
 - Color: text-gray-600
 - Size: text-sm
 - Margin: mt-1
 
 **Character counter:**
+
 - Position: Absolute bottom-right inside input
 - Color: text-gray-500
 - Size: text-xs
@@ -422,58 +455,50 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ## 🔍 Input States
 
 ### Normal State
+
 ```jsx
-<Input
-  label="Email"
-  value={email}
-  onChange={setEmail}
-/>
+<Input label="Email" value={email} onChange={setEmail} />
 ```
+
 - Gray border (border-gray-200)
 - Black text
 - Placeholder in gray
 
 ### Focus State
+
 ```jsx
 // Automatic on focus
 ```
+
 - Teal border (border-teal-medium)
 - Ring (ring-2 ring-teal-medium ring-offset-2)
 - Outline removed
 
 ### Error State
+
 ```jsx
-<Input
-  label="Email"
-  value={email}
-  onChange={setEmail}
-  error="Invalid email address"
-/>
+<Input label="Email" value={email} onChange={setEmail} error="Invalid email address" />
 ```
+
 - Red border (border-red-500)
 - Red error message below
 - Red exclamation icon
 
 ### Success State
+
 ```jsx
-<Input
-  label="Email"
-  value={email}
-  onChange={setEmail}
-  success={true}
-/>
+<Input label="Email" value={email} onChange={setEmail} success={true} />
 ```
+
 - Green border (border-green-500)
 - Green checkmark icon
 
 ### Disabled State
+
 ```jsx
-<Input
-  label="Email"
-  value={email}
-  disabled
-/>
+<Input label="Email" value={email} disabled />
 ```
+
 - Gray background (bg-gray-100)
 - Gray text
 - Cursor not-allowed
@@ -485,6 +510,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ### Phase 3.1: Component Creation
 
 #### Input Component
+
 - [ ] Create `chat-client-vite/src/components/ui/Input/Input.jsx`
 - [ ] Implement all input types
 - [ ] Add error state
@@ -500,6 +526,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - [ ] Create barrel export
 
 #### Textarea Component
+
 - [ ] Create `chat-client-vite/src/components/ui/Textarea/Textarea.jsx`
 - [ ] Implement auto-resize
 - [ ] Add character counter
@@ -511,6 +538,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - [ ] Create barrel export
 
 #### Select Component
+
 - [ ] Create `chat-client-vite/src/components/ui/Select/Select.jsx`
 - [ ] Implement native select
 - [ ] Add custom styled option (advanced)
@@ -522,6 +550,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - [ ] Create barrel export
 
 #### Update Barrel Export
+
 - [ ] Add Input to `ui/index.js`
 - [ ] Add Textarea to `ui/index.js`
 - [ ] Add Select to `ui/index.js`
@@ -556,6 +585,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ### Phase 3.3: File Migration
 
 #### LoginSignup.jsx
+
 - [ ] Add Input import
 - [ ] Replace email input
 - [ ] Replace password input
@@ -564,6 +594,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - [ ] Verify validation works
 
 #### ProfilePanel.jsx
+
 - [ ] Add Input, Textarea imports
 - [ ] Replace name input
 - [ ] Replace phone input
@@ -574,6 +605,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - [ ] Test Google Places integration
 
 #### ContactsPanel.jsx
+
 - [ ] Add Input, Textarea, Select imports
 - [ ] Replace contact name input
 - [ ] Replace relationship select
@@ -585,6 +617,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - [ ] Test contact editing
 
 #### AddActivityModal.jsx
+
 - [ ] Add Input, Textarea, Select imports
 - [ ] Replace activity name input
 - [ ] Replace description textarea
@@ -596,6 +629,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - [ ] Test activity editing
 
 #### TaskFormModal.jsx
+
 - [ ] Add Input, Textarea, Select imports
 - [ ] Replace title input
 - [ ] Replace description textarea
@@ -634,6 +668,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ## 📊 Success Criteria
 
 ### Functionality
+
 - [ ] All input components work correctly
 - [ ] All migrated inputs function as before
 - [ ] Validation works properly
@@ -642,6 +677,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - [ ] No regressions introduced
 
 ### Code Quality
+
 - [ ] Files migrated: 5+ (target: 5+)
 - [ ] Inputs replaced: 40+ (target: 30+)
 - [ ] Code reduction: 500+ lines (target: 400+)
@@ -649,6 +685,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - [ ] Consistency: 95%+ (target: 90%+)
 
 ### Accessibility
+
 - [ ] All inputs have labels
 - [ ] All inputs have proper ARIA attributes
 - [ ] Error messages linked with aria-describedby
@@ -658,6 +695,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - [ ] iOS-safe (16px font, no zoom)
 
 ### Documentation
+
 - [ ] Complete API documentation
 - [ ] Migration guide updated
 - [ ] Quick reference created
@@ -671,6 +709,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ### After Phase 3 Completion
 
 #### Codebase Metrics
+
 - **Files Migrated:** 14+ total (9 Phase 2 + 5+ Phase 3)
 - **Components Replaced:** 70+ (33 buttons + 40+ inputs)
 - **Code Reduction:** 900+ lines total (400 Phase 2 + 500 Phase 3)
@@ -678,6 +717,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - **Consistency Score:** 95%+
 
 #### Component Library
+
 - ✅ Button (5 variants) - Phase 2
 - ✅ Modal (3 sizes) - Phase 2
 - ✅ Input (6+ types) - Phase 3
@@ -685,6 +725,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - ✅ Select (native + custom) - Phase 3
 
 #### Developer Experience
+
 - **Time to create form:** 70% faster
 - **Consistency errors:** <5% (was 40%+)
 - **Validation patterns:** Standardized
@@ -695,21 +736,25 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ## 🚧 Potential Challenges
 
 ### Challenge 1: Google Places Integration
+
 **Issue:** ProfilePanel uses Google Places autocomplete
 **Solution:** Create wrapper or pass through props
 **Time Impact:** +30 minutes
 
 ### Challenge 2: Rich Text in ChatRoom
+
 **Issue:** Message input may use rich text editor
 **Solution:** May not migrate (keep custom) or create RichTextarea
 **Decision:** Evaluate during Phase 3
 
 ### Challenge 3: Custom Validation
+
 **Issue:** Each form has different validation rules
 **Solution:** Input accepts error prop, validation stays external
 **Time Impact:** Minimal (by design)
 
 ### Challenge 4: Date/Time Inputs
+
 **Issue:** Native date inputs vary by browser
 **Solution:** Consider date picker library (Phase 4?)
 **Decision:** Start with native, enhance later if needed
@@ -719,6 +764,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ## 💡 Best Practices for Phase 3
 
 ### Do's ✅
+
 1. **Start with Input component** - Most important
 2. **Test each component thoroughly** before migration
 3. **Migrate one file at a time** - Easier to debug
@@ -728,6 +774,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 7. **Update showcase immediately** - Good testing environment
 
 ### Don'ts ❌
+
 1. **Don't mix validation with display** - Keep concerns separate
 2. **Don't skip accessibility** - ARIA labels required
 3. **Don't forget iOS zoom issue** - Must use 16px font minimum
@@ -740,6 +787,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 ## 📅 Suggested Approach
 
 ### Week 1: Component Creation
+
 - Monday: Input component
 - Tuesday: Textarea component
 - Wednesday: Select component
@@ -747,6 +795,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - Friday: Documentation
 
 ### Week 2: Migration
+
 - Monday: LoginSignup + ProfilePanel
 - Tuesday: ContactsPanel
 - Wednesday: AddActivityModal
@@ -754,6 +803,7 @@ Phase 3 focuses on creating and migrating form input components to complete the 
 - Friday: Testing, fixes, documentation
 
 ### Total Time: 4-6 hours of focused work
+
 Can be done in 1-2 long sessions or spread over several days.
 
 ---
@@ -825,6 +875,7 @@ touch chat-client-vite/src/components/ui/Input/index.js
 ## 📞 Support
 
 ### Resources for Phase 3
+
 - **MIGRATION_GUIDE.md** - Step-by-step migration instructions
 - **DESIGN_SYSTEM.md** - Component patterns and best practices
 - **UI Showcase** - Visual testing environment
@@ -849,6 +900,7 @@ A: Evaluate during migration. May keep custom if heavily customized.
 ## 🎯 Success Looks Like
 
 After Phase 3, you'll have:
+
 - ✅ Complete form component library
 - ✅ 95%+ design token adoption
 - ✅ Consistent form patterns everywhere
@@ -866,6 +918,6 @@ After Phase 3, you'll have:
 
 ---
 
-*Prepared: November 21, 2025*
-*Based on Phase 2 success*
-*Estimated completion: 4-6 hours*
+_Prepared: November 21, 2025_
+_Based on Phase 2 success_
+_Estimated completion: 4-6 hours_

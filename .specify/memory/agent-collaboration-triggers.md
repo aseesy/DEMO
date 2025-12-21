@@ -28,31 +28,38 @@ Every work session must follow these 4 steps:
 ### Available Agents by Department
 
 **Architecture Department**:
+
 - `backend-architect` - System design, API architecture, scalability
 - `subagent-architect` - Creating new SDD-compliant agents
 - `structure-architect` - File organization and project structure (if exists)
 
 **Data Department**:
+
 - `database-specialist` - Schema design, queries, migrations, RLS, indexing
 
 **Design Department**:
+
 - `theme-designer` - Design systems, UI/UX patterns (if exists)
 
 **Engineering Department**:
+
 - `frontend-specialist` - React/Next.js, UI components, state management
 - `full-stack-developer` - End-to-end feature development
 
 **Operations Department**:
+
 - `devops-engineer` - CI/CD, Docker, deployment, infrastructure
 - `performance-engineer` - Optimization, caching, benchmarking
 
 **Product Department**:
+
 - `specification-agent` - Feature specs, requirements, user stories
 - `planning-agent` - Implementation planning, technical research, contract design
 - `tasks-agent` - Task breakdown, dependency tracking
 - `task-orchestrator` - Multi-agent workflow coordination
 
 **Quality Department**:
+
 - `testing-specialist` - Test strategy, test creation, QA
 - `security-specialist` - Security review, vulnerability assessment
 
@@ -63,6 +70,7 @@ Every work session must follow these 4 steps:
 ### Frontend Development
 
 **Primary Keywords** (MUST delegate):
+
 - UI, user interface, component, view, screen, page
 - React, Next.js, Vue, Angular, Svelte
 - CSS, styling, theme, design system
@@ -73,6 +81,7 @@ Every work session must follow these 4 steps:
 - Routing, navigation
 
 **Example Phrases**:
+
 - "Create a login form component"
 - "Style the dashboard with dark theme"
 - "Add responsive navigation menu"
@@ -85,6 +94,7 @@ Every work session must follow these 4 steps:
 ### Backend Development
 
 **Primary Keywords** (MUST delegate):
+
 - API, endpoint, route, controller, handler
 - Server, backend, service, microservice
 - Authentication, auth, login, session, JWT, OAuth
@@ -96,6 +106,7 @@ Every work session must follow these 4 steps:
 - Real-time, WebSocket, SSE
 
 **Example Phrases**:
+
 - "Create user authentication API"
 - "Implement JWT token refresh endpoint"
 - "Add role-based access control"
@@ -108,6 +119,7 @@ Every work session must follow these 4 steps:
 ### Database Operations
 
 **Primary Keywords** (MUST delegate):
+
 - Database, DB, SQL, PostgreSQL, MySQL, MongoDB
 - Schema, table, collection, model, entity
 - Migration, seed, fixture
@@ -120,6 +132,7 @@ Every work session must follow these 4 steps:
 - Backup, restore, replication
 
 **Example Phrases**:
+
 - "Design user profiles schema"
 - "Create RLS policies for multi-tenancy"
 - "Add indexes for query performance"
@@ -132,6 +145,7 @@ Every work session must follow these 4 steps:
 ### Testing & QA
 
 **Primary Keywords** (MUST delegate):
+
 - Test, testing, QA, quality assurance
 - Unit test, integration test, E2E test, end-to-end
 - TDD, test-driven development
@@ -143,6 +157,7 @@ Every work session must follow these 4 steps:
 - Test scenario, test case, test plan
 
 **Example Phrases**:
+
 - "Write unit tests for auth service"
 - "Create E2E tests for checkout flow"
 - "Add integration tests for API"
@@ -155,6 +170,7 @@ Every work session must follow these 4 steps:
 ### Security
 
 **Primary Keywords** (MUST delegate):
+
 - Security, vulnerability, exploit
 - XSS, CSRF, SQL injection, injection attack
 - Encryption, hashing, bcrypt, crypto
@@ -167,6 +183,7 @@ Every work session must follow these 4 steps:
 - Privacy, GDPR, PII, data protection
 
 **Example Phrases**:
+
 - "Review authentication for security issues"
 - "Add input sanitization to prevent XSS"
 - "Implement rate limiting on login"
@@ -179,6 +196,7 @@ Every work session must follow these 4 steps:
 ### Performance Optimization
 
 **Primary Keywords** (MUST delegate):
+
 - Performance, optimization, speed, latency
 - Caching, cache, Redis, Memcached
 - CDN, content delivery
@@ -191,6 +209,7 @@ Every work session must follow these 4 steps:
 - Worker thread, parallel processing
 
 **Example Phrases**:
+
 - "Optimize slow database queries"
 - "Add caching to API responses"
 - "Improve page load speed"
@@ -203,6 +222,7 @@ Every work session must follow these 4 steps:
 ### DevOps & Infrastructure
 
 **Primary Keywords** (MUST delegate):
+
 - Deploy, deployment, release, rollout
 - CI/CD, continuous integration, pipeline
 - Docker, Dockerfile, container, Kubernetes
@@ -214,6 +234,7 @@ Every work session must follow these 4 steps:
 - Load balancing, scaling, autoscaling
 
 **Example Phrases**:
+
 - "Set up CI/CD pipeline for automated testing"
 - "Containerize application with Docker"
 - "Deploy to production on AWS"
@@ -226,6 +247,7 @@ Every work session must follow these 4 steps:
 ### Specification & Requirements
 
 **Primary Keywords** (MUST delegate):
+
 - Specification, spec, requirements
 - Feature, functionality, capability
 - User story, use case, scenario
@@ -236,6 +258,7 @@ Every work session must follow these 4 steps:
 - Flow, workflow, user journey
 
 **Example Phrases**:
+
 - "Create specification for user authentication"
 - "Write user stories for dashboard"
 - "Define acceptance criteria for feature"
@@ -248,6 +271,7 @@ Every work session must follow these 4 steps:
 ### Implementation Planning
 
 **Primary Keywords** (MUST delegate):
+
 - Implementation plan, technical plan, architecture plan, planning phase
 - /plan command, Phase 0, Phase 1, Phase 2
 - Technical research, library evaluation, framework selection
@@ -260,6 +284,7 @@ Every work session must follow these 4 steps:
 - Best practices research, pattern recommendations
 
 **Example Phrases**:
+
 - "Create implementation plan for feature"
 - "Execute the /plan command"
 - "Research technology stack options"
@@ -268,6 +293,7 @@ Every work session must follow these 4 steps:
 - "Generate contracts and test scenarios"
 
 **Workflow Context**:
+
 - Phase 2 of SDD workflow (between specification and tasks)
 - Receives: spec.md from specification-agent
 - Produces: plan.md, research.md, data-model.md, contracts/, quickstart.md
@@ -280,6 +306,7 @@ Every work session must follow these 4 steps:
 ### Task Management
 
 **Primary Keywords** (MUST delegate):
+
 - Task, todo, checklist, action items
 - /tasks command, task generation, task list
 - Dependency, prerequisite, blocker
@@ -290,6 +317,7 @@ Every work session must follow these 4 steps:
 - tasks.md generation
 
 **Example Phrases**:
+
 - "Break down feature into tasks"
 - "Execute the /tasks command"
 - "Create task list with dependencies"
@@ -297,6 +325,7 @@ Every work session must follow these 4 steps:
 - "Prioritize tasks by importance"
 
 **Workflow Context**:
+
 - Phase 3 of SDD workflow (after planning, before implementation)
 - Receives: plan.md + artifacts from planning-agent
 - Produces: tasks.md with dependency-ordered task list
@@ -309,6 +338,7 @@ Every work session must follow these 4 steps:
 ### Multi-Agent Orchestration
 
 **Primary Keywords** (MUST delegate):
+
 - Multi-domain, cross-functional, full-stack
 - Complex feature, large feature, major feature
 - Multiple agents, agent coordination
@@ -317,6 +347,7 @@ Every work session must follow these 4 steps:
 - Integration (when multiple systems involved)
 
 **Example Phrases**:
+
 - "Implement user authentication system" (needs frontend + backend + database + security)
 - "Build complete payment flow" (multiple domains)
 - "Create full CRUD feature with UI and API"
@@ -332,12 +363,14 @@ If task description contains keywords from 2+ domains → Use `task-orchestrator
 ### Agent Creation
 
 **Primary Keywords** (MUST delegate):
+
 - Create agent, new agent, agent definition
 - Specialized agent, domain agent
 - Agent purpose, agent capabilities
 - SDD-compliant agent, constitutional agent
 
 **Example Phrases**:
+
 - "Create new agent for data analysis"
 - "Build agent for email handling"
 - "Define agent for report generation"
@@ -384,12 +417,14 @@ Use task-orchestrator        Keywords from 1 domain?
 **Task**: "Implement user authentication with email/password"
 
 **Analysis**:
+
 - Keywords: authentication (backend), login (frontend), database (data), security (quality)
 - Domains: Backend, Frontend, Database, Security = 4 domains
 
 **Decision**: Multi-agent scenario → Delegate to `task-orchestrator`
 
 **Orchestrator Workflow**:
+
 1. `specification-agent`: Create feature spec
 2. `backend-architect`: Design API endpoints
 3. `database-specialist`: Design user schema, RLS policies
@@ -404,6 +439,7 @@ Use task-orchestrator        Keywords from 1 domain?
 **Task**: "Create GET /api/users endpoint with pagination"
 
 **Analysis**:
+
 - Keywords: API, endpoint (backend), pagination (backend)
 - Domains: Backend only = 1 domain
 
@@ -416,6 +452,7 @@ Use task-orchestrator        Keywords from 1 domain?
 **Task**: "Design database schema for blog posts with categories"
 
 **Analysis**:
+
 - Keywords: database, schema, table relationships
 - Domains: Database only = 1 domain
 
@@ -428,6 +465,7 @@ Use task-orchestrator        Keywords from 1 domain?
 **Task**: "Optimize slow loading dashboard page"
 
 **Analysis**:
+
 - Keywords: optimize, performance, slow loading
 - Domains: Performance = 1 domain (but may expand after analysis)
 
@@ -440,12 +478,14 @@ Use task-orchestrator        Keywords from 1 domain?
 **Task**: "Build complete blog system with posts, comments, and categories"
 
 **Analysis**:
+
 - Scope: Full feature with CRUD, UI, API, database
 - Domains: Frontend, Backend, Database, Testing = 4+ domains
 
 **Decision**: Complex multi-domain → Delegate to `task-orchestrator`
 
 **Orchestrator Workflow**:
+
 1. `specification-agent`: Create feature specification
 2. `backend-architect`: Design data model and API
 3. `database-specialist`: Design schema and relationships
@@ -460,12 +500,14 @@ Use task-orchestrator        Keywords from 1 domain?
 ### Single-Agent Routing
 
 **When to use single agent**:
+
 - Task clearly within one domain
 - Simple, straightforward requirements
 - No cross-functional dependencies
 - Time-critical operations
 
 **Pattern**:
+
 ```
 Task → Analyze Domain → Select Agent → Delegate → Execute
 ```
@@ -473,12 +515,14 @@ Task → Analyze Domain → Select Agent → Delegate → Execute
 ### Multi-Agent Orchestration
 
 **When to use orchestrator**:
+
 - Task spans 2+ domains
 - Complex feature requiring multiple expertise areas
 - Needs quality gates between stages
 - Production-critical changes
 
 **Pattern**:
+
 ```
 Task → task-orchestrator → Coordinate Agents → Manage Handoffs → Validate → Complete
 ```
@@ -496,11 +540,7 @@ When multiple agents work on same feature, use structured context handoff:
   "previous_agent": "backend-architect",
   "next_agent": "frontend-specialist",
   "context": {
-    "api_endpoints": [
-      "POST /api/auth/login",
-      "POST /api/auth/register",
-      "POST /api/auth/refresh"
-    ],
+    "api_endpoints": ["POST /api/auth/login", "POST /api/auth/register", "POST /api/auth/refresh"],
     "contracts": "specs/005-auth/contracts/",
     "database_schema": "specs/005-auth/data-model.md",
     "requirements": "specs/005-auth/spec.md"
@@ -544,6 +584,7 @@ When multiple agents work on same feature, use structured context handoff:
 ### Constitutional Requirement
 
 Principle X mandates:
+
 - MUST read constitution first
 - MUST analyze domain
 - MUST delegate if triggers matched
@@ -552,11 +593,13 @@ Principle X mandates:
 ### Compliance Checking
 
 Run automated check:
+
 ```bash
 ./.specify/scripts/bash/constitutional-check.sh
 ```
 
 Checks for:
+
 - Constitution read at session start
 - Domain analysis performed
 - Delegation decision documented
@@ -566,27 +609,27 @@ Checks for:
 
 ## Quick Reference Table
 
-| Domain | Agent | Trigger Keywords |
-|--------|-------|------------------|
-| Frontend | frontend-specialist | UI, React, component, styling, responsive |
-| Backend | backend-architect | API, endpoint, server, auth, business logic |
-| Database | database-specialist | schema, migration, query, RLS, index |
-| Testing | testing-specialist | test, E2E, unit, integration, QA |
-| Security | security-specialist | security, XSS, encryption, vulnerability |
-| Performance | performance-engineer | optimization, caching, benchmark, speed |
-| DevOps | devops-engineer | deploy, CI/CD, Docker, infrastructure |
-| Specs | specification-agent | spec, requirements, user story |
-| Tasks | tasks-agent | task list, breakdown, dependency |
-| Multi-Domain | task-orchestrator | 2+ domains, complex feature |
-| Agent Creation | subagent-architect | create agent, new agent |
+| Domain         | Agent                | Trigger Keywords                            |
+| -------------- | -------------------- | ------------------------------------------- |
+| Frontend       | frontend-specialist  | UI, React, component, styling, responsive   |
+| Backend        | backend-architect    | API, endpoint, server, auth, business logic |
+| Database       | database-specialist  | schema, migration, query, RLS, index        |
+| Testing        | testing-specialist   | test, E2E, unit, integration, QA            |
+| Security       | security-specialist  | security, XSS, encryption, vulnerability    |
+| Performance    | performance-engineer | optimization, caching, benchmark, speed     |
+| DevOps         | devops-engineer      | deploy, CI/CD, Docker, infrastructure       |
+| Specs          | specification-agent  | spec, requirements, user story              |
+| Tasks          | tasks-agent          | task list, breakdown, dependency            |
+| Multi-Domain   | task-orchestrator    | 2+ domains, complex feature                 |
+| Agent Creation | subagent-architect   | create agent, new agent                     |
 
 ---
 
 ## Version History
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2025-11-06 | Initial creation for Constitution v1.5.0 |
+| Version | Date       | Changes                                  |
+| ------- | ---------- | ---------------------------------------- |
+| 1.0.0   | 2025-11-06 | Initial creation for Constitution v1.5.0 |
 
 ---
 

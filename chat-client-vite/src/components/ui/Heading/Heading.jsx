@@ -43,10 +43,7 @@ export const Heading = ({
   const colorClasses = colors[color] || colors.dark;
 
   return (
-    <Component
-      className={`font-serif ${variantClasses} ${colorClasses} ${className}`}
-      {...props}
-    >
+    <Component className={`font-serif ${variantClasses} ${colorClasses} ${className}`} {...props}>
       {children}
     </Component>
   );

@@ -18,14 +18,24 @@ const VALUE_OPTIONS = [
   { value: 'faith', label: 'Faith & Spirituality' },
   { value: 'health', label: 'Health & Wellness' },
   { value: 'creativity', label: 'Creativity & Expression' },
-  { value: 'adventure', label: 'Adventure & New Experiences' }
+  { value: 'adventure', label: 'Adventure & New Experiences' },
 ];
 
 // Tooltip component
 const Tooltip = ({ text }) => (
   <div className="group relative inline-block ml-1">
-    <svg className="w-4 h-4 text-gray-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <svg
+      className="w-4 h-4 text-gray-400 cursor-help"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
     </svg>
     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-10 max-w-xs">
       {text}
@@ -52,9 +62,7 @@ const ValueChip = ({ value, label, isSelected, onToggle }) => (
     type="button"
     onClick={() => onToggle(value)}
     className={`px-3 py-2 rounded-full text-sm font-medium transition-all ${
-      isSelected
-        ? 'bg-[#4DA8B0] text-white'
-        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+      isSelected ? 'bg-[#4DA8B0] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
     }`}
   >
     {label}
@@ -62,13 +70,14 @@ const ValueChip = ({ value, label, isSelected, onToggle }) => (
 );
 
 export default function MotivationsForm({ profileData, updateField }) {
-  const textareaClasses = "w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#4DA8B0] focus:border-transparent transition-all text-gray-800 placeholder-gray-400 resize-none";
+  const textareaClasses =
+    'w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#4DA8B0] focus:border-transparent transition-all text-gray-800 placeholder-gray-400 resize-none';
 
   // Parse selected values from comma-separated string
   const selectedValues = (profileData.motivation_values || '').split(',').filter(Boolean);
 
   // Toggle a value in the multi-select
-  const toggleValue = (value) => {
+  const toggleValue = value => {
     const newValues = selectedValues.includes(value)
       ? selectedValues.filter(v => v !== value)
       : [...selectedValues, value];
@@ -105,7 +114,7 @@ export default function MotivationsForm({ profileData, updateField }) {
       >
         <textarea
           value={profileData.motivation_goals || ''}
-          onChange={(e) => updateField('motivation_goals', e.target.value)}
+          onChange={e => updateField('motivation_goals', e.target.value)}
           placeholder="e.g., Raise a confident, kind child. Maintain a stable routine. Build strong communication skills..."
           rows={3}
           className={textareaClasses}
@@ -120,7 +129,7 @@ export default function MotivationsForm({ profileData, updateField }) {
       >
         <textarea
           value={profileData.motivation_strengths || ''}
-          onChange={(e) => updateField('motivation_strengths', e.target.value)}
+          onChange={e => updateField('motivation_strengths', e.target.value)}
           placeholder="e.g., I'm patient, I'm good at explaining things, I make time for fun activities..."
           rows={3}
           className={textareaClasses}
@@ -135,7 +144,7 @@ export default function MotivationsForm({ profileData, updateField }) {
       >
         <textarea
           value={profileData.motivation_improvements || ''}
-          onChange={(e) => updateField('motivation_improvements', e.target.value)}
+          onChange={e => updateField('motivation_improvements', e.target.value)}
           placeholder="e.g., Being more patient during stressful moments, better time management, staying calm during disagreements..."
           rows={3}
           className={textareaClasses}
@@ -145,14 +154,25 @@ export default function MotivationsForm({ profileData, updateField }) {
       {/* Info Box */}
       <div className="bg-purple-50 border border-purple-100 rounded-lg p-4 text-sm text-purple-800">
         <div className="flex gap-3">
-          <svg className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          <svg
+            className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
           </svg>
           <div>
             <p className="font-medium">Why we ask</p>
             <p className="mt-1 text-purple-700">
-              Understanding your values and motivations helps LiaiZen provide more personalized support.
-              This information is <strong>completely private</strong> and never shared with your co-parent.
+              Understanding your values and motivations helps LiaiZen provide more personalized
+              support. This information is <strong>completely private</strong> and never shared with
+              your co-parent.
             </p>
           </div>
         </div>

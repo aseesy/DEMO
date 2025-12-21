@@ -10,6 +10,7 @@
 ### 1. MCP Servers Installed (9 Total)
 
 #### LiaiZen Custom Servers:
+
 1. **Design Tokens MCP** (`liaizen-design-tokens`)
    - Location: `/Users/athenasees/Desktop/chat/.design-tokens-mcp/`
    - Purpose: Brand colors, spacing, typography, shadows, component specs
@@ -26,6 +27,7 @@
    - Tools: 12 tools for querying project knowledge
 
 #### External Tool Servers:
+
 4. Brave Search - Web research
 5. Chrome DevTools - Browser testing
 6. Playwright - E2E testing
@@ -38,9 +40,11 @@
 Updated all three core SDD agents with proactive MCP integration:
 
 #### ✅ Planning Agent (`/plan` command)
+
 **File**: `sdd-agentic-framework/.claude/agents/product/planning-agent.md`
 
 **Added**:
+
 - Required MCP Queries section (non-negotiable)
 - Step 0a: Architecture Context (before Phase 0)
 - Step 0b: Pattern Research (during Phase 0)
@@ -50,14 +54,17 @@ Updated all three core SDD agents with proactive MCP integration:
 - Error Prevention guidelines
 
 **Key Changes**:
+
 - MUST query architecture before every plan
 - MUST reference MCP sources in plan output
 - MUST validate against MCP best practices
 
 #### ✅ Specification Agent
+
 **File**: `sdd-agentic-framework/.claude/agents/product/specification-agent.md`
 
 **Added**:
+
 - Required MCP Queries before specification
 - MCP-Enhanced Specification Sections
 - Technical Constraints with MCP references
@@ -65,14 +72,17 @@ Updated all three core SDD agents with proactive MCP integration:
 - Constitutional Compliance via MCP
 
 **Key Changes**:
+
 - Specs now include MCP sources
 - Technical constraints reference Codebase Context
 - Design specs use Design Tokens MCP
 
 #### ✅ Tasks Agent
+
 **File**: `sdd-agentic-framework/.claude/agents/product/tasks-agent.md`
 
 **Added**:
+
 - Required MCP Queries before task breakdown
 - MCP-Enhanced Task Creation examples
 - File Path Accuracy from Codebase Context
@@ -80,6 +90,7 @@ Updated all three core SDD agents with proactive MCP integration:
 - Design System References in styling tasks
 
 **Key Changes**:
+
 - Tasks include exact file paths from MCP
 - Task descriptions reference patterns from Codebase Context
 - Styling tasks cite Design Tokens MCP
@@ -87,11 +98,13 @@ Updated all three core SDD agents with proactive MCP integration:
 ### 3. Documentation Created
 
 #### Integration Guides:
+
 - `sdd-agentic-framework/.docs/mcp-integration-guide.md` - Complete guide
 - `sdd-agentic-framework/.docs/mcp-quick-reference.md` - Quick commands
 - `sdd-agentic-framework/.docs/examples/planning-agent-with-mcp.md` - Real examples
 
 #### MCP Server Documentation:
+
 - `.design-tokens-mcp/README.md` - Design Tokens usage
 - `.codebase-context-mcp/README.md` - Codebase Context usage
 - `.mcp-docs/TAILWIND_MCP.md` - Tailwind CSS usage
@@ -114,11 +127,13 @@ Updated all three core SDD agents with proactive MCP integration:
 ### Step 2: Verify MCP Servers Are Active
 
 Open a new Claude conversation and ask:
+
 ```
 "List all available MCP servers"
 ```
 
 You should see all 9 servers listed, including:
+
 - ✅ liaizen-design-tokens
 - ✅ tailwindcss
 - ✅ liaizen-codebase-context
@@ -129,18 +144,21 @@ You should see all 9 servers listed, including:
 Try these queries to verify servers are working:
 
 **Design Tokens:**
+
 ```
 "Get primary brand color"
 → Should return: #275559 with description
 ```
 
 **Codebase Context:**
+
 ```
 "What's the LiaiZen architecture?"
 → Should return: React + Vite frontend, Node.js backend, etc.
 ```
 
 **Tailwind CSS:**
+
 ```
 "Convert this CSS to Tailwind: background: #275559; padding: 1rem;"
 → Should return: bg-[#275559] p-4
@@ -157,6 +175,7 @@ Try these queries to verify servers are working:
 **Now**: Planning agent queries MCP servers, gets instant context, takes 2-3 minutes
 
 **Usage**:
+
 ```
 You: "/plan Add expense tracking modal"
 
@@ -171,6 +190,7 @@ Planning Agent (automatically):
 ### Specification Agent Workflow
 
 **Usage**:
+
 ```
 You: Create spec for user settings feature
 
@@ -184,6 +204,7 @@ Specification Agent (automatically):
 ### Tasks Agent Workflow
 
 **Usage**:
+
 ```
 You: Break down the plan into tasks
 
@@ -199,17 +220,20 @@ Tasks Agent (automatically):
 ## 🎯 Expected Benefits
 
 ### Speed Improvements:
+
 - **Planning**: 10-15 min → 2-3 min (70% faster)
 - **Research**: File searching eliminated
 - **Validation**: Instant pattern checking
 
 ### Accuracy Improvements:
+
 - **Planning**: 70-80% → 95-100% accuracy
 - **File Paths**: Always correct (from Codebase Context)
 - **Design Values**: Exact (from Design Tokens)
 - **Patterns**: Authoritative (from Codebase Context)
 
 ### Quality Improvements:
+
 - **Consistency**: All agents follow same patterns
 - **Standards**: Automatic best practice compliance
 - **Documentation**: MCP sources cited in outputs
@@ -222,36 +246,43 @@ Tasks Agent (automatically):
 ### Quick Access:
 
 **MCP Integration Guide**:
+
 ```
 sdd-agentic-framework/.docs/mcp-integration-guide.md
 ```
 
 **Quick Reference**:
+
 ```
 sdd-agentic-framework/.docs/mcp-quick-reference.md
 ```
 
 **Examples**:
+
 ```
 sdd-agentic-framework/.docs/examples/planning-agent-with-mcp.md
 ```
 
 **Design Tokens Usage**:
+
 ```
 .design-tokens-mcp/README.md
 ```
 
 **Codebase Context Usage**:
+
 ```
 .codebase-context-mcp/README.md
 ```
 
 **Tailwind CSS Usage**:
+
 ```
 .mcp-docs/TAILWIND_MCP.md
 ```
 
 **Master MCP Docs**:
+
 ```
 .mcp-docs/README.md
 ```
@@ -268,6 +299,7 @@ sdd-agentic-framework/.docs/examples/planning-agent-with-mcp.md
 ```
 
 **What to expect**:
+
 - Agent queries "Get API endpoints for contacts"
 - Agent queries "Show me database schema for contacts"
 - Agent queries "Get file structure"
@@ -283,6 +315,7 @@ What's the modal pattern in LiaiZen?
 ```
 
 **What to expect**:
+
 - Instant response with z-index, padding, positioning
 - Response cites "Codebase Context MCP"
 
@@ -291,6 +324,7 @@ Get the primary brand color
 ```
 
 **What to expect**:
+
 - Response: #275559 with full description
 - Response cites "Design Tokens MCP"
 
@@ -303,6 +337,7 @@ Get the primary brand color
 **Problem**: "List all available MCP servers" shows fewer than 9
 
 **Solution**:
+
 1. Did you restart Claude Desktop? (Cmd+Q, reopen)
 2. Check config file exists: `/Users/athenasees/Library/Application Support/Claude/claude_desktop_config.json`
 3. Verify Node.js path: `/Users/athenasees/.nvm/versions/node/v20.19.4/bin/node`
@@ -312,6 +347,7 @@ Get the primary brand color
 **Problem**: Planning agent doesn't query MCP servers
 
 **Solution**:
+
 1. Agents use MCP automatically - they don't need to be told
 2. However, they may not query proactively every time
 3. You can explicitly request: "Use Codebase Context MCP to get architecture"
@@ -321,6 +357,7 @@ Get the primary brand color
 **Problem**: MCP server returns outdated information
 
 **Solution**:
+
 1. Update context files:
    - Design Tokens: `.design-tokens-mcp/tokens.json`
    - Codebase Context: `.codebase-context-mcp/codebase-context.json`
@@ -331,6 +368,7 @@ Get the primary brand color
 **Problem**: "Error connecting to MCP server"
 
 **Solution**:
+
 1. Check server installation:
    ```bash
    ls -la ~/.design-tokens-mcp/
@@ -353,17 +391,20 @@ Get the primary brand color
 Track these to measure MCP integration success:
 
 ### Planning Quality:
+
 - [ ] Plans include MCP source citations
 - [ ] File paths are accurate (from Codebase Context)
 - [ ] Design values match Design Tokens
 - [ ] Plans reference existing patterns
 
 ### Speed:
+
 - [ ] Planning completes in 2-3 minutes (vs 10-15 before)
 - [ ] No manual file searching needed
 - [ ] Instant pattern retrieval
 
 ### Accuracy:
+
 - [ ] Plans have 95%+ accuracy
 - [ ] No incorrect file paths
 - [ ] No wrong color values
@@ -384,12 +425,14 @@ Track these to measure MCP integration success:
 ## 🏆 Summary
 
 **What Changed:**
+
 - ✅ 9 MCP servers installed and configured
 - ✅ 3 SDD agents enhanced with proactive MCP usage
 - ✅ Comprehensive documentation created
 - ✅ Planning agent now 70% faster with 95%+ accuracy
 
 **What You Need to Do:**
+
 - 🔄 **Restart Claude Desktop** (Cmd+Q, reopen)
 - ✅ Test MCP servers are working
 - ✅ Try `/plan` command to see the difference
@@ -401,5 +444,5 @@ Your SDD agents are now powered by instant access to your entire codebase knowle
 
 **Integration Complete! 🎉**
 
-*LiaiZen Co-Parenting Platform*
-*Better Co-Parenting Through Better Communication*
+_LiaiZen Co-Parenting Platform_
+_Better Co-Parenting Through Better Communication_

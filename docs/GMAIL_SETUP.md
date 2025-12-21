@@ -49,6 +49,7 @@ For OAuth2, you'll need to complete the OAuth flow to get a refresh token.
 ### Prerequisites:
 
 You have:
+
 - ✅ Client ID: `353294951381-ht7qj05o0v4t01nibls59bba36erl9f7.apps.googleusercontent.com`
 - ❌ Client Secret (needed)
 - ❌ Refresh Token (needed - must be generated)
@@ -62,42 +63,41 @@ You have:
    - Copy the **Client secret** value
 
 2. **Configure Redirect URI** (Required first!)
-   
+
    Before generating the refresh token, you need to add the redirect URI:
-   
+
    **For the helper script** (recommended):
    - Go to: https://console.cloud.google.com/apis/credentials
    - Click on your OAuth 2.0 Client ID
    - Under "Authorized redirect URIs", click "ADD URI"
    - Add: `http://localhost:3000/oauth/callback`
    - Click "SAVE"
-   
+
    **OR if using OAuth Playground**:
    - Go to: https://console.cloud.google.com/apis/credentials
    - Click on your OAuth 2.0 Client ID
    - Under "Authorized redirect URIs", click "ADD URI"
    - Add: `https://developers.google.com/oauthplayground`
    - Click "SAVE"
-   
+
    ⚠️ **Note:** Google has deprecated the OOB (out-of-band) flow. The helper script now uses a local web server instead.
 
 3. **Generate Refresh Token**
-   
+
    **Recommended - Use the included script:**
-   
+
    ```bash
    cd chat-server
    node generate-gmail-refresh-token.js
    ```
-   
+
    The script will:
    1. Ask for your Client Secret
    2. Generate an authorization URL
    3. Guide you through the OAuth flow
    4. Output all the values you need for your `.env` file
-   
+
    **Alternative - Use OAuth Playground:**
-   
    1. Go to: https://developers.google.com/oauthplayground/
    2. Click the gear icon (⚙️) in top right
    3. Check "Use your own OAuth credentials"
@@ -111,7 +111,7 @@ You have:
    9. Click "Exchange authorization code for tokens"
    10. Copy the "Refresh token" value
 
-3. **Update `.env` file**:
+4. **Update `.env` file**:
 
 ```env
 EMAIL_SERVICE=gmail-oauth2
@@ -136,6 +136,7 @@ node server.js
 ```
 
 Then in the frontend, try sending an email invitation. Check the server logs for:
+
 - ✅ `Email sent to ...` (success)
 - ❌ Error messages (if something is wrong)
 
@@ -144,15 +145,18 @@ Then in the frontend, try sending an email invitation. Check the server logs for
 ## Troubleshooting
 
 ### "Invalid login" error
+
 - Make sure you're using an App Password, not your regular Gmail password
 - Verify the email address is correct
 
 ### "OAuth2 authentication failed"
+
 - Check that Client ID, Client Secret, and Refresh Token are correct
 - Verify the refresh token hasn't expired
 - Make sure OAuth consent screen is configured in Google Cloud Console
 
 ### Emails going to spam
+
 - Set up SPF/DKIM records for your domain (advanced)
 - Use a custom domain email service (SendGrid, Mailgun, etc.)
 
@@ -162,4 +166,3 @@ Then in the frontend, try sending an email invitation. Check the server logs for
 
 **Start with Option 1 (App Password)** - it's simpler and works immediately.  
 Use Option 2 (OAuth2) if you need enhanced security or are building a larger production system.
-

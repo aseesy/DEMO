@@ -66,8 +66,13 @@ async function updateProfile(userId, updates, db) {
 
     // Upsert: Insert if not exists, update if exists
     const result = await db.query(
-      `INSERT INTO user_context (user_id, ${Object.keys(updates).filter(k => updates[k] !== undefined).join(', ')}, last_profile_update, profile_version, updated_at)
-       VALUES ($1, ${values.slice(1, -1).map((_, i) => `$${i + 2}`).join(', ')}, $${paramIndex - 1}, 1, NOW())
+      `INSERT INTO user_context (user_id, ${Object.keys(updates)
+        .filter(k => updates[k] !== undefined)
+        .join(', ')}, last_profile_update, profile_version, updated_at)
+       VALUES ($1, ${values
+         .slice(1, -1)
+         .map((_, i) => `$${i + 2}`)
+         .join(', ')}, $${paramIndex - 1}, 1, NOW())
        ON CONFLICT (user_id) DO UPDATE SET
        ${setClauses.join(', ')},
        updated_at = NOW()
@@ -148,7 +153,9 @@ async function recordIntervention(userId, interventionData, db) {
       [normalizedId, JSON.stringify(history), now]
     );
 
-    console.log(`✅ ProfilePersister: Recorded intervention for ${userId} (total: ${history.total_interventions})`);
+    console.log(
+      `✅ ProfilePersister: Recorded intervention for ${userId} (total: ${history.total_interventions})`
+    );
     return history;
   } catch (err) {
     console.error(`❌ ProfilePersister: Error recording intervention for ${userId}:`, err.message);
@@ -189,14 +196,16 @@ async function recordAcceptedRewrite(userId, rewriteData, db) {
     if (current.rowCount > 0) {
       const row = current.rows[0];
       if (row.successful_rewrites) {
-        rewrites = typeof row.successful_rewrites === 'string'
-          ? JSON.parse(row.successful_rewrites)
-          : row.successful_rewrites;
+        rewrites =
+          typeof row.successful_rewrites === 'string'
+            ? JSON.parse(row.successful_rewrites)
+            : row.successful_rewrites;
       }
       if (row.intervention_history) {
-        history = typeof row.intervention_history === 'string'
-          ? JSON.parse(row.intervention_history)
-          : row.intervention_history;
+        history =
+          typeof row.intervention_history === 'string'
+            ? JSON.parse(row.intervention_history)
+            : row.intervention_history;
       }
     }
 
@@ -229,10 +238,15 @@ async function recordAcceptedRewrite(userId, rewriteData, db) {
       [normalizedId, JSON.stringify(rewrites), JSON.stringify(history), now]
     );
 
-    console.log(`✅ ProfilePersister: Recorded accepted rewrite for ${userId} (total accepted: ${history.accepted_count})`);
+    console.log(
+      `✅ ProfilePersister: Recorded accepted rewrite for ${userId} (total accepted: ${history.accepted_count})`
+    );
     return { successful_rewrites: rewrites, intervention_history: history };
   } catch (err) {
-    console.error(`❌ ProfilePersister: Error recording accepted rewrite for ${userId}:`, err.message);
+    console.error(
+      `❌ ProfilePersister: Error recording accepted rewrite for ${userId}:`,
+      err.message
+    );
     throw err;
   }
 }

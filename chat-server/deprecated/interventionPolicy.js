@@ -2,7 +2,7 @@ const OpenAI = require('openai');
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || ''
+  apiKey: process.env.OPENAI_API_KEY || '',
 });
 
 // Policy state per room/user
@@ -35,7 +35,13 @@ const policyState = new Map(); // roomId -> policy configuration
  * @param {string} roomId - Room identifier
  * @returns {Promise<Object>} - Intervention policy decision
  */
-async function generateInterventionPolicy(emotionalState, escalationAssessment, recentInterventions = [], userFeedback = {}, roomId) {
+async function generateInterventionPolicy(
+  emotionalState,
+  escalationAssessment,
+  recentInterventions = [],
+  userFeedback = {},
+  roomId
+) {
   if (!process.env.OPENAI_API_KEY) {
     return getDefaultPolicy();
   }
@@ -49,18 +55,23 @@ async function generateInterventionPolicy(emotionalState, escalationAssessment, 
         preferredMethods: ['suggestion', 'reframing'],
         userPreferences: {},
         lastIntervention: null,
-        interventionHistory: []
+        interventionHistory: [],
       });
     }
 
     const currentPolicy = policyState.get(roomId);
 
     // Analyze what intervention is needed
-    const emotionalContext = emotionalState ? JSON.stringify(emotionalState, null, 2) : 'No emotional data';
-    const escalationContext = escalationAssessment ? JSON.stringify(escalationAssessment, null, 2) : 'No escalation data';
-    const feedbackContext = Object.keys(userFeedback).length > 0 
-      ? `User feedback: ${JSON.stringify(userFeedback, null, 2)}`
-      : 'No user feedback yet';
+    const emotionalContext = emotionalState
+      ? JSON.stringify(emotionalState, null, 2)
+      : 'No emotional data';
+    const escalationContext = escalationAssessment
+      ? JSON.stringify(escalationAssessment, null, 2)
+      : 'No escalation data';
+    const feedbackContext =
+      Object.keys(userFeedback).length > 0
+        ? `User feedback: ${JSON.stringify(userFeedback, null, 2)}`
+        : 'No user feedback yet';
 
     const prompt = `You are an adaptive intervention policy generator for co-parenting mediation.
 
@@ -73,7 +84,12 @@ ${escalationContext}
 ${feedbackContext}
 
 Recent interventions (last 5):
-${recentInterventions.slice(-5).map(i => `${i.type} at ${i.timestamp}: ${i.outcome || 'unknown'}`).join('\n') || 'None'}
+${
+  recentInterventions
+    .slice(-5)
+    .map(i => `${i.type} at ${i.timestamp}: ${i.outcome || 'unknown'}`)
+    .join('\n') || 'None'
+}
 
 Current policy:
 - Intervention threshold: ${currentPolicy.interventionThreshold}/100
@@ -110,22 +126,24 @@ Respond in JSON:
       messages: [
         {
           role: 'system',
-          content: 'You are an expert in adaptive intervention policies for conflict mediation. Generate policies that are context-aware, user-preferred, and evidence-based. Respond only with valid JSON.'
+          content:
+            'You are an expert in adaptive intervention policies for conflict mediation. Generate policies that are context-aware, user-preferred, and evidence-based. Respond only with valid JSON.',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       temperature: 0.4,
-      max_tokens: 500
+      max_tokens: 500,
     });
 
     const response = completion.choices[0].message.content.trim();
     const policy = JSON.parse(response);
 
     // Update policy state
-    currentPolicy.interventionThreshold = policy.adjustedThreshold || currentPolicy.interventionThreshold;
+    currentPolicy.interventionThreshold =
+      policy.adjustedThreshold || currentPolicy.interventionThreshold;
     currentPolicy.interventionStyle = policy.interventionStyle || currentPolicy.interventionStyle;
     currentPolicy.lastIntervention = Date.now();
 
@@ -137,9 +155,8 @@ Respond in JSON:
       reasoning: policy.reasoning || '',
       confidence: policy.confidence || 0,
       fallbackPlan: policy.fallbackPlan || 'Monitor and reassess',
-      threshold: currentPolicy.interventionThreshold
+      threshold: currentPolicy.interventionThreshold,
     };
-
   } catch (error) {
     console.error('Error generating intervention policy:', error.message);
     return getDefaultPolicy();
@@ -158,7 +175,7 @@ function getDefaultPolicy() {
     reasoning: 'Default policy - insufficient data',
     confidence: 0,
     fallbackPlan: 'Monitor conversation',
-    threshold: 60
+    threshold: 60,
   };
 }
 
@@ -177,7 +194,7 @@ function recordInterventionOutcome(roomId, intervention, outcome, feedback = nul
       preferredMethods: ['suggestion', 'reframing'],
       userPreferences: {},
       lastIntervention: null,
-      interventionHistory: []
+      interventionHistory: [],
     });
   }
 
@@ -189,7 +206,7 @@ function recordInterventionOutcome(roomId, intervention, outcome, feedback = nul
     outcome: outcome,
     feedback: feedback,
     emotionalState: intervention.emotionalState,
-    escalationRisk: intervention.escalationRisk
+    escalationRisk: intervention.escalationRisk,
   });
 
   // Keep last 20 interventions
@@ -217,6 +234,5 @@ function getPolicyState(roomId) {
 module.exports = {
   generateInterventionPolicy,
   recordInterventionOutcome,
-  getPolicyState
+  getPolicyState,
 };
-

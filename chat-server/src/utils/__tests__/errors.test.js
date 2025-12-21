@@ -1,18 +1,24 @@
 /**
  * Unit Tests: Error Handling Utilities
- * 
+ *
  * Tests for custom error classes and error handling HOC.
- * 
+ *
  * @module src/utils/__tests__/errors.test
  */
 
-const { AppError, OperationalError, RetryableError, FatalError, withErrorHandling } = require('../errors');
+const {
+  AppError,
+  OperationalError,
+  RetryableError,
+  FatalError,
+  withErrorHandling,
+} = require('../errors');
 
 describe('Error Classes', () => {
   describe('AppError', () => {
     it('should create app error with message', () => {
       const error = new AppError('Test error', 'TEST_CODE');
-      
+
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(AppError);
       expect(error.message).toBe('Test error');
@@ -22,7 +28,7 @@ describe('Error Classes', () => {
 
     it('should have timestamp', () => {
       const error = new AppError('Test error', 'TEST_CODE');
-      
+
       expect(error.timestamp).toBeDefined();
       expect(new Date(error.timestamp)).toBeInstanceOf(Date);
     });
@@ -30,7 +36,7 @@ describe('Error Classes', () => {
     it('should have toJSON method', () => {
       const error = new AppError('Test error', 'TEST_CODE', 'operational', { userId: '123' });
       const json = error.toJSON();
-      
+
       expect(json.success).toBe(false);
       expect(json.error.code).toBe('TEST_CODE');
       expect(json.error.message).toBe('Test error');
@@ -41,7 +47,7 @@ describe('Error Classes', () => {
   describe('OperationalError', () => {
     it('should create operational error with message', () => {
       const error = new OperationalError('Test error');
-      
+
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(AppError);
       expect(error).toBeInstanceOf(OperationalError);
@@ -53,20 +59,20 @@ describe('Error Classes', () => {
 
     it('should create operational error with code', () => {
       const error = new OperationalError('Test error', 'TEST_CODE');
-      
+
       expect(error.code).toBe('TEST_CODE');
     });
 
     it('should create operational error with metadata', () => {
       const metadata = { userId: '123', action: 'test' };
       const error = new OperationalError('Test error', 'TEST_CODE', metadata);
-      
+
       expect(error.metadata).toEqual(metadata);
     });
 
     it('should capture stack trace', () => {
       const error = new OperationalError('Test error');
-      
+
       expect(error.stack).toBeDefined();
       expect(error.stack).toContain('OperationalError');
     });
@@ -75,7 +81,7 @@ describe('Error Classes', () => {
   describe('RetryableError', () => {
     it('should create retryable error', () => {
       const error = new RetryableError('Retryable error', 'RETRY_CODE');
-      
+
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(AppError);
       expect(error).toBeInstanceOf(RetryableError);
@@ -87,7 +93,7 @@ describe('Error Classes', () => {
     it('should accept metadata', () => {
       const metadata = { retryAfter: 5000 };
       const error = new RetryableError('Retryable error', 'RETRY_CODE', metadata);
-      
+
       expect(error.metadata).toEqual(metadata);
     });
   });
@@ -95,7 +101,7 @@ describe('Error Classes', () => {
   describe('FatalError', () => {
     it('should create fatal error', () => {
       const error = new FatalError('Fatal error', 'FATAL_CODE');
-      
+
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(AppError);
       expect(error).toBeInstanceOf(FatalError);
@@ -107,13 +113,13 @@ describe('Error Classes', () => {
     it('should accept metadata', () => {
       const metadata = { component: 'database' };
       const error = new FatalError('Fatal error', 'FATAL_CODE', metadata);
-      
+
       expect(error.metadata).toEqual(metadata);
     });
 
     it('should capture stack trace', () => {
       const error = new FatalError('Fatal error');
-      
+
       expect(error.stack).toBeDefined();
       expect(error.stack).toContain('FatalError');
     });
@@ -153,7 +159,7 @@ describe('withErrorHandling', () => {
     await expect(wrapped()).rejects.toThrow(OperationalError);
     // withErrorHandling preserves the original error message
     await expect(wrapped()).rejects.toThrow('Unknown error');
-    
+
     try {
       await wrapped();
     } catch (error) {
@@ -171,7 +177,7 @@ describe('withErrorHandling', () => {
 
     await expect(wrapped()).rejects.toThrow(OperationalError);
     await expect(wrapped()).rejects.toThrow('Operational error');
-    
+
     try {
       await wrapped();
     } catch (error) {
@@ -189,7 +195,7 @@ describe('withErrorHandling', () => {
 
     await expect(wrapped()).rejects.toThrow(RetryableError);
     await expect(wrapped()).rejects.toThrow('Retryable error');
-    
+
     try {
       await wrapped();
     } catch (error) {
@@ -207,7 +213,7 @@ describe('withErrorHandling', () => {
 
     await expect(wrapped()).rejects.toThrow(FatalError);
     await expect(wrapped()).rejects.toThrow('Fatal error');
-    
+
     try {
       await wrapped();
     } catch (error) {
@@ -275,11 +281,11 @@ describe('Error Inheritance', () => {
     expect(opError instanceof Error).toBe(true);
     expect(opError instanceof AppError).toBe(true);
     expect(opError instanceof OperationalError).toBe(true);
-    
+
     expect(retryError instanceof Error).toBe(true);
     expect(retryError instanceof AppError).toBe(true);
     expect(retryError instanceof RetryableError).toBe(true);
-    
+
     expect(fatalError instanceof Error).toBe(true);
     expect(fatalError instanceof AppError).toBe(true);
     expect(fatalError instanceof FatalError).toBe(true);
@@ -305,4 +311,3 @@ describe('Error Inheritance', () => {
     expect(fatalError.retryable).toBe(false);
   });
 });
-

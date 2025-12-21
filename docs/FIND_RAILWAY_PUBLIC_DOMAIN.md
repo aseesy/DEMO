@@ -132,4 +132,3 @@ If you only see `demo.railway.internal`:
 ---
 
 **Remember: Use the public domain (`*.up.railway.app`) for frontend connections, not the internal domain (`*.railway.internal`)** 🚂
-

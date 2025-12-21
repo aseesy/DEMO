@@ -23,8 +23,13 @@ async function detectContactMentions(messageText, existingContacts = [], recentM
   }
 
   try {
-    const existingContactNames = existingContacts.map(c => c.contact_name?.toLowerCase()).filter(Boolean);
-    const recentContext = recentMessages.slice(-5).map(m => `${m.username}: ${m.text}`).join('\n');
+    const existingContactNames = existingContacts
+      .map(c => c.contact_name?.toLowerCase())
+      .filter(Boolean);
+    const recentContext = recentMessages
+      .slice(-5)
+      .map(m => `${m.username}: ${m.text}`)
+      .join('\n');
 
     const prompt = `You are analyzing a co-parenting message to detect mentions of people who should be added as contacts.
 
@@ -70,15 +75,16 @@ If no new people detected, return empty detectedPeople array and shouldPrompt: f
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful AI that detects people mentioned in co-parenting messages. Be conservative - only suggest adding contacts when reasonably confident. Respond only with valid JSON.'
+          content:
+            'You are a helpful AI that detects people mentioned in co-parenting messages. Be conservative - only suggest adding contacts when reasonably confident. Respond only with valid JSON.',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       temperature: 0.3,
-      max_tokens: 500
+      max_tokens: 500,
     });
 
     const response = completion.choices[0].message.content.trim();
@@ -86,14 +92,13 @@ If no new people detected, return empty detectedPeople array and shouldPrompt: f
 
     // Filter to only high/medium confidence
     if (result.detectedPeople && result.detectedPeople.length > 0) {
-      result.detectedPeople = result.detectedPeople.filter(p =>
-        p.confidence === 'high' || p.confidence === 'medium'
+      result.detectedPeople = result.detectedPeople.filter(
+        p => p.confidence === 'high' || p.confidence === 'medium'
       );
       result.shouldPrompt = result.detectedPeople.length > 0;
     }
 
     return result;
-
   } catch (error) {
     console.error('Error detecting contact mentions:', error.message);
     return null;
@@ -113,12 +118,15 @@ async function generateContactProfile(contactData, userContacts = [], recentMess
   }
 
   try {
-    const recentContext = recentMessages.slice(-10).map(m => `${m.username}: ${m.text}`).join('\n');
+    const recentContext = recentMessages
+      .slice(-10)
+      .map(m => `${m.username}: ${m.text}`)
+      .join('\n');
 
     // Build context about existing relationships
-    const existingRelationships = userContacts.map(c =>
-      `${c.contact_name} (${c.relationship})`
-    ).join(', ');
+    const existingRelationships = userContacts
+      .map(c => `${c.contact_name} (${c.relationship})`)
+      .join(', ');
 
     const prompt = `You are helping a co-parent create a profile for a contact. Provide intelligent suggestions based on the relationship type and context.
 
@@ -161,19 +169,20 @@ Respond in JSON format:
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful assistant for co-parents. Provide thoughtful, practical suggestions for contact profiles. Be warm and supportive. Respond only with valid JSON.'
+          content:
+            'You are a helpful assistant for co-parents. Provide thoughtful, practical suggestions for contact profiles. Be warm and supportive. Respond only with valid JSON.',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       temperature: 0.5,
-      max_tokens: 800
+      max_tokens: 800,
     });
 
     let response = completion.choices[0].message.content.trim();
-    
+
     // Remove markdown code blocks if present
     if (response.startsWith('```')) {
       const lines = response.split('\n');
@@ -185,7 +194,7 @@ Respond in JSON format:
       }
       response = lines.join('\n').trim();
     }
-    
+
     try {
       return JSON.parse(response);
     } catch (parseError) {
@@ -194,7 +203,6 @@ Respond in JSON format:
       // Return null to trigger fallback
       return null;
     }
-
   } catch (error) {
     console.error('Error generating contact profile:', error.message);
     console.error('Error stack:', error.stack);
@@ -217,7 +225,10 @@ async function mapContactRelationships(userId) {
   }
 
   try {
-    const contacts = await dbSafe.allAsync('SELECT * FROM contacts WHERE user_id = ? ORDER BY created_at', [userId]);
+    const contacts = await dbSafe.allAsync(
+      'SELECT * FROM contacts WHERE user_id = ? ORDER BY created_at',
+      [userId]
+    );
 
     if (!contacts || contacts.length === 0) {
       return { relationships: [], suggestions: [] };
@@ -228,12 +239,12 @@ async function mapContactRelationships(userId) {
     const suggestions = [];
 
     // Find children and their other parents
-    const children = contacts.filter(c =>
-      c.relationship === 'My Child' || c.relationship === "My Partner's Child"
+    const children = contacts.filter(
+      c => c.relationship === 'My Child' || c.relationship === "My Partner's Child"
     );
 
-    const coParents = contacts.filter(c =>
-      c.relationship === 'My Co-Parent' || c.relationship === "My Partner's Co-Parent"
+    const coParents = contacts.filter(
+      c => c.relationship === 'My Co-Parent' || c.relationship === "My Partner's Co-Parent"
     );
 
     // Suggest linking children to co-parents
@@ -246,8 +257,8 @@ async function mapContactRelationships(userId) {
           suggestedLinks: coParents.map(cp => ({
             id: cp.id,
             name: cp.contact_name,
-            relationship: cp.relationship
-          }))
+            relationship: cp.relationship,
+          })),
         });
       } else if (child.linked_contact_id) {
         const linkedParent = contacts.find(c => c.id === parseInt(child.linked_contact_id));
@@ -255,7 +266,7 @@ async function mapContactRelationships(userId) {
           relationships.push({
             type: 'parent-child',
             child: { id: child.id, name: child.contact_name },
-            parent: { id: linkedParent.id, name: linkedParent.contact_name }
+            parent: { id: linkedParent.id, name: linkedParent.contact_name },
           });
         }
       }
@@ -266,12 +277,11 @@ async function mapContactRelationships(userId) {
       suggestions.push({
         type: 'missing',
         message: `You have children in your contacts but no co-parent added. Would you like to add them?`,
-        suggestedRelationship: 'My Co-Parent'
+        suggestedRelationship: 'My Co-Parent',
       });
     }
 
     return { relationships, suggestions };
-
   } catch (error) {
     console.error('Error mapping contact relationships:', error.message);
     return { relationships: [], suggestions: [] };
@@ -291,16 +301,19 @@ async function enrichContactFromMessages(contactId, userId, messages = []) {
   }
 
   try {
-    const contact = await dbSafe.getAsync('SELECT * FROM contacts WHERE id = ? AND user_id = ?', [contactId, userId]);
+    const contact = await dbSafe.getAsync('SELECT * FROM contacts WHERE id = ? AND user_id = ?', [
+      contactId,
+      userId,
+    ]);
     if (!contact) {
       return null;
     }
 
     // Find messages mentioning this contact
     const contactName = contact.contact_name.toLowerCase();
-    const relevantMessages = messages.filter(m =>
-      m.text.toLowerCase().includes(contactName)
-    ).slice(-20);
+    const relevantMessages = messages
+      .filter(m => m.text.toLowerCase().includes(contactName))
+      .slice(-20);
 
     if (relevantMessages.length === 0) {
       return null;
@@ -343,20 +356,20 @@ Respond in JSON format:
       messages: [
         {
           role: 'system',
-          content: 'You are analyzing co-parenting messages to extract useful contact information. Be accurate and conservative. Respond only with valid JSON.'
+          content:
+            'You are analyzing co-parenting messages to extract useful contact information. Be accurate and conservative. Respond only with valid JSON.',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       temperature: 0.3,
-      max_tokens: 600
+      max_tokens: 600,
     });
 
     const response = completion.choices[0].message.content.trim();
     return JSON.parse(response);
-
   } catch (error) {
     console.error('Error enriching contact from messages:', error.message);
     return null;
@@ -367,5 +380,5 @@ module.exports = {
   detectContactMentions,
   generateContactProfile,
   mapContactRelationships,
-  enrichContactFromMessages
+  enrichContactFromMessages,
 };

@@ -1,18 +1,18 @@
 /**
  * Username Value Object
- * 
+ *
  * IMPORTANT: This represents a DATABASE username (unique identifier),
  * NOT a display name or first name. Database usernames are:
  * - Auto-generated from email (e.g., "alice123")
  * - Lowercase, alphanumeric
  * - Unique across the system
  * - Used for authentication and database lookups
- * 
+ *
  * For display names, use the display_name field in the users table.
- * 
+ *
  * Immutable, validated username wrapper.
  * Provides type safety and automatic normalization.
- * 
+ *
  * @module domain/valueObjects/Username
  */
 
@@ -30,7 +30,7 @@ class Username {
     }
 
     const trimmed = value.trim();
-    
+
     if (trimmed.length < 3) {
       throw new Error(`Invalid username: ${trimmed} - must be at least 3 characters`);
     }
@@ -41,7 +41,7 @@ class Username {
 
     // Normalize to lowercase
     this.value = trimmed.toLowerCase();
-    
+
     // Make immutable
     Object.freeze(this);
   }
@@ -90,4 +90,3 @@ class Username {
 }
 
 module.exports = Username;
-

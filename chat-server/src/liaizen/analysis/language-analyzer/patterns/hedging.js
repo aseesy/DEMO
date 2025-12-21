@@ -11,28 +11,55 @@
 
 // Hedging/softening markers
 const HEDGING_MARKERS = [
-  'just', 'maybe', 'possibly', 'perhaps', 'might', 'really',
-  'sort of', 'kind of', 'kinda', 'a little', 'a bit',
-  'i think', 'i feel like', 'i guess', 'think maybe',
-  'not sure if', 'not sure but', 'i could be wrong',
-  'if you don\'t mind', 'if that\'s okay', 'if it\'s not too much',
-  'isn\'t really', 'not really'
+  'just',
+  'maybe',
+  'possibly',
+  'perhaps',
+  'might',
+  'really',
+  'sort of',
+  'kind of',
+  'kinda',
+  'a little',
+  'a bit',
+  'i think',
+  'i feel like',
+  'i guess',
+  'think maybe',
+  'not sure if',
+  'not sure but',
+  'i could be wrong',
+  "if you don't mind",
+  "if that's okay",
+  "if it's not too much",
+  "isn't really",
+  'not really',
 ];
 
 // Apologetic framing markers
 const APOLOGETIC_MARKERS = [
-  'sorry to', 'sorry for', 'i\'m sorry but',
-  'hate to', 'don\'t want to bother',
-  'i know this is', 'i know you\'re busy',
-  'apologize for', 'forgive me for'
+  'sorry to',
+  'sorry for',
+  "i'm sorry but",
+  'hate to',
+  "don't want to bother",
+  'i know this is',
+  "i know you're busy",
+  'apologize for',
+  'forgive me for',
 ];
 
 // Over-explaining markers
 const OVER_EXPLAINING_MARKERS = [
-  'let me explain', 'the reason is', 'because you see',
-  'what happened was', 'the thing is',
-  'i want you to understand', 'you have to understand',
-  'it\'s not that i', 'it\'s just that'
+  'let me explain',
+  'the reason is',
+  'because you see',
+  'what happened was',
+  'the thing is',
+  'i want you to understand',
+  'you have to understand',
+  "it's not that i",
+  "it's just that",
 ];
 
 // Direct statement patterns
@@ -42,7 +69,7 @@ const DIRECT_PATTERNS = [
   /^please\b/i,
   /^the \w+ is\b/i,
   /^we need to\b/i,
-  /^let's\b/i
+  /^let's\b/i,
 ];
 
 /**
@@ -71,19 +98,14 @@ function detect(text) {
   const hasExcessiveHedging = hedgesFound.length >= 3;
 
   // Check for apologetic framing
-  const hasApologeticFraming = APOLOGETIC_MARKERS.some(marker =>
-    lowerText.includes(marker)
-  );
+  const hasApologeticFraming = APOLOGETIC_MARKERS.some(marker => lowerText.includes(marker));
 
   // Check for over-explaining
-  const hasOverExplaining = OVER_EXPLAINING_MARKERS.some(marker =>
-    lowerText.includes(marker)
-  );
+  const hasOverExplaining = OVER_EXPLAINING_MARKERS.some(marker => lowerText.includes(marker));
 
   // Check for direct statement pattern
-  const isDirectStatement = DIRECT_PATTERNS.some(pattern =>
-    pattern.test(text)
-  ) && !hasHedging && !hasApologeticFraming;
+  const isDirectStatement =
+    DIRECT_PATTERNS.some(pattern => pattern.test(text)) && !hasHedging && !hasApologeticFraming;
 
   // Check for trailing ellipsis (uncertainty marker)
   const hasTrailingEllipsis = /\.\.\.\s*$/.test(text);
@@ -98,7 +120,7 @@ function detect(text) {
     over_explaining: hasOverExplaining,
     direct_statement: isDirectStatement,
     trailing_uncertainty: hasTrailingEllipsis || hasValidationSeeking,
-    hedges_used: hedgesFound
+    hedges_used: hedgesFound,
   };
 }
 
@@ -111,7 +133,9 @@ function summarize(patterns) {
   const observations = [];
 
   if (patterns.excessive_hedging) {
-    observations.push(`Excessive hedging weakens the message (${patterns.hedges_used.length} softeners)`);
+    observations.push(
+      `Excessive hedging weakens the message (${patterns.hedges_used.length} softeners)`
+    );
   } else if (patterns.hedging_softeners) {
     observations.push(`Contains hedging language: ${patterns.hedges_used.join(', ')}`);
   }
@@ -141,5 +165,5 @@ module.exports = {
   findHedges,
   HEDGING_MARKERS,
   APOLOGETIC_MARKERS,
-  OVER_EXPLAINING_MARKERS
+  OVER_EXPLAINING_MARKERS,
 };

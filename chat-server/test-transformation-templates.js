@@ -1,6 +1,6 @@
 /**
  * Test script for Transformation Templates
- * 
+ *
  * Tests that rewrites apply the transformation templates correctly:
  * 1. Accusation -> Observation + Need
  * 2. Always/Never -> Specific Instance
@@ -21,74 +21,77 @@ async function testTransformationTemplates() {
   const testCases = [
     {
       name: 'Accusation -> Observation + Need',
-      message: "You never tell me anything about school.",
+      message: 'You never tell me anything about school.',
       expectedTransform: 'Remove blame, express need directly',
-      checkRewrite: (rewrite) => {
+      checkRewrite: rewrite => {
         const hasNeed = /I'd like|I want|I need|Can we|Can you/i.test(rewrite);
         const noBlame = !/you never|you don't|you always/i.test(rewrite);
         return hasNeed && noBlame;
-      }
+      },
     },
     {
       name: 'Always/Never -> Specific Instance',
       message: "You're always late.",
       expectedTransform: 'Replace absolutes with concrete examples',
-      checkRewrite: (rewrite) => {
+      checkRewrite: rewrite => {
         const noAlways = !/\balways\b/i.test(rewrite);
-        const hasSpecific = /\b(Tuesday|Wednesday|Monday|Friday|last|recent|specific|20 minutes|delayed)\b/i.test(rewrite);
+        const hasSpecific =
+          /\b(Tuesday|Wednesday|Monday|Friday|last|recent|specific|20 minutes|delayed)\b/i.test(
+            rewrite
+          );
         return noAlways && hasSpecific;
-      }
+      },
     },
     {
       name: 'Character Attack -> Behavior Focus',
       message: "You're so irresponsible.",
       expectedTransform: 'Remove character judgment, focus on specific behavior',
-      checkRewrite: (rewrite) => {
+      checkRewrite: rewrite => {
         const noCharacter = !/\b(irresponsible|lazy|selfish|mean|bad)\b/i.test(rewrite);
         const hasBehavior = /\b(permission slip|signed|completed|handle|discuss)\b/i.test(rewrite);
         return noCharacter && hasBehavior;
-      }
+      },
     },
     {
       name: 'Demand -> Request',
-      message: "You need to call me before making plans.",
+      message: 'You need to call me before making plans.',
       expectedTransform: 'Replace command with collaborative request',
-      checkRewrite: (rewrite) => {
+      checkRewrite: rewrite => {
         const noCommand = !/\b(you need to|you must|you have to)\b/i.test(rewrite);
         const hasRequest = /\b(I'd appreciate|Can we|Would that work|coordinate)\b/i.test(rewrite);
         return noCommand && hasRequest;
-      }
+      },
     },
     {
       name: 'New Partner Threat -> Boundary Focus',
       message: "It's confusing for her to meet your new friend.",
       expectedTransform: 'Remove judgment, express boundary/concern directly',
-      checkRewrite: (rewrite) => {
+      checkRewrite: rewrite => {
         const noJudgment = !/\b(confusing|wrong|bad|inappropriate)\b/i.test(rewrite);
         const hasBoundary = /\b(pace|digest|timing|introductions|ensure|discuss)\b/i.test(rewrite);
         return noJudgment && hasBoundary;
-      }
+      },
     },
     {
       name: 'Softener Removal',
       message: "I'm just worried about the schedule change.",
       expectedTransform: 'Remove "just", "only", "simply" that disguise attacks',
-      checkRewrite: (rewrite) => {
+      checkRewrite: rewrite => {
         const noSoftener = !/\b(just|only|simply)\b/i.test(rewrite);
         const hasConcern = /\b(concerned|worried|thinking|discuss)\b/i.test(rewrite);
         return noSoftener && hasConcern;
-      }
+      },
     },
     {
       name: 'Weaponized Agreement Removal',
-      message: "I agree we should be consistent, but you never follow through.",
+      message: 'I agree we should be consistent, but you never follow through.',
       expectedTransform: 'Remove "but", "however" - make clean agreement or separate request',
-      checkRewrite: (rewrite) => {
+      checkRewrite: rewrite => {
         const noBut = !/\b(but|however)\b/i.test(rewrite);
         const hasConsistency = /\b(consistent|consistency)\b/i.test(rewrite);
         return noBut && hasConsistency;
-      }
-    }
+      },
+    },
   ];
 
   let passed = 0;
@@ -99,12 +102,12 @@ async function testTransformationTemplates() {
     console.log('-'.repeat(60));
     console.log('Original message:', testCase.message);
     console.log('Expected transformation:', testCase.expectedTransform);
-    
+
     try {
       const message = {
         text: testCase.message,
         username: 'testuser1',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       const result = await mediator.analyzeMessage(
@@ -164,20 +167,3 @@ async function testTransformationTemplates() {
 
 // Run tests
 testTransformationTemplates().catch(console.error);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

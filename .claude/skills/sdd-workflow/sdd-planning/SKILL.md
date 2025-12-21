@@ -19,6 +19,7 @@ allowed-tools: Read, Write, Bash, Grep, Glob
 ## When to Use
 
 Activate this skill when:
+
 - User invokes `/plan` command
 - User requests implementation planning for a feature
 - User asks "how should we implement this?"
@@ -34,11 +35,13 @@ Activate this skill when:
 ### Step 1: Setup and Initialization
 
 **Run setup script** to get feature paths:
+
 ```bash
 .specify/scripts/bash/setup-plan.sh --json
 ```
 
 **Parse JSON output** to extract:
+
 - `FEATURE_SPEC`: Path to feature specification
 - `IMPL_PLAN`: Path to implementation plan (plan.md)
 - `SPECS_DIR`: Directory for all feature artifacts
@@ -49,11 +52,13 @@ Activate this skill when:
 ### Step 2: Analyze Specification
 
 **Read and understand the feature specification**:
+
 ```bash
 Read: $FEATURE_SPEC
 ```
 
 **Extract key information**:
+
 - Feature requirements and user stories
 - Functional and non-functional requirements
 - Success criteria and acceptance criteria
@@ -63,11 +68,13 @@ Read: $FEATURE_SPEC
 ### Step 3: Review Constitutional Requirements
 
 **Read the constitution** to ensure compliance:
+
 ```bash
 Read: .specify/memory/constitution.md
 ```
 
 **Focus on core principles**:
+
 - **Principle I**: Library-First Architecture - Feature must start as standalone library
 - **Principle II**: Test-First Development - Tests written before implementation
 - **Principle III**: Contract-First Design - Define contracts before code
@@ -76,6 +83,7 @@ Read: .specify/memory/constitution.md
 ### Step 4: Execute Plan Template
 
 **Load the plan template**:
+
 ```bash
 Read: .specify/templates/plan-template.md
 ```
@@ -83,6 +91,7 @@ Read: .specify/templates/plan-template.md
 **The plan template is self-executing** - follow its 9-step Execution Flow:
 
 **Phase 0: Research & Analysis**
+
 - Technical research for feature requirements
 - Technology evaluation and selection
 - Architecture patterns identification
@@ -90,6 +99,7 @@ Read: .specify/templates/plan-template.md
 - Generate: `$SPECS_DIR/research.md`
 
 **Phase 1: Design Artifacts**
+
 - Data model definition (entities, relationships, schemas)
   - Generate: `$SPECS_DIR/data-model.md`
 - API contract definition (endpoints, request/response schemas)
@@ -98,15 +108,18 @@ Read: .specify/templates/plan-template.md
   - Generate: `$SPECS_DIR/quickstart.md`
 
 **Phase 2: Execution Planning**
+
 - Implementation roadmap
 - Task breakdown with dependencies
 - Note: tasks.md generation is deferred to /tasks command
 
 **Incorporate user-provided details**:
+
 - Add any additional context from command arguments to Technical Context section
 - User may provide implementation preferences, technology choices, constraints
 
 **Update Progress Tracking** as you complete each phase:
+
 - Mark phases as complete
 - Note any errors or blockers
 - Track generated artifacts
@@ -114,6 +127,7 @@ Read: .specify/templates/plan-template.md
 ### Step 5: Verify Execution
 
 **Check that all phases completed successfully**:
+
 - [ ] Phase 0: research.md exists and is comprehensive
 - [ ] Phase 1: data-model.md exists with entities defined
 - [ ] Phase 1: contracts/ directory exists with contract files
@@ -125,6 +139,7 @@ Read: .specify/templates/plan-template.md
 ### Step 6: Validate Implementation Plan
 
 **Run plan validation**:
+
 ```bash
 .specify/scripts/bash/validate-plan.sh --file $IMPL_PLAN
 ```
@@ -132,17 +147,20 @@ Read: .specify/templates/plan-template.md
 **Validation checks** (16 total):
 
 **Constitutional Compliance** (3 checks):
+
 - Library-First: Plan mentions library/package/module
 - Test-First: Plan mentions testing/TDD
 - Contract-First: Plan mentions contracts/API/interfaces
 
 **Artifact Existence** (4 checks):
+
 - research.md exists
 - data-model.md exists
 - contracts/ directory exists
 - quickstart.md exists
 
 **Plan Content Quality** (9 checks):
+
 - Has overview section
 - Has architecture section
 - Has implementation phases
@@ -154,6 +172,7 @@ Read: .specify/templates/plan-template.md
 - Has deployment strategy
 
 **Report validation results**:
+
 - Overall score (X/16 checks passing)
 - Readiness status (ready/needs-improvement)
 - Specific recommendations
@@ -161,22 +180,26 @@ Read: .specify/templates/plan-template.md
 ### Step 7: Domain Detection
 
 **Run domain detection on plan**:
+
 ```bash
 .specify/scripts/bash/detect-phase-domain.sh --file $IMPL_PLAN
 ```
 
 **Confirm domain alignment**:
+
 - Compare detected domains with specification domains
 - Identify any NEW domains that emerged during planning
 - Report any discrepancies
 
 **Capture suggested agents**:
+
 - Specialist agents needed for implementation
 - Delegation strategy (single-agent vs multi-agent)
 
 ### Step 8: Report Completion
 
 **Provide comprehensive summary**:
+
 ```
 ✅ Implementation Plan Generated
 
@@ -207,18 +230,21 @@ Next Step: Run /tasks to generate implementation task list
 ## Constitutional Compliance
 
 ### Principle I: Library-First Architecture
+
 - Ensure plan describes feature as standalone library
 - Library has clear public API
 - Library is reusable and testable independently
 - Document library structure in research.md
 
 ### Principle II: Test-First Development
+
 - quickstart.md must include test scenarios BEFORE implementation
 - Testing strategy documented in plan
 - Each contract has corresponding test scenario
 - Test scenarios cover happy path, error cases, edge cases
 
 ### Principle III: Contract-First Design
+
 - All contracts defined in contracts/ directory BEFORE implementation
 - Each endpoint/interface documented with:
   - Request schema
@@ -228,12 +254,14 @@ Next Step: Run /tasks to generate implementation task list
 - Contracts drive implementation
 
 ### Principle VIII: Documentation Synchronization
+
 - All artifacts generated together
 - Plan references all artifacts
 - Artifacts cross-reference each other
 - Documentation complete before implementation starts
 
 ### Principle IX: Dependency Management
+
 - All dependencies listed in research.md
 - Dependency rationale documented
 - Version constraints specified
@@ -246,6 +274,7 @@ Next Step: Run /tasks to generate implementation task list
 **User Request**: "/plan Add pagination, filtering, and sorting to user list API"
 
 **Skill Execution**:
+
 1. Run setup-plan.sh → get paths for current feature branch
 2. Read specification → understand user list API requirements
 3. Read constitution → verify Library-First, Test-First, Contract-First
@@ -262,6 +291,7 @@ Next Step: Run /tasks to generate implementation task list
 8. Report completion with suggested agents: backend-architect, database-specialist
 
 **Generated Artifacts**:
+
 ```
 specs/001-user-list-api/
 ├── spec.md (from /specify)
@@ -278,6 +308,7 @@ specs/001-user-list-api/
 **User Request**: "/plan Implement user profile card component with avatar, name, bio"
 
 **Skill Execution**:
+
 1. Setup paths
 2. Read specification → understand component requirements
 3. Read constitution
@@ -296,9 +327,11 @@ specs/001-user-list-api/
 ## Agent Collaboration
 
 ### planning-agent (PRIMARY)
+
 **When to delegate**: ALL /plan command executions - this is the designated autonomous agent for implementation planning
 
 **What they handle**: Complete autonomous execution of the planning workflow including:
+
 - Phase 0: Technical research, library evaluation, technology stack selection
 - Phase 1: API contract design (OpenAPI/GraphQL), data model creation, test scenario extraction
 - Phase 2: Constitutional compliance validation (14 principles)
@@ -307,6 +340,7 @@ specs/001-user-list-api/
 - Readiness validation for task generation phase
 
 **How to invoke**:
+
 ```
 Use the Task tool to delegate to planning-agent:
 - subagent_type: "planning-agent"
@@ -321,21 +355,25 @@ Use the Task tool to delegate to planning-agent:
 ---
 
 ### backend-architect
+
 **When to delegate**: Multi-service architecture, complex backend systems (for specialized research during Phase 0)
 
 **What they handle**: Backend system design, API architecture, service patterns
 
 ### frontend-specialist
+
 **When to delegate**: UI components, user interactions, client-side logic
 
 **What they handle**: Component design, state management, UI patterns
 
 ### database-specialist
+
 **When to delegate**: Complex data models, query optimization, schema design
 
 **What they handle**: Database schema, relationships, indexing, query patterns
 
 ### task-orchestrator
+
 **When to delegate**: Multi-domain feature (3+ domains detected)
 
 **What they handle**: Coordinating multiple specialists during implementation
@@ -364,6 +402,7 @@ Verify the skill executed correctly:
 **Cause**: Feature specification doesn't exist or is in wrong location
 
 **Solution**:
+
 - Verify spec.md exists in current branch's specs/ directory
 - Run /specify first to create specification
 - Check branch name matches specs directory name
@@ -373,6 +412,7 @@ Verify the skill executed correctly:
 **Cause**: Plan missing required sections or artifacts not generated
 
 **Solution**:
+
 - Review validation output for specific failures
 - Check that all Phase 0 and Phase 1 artifacts exist
 - Ensure plan.md includes all required sections
@@ -383,6 +423,7 @@ Verify the skill executed correctly:
 **Cause**: Feature doesn't define external interfaces or API contracts unclear
 
 **Solution**:
+
 - Review specification for API endpoints or component interfaces
 - If truly no external contracts, document internal interfaces
 - Create at least one contract showing module public API
@@ -393,6 +434,7 @@ Verify the skill executed correctly:
 **Cause**: Planning revealed additional technical requirements
 
 **Solution**:
+
 - This is expected - planning adds technical detail
 - Report discrepancy to user
 - Suggest updating specification if domains significantly changed

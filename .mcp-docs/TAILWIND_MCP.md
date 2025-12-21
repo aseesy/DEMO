@@ -7,14 +7,17 @@ A comprehensive Model Context Protocol (MCP) server that provides TailwindCSS ut
 The Tailwind CSS MCP Server provides the following tools:
 
 ### 1. **get_tailwind_utilities**
+
 Get information about specific Tailwind CSS utility classes.
 
 **Use Cases:**
+
 - Check if a utility class exists
 - Get documentation for a specific utility
 - Understand utility class variants and modifiers
 
 **Example:**
+
 ```
 get_tailwind_utilities with class: "bg-gradient-to-br"
 get_tailwind_utilities with class: "rounded-xl"
@@ -22,14 +25,17 @@ get_tailwind_utilities with class: "hover:shadow-lg"
 ```
 
 ### 2. **get_tailwind_colors**
+
 Retrieve Tailwind's color palette or specific color information.
 
 **Use Cases:**
+
 - Browse available colors
 - Find color hex values
 - Check color shades (50-900)
 
 **Example:**
+
 ```
 get_tailwind_colors (all colors)
 get_tailwind_colors with color: "teal"
@@ -37,27 +43,33 @@ get_tailwind_colors with color: "gray"
 ```
 
 ### 3. **get_tailwind_config_guide**
+
 Get guidance on configuring Tailwind CSS for your project.
 
 **Use Cases:**
+
 - Learn how to extend the default theme
 - Add custom colors or spacing
 - Configure plugins and variants
 
 **Example:**
+
 ```
 get_tailwind_config_guide
 ```
 
 ### 4. **search_tailwind_docs**
+
 Search through Tailwind CSS documentation.
 
 **Use Cases:**
+
 - Find utilities for a specific use case
 - Search for layout patterns
 - Look up responsive design utilities
 
 **Example:**
+
 ```
 search_tailwind_docs with query: "flex layout"
 search_tailwind_docs with query: "modal backdrop"
@@ -65,28 +77,34 @@ search_tailwind_docs with query: "z-index"
 ```
 
 ### 5. **install_tailwind**
+
 Get installation instructions for Tailwind CSS.
 
 **Use Cases:**
+
 - Set up Tailwind in a new project
 - Configure for specific frameworks (React, Vue, etc.)
 - PostCSS configuration
 
 **Example:**
+
 ```
 install_tailwind with framework: "react"
 install_tailwind with framework: "vite"
 ```
 
 ### 6. **convert_css_to_tailwind**
+
 Convert vanilla CSS to Tailwind utility classes.
 
 **Use Cases:**
+
 - Migrate from custom CSS to Tailwind
 - Learn Tailwind equivalents for CSS properties
 - Optimize existing styles
 
 **Example:**
+
 ```
 convert_css_to_tailwind with css: "background-color: #275559; padding: 1rem; border-radius: 0.5rem;"
 ```
@@ -94,7 +112,9 @@ convert_css_to_tailwind with css: "background-color: #275559; padding: 1rem; bor
 ## LiaiZen-Specific Usage
 
 ### Brand Colors
+
 Our brand colors are already defined in the design tokens:
+
 - Primary: `#275559` → Use `bg-[#275559]` or `text-[#275559]`
 - Secondary: `#4DA8B0` → Use `bg-[#4DA8B0]`
 - Accent: `#6dd4b0` → Use `bg-[#6dd4b0]`
@@ -102,21 +122,25 @@ Our brand colors are already defined in the design tokens:
 ### Common Patterns
 
 #### Modals
+
 ```
 Ask: "What Tailwind classes should I use for a modal with proper z-index?"
 ```
 
 #### Navigation
+
 ```
 Ask: "How do I create a fixed navigation bar with Tailwind?"
 ```
 
 #### Buttons
+
 ```
 Ask: "Convert this CSS to Tailwind for a button: padding: 0.75rem 1.5rem; background: #275559; border-radius: 0.75rem;"
 ```
 
 #### Responsive Design
+
 ```
 Ask: "What are the responsive breakpoints in Tailwind?"
 Ask: "How do I make this component responsive from mobile to desktop?"
@@ -125,6 +149,7 @@ Ask: "How do I make this component responsive from mobile to desktop?"
 ## Configuration
 
 The server is configured to work with your LiaiZen project:
+
 - **Project Path**: `/Users/athenasees/Desktop/chat/chat-client-vite`
 - **Tailwind Config**: `tailwind.config.js`
 - **Tailwind Version**: v4.x (using @import directive)
@@ -141,18 +166,21 @@ The server is configured to work with your LiaiZen project:
 ## Common Use Cases
 
 ### Optimize Existing Components
+
 ```
 "Review this component and suggest Tailwind optimizations:
 <div className='bg-white rounded-xl shadow-lg p-6'>..."
 ```
 
 ### Convert Legacy CSS
+
 ```
 "Convert this CSS to Tailwind classes:
 .card { padding: 24px; background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }"
 ```
 
 ### Responsive Design
+
 ```
 "Help me make this button responsive:
 - Mobile: Full width, smaller padding
@@ -160,6 +188,7 @@ The server is configured to work with your LiaiZen project:
 ```
 
 ### Color Consistency
+
 ```
 "What Tailwind classes should I use for these colors?
 - Primary: #275559
@@ -168,6 +197,7 @@ The server is configured to work with your LiaiZen project:
 ```
 
 ### Layout Patterns
+
 ```
 "Show me how to create a centered modal with backdrop using Tailwind"
 "How do I create a sticky footer navigation?"
@@ -181,6 +211,7 @@ The Tailwind MCP server works alongside the Design Tokens MCP server:
 2. **Tailwind MCP**: Convert those values to Tailwind classes
 
 **Example Workflow:**
+
 ```
 1. Ask Design Tokens: "What's the primary brand color?"
    → Returns: #275559
@@ -200,15 +231,18 @@ After adding this MCP server, **restart Claude Desktop** to load the new configu
 ## Troubleshooting
 
 ### Server Not Loading
+
 - Ensure you restarted Claude Desktop after configuration
 - Check that npx can access `tailwindcss-mcp-server`
 - Verify the TAILWIND_PROJECT_PATH exists
 
 ### Classes Not Found
+
 - Some custom classes may need to be added to `tailwind.config.js`
 - Use arbitrary values with `[]` syntax for custom values
 
 ### Conversion Issues
+
 - Not all CSS can be directly converted to Tailwind
 - Some complex CSS may require custom classes
 

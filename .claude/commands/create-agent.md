@@ -5,6 +5,7 @@ description: Create a new specialized subagent with constitutional compliance an
 **AGENT REQUIREMENT**: This command should be executed by the subagent-architect.
 
 **If you are NOT the subagent-architect**, delegate this work immediately:
+
 ```
 Use the Task tool to invoke subagent-architect:
 - subagent_type: "subagent-architect"
@@ -13,6 +14,7 @@ Use the Task tool to invoke subagent-architect:
 ```
 
 The subagent-architect is specialized for:
+
 - Creating SDD-compliant agents
 - Constitutional agent workflows
 - Agent department classification
@@ -43,6 +45,7 @@ Given the agent name and description provided as arguments, do this:
    - Operations: deploy, devops, monitor, incident keywords
 
 4. Execute agent creation:
+
    ```bash
    echo '{"name": "AGENT_NAME", "description": "DESCRIPTION"}' | .specify/scripts/bash/create-agent.sh --json
    ```
@@ -58,6 +61,7 @@ Given the agent name and description provided as arguments, do this:
    - Display any validation warnings
 
 The script will automatically:
+
 - Set appropriate tool restrictions based on department
 - Include constitutional references
 - Create memory structure in `.docs/agents/`

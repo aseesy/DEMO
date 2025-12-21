@@ -5,6 +5,7 @@ This guide explains how to set up and use the Google Tag (Google Analytics or Go
 ## Overview
 
 The Google Tag is automatically injected into all pages from your `.env` file. The system:
+
 - Checks for existing tags to prevent duplicates
 - Injects the tag immediately after `<head>` on all pages
 - Works with both Google Analytics 4 (GA4) and Google Tag Manager (GTM)
@@ -30,6 +31,7 @@ GOOGLE_TAG="<!-- Your Google Tag snippet here -->"
 ```
 
 **Important Notes:**
+
 - Include the **entire** Google Tag snippet (including `<script>` tags)
 - For Google Tag Manager, include both the `<script>` and `<noscript>` portions
 - The tag will be automatically injected into the `<head>` section
@@ -80,6 +82,7 @@ The Google Tag is injected in two ways:
 ### Static HTML Files (terms.html, privacy.html, contact.html)
 
 For static HTML files in the `public/` folder:
+
 - The Vite plugin will inject the tag during build
 - For development, the tag will be injected via the runtime script if you include it
 
@@ -97,6 +100,7 @@ For static HTML files in the `public/` folder:
 ### Check Console Logs
 
 Open browser console and look for:
+
 - `Google Tag injected successfully` - Tag was injected
 - `Google Tag already present, skipping injection` - Tag already exists (good!)
 - `No GOOGLE_TAG found in environment variables` - Tag not configured
@@ -113,12 +117,14 @@ Open browser console and look for:
 ### Tag Not Appearing
 
 1. **Check environment variable:**
+
    ```bash
    # In chat-client-vite/.env
    echo $VITE_GOOGLE_TAG
    ```
 
 2. **Restart dev server** after adding/changing `.env` file:
+
    ```bash
    # Stop server (Ctrl+C)
    # Start again
@@ -134,11 +140,13 @@ Open browser console and look for:
 ### Duplicate Tags
 
 The system automatically prevents duplicates by:
+
 - Checking for existing tags before injection
 - Marking injected tags with `data-gtag="injected"` attribute
 - Skipping injection if tag already exists
 
 If you see duplicates:
+
 1. Check if tag was manually added to HTML
 2. Remove manual tag and let the system inject it
 3. Clear browser cache and reload
@@ -168,11 +176,13 @@ VITE_GOOGLE_TAG="<!-- Your Google Tag snippet -->"
 ### Production (Hosting Platform)
 
 **Vercel:**
+
 - Go to Project Settings → Environment Variables
 - Add: `VITE_GOOGLE_TAG` = `<!-- Your Google Tag snippet -->`
 - Redeploy
 
 **Railway:**
+
 - Go to Variables tab
 - Add: `VITE_GOOGLE_TAG` = `<!-- Your Google Tag snippet -->`
 - Redeploy
@@ -206,9 +216,9 @@ VITE_GOOGLE_TAG="<!-- Your Google Tag snippet -->"
 ## Support
 
 If you encounter issues:
+
 1. Check browser console for errors
 2. Verify environment variable is set correctly
 3. Restart dev server after changing `.env`
 4. Check Google Analytics/Tag Manager dashboard for activity
 5. Review this documentation
-

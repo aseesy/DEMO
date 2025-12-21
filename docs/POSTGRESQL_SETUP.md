@@ -23,11 +23,13 @@ LiaiZen uses **PostgreSQL-only** in production. SQLite is available as a dev-onl
 ### Step 2: Verify DATABASE_URL
 
 **Automatic Connection (Recommended):**
+
 - Railway automatically shares `DATABASE_URL` with connected services
 - Check your **chat-server** service → **Variables** → **Connected Variables**
 - Should see: `DATABASE_URL=postgresql://...`
 
 **Manual Setup (If needed):**
+
 1. Click PostgreSQL service → **Connect** tab
 2. Copy **Connection URL**
 3. Add to chat-server service → **Variables**:
@@ -37,6 +39,7 @@ LiaiZen uses **PostgreSQL-only** in production. SQLite is available as a dev-onl
 ### Step 3: Verify Connection
 
 After setting `DATABASE_URL`, check Railway logs. You should see:
+
 ```
 ✅ PostgreSQL pool connected
 🔄 Running PostgreSQL migration...
@@ -46,11 +49,13 @@ After setting `DATABASE_URL`, check Railway logs. You should see:
 ### Connection String Format
 
 Railway PostgreSQL connection strings look like:
+
 ```
 postgresql://postgres:PASSWORD@maglev.proxy.rlwy.net:57813/railway
 ```
 
 Where:
+
 - `postgres` = username
 - `PASSWORD` = database password
 - `maglev.proxy.rlwy.net` = hostname
@@ -79,6 +84,7 @@ docker ps | grep postgres
 ```
 
 **Stop when done:**
+
 ```bash
 docker stop postgres-liaizen
 docker rm postgres-liaizen
@@ -157,10 +163,12 @@ You may need to write a custom migration script to convert SQLite data to Postgr
 ### Check Database Connection
 
 **In Production (Railway):**
+
 - Check Railway logs for: `✅ PostgreSQL pool connected`
 - Test API endpoints that use database
 
 **In Development:**
+
 ```bash
 # Test connection
 psql $DATABASE_URL
@@ -172,6 +180,7 @@ psql $DATABASE_URL
 ### Verify Tables Created
 
 The app automatically runs migrations on startup. Check logs for:
+
 ```
 🔄 Running PostgreSQL migration...
 ✅ Migration: 001_initial_schema.sql
@@ -188,6 +197,7 @@ The app automatically runs migrations on startup. Check logs for:
 **Problem:** `DATABASE_URL is not set` error
 
 **Solution:**
+
 - **Production**: Verify PostgreSQL service is connected to chat-server in Railway
 - **Development**: Either set `DATABASE_URL` or leave unset to use SQLite
 
@@ -196,6 +206,7 @@ The app automatically runs migrations on startup. Check logs for:
 **Problem:** Can't connect to PostgreSQL
 
 **Solution:**
+
 1. Verify PostgreSQL service is running (not stopped)
 2. Check connection string format is correct
 3. Verify password in connection string
@@ -206,6 +217,7 @@ The app automatically runs migrations on startup. Check logs for:
 **Problem:** Migrations fail
 
 **Solution:**
+
 1. Check Railway logs for specific error
 2. Verify database user has CREATE TABLE permissions
 3. Check if tables already exist (may need to drop and recreate)
@@ -215,6 +227,7 @@ The app automatically runs migrations on startup. Check logs for:
 **Problem:** Can't start PostgreSQL locally
 
 **Solution:**
+
 ```bash
 # Check if PostgreSQL is running
 brew services list  # macOS
@@ -240,16 +253,19 @@ sudo systemctl restart postgresql  # Linux
 ### Connection Strings
 
 **Railway Production:**
+
 ```
 postgresql://postgres:PASSWORD@HOST:PORT/railway
 ```
 
 **Local Docker:**
+
 ```
 postgresql://postgres:devpass@localhost:5432/liaizen_dev
 ```
 
 **Local Homebrew:**
+
 ```
 postgresql://postgres@localhost:5432/liaizen_dev
 ```
@@ -273,4 +289,3 @@ psql $DATABASE_URL -c "\d table_name"
 ---
 
 **PostgreSQL is now set up!** The app will automatically use it when `DATABASE_URL` is set. 🐘
-

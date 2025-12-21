@@ -18,6 +18,7 @@ For each unused item, we ask:
 #### Frontend
 
 **1. `requireAuth` HOC**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not imported anywhere
@@ -30,6 +31,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed - completely unused
 
 **2. `toCamelCase` / `toSnakeCase` (Generic Transformers)**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not imported
@@ -42,6 +44,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed - specific transformers remain
 
 **3. `UserContextForm` Component**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not imported
@@ -54,6 +57,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed - functionality replaced by ProfilePanel
 
 **4. `storageHelpers` Object**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not imported
@@ -68,6 +72,7 @@ For each unused item, we ask:
 #### Backend
 
 **5. `analyzeAndIntervene` (Legacy Alias)**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? Potentially - legacy code might use it
@@ -77,11 +82,12 @@ For each unused item, we ask:
   - Removal risk? **LOW** - only in comments/backup files
   - Documented? No
 - **Impact if removed**: None (active code uses `analyzeMessage`)
-- **Mitigation**: 
+- **Mitigation**:
   - Check backup files don't reference it
   - Remove from exports, keep `analyzeMessage`
 
 **6. `resetEscalation` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - only in deprecated files
@@ -94,6 +100,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed
 
 **7. `getPolicyState` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - only in deprecated files
@@ -106,6 +113,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed
 
 **8. `getUserProfile` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not used
@@ -118,6 +126,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed - can be re-added if needed
 
 **9. `getCodeLayerMetrics` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not used
@@ -130,6 +139,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed - can be re-added if needed
 
 **10. `getSchemaHealth` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not used
@@ -142,6 +152,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed - can be re-added if needed
 
 **11. `formatForPrompt` (Language Analyzer)**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not used
@@ -154,6 +165,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed
 
 **12. `checkCategory` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not used
@@ -166,6 +178,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed
 
 **13. `checkOne` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not used
@@ -178,6 +191,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed
 
 **14. `getVectorRiskLevel` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not used
@@ -190,6 +204,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed - can be re-added if needed
 
 **15. `getPrimaryDomain` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not used
@@ -202,6 +217,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed
 
 **16. `getInterventionUrgency` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not used
@@ -214,6 +230,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed - can be re-added if needed
 
 **17. `getAssessmentSummary` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not used
@@ -226,6 +243,7 @@ For each unused item, we ask:
 - **Mitigation**: None needed
 
 **18. `needsIntervention` Function**
+
 - **Decision**: ✅ **REMOVE**
 - **Questions Answered**:
   - Public API? No - not used
@@ -240,6 +258,7 @@ For each unused item, we ask:
 ### ⚠️ **KEEP WITH CONDITIONS** (Medium Risk, Medium Value)
 
 **19. `parseBatch` Function**
+
 - **Decision**: ⚠️ **KEEP** (for now)
 - **Questions Answered**:
   - Public API? Yes - exported
@@ -249,12 +268,13 @@ For each unused item, we ask:
   - Removal risk? **LOW** - might be used in future tests
   - Documented? Yes - comment says "for testing/benchmarking"
 - **Impact if removed**: Could break future test utilities
-- **Mitigation**: 
+- **Mitigation**:
   - Keep it - zero maintenance cost
   - Document in tests if used
   - Can remove later if still unused after 6 months
 
 **20. `quickCheck` Function**
+
 - **Decision**: ⚠️ **KEEP** (for now)
 - **Questions Answered**:
   - Public API? Yes - exported
@@ -264,12 +284,13 @@ For each unused item, we ask:
   - Removal risk? **LOW** - potential performance optimization
   - Documented? Yes - comment says "Faster than full parse for pre-screening"
 - **Impact if removed**: Lose potential optimization opportunity
-- **Mitigation**: 
+- **Mitigation**:
   - Keep it - zero maintenance cost
   - Document as "future optimization utility"
   - Can remove later if optimization not implemented after 6 months
 
 **21. `setPerformanceLogging` Function**
+
 - **Decision**: ⚠️ **KEEP** (for now)
 - **Questions Answered**:
   - Public API? Yes - exported
@@ -279,12 +300,13 @@ For each unused item, we ask:
   - Removal risk? **LOW** - useful for performance debugging
   - Documented? Yes - comment says "Enable/disable performance logging"
 - **Impact if removed**: Lose debugging capability
-- **Mitigation**: 
+- **Mitigation**:
   - Keep it - zero maintenance cost
   - Document as debugging utility
   - Can remove later if not used after 6 months
 
 **22. `secureCompare` Function**
+
 - **Decision**: ✅ **KEEP** (Used in Tests)
 - **Questions Answered**:
   - Public API? Yes - exported
@@ -294,12 +316,13 @@ For each unused item, we ask:
   - Removal risk? **HIGH** - would break tests
   - Documented? Yes - has comprehensive tests
 - **Impact if removed**: **BREAKS TESTS** - 4 test cases would fail
-- **Mitigation**: 
+- **Mitigation**:
   - **KEEP** - actively tested, security utility
   - Tests verify constant-time comparison behavior
   - This is NOT unused - it's tested code
 
 **23. `UIShowcase` Component**
+
 - **Decision**: ⚠️ **KEEP** (intentional dev tool)
 - **Questions Answered**:
   - Public API? Yes - has route `/ui-showcase`
@@ -309,7 +332,7 @@ For each unused item, we ask:
   - Removal risk? **LOW** - dev tool, not production critical
   - Documented? Yes - comment says "Design system showcase"
 - **Impact if removed**: Lose design system documentation
-- **Mitigation**: 
+- **Mitigation**:
   - **KEEP** - intentional dev tool
   - Consider moving to separate dev-only route
   - Document as development tool
@@ -317,9 +340,11 @@ For each unused item, we ask:
 ## 🛡️ Risk Mitigation Strategy
 
 ### Phase 1: Safe Removals (Zero Risk)
+
 **Timeline**: Immediate
 **Items**: 18 items marked "SAFE TO REMOVE"
 **Process**:
+
 1. Create feature branch
 2. Remove code
 3. Run tests
@@ -327,16 +352,20 @@ For each unused item, we ask:
 5. Merge
 
 ### Phase 2: Conditional Keeps (Monitor)
+
 **Timeline**: 6-month monitoring period
 **Items**: 5 items marked "KEEP WITH CONDITIONS"
 **Process**:
+
 1. Add `@deprecated` or `@future-use` comments
 2. Document in code why kept
 3. Set calendar reminder to re-evaluate in 6 months
 4. If still unused, remove
 
 ### Phase 3: Verification Before Removal
+
 **For each item**:
+
 1. ✅ Check test files
 2. ✅ Check dynamic imports (`import()`, `require()`)
 3. ✅ Check API routes
@@ -347,6 +376,7 @@ For each unused item, we ask:
 ## 📊 Removal Impact Summary
 
 ### Zero Risk Removals (18 items)
+
 - **Frontend**: 4 items
 - **Backend**: 14 items
 - **Total Lines**: ~500-800 lines
@@ -354,6 +384,7 @@ For each unused item, we ask:
 - **Risk**: **ZERO** - completely unused
 
 ### Conditional Keeps (4 items)
+
 - **Frontend**: 1 item (UIShowcase)
 - **Backend**: 3 items (parseBatch, quickCheck, setPerformanceLogging)
 - **Total Lines**: ~2000+ lines (mostly UIShowcase)
@@ -361,6 +392,7 @@ For each unused item, we ask:
 - **Risk**: **LOW** - documented utilities, dev tools
 
 ### Keep Indefinitely (1 item)
+
 - **Backend**: secureCompare (actively tested)
 - **Total Lines**: ~20 lines
 - **Maintenance Cost**: Zero
@@ -368,31 +400,31 @@ For each unused item, we ask:
 
 ## 🎯 Decision Matrix
 
-| Item | Remove? | Risk | Value | Maintenance | Decision |
-|------|---------|------|-------|-------------|----------|
-| requireAuth | ✅ | Zero | Low | Low | **REMOVE** |
-| toCamelCase/toSnakeCase | ✅ | Zero | Low | Low | **REMOVE** |
-| UserContextForm | ✅ | Zero | Low | Medium | **REMOVE** |
-| storageHelpers | ✅ | Zero | Low | Low | **REMOVE** |
-| analyzeAndIntervene | ✅ | Low | None | Low | **REMOVE** |
-| resetEscalation | ✅ | Zero | Low | Low | **REMOVE** |
-| getPolicyState | ✅ | Zero | Low | Low | **REMOVE** |
-| getUserProfile | ✅ | Zero | Medium | Low | **REMOVE** |
-| getCodeLayerMetrics | ✅ | Zero | Medium | Low | **REMOVE** |
-| getSchemaHealth | ✅ | Zero | Medium | Low | **REMOVE** |
-| formatForPrompt | ✅ | Zero | Low | Low | **REMOVE** |
-| checkCategory | ✅ | Zero | Low | Low | **REMOVE** |
-| checkOne | ✅ | Zero | Low | Low | **REMOVE** |
-| getVectorRiskLevel | ✅ | Zero | Medium | Low | **REMOVE** |
-| getPrimaryDomain | ✅ | Zero | Low | Low | **REMOVE** |
-| getInterventionUrgency | ✅ | Zero | Medium | Low | **REMOVE** |
-| getAssessmentSummary | ✅ | Zero | Low | Low | **REMOVE** |
-| needsIntervention | ✅ | Zero | Low | Low | **REMOVE** |
-| parseBatch | ⚠️ | Low | High | Zero | **KEEP** (6mo) |
-| quickCheck | ⚠️ | Low | High | Zero | **KEEP** (6mo) |
-| setPerformanceLogging | ⚠️ | Low | Medium | Zero | **KEEP** (6mo) |
-| secureCompare | ❌ | High | High | Zero | **KEEP** (used in tests) |
-| UIShowcase | ⚠️ | Low | High | Medium | **KEEP** (dev tool) |
+| Item                    | Remove? | Risk | Value  | Maintenance | Decision                 |
+| ----------------------- | ------- | ---- | ------ | ----------- | ------------------------ |
+| requireAuth             | ✅      | Zero | Low    | Low         | **REMOVE**               |
+| toCamelCase/toSnakeCase | ✅      | Zero | Low    | Low         | **REMOVE**               |
+| UserContextForm         | ✅      | Zero | Low    | Medium      | **REMOVE**               |
+| storageHelpers          | ✅      | Zero | Low    | Low         | **REMOVE**               |
+| analyzeAndIntervene     | ✅      | Low  | None   | Low         | **REMOVE**               |
+| resetEscalation         | ✅      | Zero | Low    | Low         | **REMOVE**               |
+| getPolicyState          | ✅      | Zero | Low    | Low         | **REMOVE**               |
+| getUserProfile          | ✅      | Zero | Medium | Low         | **REMOVE**               |
+| getCodeLayerMetrics     | ✅      | Zero | Medium | Low         | **REMOVE**               |
+| getSchemaHealth         | ✅      | Zero | Medium | Low         | **REMOVE**               |
+| formatForPrompt         | ✅      | Zero | Low    | Low         | **REMOVE**               |
+| checkCategory           | ✅      | Zero | Low    | Low         | **REMOVE**               |
+| checkOne                | ✅      | Zero | Low    | Low         | **REMOVE**               |
+| getVectorRiskLevel      | ✅      | Zero | Medium | Low         | **REMOVE**               |
+| getPrimaryDomain        | ✅      | Zero | Low    | Low         | **REMOVE**               |
+| getInterventionUrgency  | ✅      | Zero | Medium | Low         | **REMOVE**               |
+| getAssessmentSummary    | ✅      | Zero | Low    | Low         | **REMOVE**               |
+| needsIntervention       | ✅      | Zero | Low    | Low         | **REMOVE**               |
+| parseBatch              | ⚠️      | Low  | High   | Zero        | **KEEP** (6mo)           |
+| quickCheck              | ⚠️      | Low  | High   | Zero        | **KEEP** (6mo)           |
+| setPerformanceLogging   | ⚠️      | Low  | Medium | Zero        | **KEEP** (6mo)           |
+| secureCompare           | ❌      | High | High   | Zero        | **KEEP** (used in tests) |
+| UIShowcase              | ⚠️      | Low  | High   | Medium      | **KEEP** (dev tool)      |
 
 ## 🔍 Verification Checklist Before Removal
 
@@ -412,17 +444,21 @@ For each item marked for removal:
 ## 📝 Implementation Plan
 
 ### Step 1: Create Removal Branch
+
 ```bash
 git checkout -b cleanup/remove-unused-code
 ```
 
 ### Step 2: Remove Safe Items (18 items)
+
 Remove all items marked "SAFE TO REMOVE" in one commit
 
 **Note**: `secureCompare` is NOT in this list - it's actively tested and should be kept
 
 ### Step 3: Add Deprecation Comments (4 items)
+
 Add comments to items marked "KEEP WITH CONDITIONS":
+
 ```javascript
 /**
  * @deprecated Unused - will be removed if not used within 6 months
@@ -431,43 +467,54 @@ Add comments to items marked "KEEP WITH CONDITIONS":
 ```
 
 ### Step 4: Update Documentation
+
 - Update UNUSED_CODE_ANALYSIS.md with removal status
 - Document why items were kept
 
 ### Step 5: Test & Verify
+
 - Run full test suite
 - Check for any broken imports
 - Verify no runtime errors
 
 ### Step 6: Create Follow-up Task
+
 - Set reminder to re-evaluate conditional keeps in 6 months
 - Document in project management system
 
 ## ⚠️ What Could Go Wrong?
 
 ### Scenario 1: External Code Uses It
+
 **Risk**: Low - we've verified no imports
-**Mitigation**: 
+**Mitigation**:
+
 - Check git history for when it was last used
 - Search for dynamic imports
 - If found, don't remove
 
 ### Scenario 2: Tests Break
+
 **Risk**: Low - we've checked test files
-**Mitigation**: 
+**Mitigation**:
+
 - Run tests before and after removal
 - If tests break, investigate and fix
 
 ### Scenario 3: Future Need Arises
+
 **Risk**: Low - can re-add if needed
-**Mitigation**: 
+**Mitigation**:
+
 - Git history preserves code
 - Can restore from git if needed
 - Document why it was removed
 
 ### Scenario 4: Performance Impact
+
 **Risk**: Zero - unused code has no performance impact
-**Mitigation**: 
+**Mitigation**:
+
 - None needed - removing unused code improves performance
 
 ## 📈 Expected Benefits
@@ -481,19 +528,24 @@ Add comments to items marked "KEEP WITH CONDITIONS":
 ## 🎯 Final Recommendations
 
 ### Immediate Action (Zero Risk)
+
 **Remove 18 items** marked "SAFE TO REMOVE"
+
 - All have zero usage
 - All have zero risk
 - All provide zero value
 - Total: ~500-800 lines removed
 
 ### Deferred Action (6-Month Review)
+
 **Monitor 4 items** marked "KEEP WITH CONDITIONS"
+
 - Re-evaluate in 6 months
 - Remove if still unused
 - Document decision
 
 ### Keep Indefinitely (2 items)
+
 1. **UIShowcase** - Intentional dev tool, design system documentation
 2. **secureCompare** - Actively tested, security utility
 
@@ -501,4 +553,3 @@ Add comments to items marked "KEEP WITH CONDITIONS":
 
 **Last Updated**: 2025-01-27  
 **Next Review**: 2025-07-27 (6 months for conditional keeps)
-

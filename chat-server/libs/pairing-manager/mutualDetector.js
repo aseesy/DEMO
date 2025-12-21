@@ -81,8 +81,12 @@ async function autoCompleteMutualPairing(params, db, roomManager) {
 
   // Get user info for both parties
   const [userAResult, userBResult] = await Promise.all([
-    db.query('SELECT id, username, email FROM users WHERE id = $1', [parentBId]),
-    db.query('SELECT id, username, email FROM users WHERE id = $1', [parentAId]),
+    db.query('SELECT id, username, email, first_name, display_name FROM users WHERE id = $1', [
+      parentBId,
+    ]),
+    db.query('SELECT id, username, email, first_name, display_name FROM users WHERE id = $1', [
+      parentAId,
+    ]),
   ]);
 
   if (userAResult.rows.length === 0 || userBResult.rows.length === 0) {
@@ -91,19 +95,23 @@ async function autoCompleteMutualPairing(params, db, roomManager) {
 
   const userA = userAResult.rows[0];
   const userB = userBResult.rows[0];
+  const userAName = userA.first_name || userA.display_name || userA.username;
+  const userBName = userB.first_name || userB.display_name || userB.username;
 
-  // Create shared room
+  // Create shared room using the correct roomManager function
   let sharedRoomId = null;
-  if (roomManager) {
+  if (roomManager && roomManager.createCoParentRoom) {
     try {
-      const roomName = `${userB.username} & ${userA.username}`;
-      const room = await roomManager.createRoom({
-        name: roomName,
-        createdBy: parentAId,
-        isPrivate: true,
-        members: [parentAId, parentBId],
-      }, db);
-      sharedRoomId = room.id;
+      // createCoParentRoom(inviterId, inviteeId, inviterName, inviteeName)
+      // parentAId is the original inviter (User B), parentBId is User A
+      const room = await roomManager.createCoParentRoom(
+        parentAId, // inviterId (original inviter)
+        parentBId, // inviteeId (user who triggered mutual detection)
+        userBName, // inviterName
+        userAName // inviteeName
+      );
+      sharedRoomId = room.roomId;
+      console.log(`[mutualDetector] Created shared room ${sharedRoomId} for mutual pairing`);
     } catch (error) {
       console.error('Failed to create shared room in mutual pairing:', error);
     }
@@ -126,16 +134,16 @@ async function autoCompleteMutualPairing(params, db, roomManager) {
     await db.query(
       `INSERT INTO contacts (user_id, contact_name, contact_email, relationship, created_at)
        VALUES ($1, $2, $3, 'co-parent', CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, contact_email) DO UPDATE SET relationship = 'co-parent'`,
-      [parentAId, userA.username, userA.email]
+       ON CONFLICT (user_id, contact_email) DO UPDATE SET relationship = 'co-parent', contact_name = $2`,
+      [parentAId, userAName, userA.email]
     );
 
     // Add User B as contact for User A
     await db.query(
       `INSERT INTO contacts (user_id, contact_name, contact_email, relationship, created_at)
        VALUES ($1, $2, $3, 'co-parent', CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, contact_email) DO UPDATE SET relationship = 'co-parent'`,
-      [parentBId, userB.username, userB.email]
+       ON CONFLICT (user_id, contact_email) DO UPDATE SET relationship = 'co-parent', contact_name = $2`,
+      [parentBId, userBName, userB.email]
     );
   } catch (error) {
     console.error('Failed to create mutual contacts:', error);
@@ -177,11 +185,14 @@ async function detectAndCompleteMutual(params, db, roomManager) {
   const { initiatorId, initiatorEmail, inviteeEmail } = params;
 
   // Check for existing mutual invitation
-  const mutualInvite = await checkMutualInvitation({
-    initiatorId,
-    initiatorEmail,
-    inviteeEmail,
-  }, db);
+  const mutualInvite = await checkMutualInvitation(
+    {
+      initiatorId,
+      initiatorEmail,
+      inviteeEmail,
+    },
+    db
+  );
 
   if (!mutualInvite) {
     return null; // No mutual invitation found
@@ -190,22 +201,28 @@ async function detectAndCompleteMutual(params, db, roomManager) {
   // Found mutual invitation - auto-complete it
   console.log(`Mutual invitation detected: ${initiatorEmail} <-> ${inviteeEmail}`);
 
-  return autoCompleteMutualPairing({
-    existingPairing: mutualInvite,
-    userAId: initiatorId,
-    userBId: mutualInvite.parent_a_id,
-  }, db, roomManager);
+  return autoCompleteMutualPairing(
+    {
+      existingPairing: mutualInvite,
+      userAId: initiatorId,
+      userBId: mutualInvite.parent_a_id,
+    },
+    db,
+    roomManager
+  );
 }
 
 /**
- * Find potential matches based on shared child data
+ * Get potential matches based on shared child data
  * (Future enhancement - detect if two users have similar child profiles)
+ *
+ * NAMING: Using `get*` for consistency with codebase data retrieval convention.
  *
  * @param {string} userId - User to find matches for
  * @param {object} db - Database connection
  * @returns {Promise<Array>} Potential matches
  */
-async function findPotentialMatches(userId, db) {
+async function getPotentialMatches(userId, db) {
   // TODO: Implement child-based matching
   // This would look at shared_children table or child profiles
   // to suggest potential co-parent matches
@@ -218,5 +235,7 @@ module.exports = {
   checkMutualInvitation,
   autoCompleteMutualPairing,
   detectAndCompleteMutual,
-  findPotentialMatches,
+  getPotentialMatches,
+  // Deprecated alias - use getPotentialMatches instead
+  findPotentialMatches: getPotentialMatches,
 };

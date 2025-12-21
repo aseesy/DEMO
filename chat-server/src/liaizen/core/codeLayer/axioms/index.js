@@ -44,17 +44,17 @@ const cleanInformation = require('./clean/cleanInformation');
  */
 const AXIOM_REGISTRY = {
   // Indirect Communication Axioms
-  'AXIOM_001': displacedAccusation,
-  'AXIOM_004': weaponizedAgreement,
-  'AXIOM_010': childAsMessenger,
+  AXIOM_001: displacedAccusation,
+  AXIOM_004: weaponizedAgreement,
+  AXIOM_010: childAsMessenger,
 
   // Direct Hostility Axioms
-  'AXIOM_D101': directInsult,
-  'AXIOM_D102': threatUltimatum,
+  AXIOM_D101: directInsult,
+  AXIOM_D102: threatUltimatum,
 
   // Clean Axioms
-  'AXIOM_D001': cleanRequest,
-  'AXIOM_D002': cleanInformation,
+  AXIOM_D001: cleanRequest,
+  AXIOM_D002: cleanInformation,
 };
 
 /**
@@ -82,7 +82,7 @@ function getAxiomMetadata(id) {
     name: axiom.name,
     category: axiom.category,
     description: axiom.description || '',
-    pattern: axiom.pattern || ''
+    pattern: axiom.pattern || '',
   };
 }
 
@@ -124,7 +124,7 @@ async function checkAll(parsed, context = {}) {
   const axiomIds = Object.keys(AXIOM_REGISTRY);
 
   // Run all axiom checks in parallel
-  const checkPromises = axiomIds.map(async (id) => {
+  const checkPromises = axiomIds.map(async id => {
     const axiom = AXIOM_REGISTRY[id];
     try {
       const result = await axiom.check(parsed, context);
@@ -140,17 +140,15 @@ async function checkAll(parsed, context = {}) {
   const results = await Promise.all(checkPromises);
 
   // Filter out non-firing axioms and sort by confidence
-  const axiomsFired = results
-    .filter(r => r !== null)
-    .sort((a, b) => b.confidence - a.confidence);
+  const axiomsFired = results.filter(r => r !== null).sort((a, b) => b.confidence - a.confidence);
 
   return {
     axiomsFired: axiomsFired,
     meta: {
       totalChecked: axiomIds.length,
       totalFired: axiomsFired.length,
-      latencyMs: Date.now() - startTime
-    }
+      latencyMs: Date.now() - startTime,
+    },
   };
 }
 
@@ -174,5 +172,5 @@ module.exports = {
   // Note: checkOne and checkCategory removed - unused
 
   // Re-export categories
-  AXIOM_CATEGORIES
+  AXIOM_CATEGORIES,
 };

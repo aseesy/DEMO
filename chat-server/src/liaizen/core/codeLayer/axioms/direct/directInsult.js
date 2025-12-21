@@ -19,7 +19,11 @@
 
 'use strict';
 
-const { AXIOM_CATEGORIES, createFiringAxiomResult, createNonFiringAxiomResult } = require('../../types');
+const {
+  AXIOM_CATEGORIES,
+  createFiringAxiomResult,
+  createNonFiringAxiomResult,
+} = require('../../types');
 
 // ============================================================================
 // AXIOM METADATA
@@ -29,7 +33,7 @@ const id = 'AXIOM_D101';
 const name = 'Direct Insult';
 const category = 'direct_hostility';
 const description = 'Direct name-calling or character attack toward receiver';
-const pattern = '[You] + [are/\'re] + [Insult] OR [Insult Phrase]';
+const pattern = "[You] + [are/'re] + [Insult] OR [Insult Phrase]";
 
 // ============================================================================
 // DETECTION PATTERNS
@@ -74,9 +78,7 @@ const YOUR_TRAIT_PATTERNS = [
 /**
  * Possessive insults (your + noun as insult)
  */
-const POSSESSIVE_INSULTS = [
-  /\byour\s+(fault|problem|issue|mess)\b/gi,
-];
+const POSSESSIVE_INSULTS = [/\byour\s+(fault|problem|issue|mess)\b/gi];
 
 // ============================================================================
 // DETECTION FUNCTIONS
@@ -152,7 +154,8 @@ function calculateConfidence(evidence) {
   if (evidence.your_trait_insults.length > 0) confidence += 30;
 
   // Multiple insults = higher confidence
-  const totalInsults = evidence.you_are_insults.length +
+  const totalInsults =
+    evidence.you_are_insults.length +
     evidence.insult_phrases.length +
     evidence.your_trait_insults.length;
 
@@ -180,7 +183,8 @@ function check(parsed, context = {}) {
   };
 
   // Must have at least one insult type
-  const hasInsult = evidence.you_are_insults.length > 0 ||
+  const hasInsult =
+    evidence.you_are_insults.length > 0 ||
     evidence.insult_phrases.length > 0 ||
     evidence.your_trait_insults.length > 0;
 

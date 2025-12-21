@@ -58,6 +58,7 @@ npm run build
 ### 3. Configure Backend API URL
 
 In the Figma plugin UI:
+
 - Enter your backend API URL (default: `http://localhost:3001`)
 - Click "Update API URL"
 - For production: `https://demo-production-6dcd.up.railway.app`
@@ -120,6 +121,7 @@ GET /api/figma/scan-components
 Returns list of all components found in codebase.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -146,15 +148,17 @@ POST /api/figma/sync-components
 Syncs components to Figma (plugin must be running).
 
 **Request:**
+
 ```json
 {
-  "componentNames": ["Button", "Modal"],  // Optional: specific components
-  "pageType": "wireframes",               // "wireframes" or "design"
-  "fileKey": "abc123"                     // Optional: specific Figma file
+  "componentNames": ["Button", "Modal"], // Optional: specific components
+  "pageType": "wireframes", // "wireframes" or "design"
+  "fileKey": "abc123" // Optional: specific Figma file
 }
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -176,6 +180,7 @@ GET /api/figma/component/:componentName
 Get detailed information about a specific component including wireframe.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -206,6 +211,7 @@ A new page called "📐 Wireframes from Code" is created with:
 ### Design Page (Coming Soon)
 
 Styled design pages with:
+
 - Actual colors from design tokens
 - Typography from Tailwind classes
 - Proper spacing and layout
@@ -304,12 +310,14 @@ Components are organized by category:
 ### Button Component
 
 Scanned from `ui/Button/Button.jsx`:
+
 - **Structure**: `<button>` element with text content
 - **Props**: `variant`, `size`, `fullWidth`, `disabled`, `loading`, etc.
 - **Styles**: Tailwind classes like `bg-teal-dark`, `rounded-full`, `px-4 py-3`
 - **Tokens**: Teal colors, spacing tokens
 
 Creates in Figma:
+
 - Frame labeled "Button"
 - Rectangle with rounded corners
 - Background color from teal palette
@@ -318,12 +326,14 @@ Creates in Figma:
 ### Landing Page
 
 Scanned from `LandingPage.jsx`:
+
 - **Structure**: Complex layout with header, sections, footer
 - **Children**: Button, Heading, SectionHeader components
 - **Layout**: Flex column layout
 - **Styles**: Multiple Tailwind classes
 
 Creates in Figma:
+
 - Large frame representing the page
 - Nested frames for sections
 - Wireframe representation of layout
@@ -338,6 +348,5 @@ Creates in Figma:
 
 ---
 
-*Last Updated: 2025-01-23*
-*Project: LiaiZen Co-Parenting Platform*
-
+_Last Updated: 2025-01-23_
+_Project: LiaiZen Co-Parenting Platform_

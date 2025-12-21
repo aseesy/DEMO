@@ -10,6 +10,7 @@
 ## Task Execution Strategy
 
 ### Dependency Order
+
 ```
 Database (T001)
   → Libraries (T002-T005) [P]
@@ -21,11 +22,13 @@ Database (T001)
 ```
 
 ### TDD Workflow
+
 - **Test First**: All test tasks (T006-T009, T021-T026, T033-T035) come before implementation
 - **Fail → Implement → Pass**: Tests initially fail, then implementation makes them pass
 - **Refactor**: After tests pass, refactor for quality
 
 ### Parallel Execution Markers
+
 - **[P]** = Can execute in parallel with other [P] tasks in same phase
 - Sequential dependencies indicated in "Dependencies" field
 
@@ -34,6 +37,7 @@ Database (T001)
 ## Phase 1: Database Setup
 
 ### T001: Create Database Migration for Invitations
+
 **Type**: infrastructure
 **Priority**: critical
 **Complexity**: small (S)
@@ -41,6 +45,7 @@ Database (T001)
 
 **Description**:
 Create PostgreSQL migration file `003_invitations.sql` that adds:
+
 1. `invitations` table with fields: id, inviter_id, invitee_email, token_hash, room_id, status, expires_at, created_at, accepted_at, accepted_by
 2. `in_app_notifications` table with fields: id, user_id, type, message, data (JSONB), is_read, created_at, read_at
 3. Indexes for performance: token_hash, invitee_email, status+expires_at, user_id+is_read
@@ -49,11 +54,13 @@ Create PostgreSQL migration file `003_invitations.sql` that adds:
 6. Rollback script for down migration
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/migrations/003_invitations.sql`
 - Up migration SQL
 - Down migration SQL (for rollback)
 
 **Acceptance Criteria**:
+
 - [ ] Migration runs successfully on empty database
 - [ ] All tables and indexes created as specified in data-model.md
 - [ ] Foreign key constraints enforce referential integrity
@@ -62,6 +69,7 @@ Create PostgreSQL migration file `003_invitations.sql` that adds:
 - [ ] All column types match data-model.md specification
 
 **Technical Notes**:
+
 - Reference: `/Users/athenasees/Desktop/chat/chat-server/specs/003-account-creation-coparent-invitation/data-model.md`
 - Use `CREATE TABLE IF NOT EXISTS` for idempotency
 - Include comments on tables/columns for documentation
@@ -70,6 +78,7 @@ Create PostgreSQL migration file `003_invitations.sql` that adds:
 **Dependencies**: None (must execute first)
 
 **Risk Factors**:
+
 - PostgreSQL version compatibility (ensure JSONB support exists)
 - **Mitigation**: Test on local PostgreSQL instance matching production version
 
@@ -78,6 +87,7 @@ Create PostgreSQL migration file `003_invitations.sql` that adds:
 ## Phase 2: Core Library Implementation
 
 ### T002: Create invitationManager.js Library [P]
+
 **Type**: feature
 **Priority**: critical
 **Complexity**: medium (M)
@@ -85,6 +95,7 @@ Create PostgreSQL migration file `003_invitations.sql` that adds:
 
 **Description**:
 Create standalone library for invitation management with functions:
+
 1. `generateToken()` - Generate cryptographically secure 32-byte base64url token
 2. `hashToken(token)` - SHA-256 hash for database storage
 3. `createInvitation(inviterId, inviteeEmail, roomId)` - Create invitation record with 7-day expiration
@@ -94,9 +105,11 @@ Create standalone library for invitation management with functions:
 7. `expireInvitations()` - Cron job to mark expired invitations (status='expired')
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/invitationManager.js`
 
 **Acceptance Criteria**:
+
 - [ ] Library exports all 7 functions with clear JSDoc comments
 - [ ] `generateToken()` uses crypto.randomBytes(32) and returns 43-char base64url string
 - [ ] `hashToken()` uses SHA-256 and returns 64-char hex string
@@ -107,6 +120,7 @@ Create standalone library for invitation management with functions:
 - [ ] Library has no external dependencies beyond crypto, db modules
 
 **Technical Notes**:
+
 - Reference: `/Users/athenasees/Desktop/chat/chat-server/specs/003-account-creation-coparent-invitation/research.md` (Decisions 2, 3, 7)
 - Use PostgreSQL via dbPostgres.js and dbSafe.js for database operations
 - Token format: `crypto.randomBytes(32).toString('base64url')`
@@ -115,12 +129,14 @@ Create standalone library for invitation management with functions:
 **Dependencies**: T001 (database migration must run first)
 
 **Risk Factors**:
+
 - Token collision (extremely unlikely with 256-bit entropy)
 - **Mitigation**: UNIQUE constraint on token_hash in database
 
 ---
 
 ### T003: Create notificationManager.js Library [P]
+
 **Type**: feature
 **Priority**: high
 **Complexity**: small (S)
@@ -128,6 +144,7 @@ Create standalone library for invitation management with functions:
 
 **Description**:
 Create standalone library for in-app notification management with functions:
+
 1. `createNotification(userId, type, message, data)` - Create notification record
 2. `getUserNotifications(userId, unreadOnly)` - Get user's notifications (optionally filter unread)
 3. `markAsRead(notificationId)` - Mark notification as read with timestamp
@@ -135,9 +152,11 @@ Create standalone library for in-app notification management with functions:
 5. `cleanupOldNotifications()` - Cron job to delete read notifications older than 30 days
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/notificationManager.js`
 
 **Acceptance Criteria**:
+
 - [ ] Library exports all 5 functions with JSDoc comments
 - [ ] `createNotification()` validates type is in allowed list: 'invitation_received', 'invitation_accepted', 'room_joined'
 - [ ] `createNotification()` stores data as JSONB (JSON.stringify before insert)
@@ -147,6 +166,7 @@ Create standalone library for in-app notification management with functions:
 - [ ] All database operations use parameterized queries
 
 **Technical Notes**:
+
 - Reference: data-model.md section 3 (InAppNotification entity)
 - JSONB data structure: `{invitation_id, inviter_id, inviter_name, room_id, action_url}`
 - Use PostgreSQL via dbPostgres.js and dbSafe.js for database operations
@@ -154,12 +174,14 @@ Create standalone library for in-app notification management with functions:
 **Dependencies**: T001 (database migration must run first)
 
 **Risk Factors**:
+
 - JSONB compatibility (PostgreSQL version <9.4 doesn't support JSONB)
 - **Mitigation**: Verify PostgreSQL version ≥9.4 in production
 
 ---
 
 ### T004: Extend emailService.js with Invitation Template [P]
+
 **Type**: feature
 **Priority**: high
 **Complexity**: small (S)
@@ -167,6 +189,7 @@ Create standalone library for in-app notification management with functions:
 
 **Description**:
 Add new email template function to existing emailService.js:
+
 1. `sendCoParentInvitation(inviteeEmail, inviterName, token, expiresAt)` - Send invitation email with token link
 2. Email should include:
    - Subject: "You're invited to co-parent on LiaiZen"
@@ -177,9 +200,11 @@ Add new email template function to existing emailService.js:
    - Plain text fallback
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/emailService.js`
 
 **Acceptance Criteria**:
+
 - [ ] New function `sendCoParentInvitation()` added to exports
 - [ ] Email uses existing nodemailer transporter
 - [ ] HTML template is responsive (tested on mobile preview)
@@ -190,6 +215,7 @@ Add new email template function to existing emailService.js:
 - [ ] Development mode logs email to console instead of sending
 
 **Technical Notes**:
+
 - Reference existing `sendNewUserInvite()` function as template
 - Use `process.env.FRONTEND_URL` for link base URL
 - Use existing email templates in emailService.js as style guide
@@ -198,12 +224,14 @@ Add new email template function to existing emailService.js:
 **Dependencies**: None (extends existing file)
 
 **Risk Factors**:
+
 - Email deliverability (spam filters)
 - **Mitigation**: Follow email best practices (SPF/DKIM records, legitimate sender domain)
 
 ---
 
 ### T005: Extend roomManager.js for Co-Parent Sharing [P]
+
 **Type**: feature
 **Priority**: high
 **Complexity**: small (S)
@@ -211,14 +239,17 @@ Add new email template function to existing emailService.js:
 
 **Description**:
 Add function to existing roomManager.js to add co-parent to existing room:
+
 1. `addCoParentToRoom(roomId, userId)` - Add user to room as 'member' role
 2. Ensure user not already in room (check UNIQUE constraint)
 3. Set role='member' for equal permissions (no 'owner' role for co-parents)
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/roomManager.js`
 
 **Acceptance Criteria**:
+
 - [ ] New function `addCoParentToRoom(roomId, userId)` exported
 - [ ] Function checks if user already in room (prevent duplicate membership)
 - [ ] Inserts row into room_members with role='member' (not 'owner')
@@ -227,6 +258,7 @@ Add function to existing roomManager.js to add co-parent to existing room:
 - [ ] Handles database errors gracefully (returns error message)
 
 **Technical Notes**:
+
 - Reference: research.md Decision 6 (Room Architecture)
 - Use existing `dbSafe.safeInsert()` function
 - UNIQUE(room_id, user_id) constraint prevents duplicates
@@ -234,6 +266,7 @@ Add function to existing roomManager.js to add co-parent to existing room:
 **Dependencies**: T001 (database must have room_members table)
 
 **Risk Factors**:
+
 - Room capacity limit (future consideration - MVP is 2 members only)
 - **Mitigation**: Add validation to check room member count <2 before adding
 
@@ -242,6 +275,7 @@ Add function to existing roomManager.js to add co-parent to existing room:
 ## Phase 3: Library Unit Tests (Test-First - Will Initially Fail)
 
 ### T006: Unit Tests for invitationManager.js [P]
+
 **Type**: test
 **Priority**: critical
 **Complexity**: medium (M)
@@ -249,6 +283,7 @@ Add function to existing roomManager.js to add co-parent to existing room:
 
 **Description**:
 Write comprehensive unit tests for invitationManager library:
+
 1. Test `generateToken()` - uniqueness, length, URL-safe characters
 2. Test `hashToken()` - deterministic hashing, 64-char output
 3. Test `createInvitation()` - database insertion, expiration calculation
@@ -258,9 +293,11 @@ Write comprehensive unit tests for invitationManager library:
 7. Test `expireInvitations()` - batch update of expired invitations
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/unit/invitationManager.test.js`
 
 **Acceptance Criteria**:
+
 - [ ] Test file uses Jest framework (existing setup)
 - [ ] All 7 functions have test coverage
 - [ ] Tests use test PostgreSQL database (not production DB)
@@ -271,6 +308,7 @@ Write comprehensive unit tests for invitationManager library:
 - [ ] **Tests initially FAIL** (no implementation exists yet)
 
 **Technical Notes**:
+
 - Use Jest's `describe()` and `it()` syntax
 - Mock database calls if needed for isolation
 - Reference: research.md Decision 13 (Testing Patterns)
@@ -278,12 +316,14 @@ Write comprehensive unit tests for invitationManager library:
 **Dependencies**: T002 (invitationManager must exist to test)
 
 **Risk Factors**:
+
 - Test data pollution (tests affecting each other)
 - **Mitigation**: Use `beforeEach` and `afterEach` to reset database state
 
 ---
 
 ### T007: Unit Tests for notificationManager.js [P]
+
 **Type**: test
 **Priority**: high
 **Complexity**: small (S)
@@ -291,6 +331,7 @@ Write comprehensive unit tests for invitationManager library:
 
 **Description**:
 Write unit tests for notificationManager library:
+
 1. Test `createNotification()` - valid notification creation, JSONB data storage
 2. Test `getUserNotifications()` - unread filter, ordering by created_at DESC
 3. Test `markAsRead()` - is_read flag, read_at timestamp
@@ -298,9 +339,11 @@ Write unit tests for notificationManager library:
 5. Test `cleanupOldNotifications()` - delete only read + old, keep unread
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/unit/notificationManager.test.js`
 
 **Acceptance Criteria**:
+
 - [ ] All 5 functions have test coverage
 - [ ] Tests verify JSONB data is correctly stored and retrieved
 - [ ] Edge cases: invalid notification type, missing user_id, null data
@@ -309,6 +352,7 @@ Write unit tests for notificationManager library:
 - [ ] **Tests initially FAIL**
 
 **Technical Notes**:
+
 - Mock Socket.io for notification push tests (optional - unit tests only)
 - Use Jest's `expect()` assertions
 
@@ -319,6 +363,7 @@ Write unit tests for notificationManager library:
 ---
 
 ### T008: Unit Tests for Email Template [P]
+
 **Type**: test
 **Priority**: medium
 **Complexity**: small (S)
@@ -326,15 +371,18 @@ Write unit tests for notificationManager library:
 
 **Description**:
 Write tests for new email template function:
+
 1. Test `sendCoParentInvitation()` - email content generation
 2. Test HTML template rendering (inviter name, token link, expiration notice)
 3. Test plain text fallback content
 4. Test development mode (console logging instead of sending)
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/unit/emailService.test.js` (extend existing if exists)
 
 **Acceptance Criteria**:
+
 - [ ] Test verifies email subject is correct
 - [ ] Test verifies invitation link includes token parameter
 - [ ] Test verifies both HTML and plain text versions generated
@@ -343,6 +391,7 @@ Write tests for new email template function:
 - [ ] **Tests initially FAIL**
 
 **Technical Notes**:
+
 - Use Jest to mock nodemailer `sendMail()` function
 - Verify email content without actually sending
 
@@ -353,6 +402,7 @@ Write tests for new email template function:
 ---
 
 ### T009: Unit Tests for Room Sharing [P]
+
 **Type**: test
 **Priority**: medium
 **Complexity**: small (S)
@@ -360,21 +410,25 @@ Write tests for new email template function:
 
 **Description**:
 Write tests for room sharing function:
+
 1. Test `addCoParentToRoom()` - successful addition as 'member'
 2. Test duplicate prevention (user already in room)
 3. Test non-existent room handling
 4. Test non-existent user handling
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/unit/roomManager.test.js` (extend existing)
 
 **Acceptance Criteria**:
+
 - [ ] Test verifies role='member' (not 'owner')
 - [ ] Test verifies UNIQUE constraint prevents duplicates
 - [ ] Test handles edge cases gracefully (error messages, not crashes)
 - [ ] **Tests initially FAIL**
 
 **Technical Notes**:
+
 - Extend existing roomManager tests (don't create new file if tests already exist)
 
 **Dependencies**: T005 (roomManager extension must exist)
@@ -386,6 +440,7 @@ Write tests for room sharing function:
 ## Phase 4: Backend API Implementation
 
 ### T010: Extend auth.js Registration Endpoint
+
 **Type**: feature
 **Priority**: critical
 **Complexity**: medium (M)
@@ -393,6 +448,7 @@ Write tests for room sharing function:
 
 **Description**:
 Modify `/api/auth/register` endpoint to accept coParentEmail parameter and send invitation:
+
 1. Add `coParentEmail` to request body validation (REQUIRED field)
 2. Validate coParentEmail format (RFC 5322)
 3. Prevent self-invitation (coParentEmail !== email)
@@ -403,9 +459,11 @@ Modify `/api/auth/register` endpoint to accept coParentEmail parameter and send 
 6. Return invitation status in response
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/auth.js`
 
 **Acceptance Criteria**:
+
 - [ ] `coParentEmail` is required field (400 error if missing)
 - [ ] Email format validation (RFC 5322 regex)
 - [ ] Self-invitation blocked (400 error: "You cannot invite yourself")
@@ -416,6 +474,7 @@ Modify `/api/auth/register` endpoint to accept coParentEmail parameter and send 
 - [ ] Atomic transaction (user creation + invitation creation + room sharing)
 
 **Technical Notes**:
+
 - Reference: contracts/auth.yaml (POST /api/auth/register schema)
 - Use validator library for email validation
 - Wrap in try-catch for error handling
@@ -423,12 +482,14 @@ Modify `/api/auth/register` endpoint to accept coParentEmail parameter and send 
 **Dependencies**: T002, T003, T004 (libraries must exist)
 
 **Risk Factors**:
+
 - Email delivery failure should not block user signup
 - **Mitigation**: Async email sending (don't await), log failures
 
 ---
 
 ### T011: Create POST /api/invitations/send Endpoint
+
 **Type**: feature
 **Priority**: high
 **Complexity**: small (S)
@@ -436,6 +497,7 @@ Modify `/api/auth/register` endpoint to accept coParentEmail parameter and send 
 
 **Description**:
 Create endpoint to send invitation from authenticated user:
+
 1. Authenticate user via JWT middleware
 2. Validate request body: email (required)
 3. Rate limit: 5 invitations per hour per user
@@ -446,9 +508,11 @@ Create endpoint to send invitation from authenticated user:
 8. Return generic success message (don't reveal if user exists - security)
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/server.js` (add route)
 
 **Acceptance Criteria**:
+
 - [ ] Endpoint: POST /api/invitations/send
 - [ ] Requires authentication (JWT in Authorization header)
 - [ ] Rate limited to 5 requests per hour per user
@@ -458,6 +522,7 @@ Create endpoint to send invitation from authenticated user:
 - [ ] Logs invitation creation for audit trail
 
 **Technical Notes**:
+
 - Use express-rate-limit middleware
 - Reference: research.md Decision 11 (Prevent Email Enumeration)
 - Return same response regardless of whether email exists (security)
@@ -465,12 +530,14 @@ Create endpoint to send invitation from authenticated user:
 **Dependencies**: T002, T003, T004 (libraries must exist)
 
 **Risk Factors**:
+
 - Spam abuse (rate limiting mitigates)
 - **Mitigation**: Rate limit + log suspicious activity
 
 ---
 
 ### T012: Create GET /api/invitations/:token Endpoint
+
 **Type**: feature
 **Priority**: high
 **Complexity**: small (S)
@@ -478,6 +545,7 @@ Create endpoint to send invitation from authenticated user:
 
 **Description**:
 Create endpoint to validate invitation token (for frontend to check token before showing signup form):
+
 1. Extract token from URL parameter
 2. Validate token via `invitationManager.validateToken()`
 3. Return invitation details (inviter name, room name) if valid
@@ -485,9 +553,11 @@ Create endpoint to validate invitation token (for frontend to check token before
 5. Do NOT mark invitation as accepted (read-only validation)
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/server.js` (add route)
 
 **Acceptance Criteria**:
+
 - [ ] Endpoint: GET /api/invitations/:token
 - [ ] No authentication required (public endpoint for signup flow)
 - [ ] Returns 200 with invitation details if valid: `{inviterName, roomName, expiresAt}`
@@ -496,18 +566,21 @@ Create endpoint to validate invitation token (for frontend to check token before
 - [ ] Logs token validation attempts for security monitoring
 
 **Technical Notes**:
+
 - Token is 43-character base64url string (validate format first)
 - Join users table to get inviter's name
 
 **Dependencies**: T002 (invitationManager must exist)
 
 **Risk Factors**:
+
 - Brute force token guessing (extremely unlikely with 256-bit entropy)
 - **Mitigation**: Rate limit this endpoint (100 requests per hour per IP)
 
 ---
 
 ### T013: Create POST /api/invitations/:token/accept Endpoint
+
 **Type**: feature
 **Priority**: critical
 **Complexity**: medium (M)
@@ -515,6 +588,7 @@ Create endpoint to validate invitation token (for frontend to check token before
 
 **Description**:
 Create endpoint for co-parent to accept invitation and create account:
+
 1. Extract token from URL parameter
 2. Validate token via `invitationManager.validateToken()`
 3. Validate request body: email, password (must match invitee_email)
@@ -525,9 +599,11 @@ Create endpoint for co-parent to accept invitation and create account:
 8. Return user object + JWT token (auto-login)
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/server.js` (add route)
 
 **Acceptance Criteria**:
+
 - [ ] Endpoint: POST /api/invitations/:token/accept
 - [ ] No authentication required (public endpoint for signup)
 - [ ] Validates email matches invitation's invitee_email
@@ -541,6 +617,7 @@ Create endpoint for co-parent to accept invitation and create account:
 - [ ] Returns 400 if email already registered (duplicate account)
 
 **Technical Notes**:
+
 - Use database transaction for atomicity
 - Reference: contracts/auth.yaml response schema
 - Call existing `auth.createUserWithEmail()` function
@@ -548,12 +625,14 @@ Create endpoint for co-parent to accept invitation and create account:
 **Dependencies**: T002, T003, T005 (all libraries must exist)
 
 **Risk Factors**:
+
 - Race condition if multiple users try to accept same invitation
 - **Mitigation**: Database UNIQUE constraint on token_hash prevents duplicate acceptance
 
 ---
 
 ### T014: Create GET /api/notifications Endpoint
+
 **Type**: feature
 **Priority**: high
 **Complexity**: small (S)
@@ -561,15 +640,18 @@ Create endpoint for co-parent to accept invitation and create account:
 
 **Description**:
 Create endpoint to get user's in-app notifications:
+
 1. Authenticate user via JWT middleware
 2. Optional query parameter: unreadOnly=true/false
 3. Call `notificationManager.getUserNotifications(userId, unreadOnly)`
 4. Return notifications array ordered by created_at DESC
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/server.js` (add route)
 
 **Acceptance Criteria**:
+
 - [ ] Endpoint: GET /api/notifications?unreadOnly=true
 - [ ] Requires authentication (JWT)
 - [ ] Returns notifications array with id, type, message, data, is_read, created_at
@@ -578,6 +660,7 @@ Create endpoint to get user's in-app notifications:
 - [ ] Logs notification access for audit trail
 
 **Technical Notes**:
+
 - Use existing JWT authentication middleware
 - Query param: `req.query.unreadOnly === 'true'`
 
@@ -588,6 +671,7 @@ Create endpoint to get user's in-app notifications:
 ---
 
 ### T015: Create PATCH /api/notifications/:id/read Endpoint
+
 **Type**: feature
 **Priority**: medium
 **Complexity**: small (S)
@@ -595,15 +679,18 @@ Create endpoint to get user's in-app notifications:
 
 **Description**:
 Create endpoint to mark notification as read:
+
 1. Authenticate user via JWT middleware
 2. Validate notification belongs to authenticated user (security check)
 3. Call `notificationManager.markAsRead(notificationId)`
 4. Return updated notification object
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/server.js` (add route)
 
 **Acceptance Criteria**:
+
 - [ ] Endpoint: PATCH /api/notifications/:id/read
 - [ ] Requires authentication (JWT)
 - [ ] Verifies notification belongs to authenticated user (403 if not)
@@ -612,16 +699,19 @@ Create endpoint to mark notification as read:
 - [ ] Returns 404 if notification doesn't exist
 
 **Technical Notes**:
+
 - Security check: `WHERE id = :id AND user_id = :userId`
 
 **Dependencies**: T003 (notificationManager must exist)
 
 **Risk Factors**:
+
 - User could mark another user's notifications as read (prevented by security check)
 
 ---
 
 ### T016: Add Socket.io Notification Push Event
+
 **Type**: feature
 **Priority**: medium
 **Complexity**: small (S)
@@ -629,16 +719,19 @@ Create endpoint to mark notification as read:
 
 **Description**:
 Emit Socket.io event when notification created (for real-time updates):
+
 1. Modify `notificationManager.createNotification()` to accept optional io instance
 2. After creating notification, emit Socket.io event to user's socket: `socket.to(userSocketId).emit('notification', notificationData)`
 3. Store user's socket ID when they connect (existing Socket.io connection)
 4. Handle user offline gracefully (notification persists in database for later retrieval)
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/notificationManager.js`
 - Modified `/Users/athenasees/Desktop/chat/chat-server/server.js` (Socket.io setup)
 
 **Acceptance Criteria**:
+
 - [ ] `createNotification()` accepts optional io parameter
 - [ ] Socket.io event emitted if io provided: `io.to(userId).emit('notification', notification)`
 - [ ] Notification still created in database even if user offline
@@ -646,6 +739,7 @@ Emit Socket.io event when notification created (for real-time updates):
 - [ ] Handle disconnection gracefully (remove socket ID from map)
 
 **Technical Notes**:
+
 - Use existing Socket.io setup in server.js
 - Socket.io rooms: each user joins room with their userId
 - Reference existing chat message push implementation
@@ -653,12 +747,14 @@ Emit Socket.io event when notification created (for real-time updates):
 **Dependencies**: T003 (notificationManager must exist), T014 (GET notifications for fallback)
 
 **Risk Factors**:
+
 - User has multiple tabs/devices open (send to all sockets)
 - **Mitigation**: Use Socket.io rooms (userId = room name, all user sockets join room)
 
 ---
 
 ### T017: Add Invitation Cleanup Cron Job
+
 **Type**: infrastructure
 **Priority**: low
 **Complexity**: small (S)
@@ -666,15 +762,18 @@ Emit Socket.io event when notification created (for real-time updates):
 
 **Description**:
 Create daily cron job to mark expired invitations:
+
 1. Use node-cron (or existing scheduler)
 2. Schedule daily at 2am UTC: `cron.schedule('0 2 * * *', ...)`
 3. Call `invitationManager.expireInvitations()`
 4. Log results (number of invitations expired)
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/server.js` (add cron job)
 
 **Acceptance Criteria**:
+
 - [ ] Cron job runs daily at 2am UTC
 - [ ] Calls `invitationManager.expireInvitations()`
 - [ ] Logs number of invitations expired: "✅ Expired 5 invitations"
@@ -682,6 +781,7 @@ Create daily cron job to mark expired invitations:
 - [ ] Can be manually triggered for testing: `npm run expire-invitations`
 
 **Technical Notes**:
+
 - Use node-cron package (likely already installed)
 - If not installed: `npm install node-cron`
 - Low priority - can be added after core features working
@@ -693,6 +793,7 @@ Create daily cron job to mark expired invitations:
 ---
 
 ### T018: Add Notification Cleanup Cron Job
+
 **Type**: infrastructure
 **Priority**: low
 **Complexity**: small (S)
@@ -700,20 +801,24 @@ Create daily cron job to mark expired invitations:
 
 **Description**:
 Create daily cron job to delete old read notifications:
+
 1. Schedule daily at 3am UTC
 2. Call `notificationManager.cleanupOldNotifications()`
 3. Log results (number of notifications deleted)
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/server.js` (add cron job)
 
 **Acceptance Criteria**:
+
 - [ ] Cron job runs daily at 3am UTC
 - [ ] Deletes read notifications older than 30 days
 - [ ] Logs number of notifications deleted
 - [ ] Handles errors gracefully
 
 **Technical Notes**:
+
 - Low priority - database cleanup, not critical for MVP
 
 **Dependencies**: T003 (notificationManager.cleanupOldNotifications must exist)
@@ -723,6 +828,7 @@ Create daily cron job to delete old read notifications:
 ---
 
 ### T019: Add Rate Limiting Middleware
+
 **Type**: infrastructure
 **Priority**: medium
 **Complexity**: small (S)
@@ -730,15 +836,18 @@ Create daily cron job to delete old read notifications:
 
 **Description**:
 Add rate limiting to invitation endpoints:
+
 1. Use express-rate-limit package (or existing rate limiter)
 2. Limit POST /api/invitations/send to 5 requests per hour per user
 3. Limit GET /api/invitations/:token to 100 requests per hour per IP
 4. Return 429 error with clear message when rate limit exceeded
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-server/server.js`
 
 **Acceptance Criteria**:
+
 - [ ] Rate limiter middleware applied to invitation endpoints
 - [ ] POST /send limited to 5 requests per hour per authenticated user
 - [ ] GET /:token limited to 100 requests per hour per IP
@@ -746,6 +855,7 @@ Add rate limiting to invitation endpoints:
 - [ ] Rate limit counters reset after time window expires
 
 **Technical Notes**:
+
 - Reference: research.md Decision 16 (Rate Limiting)
 - Use user ID for send endpoint, IP for validate endpoint
 - Log rate limit violations for security monitoring
@@ -753,12 +863,14 @@ Add rate limiting to invitation endpoints:
 **Dependencies**: T011, T012 (endpoints must exist)
 
 **Risk Factors**:
+
 - Shared IPs (multiple users behind same NAT)
 - **Mitigation**: Use user ID for authenticated endpoints, not IP
 
 ---
 
 ### T020: Update CLAUDE.md Documentation
+
 **Type**: docs
 **Priority**: low
 **Complexity**: small (S)
@@ -766,6 +878,7 @@ Add rate limiting to invitation endpoints:
 
 **Description**:
 Update `/Users/athenasees/Desktop/chat/CLAUDE.md` with:
+
 1. New API endpoints (POST /send, GET /:token, POST /accept, GET /notifications, PATCH /:id/read)
 2. Invitation flow architecture diagram
 3. Common troubleshooting patterns (token expiration, email delivery failures)
@@ -773,15 +886,18 @@ Update `/Users/athenasees/Desktop/chat/CLAUDE.md` with:
 5. Environment variables (none new, but document FRONTEND_URL usage)
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/CLAUDE.md`
 
 **Acceptance Criteria**:
+
 - [ ] All new endpoints documented with parameters and responses
 - [ ] Invitation flow diagram added (ASCII or markdown)
 - [ ] Troubleshooting section includes invitation-specific issues
 - [ ] Recent changes section updated with date and summary
 
 **Technical Notes**:
+
 - Keep last 3 updates in "Recent Changes" section
 - Follow existing CLAUDE.md format and style
 
@@ -794,6 +910,7 @@ Update `/Users/athenasees/Desktop/chat/CLAUDE.md` with:
 ## Phase 5: Backend Contract Tests (Test-First - Will Initially Fail)
 
 ### T021: Contract Tests for POST /api/auth/register
+
 **Type**: test
 **Priority**: critical
 **Complexity**: medium (M)
@@ -801,6 +918,7 @@ Update `/Users/athenasees/Desktop/chat/CLAUDE.md` with:
 
 **Description**:
 Write contract tests for extended registration endpoint:
+
 1. Test successful registration with coParentEmail (new user)
 2. Test successful registration with coParentEmail (existing user)
 3. Test validation: missing coParentEmail (400 error)
@@ -810,9 +928,11 @@ Write contract tests for extended registration endpoint:
 7. Test response schema matches contracts/auth.yaml
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/contract/auth.test.js` (extend existing)
 
 **Acceptance Criteria**:
+
 - [ ] All 7 test cases pass
 - [ ] Tests use supertest for HTTP requests
 - [ ] Tests verify HTTP status codes (201 success, 400 error)
@@ -822,6 +942,7 @@ Write contract tests for extended registration endpoint:
 - [ ] **Tests initially FAIL** (endpoint not fully implemented yet)
 
 **Technical Notes**:
+
 - Reference: contracts/auth.yaml for schema validation
 - Use Jest + supertest for API testing
 
@@ -832,6 +953,7 @@ Write contract tests for extended registration endpoint:
 ---
 
 ### T022: Contract Tests for POST /api/invitations/send
+
 **Type**: test
 **Priority**: high
 **Complexity**: small (S)
@@ -839,6 +961,7 @@ Write contract tests for extended registration endpoint:
 
 **Description**:
 Write contract tests for send invitation endpoint:
+
 1. Test successful invitation send (200 success)
 2. Test authentication required (401 error if no JWT)
 3. Test validation: missing email (400 error)
@@ -848,9 +971,11 @@ Write contract tests for send invitation endpoint:
 7. Test response schema
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/contract/invitations.test.js`
 
 **Acceptance Criteria**:
+
 - [ ] All 7 test cases pass
 - [ ] Tests verify authentication enforcement
 - [ ] Tests verify rate limiting works
@@ -858,6 +983,7 @@ Write contract tests for send invitation endpoint:
 - [ ] **Tests initially FAIL**
 
 **Technical Notes**:
+
 - Mock JWT authentication for valid user
 - Use supertest to simulate multiple requests (rate limit test)
 
@@ -868,6 +994,7 @@ Write contract tests for send invitation endpoint:
 ---
 
 ### T023: Contract Tests for GET /api/invitations/:token
+
 **Type**: test
 **Priority**: high
 **Complexity**: small (S)
@@ -875,6 +1002,7 @@ Write contract tests for send invitation endpoint:
 
 **Description**:
 Write contract tests for token validation endpoint:
+
 1. Test valid token (200 with invitation details)
 2. Test expired token (400 error)
 3. Test invalid token format (400 error)
@@ -882,15 +1010,18 @@ Write contract tests for token validation endpoint:
 5. Test response schema
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/contract/invitations.test.js` (extend)
 
 **Acceptance Criteria**:
+
 - [ ] All 5 test cases pass
 - [ ] Tests create test invitation tokens in database
 - [ ] Tests verify response schema matches OpenAPI spec
 - [ ] **Tests initially FAIL**
 
 **Technical Notes**:
+
 - Create test tokens with varying expiration dates
 
 **Dependencies**: T012 (validate endpoint)
@@ -900,6 +1031,7 @@ Write contract tests for token validation endpoint:
 ---
 
 ### T024: Contract Tests for POST /api/invitations/:token/accept
+
 **Type**: test
 **Priority**: critical
 **Complexity**: medium (M)
@@ -907,6 +1039,7 @@ Write contract tests for token validation endpoint:
 
 **Description**:
 Write contract tests for accept invitation endpoint:
+
 1. Test successful acceptance (201 with user + token)
 2. Test email mismatch (400 error)
 3. Test expired token (400 error)
@@ -917,9 +1050,11 @@ Write contract tests for accept invitation endpoint:
 8. Test user added to room
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/contract/invitations.test.js` (extend)
 
 **Acceptance Criteria**:
+
 - [ ] All 8 test cases pass
 - [ ] Tests verify user account created
 - [ ] Tests verify invitation status='accepted'
@@ -928,6 +1063,7 @@ Write contract tests for accept invitation endpoint:
 - [ ] **Tests initially FAIL**
 
 **Technical Notes**:
+
 - This is the most complex contract test (multiple operations)
 - Verify database state after acceptance
 
@@ -938,6 +1074,7 @@ Write contract tests for accept invitation endpoint:
 ---
 
 ### T025: Contract Tests for GET /api/notifications
+
 **Type**: test
 **Priority**: medium
 **Complexity**: small (S)
@@ -945,6 +1082,7 @@ Write contract tests for accept invitation endpoint:
 
 **Description**:
 Write contract tests for notifications endpoint:
+
 1. Test successful retrieval (200 with notifications array)
 2. Test authentication required (401 error)
 3. Test unreadOnly filter (returns only unread)
@@ -952,15 +1090,18 @@ Write contract tests for notifications endpoint:
 5. Test response schema
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/contract/notifications.test.js`
 
 **Acceptance Criteria**:
+
 - [ ] All 5 test cases pass
 - [ ] Tests create test notifications in database
 - [ ] Tests verify filtering works
 - [ ] **Tests initially FAIL**
 
 **Technical Notes**:
+
 - Create test notifications with is_read=true/false
 
 **Dependencies**: T014 (get notifications endpoint)
@@ -970,6 +1111,7 @@ Write contract tests for notifications endpoint:
 ---
 
 ### T026: Contract Tests for PATCH /api/notifications/:id/read
+
 **Type**: test
 **Priority**: medium
 **Complexity**: small (S)
@@ -977,6 +1119,7 @@ Write contract tests for notifications endpoint:
 
 **Description**:
 Write contract tests for mark as read endpoint:
+
 1. Test successful mark as read (200 with updated notification)
 2. Test authentication required (401 error)
 3. Test security: cannot mark another user's notification (403 error)
@@ -984,15 +1127,18 @@ Write contract tests for mark as read endpoint:
 5. Test response schema
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/contract/notifications.test.js` (extend)
 
 **Acceptance Criteria**:
+
 - [ ] All 5 test cases pass
 - [ ] Tests verify is_read flag updated
 - [ ] Tests verify read_at timestamp set
 - [ ] **Tests initially FAIL**
 
 **Technical Notes**:
+
 - Test with different user JWTs to verify security
 
 **Dependencies**: T015 (mark as read endpoint)
@@ -1004,6 +1150,7 @@ Write contract tests for mark as read endpoint:
 ## Phase 6: Frontend Implementation (Parallel Execution)
 
 ### T027: Create InvitationForm.jsx Component [P]
+
 **Type**: feature
 **Priority**: high
 **Complexity**: small (S)
@@ -1011,6 +1158,7 @@ Write contract tests for mark as read endpoint:
 
 **Description**:
 Create React component for sending invitation during/after signup:
+
 1. Form with single email input field
 2. Validation: email format, not same as user's email
 3. Submit handler calls POST /api/invitations/send
@@ -1019,9 +1167,11 @@ Create React component for sending invitation during/after signup:
 6. Loading state during API call
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/InvitationForm.jsx`
 
 **Acceptance Criteria**:
+
 - [ ] Component renders email input field
 - [ ] Client-side validation before API call
 - [ ] Displays loading spinner during submission
@@ -1030,6 +1180,7 @@ Create React component for sending invitation during/after signup:
 - [ ] Accessible (WCAG 2.1 AA): labels, keyboard navigation, screen reader support
 
 **Technical Notes**:
+
 - Use existing form styling patterns
 - Reference: quickstart.md Scenario 2 for UI flow
 
@@ -1040,6 +1191,7 @@ Create React component for sending invitation during/after signup:
 ---
 
 ### T028: Create NotificationBell.jsx Component [P]
+
 **Type**: feature
 **Priority**: medium
 **Complexity**: small (S)
@@ -1047,6 +1199,7 @@ Create React component for sending invitation during/after signup:
 
 **Description**:
 Create notification bell icon with unread count badge:
+
 1. Bell icon in header/navigation bar
 2. Red badge showing unread count (if >0)
 3. Click opens notification panel
@@ -1054,9 +1207,11 @@ Create notification bell icon with unread count badge:
 5. Fetch unread count on component mount (GET /api/notifications?unreadOnly=true)
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/NotificationBell.jsx`
 
 **Acceptance Criteria**:
+
 - [ ] Bell icon visible in header
 - [ ] Badge shows unread count (hidden if 0)
 - [ ] Clicking bell opens NotificationPanel
@@ -1064,6 +1219,7 @@ Create notification bell icon with unread count badge:
 - [ ] Accessible: keyboard clickable, aria-label="Notifications"
 
 **Technical Notes**:
+
 - Use existing icon library (Heroicons or similar)
 - Socket.io listener: `socket.on('notification', () => fetchUnreadCount())`
 
@@ -1074,6 +1230,7 @@ Create notification bell icon with unread count badge:
 ---
 
 ### T029: Create NotificationPanel.jsx Component [P]
+
 **Type**: feature
 **Priority**: medium
 **Complexity**: medium (M)
@@ -1081,6 +1238,7 @@ Create notification bell icon with unread count badge:
 
 **Description**:
 Create notification panel UI for displaying and managing notifications:
+
 1. List of notifications (type-based rendering)
 2. Each notification shows: icon, message, timestamp, action buttons
 3. "Invitation Received" type shows [Accept] [Decline] buttons
@@ -1089,9 +1247,11 @@ Create notification panel UI for displaying and managing notifications:
 6. Real-time updates via Socket.io
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/NotificationPanel.jsx`
 
 **Acceptance Criteria**:
+
 - [ ] Panel displays list of notifications
 - [ ] Notifications grouped by type with appropriate icons
 - [ ] Accept button calls invitation accept flow
@@ -1100,6 +1260,7 @@ Create notification panel UI for displaying and managing notifications:
 - [ ] Accessible: keyboard navigation, focus management
 
 **Technical Notes**:
+
 - Reference data-model.md for notification types and data structure
 - Use existing UI components for buttons/cards
 
@@ -1110,6 +1271,7 @@ Create notification panel UI for displaying and managing notifications:
 ---
 
 ### T030: Modify SignupForm.jsx to Include Invitation [P]
+
 **Type**: feature
 **Priority**: critical
 **Complexity**: small (S)
@@ -1117,6 +1279,7 @@ Create notification panel UI for displaying and managing notifications:
 
 **Description**:
 Extend existing signup form to include coParentEmail field:
+
 1. Add "Co-Parent Email" field (REQUIRED)
 2. Validation: email format, not same as user email
 3. Update API call to include coParentEmail in registration request
@@ -1124,9 +1287,11 @@ Extend existing signup form to include coParentEmail field:
 5. Handle invitation errors gracefully (account created but invitation failed)
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-client-vite/src/components/SignupForm.jsx`
 
 **Acceptance Criteria**:
+
 - [ ] New field added: "Co-Parent Email" (required)
 - [ ] Client-side validation before submission
 - [ ] Registration API call includes coParentEmail
@@ -1134,18 +1299,21 @@ Extend existing signup form to include coParentEmail field:
 - [ ] Error handling for invitation failures (don't block signup)
 
 **Technical Notes**:
+
 - Reference: contracts/auth.yaml for request body schema
 - Existing form already has email, password, firstName, lastName fields
 
 **Dependencies**: T010 (registration endpoint extension)
 
 **Risk Factors**:
+
 - Breaking existing signup flow (test thoroughly)
 - **Mitigation**: Test both old and new signup flows
 
 ---
 
 ### T031: Create AcceptInvite.jsx Page [P]
+
 **Type**: feature
 **Priority**: critical
 **Complexity**: medium (M)
@@ -1153,6 +1321,7 @@ Extend existing signup form to include coParentEmail field:
 
 **Description**:
 Create dedicated page for invitation acceptance (/join?token=XXX):
+
 1. Extract token from URL query parameter
 2. Validate token on page load (GET /api/invitations/:token)
 3. Show error if token invalid/expired
@@ -1162,9 +1331,11 @@ Create dedicated page for invitation acceptance (/join?token=XXX):
 7. Redirect to shared room on success
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-client-vite/src/pages/AcceptInvite.jsx`
 
 **Acceptance Criteria**:
+
 - [ ] Page validates token on mount
 - [ ] Shows loading state during token validation
 - [ ] Shows error page if token invalid/expired
@@ -1175,6 +1346,7 @@ Create dedicated page for invitation acceptance (/join?token=XXX):
 - [ ] Accessible: error messages announced, form accessible
 
 **Technical Notes**:
+
 - Reference: quickstart.md Scenario 3 for flow
 - Use React Router for URL parameter extraction
 - Show inviter name in context: "You've been invited by {inviterName}"
@@ -1182,12 +1354,14 @@ Create dedicated page for invitation acceptance (/join?token=XXX):
 **Dependencies**: T012, T013 (API endpoints)
 
 **Risk Factors**:
+
 - Token expired during signup form filling
 - **Mitigation**: Validate token again on submit (API handles this)
 
 ---
 
 ### T032: Add Socket.io Notification Listener [P]
+
 **Type**: feature
 **Priority**: medium
 **Complexity**: small (S)
@@ -1195,6 +1369,7 @@ Create dedicated page for invitation acceptance (/join?token=XXX):
 
 **Description**:
 Add Socket.io event listener for real-time notifications:
+
 1. Connect to Socket.io server on app mount
 2. Join user's room (user ID)
 3. Listen for 'notification' event
@@ -1202,9 +1377,11 @@ Add Socket.io event listener for real-time notifications:
 5. Show browser notification (optional, with permission)
 
 **Deliverables**:
+
 - Modified `/Users/athenasees/Desktop/chat/chat-client-vite/src/App.jsx` or context provider
 
 **Acceptance Criteria**:
+
 - [ ] Socket.io connection established on login
 - [ ] User joins room with their userId
 - [ ] 'notification' event listener registered
@@ -1213,6 +1390,7 @@ Add Socket.io event listener for real-time notifications:
 - [ ] Browser notification shown (if permission granted)
 
 **Technical Notes**:
+
 - Use existing Socket.io connection (already used for chat)
 - Event format: `socket.on('notification', (data) => { ... })`
 
@@ -1225,6 +1403,7 @@ Add Socket.io event listener for real-time notifications:
 ## Phase 7: Integration Testing (End-to-End Flows)
 
 ### T033: Integration Test - Full Signup → Invite → Accept Flow
+
 **Type**: test
 **Priority**: critical
 **Complexity**: large (L)
@@ -1232,6 +1411,7 @@ Add Socket.io event listener for real-time notifications:
 
 **Description**:
 Write end-to-end integration test for complete invitation flow:
+
 1. Parent 1 signs up with coParentEmail
 2. Verify invitation created in database
 3. Verify email sent (or in-app notification if existing user)
@@ -1242,9 +1422,11 @@ Write end-to-end integration test for complete invitation flow:
 8. Verify invitation status='accepted'
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/integration/signup-invite-accept.test.js`
 
 **Acceptance Criteria**:
+
 - [ ] Test covers entire user journey (Scenario 1-4 from spec.md)
 - [ ] Tests verify database state at each step
 - [ ] Tests verify email content (mock email service)
@@ -1253,6 +1435,7 @@ Write end-to-end integration test for complete invitation flow:
 - [ ] Test cleans up data after execution
 
 **Technical Notes**:
+
 - Reference: quickstart.md for detailed test steps
 - Use Jest + supertest for API calls
 - Use database transactions for test data isolation
@@ -1260,12 +1443,14 @@ Write end-to-end integration test for complete invitation flow:
 **Dependencies**: T010, T013, T005 (all endpoints and libraries)
 
 **Risk Factors**:
+
 - Test data pollution (cleanup critical)
 - **Mitigation**: Use unique email addresses per test run
 
 ---
 
 ### T034: Integration Test - Existing User Invitation
+
 **Type**: test
 **Priority**: high
 **Complexity**: medium (M)
@@ -1273,6 +1458,7 @@ Write end-to-end integration test for complete invitation flow:
 
 **Description**:
 Write integration test for inviting existing user:
+
 1. Create Parent 2 account (existing user)
 2. Parent 1 sends invitation to Parent 2's email
 3. Verify in-app notification created (NOT email)
@@ -1282,9 +1468,11 @@ Write integration test for inviting existing user:
 7. Verify notification marked as read
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/integration/existing-user-invite.test.js`
 
 **Acceptance Criteria**:
+
 - [ ] Test creates existing user before invitation
 - [ ] Verifies in-app notification created (not email)
 - [ ] Verifies notification appears in GET /api/notifications
@@ -1292,6 +1480,7 @@ Write integration test for inviting existing user:
 - [ ] Test cleans up data after execution
 
 **Technical Notes**:
+
 - Reference: quickstart.md Scenario 5
 - Simulate existing user by creating account first
 
@@ -1302,6 +1491,7 @@ Write integration test for inviting existing user:
 ---
 
 ### T035: Integration Test - Invitation Expiration
+
 **Type**: test
 **Priority**: medium
 **Complexity**: small (S)
@@ -1309,6 +1499,7 @@ Write integration test for inviting existing user:
 
 **Description**:
 Write integration test for expired invitation handling:
+
 1. Create invitation with backdated expires_at (8 days ago)
 2. Try to validate token via GET /api/invitations/:token
 3. Verify 400 error returned
@@ -1318,9 +1509,11 @@ Write integration test for expired invitation handling:
 7. Verify status changed to 'expired'
 
 **Deliverables**:
+
 - `/Users/athenasees/Desktop/chat/chat-server/tests/integration/invite-expiration.test.js`
 
 **Acceptance Criteria**:
+
 - [ ] Test creates expired invitation (backdated)
 - [ ] Verifies validation fails with clear error
 - [ ] Verifies acceptance fails with clear error
@@ -1328,6 +1521,7 @@ Write integration test for expired invitation handling:
 - [ ] Test cleans up data after execution
 
 **Technical Notes**:
+
 - Reference: quickstart.md Scenario 6
 - Manually insert expired invitation into database
 
@@ -1340,6 +1534,7 @@ Write integration test for expired invitation handling:
 ## Task Summary
 
 ### By Phase
+
 - **Phase 1 (Database)**: 1 task (T001)
 - **Phase 2 (Libraries)**: 4 tasks (T002-T005)
 - **Phase 3 (Library Tests)**: 4 tasks (T006-T009)
@@ -1349,17 +1544,20 @@ Write integration test for expired invitation handling:
 - **Phase 7 (Integration)**: 3 tasks (T033-T035)
 
 ### By Complexity
+
 - **Small (S)**: 22 tasks (63%)
 - **Medium (M)**: 11 tasks (31%)
 - **Large (L)**: 2 tasks (6%)
 
 ### By Priority
+
 - **Critical**: 10 tasks
 - **High**: 11 tasks
 - **Medium**: 11 tasks
 - **Low**: 3 tasks
 
 ### Total Estimated Hours
+
 - **Phase 1**: 1 hour
 - **Phase 2**: 7.5 hours
 - **Phase 3**: 6.5 hours
@@ -1374,11 +1572,13 @@ Write integration test for expired invitation handling:
 ## Parallel Execution Opportunities
 
 **Maximum Parallelism**:
+
 - Phase 2: 4 tasks can run in parallel [P] (T002-T005)
 - Phase 3: 4 tasks can run in parallel [P] (T006-T009)
 - Phase 6: 6 tasks can run in parallel [P] (T027-T032)
 
 **Critical Path** (longest sequential dependency chain):
+
 ```
 T001 → T002 → T006 → T010 → T021 → T033
 Database → invitationManager → Tests → Registration → Contract Tests → Integration
@@ -1394,6 +1594,7 @@ With parallelization, total wall-clock time: ~20-25 hours (3-4 working days)
 Before marking feature complete, verify:
 
 ### Constitutional Compliance
+
 - [ ] **Principle I (Library-First)**: invitationManager, notificationManager are standalone libraries
 - [ ] **Principle II (Test-First)**: All tests written and passing (>80% coverage)
 - [ ] **Principle III (Contract-First)**: OpenAPI contracts defined and validated
@@ -1401,17 +1602,20 @@ Before marking feature complete, verify:
 - [ ] **Principle VII (Observability)**: All operations logged for audit trail
 
 ### Functional Requirements
+
 - [ ] All 21 functional requirements from spec.md met
 - [ ] All 6 acceptance scenarios from quickstart.md pass
 - [ ] All edge cases handled (11 edge cases from spec.md)
 
 ### Non-Functional Requirements
+
 - [ ] Account creation <3 seconds (NFR-004)
 - [ ] Email delivery <5 minutes (NFR-005)
 - [ ] Token validation <200ms p95
 - [ ] WCAG 2.1 AA accessibility compliance (NFR-008)
 
 ### Security Requirements
+
 - [ ] Tokens hashed in database (SHA-256)
 - [ ] Rate limiting enforced (5 invitations/hour per user)
 - [ ] Input validation on all endpoints
@@ -1419,6 +1623,7 @@ Before marking feature complete, verify:
 - [ ] SQL injection prevention (parameterized queries)
 
 ### Documentation
+
 - [ ] CLAUDE.md updated with new endpoints
 - [ ] API contracts documented (OpenAPI)
 - [ ] README.md includes invitation feature overview

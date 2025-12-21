@@ -136,15 +136,8 @@
     }
   },
   "apiEndpoints": {
-    "authentication": [
-      "POST /api/auth/register",
-      "POST /api/auth/login",
-      "POST /api/auth/google"
-    ],
-    "users": [
-      "GET /api/user/profile",
-      "PUT /api/user/profile"
-    ],
+    "authentication": ["POST /api/auth/register", "POST /api/auth/login", "POST /api/auth/google"],
+    "users": ["GET /api/user/profile", "PUT /api/user/profile"],
     "contacts": [
       "GET /api/contacts",
       "POST /api/contacts",
@@ -172,13 +165,7 @@
     ]
   },
   "socketEvents": {
-    "client": [
-      "join-room",
-      "send-message",
-      "typing",
-      "stop-typing",
-      "disconnect"
-    ],
+    "client": ["join-room", "send-message", "typing", "stop-typing", "disconnect"],
     "server": [
       "room-joined",
       "receive-message",
@@ -257,10 +244,7 @@
     }
   },
   "developmentWorkflow": {
-    "starting": [
-      "npm run dev - Start all services",
-      "npm run kill-ports - Kill conflicting ports"
-    ],
+    "starting": ["npm run dev - Start all services", "npm run kill-ports - Kill conflicting ports"],
     "frontend": [
       "cd chat-client-vite && npm run dev",
       "Runs on http://localhost:5173",

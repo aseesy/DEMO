@@ -16,6 +16,7 @@ This policy establishes Git branching standards and workflows for the SDD Framew
 ## Constitutional Alignment
 
 This policy enforces:
+
 - **Principle VI**: Git Operation Approval - No autonomous git operations without user approval
 - **Principle VIII**: Documentation Synchronization - Branches track documentation changes
 - **All Principles**: Branch names and conventions support constitutional workflow
@@ -25,6 +26,7 @@ This policy enforces:
 ## Scope
 
 All Git repositories using the SDD Framework must follow this branching strategy, including:
+
 - Application repositories
 - Library repositories
 - Infrastructure repositories
@@ -41,6 +43,7 @@ All Git repositories using the SDD Framework must follow this branching strategy
 **Purpose**: Production-ready code
 
 **Characteristics**:
+
 - Always deployable
 - Protected (no direct pushes)
 - Requires PR and approval
@@ -50,6 +53,7 @@ All Git repositories using the SDD Framework must follow this branching strategy
 **Naming**: `main` (preferred) or `master` (legacy)
 
 **Protection Rules**:
+
 - ✅ Require PR before merging
 - ✅ Require ≥1 approval
 - ✅ Require status checks to pass
@@ -62,6 +66,7 @@ All Git repositories using the SDD Framework must follow this branching strategy
 **Purpose**: Integration branch for ongoing development
 
 **Characteristics**:
+
 - Latest development changes
 - May be unstable
 - Integration testing
@@ -70,11 +75,13 @@ All Git repositories using the SDD Framework must follow this branching strategy
 **Naming**: `develop`
 
 **When to Use**:
+
 - Teams ≥5 developers
 - Continuous integration workflow
 - Need for stable main branch
 
 **When to Skip**:
+
 - Small teams (<5 developers)
 - GitHub Flow (direct to main)
 
@@ -87,16 +94,19 @@ All Git repositories using the SDD Framework must follow this branching strategy
 **Purpose**: Develop new features or enhancements
 
 **Naming Convention**:
+
 ```
 {feature-number}-{short-description}
 ```
 
 **Examples**:
+
 - `001-user-authentication`
 - `042-pagination-api`
 - `123-fix-memory-leak`
 
 **SDD Framework Convention** (when user approves):
+
 - User specifies feature description
 - System generates: `###-feature-name`
 - Format: 3-digit number + kebab-case description
@@ -109,6 +119,7 @@ All Git repositories using the SDD Framework must follow this branching strategy
 **Lifetime**: Until feature complete and merged (typically 1-7 days)
 
 **Workflow**:
+
 ```bash
 # Create feature branch (with user approval per Principle VI)
 git checkout -b 001-user-authentication main
@@ -135,11 +146,13 @@ gh pr create --base main --head 001-user-authentication
 **Purpose**: Emergency fixes for production issues
 
 **Naming Convention**:
+
 ```
 hotfix/{issue-description}
 ```
 
 **Examples**:
+
 - `hotfix/password-reset-bug`
 - `hotfix/security-xss-vulnerability`
 - `hotfix/database-connection-timeout`
@@ -151,6 +164,7 @@ hotfix/{issue-description}
 **Lifetime**: Short (hours, not days)
 
 **Workflow**:
+
 ```bash
 # Create hotfix branch
 git checkout -b hotfix/password-reset-bug main
@@ -176,11 +190,13 @@ git push origin develop
 **Purpose**: Prepare for production release
 
 **Naming Convention**:
+
 ```
 release/v{major}.{minor}.{patch}
 ```
 
 **Examples**:
+
 - `release/v1.2.0`
 - `release/v2.0.0-beta.1`
 
@@ -191,11 +207,13 @@ release/v{major}.{minor}.{patch}
 **Lifetime**: Until release deployed (typically 1-3 days)
 
 **When to Use**:
+
 - Formal release process
 - Version-specific testing
 - Release candidates
 
 **Workflow**:
+
 ```bash
 # Create release branch from develop
 git checkout -b release/v1.2.0 develop
@@ -240,12 +258,14 @@ main
 ```
 
 **Characteristics**:
+
 - Single main branch (always deployable)
 - Feature branches for all work
 - PR and review before merge
 - Deploy from main frequently
 
 **Best For**:
+
 - Small teams (<5 developers)
 - Continuous deployment
 - Simple release process
@@ -264,12 +284,14 @@ main ← release/v1.0 ← develop
 ```
 
 **Characteristics**:
+
 - Two main branches (main + develop)
 - Release branches for preparation
 - Hotfix branches for emergencies
 - Formal versioning
 
 **Best For**:
+
 - Large teams (≥5 developers)
 - Scheduled releases
 - Complex QA process
@@ -299,6 +321,7 @@ main ← release/v1.0 ← develop
 ### Examples
 
 **Good**:
+
 - `001-user-authentication`
 - `042-api-pagination`
 - `hotfix/security-xss-fix`
@@ -306,6 +329,7 @@ main ← release/v1.0 ← develop
 - `docs/api-documentation`
 
 **Bad**:
+
 - `my-branch` (not descriptive)
 - `Feature-Branch` (not lowercase)
 - `user_auth` (not kebab-case)
@@ -342,6 +366,7 @@ Follow Conventional Commits specification:
 ### Examples
 
 **Good**:
+
 ```
 feat(auth): add JWT token authentication
 
@@ -362,12 +387,15 @@ Fixes #123
 ```
 
 **Bad**:
+
 ```
 Update stuff
 ```
+
 ```
 fix bug
 ```
+
 ```
 WIP
 ```
@@ -393,34 +421,42 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ### Creating PRs
 
 **PR Title**: Same as commit message format
+
 ```
 feat(auth): add JWT token authentication
 ```
 
 **PR Description Template**:
+
 ```markdown
 ## Summary
+
 Brief description of changes
 
 ## Changes
+
 - Added JWT authentication
 - Created login endpoint
 - Updated user model
 
 ## Testing
+
 - [x] Unit tests pass
 - [x] Integration tests pass
 - [x] Manual testing complete
 
 ## Constitutional Compliance
+
 - [x] Principle I: Library-first (auth library created)
 - [x] Principle II: Test-first (tests written before code)
 - [x] Principle III: Contract-first (API contract defined)
 
 ## Screenshots (if UI changes)
+
 [Add screenshots]
 
 ## Related Issues
+
 Closes #42
 ```
 
@@ -429,6 +465,7 @@ Closes #42
 See Code Review Policy (`.docs/policies/code-review-policy.md`) for details.
 
 **Summary**:
+
 1. Author creates PR with description
 2. CI/CD runs automated checks
 3. Reviewer(s) review code
@@ -490,12 +527,14 @@ protection:
 **When**: Feature branches → main
 
 **Benefits**:
+
 - Clean, linear history
 - Each feature = one commit
 - Easy to revert
 - Simple history
 
 **How**:
+
 ```bash
 # GitHub: Use "Squash and merge" button
 # CLI:
@@ -508,11 +547,13 @@ git commit -m "feat: add user authentication"
 **When**: Release branches, hotfixes
 
 **Benefits**:
+
 - Preserves full history
 - Shows branch points
 - Useful for auditing
 
 **How**:
+
 ```bash
 git merge --no-ff release/v1.2.0
 ```
@@ -522,11 +563,13 @@ git merge --no-ff release/v1.2.0
 **When**: Updating feature branch with main
 
 **Benefits**:
+
 - Linear history
 - No merge commits
 - Clean log
 
 **How**:
+
 ```bash
 git checkout 001-feature
 git rebase main
@@ -571,11 +614,13 @@ git rebase main
 **Definition**: Branch with no commits for >14 days
 
 **Policy**:
+
 - Automated reminder at 14 days
 - Automated closure warning at 21 days
 - Automated closure at 28 days (with notification)
 
 **Developer Responsibility**:
+
 - Keep branches active (commit/sync regularly)
 - Close unused branches
 - Finish or abandon work
@@ -589,6 +634,7 @@ git rebase main
 **CRITICAL**: No autonomous Git operations without user approval
 
 **Applies to**:
+
 - Branch creation
 - Branch deletion
 - Commits
@@ -597,6 +643,7 @@ git rebase main
 - Rebases
 
 **Implementation**:
+
 ```bash
 # ❌ BAD: Automatic branch creation
 git checkout -b auto-branch
@@ -657,6 +704,7 @@ When user invokes `/specify` command:
 **When**: Merging or rebasing with conflicting changes
 
 **Resolution**:
+
 ```bash
 # 1. Update your branch
 git fetch origin
@@ -680,6 +728,7 @@ git push --force-with-lease
 **When**: Local and remote have different histories
 
 **Resolution**:
+
 ```bash
 # Check status
 git status
@@ -696,6 +745,7 @@ git push --force-with-lease origin 001-feature
 **When**: Committed to main instead of feature branch
 
 **Resolution**:
+
 ```bash
 # 1. Create feature branch at current commit
 git branch 001-feature
@@ -717,6 +767,7 @@ git push -u origin 001-feature
 ### Branch Management Scripts
 
 **List stale branches**:
+
 ```bash
 git for-each-ref --sort=-committerdate refs/heads/ \
   --format='%(refname:short)|%(committerdate:relative)' \
@@ -724,6 +775,7 @@ git for-each-ref --sort=-committerdate refs/heads/ \
 ```
 
 **Delete merged branches**:
+
 ```bash
 git branch --merged main | grep -v "main" | xargs git branch -d
 ```
@@ -731,6 +783,7 @@ git branch --merged main | grep -v "main" | xargs git branch -d
 ### Git Hooks
 
 **Pre-commit** (validate commits):
+
 ```bash
 #!/bin/sh
 # .git/hooks/pre-commit
@@ -746,6 +799,7 @@ fi
 ```
 
 **Pre-push** (validate tests):
+
 ```bash
 #!/bin/sh
 # .git/hooks/pre-push
@@ -761,6 +815,7 @@ npm test || exit 1
 ### /specify Command
 
 Respects Principle VI:
+
 1. User invokes: `/specify "User authentication feature"`
 2. System asks: "Create new feature branch?"
 3. User approves: "Yes"
@@ -772,6 +827,7 @@ Respects Principle VI:
 ### Feature Directories
 
 Branch name matches specs directory:
+
 ```
 Branch: 001-user-authentication
 Specs:  specs/001-user-authentication/

@@ -11,27 +11,48 @@ import MotivationsForm from './MotivationsForm';
 
 const STEPS = [
   { id: 'personal', title: 'Personal', icon: 'user', description: 'Basic info about you' },
-  { id: 'motivations', title: 'Motivations', icon: 'sparkles', description: 'Your values and goals' },
-  { id: 'background', title: 'Background', icon: 'book', description: 'Your story' }
+  {
+    id: 'motivations',
+    title: 'Motivations',
+    icon: 'sparkles',
+    description: 'Your values and goals',
+  },
+  { id: 'background', title: 'Background', icon: 'book', description: 'Your story' },
 ];
 
 // Section field mappings
 const SECTION_FIELDS = {
   personal: [
-    'first_name', 'pronouns',
-    'birthdate', 'language', 'timezone', 'phone', 'city', 'state', 'zip',
-    'work_schedule', 'schedule_flexibility'
+    'first_name',
+    'pronouns',
+    'birthdate',
+    'language',
+    'timezone',
+    'phone',
+    'city',
+    'state',
+    'zip',
+    'work_schedule',
+    'schedule_flexibility',
   ],
   motivations: [
-    'motivation_values', 'motivation_goals',
-    'motivation_strengths', 'motivation_improvements'
+    'motivation_values',
+    'motivation_goals',
+    'motivation_strengths',
+    'motivation_improvements',
   ],
   background: [
-    'background_birthplace', 'background_raised', 'background_family_origin',
-    'background_culture', 'background_religion', 'background_military',
-    'background_military_branch', 'background_military_status',
-    'education_level', 'education_field'
-  ]
+    'background_birthplace',
+    'background_raised',
+    'background_family_origin',
+    'background_culture',
+    'background_religion',
+    'background_military',
+    'background_military_branch',
+    'background_military_status',
+    'education_level',
+    'education_field',
+  ],
 };
 
 // Step icons as simple SVG components
@@ -49,34 +70,64 @@ const StepIcon = ({ type, isActive, isComplete }) => {
   const icons = {
     user: (
       <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+        />
       </svg>
     ),
     sparkles: (
       <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+        />
       </svg>
     ),
     briefcase: (
       <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+        />
       </svg>
     ),
     heart: (
       <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+        />
       </svg>
     ),
     dollar: (
       <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
       </svg>
     ),
     book: (
       <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+        />
       </svg>
-    )
+    ),
   };
 
   return icons[type] || icons.user;
@@ -86,17 +137,11 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
   const [currentStep, setCurrentStep] = React.useState(initialStep);
   const [completedSteps, setCompletedSteps] = React.useState(new Set());
 
-  const {
-    profileData,
-    updateField,
-    saveSection,
-    isSavingProfile,
-    profileCompletion,
-    error
-  } = useProfile(username);
+  const { profileData, updateField, saveSection, isSavingProfile, profileCompletion, error } =
+    useProfile(username);
 
   // Calculate section completion
-  const getSectionCompletion = (sectionId) => {
+  const getSectionCompletion = sectionId => {
     const fields = SECTION_FIELDS[sectionId];
     if (!fields) return 0;
 
@@ -160,22 +205,27 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-0 sm:p-4 pb-nav-mobile sm:pb-4">
+      <div className="bg-white sm:rounded-2xl w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center pt-safe">
           <div>
             <h2 className="text-xl font-semibold text-[#275559]">Complete Your Profile</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Help LiaiZen understand you better
-            </p>
+            <p className="text-sm text-gray-500 mt-0.5">Help LiaiZen understand you better</p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <svg
+              className="w-5 h-5 text-gray-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -189,29 +239,37 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
                   className={`flex flex-col items-center cursor-pointer ${index <= currentStep ? 'opacity-100' : 'opacity-50'}`}
                   onClick={() => index < currentStep && setCurrentStep(index)}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-colors ${
-                    index === currentStep
-                      ? 'bg-[#4DA8B0] text-white'
-                      : completedSteps.has(index) || getSectionCompletion(step.id) === 100
-                        ? 'bg-green-100 text-green-600'
-                        : 'bg-gray-200 text-gray-500'
-                  }`}>
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-colors ${
+                      index === currentStep
+                        ? 'bg-[#4DA8B0] text-white'
+                        : completedSteps.has(index) || getSectionCompletion(step.id) === 100
+                          ? 'bg-green-100 text-green-600'
+                          : 'bg-gray-200 text-gray-500'
+                    }`}
+                  >
                     <StepIcon
                       type={step.icon}
                       isActive={index === currentStep}
-                      isComplete={completedSteps.has(index) || getSectionCompletion(step.id) === 100}
+                      isComplete={
+                        completedSteps.has(index) || getSectionCompletion(step.id) === 100
+                      }
                     />
                   </div>
-                  <span className={`text-xs font-medium hidden sm:block ${
-                    index === currentStep ? 'text-[#275559]' : 'text-gray-500'
-                  }`}>
+                  <span
+                    className={`text-xs font-medium hidden sm:block ${
+                      index === currentStep ? 'text-[#275559]' : 'text-gray-500'
+                    }`}
+                  >
                     {step.title}
                   </span>
                 </div>
                 {index < STEPS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-2 ${
-                    index < currentStep ? 'bg-[#4DA8B0]' : 'bg-gray-200'
-                  }`} />
+                  <div
+                    className={`flex-1 h-0.5 mx-2 ${
+                      index < currentStep ? 'bg-[#4DA8B0]' : 'bg-gray-200'
+                    }`}
+                  />
                 )}
               </React.Fragment>
             ))}
@@ -238,9 +296,7 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
             <h3 className="text-lg font-semibold text-[#275559]">
               Step {currentStep + 1}: {STEPS[currentStep].title}
             </h3>
-            <p className="text-sm text-gray-500 mt-1">
-              {STEPS[currentStep].description}
-            </p>
+            <p className="text-sm text-gray-500 mt-1">{STEPS[currentStep].description}</p>
           </div>
 
           {/* Error Display */}
@@ -284,8 +340,19 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
               {isSavingProfile ? (
                 <>
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   Saving...
                 </>

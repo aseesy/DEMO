@@ -2,12 +2,13 @@
  * Cryptographic Utilities
  *
  * Generic, stateless crypto functions for token generation,
- * ID creation, and secure random values.
+ * ID creation, secure random values, and field encryption.
  *
  * @module src/utils/crypto
  */
 
 const crypto = require('crypto');
+const { SENSITIVE_FIELDS } = require('./profileConstants');
 
 /**
  * Generate a cryptographically secure random token
@@ -168,7 +169,154 @@ function secureCompare(a, b) {
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
+// ============================================================================
+// AES-256-GCM ENCRYPTION (for sensitive profile fields)
+// ============================================================================
+
+/**
+ * Get encryption key from environment or use default for development.
+ * In production, PROFILE_ENCRYPTION_KEY must be set.
+ *
+ * @returns {Buffer} 32-byte encryption key
+ * @throws {Error} If key is missing in production
+ */
+function getEncryptionKey() {
+  const key = process.env.PROFILE_ENCRYPTION_KEY;
+  if (!key) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('PROFILE_ENCRYPTION_KEY must be set in production');
+    }
+    // Development fallback - NOT SECURE, only for local testing
+    console.warn('Using development encryption key - NOT SECURE for production');
+    return crypto.createHash('sha256').update('dev-key-not-secure').digest();
+  }
+  return Buffer.from(key, 'hex');
+}
+
+/**
+ * Encrypt a single value using AES-256-GCM
+ *
+ * @param {string} text - Plain text to encrypt
+ * @returns {string} Encrypted string in format: iv:authTag:ciphertext
+ *
+ * @example
+ * encrypt('sensitive data') // '0a1b2c...:3d4e5f...:6g7h8i...'
+ */
+function encrypt(text) {
+  if (!text) return text;
+
+  try {
+    const key = getEncryptionKey();
+    const iv = crypto.randomBytes(12); // 96-bit IV for GCM
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+
+    const authTag = cipher.getAuthTag().toString('hex');
+
+    // Format: iv:authTag:ciphertext
+    return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+  } catch (error) {
+    console.error('Encryption error:', error.message);
+    throw new Error('Failed to encrypt sensitive data');
+  }
+}
+
+/**
+ * Decrypt a value encrypted with encrypt()
+ *
+ * @param {string} encryptedText - Encrypted string in format: iv:authTag:ciphertext
+ * @returns {string|null} Decrypted plain text, or null if decryption fails
+ *
+ * @example
+ * decrypt('0a1b2c...:3d4e5f...:6g7h8i...') // 'sensitive data'
+ */
+function decrypt(encryptedText) {
+  if (!encryptedText) return encryptedText;
+
+  // Check if this looks like encrypted data
+  if (!encryptedText.includes(':')) {
+    // Not encrypted, return as-is (for backward compatibility)
+    return encryptedText;
+  }
+
+  try {
+    const key = getEncryptionKey();
+    const parts = encryptedText.split(':');
+
+    if (parts.length !== 3) {
+      throw new Error('Invalid encrypted data format');
+    }
+
+    const iv = Buffer.from(parts[0], 'hex');
+    const authTag = Buffer.from(parts[1], 'hex');
+    const ciphertext = parts[2];
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
+
+    let decrypted = decipher.update(ciphertext, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+
+    return decrypted;
+  } catch (error) {
+    console.error('Decryption error:', error.message);
+    // Return null for corrupted/invalid encrypted data
+    return null;
+  }
+}
+
+/**
+ * Encrypt sensitive fields in a profile data object
+ *
+ * @param {Object} data - Profile data with potential sensitive fields
+ * @returns {Object} Profile data with sensitive fields encrypted
+ *
+ * @example
+ * encryptSensitiveFields({ health_mental_conditions: 'anxiety' })
+ * // { health_mental_conditions: '0a1b2c...:3d4e5f...:6g7h8i...' }
+ */
+function encryptSensitiveFields(data) {
+  if (!data) return data;
+
+  const result = { ...data };
+
+  for (const field of SENSITIVE_FIELDS) {
+    if (result[field] && typeof result[field] === 'string' && result[field].trim()) {
+      result[field] = encrypt(result[field]);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Decrypt sensitive fields in a profile data object
+ *
+ * @param {Object} data - Profile data with encrypted sensitive fields
+ * @returns {Object} Profile data with sensitive fields decrypted
+ *
+ * @example
+ * decryptSensitiveFields({ health_mental_conditions: '0a1b2c...:3d4e5f...:6g7h8i...' })
+ * // { health_mental_conditions: 'anxiety' }
+ */
+function decryptSensitiveFields(data) {
+  if (!data) return data;
+
+  const result = { ...data };
+
+  for (const field of SENSITIVE_FIELDS) {
+    if (result[field]) {
+      result[field] = decrypt(result[field]);
+    }
+  }
+
+  return result;
+}
+
 module.exports = {
+  // Token generation
   generateToken,
   generateShortCode,
   generateId,
@@ -178,6 +326,14 @@ module.exports = {
   generateMessageId,
   generateThreadId,
   generateSessionToken,
+
+  // Hashing & comparison
   hashString,
   secureCompare,
+
+  // AES-256-GCM encryption
+  encrypt,
+  decrypt,
+  encryptSensitiveFields,
+  decryptSensitiveFields,
 };

@@ -5,6 +5,7 @@ Quick reference checklist for launching LiaiZen to production.
 ## 🔴 Critical (Must Do Before Launch)
 
 ### Security
+
 - [x] Password hashing using bcrypt ✅ (Already implemented)
 - [x] SQL injection protection ✅ (Using dbSafe)
 - [ ] HTTPS/SSL certificate configured
@@ -15,6 +16,7 @@ Quick reference checklist for launching LiaiZen to production.
 - [x] Security headers (Helmet.js) ✅
 
 ### Infrastructure
+
 - [ ] Hosting provider chosen and set up
 - [ ] Domain name purchased and DNS configured
 - [ ] SSL certificate installed (Let's Encrypt)
@@ -23,6 +25,7 @@ Quick reference checklist for launching LiaiZen to production.
 - [ ] Process manager (PM2) configured for auto-restart
 
 ### Application
+
 - [ ] Email service configured (Gmail or alternative)
 - [ ] OpenAI API key added for AI moderation
 - [ ] Frontend URL updated in backend config
@@ -33,12 +36,14 @@ Quick reference checklist for launching LiaiZen to production.
 ## 🟡 Important (Do Within First Week)
 
 ### Monitoring
+
 - [ ] Uptime monitoring (UptimeRobot, Pingdom)
 - [ ] Error tracking (Sentry, LogRocket)
 - [ ] Application logs configured
 - [ ] Performance monitoring
 
 ### Testing
+
 - [ ] End-to-end testing on production
 - [ ] Mobile testing (iOS & Android)
 - [ ] PWA installation tested
@@ -46,6 +51,7 @@ Quick reference checklist for launching LiaiZen to production.
 - [ ] Load testing (10-50 concurrent users)
 
 ### Documentation
+
 - [ ] User documentation/help center
 - [ ] Support email/contact method
 - [ ] Privacy policy
@@ -54,12 +60,14 @@ Quick reference checklist for launching LiaiZen to production.
 ## 🟢 Nice to Have (First Month)
 
 ### Features
+
 - [ ] User analytics dashboard
 - [ ] Admin panel improvements
 - [ ] User onboarding flow
 - [ ] Help/FAQ section
 
 ### Infrastructure
+
 - [ ] Database migration to PostgreSQL (if scaling)
 - [ ] CDN for static assets
 - [ ] Automated deployment pipeline
@@ -70,10 +78,10 @@ Quick reference checklist for launching LiaiZen to production.
 ## 🚀 Quick Launch Path (Recommended)
 
 ### Week 1: Setup
+
 1. **Day 1-2:** Choose hosting (DigitalOcean recommended)
    - Set up VPS ($6-12/month)
    - Install Node.js, PM2, Nginx
-   
 2. **Day 3:** Domain & SSL
    - Purchase domain
    - Configure DNS
@@ -92,12 +100,14 @@ Quick reference checklist for launching LiaiZen to production.
    - Test email delivery
 
 ### Week 2: Soft Launch
+
 1. Invite 5-10 beta users
 2. Monitor for issues
 3. Fix any critical bugs
 4. Gather feedback
 
 ### Week 3-4: Limited Launch
+
 1. Invite 50-100 users
 2. Monitor performance
 3. Optimize based on usage
@@ -108,12 +118,14 @@ Quick reference checklist for launching LiaiZen to production.
 ## 💡 Recommended Hosting Setup
 
 **For MVP/Start:**
+
 - **DigitalOcean Droplet** ($6/month)
 - **Domain** ($10-15/year)
 - **Let's Encrypt SSL** (Free)
 - **Total:** ~$82/year
 
 **For Growth:**
+
 - **DigitalOcean Droplet** ($12-24/month)
 - **Managed PostgreSQL** ($15/month) - when you outgrow SQLite
 - **Domain** ($10-15/year)
@@ -161,4 +173,3 @@ Make sure these are set in production `.env`:
 ---
 
 **Ready to launch?** Follow the checklist above and refer to `PRODUCTION_DEPLOYMENT.md` for detailed instructions!
-

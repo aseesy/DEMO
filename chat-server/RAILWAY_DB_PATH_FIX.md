@@ -1,7 +1,9 @@
 # Railway DB_PATH Configuration Fix
 
 ## Problem
+
 Your logs show:
+
 ```
 ✅ Database saved to: /app/chat.db
 ✅ Loaded 0 messages from database
@@ -27,6 +29,7 @@ This means the database is being saved to `/app/chat.db`, which is **ephemeral**
 3. Save
 
 **For your setup:** Since your volume is mounted at `/app/data`, set:
+
 - **DB_PATH** = `/app/data/chat.db`
 
 ### Step 3: Redeploy
@@ -34,6 +37,7 @@ This means the database is being saved to `/app/chat.db`, which is **ephemeral**
 Railway will automatically redeploy. After deployment, check logs for:
 
 ✅ **Correct:**
+
 ```
 📁 Database path: /app/data/chat.db
 📁 DB_PATH env var: /app/data/chat.db
@@ -42,6 +46,7 @@ Railway will automatically redeploy. After deployment, check logs for:
 ```
 
 ❌ **Wrong (current state):**
+
 ```
 📁 Database path: /app/chat.db
 📁 DB_PATH env var: NOT SET (using default)
@@ -67,7 +72,7 @@ After setting `DB_PATH` and redeploying:
 5. Check startup logs: `📊 Database contains X messages` (should be > 0)
 
 If message count is still 0 after restart, double-check:
+
 - Volume is actually mounted in Railway
 - `DB_PATH` matches volume mount path exactly
 - No typos in the path
-

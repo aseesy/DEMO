@@ -28,7 +28,7 @@ export function ResetPassword() {
   const [passwordStrength, setPasswordStrength] = React.useState({
     score: 0,
     label: '',
-    color: ''
+    color: '',
   });
 
   // Validate token on mount
@@ -83,13 +83,13 @@ export function ResetPassword() {
       3: { label: 'Good', color: 'bg-yellow-400' },
       4: { label: 'Strong', color: 'bg-green-400' },
       5: { label: 'Very strong', color: 'bg-green-500' },
-      6: { label: 'Excellent', color: 'bg-green-600' }
+      6: { label: 'Excellent', color: 'bg-green-600' },
     };
 
     setPasswordStrength({
       score,
       label: strengthMap[score].label,
-      color: strengthMap[score].color
+      color: strengthMap[score].color,
     });
   }, [password]);
 
@@ -106,7 +106,7 @@ export function ResetPassword() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setError('');
 
@@ -140,8 +140,14 @@ export function ResetPassword() {
       } else {
         // Handle specific error codes
         if (data.code === 'WEAK_PASSWORD') {
-          setError(data.error + (data.requirements ? ` Requirements: ${data.requirements.join(', ')}` : ''));
-        } else if (data.code === 'TOKEN_EXPIRED' || data.code === 'TOKEN_USED' || data.code === 'INVALID_TOKEN') {
+          setError(
+            data.error + (data.requirements ? ` Requirements: ${data.requirements.join(', ')}` : '')
+          );
+        } else if (
+          data.code === 'TOKEN_EXPIRED' ||
+          data.code === 'TOKEN_USED' ||
+          data.code === 'INVALID_TOKEN'
+        ) {
           setTokenValid(false);
           setTokenError(getTokenErrorMessage(data.code, data.error));
         } else {
@@ -159,7 +165,13 @@ export function ResetPassword() {
   // Loading state
   if (isValidating) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4 py-6 sm:py-8" style={{ backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)' }}>
+      <div
+        className="h-dvh bg-white flex items-center justify-center px-4 py-6 sm:py-8"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)',
+        }}
+      >
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-200/50 p-6 sm:p-8 text-center">
           <div className="flex flex-col items-center mb-6">
             <div className="flex items-center gap-2 sm:gap-3 mb-1">
@@ -177,7 +189,13 @@ export function ResetPassword() {
   // Invalid token state
   if (!tokenValid) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4 py-6 sm:py-8" style={{ backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)' }}>
+      <div
+        className="h-dvh bg-white flex items-center justify-center px-4 py-6 sm:py-8"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)',
+        }}
+      >
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-200/50 p-6 sm:p-8">
           <div className="flex flex-col items-center mb-8">
             <div className="flex items-center gap-2 sm:gap-3 mb-1">
@@ -189,8 +207,18 @@ export function ResetPassword() {
           {/* Error Icon */}
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
             </div>
           </div>
@@ -199,9 +227,7 @@ export function ResetPassword() {
             Link Not Valid
           </h1>
 
-          <p className="text-gray-600 text-center mb-6">
-            {tokenError}
-          </p>
+          <p className="text-gray-600 text-center mb-6">{tokenError}</p>
 
           <div className="space-y-3">
             <Button
@@ -232,7 +258,13 @@ export function ResetPassword() {
   // Success state
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4 py-6 sm:py-8" style={{ backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)' }}>
+      <div
+        className="h-dvh bg-white flex items-center justify-center px-4 py-6 sm:py-8"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)',
+        }}
+      >
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-200/50 p-6 sm:p-8">
           <div className="flex flex-col items-center mb-8">
             <div className="flex items-center gap-2 sm:gap-3 mb-1">
@@ -244,8 +276,18 @@ export function ResetPassword() {
           {/* Success Icon */}
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-8 h-8 text-emerald-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
           </div>
@@ -274,7 +316,13 @@ export function ResetPassword() {
 
   // Reset form
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-6 sm:py-8" style={{ backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)' }}>
+    <div
+      className="h-dvh bg-white flex items-center justify-center px-4 py-6 sm:py-8"
+      style={{
+        backgroundImage:
+          'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)',
+      }}
+    >
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-200/50 p-6 sm:p-8">
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
@@ -284,19 +332,25 @@ export function ResetPassword() {
               alt="LiaiZen Logo"
               className="h-12 sm:h-14 w-auto transition-transform hover:scale-105"
             />
-            <img
-              src="/assets/wordmark.svg"
-              alt="LiaiZen"
-              className="h-14 sm:h-16 w-auto"
-            />
+            <img src="/assets/wordmark.svg" alt="LiaiZen" className="h-14 sm:h-16 w-auto" />
           </div>
         </div>
 
         {/* Key Icon */}
         <div className="flex justify-center mb-6">
           <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            <svg
+              className="w-8 h-8 text-teal-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+              />
             </svg>
           </div>
         </div>
@@ -307,7 +361,8 @@ export function ResetPassword() {
 
         {maskedEmail && (
           <p className="text-gray-600 text-center mb-6">
-            Enter a new password for <span className="font-semibold text-gray-800">{maskedEmail}</span>
+            Enter a new password for{' '}
+            <span className="font-semibold text-gray-800">{maskedEmail}</span>
           </p>
         )}
 
@@ -335,7 +390,7 @@ export function ResetPassword() {
             {password && (
               <div className="mt-2">
                 <div className="flex gap-1 mb-1">
-                  {[1, 2, 3, 4, 5, 6].map((level) => (
+                  {[1, 2, 3, 4, 5, 6].map(level => (
                     <div
                       key={level}
                       className={`h-1 flex-1 rounded-full transition-colors ${
@@ -359,9 +414,11 @@ export function ResetPassword() {
             placeholder="Confirm new password"
             required
             autoComplete="new-password"
-            helperText={confirmPassword && password !== confirmPassword ? (
-              <span className="text-red-600">Passwords do not match</span>
-            ) : undefined}
+            helperText={
+              confirmPassword && password !== confirmPassword ? (
+                <span className="text-red-600">Passwords do not match</span>
+              ) : undefined
+            }
           />
 
           <Button

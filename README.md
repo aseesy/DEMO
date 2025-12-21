@@ -13,6 +13,7 @@ LiaiZen is a real-time communication platform designed to help separated parents
 Transform high-tension co-parenting exchanges into respectful, child-centered dialogue through intelligent mediation technology.
 
 ### **Core Focus**
+
 - **Child-Centered Outcomes**: Every feature prioritizes children's wellbeing
 - **Conflict Reduction**: AI-powered mediation reduces misunderstandings
 - **Privacy & Security**: SOC 2 Type II compliant, COPPA/GDPR adherent
@@ -23,6 +24,7 @@ Transform high-tension co-parenting exchanges into respectful, child-centered di
 ## 🏗️ **Architecture**
 
 ### **Frontend** (`chat-client-vite/`)
+
 - **Framework**: React 18+ with Vite
 - **Styling**: Tailwind CSS (mobile-first)
 - **Real-time**: Socket.io-client for WebSocket communication
@@ -30,6 +32,7 @@ Transform high-tension co-parenting exchanges into respectful, child-centered di
 - **Deployment**: Vercel
 
 ### **Backend** (`chat-server/`)
+
 - **Framework**: Node.js 18+ with Express.js
 - **Real-time**: Socket.io for WebSocket server
 - **Database**: SQLite (local) / PostgreSQL (production migration path)
@@ -38,6 +41,7 @@ Transform high-tension co-parenting exchanges into respectful, child-centered di
 - **Deployment**: Railway
 
 ### **LiaiZen AI System** (`chat-server/src/liaizen/`)
+
 - **Core**: Main mediation pipeline (`core/mediator.js`) and AI client (`core/client.js`)
 - **Agents**: Specialized AI agents for proactive coaching and feedback learning
 - **Policies**: Constitution rules and safety controls
@@ -47,6 +51,7 @@ Transform high-tension co-parenting exchanges into respectful, child-centered di
 - **Metrics**: Communication statistics and tracking
 
 ### **Development Framework** (NEW)
+
 - **SDD Agentic Framework v2.0.0**: Specification-driven development with constitutional AI
 - **DS-STAR Multi-Agent System**: Quality gates, intelligent routing, self-healing
 - **14 Specialized Agents**: Automatic delegation across 6 departments
@@ -57,12 +62,14 @@ Transform high-tension co-parenting exchanges into respectful, child-centered di
 ## ✨ **Key Features**
 
 ### **Real-Time Communication**
+
 - Private room-based messaging between co-parents
 - WebSocket-powered instant message delivery
 - Message history and search
 - Typing indicators (no read receipts to prevent conflict)
 
 ### **AI-Powered Message Mediation**
+
 - Real-time message blocking prevents hostile communication
 - AI conversationally explains why you wouldn't want to send that message
 - Provides 1 personalized communication tip relative to your situation
@@ -72,18 +79,21 @@ Transform high-tension co-parenting exchanges into respectful, child-centered di
 - Feels like a supportive friend, not clinical therapy
 
 ### **Contact Management**
+
 - Shared contact lists for co-parents, children, and professionals
 - Comprehensive relationship context tracking for AI personalization
 - Role-based contact types (teacher, doctor, family, partner)
 - Emergency contact protocols
 
 ### **Task Management**
+
 - Shared to-do lists for parenting responsibilities
 - Task assignments with due dates
 - Completion tracking and notifications
 - Recurring task support
 
 ### **Room Management**
+
 - Secure invitation system for co-parents
 - Member status tracking (pending, accepted, rejected)
 - Privacy controls and access management
@@ -94,6 +104,7 @@ Transform high-tension co-parenting exchanges into respectful, child-centered di
 ## 🚀 **Quick Start**
 
 ### **Prerequisites**
+
 - Node.js 18+
 - Python 3.9+ (for DS-STAR features)
 - SQLite (included) or PostgreSQL
@@ -156,6 +167,7 @@ See `chat-server/scripts/README.md` for detailed documentation.
 Create `.env` files:
 
 **Backend** (`chat-server/.env`):
+
 ```env
 PORT=8080
 JWT_SECRET=your_jwt_secret_here
@@ -166,6 +178,7 @@ DATABASE_URL=sqlite:./chat.db
 ```
 
 **Frontend** (`chat-client-vite/.env`):
+
 ```env
 VITE_API_URL=http://localhost:8080
 VITE_WS_URL=ws://localhost:8080
@@ -176,17 +189,20 @@ VITE_WS_URL=ws://localhost:8080
 ## 📚 **Documentation**
 
 ### **Project Documentation**
+
 - **CLAUDE.md**: AI assistant instructions and project guidelines
 - **INTEGRATION_GUIDE.md**: SDD framework integration guide
 - **START_HERE.md**: Framework overview and quick start
 - **AGENTS.md**: Agent reference and capabilities
 
 ### **Framework Documentation**
+
 - **.specify/memory/constitution.md**: 14 development principles
 - **.docs/policies/**: Governance policies (testing, security, deployment)
 - **FRAMEWORK_CHANGELOG.md**: Framework version history
 
 ### **API Documentation**
+
 See `chat-server/README.md` for API endpoints and WebSocket events.
 
 ---
@@ -194,12 +210,14 @@ See `chat-server/README.md` for API endpoints and WebSocket events.
 ## 🛠️ **Development Workflow**
 
 ### **Standard Development**
+
 1. Make changes to code
 2. Test locally
 3. Commit and push
 4. Deploy via Vercel (frontend) and Railway (backend)
 
 ### **Specification-Driven Development** (NEW)
+
 Using the SDD Agentic Framework:
 
 ```bash
@@ -229,23 +247,27 @@ See `INTEGRATION_GUIDE.md` for complete framework usage.
 ## 🧪 **Testing**
 
 ### **Backend Tests**
+
 ```bash
 cd chat-server
 npm test
 ```
 
 ### **Frontend Tests**
+
 ```bash
 cd chat-client-vite
 npm test
 ```
 
 ### **Constitutional Compliance Check**
+
 ```bash
 ./.specify/scripts/bash/constitutional-check.sh
 ```
 
 ### **Framework Integrity Audit**
+
 ```bash
 ./.specify/scripts/bash/sanitization-audit.sh
 ```
@@ -255,11 +277,13 @@ npm test
 ## 🚢 **Deployment**
 
 ### **Frontend (Vercel)**
+
 - **URL**: https://coparentliaizen.com
 - **Deployment**: Automatic on push to `main`
 - **Config**: `vercel.json`
 
 ### **Backend (Railway)**
+
 - **Project**: LiaiZen Demo
 - **Service**: positive-recreation
 - **URL**: https://demo-production-6dcd.up.railway.app
@@ -267,6 +291,7 @@ npm test
 - **Config**: Railway dashboard
 
 ### **Database**
+
 - **Development**: SQLite (`chat-server/chat.db`)
 - **Production**: PostgreSQL (migration in progress)
 
@@ -275,18 +300,21 @@ npm test
 ## 🔐 **Security & Privacy**
 
 ### **Data Protection**
+
 - All passwords hashed with bcrypt
 - JWT-based authentication
 - Secure WebSocket connections
 - Environment variable secret management
 
 ### **Privacy Compliance**
+
 - COPPA compliant (children's data protection)
 - GDPR adherent (EU privacy regulations)
 - Communication history for accountability and reference
 - Selective information sharing controls
 
 ### **Best Practices**
+
 - Input validation on all user inputs
 - Output sanitization for XSS prevention
 - Rate limiting on API endpoints
@@ -297,6 +325,7 @@ npm test
 ## 🧑‍💻 **Tech Stack**
 
 ### **Frontend**
+
 - React 18+ (functional components, hooks)
 - Vite (build tool)
 - Tailwind CSS (styling)
@@ -304,6 +333,7 @@ npm test
 - React Router (routing)
 
 ### **Backend**
+
 - Node.js 18+
 - Express.js (REST API)
 - Socket.io (WebSocket server)
@@ -314,6 +344,7 @@ npm test
 - Nodemailer (email)
 
 ### **Development**
+
 - SDD Agentic Framework v2.0.0
 - DS-STAR Multi-Agent System
 - Python 3.13 (for DS-STAR)
@@ -343,11 +374,13 @@ This project follows **17 constitutional principles** enforced by the SDD framew
 14. **AI Model Selection**: Appropriate model for task
 
 ### **Co-Parenting Domain Principles** (Additional)
+
 15. **Child-Centered Outcomes**: Features benefit children's wellbeing
 16. **Conflict Reduction First**: Reduce misunderstandings and tensions
 17. **Privacy by Default**: Family data protection at every layer
 
 ### **Contribution Workflow**
+
 1. Fork the repository
 2. Create feature branch: `git checkout -b feature/your-feature`
 3. Use SDD workflow: `/specify` → `/plan` → `/tasks`
@@ -363,9 +396,11 @@ This project follows **17 constitutional principles** enforced by the SDD framew
 ## 📊 **Project Status**
 
 ### **Current Version**: 1.0.0
+
 ### **Framework Version**: SDD v2.0.0 with DS-STAR
 
 ### **Features**
+
 - ✅ Real-time messaging with WebSocket
 - ✅ AI-powered message mediation
 - ✅ Contact management

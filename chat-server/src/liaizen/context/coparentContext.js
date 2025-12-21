@@ -34,8 +34,8 @@ function monthsSince(dateStr) {
     if (isNaN(date.getTime())) return null;
 
     const now = new Date();
-    const months = (now.getFullYear() - date.getFullYear()) * 12 +
-                   (now.getMonth() - date.getMonth());
+    const months =
+      (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
     return Math.max(0, months);
   } catch {
     return null;
@@ -82,7 +82,7 @@ function buildChildContext(contacts) {
       childNames: [],
       childAges: [],
       childAgeRange: null,
-      custodyArrangement: null
+      custodyArrangement: null,
     };
   }
 
@@ -111,7 +111,7 @@ function buildChildContext(contacts) {
     childNames,
     childAges,
     childAgeRange,
-    custodyArrangement: normalizeCustodyArrangement(custodyArrangement)
+    custodyArrangement: normalizeCustodyArrangement(custodyArrangement),
   };
 }
 
@@ -160,7 +160,7 @@ function buildCoparentRelationshipContext(contacts) {
       hasLegalMatters: false,
       hasSafetyConcerns: false,
       hasSubstanceConcerns: false,
-      communicationChallenges: []
+      communicationChallenges: [],
     };
   }
 
@@ -189,9 +189,13 @@ function buildCoparentRelationshipContext(contacts) {
     frictionAreas,
     hasLegalMatters: Boolean(coparent.legal_matters && coparent.legal_matters.trim()),
     hasSafetyConcerns: Boolean(coparent.safety_concerns && coparent.safety_concerns.trim()),
-    hasSubstanceConcerns: Boolean(coparent.substance_mental_health && coparent.substance_mental_health.trim()),
-    hasAbuseConcerns: Boolean(coparent.neglect_abuse_concerns && coparent.neglect_abuse_concerns.trim()),
-    communicationChallenges
+    hasSubstanceConcerns: Boolean(
+      coparent.substance_mental_health && coparent.substance_mental_health.trim()
+    ),
+    hasAbuseConcerns: Boolean(
+      coparent.neglect_abuse_concerns && coparent.neglect_abuse_concerns.trim()
+    ),
+    communicationChallenges,
   };
 }
 
@@ -200,15 +204,31 @@ function buildCoparentRelationshipContext(contacts) {
  */
 function extractFrictionAreas(coparent) {
   const areas = [];
-  const text = `${coparent.difficult_aspects || ''} ${coparent.friction_situations || ''}`.toLowerCase();
+  const text =
+    `${coparent.difficult_aspects || ''} ${coparent.friction_situations || ''}`.toLowerCase();
 
-  if (text.includes('money') || text.includes('financ') || text.includes('support') || text.includes('expense')) {
+  if (
+    text.includes('money') ||
+    text.includes('financ') ||
+    text.includes('support') ||
+    text.includes('expense')
+  ) {
     areas.push('financial');
   }
-  if (text.includes('schedule') || text.includes('time') || text.includes('pickup') || text.includes('drop')) {
+  if (
+    text.includes('schedule') ||
+    text.includes('time') ||
+    text.includes('pickup') ||
+    text.includes('drop')
+  ) {
     areas.push('scheduling');
   }
-  if (text.includes('partner') || text.includes('girlfriend') || text.includes('boyfriend') || text.includes('dating')) {
+  if (
+    text.includes('partner') ||
+    text.includes('girlfriend') ||
+    text.includes('boyfriend') ||
+    text.includes('dating')
+  ) {
     areas.push('new_partners');
   }
   if (text.includes('parent') || text.includes('discipline') || text.includes('rules')) {
@@ -217,7 +237,12 @@ function extractFrictionAreas(coparent) {
   if (text.includes('communication') || text.includes('talk') || text.includes('respond')) {
     areas.push('communication');
   }
-  if (text.includes('court') || text.includes('legal') || text.includes('lawyer') || text.includes('custody')) {
+  if (
+    text.includes('court') ||
+    text.includes('legal') ||
+    text.includes('lawyer') ||
+    text.includes('custody')
+  ) {
     areas.push('legal');
   }
   if (text.includes('family') || text.includes('grandparent') || text.includes('in-law')) {
@@ -260,19 +285,20 @@ function extractCommunicationChallenges(coparent) {
  */
 function buildPartnerContext(contacts) {
   // Look for partner relationships
-  const senderPartner = contacts.find(c =>
-    c.relationship === 'partner' || c.relationship === 'spouse'
+  const senderPartner = contacts.find(
+    c => c.relationship === 'partner' || c.relationship === 'spouse'
   );
 
   // Co-parent's partner info might be in notes or additional contacts
   // For now, check if "new partner" is mentioned as a friction area
   const coparent = contacts.find(c => c.relationship === 'coparent');
-  const receiverHasPartner = coparent?.friction_situations?.toLowerCase().includes('partner') ||
-                              coparent?.difficult_aspects?.toLowerCase().includes('partner');
+  const receiverHasPartner =
+    coparent?.friction_situations?.toLowerCase().includes('partner') ||
+    coparent?.difficult_aspects?.toLowerCase().includes('partner');
 
   return {
     senderHasNewPartner: Boolean(senderPartner),
-    receiverMayHaveNewPartner: receiverHasPartner
+    receiverMayHaveNewPartner: receiverHasPartner,
   };
 }
 
@@ -290,7 +316,13 @@ function buildPartnerContext(contacts) {
  * @param {Object} receiverProfile - Receiver's user profile (optional)
  * @returns {Object} Complete co-parenting context
  */
-function buildCoparentingContext(senderId, receiverId, senderContacts = [], senderProfile = null, receiverProfile = null) {
+function buildCoparentingContext(
+  senderId,
+  receiverId,
+  senderContacts = [],
+  senderProfile = null,
+  receiverProfile = null
+) {
   const childContext = buildChildContext(senderContacts);
   const coparentContext = buildCoparentRelationshipContext(senderContacts);
   const partnerContext = buildPartnerContext(senderContacts);
@@ -304,7 +336,7 @@ function buildCoparentingContext(senderId, receiverId, senderContacts = [], send
       coparentContext.hasAbuseConcerns,
       coparentContext.hasSubstanceConcerns,
       coparentContext.communicationChallenges.includes('hostile'),
-      coparentContext.frictionAreas.length > 3
+      coparentContext.frictionAreas.length > 3,
     ].filter(Boolean).length;
 
     if (severity >= 3) conflictLevel = 'high';
@@ -338,7 +370,7 @@ function buildCoparentingContext(senderId, receiverId, senderContacts = [], send
     receiverMayHaveNewPartner: partnerContext.receiverMayHaveNewPartner,
 
     // Meta
-    hasContext: childContext.hasChildren || coparentContext.hasCoparentInfo
+    hasContext: childContext.hasChildren || coparentContext.hasCoparentInfo,
   };
 }
 
@@ -372,13 +404,14 @@ function formatContextForPrompt(context) {
       sections.push(`  Ages: ${context.childAges.join(', ')}`);
     }
     if (context.custodyArrangement && context.custodyArrangement !== 'unknown') {
-      const arrangementDesc = {
-        'equal_shared': '50/50 shared custody',
-        'sender_primary': 'Sender has primary custody',
-        'receiver_primary': 'Co-parent has primary custody',
-        'one_primary': 'One parent has primary custody',
-        'visitation': 'Visitation arrangement'
-      }[context.custodyArrangement] || context.custodyArrangement;
+      const arrangementDesc =
+        {
+          equal_shared: '50/50 shared custody',
+          sender_primary: 'Sender has primary custody',
+          receiver_primary: 'Co-parent has primary custody',
+          one_primary: 'One parent has primary custody',
+          visitation: 'Visitation arrangement',
+        }[context.custodyArrangement] || context.custodyArrangement;
       sections.push(`  Custody: ${arrangementDesc}`);
     }
     sections.push('');
@@ -387,11 +420,11 @@ function formatContextForPrompt(context) {
   // Separation
   if (context.separationPhase && context.separationPhase !== 'unknown') {
     const phaseDesc = {
-      'very_recent': 'Very recent separation (< 6 months) - emotions likely still raw',
-      'recent': 'Recent separation (6-12 months) - still adjusting',
-      'adjusting': 'Adjusting phase (1-2 years) - patterns forming',
-      'established': 'Established co-parenting (2-5 years)',
-      'long_term': 'Long-term co-parenting (5+ years)'
+      very_recent: 'Very recent separation (< 6 months) - emotions likely still raw',
+      recent: 'Recent separation (6-12 months) - still adjusting',
+      adjusting: 'Adjusting phase (1-2 years) - patterns forming',
+      established: 'Established co-parenting (2-5 years)',
+      long_term: 'Long-term co-parenting (5+ years)',
     }[context.separationPhase];
     sections.push(`SEPARATION PHASE: ${phaseDesc}`);
     sections.push('');
@@ -404,13 +437,13 @@ function formatContextForPrompt(context) {
 
   if (context.frictionAreas.length > 0) {
     const frictionDesc = {
-      'financial': 'Money/expenses/child support',
-      'scheduling': 'Pickup/dropoff/schedule changes',
-      'new_partners': 'New romantic partners',
-      'parenting_styles': 'Different parenting approaches',
-      'communication': 'Communication patterns',
-      'legal': 'Court/custody/legal matters',
-      'extended_family': 'In-laws/grandparents/family'
+      financial: 'Money/expenses/child support',
+      scheduling: 'Pickup/dropoff/schedule changes',
+      new_partners: 'New romantic partners',
+      parenting_styles: 'Different parenting approaches',
+      communication: 'Communication patterns',
+      legal: 'Court/custody/legal matters',
+      extended_family: 'In-laws/grandparents/family',
     };
     const areas = context.frictionAreas.map(a => frictionDesc[a] || a);
     sections.push(`KNOWN FRICTION AREAS: ${areas.join(', ')}`);
@@ -432,7 +465,8 @@ function formatContextForPrompt(context) {
   if (context.senderHasNewPartner || context.receiverMayHaveNewPartner) {
     sections.push('\nPARTNER DYNAMICS:');
     if (context.senderHasNewPartner) sections.push('  - Sender has a new partner');
-    if (context.receiverMayHaveNewPartner) sections.push('  - Co-parent may have new partner (friction point)');
+    if (context.receiverMayHaveNewPartner)
+      sections.push('  - Co-parent may have new partner (friction point)');
   }
 
   // Coaching guidance based on context
@@ -461,9 +495,15 @@ function extractMessageGoal(messageText, context) {
   let specificDetail = null;
 
   // Time/schedule related
-  if (text.includes('time') || text.includes('pickup') || text.includes('drop') ||
-      text.includes('schedule') || text.includes('pm') || text.includes('am') ||
-      text.includes('court order')) {
+  if (
+    text.includes('time') ||
+    text.includes('pickup') ||
+    text.includes('drop') ||
+    text.includes('schedule') ||
+    text.includes('pm') ||
+    text.includes('am') ||
+    text.includes('court order')
+  ) {
     topic = 'scheduling';
 
     // Extract specific time mention
@@ -472,30 +512,59 @@ function extractMessageGoal(messageText, context) {
   }
 
   // Money related
-  if (text.includes('money') || text.includes('pay') || text.includes('owe') ||
-      text.includes('expense') || text.includes('support') || text.includes('cost')) {
+  if (
+    text.includes('money') ||
+    text.includes('pay') ||
+    text.includes('owe') ||
+    text.includes('expense') ||
+    text.includes('support') ||
+    text.includes('cost')
+  ) {
     topic = 'financial';
   }
 
   // Parenting/child related
-  if (text.includes('school') || text.includes('homework') || text.includes('bedtime') ||
-      text.includes('sick') || text.includes('doctor') || text.includes('discipline')) {
+  if (
+    text.includes('school') ||
+    text.includes('homework') ||
+    text.includes('bedtime') ||
+    text.includes('sick') ||
+    text.includes('doctor') ||
+    text.includes('discipline')
+  ) {
     topic = 'parenting';
   }
 
   // Third party (grandparents, new partners)
-  if (text.includes('mom') || text.includes('dad') || text.includes('mother') ||
-      text.includes('father') || text.includes('grandma') || text.includes('grandpa')) {
+  if (
+    text.includes('mom') ||
+    text.includes('dad') ||
+    text.includes('mother') ||
+    text.includes('father') ||
+    text.includes('grandma') ||
+    text.includes('grandpa')
+  ) {
     topic = 'extended_family';
   }
 
   // Determine underlying goal
   let goal = 'unknown';
-  if (text.includes('need') || text.includes('want') || text.includes('can you') ||
-      text.includes('please') || text.includes('?')) {
+  if (
+    text.includes('need') ||
+    text.includes('want') ||
+    text.includes('can you') ||
+    text.includes('please') ||
+    text.includes('?')
+  ) {
     goal = 'request';
-  } else if (text.includes('you') && (text.includes('always') || text.includes('never') ||
-             text.includes('stop') || text.includes('pathetic') || text.includes('power'))) {
+  } else if (
+    text.includes('you') &&
+    (text.includes('always') ||
+      text.includes('never') ||
+      text.includes('stop') ||
+      text.includes('pathetic') ||
+      text.includes('power'))
+  ) {
     goal = 'vent_frustration';
   } else if (text.includes('court') || text.includes('order') || text.includes('legal')) {
     goal = 'assert_boundary';
@@ -506,7 +575,7 @@ function extractMessageGoal(messageText, context) {
     goal,
     specificDetail,
     childNames: context.childNames || [],
-    frictionMatch: context.frictionAreas?.includes(topic)
+    frictionMatch: context.frictionAreas?.includes(topic),
   };
 }
 
@@ -527,5 +596,5 @@ module.exports = {
 
   // Utilities
   monthsSince,
-  calculateAge
+  calculateAge,
 };

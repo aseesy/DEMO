@@ -11,12 +11,15 @@
 ## 📋 Executive Summary
 
 ### Vision Statement
+
 [One paragraph describing the product vision - what you're building and why it matters]
 
 ### Problem Statement
+
 [What problem does this product solve? Who has this problem?]
 
 ### Success Metrics
+
 - **Primary Metric**: [Key metric that defines success]
 - **Secondary Metrics**:
   - [Metric 1]
@@ -24,6 +27,7 @@
   - [Metric 3]
 
 ### Target Audience
+
 - **Primary Users**: [Who will use this daily?]
 - **Secondary Users**: [Who else benefits?]
 - **Stakeholders**: [Who cares about this product?]
@@ -33,19 +37,23 @@
 ## 🎯 Product Goals & Objectives
 
 ### Short-term Goals (0-3 months)
+
 1. [Goal 1]
 2. [Goal 2]
 3. [Goal 3]
 
 ### Medium-term Goals (3-6 months)
+
 1. [Goal 1]
 2. [Goal 2]
 
 ### Long-term Vision (6-12 months)
+
 1. [Goal 1]
 2. [Goal 2]
 
 ### Non-Goals
+
 - [Explicitly state what this product will NOT do]
 - [What's out of scope?]
 
@@ -54,6 +62,7 @@
 ## 👥 User Personas
 
 ### Primary Persona: [Name/Title]
+
 - **Background**: [Role, experience level, context]
 - **Goals**: [What they want to achieve]
 - **Pain Points**: [Current challenges]
@@ -61,6 +70,7 @@
 - **Success Criteria**: [What makes them successful?]
 
 ### Secondary Persona: [Name/Title]
+
 - **Background**: [Role, experience level, context]
 - **Goals**: [What they want to achieve]
 - **Pain Points**: [Current challenges]
@@ -71,6 +81,7 @@
 ## 🗺️ User Journey Maps
 
 ### Journey 1: [Primary User Flow Name]
+
 **Persona**: [Which persona uses this?]
 
 1. **Discovery**: [How do they find/start using the product?]
@@ -80,10 +91,12 @@
 5. **Exit/Completion**: [How does the journey end?]
 
 **Pain Points**:
+
 - [Pain point 1 at specific step]
 - [Pain point 2 at specific step]
 
 **Opportunities**:
+
 - [Opportunity to improve step X]
 - [Opportunity to enhance step Y]
 
@@ -92,13 +105,16 @@
 ## ⚙️ Core Features & Requirements
 
 ### Feature Category 1: [Category Name]
+
 **Priority**: High | Medium | Low
 **Timeline**: [When should this be built?]
 
 #### Feature 1.1: [Feature Name]
+
 **User Story**: As a [persona], I want to [action] so that [benefit].
 
 **Acceptance Criteria**:
+
 - [ ] Given [context], when [action], then [result]
 - [ ] Given [context], when [action], then [result]
 - [ ] [Specific requirement]
@@ -108,9 +124,11 @@
 **Success Metrics**: [How to measure this feature's impact]
 
 #### Feature 1.2: [Feature Name]
+
 [Repeat structure above]
 
 ### Feature Category 2: [Category Name]
+
 [Repeat structure above]
 
 ---
@@ -122,6 +140,7 @@
 **CRITICAL: These principles guide ALL development decisions**
 
 #### Immutable Principles
+
 1. **Library-First Architecture** (Principle I)
    - How does this apply to your project? [Customize]
    - Exceptions for this project: [If any]
@@ -135,6 +154,7 @@
    - Contract versioning approach: [Customize]
 
 #### Quality & Safety Principles
+
 4. **Idempotent Operations** (Principle IV)
    - Critical operations requiring idempotency: [List]
 
@@ -159,6 +179,7 @@
    - Version pinning strategy: [Exact, caret, tilde]
 
 #### Workflow & Delegation Principles
+
 10. **Agent Delegation Protocol** (Principle X)
     - Agent usage policy: [When to use which agents]
     - Custom agents for this project: [List planned agents]
@@ -185,6 +206,7 @@
 ## 🔧 Technical Constraints
 
 ### Technology Stack (High-level Constraints Only)
+
 **Note**: Specific implementation details belong in feature specs, not here.
 
 - **Required Technologies**: [Technologies you MUST use - e.g., existing APIs]
@@ -192,12 +214,14 @@
 - **Platform Requirements**: [Web, Mobile, Desktop, etc.]
 
 ### Performance Requirements
+
 - **Response Time**: [Max acceptable latency]
 - **Throughput**: [Requests per second, concurrent users]
 - **Availability**: [Uptime SLA - e.g., 99.9%]
 - **Scalability**: [User/data growth expectations]
 
 ### Security & Compliance
+
 - **Authentication**: [Required auth method]
 - **Authorization**: [RBAC, ABAC, etc.]
 - **Data Privacy**: [GDPR, CCPA, HIPAA compliance]
@@ -205,6 +229,7 @@
 - **Audit Logging**: [What must be logged?]
 
 ### Integration Requirements
+
 - **External Systems**: [APIs, services to integrate with]
 - **Data Import/Export**: [Formats, frequency]
 - **Webhooks/Events**: [Real-time requirements]
@@ -214,6 +239,7 @@
 ## 📊 Data & Analytics
 
 ### Core Entities
+
 List the main data objects your product manages:
 
 1. **[Entity Name]** (e.g., User, Product, Order)
@@ -227,6 +253,7 @@ List the main data objects your product manages:
    [Repeat above]
 
 ### Analytics & Reporting
+
 - **Key Reports**: [What reports do users need?]
 - **Dashboard Requirements**: [Real-time metrics to display]
 - **Export Capabilities**: [CSV, PDF, API access?]
@@ -236,8 +263,10 @@ List the main data objects your product manages:
 ## 🚀 Release Strategy
 
 ### MVP (Minimum Viable Product)
+
 **Target Date**: [Date]
 **Core Features**:
+
 - [Feature 1 - absolute must-have]
 - [Feature 2 - absolute must-have]
 - [Feature 3 - absolute must-have]
@@ -245,14 +274,18 @@ List the main data objects your product manages:
 **Success Criteria**: [How do we know MVP succeeded?]
 
 ### Phase 2: [Phase Name]
+
 **Target Date**: [Date]
 **Features**:
+
 - [Feature 1]
 - [Feature 2]
 
 ### Phase 3: [Phase Name]
+
 **Target Date**: [Date]
 **Features**:
+
 - [Feature 1]
 - [Feature 2]
 
@@ -261,15 +294,18 @@ List the main data objects your product manages:
 ## 🎨 Design Principles & UX Guidelines
 
 ### Design Philosophy
+
 [Describe your product's design philosophy - e.g., minimalist, data-dense, playful]
 
 ### Accessibility Requirements
+
 - **WCAG Compliance**: [Level A, AA, or AAA]
 - **Keyboard Navigation**: [Required? Exceptions?]
 - **Screen Reader Support**: [Required features]
 - **Color Contrast**: [Minimum ratios]
 
 ### Responsive Design
+
 - **Supported Devices**: [Desktop, Tablet, Mobile]
 - **Breakpoints**: [If specific breakpoints required]
 - **Progressive Enhancement**: [Core functionality on all devices]
@@ -279,6 +315,7 @@ List the main data objects your product manages:
 ## 🔄 Workflow Integration
 
 ### SDD Framework Integration
+
 This PRD serves as the **Single Source of Truth (SSOT)** for:
 
 1. **Specification Agent** (`/specify` command)
@@ -305,6 +342,7 @@ This PRD serves as the **Single Source of Truth (SSOT)** for:
 ## ❓ Open Questions & Risks
 
 ### Open Questions
+
 1. **[Question 1]**
    - **Impact**: [What's affected if unanswered?]
    - **Owner**: [Who should answer?]
@@ -314,6 +352,7 @@ This PRD serves as the **Single Source of Truth (SSOT)** for:
    [Repeat above]
 
 ### Risks & Mitigation
+
 1. **Risk**: [Describe risk]
    - **Likelihood**: High | Medium | Low
    - **Impact**: High | Medium | Low
@@ -324,6 +363,7 @@ This PRD serves as the **Single Source of Truth (SSOT)** for:
    [Repeat above]
 
 ### Assumptions
+
 - [Assumption 1 - what we're assuming is true]
 - [Assumption 2 - what we're assuming is true]
 - [Assumption 3 - needs validation?]
@@ -333,18 +373,21 @@ This PRD serves as the **Single Source of Truth (SSOT)** for:
 ## 📚 Appendices
 
 ### Appendix A: Glossary
+
 - **[Term]**: [Definition]
 - **[Term]**: [Definition]
 
 ### Appendix B: References
+
 - [Link to competitive analysis]
 - [Link to user research]
 - [Link to technical research]
 
 ### Appendix C: Revision History
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | [Date] | [Name] | Initial PRD |
+
+| Version | Date   | Author | Changes     |
+| ------- | ------ | ------ | ----------- |
+| 1.0.0   | [Date] | [Name] | Initial PRD |
 
 ---
 
@@ -353,6 +396,7 @@ This PRD serves as the **Single Source of Truth (SSOT)** for:
 Before finalizing this PRD, ensure:
 
 **Completeness**:
+
 - [ ] Executive summary clearly states vision, problem, and success metrics
 - [ ] All user personas documented with goals and pain points
 - [ ] Core features have acceptance criteria and success metrics
@@ -362,6 +406,7 @@ Before finalizing this PRD, ensure:
 - [ ] Open questions identified with owners and deadlines
 
 **Clarity**:
+
 - [ ] No ambiguous requirements (all testable and measurable)
 - [ ] Success metrics are quantifiable
 - [ ] Personas are specific and realistic
@@ -369,6 +414,7 @@ Before finalizing this PRD, ensure:
 - [ ] No implementation details (HOW) - only requirements (WHAT/WHY)
 
 **Alignment**:
+
 - [ ] Goals align with vision and problem statement
 - [ ] Features support defined user journeys
 - [ ] Success metrics measure stated goals
@@ -376,6 +422,7 @@ Before finalizing this PRD, ensure:
 - [ ] Release phases are achievable given constraints
 
 **Actionability**:
+
 - [ ] Specification agent can extract clear user stories
 - [ ] Planning agent has sufficient constraints and principles
 - [ ] Each feature can be broken into tasks
@@ -383,6 +430,7 @@ Before finalizing this PRD, ensure:
 - [ ] Risks have mitigation plans
 
 **Stakeholder Review**:
+
 - [ ] Product owner approved
 - [ ] Key stakeholders reviewed
 - [ ] Technical feasibility validated
@@ -392,6 +440,7 @@ Before finalizing this PRD, ensure:
 ---
 
 **Next Steps After PRD Approval**:
+
 1. Update `.specify/memory/constitution.md` with project-specific principles
 2. Run `/specify` for each core MVP feature
 3. Create custom agents identified in Principle X
@@ -400,4 +449,4 @@ Before finalizing this PRD, ensure:
 
 ---
 
-*This PRD is a living document. Update it as the product evolves, but maintain version history.*
+_This PRD is a living document. Update it as the product evolves, but maintain version history._

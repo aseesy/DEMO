@@ -21,6 +21,7 @@ The `/tasks` command invokes the **tasks-agent** to:
 ## Prerequisites
 
 Before running `/tasks`:
+
 - ✅ Implementation plan exists (`plan.md` from `/plan`)
 - ✅ MCP servers are active (restart Claude Desktop if needed)
 - ✅ You're in the project root: `/Users/athenasees/Desktop/chat`
@@ -28,21 +29,25 @@ Before running `/tasks`:
 ## Usage
 
 ### Basic Usage (with existing plan):
+
 ```
 /tasks
 ```
 
 This will:
+
 1. Look for the most recent plan.md
 2. Execute tasks-agent workflow
 3. Create tasks.md with dependency-ordered task list
 
 ### With Feature Name:
+
 ```
 /tasks expense-tracking
 ```
 
 ### With Path to Plan:
+
 ```
 /tasks --plan path/to/plan.md
 ```
@@ -52,6 +57,7 @@ This will:
 The tasks-agent will **automatically**:
 
 ### Query MCP for Context
+
 ```
 1. "Get file structure for frontend/backend"
    → Know exact paths for task file locations
@@ -70,7 +76,9 @@ The tasks-agent will **automatically**:
 ```
 
 ### Create Tasks with MCP Context
+
 Each task will include:
+
 - **Exact file paths** from Codebase Context MCP
 - **Pattern details** from common patterns
 - **Design tokens** from Design Tokens MCP
@@ -93,6 +101,7 @@ specs/[feature-id]/
 # Task List: Expense Tracking Feature
 
 ## Task 1: Create Expenses Database Table
+
 **Type**: infrastructure
 **Priority**: critical
 **Complexity**: small
@@ -100,14 +109,17 @@ specs/[feature-id]/
 
 **Description**:
 Create expenses table in SQLite database (from Codebase Context MCP):
+
 - Fields: id, user_id, amount, category, date, description, receipt_url
 - Schema follows existing pattern (users, contacts, tasks tables)
 
 **Files**:
+
 - Path: chat-server/db.js (from "Get file structure")
   Action: modify
 
 **Acceptance Criteria**:
+
 - [ ] Expenses table created
 - [ ] Migration script added
 - [ ] Table schema validated
@@ -115,6 +127,7 @@ Create expenses table in SQLite database (from Codebase Context MCP):
 ---
 
 ## Task 2: Create ExpenseModal Component
+
 **Type**: feature
 **Priority**: high
 **Complexity**: medium
@@ -123,16 +136,19 @@ Create expenses table in SQLite database (from Codebase Context MCP):
 
 **Description**:
 Create modal following LiaiZen pattern (from Codebase Context MCP):
+
 - Container: z-[100] (above navigation z-50)
 - Positioning: items-center justify-center
 - Padding: pt-16 pb-24 (mobile), pt-4 pb-4 (desktop)
 - Backdrop: bg-black/40
 
 **Files**:
+
 - Path: chat-client-vite/src/components/modals/ExpenseModal.jsx (from "Get file structure")
   Action: create
 
 **Acceptance Criteria**:
+
 - [ ] Modal follows standard pattern
 - [ ] Form fields included (amount, category, date, description)
 - [ ] Receipt upload functionality
@@ -141,6 +157,7 @@ Create modal following LiaiZen pattern (from Codebase Context MCP):
 ---
 
 ## Task 3: Style Expense Form
+
 **Type**: feature
 **Priority**: medium
 **Complexity**: small
@@ -149,11 +166,13 @@ Create modal following LiaiZen pattern (from Codebase Context MCP):
 
 **Description**:
 Apply brand styling (from Design Tokens MCP):
+
 - Primary button: bg-[#275559], rounded-lg, min-h-[44px]
 - Input fields: min-h-[44px], border-2, focus:border-[#275559]
 - Success button: bg-[#6dd4b0]
 
 **Acceptance Criteria**:
+
 - [ ] Follows design tokens
 - [ ] Touch targets 44px minimum
 - [ ] Responsive on mobile
@@ -171,6 +190,7 @@ Once tasks are created:
 ## MCP Server Benefits
 
 The tasks-agent **automatically uses MCP servers** to:
+
 - ✅ **Exact file paths** from Codebase Context (no guessing)
 - ✅ **Pattern compliance** in task descriptions
 - ✅ **Design token references** for styling tasks
@@ -180,20 +200,25 @@ The tasks-agent **automatically uses MCP servers** to:
 ## Troubleshooting
 
 ### "Plan not found"
+
 **Solution**: Run `/plan` first to create plan.md
 
 ### "MCP servers not responding"
+
 **Solution**: Restart Claude Desktop (Cmd+Q, reopen)
 
 ### "Tasks too granular/not granular enough"
+
 **Solution**: Specify `--granularity [coarse|fine]` when running command
 
 ### "Incorrect file paths"
+
 **Solution**: Update Codebase Context MCP if file structure changed
 
 ## Task Execution Order
 
 Tasks are ordered by dependencies:
+
 1. **Infrastructure tasks** (database, API setup) - no dependencies
 2. **Component tasks** - depend on infrastructure
 3. **Styling tasks** - depend on components

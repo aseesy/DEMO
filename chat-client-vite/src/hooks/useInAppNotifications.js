@@ -4,7 +4,7 @@ import { apiGet } from '../apiClient.js';
 /**
  * Hook for managing in-app notifications (invitations, system messages, etc.)
  * This is separate from browser/push notifications
- * 
+ *
  * @param {Object} options - Configuration options
  * @param {boolean} options.enabled - Whether to fetch notifications (default: true)
  */
@@ -18,7 +18,7 @@ export function useInAppNotifications({ enabled = true } = {}) {
    */
   const fetchUnreadCount = React.useCallback(async () => {
     if (!enabled) return;
-    
+
     try {
       const response = await apiGet('/api/notifications/unread-count');
 

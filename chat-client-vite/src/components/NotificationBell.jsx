@@ -16,9 +16,10 @@ export function NotificationBell({ unreadCount = 0, onClick, isOpen = false }) {
       className={`
         relative p-2 rounded-full transition-all duration-200 min-h-[44px] min-w-[44px]
         flex items-center justify-center
-        ${isOpen
-          ? 'bg-teal-lightest text-teal-dark'
-          : 'text-gray-600 hover:bg-gray-100 hover:text-teal-dark'
+        ${
+          isOpen
+            ? 'bg-teal-lightest text-teal-dark'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-teal-dark'
         }
         focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2
       `}
@@ -60,10 +61,7 @@ export function NotificationBell({ unreadCount = 0, onClick, isOpen = false }) {
 
       {/* Pulse animation for new notifications */}
       {unreadCount > 0 && (
-        <span
-          className="absolute -top-0.5 -right-0.5 flex h-5 w-5"
-          aria-hidden="true"
-        >
+        <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5" aria-hidden="true">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
         </span>
       )}

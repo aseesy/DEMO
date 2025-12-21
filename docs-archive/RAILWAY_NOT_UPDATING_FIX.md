@@ -111,6 +111,7 @@ cat railway.toml
 ```
 
 **Expected content:**
+
 ```toml
 [build]
 builder = "nixpacks"
@@ -150,6 +151,7 @@ Missing environment variables can cause deployments to fail:
    - Look for: Environment variable errors
 
 **Common errors:**
+
 - `Error: Cannot find module` → Missing dependency
 - `Build failed` → Check buildCommand in railway.toml
 - `Missing environment variable` → Add missing variable
@@ -189,6 +191,7 @@ After triggering a deployment:
 ### Contact Railway Support
 
 If nothing works:
+
 1. **Go to**: https://railway.app/dashboard
 2. **Click "Help"** in bottom left
 3. **Submit a support ticket** with:
@@ -211,13 +214,3 @@ If nothing works:
 ---
 
 **Most Common Issue**: Changes not pushed to GitHub. Railway only deploys when you push to the connected branch!
-
-
-
-
-
-
-
-
-
-

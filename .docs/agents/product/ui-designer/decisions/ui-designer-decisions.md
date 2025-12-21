@@ -20,4 +20,4 @@ Historical decisions and rationales for design choices.
 
 ## Decisions
 
-*No decisions logged yet. Decisions will be recorded as they are made.*
+_No decisions logged yet. Decisions will be recorded as they are made._

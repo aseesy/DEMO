@@ -1,285 +1,605 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with the coparentliaizen.com codebase.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-**LiaiZen** (coparentliaizen.com) is a co-parenting communication platform that helps separated parents communicate better for their children's wellbeing. The platform provides:
+**LiaiZen** (coparentliaizen.com) is a co-parenting communication platform with AI-powered message mediation. The platform helps separated parents communicate better through real-time messaging, conflict reduction via AI coaching, shared task management, and contact sharing.
 
-- **Real-time messaging** between co-parents via WebSocket
-- **AI-powered message mediation** to reduce conflict and improve communication quality
-- **Contact management** for co-parents, children, and related parties
-- **Task management** for shared parenting responsibilities
-- **Room-based communication** for private co-parent conversations
-- **Mobile/PWA support** for accessibility on all devices
+**Live**: https://coparentliaizen.com
 
 ## Architecture
 
-### Frontend (`chat-client-vite/`)
-- **Framework**: React 18+ with Vite
-- **Styling**: Tailwind CSS
-- **Real-time**: Socket.io-client
-- **State**: React hooks and context
-- **Deployment**: Vercel
+### Core Domain
 
-### Backend (`chat-server/`)
-- **Framework**: Node.js 18+ with Express.js
-- **Real-time**: Socket.io
-- **Database**: SQLite (with migration path to PostgreSQL)
-- **AI Services**: OpenAI API for message mediation
-- **Email**: Nodemailer (Gmail integration)
-- **Deployment**: Railway
+**What this system does:**
 
-### LiaiZen AI System (`chat-server/src/liaizen/`)
-The LiaiZen namespace contains the complete AI mediation intelligence system:
-- **Core** (`core/`): Main mediation pipeline and AI client
-- **Agents** (`agents/`): Specialized AI agents (proactive coaching, feedback learning)
-- **Policies** (`policies/`): Constitution rules and safety controls
-- **Context** (`context/`): Communication profiles and user context
-- **Analysis** (`analysis/`): Language analysis and rewrite validation
-- **Intelligence** (`intelligence/`): Contact detection
-- **Metrics** (`metrics/`): Communication statistics
+1. **Message Mediation** - Intercepts hostile messages before they reach the recipient
+2. **Sender-First Coaching** - Helps senders communicate better (not punishment, education)
+3. **Communication Learning** - Adapts to each user's patterns and triggers over time
+4. **Co-Parent Pairing** - Connects two parents in a private communication space
+5. **Shared Context** - Contacts, tasks, and children info both parents can access
 
-**Import examples:**
-- `const { mediator } = require('./src/liaizen')` - Main mediation system
-- `const { proactiveCoach } = require('./src/liaizen')` - Pre-send coaching
-- `const { languageAnalyzer } = require('./src/liaizen')` - Language analysis
+### Entities
 
-### Key Features
-- User authentication (JWT, Google OAuth)
-- Real-time chat rooms
-- AI message mediation and rewriting
-- Contact management (co-parents, children, professionals)
-- Task management
-- Room invitations and member management
-- Email notifications
+| Entity                   | Purpose                                                     |
+| ------------------------ | ----------------------------------------------------------- |
+| **User**                 | A co-parent with communication profile and learned patterns |
+| **Room**                 | Private space between paired co-parents                     |
+| **Message**              | Unit of communication, may trigger intervention             |
+| **Intervention**         | AI coaching moment (tip + rewrites)                         |
+| **CommunicationProfile** | Learned patterns, triggers, voice signature per user        |
+| **Contact**              | Shared person (child, teacher, doctor)                      |
+| **Task**                 | Shared responsibility with assignment and status            |
 
-## Commands
+### Use Cases
 
-### Domain Validation
+```
+User drafts message
+    → Mediator analyzes (pre-filters → axiom detection → AI analysis)
+    → If hostile: Intervention with tip + 2 rewrites
+    → User accepts/edits/ignores
+    → Message delivered to room
+    → System learns from user's choice
 
-**`/validate-domain`** - Validate features against co-parenting domain requirements
+Co-parents pair
+    → Invitation sent → Accepted → Room created
+    → Contacts and tasks become shared
+    → Communication history maintained for accountability
+```
 
-- **PURPOSE**: Ensure features align with LiaiZen's mission and co-parenting best practices
-- **Script**: `.specify/scripts/bash/validate-domain.sh`
-- **Domain Requirements Checked**:
-  - ✅ Child-centered outcomes focus
-  - ✅ Conflict reduction mechanisms
-  - ✅ Privacy and security for family data
-  - ✅ Accessibility for varying technical skills
-  - ✅ Asynchronous communication support
-  - ✅ Audit trail for legal/custody purposes
-  - ✅ Conflict resolution resources
-  - ✅ Privacy regulation compliance (COPPA, GDPR)
-  - ✅ Selective information sharing
-  - ✅ Invitation state handling
-  - ✅ AI mediation integration
-  - ✅ Real-time communication support
-  - ✅ Mobile/PWA compatibility
-  - ✅ Backward compatibility
+### Boundaries
 
-- **Usage Examples**:
-  ```bash
-  # Validate a specification file
-  /validate-domain --spec specs/001-feature-name/spec.md
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      DOMAIN CORE                            │
+│  Mediator • CommunicationProfile • Intervention • Message   │
+│  (knows nothing about HTTP, WebSocket, or database)         │
+└─────────────────────────────────────────────────────────────┘
+                            ▲
+                            │
+┌───────────────────────────┴─────────────────────────────────┐
+│                    INTERFACE ADAPTERS                        │
+│  socketHandlers/* • routes/* • roomManager • dbSafe         │
+│  (translate between domain and infrastructure)              │
+└─────────────────────────────────────────────────────────────┘
+                            ▲
+                            │
+┌───────────────────────────┴─────────────────────────────────┐
+│                    INFRASTRUCTURE                            │
+│  Express • Socket.io • PostgreSQL • OpenAI • Neo4j          │
+│  (delivery mechanisms and external services)                │
+└─────────────────────────────────────────────────────────────┘
+```
 
-  # Validate entire feature directory
-  /validate-domain --directory specs/001-feature-name/
+### Implementation (Deferred Details)
 
-  # Validate a component
-  /validate-domain --component chat-client-vite/src/components/ContactsPanel.jsx
+| Concern     | Current Choice   | Could Be Swapped         |
+| ----------- | ---------------- | ------------------------ |
+| Delivery    | Socket.io + REST | WebSocket, SSE, GraphQL  |
+| Persistence | PostgreSQL       | Any SQL, MongoDB         |
+| AI Provider | OpenAI           | Anthropic, local LLM     |
+| Graph       | Neo4j            | PostgreSQL JSONB, Dgraph |
+| Frontend    | React            | Vue, Svelte, native apps |
 
-  # Validate a file directly
-  /validate-domain chat-client-vite/src/components/ChatRoom.jsx
-  ```
+**Directory mapping:**
 
-- **Output**: Validation report with:
-  - Pass/fail status for each requirement
-  - Overall score (0-100%)
-  - Specific recommendations for improvements
-  - Domain alignment percentage
+- Domain core: `chat-server/src/liaizen/`
+- Interface adapters: `chat-server/routes/`, `chat-server/socketHandlers/`
+- Infrastructure: `chat-server/server.js`, `chat-server/dbSafe.js`
+- Delivery: `chat-client-vite/`
 
-- **Note**: This command does NOT modify files - it only validates and reports recommendations
+## Essential Commands
+
+### Development
+
+```bash
+# Start all services (frontend + backend)
+npm run dev
+
+# Frontend only (port 5173)
+cd chat-client-vite && npm run dev
+
+# Backend only (port 8080)
+cd chat-server && node server.js
+
+# Restart services
+npm run restart
+```
+
+### Testing
+
+```bash
+# Backend tests (Jest, 60% coverage threshold)
+cd chat-server && npm test
+npm run test:coverage
+
+# Run specific test
+cd chat-server && npm test -- auth.routes.test.js
+```
+
+### Code Quality
+
+```bash
+# Lint and auto-fix
+npm run lint:fix
+
+# Backend-specific
+cd chat-server
+npm run db:validate          # Validate PostgreSQL schema
+npm run prompts:lint         # Validate AI mediation prompts
+npm run ai:test              # AI regression tests
+npm run validate:naming      # Check naming conventions
+npm run scan:all             # Duplication + dependency analysis
+```
+
+### Database Migrations
+
+```bash
+cd chat-server
+npm run migrate              # Run pending migrations
+npm run start:with-migrate   # Migrate then start server
+```
 
 ## AI Mediation Constitution
 
-**Location**: `chat-server/ai-mediation-constitution.md`
+**Full spec**: `chat-server/ai-mediation-constitution.md`
 
-All AI-powered mediation in LiaiZen MUST follow the constitution. Key rules:
+**Key rules**: Language not emotions • No psychological labels • 1-2-3 framework (address + tip + 2 rewrites) • Use "you/your" only
 
-### Core Immutable Principles
+## Design System
 
-1. **Language, Not Emotions**: Talk about phrasing, not emotional states
-   - CORRECT: "This phrasing implies blame"
-   - PROHIBITED: "You're angry", "You're frustrated"
+**Full spec**: `.cursorrules`, `prompts/design_system.md`, `prompts/design_critic.md`
 
-2. **No Diagnostics**: Never apply psychological labels
-   - PROHIBITED: narcissist, manipulative, insecure, gaslighting, toxic
-   - ALLOWED: "This approach may backfire", "This phrasing might not achieve your goal"
+**Key tokens**: `bg-teal-dark`, `bg-teal-medium`, `bg-teal-light` • 8px spacing unit • 44px touch targets • z-nav (50), z-modal (100)
 
-3. **Child-Centric When Applicable**: Frame feedback around child wellbeing when children are mentioned
+## Key Patterns
 
-### 1-2-3 Coaching Framework
+### Socket Events (Real-time)
 
-Every AI intervention MUST include:
-1. **ADDRESS**: Describe what the phrasing is doing (mechanics, not emotions)
-2. **ONE TIP**: Single adjustment, max 10 words, specific to this message
-3. **TWO REWRITES**: Complete alternatives using different approaches
+Client events: `send_message`, `join_room`, `typing`
+Server events: `new_message`, `ai_intervention`, `room_update`
 
-### Voice Rules
-- Use only "you/your" - NEVER "we/us/our/both"
-- Communication coach, not therapist
-- Describe phrasing mechanics, not feelings
+### AI Mediation Flow
 
-## Co-Parenting Domain Principles
+1. User drafts message → `send_message` event
+2. Backend runs through mediator pipeline (pre-filters, axiom detection, AI analysis)
+3. If flagged → `ai_intervention` with tip + 2 rewrites
+4. User accepts rewrite or edits → message broadcasts to room
 
-When working on LiaiZen features, always consider:
+### Authentication
 
-1. **Child-Centered Outcomes**: Every feature should ultimately benefit children's wellbeing
-2. **Conflict Reduction**: Features should help reduce misunderstandings and tensions between co-parents
-3. **Privacy & Security**: Co-parenting data is sensitive and must be protected
-4. **Accessibility**: Features must work for parents with varying technical skills
-5. **Asynchronous Communication**: Support parents in different time zones
-6. **Legal Compliance**: Maintain audit trails and comply with privacy regulations
-7. **Conflict Resources**: Provide tools and resources for conflict resolution
+- JWT tokens stored in localStorage
+- Refresh via httpOnly cookies
+- Google OAuth callback at `/auth/google/callback`
 
-## Development Guidelines
+## Environment Variables
 
-### Code Style
-- **Frontend**: Functional React components with hooks, Tailwind CSS, mobile-first design
-- **Backend**: Express.js routes, async/await, error handling middleware
-- **Database**: Parameterized queries, migrations for schema changes
-- **Testing**: Unit tests for components/modules, integration tests for workflows
-
-### Security
-- Never log sensitive family information
-- Encrypt sensitive data at rest and in transit
-- Validate all user input (frontend and backend)
-- Use parameterized queries to prevent SQL injection
-- Rate limit API endpoints
-
-### Real-Time Communication
-- Use Socket.io for real-time updates
-- Handle reconnection gracefully
-- Prevent duplicate message delivery
-- Maintain message order
-
-### Mobile/PWA
-- Test on mobile devices, not just desktop
-- Ensure touch targets are 44px minimum
-- Support offline functionality where possible
-- Optimize for mobile data usage
-
-## File Structure
+### Backend (`chat-server/.env`)
 
 ```
-chat-client-vite/          # React frontend
-├── src/
-│   ├── components/        # React components
-│   ├── hooks/            # Custom React hooks
-│   ├── apiClient.js      # API client
-│   └── config.js         # Configuration
-
-chat-server/              # Node.js backend
-├── server.js             # Express + Socket.io server
-├── db.js                 # Database (SQLite)
-├── auth.js               # Authentication
-├── roomManager.js        # Room management
-├── aiMediator.js         # AI message mediation
-└── emailService.js       # Email notifications
-
-.specify/                 # SDD framework templates
-├── templates/            # Feature templates
-└── scripts/bash/         # Validation scripts
-
-.claude/                  # Claude configuration
-└── commands/             # Command documentation
+PORT=8080
+JWT_SECRET=
+OPENAI_API_KEY=
+DATABASE_URL=postgresql://...
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
+NEO4J_URI=
+NEO4J_USER=
+NEO4J_PASSWORD=
 ```
 
-## Key Dependencies
+### Frontend (`chat-client-vite/.env`)
 
-### Frontend
-- React 18+
-- Tailwind CSS
-- Socket.io-client
-- Vite
-
-### Backend
-- Express.js
-- Socket.io
-- sql.js (SQLite)
-- bcrypt (password hashing)
-- jsonwebtoken (JWT)
-- openai (AI mediation)
-- nodemailer (email)
+```
+VITE_API_URL=http://localhost:8080
+VITE_WS_URL=ws://localhost:8080
+```
 
 ## Deployment
 
-- **Frontend**: Vercel (coparentliaizen.com)
-- **Backend**: Railway (demo-production-6dcd.up.railway.app)
-- **Database**: SQLite (local), PostgreSQL (production migration path)
-- **Environment Variables**: Managed via Railway and Vercel dashboards
+| Service  | Platform           | URL                                 |
+| -------- | ------------------ | ----------------------------------- |
+| Frontend | Vercel             | coparentliaizen.com                 |
+| Backend  | Railway            | demo-production-6dcd.up.railway.app |
+| Database | Railway PostgreSQL | (internal)                          |
 
-## Available Agents
+Auto-deploy on push to `main` branch for both platforms.
 
-The following specialized agents are available for specific tasks:
+## SDD Framework
 
-### product-manager (product)
+**Full docs**: `docs/START_HERE.md`, `docs/AGENTS.md`
 
-**Purpose**: Product Manager who deeply understands co-parents challenges and how to solve them. Expert in user insight and empathy for complex human contexts, product strategy and roadmapping, AI-native product thinking, cross-functional leadership, systems thinking and requirements clarity, design sensibility, data-informed decision-making, and conflict navigation.
+**Commands**: `/create-prd`, `/specify`, `/plan`, `/tasks`, `/validate-domain`, `/create-agent`
 
-**Core Capabilities**:
-- **Deep User Insight**: Understanding co-parenting dynamics, conflict patterns, emotional safety principles, user psychology under stress
-- **Product Strategy**: Vision to strategy translation, hard prioritization decisions, roadmap creation, OKR definition
-- **AI-Native Thinking**: LLM capabilities/limitations, sender-first moderation design, multi-agent orchestration, bias monitoring
-- **Cross-Functional Leadership**: Engineering communication, design collaboration, marketing alignment, support synthesis
-- **Systems Thinking**: PRD excellence, edge case identification, user story precision, dependency mapping
-- **Design Sensibility**: UX quality assessment, friction identification, calm/dignity principles
-- **Data-Informed Decisions**: Hypothesis creation, success metrics, experiment design, analytics interpretation
-- **Conflict Navigation**: Internal mediation, diplomatic feedback, decision documentation
+## Co-Parenting Domain Principles
 
-**Brand Values Protected**: Dignity, Calm, Precision, Fairness, Neutrality, Respect
+When working on features, prioritize:
 
-**Usage**: `Use the product-manager agent to...`
-
-**Triggers**: Product strategy, user research, PRD review, feature prioritization, roadmap planning, stakeholder alignment, user persona development, AI feature design
-
-**Tools**: Read, Grep, Glob, WebFetch, WebSearch, AskUserQuestion, TodoWrite
-
-**Memory**: `.docs/agents/product/product-manager/`
+1. **Win/Win Outcomes**: Features should benefit everyone involved's wellbeing
+2. **Conflict Reduction**: Improve understanding of both sides
+3. **Privacy & Security**: Family data is sensitive (COPPA, GDPR compliant)
+4. **Accessibility**: Work for parents with varying technical skills
 
 ---
 
-### ui-designer (product)
+## Code Style & Conventions
 
-**Purpose**: Senior UI Designer and Design System Steward. Calm, confident, minimalist personality with refined visual sensitivity. Output is decisive, elegant, succinct.
+### Frontend (React)
 
-**Philosophy**: "Beauty emerges from restraint + clarity + consistency."
+```javascript
+// Named exports preferred
+export function ContactsPanel({ contacts, onSelect }) { ... }
 
-**Operating Modes**:
-- **System Executor (default)**: Applies existing design tokens, components, spacing, and typography without deviation
-- **Design Evolution**: Proposes system-level changes only with explicit approval using "Recommendation: [change]. Approve?" format
+// Hooks for all logic extraction
+const { user, login, logout } = useAuth();
 
-**Vague Direction Interpretation**:
-- "Friendlier buttons" -> larger radius, generous padding, softer shadows
-- "More premium feel" -> less color, more whitespace, refined weights
-- "More calm" -> reduced saturation, wider spacing, quieter typography
+// API calls via apiClient.js - never raw fetch
+import { apiGet, apiPost } from '../apiClient.js';
+const data = await apiGet('/api/contacts');
 
-**Memory**: Remembers approved decisions, rejected suggestions, user preferences, and brand tone
+// Context for shared state (not prop drilling)
+<AuthProvider>
+  <ChatContext.Provider value={{ room, messages }}>
+```
 
-**Canonical Requirements**: Uses design tokens, official component library, type scale, spacing scale, grid, brand palette, shadow radii, and iconography exclusively
+### Backend (Express)
 
-**Forbidden**: Introducing new colors without approval, changing typography stack, redefining tokens, non-system CSS, random shadows, copying external patterns, freestyle styling, excessive questions
+```javascript
+// Routes organized by feature in routes/
+// Sub-routes in routes/auth/, routes/user/ for complex features
 
-**Usage**: `Use the ui-designer agent to...`
+// Modular managers export from index files
+const { createPrivateRoom, getUserRoom } = require('./roomManager');
 
-**Triggers**: UI design, component styling, design system, visual design, typography, spacing, color palette, button styles, card layouts, design tokens
+// Async/await with try-catch, errors to middleware
+router.post('/endpoint', async (req, res, next) => {
+  try { ... } catch (error) { next(error); }
+});
 
-**Tools**: Read, Write, Edit, Grep, Glob, TodoWrite
+// Database queries via dbSafe.js (parameterized)
+const { query } = require('./dbSafe');
+await query('SELECT * FROM users WHERE id = $1', [userId]);
+```
 
-**Memory**: `.docs/agents/product/ui-designer/`
+### Naming Conventions
+
+| Type             | Convention                  | Example                            |
+| ---------------- | --------------------------- | ---------------------------------- |
+| React components | PascalCase                  | `ContactsPanel.jsx`                |
+| Hooks            | camelCase with `use` prefix | `useInviteManagement.js`           |
+| Backend routes   | kebab-case endpoints        | `/api/auth/forgot-password`        |
+| Socket events    | snake_case                  | `send_message`, `ai_intervention`  |
+| Database tables  | snake_case                  | `pairing_sessions`, `room_members` |
 
 ---
 
-*For coparentliaizen.com - Better Co-Parenting Through Better Communication*
+## Key Design Principles
 
+### 1. Sender-First Moderation
+
+AI mediation happens BEFORE messages are sent, not after. The sender sees coaching; the recipient never sees hostile messages.
+
+### 2. Context Providers Stack
+
+```jsx
+<ErrorBoundary>
+  <AuthProvider>           {/* Auth state, login/logout */}
+    <InvitationProvider>   {/* Invitation flow state */}
+      <MediatorProvider>   {/* AI mediation state */}
+        <BrowserRouter>
+```
+
+### 3. Socket + REST Hybrid
+
+- **REST API**: Auth, CRUD operations, initial data fetches
+- **Socket.io**: Real-time messages, typing indicators, presence, AI interventions
+
+### 4. Modular Backend Managers
+
+Large features split into manager modules with sub-files:
+
+```
+roomManager.js          → Entry point (re-exports)
+roomManager/
+  ├── room.js           → Core room CRUD
+  ├── member.js         → Member management
+  ├── contact.js        → Contact syncing
+  ├── coParent.js       → Co-parent specific logic
+  └── utils.js          → Shared utilities
+```
+
+### 5. LiaiZen AI Pipeline
+
+```
+Message → Pre-filters → Axiom Detection → AI Analysis → Response Building
+              ↓              ↓                 ↓              ↓
+         Quick reject   Code-based       OpenAI call    Tip + 2 rewrites
+                        hostile detect
+```
+
+### 6. Single Responsibility by Actor
+
+Code should be separated by **who requests changes**, not just "what it does."
+
+| Actor                | Their Concerns                                    | Code They "Own"                                     |
+| -------------------- | ------------------------------------------------- | --------------------------------------------------- |
+| **Product/UX**       | UI flows, presentation, user experience           | `components/`, `views/`, `hooks/`                   |
+| **AI/Coaching Team** | What's hostile, intervention tone, coaching rules | `src/liaizen/core/`, `ai-mediation-constitution.md` |
+| **Domain Experts**   | Child-centric rules, conflict patterns            | `src/liaizen/policies/`, `src/liaizen/context/`     |
+| **Operations**       | Delivery, persistence, monitoring                 | `server.js`, `dbSafe.js`, `sockets.js`              |
+| **Compliance**       | Audit trails, data retention, privacy             | `src/liaizen/metrics/`, database migrations         |
+
+**Why this matters:**
+
+- If Product wants a new UI for interventions → only `components/` changes
+- If AI team tweaks hostility detection → only `src/liaizen/core/` changes
+- If Compliance needs audit logging → only persistence layer changes
+
+**God Objects to avoid:**
+
+```
+❌ ChatRoom.jsx that handles auth + chat + contacts + tasks + AI display
+❌ Route handlers with validation + business logic + persistence
+❌ Socket handlers with embedded domain rules
+
+✅ Extract: useAuth, useChat, useContacts, useTasks (done)
+✅ Extract: validation → middleware, business logic → services
+✅ Extract: domain rules → src/liaizen/, transport → socketHandlers/
+```
+
+---
+
+## Folder Structure Explanation
+
+### Frontend (`chat-client-vite/src/`)
+
+```
+components/
+  ├── blog/              # SEO content pages (15+ articles)
+  ├── chat/              # Chat-specific components
+  ├── landing/           # Landing page sections
+  ├── profile/           # Profile wizard, settings
+  ├── quizzes/           # Interactive quizzes
+  ├── showcase/          # UI component demos
+  └── ui/                # Reusable UI primitives (Modal, Card)
+
+context/
+  ├── AuthContext.jsx    # User auth state + methods
+  ├── ChatContext.jsx    # Active room, messages
+  ├── MediatorContext.jsx # AI intervention state
+  └── InvitationContext.jsx # Invitation flow
+
+hooks/
+  ├── useAuth.js         # Auth operations
+  ├── useChat.js         # Chat operations
+  ├── useChatSocket.js   # Socket connection management
+  ├── useContacts.js     # Contact CRUD
+  ├── useTasks.js        # Task management
+  ├── useInviteManagement.js # Invitation flow logic
+  └── usePWA.js          # Service worker, push notifications
+
+views/
+  ├── ChatView.jsx       # Main chat interface
+  ├── DashboardView.jsx  # Dashboard/home
+  └── SettingsView.jsx   # User settings
+```
+
+### Backend (`chat-server/`)
+
+```
+routes/
+  ├── auth.js            # Main auth router
+  ├── auth/              # Sub-routes: login, signup, oauth, password
+  ├── user.js            # User operations
+  ├── user/              # Sub-routes: profile, onboarding
+  ├── rooms.js           # Room CRUD
+  ├── contacts.js        # Contact management
+  ├── invitations.js     # Invitation system
+  ├── pairing.js         # Co-parent pairing
+  └── ai.js              # AI endpoints
+
+socketHandlers/
+  ├── connectionHandler.js  # Connect/disconnect
+  ├── messageHandler.js     # Message routing
+  ├── aiHelper.js           # AI mediation pipeline
+  ├── aiContextHelper.js    # Context enrichment
+  ├── feedbackHandler.js    # User feedback on AI
+  └── contactHandler.js     # Real-time contact updates
+
+src/liaizen/             # AI mediation system
+  ├── core/
+  │   ├── mediator.js       # Main orchestrator
+  │   ├── client.js         # OpenAI client
+  │   ├── codeLayer/        # Axiom-based detection
+  │   ├── contexts/         # Context builders
+  │   └── response/         # Response processing
+  ├── context/
+  │   └── communication-profile/  # Per-user learning
+  ├── agents/               # Proactive coaching, feedback
+  ├── analysis/             # Language analysis
+  └── policies/             # Safety rules
+
+libs/
+  ├── invitation-manager/   # Invitation validation
+  ├── pairing-manager/      # Mutual pairing detection
+  └── password-validator.js # Password strength
+```
+
+---
+
+## Common Tasks & How-To
+
+### Add a New API Endpoint
+
+```bash
+# 1. Create route file or add to existing
+chat-server/routes/myfeature.js
+
+# 2. Register in routeManager.js
+app.use('/api/myfeature', require('./routes/myfeature'));
+
+# 3. Add auth middleware if needed
+router.get('/', authMiddleware, async (req, res) => { ... });
+```
+
+### Add a New Socket Event
+
+```javascript
+// Backend: socketHandlers/myHandler.js
+module.exports = function setupMyHandler(socket, io) {
+  socket.on('my_event', async (data) => {
+    // Handle event
+    socket.emit('my_response', result);
+  });
+};
+
+// Register in sockets.js
+const setupMyHandler = require('./socketHandlers/myHandler');
+setupMyHandler(socket, io);
+
+// Frontend: hooks/useChatSocket.js
+socket.on('my_response', (data) => { ... });
+socket.emit('my_event', payload);
+```
+
+### Add a New React Hook
+
+```javascript
+// chat-client-vite/src/hooks/useMyFeature.js
+import { apiGet, apiPost } from '../apiClient.js';
+
+export function useMyFeature() {
+  const [data, setData] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const result = await apiGet('/api/myfeature');
+    setData(result);
+    setLoading(false);
+  };
+
+  return { data, loading, fetchData };
+}
+```
+
+### Create a Database Migration
+
+```bash
+# Create new migration file
+chat-server/migrations/020_my_feature.sql
+
+# Run migration
+cd chat-server && npm run migrate
+```
+
+### Debug Socket Issues
+
+```javascript
+// Enable Socket.io debug logging
+localStorage.debug = 'socket.io-client:*';
+
+// Check connection in browser console
+window.socket.connected; // true/false
+window.socket.id; // socket ID
+```
+
+### Check Railway Logs
+
+```bash
+railway logs --tail
+railway logs -n 100  # Last 100 lines
+```
+
+---
+
+## Known Pitfalls & Anti-Patterns
+
+### ❌ DON'T: Use raw fetch() in frontend
+
+```javascript
+// BAD - loses auth headers, no error tracking
+const res = await fetch('/api/contacts');
+
+// GOOD - uses apiClient with auth + analytics
+import { apiGet } from '../apiClient.js';
+const contacts = await apiGet('/api/contacts');
+```
+
+### ❌ DON'T: Hardcode Tailwind colors
+
+```javascript
+// BAD - not in design system
+<div className="bg-[#275559]">
+
+// GOOD - uses design tokens
+<div className="bg-teal-dark">
+```
+
+### ❌ DON'T: Create new Context without need
+
+```javascript
+// BAD - unnecessary context for local state
+const MyContext = createContext();
+
+// GOOD - use existing contexts or local state
+const { user } = useAuth(); // From AuthContext
+const [localState, setLocalState] = useState();
+```
+
+### ❌ DON'T: Skip the mediator for AI features
+
+```javascript
+// BAD - direct OpenAI call bypasses safety
+const response = await openai.chat.completions.create(...);
+
+// GOOD - use liaizen mediator (has constitution, safety)
+const { mediator } = require('./src/liaizen');
+const result = await mediator.analyze(message, context);
+```
+
+### ❌ DON'T: Use psychological labels in AI responses
+
+```javascript
+// BAD - violates AI constitution
+'You seem angry and defensive';
+'This is manipulative behavior';
+
+// GOOD - describe phrasing mechanics
+'This phrasing implies blame';
+'This approach may not achieve your goal';
+```
+
+### ⚠️ WATCH: Safari localStorage Issues
+
+Safari's ITP can clear localStorage. The codebase uses backup keys:
+
+```javascript
+// Token stored in both keys for Safari compatibility
+STORAGE_KEYS.AUTH_TOKEN; // Primary
+('auth_token_backup'); // Fallback
+```
+
+### ⚠️ WATCH: Tailwind v4 PostCSS Plugin
+
+If you see PostCSS errors, the plugin moved:
+
+```javascript
+// postcss.config.js - use new package
+plugins: {
+  '@tailwindcss/postcss': {},  // NOT 'tailwindcss'
+  autoprefixer: {},
+}
+```
+
+### ⚠️ WATCH: Socket Reconnection
+
+Socket.io handles reconnection automatically, but state may be stale. Always re-fetch on reconnect:
+
+```javascript
+socket.on('connect', () => {
+  // Re-join rooms, re-fetch messages
+  socket.emit('join_room', roomId);
+});
+```

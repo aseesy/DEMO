@@ -17,59 +17,140 @@
 /**
  * Pronouns that reference the addressee (co-parent receiving the message)
  */
-const ADDRESSEE_WORDS = new Set([
-  'you', "you're", 'your', 'yours', 'yourself', 'youre'
-]);
+const ADDRESSEE_WORDS = new Set(['you', "you're", 'your', 'yours', 'yourself', 'youre']);
 
 /**
  * Pronouns that reference the speaker
  */
 const SPEAKER_WORDS = new Set([
-  'i', "i'm", 'im', 'me', 'my', 'mine', 'myself', "i've", 'ive', "i'd", 'id', "i'll", 'ill'
+  'i',
+  "i'm",
+  'im',
+  'me',
+  'my',
+  'mine',
+  'myself',
+  "i've",
+  'ive',
+  "i'd",
+  'id',
+  "i'll",
+  'ill',
 ]);
 
 /**
  * Intensifier words that amplify statements
  */
 const INTENSIFIERS = new Set([
-  'always', 'never', 'every', 'completely', 'totally', 'absolutely',
-  'constantly', 'forever', 'entirely', 'extremely', 'very', 'really',
-  'so', 'such', 'definitely', 'certainly', 'obviously', 'clearly'
+  'always',
+  'never',
+  'every',
+  'completely',
+  'totally',
+  'absolutely',
+  'constantly',
+  'forever',
+  'entirely',
+  'extremely',
+  'very',
+  'really',
+  'so',
+  'such',
+  'definitely',
+  'certainly',
+  'obviously',
+  'clearly',
 ]);
 
 /**
  * Absolute terms (subset of intensifiers with binary meaning)
  */
 const ABSOLUTES = new Set([
-  'always', 'never', 'every', 'all', 'none', 'nothing', 'everything',
-  'everyone', 'nobody', 'no one', 'nowhere', 'everywhere'
+  'always',
+  'never',
+  'every',
+  'all',
+  'none',
+  'nothing',
+  'everything',
+  'everyone',
+  'nobody',
+  'no one',
+  'nowhere',
+  'everywhere',
 ]);
 
 /**
  * Softener words that hedge or minimize
  */
 const SOFTENERS = new Set([
-  'just', 'maybe', 'might', 'perhaps', 'possibly', 'probably', 'kind of',
-  'sort of', 'somewhat', 'a bit', 'a little', 'slightly', 'basically',
-  'actually', 'honestly', 'frankly', 'simply', 'only', 'merely'
+  'just',
+  'maybe',
+  'might',
+  'perhaps',
+  'possibly',
+  'probably',
+  'kind of',
+  'sort of',
+  'somewhat',
+  'a bit',
+  'a little',
+  'slightly',
+  'basically',
+  'actually',
+  'honestly',
+  'frankly',
+  'simply',
+  'only',
+  'merely',
 ]);
 
 /**
  * Third-party pronouns (potential child references)
  */
 const THIRD_PARTY_PRONOUNS = new Set([
-  'she', "she's", 'shes', 'her', 'hers', 'herself',
-  'he', "he's", 'hes', 'him', 'his', 'himself',
-  'they', "they're", 'theyre', 'them', 'their', 'theirs', 'themselves'
+  'she',
+  "she's",
+  'shes',
+  'her',
+  'hers',
+  'herself',
+  'he',
+  "he's",
+  'hes',
+  'him',
+  'his',
+  'himself',
+  'they',
+  "they're",
+  'theyre',
+  'them',
+  'their',
+  'theirs',
+  'themselves',
 ]);
 
 /**
  * Child-related terms
  */
 const CHILD_TERMS = new Set([
-  'kids', 'children', 'child', 'kid', 'daughter', 'son', 'baby',
-  'the kids', 'the children', 'our kids', 'our children', 'our daughter',
-  'our son', 'my daughter', 'my son', 'your daughter', 'your son'
+  'kids',
+  'children',
+  'child',
+  'kid',
+  'daughter',
+  'son',
+  'baby',
+  'the kids',
+  'the children',
+  'our kids',
+  'our children',
+  'our daughter',
+  'our son',
+  'my daughter',
+  'my son',
+  'your daughter',
+  'your son',
 ]);
 
 /**
@@ -77,42 +158,147 @@ const CHILD_TERMS = new Set([
  */
 const DOMAIN_KEYWORDS = {
   schedule: new Set([
-    'pickup', 'drop-off', 'dropoff', 'custody', 'time', 'schedule', 'weekend',
-    'holiday', 'vacation', 'visitation', 'overnight', 'weekday', 'evening',
-    'morning', 'afternoon', 'today', 'tomorrow', 'yesterday', 'monday',
-    'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+    'pickup',
+    'drop-off',
+    'dropoff',
+    'custody',
+    'time',
+    'schedule',
+    'weekend',
+    'holiday',
+    'vacation',
+    'visitation',
+    'overnight',
+    'weekday',
+    'evening',
+    'morning',
+    'afternoon',
+    'today',
+    'tomorrow',
+    'yesterday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
   ]),
   money: new Set([
-    'payment', 'support', 'child support', 'money', 'expense', 'expenses',
-    'cost', 'pay', 'paid', 'afford', 'financial', 'bill', 'bills', 'fee',
-    'fees', 'tuition', 'insurance', 'medical', 'dental'
+    'payment',
+    'support',
+    'child support',
+    'money',
+    'expense',
+    'expenses',
+    'cost',
+    'pay',
+    'paid',
+    'afford',
+    'financial',
+    'bill',
+    'bills',
+    'fee',
+    'fees',
+    'tuition',
+    'insurance',
+    'medical',
+    'dental',
   ]),
   child_education: new Set([
-    'homework', 'school', 'teacher', 'class', 'grade', 'grades', 'test',
-    'project', 'assignment', 'report card', 'parent-teacher', 'conference',
-    'education', 'learning', 'tutoring', 'tutor'
+    'homework',
+    'school',
+    'teacher',
+    'class',
+    'grade',
+    'grades',
+    'test',
+    'project',
+    'assignment',
+    'report card',
+    'parent-teacher',
+    'conference',
+    'education',
+    'learning',
+    'tutoring',
+    'tutor',
   ]),
   parenting: new Set([
-    'discipline', 'rules', 'bedtime', 'routine', 'behavior', 'behaviour',
-    'screen time', 'chores', 'responsibilities', 'parenting', 'raising',
-    'teaching', 'boundaries', 'consequences'
+    'discipline',
+    'rules',
+    'bedtime',
+    'routine',
+    'behavior',
+    'behaviour',
+    'screen time',
+    'chores',
+    'responsibilities',
+    'parenting',
+    'raising',
+    'teaching',
+    'boundaries',
+    'consequences',
   ]),
   character: new Set([
-    'behavior', 'behaviour', 'attitude', 'personality', 'character', 'trait',
-    'habit', 'habits', 'way', 'ways', 'kind of person', 'type of person'
-  ])
+    'behavior',
+    'behaviour',
+    'attitude',
+    'personality',
+    'character',
+    'trait',
+    'habit',
+    'habits',
+    'way',
+    'ways',
+    'kind of person',
+    'type of person',
+  ]),
 };
 
 /**
  * Action verbs relevant to co-parenting
  */
 const ACTION_VERBS = new Set([
-  'pick', 'drop', 'bring', 'take', 'get', 'give', 'send', 'receive',
-  'tell', 'say', 'said', 'told', 'ask', 'asked', 'help', 'helped',
-  'change', 'changed', 'cancel', 'cancelled', 'forgot', 'forget',
-  'remember', 'remembered', 'miss', 'missed', 'call', 'called',
-  'text', 'texted', 'respond', 'responded', 'reply', 'replied',
-  'agree', 'agreed', 'disagree', 'disagreed', 'decide', 'decided'
+  'pick',
+  'drop',
+  'bring',
+  'take',
+  'get',
+  'give',
+  'send',
+  'receive',
+  'tell',
+  'say',
+  'said',
+  'told',
+  'ask',
+  'asked',
+  'help',
+  'helped',
+  'change',
+  'changed',
+  'cancel',
+  'cancelled',
+  'forgot',
+  'forget',
+  'remember',
+  'remembered',
+  'miss',
+  'missed',
+  'call',
+  'called',
+  'text',
+  'texted',
+  'respond',
+  'responded',
+  'reply',
+  'replied',
+  'agree',
+  'agreed',
+  'disagree',
+  'disagreed',
+  'decide',
+  'decided',
 ]);
 
 /**
@@ -123,22 +309,83 @@ const POS_PATTERNS = {
   article: new Set(['a', 'an', 'the']),
   // Prepositions
   preposition: new Set([
-    'in', 'on', 'at', 'to', 'for', 'with', 'by', 'from', 'about',
-    'into', 'through', 'during', 'before', 'after', 'above', 'below',
-    'between', 'under', 'over', 'since', 'until', 'of'
+    'in',
+    'on',
+    'at',
+    'to',
+    'for',
+    'with',
+    'by',
+    'from',
+    'about',
+    'into',
+    'through',
+    'during',
+    'before',
+    'after',
+    'above',
+    'below',
+    'between',
+    'under',
+    'over',
+    'since',
+    'until',
+    'of',
   ]),
   // Conjunctions
   conjunction: new Set([
-    'and', 'but', 'or', 'nor', 'for', 'yet', 'so', 'because', 'although',
-    'though', 'while', 'if', 'when', 'where', 'since', 'unless', 'however'
+    'and',
+    'but',
+    'or',
+    'nor',
+    'for',
+    'yet',
+    'so',
+    'because',
+    'although',
+    'though',
+    'while',
+    'if',
+    'when',
+    'where',
+    'since',
+    'unless',
+    'however',
   ]),
   // Auxiliary verbs
   auxiliary: new Set([
-    'is', 'are', 'was', 'were', 'be', 'been', 'being', 'am',
-    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-    'could', 'should', 'may', 'might', 'must', 'shall', 'can', "can't",
-    "won't", "wouldn't", "couldn't", "shouldn't", "don't", "doesn't", "didn't"
-  ])
+    'is',
+    'are',
+    'was',
+    'were',
+    'be',
+    'been',
+    'being',
+    'am',
+    'have',
+    'has',
+    'had',
+    'do',
+    'does',
+    'did',
+    'will',
+    'would',
+    'could',
+    'should',
+    'may',
+    'might',
+    'must',
+    'shall',
+    'can',
+    "can't",
+    "won't",
+    "wouldn't",
+    "couldn't",
+    "shouldn't",
+    "don't",
+    "doesn't",
+    "didn't",
+  ]),
 };
 
 // ============================================================================
@@ -157,7 +404,7 @@ function normalizeText(text) {
     .toLowerCase()
     .replace(/['']/g, "'") // Normalize apostrophes
     .replace(/[""]/g, '"') // Normalize quotes
-    .replace(/\s+/g, ' ')  // Normalize whitespace
+    .replace(/\s+/g, ' ') // Normalize whitespace
     .trim();
 }
 
@@ -254,7 +501,7 @@ function tokenize(text) {
   if (!text || typeof text !== 'string') {
     return {
       tokens: [],
-      latencyMs: Date.now() - startTime
+      latencyMs: Date.now() - startTime,
     };
   }
 
@@ -272,7 +519,7 @@ function tokenize(text) {
     const token = {
       word: wordLower,
       pos: getPartOfSpeech(wordLower),
-      index: tokens.length
+      index: tokens.length,
     };
 
     // Add special tags
@@ -318,7 +565,7 @@ function tokenize(text) {
 
   return {
     tokens,
-    latencyMs: Date.now() - startTime
+    latencyMs: Date.now() - startTime,
   };
 }
 
@@ -410,5 +657,5 @@ module.exports = {
   THIRD_PARTY_PRONOUNS,
   CHILD_TERMS,
   DOMAIN_KEYWORDS,
-  ACTION_VERBS
+  ACTION_VERBS,
 };

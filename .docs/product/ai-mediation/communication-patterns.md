@@ -10,6 +10,7 @@
 ## Core Principles
 
 ### Sender-First, Private Coaching Model
+
 1. AI suggestions are **private to the sender only** - never shared with recipient
 2. Sender retains **full control** over final message
 3. AI helps sender express themselves better, never dictates what to say
@@ -17,20 +18,22 @@
 5. **Educational component** - explain WHY certain phrases escalate
 
 ### Brand Values in Communication
-| Value | Communication Implication |
-|-------|---------------------------|
-| **Dignity** | No shaming, no public corrections, no judgment |
-| **Calm** | Reduce urgency, avoid inflammatory language |
-| **Precision** | Clear, specific, actionable language |
-| **Fairness** | Balanced suggestions that don't advantage either party |
-| **Neutrality** | No blame attribution, no taking sides |
-| **Respect** | Honor user's voice and autonomy |
+
+| Value          | Communication Implication                              |
+| -------------- | ------------------------------------------------------ |
+| **Dignity**    | No shaming, no public corrections, no judgment         |
+| **Calm**       | Reduce urgency, avoid inflammatory language            |
+| **Precision**  | Clear, specific, actionable language                   |
+| **Fairness**   | Balanced suggestions that don't advantage either party |
+| **Neutrality** | No blame attribution, no taking sides                  |
+| **Respect**    | Honor user's voice and autonomy                        |
 
 ---
 
 ## Hostile Communication Patterns
 
 ### Pattern 1: "Always/Never" Statements
+
 **What it is**: Absolute language that overgeneralizes behavior
 
 **Examples**:
@@ -42,6 +45,7 @@
 | "You never listen to me" | Sweeping generalization that invites defensiveness |
 
 **Rewrite Strategy**:
+
 - Focus on the **specific current situation**
 - Use **"this time"** or **"today"** instead of "always/never"
 - State the **impact** rather than the pattern
@@ -56,6 +60,7 @@
 ---
 
 ### Pattern 2: Blame and Accusation
+
 **What it is**: Assigning fault rather than solving problems
 
 **Examples**:
@@ -67,6 +72,7 @@
 | "If you hadn't..." | Counterfactual accusation |
 
 **Rewrite Strategy**:
+
 - Focus on **what needs to happen** not who caused the problem
 - Use **"I" statements** about impact
 - Move toward **solution** not blame
@@ -81,6 +87,7 @@
 ---
 
 ### Pattern 3: Triangulation (Speaking Through/For Children)
+
 **What it is**: Using children as messengers or evidence in parental conflicts
 
 **Examples**:
@@ -92,6 +99,7 @@
 | "Tell your father..." | Uses child as messenger |
 
 **Rewrite Strategy**:
+
 - Speak about **your own observations and needs**
 - Don't relay children's complaints as accusations
 - Address issues **directly** between co-parents
@@ -106,6 +114,7 @@
 ---
 
 ### Pattern 4: Past Weaponization
+
 **What it is**: Bringing up old grievances in current discussions
 
 **Examples**:
@@ -117,6 +126,7 @@
 | "Remember when you forgot..." | Uses past failure as weapon |
 
 **Rewrite Strategy**:
+
 - Keep focus on **present situation only**
 - Acknowledge the past exists without relitigating it
 - Redirect to **current actionable request**
@@ -131,6 +141,7 @@
 ---
 
 ### Pattern 5: Hostile Tone Markers
+
 **What it is**: Capitalization, excessive punctuation, sarcasm, condescension
 
 **Examples**:
@@ -143,6 +154,7 @@
 | "???" or "!!!" | Aggressive punctuation |
 
 **Rewrite Strategy**:
+
 - Remove caps, excessive punctuation
 - Replace sarcasm with **direct statement**
 - Express frustration through **"I feel"** not attacks
@@ -158,6 +170,7 @@
 ---
 
 ### Pattern 6: Threats and Ultimatums
+
 **What it is**: Coercive language that escalates stakes
 
 **Examples**:
@@ -169,6 +182,7 @@
 | "I'm documenting everything" | Implied threat of legal action |
 
 **Rewrite Strategy**:
+
 - Express **needs and boundaries** without threats
 - If legal action is genuinely needed, keep it factual
 - Focus on **desired outcome** not punishment
@@ -183,6 +197,7 @@
 ---
 
 ### Pattern 7: Mind Reading and Assumptions
+
 **What it is**: Assuming intent or motivation without evidence
 
 **Examples**:
@@ -194,6 +209,7 @@
 | "I know what you're really thinking" | Claims to know internal state |
 
 **Rewrite Strategy**:
+
 - **Ask** instead of assuming
 - Describe **observable behavior** not assumed motivation
 - Use **curious tone** not accusatory
@@ -210,6 +226,7 @@
 ## Healthy Communication Patterns
 
 ### Pattern A: Specific and Current
+
 **What it looks like**: Focused on the present situation with concrete details
 
 **Examples**:
@@ -222,6 +239,7 @@
 ---
 
 ### Pattern B: Child-Centered Framing
+
 **What it looks like**: Focuses on children's needs, not parental grievances
 
 **Examples**:
@@ -234,6 +252,7 @@
 ---
 
 ### Pattern C: "I" Statements
+
 **What it looks like**: Expresses personal experience without accusation
 
 **Examples**:
@@ -246,6 +265,7 @@
 ---
 
 ### Pattern D: Collaborative Language
+
 **What it looks like**: Invites joint problem-solving
 
 **Examples**:
@@ -259,6 +279,7 @@
 ---
 
 ### Pattern E: Acknowledgment Before Disagreement
+
 **What it looks like**: Validates before countering
 
 **Examples**:
@@ -273,7 +294,9 @@
 ## AI Rewrite Guidelines
 
 ### Preserve Intent Checklist
+
 When rewriting a hostile message, ensure:
+
 - [ ] The **core request or concern** is maintained
 - [ ] The sender's **emotional truth** is acknowledged (to them, not in message)
 - [ ] The **urgency level** is appropriate (don't minimize genuine urgency)
@@ -281,14 +304,18 @@ When rewriting a hostile message, ensure:
 - [ ] **Autonomy** is preserved (suggestions, not mandates)
 
 ### When NOT to Intervene
+
 AI should **allow messages through** when:
+
 - Message is already constructive
 - Minor tone issues that don't escalate
 - Sender has established healthy patterns (learned behavior)
 - Context shows it's a benign exchange
 
 ### When to Definitely Block
+
 AI should **block and offer rewrite** when:
+
 - Message contains threats
 - Message attacks character
 - Message weaponizes children
@@ -296,7 +323,9 @@ AI should **block and offer rewrite** when:
 - Message brings up irrelevant past grievances
 
 ### Rewrite Quality Standards
+
 Good rewrites should be:
+
 1. **Shorter** than or equal to original (remove noise)
 2. **Actionable** (clear what's being asked)
 3. **Neutral** (no blame, no sarcasm)
@@ -310,9 +339,11 @@ Good rewrites should be:
 ### Complex Example 1: Multi-Pattern Hostile Message
 
 **Original** (Sarah to Mike):
+
 > "You're ALWAYS late!!! She told me you didn't even make her lunch yesterday. This is EXACTLY like when you forgot her birthday. I'm documenting everything for my lawyer."
 
 **Pattern Analysis**:
+
 - Always/Never statement
 - Triangulation (child as reporter)
 - Past weaponization
@@ -320,12 +351,15 @@ Good rewrites should be:
 - Threat (lawyer)
 
 **Rewrite Option 1** (Direct):
+
 > "I need you to be on time for pickups. Can we also coordinate on lunch plans for school days?"
 
 **Rewrite Option 2** (Slightly warmer):
+
 > "Pickup punctuality is important to me. Also, can we talk about lunch coordination so she's covered every day?"
 
 **Educational Tip to Show Sender**:
+
 > "Your message contained an 'always' statement and referenced the past. Focusing on the specific current need makes it easier to resolve."
 
 ---
@@ -333,20 +367,25 @@ Good rewrites should be:
 ### Complex Example 2: Brief but Harsh Message
 
 **Original** (Mike to Sarah):
+
 > "No."
 
 **Pattern Analysis**:
+
 - Too brief - comes across as dismissive
 - No explanation or alternative
 - (Mike's communication style - efficient but harsh)
 
 **Rewrite Option 1** (Add context):
+
 > "No, that doesn't work for me this week. Can we find another time?"
 
 **Rewrite Option 2** (Explain + alternative):
+
 > "I can't do Tuesday. Would Thursday work instead?"
 
 **Educational Tip to Show Sender**:
+
 > "Brief responses can feel dismissive. Adding a short explanation or alternative helps keep the conversation productive."
 
 ---
@@ -354,20 +393,25 @@ Good rewrites should be:
 ### Complex Example 3: Passive-Aggressive Message
 
 **Original**:
+
 > "Fine. Do whatever you want. You always do anyway."
 
 **Pattern Analysis**:
+
 - Passive-aggressive dismissal ("Fine")
 - Mind reading ("You always do anyway")
 - Resignation that implies resentment
 
 **Rewrite Option 1** (Direct disagreement):
+
 > "I disagree with this approach. Can we discuss alternatives?"
 
 **Rewrite Option 2** (Express concern):
+
 > "I'm not comfortable with this plan. What if we tried [alternative]?"
 
 **Educational Tip to Show Sender**:
+
 > "Passive-aggressive responses often mask real concerns. Expressing your disagreement directly is more likely to lead to resolution."
 
 ---
@@ -375,26 +419,29 @@ Good rewrites should be:
 ## Metrics for AI Mediation Success
 
 ### User-Level Metrics
-| Metric | Definition | Target |
-|--------|------------|--------|
-| Block rate trend | % of messages blocked over time | Decreasing |
-| Rewrite acceptance | % of rewrites user accepts | > 70% |
-| Intent preservation | User agrees rewrite kept their meaning | > 90% |
-| Learning velocity | Time to reduce block rate by 50% | < 8 weeks |
+
+| Metric              | Definition                             | Target     |
+| ------------------- | -------------------------------------- | ---------- |
+| Block rate trend    | % of messages blocked over time        | Decreasing |
+| Rewrite acceptance  | % of rewrites user accepts             | > 70%      |
+| Intent preservation | User agrees rewrite kept their meaning | > 90%      |
+| Learning velocity   | Time to reduce block rate by 50%       | < 8 weeks  |
 
 ### System-Level Metrics
-| Metric | Definition | Target |
-|--------|------------|--------|
-| False positive rate | Constructive messages incorrectly blocked | < 5% |
-| False negative rate | Hostile messages that should have been blocked | < 10% |
-| Rewrite quality score | Human evaluation of rewrite appropriateness | > 4/5 |
-| Latency | Time from draft to suggestion | < 2 seconds |
+
+| Metric                | Definition                                     | Target      |
+| --------------------- | ---------------------------------------------- | ----------- |
+| False positive rate   | Constructive messages incorrectly blocked      | < 5%        |
+| False negative rate   | Hostile messages that should have been blocked | < 10%       |
+| Rewrite quality score | Human evaluation of rewrite appropriateness    | > 4/5       |
+| Latency               | Time from draft to suggestion                  | < 2 seconds |
 
 ---
 
 ## Appendix: Pattern Recognition Signals
 
 ### High-Confidence Hostile Signals
+
 - ALL CAPS words
 - Multiple exclamation marks (!!!) or question marks (???)
 - "Always" or "never" followed by accusation
@@ -404,16 +451,18 @@ Good rewrites should be:
 - Child's name + accusation
 
 ### Moderate-Confidence Hostile Signals
+
 - Sarcasm markers ("Oh, so NOW...")
 - Rhetorical questions ("WHY can't you...")
 - Historical references ("just like when...")
 - Character labels ("You're so...")
 
 ### Context-Dependent Signals
+
 - Brief responses (may be hostile or just efficient)
 - Direct statements (may be harsh or just clear)
 - Questions about past (may be accusatory or genuinely curious)
 
 ---
 
-*Guide for coparentliaizen.com - Better Co-Parenting Through Better Communication*
+_Guide for coparentliaizen.com - Better Co-Parenting Through Better Communication_

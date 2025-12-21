@@ -10,17 +10,20 @@ This project is **NOT affected** by the React2Shell vulnerability (CVE-2025-5518
 ## Why We're Not Affected
 
 ### 1. **No Next.js Usage**
+
 - This project uses **Vite** for build tooling, not Next.js
 - The vulnerability specifically affects Next.js 15.0.0 through 16.0.6
 - **Our stack:** React 19.2.0 + Vite 7.2.2
 
 ### 2. **No React Server Components (RSC)**
+
 - The vulnerability affects **React Server Components** (RSC)
 - This project uses **standard client-side React** only
 - No `react-server-dom-*` packages installed
 - No `'use server'` directives found in codebase
 
 ### 3. **Architecture Verification**
+
 - ✅ Frontend: React 19.2.0 with Vite (client-side only)
 - ✅ Backend: Node.js with Express.js (separate server)
 - ✅ No server-side rendering (SSR)
@@ -38,6 +41,7 @@ This project is **NOT affected** by the React2Shell vulnerability (CVE-2025-5518
 ```
 
 **No vulnerable packages:**
+
 - ❌ No `next` package
 - ❌ No `react-server-dom-webpack`
 - ❌ No `react-server-dom-parcel`
@@ -54,9 +58,11 @@ This project is **NOT affected** by the React2Shell vulnerability (CVE-2025-5518
 ## Recommendations
 
 ### ✅ No Action Required
+
 Since we're not using Next.js or React Server Components, **no updates are needed**.
 
 ### 🔄 General Best Practices
+
 - Keep React updated to latest stable version (currently 19.2.0)
 - Monitor for future React security advisories
 - Review Vercel security bulletins regularly
@@ -71,4 +77,3 @@ Since we're not using Next.js or React Server Components, **no updates are neede
 
 **Last Verified:** December 8, 2025  
 **Verified By:** Automated security check
-

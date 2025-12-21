@@ -3,9 +3,12 @@ import { apiGet, apiPost } from '../apiClient.js';
 import { getErrorMessage, logError, isRetryableError } from '../utils/errorHandler.jsx';
 import { setUserProperties, setUserID } from '../utils/analyticsEnhancements.js';
 
+// Storage adapter for abstracting localStorage
+import { storage, StorageKeys, authStorage } from '../adapters/storage';
+
 /**
  * AuthContext - Centralized authentication state management
- * 
+ *
  * Provides:
  * - Centralized auth state (isAuthenticated, username, email, token)
  * - Token management (storage, validation, expiration)
@@ -52,7 +55,7 @@ function calculateUserProperties(user, isNewUser = false) {
  */
 function isTokenExpired(token) {
   if (!token) return true;
-  
+
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const exp = payload.exp * 1000; // Convert to milliseconds
@@ -78,13 +81,13 @@ export function AuthProvider({ children }) {
   const [error, setError] = React.useState(null);
 
   /**
-   * Load auth state from localStorage
+   * Load auth state from storage
    */
   const loadAuthState = React.useCallback(() => {
-    const storedToken = localStorage.getItem('auth_token_backup');
-    const storedUsername = localStorage.getItem('username');
-    const storedEmail = localStorage.getItem('userEmail');
-    const storedIsAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    const storedToken = authStorage.getToken();
+    const storedUsername = authStorage.getUsername();
+    const storedEmail = storage.getString(StorageKeys.USER_EMAIL);
+    const storedIsAuthenticated = authStorage.isAuthenticated();
 
     // Validate token if present
     if (storedToken && isTokenExpired(storedToken)) {
@@ -105,11 +108,7 @@ export function AuthProvider({ children }) {
    * Clear auth state
    */
   const clearAuthState = React.useCallback(() => {
-    localStorage.removeItem('auth_token_backup');
-    localStorage.removeItem('username');
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('chatUser');
+    authStorage.clearAuth();
     setIsAuthenticated(false);
     setUsername(null);
     setEmail(null);
@@ -124,8 +123,8 @@ export function AuthProvider({ children }) {
     setError(null);
 
     try {
-      const storedToken = localStorage.getItem('auth_token_backup');
-      
+      const storedToken = authStorage.getToken();
+
       if (!storedToken) {
         setIsCheckingAuth(false);
         return;
@@ -151,12 +150,12 @@ export function AuthProvider({ children }) {
           setEmail(data.user.email);
           setIsAuthenticated(true);
           setToken(storedToken);
-          
-          // Keep localStorage in sync
-          localStorage.setItem('username', data.user.username);
-          localStorage.setItem('isAuthenticated', 'true');
+
+          // Keep storage in sync
+          authStorage.setUsername(data.user.username);
+          authStorage.setAuthenticated(true);
           if (data.user.email) {
-            localStorage.setItem('userEmail', data.user.email);
+            storage.set(StorageKeys.USER_EMAIL, data.user.email);
           }
 
           // Set analytics
@@ -172,7 +171,7 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       console.error('Error verifying session:', err);
-      // On error, try to restore from localStorage if available
+      // On error, try to restore from storage if available
       const storedState = loadAuthState();
       if (storedState.isAuthenticated) {
         // Use stored state but mark as potentially stale
@@ -216,21 +215,21 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true);
       if (data.user?.username) {
         setUsername(data.user.username);
-        localStorage.setItem('username', data.user.username);
+        authStorage.setUsername(data.user.username);
         setUserID(data.user.username);
         const userProperties = calculateUserProperties(data.user, false);
         setUserProperties(userProperties);
       }
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('userEmail', cleanEmail);
+      authStorage.setAuthenticated(true);
+      storage.set(StorageKeys.USER_EMAIL, cleanEmail);
       setEmail(cleanEmail);
-      
+
       if (data.token) {
         setToken(data.token);
-        localStorage.setItem('auth_token_backup', data.token);
+        authStorage.setToken(data.token);
       }
       if (data.user) {
-        localStorage.setItem('chatUser', JSON.stringify(data.user));
+        storage.set(StorageKeys.CHAT_USER, data.user);
       }
 
       return { success: true, user: data.user };
@@ -273,19 +272,19 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true);
       if (data.user?.username) {
         setUsername(data.user.username);
-        localStorage.setItem('username', data.user.username);
+        authStorage.setUsername(data.user.username);
         setUserID(data.user.username);
         const userProperties = calculateUserProperties(data.user, true);
         setUserProperties(userProperties);
       }
-      localStorage.setItem('chatUser', JSON.stringify(data.user));
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('userEmail', cleanEmail);
+      storage.set(StorageKeys.CHAT_USER, data.user);
+      authStorage.setAuthenticated(true);
+      storage.set(StorageKeys.USER_EMAIL, cleanEmail);
       setEmail(cleanEmail);
-      
+
       if (data.token) {
         setToken(data.token);
-        localStorage.setItem('auth_token_backup', data.token);
+        authStorage.setToken(data.token);
       }
 
       return { success: true, user: data.user };
@@ -323,8 +322,13 @@ export function AuthProvider({ children }) {
    * Sync auth state across tabs
    */
   React.useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === 'auth_token_backup' || e.key === 'isAuthenticated') {
+    const handleStorageChange = e => {
+      if (
+        e.key === StorageKeys.AUTH_TOKEN ||
+        e.key === 'auth_token_backup' ||
+        e.key === StorageKeys.IS_AUTHENTICATED ||
+        e.key === 'isAuthenticated'
+      ) {
         // Auth state changed in another tab, re-verify
         verifySession();
       }
@@ -363,7 +367,7 @@ export function AuthProvider({ children }) {
     isSigningUp,
     isGoogleLoggingIn,
     error,
-    
+
     // Actions
     login,
     signup,
@@ -371,7 +375,7 @@ export function AuthProvider({ children }) {
     verifySession,
     clearAuthState,
     setError,
-    
+
     // Helpers
     isTokenExpired: () => isTokenExpired(token),
   };
@@ -394,4 +398,3 @@ export function useAuthContext() {
 // React Router handles route protection via route configuration
 
 export default AuthContext;
-

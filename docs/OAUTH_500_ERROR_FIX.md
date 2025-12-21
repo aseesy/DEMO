@@ -131,8 +131,8 @@ If you see this, the variable wasn't set correctly.
 ## Need Help?
 
 If the issue persists:
+
 1. Check Railway deployment logs for the exact error
 2. Verify all environment variables are set correctly
 3. Ensure OAuth client is configured in Google Cloud Console
 4. Make sure redirect URIs match exactly
-

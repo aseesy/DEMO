@@ -20,19 +20,24 @@ This file tracks diagnostic decisions and their rationale.
 **Context**: [What led to this decision]
 
 ### Analysis
+
 [Detailed analysis of the problem]
 
 ### Decision
+
 [What was decided and why]
 
 ### Alternatives Considered
+
 1. [Alternative 1] - [Why rejected]
 2. [Alternative 2] - [Why rejected]
 
 ### Outcome
+
 [Result of the decision]
 
 ### Follow-up
+
 [Any required follow-up actions]
 ```
 
@@ -44,4 +49,4 @@ No decisions recorded yet.
 
 ---
 
-*Last Updated: 2025-11-26*
+_Last Updated: 2025-11-26_

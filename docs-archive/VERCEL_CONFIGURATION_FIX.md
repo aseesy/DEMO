@@ -25,11 +25,13 @@ You have TWO `vercel.json` files:
 ### Option A: Use Root Directory = `chat-client-vite` (RECOMMENDED)
 
 **In Vercel Dashboard:**
+
 1. Go to **Settings** → **General**
 2. Set **Root Directory** to: `chat-client-vite`
 3. Save
 
 **Result:**
+
 - Vercel will use `chat-client-vite/vercel.json`
 - Settings will match automatically
 - No need to change code
@@ -39,6 +41,7 @@ You have TWO `vercel.json` files:
 ### Option B: Use Root Directory = `.` (root)
 
 **In Vercel Dashboard:**
+
 1. Go to **Settings** → **General**
 2. Set **Root Directory** to: `.` (or leave blank)
 3. Go to **Settings** → **Build & Development Settings**
@@ -50,6 +53,7 @@ You have TWO `vercel.json` files:
 5. Save
 
 **Result:**
+
 - Vercel will use root `vercel.json`
 - Settings will match
 
@@ -75,4 +79,3 @@ This is cleaner and matches the project structure better.
 1. **Redeploy** from Vercel dashboard
 2. The warning should disappear
 3. Future deployments will use the correct configuration
-

@@ -20,17 +20,20 @@
 ## Before You Start
 
 ### Prerequisites
+
 - ✅ Read `DESIGN_SYSTEM.md` for component API reference
 - ✅ Check `BUTTON_QUICK_REFERENCE.md` for common patterns
 - ✅ Visit `/ui-showcase` to see components in action
 - ✅ Ensure HMR (Hot Module Replacement) is working
 
 ### Tools You'll Need
+
 - Code editor with search/replace
 - Browser with dev server running
 - Design system documentation open
 
 ### Time Estimates
+
 - **Simple button:** 1-2 minutes
 - **Complex button (icons, loading):** 3-5 minutes
 - **Multiple buttons in file:** 5-10 minutes per file
@@ -44,6 +47,7 @@
 Use this checklist for each file you migrate:
 
 ### Pre-Migration
+
 - [ ] Read the file to understand its purpose
 - [ ] Count buttons to migrate (use `grep -c "<button"`)
 - [ ] Identify button types (action, toggle, icon-only, etc.)
@@ -51,6 +55,7 @@ Use this checklist for each file you migrate:
 - [ ] Check if file has loading states
 
 ### During Migration
+
 - [ ] Add Button import at top of file
 - [ ] Replace each button element
 - [ ] Choose appropriate variant
@@ -62,6 +67,7 @@ Use this checklist for each file you migrate:
 - [ ] Test in browser after each change
 
 ### Post-Migration
+
 - [ ] Verify all buttons work correctly
 - [ ] Check loading states function
 - [ ] Test responsive behavior
@@ -77,6 +83,7 @@ Use this checklist for each file you migrate:
 ### Step 1: Add Import
 
 **At the top of your file, add:**
+
 ```jsx
 import { Button } from './ui';
 // OR for nested directories
@@ -84,6 +91,7 @@ import { Button } from '../ui';
 ```
 
 **Example:**
+
 ```jsx
 // Before
 import React from 'react';
@@ -100,11 +108,13 @@ import { Button } from './ui';
 ### Step 2: Find All Buttons
 
 **Use grep to find buttons:**
+
 ```bash
 grep -n "<button" path/to/your-file.jsx
 ```
 
 **Or search in your editor:**
+
 - VS Code: Cmd+F / Ctrl+F → search `<button`
 - Count found: This tells you how many to migrate
 
@@ -114,14 +124,14 @@ grep -n "<button" path/to/your-file.jsx
 
 For each button, identify what it does:
 
-| Button Type | Typical Variant | Example |
-|-------------|----------------|---------|
-| Primary CTA | `primary` | Save, Submit, Get Started |
-| Secondary action | `secondary` | Add, Generate, Install |
-| Cancel/Back | `tertiary` | Cancel, Back, Close |
-| Subtle action | `ghost` | Hide, Dismiss, × close |
-| Destructive | `danger` | Delete, Remove |
-| Toggle | `secondary/tertiary` | Day selector, mode toggle |
+| Button Type      | Typical Variant      | Example                   |
+| ---------------- | -------------------- | ------------------------- |
+| Primary CTA      | `primary`            | Save, Submit, Get Started |
+| Secondary action | `secondary`          | Add, Generate, Install    |
+| Cancel/Back      | `tertiary`           | Cancel, Back, Close       |
+| Subtle action    | `ghost`              | Hide, Dismiss, × close    |
+| Destructive      | `danger`             | Delete, Remove            |
+| Toggle           | `secondary/tertiary` | Day selector, mode toggle |
 
 ---
 
@@ -130,6 +140,7 @@ For each button, identify what it does:
 #### Simple Button Example
 
 **Before:**
+
 ```jsx
 <button
   onClick={handleSave}
@@ -140,17 +151,15 @@ For each button, identify what it does:
 ```
 
 **After:**
+
 ```jsx
-<Button
-  onClick={handleSave}
-  variant="primary"
-  size="medium"
->
+<Button onClick={handleSave} variant="primary" size="medium">
   Save
 </Button>
 ```
 
 **What Changed:**
+
 - ✅ `<button>` → `<Button>`
 - ✅ Removed style classes
 - ✅ Added `variant="primary"`
@@ -161,6 +170,7 @@ For each button, identify what it does:
 #### Button with Loading State
 
 **Before:**
+
 ```jsx
 <button
   onClick={handleSave}
@@ -172,18 +182,15 @@ For each button, identify what it does:
 ```
 
 **After:**
+
 ```jsx
-<Button
-  onClick={handleSave}
-  variant="primary"
-  loading={isSaving}
-  disabled={isSaving}
->
+<Button onClick={handleSave} variant="primary" loading={isSaving} disabled={isSaving}>
   Save
 </Button>
 ```
 
 **What Changed:**
+
 - ✅ Added `loading={isSaving}`
 - ✅ Removed conditional text (automatic)
 - ✅ Spinner shows automatically
@@ -193,6 +200,7 @@ For each button, identify what it does:
 #### Button with Icon
 
 **Before:**
+
 ```jsx
 <button className="...">
   <svg className="w-4 h-4">...</svg>
@@ -201,18 +209,15 @@ For each button, identify what it does:
 ```
 
 **After:**
+
 ```jsx
-<Button
-  variant="primary"
-  icon={
-    <svg className="w-4 h-4">...</svg>
-  }
->
+<Button variant="primary" icon={<svg className="w-4 h-4">...</svg>}>
   Add Item
 </Button>
 ```
 
 **What Changed:**
+
 - ✅ Icon moved to `icon` prop
 - ✅ Text moved to children
 - ✅ Spacing handled automatically
@@ -222,29 +227,23 @@ For each button, identify what it does:
 #### Icon-Only Button
 
 **Before:**
+
 ```jsx
-<button
-  onClick={onClose}
-  className="text-gray-500 hover:text-teal-medium"
-  aria-label="Close"
->
+<button onClick={onClose} className="text-gray-500 hover:text-teal-medium" aria-label="Close">
   ×
 </button>
 ```
 
 **After:**
+
 ```jsx
-<Button
-  onClick={onClose}
-  variant="ghost"
-  size="small"
-  aria-label="Close"
->
+<Button onClick={onClose} variant="ghost" size="small" aria-label="Close">
   ×
 </Button>
 ```
 
 **What Changed:**
+
 - ✅ Used `ghost` variant (subtle)
 - ✅ Used `small` size
 - ✅ Kept aria-label (accessibility)
@@ -254,23 +253,21 @@ For each button, identify what it does:
 #### Full-Width Button
 
 **Before:**
+
 ```jsx
-<button className="w-full bg-teal-dark text-white ...">
-  Submit
-</button>
+<button className="w-full bg-teal-dark text-white ...">Submit</button>
 ```
 
 **After:**
+
 ```jsx
-<Button
-  variant="primary"
-  fullWidth
->
+<Button variant="primary" fullWidth>
   Submit
 </Button>
 ```
 
 **What Changed:**
+
 - ✅ Added `fullWidth` prop
 - ✅ Removed `w-full` class
 
@@ -279,13 +276,12 @@ For each button, identify what it does:
 #### Toggle Button
 
 **Before:**
+
 ```jsx
 <button
   onClick={() => toggleDay(day)}
   className={`px-3 py-2 rounded ${
-    selectedDays.includes(day)
-      ? 'bg-teal-medium text-white'
-      : 'bg-white text-teal-medium border'
+    selectedDays.includes(day) ? 'bg-teal-medium text-white' : 'bg-white text-teal-medium border'
   }`}
 >
   {day}
@@ -293,6 +289,7 @@ For each button, identify what it does:
 ```
 
 **After:**
+
 ```jsx
 <Button
   onClick={() => toggleDay(day)}
@@ -304,6 +301,7 @@ For each button, identify what it does:
 ```
 
 **What Changed:**
+
 - ✅ Variant switches based on state
 - ✅ No manual class management
 - ✅ Cleaner conditional logic
@@ -315,11 +313,9 @@ For each button, identify what it does:
 #### Custom Gradient Button
 
 **Solution:** Use className override
+
 ```jsx
-<Button
-  variant="primary"
-  className="bg-gradient-to-br from-purple-600 to-indigo-700"
->
+<Button variant="primary" className="bg-gradient-to-br from-purple-600 to-indigo-700">
   Custom Style
 </Button>
 ```
@@ -327,11 +323,9 @@ For each button, identify what it does:
 #### Button with Custom Colors
 
 **Solution:** Use className for special cases
+
 ```jsx
-<Button
-  variant="primary"
-  className="bg-indigo-600 hover:bg-indigo-700"
->
+<Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700">
   Custom Color
 </Button>
 ```
@@ -339,9 +333,10 @@ For each button, identify what it does:
 #### Button Inside Form
 
 **Important:** Preserve `type` attribute
+
 ```jsx
 <Button
-  type="submit"  // ← Important!
+  type="submit" // ← Important!
   variant="primary"
 >
   Submit Form
@@ -377,6 +372,7 @@ After each button replacement:
 ### Pattern 1: Modal Footer Buttons
 
 **Before:**
+
 ```jsx
 <div className="flex gap-2">
   <button className="...">Cancel</button>
@@ -385,6 +381,7 @@ After each button replacement:
 ```
 
 **After:**
+
 ```jsx
 <div className="flex gap-2">
   <Button variant="tertiary" onClick={onClose}>
@@ -397,12 +394,17 @@ After each button replacement:
 ```
 
 **Or use Modal footer prop:**
+
 ```jsx
 <Modal
   footer={
     <>
-      <Button variant="tertiary" onClick={onClose}>Cancel</Button>
-      <Button variant="primary" onClick={onSave}>Save</Button>
+      <Button variant="tertiary" onClick={onClose}>
+        Cancel
+      </Button>
+      <Button variant="primary" onClick={onSave}>
+        Save
+      </Button>
     </>
   }
 >
@@ -415,6 +417,7 @@ After each button replacement:
 ### Pattern 2: Form Submission
 
 **Before:**
+
 ```jsx
 <form onSubmit={handleSubmit}>
   {/* fields */}
@@ -425,15 +428,11 @@ After each button replacement:
 ```
 
 **After:**
+
 ```jsx
 <form onSubmit={handleSubmit}>
   {/* fields */}
-  <Button
-    type="submit"
-    variant="primary"
-    disabled={!isValid}
-    loading={isSubmitting}
-  >
+  <Button type="submit" variant="primary" disabled={!isValid} loading={isSubmitting}>
     Submit
   </Button>
 </form>
@@ -444,6 +443,7 @@ After each button replacement:
 ### Pattern 3: Delete Confirmation
 
 **Before:**
+
 ```jsx
 <button
   onClick={() => {
@@ -458,6 +458,7 @@ After each button replacement:
 ```
 
 **After:**
+
 ```jsx
 <Button
   variant="danger"
@@ -476,6 +477,7 @@ After each button replacement:
 ### Pattern 4: List of Action Buttons
 
 **Before:**
+
 ```jsx
 <div className="flex gap-2">
   <button onClick={onEdit}>Edit</button>
@@ -484,20 +486,11 @@ After each button replacement:
 ```
 
 **After:**
+
 ```jsx
 <div className="flex gap-2">
-  <Button
-    variant="ghost"
-    size="small"
-    onClick={onEdit}
-    icon={<EditIcon />}
-  />
-  <Button
-    variant="ghost"
-    size="small"
-    onClick={onDelete}
-    icon={<DeleteIcon />}
-  />
+  <Button variant="ghost" size="small" onClick={onEdit} icon={<EditIcon />} />
+  <Button variant="ghost" size="small" onClick={onDelete} icon={<DeleteIcon />} />
 </div>
 ```
 
@@ -506,6 +499,7 @@ After each button replacement:
 ### Pattern 5: Google OAuth Button
 
 **Special case with custom icon:**
+
 ```jsx
 <Button
   onClick={handleGoogleLogin}
@@ -513,11 +507,13 @@ After each button replacement:
   disabled={isLoading}
   fullWidth
   className="bg-white border-2 border-gray-300 text-gray-700"
-  icon={!isLoading && (
-    <svg className="w-5 h-5" viewBox="0 0 24 24">
-      {/* Google icon paths */}
-    </svg>
-  )}
+  icon={
+    !isLoading && (
+      <svg className="w-5 h-5" viewBox="0 0 24 24">
+        {/* Google icon paths */}
+      </svg>
+    )
+  }
 >
   Sign in with Google
 </Button>
@@ -536,25 +532,29 @@ import { Modal, Button } from './ui';
 ### Step 2: Replace Modal Structure
 
 **Before:**
+
 ```jsx
-{showModal && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-lg p-6 max-w-md">
-      <div className="flex justify-between items-center mb-4">
-        <h2>Title</h2>
-        <button onClick={onClose}>×</button>
-      </div>
-      <div>Content</div>
-      <div className="flex gap-2 mt-4">
-        <button onClick={onClose}>Cancel</button>
-        <button onClick={onSave}>Save</button>
+{
+  showModal && (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md">
+        <div className="flex justify-between items-center mb-4">
+          <h2>Title</h2>
+          <button onClick={onClose}>×</button>
+        </div>
+        <div>Content</div>
+        <div className="flex gap-2 mt-4">
+          <button onClick={onClose}>Cancel</button>
+          <button onClick={onSave}>Save</button>
+        </div>
       </div>
     </div>
-  </div>
-)}
+  );
+}
 ```
 
 **After:**
+
 ```jsx
 <Modal
   isOpen={showModal}
@@ -562,8 +562,12 @@ import { Modal, Button } from './ui';
   title="Title"
   footer={
     <>
-      <Button variant="tertiary" onClick={onClose}>Cancel</Button>
-      <Button variant="primary" onClick={onSave}>Save</Button>
+      <Button variant="tertiary" onClick={onClose}>
+        Cancel
+      </Button>
+      <Button variant="primary" onClick={onSave}>
+        Save
+      </Button>
     </>
   }
 >
@@ -572,6 +576,7 @@ import { Modal, Button } from './ui';
 ```
 
 **What Changed:**
+
 - ✅ Backdrop handled automatically
 - ✅ Escape key support automatic
 - ✅ Scroll lock automatic
@@ -598,6 +603,7 @@ import { Modal, Button } from './ui';
 **Coming Soon!** This section will be populated when Phase 3 (Input component migration) begins.
 
 **Expected Pattern:**
+
 ```jsx
 // Future Input component
 <Input
@@ -617,21 +623,27 @@ import { Modal, Button } from './ui';
 ### Automated Checks
 
 **1. Count remaining buttons:**
+
 ```bash
 grep -c "<button" path/to/file.jsx
 ```
+
 Should return `0` when complete.
 
 **2. Check for hardcoded colors:**
+
 ```bash
 grep -n "#[0-9a-fA-F]\{6\}" path/to/file.jsx
 ```
+
 Should only show non-button colors.
 
 **3. Verify Button import:**
+
 ```bash
 grep "import.*Button" path/to/file.jsx
 ```
+
 Should show the import.
 
 ---
@@ -674,6 +686,7 @@ For each migrated file:
 ### Browser Testing
 
 **Test in at least:**
+
 - [ ] Chrome/Edge (Chromium)
 - [ ] Firefox
 - [ ] Safari (if on Mac)
@@ -687,11 +700,13 @@ For each migrated file:
 ### Issue: Button doesn't look right
 
 **Possible causes:**
+
 1. Wrong variant chosen
 2. Missing size prop
 3. Conflicting className
 
 **Solutions:**
+
 ```jsx
 // Try different variant
 <Button variant="secondary">  // instead of primary
@@ -708,6 +723,7 @@ For each migrated file:
 ### Issue: Loading state not working
 
 **Check:**
+
 ```jsx
 // Both props needed
 <Button
@@ -717,6 +733,7 @@ For each migrated file:
 ```
 
 **Common mistake:**
+
 ```jsx
 // ❌ Wrong - only disabling
 <Button disabled={isLoading}>
@@ -730,6 +747,7 @@ For each migrated file:
 ### Issue: Icon not showing
 
 **Check:**
+
 ```jsx
 // ✅ Correct
 <Button
@@ -750,6 +768,7 @@ For each migrated file:
 ### Issue: Button too wide/narrow
 
 **Solutions:**
+
 ```jsx
 // Full width
 <Button fullWidth>
@@ -769,10 +788,11 @@ For each migrated file:
 ### Issue: Custom styling not applying
 
 **Solution:** Use className for overrides
+
 ```jsx
 <Button
   variant="primary"
-  className="bg-purple-600 hover:bg-purple-700"  // Override
+  className="bg-purple-600 hover:bg-purple-700" // Override
 >
   Custom
 </Button>
@@ -785,6 +805,7 @@ For each migrated file:
 ### Issue: Form submission not working
 
 **Check `type` attribute:**
+
 ```jsx
 // ✅ Correct
 <Button type="submit">Submit</Button>
@@ -798,23 +819,24 @@ For each migrated file:
 ### Issue: Buttons in loop have wrong onClick
 
 **Check closure/binding:**
+
 ```jsx
 // ❌ Wrong
-{items.map(item => (
-  <Button onClick={() => handleClick(item.id)}>
-    {item.name}
-  </Button>
-))}
+{
+  items.map(item => <Button onClick={() => handleClick(item.id)}>{item.name}</Button>);
+}
 
 // ✅ Correct
-{items.map(item => (
-  <Button
-    key={item.id}  // ← Don't forget key!
-    onClick={() => handleClick(item.id)}
-  >
-    {item.name}
-  </Button>
-))}
+{
+  items.map(item => (
+    <Button
+      key={item.id} // ← Don't forget key!
+      onClick={() => handleClick(item.id)}
+    >
+      {item.name}
+    </Button>
+  ));
+}
 ```
 
 ---
@@ -823,21 +845,21 @@ For each migrated file:
 
 ### Variant Selection
 
-| Action Type | Variant |
-|-------------|---------|
-| Main CTA | `primary` |
-| Secondary action | `secondary` |
-| Cancel/alternative | `tertiary` |
-| Subtle/hide | `ghost` |
-| Destructive | `danger` |
+| Action Type        | Variant     |
+| ------------------ | ----------- |
+| Main CTA           | `primary`   |
+| Secondary action   | `secondary` |
+| Cancel/alternative | `tertiary`  |
+| Subtle/hide        | `ghost`     |
+| Destructive        | `danger`    |
 
 ### Size Selection
 
-| Context | Size |
-|---------|------|
-| Hero CTA | `large` |
+| Context      | Size     |
+| ------------ | -------- |
+| Hero CTA     | `large`  |
 | Most buttons | `medium` |
-| Modals/cards | `small` |
+| Modals/cards | `small`  |
 
 ### Common Props Combinations
 
@@ -954,4 +976,4 @@ A: Navigation tabs/menu items are different - see NAVIGATION_ANALYSIS.md. Use Bu
 
 **Good luck with your migration! 🚀**
 
-*Refer to this guide whenever you migrate a new file. The patterns become second nature after a few files.*
+_Refer to this guide whenever you migrate a new file. The patterns become second nature after a few files._

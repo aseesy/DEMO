@@ -13,26 +13,26 @@ const marketingSitemapPath = resolve('src', 'routes', 'marketing', 'sitemap.json
 const outputPath = resolve('public', 'sitemap.xml');
 
 function generate() {
-    try {
-        const raw = readFileSync(marketingSitemapPath, 'utf-8');
-        const data = JSON.parse(raw);
-        const pages = data.pages || [];
+  try {
+    const raw = readFileSync(marketingSitemapPath, 'utf-8');
+    const data = JSON.parse(raw);
+    const pages = data.pages || [];
 
-        const urls = pages
-            .map((p) => {
-                const loc = `${BASE_URL}${p.slug}`;
-                return `  <url>\n    <loc>${loc}</loc>\n  </url>`;
-            })
-            .join('\n');
+    const urls = pages
+      .map(p => {
+        const loc = `${BASE_URL}${p.slug}`;
+        return `  <url>\n    <loc>${loc}</loc>\n  </url>`;
+      })
+      .join('\n');
 
-        const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
 
-        writeFileSync(outputPath, xml, 'utf-8');
-        console.log('✅ sitemap.xml generated at', outputPath);
-    } catch (err) {
-        console.error('❌ Failed to generate sitemap.xml:', err);
-        process.exit(1);
-    }
+    writeFileSync(outputPath, xml, 'utf-8');
+    console.log('✅ sitemap.xml generated at', outputPath);
+  } catch (err) {
+    console.error('❌ Failed to generate sitemap.xml:', err);
+    process.exit(1);
+  }
 }
 
 generate();

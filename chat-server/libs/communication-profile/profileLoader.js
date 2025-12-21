@@ -32,12 +32,15 @@ const DEFAULT_PROFILE = {
 };
 
 /**
- * Load a single user's communication profile
+ * Get a single user's communication profile
+ *
+ * NAMING: Using `get*` for consistency with codebase data retrieval convention.
+ *
  * @param {string} userId - User ID (username)
  * @param {Object} db - Database connection (dbPostgres)
  * @returns {Promise<Object>} - User's communication profile
  */
-async function loadProfile(userId, db) {
+async function getProfile(userId, db) {
   if (!userId) {
     console.warn('⚠️ ProfileLoader: No userId provided');
     return { ...DEFAULT_PROFILE, user_id: null };
@@ -84,10 +87,19 @@ async function loadProfile(userId, db) {
 
     return {
       user_id: row.user_id,
-      communication_patterns: parseJsonField(row.communication_patterns, DEFAULT_PROFILE.communication_patterns),
+      communication_patterns: parseJsonField(
+        row.communication_patterns,
+        DEFAULT_PROFILE.communication_patterns
+      ),
       triggers: parseJsonField(row.triggers, DEFAULT_PROFILE.triggers),
-      successful_rewrites: parseJsonField(row.successful_rewrites, DEFAULT_PROFILE.successful_rewrites),
-      intervention_history: parseJsonField(row.intervention_history, DEFAULT_PROFILE.intervention_history),
+      successful_rewrites: parseJsonField(
+        row.successful_rewrites,
+        DEFAULT_PROFILE.successful_rewrites
+      ),
+      intervention_history: parseJsonField(
+        row.intervention_history,
+        DEFAULT_PROFILE.intervention_history
+      ),
       profile_version: row.profile_version || 1,
       last_profile_update: row.last_profile_update,
       is_new: false,
@@ -105,12 +117,15 @@ async function loadProfile(userId, db) {
 }
 
 /**
- * Load multiple user profiles efficiently
+ * Get multiple user profiles efficiently
+ *
+ * NAMING: Using `get*` for consistency with codebase data retrieval convention.
+ *
  * @param {string[]} userIds - Array of user IDs
  * @param {Object} db - Database connection
  * @returns {Promise<Map<string, Object>>} - Map of userId -> profile
  */
-async function loadProfiles(userIds, db) {
+async function getProfiles(userIds, db) {
   const profiles = new Map();
 
   if (!userIds || userIds.length === 0) {
@@ -150,10 +165,19 @@ async function loadProfiles(userIds, db) {
 
       profiles.set(row.user_id, {
         user_id: row.user_id,
-        communication_patterns: parseJsonField(row.communication_patterns, DEFAULT_PROFILE.communication_patterns),
+        communication_patterns: parseJsonField(
+          row.communication_patterns,
+          DEFAULT_PROFILE.communication_patterns
+        ),
         triggers: parseJsonField(row.triggers, DEFAULT_PROFILE.triggers),
-        successful_rewrites: parseJsonField(row.successful_rewrites, DEFAULT_PROFILE.successful_rewrites),
-        intervention_history: parseJsonField(row.intervention_history, DEFAULT_PROFILE.intervention_history),
+        successful_rewrites: parseJsonField(
+          row.successful_rewrites,
+          DEFAULT_PROFILE.successful_rewrites
+        ),
+        intervention_history: parseJsonField(
+          row.intervention_history,
+          DEFAULT_PROFILE.intervention_history
+        ),
         profile_version: row.profile_version || 1,
         last_profile_update: row.last_profile_update,
         is_new: false,
@@ -189,7 +213,10 @@ async function loadProfiles(userIds, db) {
 }
 
 module.exports = {
-  loadProfile,
-  loadProfiles,
+  getProfile,
+  getProfiles,
+  // Deprecated aliases - use getProfile/getProfiles instead
+  loadProfile: getProfile,
+  loadProfiles: getProfiles,
   DEFAULT_PROFILE,
 };

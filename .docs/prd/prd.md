@@ -11,12 +11,15 @@
 ## 📋 Executive Summary
 
 ### Vision Statement
+
 Transform high-tension co-parenting exchanges into respectful, child-centered dialogue through intelligent mediation technology. LiaiZen empowers separated parents to communicate effectively, reduce conflict, and prioritize their children's wellbeing through AI-powered message mediation, secure task sharing, and comprehensive communication tools designed specifically for the unique challenges of co-parenting.
 
 ### Problem Statement
+
 Separated and divorced parents face significant communication challenges that directly impact their children's wellbeing. High-conflict exchanges, misunderstandings due to different communication styles, lack of documentation for legal/custody purposes, and difficulty coordinating shared responsibilities create stress for both parents and children. Existing communication tools (email, text messaging, general chat apps) lack features specifically designed for co-parenting: conflict de-escalation, message mediation, audit trails for legal purposes, and child-centered communication prompts. Parents need a platform that actively helps them communicate better, not just a conduit for messages that can escalate tensions.
 
 ### Success Metrics
+
 - **Primary Metric**: Message sentiment improvement (30% reduction in negative/hostile messages within 3 months of use)
 - **Secondary Metrics**:
   - Monthly Active Users (MAU): 10,000 users within 6 months of launch
@@ -27,6 +30,7 @@ Separated and divorced parents face significant communication challenges that di
   - Average Response Time: Parents respond to co-parent messages within 24 hours (vs. 3+ days industry average)
 
 ### Target Audience
+
 - **Primary Users**: Separated/divorced parents managing joint or shared custody arrangements (ages 25-50, varying technical skill levels)
 - **Secondary Users**: Family law attorneys seeking to reduce client communication conflicts and billable mediation hours
 - **Stakeholders**: Children of separated parents (indirect beneficiaries), family therapists, co-parenting counselors, mental health professionals
@@ -36,6 +40,7 @@ Separated and divorced parents face significant communication challenges that di
 ## 🎯 Product Goals & Objectives
 
 ### Short-term Goals (0-3 months)
+
 1. Launch MVP with core messaging, AI mediation, and contact management to 500 beta users
 2. Achieve 60% AI mediation acceptance rate (users accepting rewrite suggestions)
 3. Establish reliable real-time messaging infrastructure with 99.5% uptime
@@ -43,6 +48,7 @@ Separated and divorced parents face significant communication challenges that di
 5. Build trust with early adopters through robust privacy controls and COPPA/GDPR compliance
 
 ### Medium-term Goals (3-6 months)
+
 1. Scale to 10,000 Monthly Active Users with positive user retention (70%+ at 3 months)
 2. Launch task management and calendar integration features for comprehensive co-parenting coordination
 3. Establish partnerships with 5 family law firms for attorney referrals and platform validation
@@ -50,6 +56,7 @@ Separated and divorced parents face significant communication challenges that di
 5. Build content library of co-parenting resources and conflict resolution guides
 
 ### Long-term Vision (6-12 months)
+
 1. Become the leading co-parenting communication platform with 50,000+ active users
 2. Launch premium features: document storage, expense tracking, advanced analytics
 3. Expand to become a social platform for respectful family communication as children age into adulthood
@@ -58,6 +65,7 @@ Separated and divorced parents face significant communication challenges that di
 6. Explore international expansion with multi-language support and region-specific family law compliance
 
 ### Non-Goals
+
 - **Not a dating or social networking platform** - LiaiZen is strictly for co-parent communication, not for finding new partners or socializing
 - **Not a legal advice platform** - We provide tools for communication and documentation, but not legal counsel or custody recommendations
 - **Not a therapy/counseling replacement** - AI mediation assists communication but does not replace professional mental health support
@@ -70,6 +78,7 @@ Separated and divorced parents face significant communication challenges that di
 ## 👥 User Personas
 
 ### Primary Persona: Sarah - Recently Divorced Mother
+
 - **Background**: 38-year-old marketing manager, divorced 18 months ago, shares 50/50 custody of two children (ages 7 and 10) with her ex-husband. Moderately tech-savvy, uses smartphone for most communication. Lives in suburban area, works full-time.
 - **Communication Struggles & Real Costs**:
   - **The Endless Conflict Cycle**: Every message exchange spirals into multi-day arguments where old grievances resurface. A simple "Can you pick up Emma early on Friday?" becomes "You NEVER help when I need you" and then devolves into rehashing who forgot whose soccer game two years ago. They haven't successfully resolved a single scheduling conflict without fighting in over a year.
@@ -92,6 +101,7 @@ Separated and divorced parents face significant communication challenges that di
   - Can discuss present-day issues without the past being weaponized against her
 
 ### Secondary Persona: Mike - Father in High-Conflict Co-Parenting Situation
+
 - **Background**: 42-year-old construction foreman, divorced 3 years ago, has children every other weekend and one weeknight. Not highly tech-savvy, primarily uses phone for calls/texts. Currently in ongoing custody dispute seeking more parenting time.
 - **Communication Struggles & Real Costs**:
   - **Words Used Against Him**: Everything he says gets misinterpreted and escalated. His straightforward "No, that doesn't work for me" gets read as hostile and dismissive. His brief texts come across as uncaring when he's just trying to be efficient. His inability to express himself clearly is damaging his relationship with both his ex-wife and his children.
@@ -115,6 +125,7 @@ Separated and divorced parents face significant communication challenges that di
   - Reaches actual agreements about parenting instead of endless stalemates
 
 ### Tertiary Persona: Jessica - Family Law Attorney
+
 - **Background**: 35-year-old attorney specializing in family law and custody cases, represents 15-20 active divorce/custody clients at any time. Tech-savvy, early adopter of legal tech tools.
 - **Communication Struggles & Real Costs**:
   - **Watching Clients Sabotage Themselves**: She sees clients damage their co-parenting relationships not because they're bad parents, but because they can't stop sending hostile, emotional messages. One client lost ground in custody negotiations because his aggressive communication style demonstrated poor judgment. Another client's angry texting patterns illustrated an inability to co-parent collaboratively. The communication breakdown is costing her clients their relationships with their children.
@@ -136,6 +147,7 @@ Separated and divorced parents face significant communication challenges that di
   - Clients stop sabotaging their own co-parenting relationships through poor communication
 
 ### Quaternary Persona: David - Co-Parent with Minimal Conflict
+
 - **Background**: 45-year-old teacher, amicably divorced 5 years ago, shares custody 60/40 with ex-wife. Strong communicators with low conflict, both remarried.
 - **Communication Struggles & Real Costs**:
   - **Small Misunderstandings That Add Up**: Even though they're amicable, communication gaps still cost them. Last month he showed up to a soccer game his ex-wife already attended—wasted 2 hours driving across town because they didn't coordinate. His son needed permission slips signed by both parents, but the deadline passed because the message got lost in their casual text thread.
@@ -161,6 +173,7 @@ Separated and divorced parents face significant communication challenges that di
 ## 🗺️ User Journey Maps
 
 ### Journey 1: First-Time User Onboarding (Sarah's Journey)
+
 **Persona**: Sarah - Recently Divorced Mother
 
 1. **Discovery**: Sarah's therapist mentions LiaiZen after hearing about yet another text fight with her ex. She searches "stop fighting with co-parent" on her iPhone and finds LiaiZen. Reads landing page emphasizing "AI blocks hostile messages before they're sent" and "learn healthier communication" - both resonate deeply with her exhaustion.
@@ -201,17 +214,20 @@ Separated and divorced parents face significant communication challenges that di
 5. **Long-Term Vision**: Years later, as children become adults, Sarah and her ex-husband continue using LiaiZen not as "co-parents" but as two adults who share family connections and need to coordinate holidays, graduations, and eventually grandchildren. The AI that once blocked their hostile messages now simply facilitates respectful, organized communication. LiaiZen has become a social platform for people who've learned to communicate with mutual respect.
 
 **Pain Points**:
+
 - **Week 1**: Frustrated when AI blocks messages she "needs to send" - doesn't yet see the pattern
 - **Week 2**: Wishes AI understood context better (learns this improves as AI learns her style)
 - **Month 1**: Ex-husband complains the app is "censoring" him - needs time to trust the process
 
 **Breakthrough Moments**:
+
 - **Week 2**: First time a blocked message prevents a three-day argument
 - **Month 2**: Daughter says "You and Dad aren't fighting as much" - validates the change
 - **Month 4**: Realizes she's THINKING differently before typing, not just relying on AI to fix it
 - **Month 6**: Ex-husband texts her outside the app to say "This is actually helping"
 
 ### Journey 2: Attorney-Facilitated Adoption (Mike's Journey)
+
 **Persona**: Mike - Father in High-Conflict Co-Parenting Situation
 
 1. **Discovery**: Mike's attorney recommends LiaiZen during their third meeting about communication issues. Attorney says: "I can't keep billing you $350/hour to rewrite your texts. This app will teach you to communicate without constantly escalating. Your ex-wife needs to use it too—this isn't about her behavior, it's about both of you learning healthier patterns."
@@ -249,17 +265,20 @@ Separated and divorced parents face significant communication challenges that di
 5. **Long-Term Evolution**: Mike continues using LiaiZen for years. As kids grow, platform shifts from conflict prevention to coordination tool. Eventually, when his daughter graduates high school, Mike and his ex-wife use the platform to coordinate college visits, share expenses for graduation party, plan family events. The AI that once saved him from his worst impulses now just helps them stay organized. They've learned to respect each other.
 
 **Pain Points**:
+
 - **Week 1**: Feels like app is "controlling" him - doesn't like being told he's wrong
 - **Week 3**: Frustrated when AI blocks messages that "aren't that bad"
 - **Month 1**: Spotty cell service at work sites causes delays (offline mode helps)
 
 **Breakthrough Moments**:
+
 - **Week 2**: First time his ex-wife responds positively to his message - realizes this is working
 - **Month 2**: Attorney says "I'm not worried about your communication anymore" - huge validation
 - **Month 5**: His daughter tells him "You and Mom don't fight as much" - makes everything worth it
 - **Year 1**: Wins increased custody partly due to improved communication - life-changing
 
 ### Journey 3: Low-Conflict Organizational Use (David's Journey)
+
 **Persona**: David - Co-Parent with Minimal Conflict
 
 1. **Discovery**: David searches "co-parent coordination app" after his new wife asks why he and his ex don't have a better system. Finds LiaiZen. Initially concerned it's conflict-focused, but reads "prevent misunderstandings before they happen" and "transparent coordination" - decides to try it.
@@ -293,11 +312,13 @@ Separated and divorced parents face significant communication challenges that di
 5. **Long-Term Vision**: Years later, David's kids are adults. He and his ex-wife still use LiaiZen to coordinate family holidays, share updates about grandchildren when they come, split costs for family gifts. What started as a co-parenting tool has become a permanent fixture for their extended family network—a respectful, organized way for people with shared family ties to stay connected. LiaiZen has evolved beyond co-parenting into a social platform for healthy, respectful family coordination.
 
 **Pain Points**:
+
 - **Week 1**: Worries platform is "overkill" for their low-conflict situation
 - **Week 2**: Occasionally feels AI suggestions are unnecessary when they're already being respectful
 - **Month 1**: Learning curve for new spouse getting access - clarity needed
 
 **Breakthrough Moments**:
+
 - **Week 3**: AI prevents a small misunderstanding from escalating - realizes even healthy relationships benefit from clarity
 - **Month 3**: New wife says "This makes everything so much easier" - validates the tool
 - **Year 1**: His ex-wife's new husband texts: "Thanks for setting this up, makes my life easier too"
@@ -308,13 +329,16 @@ Separated and divorced parents face significant communication challenges that di
 ## ⚙️ Core Features & Requirements
 
 ### Feature Category 1: Real-Time Communication
+
 **Priority**: High (MVP Critical)
 **Timeline**: Phase 1 (MVP - Month 0-3)
 
 #### Feature 1.1: WebSocket-Based Messaging
+
 **User Story**: As a co-parent (Sarah/Mike), I want to send and receive messages in real-time so that I can coordinate time-sensitive matters like schedule changes without delays.
 
 **Acceptance Criteria**:
+
 - [ ] Given two co-parents in a room, when User A sends a message, then User B receives it within 2 seconds
 - [ ] Given a user with poor connectivity, when connection is lost, then messages queue locally and send when reconnected
 - [ ] Given a user on mobile, when app is backgrounded, then push notifications alert user to new messages
@@ -327,18 +351,21 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: Socket.io infrastructure, user authentication, room membership
 **Constraints**:
+
 - Real-time requires WebSocket support (fallback to polling for old browsers)
 - Message storage must comply with data retention policies (7 years for legal purposes)
 - End-to-end encryption not feasible due to AI mediation requirement (messages must be readable by AI)
-**Success Metrics**:
+  **Success Metrics**:
 - Message delivery latency <2 seconds for 95% of messages
 - Zero message loss rate
 - 80% of users send first message within 24 hours of joining
 
 #### Feature 1.2: Room-Based Privacy Model
+
 **User Story**: As a co-parent (Sarah), I want my messages with my ex-husband to be completely private from other users so that sensitive family information stays confidential.
 
 **Acceptance Criteria**:
+
 - [ ] Given a user account, when user creates room, then only invited co-parent can access messages
 - [ ] Given an invitation, when recipient accepts, then both users see full message history
 - [ ] Given an invitation, when recipient declines or doesn't respond, then sender can cancel invitation
@@ -348,17 +375,20 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: User authentication, invitation system
 **Constraints**:
+
 - Two-party limitation (no group co-parenting for multiple parents)
 - Cannot remove co-parent once accepted (data retention for legal purposes)
-**Success Metrics**:
+  **Success Metrics**:
 - 90% of invitations accepted within 7 days
 - Zero data breach incidents
 - Zero unauthorized access incidents
 
 #### Feature 1.3: Message History & Search
+
 **User Story**: As a co-parent (Mike), I want to search through past conversations so that I can quickly reference previous agreements and decisions.
 
 **Acceptance Criteria**:
+
 - [ ] Given user in room, when user searches messages, then results display within 2 seconds
 - [ ] Search supports keyword matching, date range filtering, and sender filtering
 - [ ] Search highlights matching text in context
@@ -368,21 +398,25 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: Message storage, search indexing, authentication
 **Constraints**:
+
 - Search must work on mobile with limited screen space
 - Search performance must scale to 10,000+ messages per room
-**Success Metrics**:
+  **Success Metrics**:
 - 60% of users use search feature within first month
 - Average search completion time <2 seconds
 - 80% of searches return relevant results (user doesn't refine search)
 
 ### Feature Category 2: AI-Powered Message Mediation (CORE VALUE PROPOSITION)
+
 **Priority**: CRITICAL (MVP Essential - Product Differentiator)
 **Timeline**: Phase 1 (MVP - Month 0-3)
 
 #### Feature 2.1: Real-Time Message Blocking & Analysis
+
 **User Story**: As a co-parent (Sarah) about to send an angry message, I want the AI to prevent me from sending it and show me why it's problematic so that I can learn healthier communication patterns.
 
 **Acceptance Criteria**:
+
 - [ ] Given user composing message, when user attempts to send, then AI analyzes message in real-time (<2 seconds)
 - [ ] AI determines action: ALLOW (send immediately), BLOCK (prevent sending), or SUGGEST (gentle guidance)
 - [ ] **BLOCK triggers when message contains**:
@@ -403,20 +437,23 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: OpenAI API integration, message composition UI, real-time WebSocket
 **Constraints**:
+
 - AI analysis costs ~$0.02-0.04 per message (GPT-3.5 Turbo for speed/cost balance)
 - Must handle edge cases: sarcasm, cultural differences, non-English
 - Cannot guarantee 100% accuracy - will have false positives (better safe than sorry)
 - Must work offline (queue analysis when reconnected)
-**Success Metrics**:
+  **Success Metrics**:
 - AI blocks 40-50% of messages in Week 1 for high-conflict users
 - AI blocking drops to 10-20% by Month 3 (users learning)
 - <3 second analysis time for 95% of messages
 - <8% false positive rate (neutral messages incorrectly blocked) based on user appeals
 
 #### Feature 2.2: Conversational Mediation Response (REQUIRED FORMAT)
+
 **User Story**: As a co-parent (Mike) whose message was blocked, I want to understand WHY I wouldn't want to send it and see constructive alternatives so that I can learn to communicate better.
 
 **Acceptance Criteria**:
+
 - [ ] Given AI blocks message, when block screen displays, then user sees THREE components:
   1. **Conversational Explanation**: Why sender wouldn't want to send that message (conversational tone, specific to their situation and relationship context)
   2. **Communication Tip**: One actionable skill relative to them and their situation
@@ -442,12 +479,13 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: OpenAI API (GPT-4 Turbo for conversational quality), Feature 2.1 blocking system, user context data (from Feature 2.4)
 **Constraints**:
+
 - Conversational tone requires rich context: co-parent's name, children's names, user's stated concerns/goals
 - Quality degrades if user hasn't provided context during onboarding
 - Cost per block event: ~$0.04-0.08 (includes analysis + 2 rewrites)
 - Must feel like a supportive friend, not a clinical therapist or judgmental authority
 - Cultural and language nuances may be missed
-**Success Metrics**:
+  **Success Metrics**:
 - 70% of users select one of the two rewrites
 - 20% of users write new message (shows engagement with learning)
 - <10% of users repeatedly write new messages that get blocked again (indicates frustration or not learning)
@@ -456,9 +494,11 @@ Separated and divorced parents face significant communication challenges that di
 - Average time from block to rewrite selection: <30 seconds (user not stuck)
 
 #### Feature 2.3: Adaptive AI Learning (User-Specific Patterns)
+
 **User Story**: As a co-parent (Sarah) who's been using LiaiZen for months, I want the AI to understand my communication style so that it doesn't block constructive messages that happen to use phrases that could be problematic in other contexts.
 
 **Acceptance Criteria**:
+
 - [ ] Given user has 30+ days of message history, when AI analyzes new message, then AI considers user's historical patterns
 - [ ] **AI learns**:
   - User's baseline tone and phrasing style
@@ -481,19 +521,22 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: AI mediation database, user message history, analytics dashboard
 **Constraints**:
+
 - Requires minimum 2 weeks of data to personalize effectively
 - Cannot compromise safety: even adapted AI still blocks clearly hostile content
 - Privacy concern: AI learning from user messages (must be transparent in privacy policy)
-**Success Metrics**:
+  **Success Metrics**:
 - 50% reduction in AI blocks between Month 1 and Month 3 (users learning)
 - 85% of users report AI "gets better at understanding me over time"
 - <5% of long-term users (6+ months) report AI blocks appropriate messages
 - Users view progress dashboard average 2-3 times per month
 
 #### Feature 2.4: Smart Onboarding Tasks (Context Building)
+
 **User Story**: As a new user (Sarah), I want the platform to guide me through providing context about my co-parenting situation so that the AI can give me personalized help from day one.
 
 **Acceptance Criteria**:
+
 - [ ] Given user creates account, when onboarding completes, then AI pre-populates smart tasks:
   1. "Send welcome message to co-parent" (template provided)
   2. "Add your children's information" (names, ages, custody schedule)
@@ -514,23 +557,27 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: User onboarding flow, task management system, AI context database
 **Constraints**:
+
 - Must balance information gathering vs. overwhelming new users
 - Privacy concern: sensitive family data must be encrypted
 - Users may resist providing detailed information upfront
-**Success Metrics**:
+  **Success Metrics**:
 - 75% of users complete at least 3/5 onboarding tasks within first week
 - 60% of users complete all 5 tasks within first month
 - Users who complete all tasks show 30% better AI mediation satisfaction scores
 - <5% of users report onboarding feels invasive or too lengthy
 
 ### Feature Category 3: Contact Management
+
 **Priority**: High (MVP Critical)
 **Timeline**: Phase 1 (MVP - Month 0-3)
 
 #### Feature 3.1: Comprehensive Contact & Relationship Management
+
 **User Story**: As a co-parent (Sarah), I want to maintain a detailed directory of contacts AND track important relationship context so that the AI can understand my family dynamics and provide better mediation.
 
 **Acceptance Criteria**:
+
 - [ ] Given user in room, when user adds contact, then both co-parents see contact in directory
 - [ ] **Contact Types**: Co-parent, Child, Professional (teacher/doctor), Family, Partner, Emergency
 - [ ] **Base Fields** (all contacts): name, email, phone, relationship type, notes
@@ -563,10 +610,11 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: User authentication, room membership, AI mediator system
 **Constraints**:
+
 - Extremely sensitive data (safety concerns, legal matters) - AES-256 encryption at rest
 - COPPA compliance: children's names/ages stored but NOT behaviorally tracked
 - Audit logging required for all contact data access
-**Success Metrics**:
+  **Success Metrics**:
 - Average of 8-15 contacts per co-parenting pair (higher due to comprehensive fields)
 - 80% of users fill out co-parent relationship context fields (enables better AI mediation)
 - 70% of users add at least 5 contacts within first month
@@ -574,9 +622,11 @@ Separated and divorced parents face significant communication challenges that di
 - AI mediation accuracy improves 30% when full context provided
 
 #### Feature 3.2: Emergency Contact Protocols
+
 **User Story**: As a co-parent (Mike) who doesn't have custody most of the time, I want to be notified immediately if there's an emergency involving my children so that I can respond quickly.
 
 **Acceptance Criteria**:
+
 - [ ] Given user designates contact as "Emergency", when contact is viewed/called, then other co-parent receives push notification
 - [ ] Emergency contacts highlighted in red in directory
 - [ ] Optional: "Emergency Alert" message type with high-priority notification
@@ -584,20 +634,24 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: Contact directory, push notifications
 **Constraints**:
+
 - Emergency feature could be abused for non-emergencies (need clear guidelines)
 - Push notifications require mobile app or browser permissions
-**Success Metrics**:
+  **Success Metrics**:
 - <1% false emergency alert rate (abuse prevention)
 - Emergency contacts used appropriately (based on user feedback)
 
 ### Feature Category 4: Task Management
+
 **Priority**: High (MVP Critical)
 **Timeline**: Phase 1 (MVP - Month 0-3)
 
 #### Feature 4.1: Shared Task Lists
+
 **User Story**: As a co-parent (David), I want to create shared to-do lists for parenting responsibilities so that nothing falls through the cracks.
 
 **Acceptance Criteria**:
+
 - [ ] Given user in room, when user creates task, then both co-parents see task
 - [ ] Tasks include: title, description, assigned to (one or both parents), due date, status (pending/completed)
 - [ ] Tasks can be assigned to specific parent or "either parent"
@@ -607,17 +661,20 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: Room membership, notifications
 **Constraints**:
+
 - Task assignment could create resentment if one parent assigns all tasks to other
 - Need fair distribution tracking/suggestions
-**Success Metrics**:
+  **Success Metrics**:
 - 80% task completion rate within 7 days of due date
 - Average of 5-10 active tasks per co-parenting pair
 - 60% of users report feeling more organized (survey)
 
 #### Feature 4.2: Task History & Completion Tracking
+
 **User Story**: As a co-parent (Sarah) frustrated that ex-husband "never does his share," I want to see task completion statistics so that I have objective data for discussions about workload balance.
 
 **Acceptance Criteria**:
+
 - [ ] Given tasks with assignments, when user views stats, then system shows completion rate per parent (percentage, number of tasks)
 - [ ] Stats show on-time vs. late completions
 - [ ] Stats displayed in dashboard with visual trends over time
@@ -626,21 +683,25 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: Task management, data analytics
 **Constraints**:
+
 - Task stats could exacerbate conflict if displayed confrontationally
 - Need careful UX design to be informational, not accusatory
-**Success Metrics**:
+  **Success Metrics**:
 - 70% of users view task completion stats at least once per month
 - <10% of users report stats increased conflict (survey)
 - Users report feeling more balanced workload distribution
 
 ### Feature Category 5: Child Activities & Schedule Management
+
 **Priority**: Medium (MVP Nice-to-Have, Phase 2 Essential)
 **Timeline**: Phase 2 (Month 3-6)
 
 #### Feature 5.1: Activity Tracking & Cost Splitting
+
 **User Story**: As a co-parent (Sarah), I want to track my children's activities with schedules and costs so that both parents know what's happening and can fairly split expenses.
 
 **Acceptance Criteria**:
+
 - [ ] Given user with child contacts, when user adds activity, then activity is linked to specific child
 - [ ] **Activity Information**:
   - Activity name, description, location
@@ -659,18 +720,21 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: Contact management (child contacts), task management (for payment tracking)
 **Constraints**:
+
 - Cost splitting can be contentious - need neutral presentation
 - Different parents may have different views on which activities are "necessary"
 - Privacy: activity details should only be visible to co-parents, not extended family
-**Success Metrics**:
+  **Success Metrics**:
 - 60% of users with children track at least 2 activities
 - 40% of users use cost-splitting features
 - Reduces "Who's paying for soccer?" questions by 70%
 
 #### Feature 5.2: Activity Calendar Integration
+
 **User Story**: As a co-parent (David) managing multiple children's activities, I want to see all activities in a calendar view so that I can avoid scheduling conflicts.
 
 **Acceptance Criteria**:
+
 - [ ] Calendar view shows all children's activities with color-coding per child
 - [ ] Can toggle activities on/off per child
 - [ ] Shows upcoming activities for next 7/30/90 days
@@ -680,21 +744,25 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: Activity tracking, calendar integration framework
 **Constraints**:
+
 - Calendar complexity increases with multiple children
 - Need mobile-friendly calendar view
-**Success Metrics**:
+  **Success Metrics**:
 - 70% of users with activities use calendar view at least weekly
 - 30% of users export to external calendar
 - Reduces missed activity conflicts by 50%
 
 ### Feature Category 6: Authentication & Security
+
 **Priority**: Critical (MVP Essential)
 **Timeline**: Phase 1 (MVP - Month 0-3)
 
 #### Feature 5.1: Multi-Method Authentication
+
 **User Story**: As a user (Sarah), I want to sign up quickly with Google OAuth so that I don't have to remember another password.
 
 **Acceptance Criteria**:
+
 - [ ] Users can sign up/login with: Email/Password, Google OAuth
 - [ ] Email/password requires: minimum 8 characters, one number, one special character
 - [ ] Email verification required before accessing full features (prevent spam accounts)
@@ -704,17 +772,20 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: Express.js backend, JWT token management
 **Constraints**:
+
 - OAuth requires third-party service availability (Google)
 - SMS 2FA has cost (~$0.01 per message)
-**Success Metrics**:
+  **Success Metrics**:
 - 70% of users choose Google OAuth (faster onboarding)
 - <1% account compromise rate
 - 15% of users enable 2FA (security-conscious segment)
 
 #### Feature 5.2: Room Invitation System
+
 **User Story**: As a user (Sarah), I want to invite my co-parent to a private room via email so that we can start communicating securely.
 
 **Acceptance Criteria**:
+
 - [ ] Given user account, when user creates room and invites co-parent by email, then co-parent receives email with signup/login link
 - [ ] Invitation email clearly explains what LiaiZen is and why they're invited
 - [ ] Recipient can accept, decline, or ignore invitation
@@ -724,17 +795,20 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: Email service (Nodemailer), user accounts
 **Constraints**:
+
 - Email delivery not guaranteed (spam filters, incorrect addresses)
 - Invitation acceptance dependent on recipient cooperation (can't force)
-**Success Metrics**:
+  **Success Metrics**:
 - 90% invitation email delivery success rate
 - 70% invitation acceptance rate within 7 days
 - <5% invitation spam/abuse rate
 
 #### Feature 5.3: Data Privacy & COPPA/GDPR Compliance
+
 **User Story**: As a parent (Sarah), I want assurance that my children's information is protected and that I control my data so that I can trust the platform with sensitive family information.
 
 **Acceptance Criteria**:
+
 - [ ] Children's names/ages stored but NOT tracked behaviorally (COPPA compliance)
 - [ ] Users can request a copy of all their data in JSON format (GDPR Right to Data Portability)
 - [ ] Users can delete account and all data (GDPR Right to Erasure) - with co-parent notification
@@ -745,22 +819,26 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: Database encryption, data portability tools
 **Constraints**:
+
 - 7-year data retention required for legal purposes conflicts with "right to be forgotten" (legal review needed)
 - Data deletion when co-parent relationship ends is complex (one user can't delete other's messages)
-**Success Metrics**:
+  **Success Metrics**:
 - Zero COPPA violations
 - Zero GDPR complaints
 - Privacy policy comprehension score >70% (user testing)
 - SOC 2 Type II certification within 12 months
 
 ### Feature Category 7: Email Notifications
+
 **Priority**: Medium (MVP Important but not critical)
 **Timeline**: Phase 1 (MVP - Month 0-3)
 
 #### Feature 7.1: Configurable Email Alerts
+
 **User Story**: As a user (Mike) who doesn't check the app constantly, I want email notifications for new messages so that I can respond promptly without constantly monitoring the app.
 
 **Acceptance Criteria**:
+
 - [ ] Users receive email notification for: new messages, task assignments, task completions, room invitations
 - [ ] Email preferences configurable: immediate, daily digest, or off (per notification type)
 - [ ] Emails include message preview (first 100 characters) and link to platform
@@ -769,9 +847,10 @@ Separated and divorced parents face significant communication challenges that di
 
 **Dependencies**: Email service (Nodemailer + Gmail), user preferences
 **Constraints**:
+
 - Email delivery not guaranteed (spam filters)
 - Gmail daily sending limit: 500 emails/day (switch to SendGrid for scaling)
-**Success Metrics**:
+  **Success Metrics**:
 - 85% email delivery rate
 - <2% unsubscribe rate
 - 60% of users keep default email settings (indicates good defaults)
@@ -993,6 +1072,7 @@ Separated and divorced parents face significant communication challenges that di
 ## 🔧 Technical Constraints
 
 ### Technology Stack (High-level Constraints Only)
+
 **Note**: Specific implementation details belong in feature specs, not here.
 
 - **Required Technologies**:
@@ -1015,6 +1095,7 @@ Separated and divorced parents face significant communication challenges that di
   - **Future**: PWA with offline support for poor connectivity scenarios
 
 ### Performance Requirements
+
 - **Response Time**:
   - API endpoints: <200ms p95 (fast enough for real-time feel)
   - WebSocket message delivery: <2 seconds p95 (acceptable for co-parenting coordination)
@@ -1038,6 +1119,7 @@ Separated and divorced parents face significant communication challenges that di
   - Data growth: Estimated 10 GB/year (10,000 users × 1 MB average storage)
 
 ### Security & Compliance
+
 - **Authentication**:
   - JWT tokens with 24-hour expiration (balance security + UX)
   - Google OAuth (primary), Email/Password (secondary)
@@ -1067,6 +1149,7 @@ Separated and divorced parents face significant communication challenges that di
   - Data retention for audit logs: 7 years (GDPR compliance)
 
 ### Integration Requirements
+
 - **External Systems**:
   - **OpenAI API**: GPT-3.5 Turbo (tone analysis), GPT-4 Turbo (message rewriting)
   - **Google OAuth**: User authentication
@@ -1156,8 +1239,10 @@ Separated and divorced parents face significant communication challenges that di
 ## 🚀 Release Strategy
 
 ### MVP (Minimum Viable Product)
+
 **Target Date**: Month 3 (90 days from kickoff)
 **Core Features** (Ruthlessly Scoped):
+
 - Real-time WebSocket messaging with room-based privacy
 - AI-powered message blocking and rewriting (GPT-3.5 Turbo) - blocks inappropriate messages, provides 1 tip + 2 rewrites
 - Smart task onboarding (AI pre-populates welcome tasks, profile setup, contact uploads)
@@ -1170,6 +1255,7 @@ Separated and divorced parents face significant communication challenges that di
 - Mobile-responsive web UI (Tailwind CSS)
 
 **Success Criteria** (MVP Validation):
+
 - 500 beta users onboarded (250 co-parenting pairs)
 - 70% invitation acceptance rate (co-parents willing to join)
 - AI blocks 40%+ of attempted hostile messages in first week (protection working)
@@ -1182,8 +1268,10 @@ Separated and divorced parents face significant communication challenges that di
 - Net Promoter Score (NPS) >40 (users willing to recommend)
 
 ### Phase 2: Enhanced Features & Mobile Apps
+
 **Target Date**: Month 6 (3 months after MVP)
 **Features**:
+
 - **Mobile Apps**: iOS and Android native apps (React Native) with push notifications
 - **Calendar Integration**: Google Calendar and Apple Calendar 2-way sync
 - **Advanced Task Management**: Recurring tasks, task templates, completion analytics
@@ -1195,6 +1283,7 @@ Separated and divorced parents face significant communication challenges that di
 - **3-hour response nudge**: Gentle prompts when co-parent hasn't responded
 
 **Success Criteria** (Growth Validation):
+
 - 10,000 Monthly Active Users (20x growth from MVP)
 - 70% 3-month user retention (sticky product)
 - 10% premium conversion rate (sustainable business model)
@@ -1202,8 +1291,10 @@ Separated and divorced parents face significant communication challenges that di
 - Calendar integration used by 40% of users (organizational value validated)
 
 ### Phase 3: Professional Features & Social Platform Evolution
+
 **Target Date**: Month 12 (12 months from kickoff)
 **Features**:
+
 - **Therapist Portal**: Professional tier with bulk client management, advanced analytics, communication coaching insights
 - **Document Storage**: Secure file uploads (medical records, school reports, shared documents)
 - **Expense Tracking**: Shared expense ledger with receipt scanning and fair split calculations
@@ -1214,6 +1305,7 @@ Separated and divorced parents face significant communication challenges that di
 - **Social Platform Features**: As children age, evolve from co-parenting tool to respectful family coordination platform
 
 **Success Criteria** (Scale & Sustainability):
+
 - 50,000 Monthly Active Users (5x growth from Phase 2)
 - 50 attorney partnerships (legal validation and referral network)
 - 15% premium conversion rate (improved value proposition)
@@ -1226,11 +1318,13 @@ Separated and divorced parents face significant communication challenges that di
 ## 🎨 Design Principles & UX Guidelines
 
 ### Design Philosophy
+
 **Calm, Child-Centered, Trauma-Informed Design**
 
 LiaiZen's design philosophy prioritizes reducing stress and promoting cooperation. The platform should feel like a "safe space" for difficult conversations, not a battleground. Design choices actively counteract the high emotions often present in co-parenting communication.
 
 **Core Design Tenets**:
+
 1. **Calming & Non-Confrontational**: Soft colors, generous whitespace, no aggressive visual elements
 2. **Child-Centered Messaging**: Every UI element reminds parents why they're here (for their children's wellbeing)
 3. **Neutral & Non-Judgmental**: Platform never "picks sides" or appears to favor one parent over another
@@ -1239,6 +1333,7 @@ LiaiZen's design philosophy prioritizes reducing stress and promoting cooperatio
 6. **Accessible to All**: Works for parents with varying tech skills, education levels, and abilities
 
 ### Accessibility Requirements
+
 - **WCAG Compliance**: Level AA (ethical accessibility and broad usability standard)
 - **Keyboard Navigation**: Fully supported for all features (power users, accessibility needs)
 - **Screen Reader Support**: All interactive elements have ARIA labels, semantic HTML structure
@@ -1248,6 +1343,7 @@ LiaiZen's design philosophy prioritizes reducing stress and promoting cooperatio
 - **Readable Fonts**: Sans-serif, minimum 16px body text, clear hierarchy
 
 ### Responsive Design
+
 - **Supported Devices**:
   - **Desktop**: 1920x1080 and above (primary for attorneys, power users)
   - **Tablet**: iPad and Android tablets (occasional use)
@@ -1274,6 +1370,7 @@ LiaiZen's design philosophy prioritizes reducing stress and promoting cooperatio
 ## 🔄 Workflow Integration
 
 ### SDD Framework Integration
+
 This PRD serves as the **Single Source of Truth (SSOT)** for:
 
 1. **Specification Agent** (`/specify` command)
@@ -1406,6 +1503,7 @@ This PRD serves as the **Single Source of Truth (SSOT)** for:
 ## 📚 Appendices
 
 ### Appendix A: Glossary
+
 - **Co-Parent**: A parent who shares parenting responsibilities with a separated or divorced partner
 - **Room**: Private communication space for two co-parents on LiaiZen platform
 - **AI Mediation**: Real-time message analysis that blocks hostile messages and provides constructive rewrites
@@ -1420,6 +1518,7 @@ This PRD serves as the **Single Source of Truth (SSOT)** for:
 - **RLS**: Row-Level Security (PostgreSQL feature for data isolation)
 
 ### Appendix B: References
+
 - **Existing Project Documentation**: `/Users/athenasees/Desktop/chat/README.md`, `/Users/athenasees/Desktop/chat/CLAUDE.md`
 - **SDD Framework Constitution**: `/Users/athenasees/Desktop/chat/.specify/memory/constitution.md`
 - **COPPA Compliance Guide**: https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions
@@ -1428,9 +1527,10 @@ This PRD serves as the **Single Source of Truth (SSOT)** for:
 - **Family Law Research**: To be added (competitive analysis of OurFamilyWizard, TalkingParents, AppClose)
 
 ### Appendix C: Revision History
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2025-11-24 | prd-specialist agent | Initial PRD creation with comprehensive co-parenting requirements |
+
+| Version | Date       | Author               | Changes                                                           |
+| ------- | ---------- | -------------------- | ----------------------------------------------------------------- |
+| 1.0.0   | 2025-11-24 | prd-specialist agent | Initial PRD creation with comprehensive co-parenting requirements |
 
 ---
 
@@ -1439,6 +1539,7 @@ This PRD serves as the **Single Source of Truth (SSOT)** for:
 Before finalizing this PRD, ensure:
 
 **Completeness**:
+
 - [x] Executive summary clearly states vision, problem, and success metrics
 - [x] All user personas documented with goals and pain points (4 personas: Sarah, Mike, Jessica, David)
 - [x] Core features have acceptance criteria and success metrics (6 feature categories, 15 features total)
@@ -1448,6 +1549,7 @@ Before finalizing this PRD, ensure:
 - [x] Open questions identified with owners and deadlines (5 critical questions)
 
 **Clarity**:
+
 - [x] No ambiguous requirements (all testable and measurable)
 - [x] Success metrics are quantifiable (30% sentiment reduction, 60% AI acceptance, 10,000 MAU, etc.)
 - [x] Personas are specific and realistic (based on real co-parenting scenarios)
@@ -1455,6 +1557,7 @@ Before finalizing this PRD, ensure:
 - [x] No implementation details (WHAT/WHY only, not HOW)
 
 **Alignment**:
+
 - [x] Goals align with vision and problem statement (conflict reduction, child-centered outcomes)
 - [x] Features support defined user journeys (Sarah, Mike, David journeys map to features)
 - [x] Success metrics measure stated goals (sentiment, AI acceptance, retention, NPS)
@@ -1462,6 +1565,7 @@ Before finalizing this PRD, ensure:
 - [x] Release phases are achievable given constraints (MVP in 3 months, Phase 2 in 6 months, Phase 3 in 12 months)
 
 **Actionability**:
+
 - [x] Specification agent can extract clear user stories (15 features with user stories + acceptance criteria)
 - [x] Planning agent has sufficient constraints and principles (tech stack, performance, 17 principles)
 - [x] Each feature can be broken into tasks (acceptance criteria provide task breakdown)
@@ -1469,6 +1573,7 @@ Before finalizing this PRD, ensure:
 - [x] Risks have mitigation plans (5 risks with owners and mitigation strategies)
 
 **Stakeholder Review**:
+
 - [ ] Product owner approved (PENDING - requires human review)
 - [ ] Key stakeholders reviewed (PENDING - requires team review)
 - [ ] Technical feasibility validated (PENDING - requires engineering review)
@@ -1478,6 +1583,7 @@ Before finalizing this PRD, ensure:
 ---
 
 **Next Steps After PRD Approval**:
+
 1. **Update Constitution** (`.specify/memory/constitution.md`) with 17 principles from this PRD (Principles 15-17 are NEW)
 2. **Create Custom Agents**:
    - `/claude/agents/co-parenting-ux-specialist.md`
@@ -1497,7 +1603,6 @@ Before finalizing this PRD, ensure:
 
 ---
 
-*This PRD is a living document. Update it as the product evolves, maintaining version history for all changes.*
+_This PRD is a living document. Update it as the product evolves, maintaining version history for all changes._
 
 ---
-

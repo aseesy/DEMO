@@ -11,50 +11,105 @@
 
 // Logistics-focused markers
 const LOGISTICS_MARKERS = [
-  'pickup', 'pick up', 'drop off', 'dropoff',
-  'schedule', 'time', 'date', 'day',
-  'swap', 'switch', 'change', 'reschedule',
-  'meeting', 'appointment', 'practice', 'game',
-  'school', 'work', 'doctor', 'dentist'
+  'pickup',
+  'pick up',
+  'drop off',
+  'dropoff',
+  'schedule',
+  'time',
+  'date',
+  'day',
+  'swap',
+  'switch',
+  'change',
+  'reschedule',
+  'meeting',
+  'appointment',
+  'practice',
+  'game',
+  'school',
+  'work',
+  'doctor',
+  'dentist',
 ];
 
 // Character-focused markers (about the person)
 const CHARACTER_MARKERS = [
-  'you\'re', 'you are', 'you\'ve always been',
-  'that\'s so you', 'typical', 'of course you',
-  'you would', 'you couldn\'t', 'you can\'t',
-  'your problem', 'your issue', 'your fault'
+  "you're",
+  'you are',
+  "you've always been",
+  "that's so you",
+  'typical',
+  'of course you',
+  'you would',
+  "you couldn't",
+  "you can't",
+  'your problem',
+  'your issue',
+  'your fault',
 ];
 
 // Child-focused markers
 const CHILD_FOCUSED_MARKERS = [
-  'for her', 'for him', 'for the kids', 'for them',
-  'she needs', 'he needs', 'they need',
-  'her wellbeing', 'his wellbeing', 'their wellbeing',
-  'best for', 'what\'s best', 'in their interest'
+  'for her',
+  'for him',
+  'for the kids',
+  'for them',
+  'she needs',
+  'he needs',
+  'they need',
+  'her wellbeing',
+  'his wellbeing',
+  'their wellbeing',
+  'best for',
+  "what's best",
+  'in their interest',
 ];
 
 // Relationship-focused markers
 const RELATIONSHIP_MARKERS = [
-  'we need to', 'between us', 'our communication',
-  'how we', 'the way we', 'together',
-  'co-parent', 'as parents', 'as a team'
+  'we need to',
+  'between us',
+  'our communication',
+  'how we',
+  'the way we',
+  'together',
+  'co-parent',
+  'as parents',
+  'as a team',
 ];
 
 // Past-focused markers
 const PAST_MARKERS = [
-  'last time', 'last week', 'last month', 'last year',
-  'remember when', 'you did', 'you said',
-  'back when', 'before', 'used to',
-  'always have', 'never have', 'have always'
+  'last time',
+  'last week',
+  'last month',
+  'last year',
+  'remember when',
+  'you did',
+  'you said',
+  'back when',
+  'before',
+  'used to',
+  'always have',
+  'never have',
+  'have always',
 ];
 
 // Future-focused markers
 const FUTURE_MARKERS = [
-  'going forward', 'from now on', 'in the future',
-  'next time', 'next week', 'next month',
-  'can we', 'could we', 'will you',
-  'moving forward', 'let\'s', 'we should'
+  'going forward',
+  'from now on',
+  'in the future',
+  'next time',
+  'next week',
+  'next month',
+  'can we',
+  'could we',
+  'will you',
+  'moving forward',
+  "let's",
+  'we should',
 ];
 
 /**
@@ -80,7 +135,7 @@ function detect(text) {
     child: childCount,
     relationship: relationshipCount,
     past: pastCount,
-    future: futureCount
+    future: futureCount,
   };
 
   // Find dominant focus (could be multiple)
@@ -94,7 +149,8 @@ function detect(text) {
     past_focused: pastCount > 0,
     future_focused: futureCount > 0,
     focus_counts: counts,
-    primary_focus: Object.keys(counts).find(k => counts[k] === maxCount && maxCount > 0) || 'unclear'
+    primary_focus:
+      Object.keys(counts).find(k => counts[k] === maxCount && maxCount > 0) || 'unclear',
   };
 }
 
@@ -110,10 +166,10 @@ function summarize(patterns) {
     observations.push('Focused on logistics/scheduling');
   }
   if (patterns.character_focused) {
-    observations.push('Focused on other parent\'s character');
+    observations.push("Focused on other parent's character");
   }
   if (patterns.child_focused) {
-    observations.push('References child\'s needs/wellbeing');
+    observations.push("References child's needs/wellbeing");
   }
   if (patterns.relationship_focused) {
     observations.push('Focused on co-parenting relationship');
@@ -139,5 +195,5 @@ module.exports = {
   CHILD_FOCUSED_MARKERS,
   RELATIONSHIP_MARKERS,
   PAST_MARKERS,
-  FUTURE_MARKERS
+  FUTURE_MARKERS,
 };

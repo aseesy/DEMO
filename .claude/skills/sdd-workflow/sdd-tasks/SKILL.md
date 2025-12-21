@@ -19,6 +19,7 @@ allowed-tools: Read, Write, Bash, Grep, Glob
 ## When to Use
 
 Activate this skill when:
+
 - User invokes `/tasks` command
 - User requests task list or work breakdown
 - User asks "what do I need to implement?"
@@ -28,6 +29,7 @@ Activate this skill when:
 **Trigger Keywords**: tasks, task list, work breakdown, implementation steps, what to do next, /tasks
 
 **Prerequisites**:
+
 - Feature specification exists (from /specify)
 - Implementation plan exists (from /plan)
 - Design artifacts exist (research.md, data-model.md, contracts/, quickstart.md)
@@ -37,15 +39,18 @@ Activate this skill when:
 ### Step 1: Check Prerequisites
 
 **Run prerequisite check script**:
+
 ```bash
 .specify/scripts/bash/check-task-prerequisites.sh --json
 ```
 
 **Parse JSON output** to extract:
+
 - `FEATURE_DIR`: Directory containing all feature artifacts
 - `AVAILABLE_DOCS`: List of available design documents
 
 **Available documents may include**:
+
 - plan.md (ALWAYS required)
 - data-model.md (if entities defined)
 - contracts/ (if APIs/interfaces defined)
@@ -57,42 +62,52 @@ Activate this skill when:
 ### Step 2: Load and Analyze Design Artifacts
 
 **Always read the implementation plan**:
+
 ```bash
 Read: $FEATURE_DIR/plan.md
 ```
+
 - Extract tech stack and libraries
 - Understand implementation approach
 - Identify architecture patterns
 
 **Read data-model.md if exists**:
+
 ```bash
 Read: $FEATURE_DIR/data-model.md
 ```
+
 - Extract entity names
 - Understand relationships
 - Note any special requirements
 
 **Read contracts/ directory if exists**:
+
 ```bash
 Glob: $FEATURE_DIR/contracts/*.md
 Read: [each contract file]
 ```
+
 - Extract endpoint/interface names
 - Understand request/response schemas
 - Note error cases
 
 **Read research.md if exists**:
+
 ```bash
 Read: $FEATURE_DIR/research.md
 ```
+
 - Understand technical decisions
 - Note dependencies and libraries
 - Understand patterns to follow
 
 **Read quickstart.md if exists**:
+
 ```bash
 Read: $FEATURE_DIR/quickstart.md
 ```
+
 - Extract test scenarios
 - Understand user stories
 - Note integration test requirements
@@ -100,11 +115,13 @@ Read: $FEATURE_DIR/quickstart.md
 ### Step 3: Load Task Template
 
 **Read the task template**:
+
 ```bash
 Read: .specify/templates/tasks-template.md
 ```
 
 **Template provides structure** for:
+
 - Task numbering (T001, T002, etc.)
 - Task categories (Setup, Tests, Core, Integration, Polish)
 - Parallel execution markers [P]
@@ -114,6 +131,7 @@ Read: .specify/templates/tasks-template.md
 ### Step 4: Generate Tasks by Category
 
 **Setup Tasks** (always first):
+
 ```
 T001: [ ] Initialize project structure
 T002: [ ] Install and configure dependencies [from research.md]
@@ -122,6 +140,7 @@ T004: [ ] Configure build system [P]
 ```
 
 **Test Tasks** (test-first, marked [P] for parallelism):
+
 ```
 For each contract file:
   T00X: [ ] Write contract test for [endpoint/interface] [P]
@@ -131,6 +150,7 @@ For each user story in quickstart.md:
 ```
 
 **Core Implementation Tasks**:
+
 ```
 For each entity in data-model.md:
   T00Z: [ ] Implement [Entity] model [P]
@@ -144,6 +164,7 @@ For each service/module in plan:
 ```
 
 **Integration Tasks**:
+
 ```
 T00C: [ ] Set up database connection (if database domain)
 T00D: [ ] Configure middleware and error handling
@@ -152,6 +173,7 @@ T00F: [ ] Integrate with external services (if any)
 ```
 
 **Polish Tasks** (final, marked [P]):
+
 ```
 T00G: [ ] Add unit tests for edge cases [P]
 T00H: [ ] Performance optimization [P]
@@ -162,10 +184,12 @@ T00J: [ ] Code review and refactoring [P]
 ### Step 5: Apply Task Generation Rules
 
 **Parallel Execution Rules**:
+
 - **Mark [P]** if: Tasks work on different files
 - **No [P]** if: Tasks modify same file (sequential required)
 
 **Examples**:
+
 ```
 ✅ PARALLEL:
 - T005: Write contract test for GET /users [P]
@@ -179,6 +203,7 @@ T00J: [ ] Code review and refactoring [P]
 ```
 
 **Dependency Ordering**:
+
 1. Setup tasks first
 2. Test tasks before implementation (TDD)
 3. Models before services
@@ -189,11 +214,13 @@ T00J: [ ] Code review and refactoring [P]
 ### Step 6: Write Tasks File
 
 **Create task list**:
+
 ```bash
 Write: $FEATURE_DIR/tasks.md
 ```
 
 **Include in tasks.md**:
+
 - Feature name and description
 - Total task count
 - Parallel execution guidance
@@ -203,6 +230,7 @@ Write: $FEATURE_DIR/tasks.md
 - Progress tracking checkboxes
 
 **Task format**:
+
 ```markdown
 - [ ] T001: Task description
   - File: `path/to/file.ts`
@@ -218,6 +246,7 @@ Write: $FEATURE_DIR/tasks.md
 ### Step 7: Validate Task List
 
 **Run task validation**:
+
 ```bash
 .specify/scripts/bash/validate-tasks.sh --file $FEATURE_DIR/tasks.md
 ```
@@ -225,6 +254,7 @@ Write: $FEATURE_DIR/tasks.md
 **Validation checks** (12 total):
 
 **Task Quality** (6 checks):
+
 - Has tasks (at least 1)
 - Has numbered tasks (T001, T002, etc.)
 - Has parallel tasks marked [P]
@@ -233,16 +263,19 @@ Write: $FEATURE_DIR/tasks.md
 - Tasks have dependency notes
 
 **Constitutional Compliance** (3 checks):
+
 - Has test tasks (Principle II: Test-First)
 - Has contract tasks (Principle III: Contract-First)
 - Tests before implementation (TDD ordering)
 
 **Organization** (3 checks):
+
 - Tasks ordered by dependencies
 - Setup tasks first
 - Polish tasks last
 
 **Report validation results**:
+
 - Overall score (X/12 checks passing)
 - Total task count
 - Parallel task count
@@ -251,11 +284,13 @@ Write: $FEATURE_DIR/tasks.md
 ### Step 8: Domain Detection
 
 **Run domain detection on tasks**:
+
 ```bash
 .specify/scripts/bash/detect-phase-domain.sh --file $FEATURE_DIR/tasks.md
 ```
 
 **Identify agents needed** for task execution:
+
 - Specialist agents by domain
 - Delegation strategy (single vs multi-agent)
 - task-orchestrator if multi-domain
@@ -263,6 +298,7 @@ Write: $FEATURE_DIR/tasks.md
 ### Step 9: Report Completion
 
 **Provide comprehensive summary**:
+
 ```
 ✅ Task List Generated
 
@@ -304,6 +340,7 @@ Next Step: Execute tasks sequentially or delegate to specialized agents
 ## Constitutional Compliance
 
 ### Principle II: Test-First Development
+
 - **ALL test tasks BEFORE implementation tasks**
 - Contract tests first
 - Integration tests early
@@ -311,6 +348,7 @@ Next Step: Execute tasks sequentially or delegate to specialized agents
 - No implementation without corresponding test
 
 ### Principle III: Contract-First Design
+
 - **Contract test tasks for EACH contract file**
 - Contract tests validate:
   - Request schema
@@ -319,6 +357,7 @@ Next Step: Execute tasks sequentially or delegate to specialized agents
 - Contract tests marked [P] for parallel execution
 
 ### Principle X: Agent Delegation Protocol
+
 - Tasks identify which agents/domains are needed
 - Multi-domain features routed to task-orchestrator
 - Single-domain features routed to specialist
@@ -331,24 +370,28 @@ Next Step: Execute tasks sequentially or delegate to specialized agents
 **User Request**: "/tasks Generate task list for user authentication API"
 
 **Available Artifacts**:
+
 - plan.md: Express.js API, bcrypt, JWT
 - data-model.md: User entity, Session entity
 - contracts/: POST /api/register, POST /api/login, POST /api/logout
 - quickstart.md: Registration scenario, Login scenario, Logout scenario
 
 **Generated Tasks**:
+
 ```markdown
 # User Authentication API - Tasks
 
 Total: 18 tasks (8 parallel)
 
 ## Setup (4 tasks)
+
 - [ ] T001: Initialize Express.js project structure
 - [ ] T002: Install dependencies (express, bcrypt, jsonwebtoken, pg)
 - [ ] T003: Set up ESLint and Prettier [P]
 - [ ] T004: Configure TypeScript [P]
 
 ## Tests (6 tasks - all parallel)
+
 - [ ] T005: Write contract test for POST /api/register [P]
 - [ ] T006: Write contract test for POST /api/login [P]
 - [ ] T007: Write contract test for POST /api/logout [P]
@@ -357,6 +400,7 @@ Total: 18 tasks (8 parallel)
 - [ ] T010: Write integration test for logout flow [P]
 
 ## Core Implementation (5 tasks)
+
 - [ ] T011: Implement User model
 - [ ] T012: Implement Session model
 - [ ] T013: Implement POST /api/register endpoint
@@ -364,10 +408,12 @@ Total: 18 tasks (8 parallel)
 - [ ] T015: Implement POST /api/logout endpoint
 
 ## Integration (2 tasks)
+
 - [ ] T016: Set up PostgreSQL connection and migrations
 - [ ] T017: Configure JWT middleware and error handling
 
 ## Polish (3 tasks - all parallel)
+
 - [ ] T018: Add unit tests for password hashing [P]
 - [ ] T019: Performance test for concurrent logins [P]
 - [ ] T020: Generate API documentation [P]
@@ -383,34 +429,40 @@ Total: 18 tasks (8 parallel)
 **User Request**: "/tasks Break down user profile card component"
 
 **Available Artifacts**:
+
 - plan.md: React 18, TypeScript, CSS Modules, Vitest
 - data-model.md: UserProfile interface, Avatar interface
 - contracts/: ProfileCard component props
 - quickstart.md: Component rendering scenarios
 
 **Generated Tasks**:
+
 ```markdown
 # User Profile Card Component - Tasks
 
 Total: 12 tasks (6 parallel)
 
 ## Setup (3 tasks)
+
 - [ ] T001: Initialize React component structure
 - [ ] T002: Install dependencies (react, typescript, vitest)
 - [ ] T003: Set up Vitest and React Testing Library [P]
 
 ## Tests (4 tasks - all parallel)
+
 - [ ] T004: Write component prop validation test [P]
 - [ ] T005: Write rendering test with mock data [P]
 - [ ] T006: Write interaction test (click, hover) [P]
 - [ ] T007: Write accessibility test (ARIA, keyboard) [P]
 
 ## Core Implementation (3 tasks)
+
 - [ ] T008: Implement ProfileCard component structure
 - [ ] T009: Implement Avatar sub-component
 - [ ] T010: Style components with CSS Modules
 
 ## Polish (2 tasks - parallel)
+
 - [ ] T011: Add Storybook stories [P]
 - [ ] T012: Component documentation [P]
 ```
@@ -423,16 +475,19 @@ Total: 12 tasks (6 parallel)
 ## Agent Collaboration
 
 ### tasks-agent
+
 **When to delegate**: Complex task breakdown, dependency analysis
 
 **What they handle**: Creating task lists, identifying dependencies, task sequencing
 
 ### task-orchestrator
+
 **When to delegate**: Multi-domain tasks (3+ domains)
 
 **What they handle**: Coordinating multiple specialists to execute tasks
 
 ### Domain Specialists
+
 **When to notify**: Report which specialists needed based on domains
 
 **What they handle**: Executing tasks in their domain
@@ -461,6 +516,7 @@ Verify the skill executed correctly:
 **Cause**: Missing required artifacts (usually plan.md)
 
 **Solution**:
+
 - Verify plan.md exists in feature directory
 - Run /plan first to generate implementation plan
 - Check that feature directory structure is correct
@@ -470,6 +526,7 @@ Verify the skill executed correctly:
 **Cause**: No contracts or quickstart.md found
 
 **Solution**:
+
 - Review plan.md for interfaces/APIs that need tests
 - Create contract tests for internal module APIs
 - Generate at least unit test tasks for core functions
@@ -480,6 +537,7 @@ Verify the skill executed correctly:
 **Cause**: Tasks all modify same files or unclear file paths
 
 **Solution**:
+
 - Review task file paths
 - Separate concerns into different files
 - Test files can always be parallel
@@ -490,6 +548,7 @@ Verify the skill executed correctly:
 **Cause**: Tasks not ordered by dependency hierarchy
 
 **Solution**:
+
 - Ensure setup tasks first
 - Move test tasks before implementation
 - Order by: models → services → endpoints → integration
@@ -500,6 +559,7 @@ Verify the skill executed correctly:
 **Cause**: Tasks too broad, not granular enough
 
 **Solution**:
+
 - Break down large tasks into smaller steps
 - One task per contract
 - One task per entity

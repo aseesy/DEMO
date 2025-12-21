@@ -18,6 +18,7 @@ Your MCP servers are already configured in the repository, but need API keys to 
 **What it does**: Allows MCP to access GitHub repositories, issues, commits, and PRs
 
 **How to get it**:
+
 1. Go to: https://github.com/settings/tokens
 2. Click **"Generate new token"** → **"Generate new token (classic)"**
 3. Token name: `LiaiZen MCP Access`
@@ -28,6 +29,7 @@ Your MCP servers are already configured in the repository, but need API keys to 
 6. **Copy the token** (you won't see it again!)
 
 **Where to set it**:
+
 ```bash
 # Option A: Add to shell profile (recommended)
 echo 'export GITHUB_TOKEN=ghp_your_token_here' >> ~/.zshrc
@@ -45,6 +47,7 @@ echo $GITHUB_TOKEN
 **What it does**: Powers the AI message mediation feature in chat
 
 **How to get it**:
+
 1. Go to: https://platform.openai.com/api-keys
 2. Create account if needed
 3. Click **"Create new secret key"**
@@ -52,6 +55,7 @@ echo $GITHUB_TOKEN
 5. **Copy the key** (starts with `sk-`)
 
 **Where to set it**:
+
 ```bash
 # Edit the server .env file
 nano /Users/athenasees/Desktop/chat/chat-server/.env
@@ -65,6 +69,7 @@ OPENAI_API_KEY=sk-your-actual-key-here
 **What it does**: Sends email notifications (room invitations, etc.)
 
 **How to get it**:
+
 1. Enable 2FA on your Gmail account first
 2. Go to: https://myaccount.google.com/apppasswords
 3. App name: `LiaiZen Server`
@@ -72,6 +77,7 @@ OPENAI_API_KEY=sk-your-actual-key-here
 5. **Copy the 16-character password**
 
 **Where to set it**:
+
 ```bash
 # Edit the server .env file
 nano /Users/athenasees/Desktop/chat/chat-server/.env
@@ -87,12 +93,14 @@ EMAIL_FROM=info@liaizen.com
 **What it does**: Secures user authentication tokens
 
 **How to generate**:
+
 ```bash
 # Generate a secure random string
 openssl rand -base64 48
 ```
 
 **Where to set it**:
+
 ```bash
 # Edit the server .env file
 nano /Users/athenasees/Desktop/chat/chat-server/.env
@@ -104,6 +112,7 @@ JWT_SECRET=your-generated-secret-here-minimum-32-chars
 ## Quick Setup Steps
 
 ### Step 1: Set GitHub Token
+
 ```bash
 # Generate token at: https://github.com/settings/tokens
 # Then add to your shell:
@@ -112,6 +121,7 @@ source ~/.zshrc
 ```
 
 ### Step 2: Copy and Configure Server Environment
+
 ```bash
 # Copy the example file
 cp /Users/athenasees/Desktop/chat/chat-server/.env.example /Users/athenasees/Desktop/chat/chat-server/.env
@@ -121,6 +131,7 @@ nano /Users/athenasees/Desktop/chat/chat-server/.env
 ```
 
 ### Step 3: Add Required Keys to .env
+
 Update the following in `/Users/athenasees/Desktop/chat/chat-server/.env`:
 
 ```bash
@@ -137,6 +148,7 @@ JWT_SECRET=your-secure-random-string-here
 ```
 
 ### Step 4: Configure MCP in Claude Code
+
 ```bash
 # Run the setup script
 ./scripts/setup-mcp.sh
@@ -146,6 +158,7 @@ JWT_SECRET=your-secure-random-string-here
 ```
 
 ### Step 5: Restart Everything
+
 ```bash
 # Restart Claude Code completely
 # Then test MCP servers with:
@@ -156,6 +169,7 @@ JWT_SECRET=your-secure-random-string-here
 ## Verification Checklist
 
 ### Environment Variables
+
 ```bash
 # Check GitHub token
 echo $GITHUB_TOKEN  # Should show: ghp_...
@@ -168,6 +182,7 @@ cat /Users/athenasees/Desktop/chat/chat-server/.env | grep -v '^#' | grep '='
 ```
 
 ### MCP Configuration
+
 ```bash
 # Check MCP config exists
 ls -la ~/.config/Claude/claude_desktop_config.json
@@ -177,19 +192,23 @@ ls -la /Users/athenasees/Desktop/chat/.mcp-config.json
 ```
 
 ### Test MCP Servers
+
 After setting everything up, test in Claude Code:
 
 **SQLite MCP:**
+
 ```
 Show me all users in the chat database
 ```
 
 **GitHub MCP:**
+
 ```
 Show me the last 5 commits in this repo
 ```
 
 **Filesystem MCP:**
+
 ```
 Find all files containing "socket.io"
 ```
@@ -197,6 +216,7 @@ Find all files containing "socket.io"
 ## Current Server .env Status
 
 Your server already has a `.env` file at:
+
 ```
 /Users/athenasees/Desktop/chat/chat-server/.env
 ```
@@ -206,6 +226,7 @@ You need to update it with the actual API keys listed above.
 ## Security Best Practices
 
 ### DO ✅
+
 - Store tokens in environment variables
 - Add `.env` to `.gitignore` (already done)
 - Use different tokens for development vs production
@@ -213,6 +234,7 @@ You need to update it with the actual API keys listed above.
 - Use minimal required permissions
 
 ### DON'T ❌
+
 - Commit tokens to git
 - Share tokens in screenshots or logs
 - Use production tokens in development
@@ -222,6 +244,7 @@ You need to update it with the actual API keys listed above.
 ## Troubleshooting
 
 ### GitHub MCP Not Working
+
 ```bash
 # 1. Check token is set
 echo $GITHUB_TOKEN
@@ -234,6 +257,7 @@ cat ~/.config/Claude/claude_desktop_config.json | grep -A5 github
 ```
 
 ### Server Not Starting
+
 ```bash
 # 1. Check .env file exists
 ls -la chat-server/.env
@@ -246,6 +270,7 @@ node -e "require('dotenv').config({path:'./chat-server/.env'}); console.log(proc
 ```
 
 ### Email Not Sending
+
 ```bash
 # 1. Verify Gmail app password is correct (16 chars, no spaces)
 # 2. Ensure 2FA is enabled on Gmail
@@ -274,12 +299,12 @@ cd chat-server && node -e "require('dotenv').config(); console.log(Object.keys(p
 
 ## Summary: What You Need
 
-| Service | Key/Token | Where to Get | Where to Set |
-|---------|-----------|--------------|--------------|
-| GitHub MCP | Personal Access Token | https://github.com/settings/tokens | `~/.zshrc` as `GITHUB_TOKEN` |
-| AI Moderation | OpenAI API Key | https://platform.openai.com/api-keys | `chat-server/.env` as `OPENAI_API_KEY` |
-| Email | Gmail App Password | https://myaccount.google.com/apppasswords | `chat-server/.env` as `GMAIL_APP_PASSWORD` |
-| Auth | JWT Secret | Generate with `openssl rand -base64 48` | `chat-server/.env` as `JWT_SECRET` |
+| Service       | Key/Token             | Where to Get                              | Where to Set                               |
+| ------------- | --------------------- | ----------------------------------------- | ------------------------------------------ |
+| GitHub MCP    | Personal Access Token | https://github.com/settings/tokens        | `~/.zshrc` as `GITHUB_TOKEN`               |
+| AI Moderation | OpenAI API Key        | https://platform.openai.com/api-keys      | `chat-server/.env` as `OPENAI_API_KEY`     |
+| Email         | Gmail App Password    | https://myaccount.google.com/apppasswords | `chat-server/.env` as `GMAIL_APP_PASSWORD` |
+| Auth          | JWT Secret            | Generate with `openssl rand -base64 48`   | `chat-server/.env` as `JWT_SECRET`         |
 
 ## Next Steps
 
@@ -293,7 +318,8 @@ cd chat-server && node -e "require('dotenv').config(); console.log(Object.keys(p
 
 ---
 
-*Need help? See the detailed guides:*
+_Need help? See the detailed guides:_
+
 - **GitHub Token**: `docs/GITHUB_TOKEN_SETUP.md`
 - **MCP Setup**: `docs/MCP_SETUP.md`
 - **Usage Examples**: `docs/MCP_USAGE_EXAMPLES.md`

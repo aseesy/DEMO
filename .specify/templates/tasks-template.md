@@ -4,6 +4,7 @@
 **Prerequisites**: plan.md (✓), research.md (✓), data-model.md (✓), contracts/ (✓), quickstart.md (✓)
 
 ## Execution Flow (main)
+
 ```
 1. Load plan.md from feature directory
    ✓ SUCCESS: Tech stack: {{TECH_STACK}}
@@ -35,11 +36,13 @@
 ```
 
 ## Format: `[ID] [P?] Description`
+
 - **[P]**: Can run in parallel (different files, no dependencies)
 - Include exact file paths in descriptions
 - Specify frontend vs backend clearly
 
 ## Path Conventions
+
 - **Frontend**: `chat-client-vite/src/` for React components
 - **Backend**: `chat-server/` for Node.js modules
 - **Database**: `chat-server/` for migrations and schema
@@ -286,6 +289,7 @@
 ## Dependencies
 
 ### Critical Path
+
 1. **Database** (T001-T003) must complete before backend implementation
 2. **Backend API** (T004-T009) must complete before frontend integration
 3. **Frontend Components** (T010-T016) can run in parallel with backend (different directories)
@@ -294,6 +298,7 @@
 6. **Documentation** (T028-T031) can run in parallel
 
 ### Detailed Dependencies
+
 - T001 (database migration) blocks → T003 (database operations)
 - T003 (database operations) blocks → T004-T009 (backend endpoints)
 - T004-T009 (backend endpoints) blocks → T014 (API client), T016 (WebSocket)
@@ -307,6 +312,7 @@
 ## Parallel Execution Examples
 
 ### Backend + Frontend Parallel Execution
+
 ```bash
 # Backend and frontend can run simultaneously (different directories)
 # Launch T004-T009 (backend) and T010-T016 (frontend) together:
@@ -314,22 +320,43 @@
 
 ```javascript
 // Backend task
-Task(agent="backend-architect", description="Create API endpoint", prompt="T004: Create API endpoint POST /api/...")
+Task(
+  (agent = 'backend-architect'),
+  (description = 'Create API endpoint'),
+  (prompt = 'T004: Create API endpoint POST /api/...')
+);
 
 // Frontend task (parallel)
-Task(agent="frontend-specialist", description="Create component", prompt="T010: Create component ChatRoom in chat-client-vite/src/components/...")
+Task(
+  (agent = 'frontend-specialist'),
+  (description = 'Create component'),
+  (prompt = 'T010: Create component ChatRoom in chat-client-vite/src/components/...')
+);
 ```
 
 ### Multiple Component Tasks (Parallel)
+
 ```bash
 # Multiple components can be created/updated simultaneously
 # Launch T010, T011, T012 together:
 ```
 
 ```javascript
-Task(agent="frontend-specialist", description="Component A", prompt="T010: Create component A...")
-Task(agent="frontend-specialist", description="Component B", prompt="T011: Create component B...")
-Task(agent="frontend-specialist", description="Component C", prompt="T012: Create component C...")
+Task(
+  (agent = 'frontend-specialist'),
+  (description = 'Component A'),
+  (prompt = 'T010: Create component A...')
+);
+Task(
+  (agent = 'frontend-specialist'),
+  (description = 'Component B'),
+  (prompt = 'T011: Create component B...')
+);
+Task(
+  (agent = 'frontend-specialist'),
+  (description = 'Component C'),
+  (prompt = 'T012: Create component C...')
+);
 ```
 
 ---
@@ -353,24 +380,28 @@ Task(agent="frontend-specialist", description="Component C", prompt="T012: Creat
 ## Co-Parenting Domain Considerations
 
 ### Privacy & Security
+
 - [ ] All tasks include privacy validation
 - [ ] Sensitive data handling reviewed
 - [ ] Authentication/authorization verified
 - [ ] Data encryption validated
 
 ### AI Mediation Integration
+
 - [ ] AI mediation prompts updated
 - [ ] Message rewriting tested
 - [ ] Conflict detection validated
 - [ ] User feedback loop implemented
 
 ### Real-Time Communication
+
 - [ ] WebSocket events tested
 - [ ] Reconnection logic validated
 - [ ] Message delivery verified
 - [ ] State synchronization tested
 
 ### Mobile/PWA
+
 - [ ] Responsive design verified
 - [ ] Touch interactions tested
 - [ ] Offline functionality validated
@@ -391,7 +422,8 @@ Task(agent="frontend-specialist", description="Component C", prompt="T012: Creat
 ---
 
 ## Validation Checklist
-*GATE: Checked during task generation*
+
+_GATE: Checked during task generation_
 
 - [ ] All API endpoints have corresponding tests
 - [ ] All components have unit tests
@@ -423,5 +455,4 @@ Task(agent="frontend-specialist", description="Component C", prompt="T012: Creat
 
 ---
 
-*Tasks for coparentliaizen.com - Better Co-Parenting Through Better Communication*
-
+_Tasks for coparentliaizen.com - Better Co-Parenting Through Better Communication_

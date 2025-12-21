@@ -18,6 +18,7 @@ This checklist ensures constitutional changes propagate correctly throughout the
 ## When to Use This Checklist
 
 Use this checklist whenever you:
+
 - Add a new constitutional principle
 - Modify an existing principle
 - Change principle numbering
@@ -91,6 +92,7 @@ After changing constitution, update ALL of the following:
 ### Step 2: Update Main Instruction Files
 
 **CLAUDE.md** (`.claude/CLAUDE.md` or `CLAUDE.md`):
+
 - [ ] Update constitutional principle references
 - [ ] Add new principle to relevant sections
 - [ ] Update workflow descriptions if changed
@@ -98,12 +100,14 @@ After changing constitution, update ALL of the following:
 - [ ] Verify cross-references to constitution
 
 **AGENTS.md** (if exists):
+
 - [ ] Update universal agent instructions
 - [ ] Add new constitutional requirements
 - [ ] Update delegation protocol if changed
 - [ ] Verify all principle references
 
 **README.md**:
+
 - [ ] Update framework overview if principles changed fundamentally
 - [ ] Update "Core Principles" section
 - [ ] Update quick reference if provided
@@ -121,6 +125,7 @@ For EACH agent in `.claude/agents/**/*.md`:
 - [ ] Verify no outdated principle references
 
 **Affected Agent Files** (check all):
+
 - [ ] frontend-specialist.md
 - [ ] backend-architect.md
 - [ ] database-specialist.md
@@ -140,51 +145,61 @@ For EACH agent in `.claude/agents/**/*.md`:
 If workflows affected (Principles II, III, VI, X):
 
 **create-new-feature.sh**:
+
 - [ ] Update if branching/git workflow changed
 - [ ] Add new validation if required
 - [ ] Update constitutional checks
 
 **setup-plan.sh**:
+
 - [ ] Update if planning workflow changed
 - [ ] Add new artifact generation if required
 - [ ] Update multi-agent detection logic if Principle X changed
 
 **check-task-prerequisites.sh**:
+
 - [ ] Update prerequisite checks if quality gates changed
 - [ ] Add new validations if required
 
 **constitutional-check.sh**:
+
 - [ ] **CRITICAL**: Add checks for new principles
 - [ ] Update existing checks if principles modified
 - [ ] Test all checks still pass
 - [ ] Update output messages
 
 **sanitization-audit.sh**:
+
 - [ ] Update if security/validation principles changed
 - [ ] Add new checks if required
 
 **create-agent.sh**:
+
 - [ ] Update agent template if delegation principles changed
 - [ ] Update validation if requirements changed
 
 ### Step 5: Update Templates
 
 **spec-template.md**:
+
 - [ ] Add sections for new principles if user-facing
 - [ ] Update validation requirements
 - [ ] Update examples
 
 **plan-template.md**:
+
 - [ ] Update 9-step process if workflow changed
 - [ ] Add new planning requirements
 - [ ] Update compliance sections
 
 **tasks-template.md**:
+
 - [ ] Update task structure if workflow changed
 - [ ] Add new task types if required
 - [ ] Update agent assignment if Principle X changed
 
 **agent-file-template.md**:
+
 - [ ] **CRITICAL**: Update constitutional section
 - [ ] Add new principle applications
 - [ ] Update delegation protocol if Principle X changed
@@ -195,24 +210,29 @@ If workflows affected (Principles II, III, VI, X):
 In `.docs/policies/`:
 
 **agent-collaboration-triggers.md**:
+
 - [ ] **CRITICAL if Principle X changed**: Update trigger keywords
 - [ ] Add new domain triggers
 - [ ] Update agent routing logic
 
 **testing-strategy-guide.md**:
+
 - [ ] Update if Principle II (Test-First) changed
 - [ ] Add new testing requirements
 - [ ] Update test types/priorities
 
 **feature-development-workflow.md**:
+
 - [ ] Update workflow steps if processes changed
 - [ ] Add new gates if quality standards changed
 - [ ] Update approval requirements
 
 **file-creation-policy.md**:
+
 - [ ] Update if library-first or documentation principles changed
 
 **Any other policy files**:
+
 - [ ] Review each for constitutional references
 - [ ] Update as needed
 
@@ -221,23 +241,28 @@ In `.docs/policies/`:
 In `.claude/commands/`:
 
 **/specify** command:
+
 - [ ] Update if specification requirements changed
 - [ ] Add new validations if required
 
 **/plan** command:
+
 - [ ] Update if planning process changed
 - [ ] Update multi-agent triggers if Principle X changed
 
 **/tasks** command:
+
 - [ ] Update if task generation requirements changed
 
 **/create-agent** command:
+
 - [ ] **CRITICAL**: Update if agent structure changed
 - [ ] Update constitutional compliance requirements
 
 ### Step 8: Update Case Studies / Examples
 
 **case-studies/ioun-ai.md** (and any others):
+
 - [ ] Add examples of new principle application
 - [ ] Update existing examples if principles changed
 - [ ] Document how principle was applied in practice
@@ -245,10 +270,12 @@ In `.claude/commands/`:
 ### Step 9: Update SOW / PRD (if applicable)
 
 **sdd-framework-enhancements-sow.md**:
+
 - [ ] Update constitutional foundation section if applicable
 - [ ] Document change as enhancement
 
 **sdd-framework-enhancements-prd.md**:
+
 - [ ] Add change to enhancement catalog if applicable
 
 ---
@@ -328,14 +355,14 @@ If constitutional change breaks existing projects:
 
 ### Sign-Off
 
-**Change Author**: _________________________
-**Date**: _________
+**Change Author**: ************\_************
+**Date**: ****\_****
 
-**Technical Reviewer**: _________________________
-**Date**: _________
+**Technical Reviewer**: ************\_************
+**Date**: ****\_****
 
-**Framework Maintainer**: _________________________
-**Date**: _________
+**Framework Maintainer**: ************\_************
+**Date**: ****\_****
 
 ---
 

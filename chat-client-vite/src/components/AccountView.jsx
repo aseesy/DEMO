@@ -55,16 +55,27 @@ export function AccountView({ username }) {
         <div className="bg-white rounded-2xl p-6 sm:p-8 border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow mb-6">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-12 h-12 bg-white border-2 border-teal-light rounded-xl flex items-center justify-center shadow-sm">
-              <svg className="w-6 h-6 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <svg
+                className="w-6 h-6 text-teal-medium"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
               </svg>
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-teal-dark mb-1">
-                Account Information
-              </h3>
+              <h3 className="text-xl font-semibold text-teal-dark mb-1">Account Information</h3>
               <p className="text-sm text-gray-500">
-                Signed in as <span className="font-medium text-teal-dark">{profileData?.firstName || username}</span>
+                Signed in as{' '}
+                <span className="font-medium text-teal-dark">
+                  {profileData?.firstName || username}
+                </span>
               </p>
             </div>
           </div>
@@ -76,9 +87,7 @@ export function AccountView({ username }) {
               <input
                 type="email"
                 value={profileData.email}
-                onChange={(e) =>
-                  setProfileData({ ...profileData, email: e.target.value })
-                }
+                onChange={e => setProfileData({ ...profileData, email: e.target.value })}
                 className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-teal-dark focus:ring-2 focus:ring-teal-light focus:ring-opacity-20 transition-all text-base text-gray-900 placeholder-gray-400 min-h-[44px]"
                 placeholder="your@email.com"
               />
@@ -91,8 +100,18 @@ export function AccountView({ username }) {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-white border-2 border-teal-light rounded-xl flex items-center justify-center shadow-sm">
-                <svg className="w-6 h-6 text-teal-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <svg
+                  className="w-6 h-6 text-teal-medium"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
                 </svg>
               </div>
               <div>
@@ -116,7 +135,7 @@ export function AccountView({ username }) {
                 <input
                   type="password"
                   value={passwordData.currentPassword}
-                  onChange={(e) =>
+                  onChange={e =>
                     setPasswordData({
                       ...passwordData,
                       currentPassword: e.target.value,
@@ -133,7 +152,7 @@ export function AccountView({ username }) {
                 <input
                   type="password"
                   value={passwordData.newPassword}
-                  onChange={(e) =>
+                  onChange={e =>
                     setPasswordData({
                       ...passwordData,
                       newPassword: e.target.value,
@@ -150,7 +169,7 @@ export function AccountView({ username }) {
                 <input
                   type="password"
                   value={passwordData.confirmPassword}
-                  onChange={(e) =>
+                  onChange={e =>
                     setPasswordData({
                       ...passwordData,
                       confirmPassword: e.target.value,
@@ -172,7 +191,13 @@ export function AccountView({ username }) {
                   </>
                 ) : (
                   <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                     <span>Update Password</span>
@@ -187,11 +212,15 @@ export function AccountView({ username }) {
         <div className="grid gap-6 md:grid-cols-2 mb-6">
           <div className="border-2 border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <h3 className="font-semibold text-lg text-teal-dark mb-2">Plan &amp; Billing</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">Upgrade plans or download invoices.</p>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Upgrade plans or download invoices.
+            </p>
           </div>
           <div className="border-2 border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <h3 className="font-semibold text-lg text-teal-dark mb-2">Household Access</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">Invite, remove, or update connected caregivers.</p>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Invite, remove, or update connected caregivers.
+            </p>
           </div>
         </div>
 
@@ -209,7 +238,13 @@ export function AccountView({ username }) {
               </>
             ) : (
               <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
                 <span>Save Account</span>

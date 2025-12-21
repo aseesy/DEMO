@@ -27,7 +27,6 @@ If you can't change nameservers in Hostinger (due to hosting restrictions), you 
    - You'll see two options:
      - **Option A**: Use Vercel nameservers (if you can change nameservers)
      - **Option B**: Use DNS records (if you can't change nameservers)
-   
    - **Choose Option B**: Use DNS records
    - Vercel will show you:
      - **A Record**: `@` → `[Vercel IP]` (e.g., `76.76.21.21`)
@@ -50,11 +49,9 @@ If you can't change nameservers in Hostinger (due to hosting restrictions), you 
    - **Remove any A records pointing to Railway**:
      - Look for A record with name `@` or blank
      - If it points to Railway IP, delete it
-   
    - **Remove any CNAME records pointing to Railway**:
      - Look for CNAME record with name `www`
      - If it points to Railway, delete it
-   
    - **Remove any other conflicting records**:
      - Remove any other A or CNAME records that might conflict
      - Keep MX records (for email) if you use email
@@ -165,6 +162,7 @@ If you can't change nameservers in Hostinger (due to hosting restrictions), you 
 **Issue**: DNS records not pointing to Vercel
 
 **Solution**:
+
 1. **Verify DNS Records**:
    - Check DNS records in Hostinger
    - Ensure A record points to Vercel IP
@@ -185,6 +183,7 @@ If you can't change nameservers in Hostinger (due to hosting restrictions), you 
 **Issue**: SSL certificate hasn't been provisioned yet
 
 **Solution**:
+
 1. **Wait for SSL Provisioning**:
    - SSL certificates are provisioned automatically after DNS is configured
    - Usually takes 5-15 minutes
@@ -205,6 +204,7 @@ If you can't change nameservers in Hostinger (due to hosting restrictions), you 
 **Issue**: Still getting SSL errors after DNS is configured
 
 **Solution**:
+
 1. **Wait for Propagation**:
    - DNS and SSL provisioning can take time
    - Wait 10-30 minutes after DNS is configured
@@ -225,6 +225,7 @@ If you can't change nameservers in Hostinger (due to hosting restrictions), you 
 **Issue**: Can't remove old DNS records in Hostinger
 
 **Solution**:
+
 1. **Check Record Types**:
    - Ensure you're looking at the right records
    - A records for root domain
@@ -263,4 +264,3 @@ If you can't change nameservers in Hostinger (due to hosting restrictions), you 
 ---
 
 **Next Steps: Get DNS records from Vercel, add them to Hostinger DNS Zone Editor, then wait for DNS propagation and SSL certificate provisioning!** 🌐
-

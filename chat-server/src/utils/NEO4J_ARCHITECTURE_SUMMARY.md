@@ -26,6 +26,7 @@ Mom A ──[MEMBER_OF]──> Room 1
 ### Key Structures
 
 1. **Direct Relationships** (for fast queries):
+
    ```cypher
    (:User)-[:CO_PARENT_WITH {
      roomId: "room_123",
@@ -45,6 +46,7 @@ Mom A ──[MEMBER_OF]──> Room 1
 ### When to Create Relationships
 
 **Trigger Points:**
+
 1. ✅ When `createCoParentRoom()` is called in `roomManager.js`
 2. ✅ When `addUserToRoom()` adds a second user (co-parent connection)
 3. ✅ When invitation is accepted (`registerFromInvitation`)
@@ -53,27 +55,32 @@ Mom A ──[MEMBER_OF]──> Room 1
 ### Integration Points
 
 **File: `chat-server/roomManager.js`**
+
 - `createCoParentRoom()` → Create relationship + room node
 - `addUserToRoom()` → If second member, create relationship
 
 **File: `chat-server/auth.js`**
+
 - `registerFromInvitation()` → After room created, create relationship
 - `registerFromPairing()` → After room created, create relationship
 
 ### Example: Mom A's Evolving Relationships
 
 **Initial State:**
+
 ```
 Mom A ←→ Dad A (Room 1)
 ```
 
 **After Mom A's Partner Joins:**
+
 ```
 Mom A ←→ Dad A (Room 1)          [Still active]
 Mom A ←→ Mom A's Partner (Room 2) [New relationship]
 ```
 
 **Query Result:**
+
 ```cypher
 MATCH (momA:User {userId: 1})-[:CO_PARENT_WITH {active: true}]->(coParent:User)
 RETURN coParent
@@ -93,4 +100,3 @@ RETURN coParent
 2. **Add relationship creation** to `roomManager.addUserToRoom()` (when second member)
 3. **Backfill existing relationships** from PostgreSQL rooms
 4. **Add relationship queries** for analytics and features
-

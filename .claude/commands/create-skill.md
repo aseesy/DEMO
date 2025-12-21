@@ -15,9 +15,11 @@ Create a standalone skill or a skill associated with an existing agent.
 ## Arguments
 
 **Required**:
+
 - `skill-name`: Kebab-case name for the skill (e.g., `api-design`, `deployment-automation`)
 
 **Optional**:
+
 - `--agent agent-name`: Associate this skill with an existing agent
 - `--category category-name`: Skill category (sdd-workflow, validation, technical, integration)
 - `--description "text"`: Brief description of what the skill does
@@ -27,6 +29,7 @@ Create a standalone skill or a skill associated with an existing agent.
 ### Step 1: Parse Arguments
 
 Extract skill name and options from arguments:
+
 ```bash
 SKILL_NAME="first-argument"
 AGENT_NAME="value after --agent flag (if present)"
@@ -37,6 +40,7 @@ DESCRIPTION="value after --description flag (if present)"
 ### Step 2: Validate Skill Name
 
 Check format:
+
 - Must be kebab-case (lowercase with hyphens)
 - No special characters except hyphens
 - Not empty
@@ -46,6 +50,7 @@ Check format:
 If `--category` not provided, determine automatically:
 
 **If `--agent` is provided**, look up the agent's department:
+
 - Product department → `sdd-workflow`
 - Quality department → `validation`
 - Operations department → `integration`
@@ -56,6 +61,7 @@ If `--category` not provided, determine automatically:
 ### Step 4: Check for Existing Skill
 
 Verify skill doesn't already exist:
+
 ```bash
 find .claude/skills -name "${SKILL_NAME}" -type d
 ```
@@ -74,6 +80,7 @@ mkdir -p "${SKILL_DIR}"
 Create SKILL.md with template structure:
 
 **Frontmatter** (YAML):
+
 ```yaml
 ---
 name: skill-name
@@ -85,6 +92,7 @@ allowed-tools: Read, Write, Bash, Grep, Glob
 ```
 
 **Sections**:
+
 1. When to Use
 2. Procedure (Step-by-step instructions)
 3. Constitutional Compliance
@@ -142,19 +150,25 @@ Creates: `.claude/skills/validation/feature-validation/SKILL.md`
 ## Skill Categories
 
 ### sdd-workflow/
+
 Core SDD methodology workflows (Priority 1)
+
 - Specification creation
 - Implementation planning
 - Task generation
 
 ### validation/
+
 Quality gates and compliance checking (Priority 2)
+
 - Constitutional compliance
 - Domain detection
 - Specification/plan/task validation
 
 ### technical/
+
 Domain-specific technical procedures (Priority 3)
+
 - API contract design
 - Test-first development
 - Database design
@@ -162,7 +176,9 @@ Domain-specific technical procedures (Priority 3)
 - Performance optimization
 
 ### integration/
+
 External system integrations (Priority 4)
+
 - MCP server integration
 - CI/CD integration
 - Monitoring setup

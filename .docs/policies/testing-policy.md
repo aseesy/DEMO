@@ -20,6 +20,7 @@ This policy establishes comprehensive testing standards for the SDD Framework, e
 Test-Driven Development (TDD) is mandatory for all code.
 
 ### Required Workflow
+
 1. **Write tests** that define expected behavior
 2. **Get user approval** on test scenarios
 3. **Run tests** (they should fail initially - RED)
@@ -33,6 +34,7 @@ Test-Driven Development (TDD) is mandatory for all code.
 ## Scope
 
 All code requires tests:
+
 - Application code
 - Library code
 - Scripts and automation
@@ -75,6 +77,7 @@ Follow the testing pyramid strategy:
 **Definition**: Test individual functions/methods in isolation
 
 **Requirements**:
+
 - ✅ Test all public methods/functions
 - ✅ Mock external dependencies
 - ✅ Cover edge cases and error paths
@@ -83,12 +86,14 @@ Follow the testing pyramid strategy:
 - ✅ ≥80% code coverage minimum
 
 **Framework Examples**:
+
 - JavaScript/TypeScript: Jest, Vitest, Mocha
 - Python: pytest, unittest
 - Go: testing package
 - Java: JUnit
 
 **Example**:
+
 ```typescript
 // ✅ GOOD: Unit test with mocks
 describe('UserService', () => {
@@ -102,7 +107,7 @@ describe('UserService', () => {
     expect(mockHasher).toHaveBeenCalledWith('password');
     expect(mockDB).toHaveBeenCalledWith({
       email: 'user@example.com',
-      password: 'hashed123'
+      password: 'hashed123',
     });
   });
 });
@@ -113,6 +118,7 @@ describe('UserService', () => {
 **Definition**: Test interactions between components
 
 **Requirements**:
+
 - ✅ Test contract compliance (Principle III)
 - ✅ Test database interactions
 - ✅ Test API endpoints
@@ -121,6 +127,7 @@ describe('UserService', () => {
 - ✅ Use test database/services
 
 **What to Test**:
+
 - API request/response contracts
 - Database queries and transactions
 - External service integrations
@@ -128,6 +135,7 @@ describe('UserService', () => {
 - Error handling across boundaries
 
 **Example**:
+
 ```typescript
 // ✅ GOOD: Integration test with test DB
 describe('POST /api/users', () => {
@@ -159,6 +167,7 @@ describe('POST /api/users', () => {
 **Definition**: Test complete user workflows
 
 **Requirements**:
+
 - ✅ Test critical user paths
 - ✅ Test authentication flows
 - ✅ Test payment flows (if applicable)
@@ -167,16 +176,19 @@ describe('POST /api/users', () => {
 - ✅ Use production-like environment
 
 **Framework Examples**:
+
 - Playwright, Cypress, Selenium
 - Postman for API E2E
 
 **When Required**:
+
 - User-facing applications
 - Critical business workflows
 - Payment processing
 - Authentication systems
 
 **Example**:
+
 ```typescript
 // ✅ GOOD: E2E test with Playwright
 test('user can sign up and log in', async ({ page }) => {
@@ -208,6 +220,7 @@ test('user can sign up and log in', async ({ page }) => {
 **Definition**: Verify API contracts match specifications
 
 **Requirements**:
+
 - ✅ One test per endpoint
 - ✅ Validate request schemas
 - ✅ Validate response schemas
@@ -215,6 +228,7 @@ test('user can sign up and log in', async ({ page }) => {
 - ✅ Match documented contracts
 
 **Example**:
+
 ```typescript
 // ✅ GOOD: Contract test
 describe('GET /api/users/:id contract', () => {
@@ -228,8 +242,8 @@ describe('GET /api/users/:id contract', () => {
       properties: {
         id: { type: 'number' },
         email: { type: 'string', format: 'email' },
-        createdAt: { type: 'string', format: 'date-time' }
-      }
+        createdAt: { type: 'string', format: 'date-time' },
+      },
     });
   });
 });
@@ -241,11 +255,11 @@ describe('GET /api/users/:id contract', () => {
 
 ### Minimum Coverage Thresholds
 
-| Code Type | Statements | Branches | Functions | Lines |
-|-----------|-----------|----------|-----------|-------|
-| Application | 80% | 75% | 80% | 80% |
-| Libraries | 90% | 85% | 90% | 90% |
-| Critical paths | 100% | 100% | 100% | 100% |
+| Code Type      | Statements | Branches | Functions | Lines |
+| -------------- | ---------- | -------- | --------- | ----- |
+| Application    | 80%        | 75%      | 80%       | 80%   |
+| Libraries      | 90%        | 85%      | 90%       | 90%   |
+| Critical paths | 100%       | 100%     | 100%      | 100%  |
 
 ### Critical Paths Requiring 100% Coverage
 
@@ -258,12 +272,14 @@ describe('GET /api/users/:id contract', () => {
 ### Coverage Exemptions
 
 Allowed to exclude from coverage:
+
 - Generated code (with comment marker)
 - Third-party code
 - Trivial getters/setters (with approval)
 - Deprecated code (scheduled for removal)
 
 **How to Exempt**:
+
 ```typescript
 /* istanbul ignore next */
 function trivialGetter() {
@@ -278,6 +294,7 @@ function trivialGetter() {
 ### Step 1: Write Tests FIRST
 
 Before writing implementation:
+
 1. Understand requirements from specification
 2. Write test cases covering happy path
 3. Write test cases covering error cases
@@ -287,6 +304,7 @@ Before writing implementation:
 ### Step 2: Run Tests (RED)
 
 Tests should FAIL initially:
+
 ```bash
 $ npm test
 FAIL src/user-service.test.ts
@@ -299,6 +317,7 @@ FAIL src/user-service.test.ts
 ### Step 3: Implement (GREEN)
 
 Write minimum code to make tests pass:
+
 ```typescript
 class UserService {
   async createUser(email, password) {
@@ -319,9 +338,13 @@ PASS src/user-service.test.ts
 ### Step 5: Refactor (REFACTOR)
 
 Improve code while keeping tests green:
+
 ```typescript
 class UserService {
-  constructor(private db: Database, private hasher: Hasher) {}
+  constructor(
+    private db: Database,
+    private hasher: Hasher
+  ) {}
 
   async createUser(email: string, password: string): Promise<User> {
     const hashedPassword = await this.hasher.hash(password);
@@ -399,9 +422,9 @@ it('should reject invalid email', async () => {
   const invalidEmail = 'not-an-email';
 
   // Act & Assert
-  await expect(service.createUser(invalidEmail, 'password'))
-    .rejects
-    .toThrow('Invalid email format');
+  await expect(service.createUser(invalidEmail, 'password')).rejects.toThrow(
+    'Invalid email format'
+  );
 });
 ```
 
@@ -414,14 +437,14 @@ Use meaningful test data:
 const testUser = {
   email: 'john.doe@example.com',
   name: 'John Doe',
-  role: 'user'
+  role: 'user',
 };
 
 // ❌ BAD: Meaningless data
 const testUser = {
   email: 'a@b.c',
   name: 'x',
-  role: 'y'
+  role: 'y',
 };
 ```
 
@@ -432,6 +455,7 @@ const testUser = {
 ### When to Mock
 
 Mock external dependencies:
+
 - ✅ Database connections
 - ✅ External APIs
 - ✅ File system operations
@@ -470,6 +494,7 @@ const service = new UserService(mockDB);
 ### Required CI Checks
 
 All PRs must pass:
+
 1. ✅ All tests pass
 2. ✅ Coverage thresholds met
 3. ✅ No test warnings or errors
@@ -501,6 +526,7 @@ jobs:
 ### Test Databases
 
 Use dedicated test databases:
+
 - ✅ Separate from development DB
 - ✅ Reset before each test suite
 - ✅ Use migrations for schema
@@ -515,18 +541,19 @@ Manage test data with fixtures:
 export const testUsers = {
   admin: {
     email: 'admin@example.com',
-    role: 'admin'
+    role: 'admin',
   },
   user: {
     email: 'user@example.com',
-    role: 'user'
-  }
+    role: 'user',
+  },
 };
 ```
 
 ### Test Isolation
 
 Ensure test isolation:
+
 ```typescript
 beforeEach(async () => {
   await testDB.migrate.rollback();
@@ -546,6 +573,7 @@ afterEach(async () => {
 ### Load Testing (Recommended for APIs)
 
 Test system under load:
+
 - Response time under load
 - Concurrent user handling
 - Resource usage
@@ -554,6 +582,7 @@ Test system under load:
 ### Benchmark Testing (Optional)
 
 Track performance over time:
+
 ```typescript
 describe('Performance benchmarks', () => {
   it('should process 1000 items in < 100ms', async () => {
@@ -573,6 +602,7 @@ describe('Performance benchmarks', () => {
 ### Security Test Requirements
 
 Test security controls:
+
 - ✅ Authentication bypasses
 - ✅ Authorization checks
 - ✅ Input validation
@@ -588,9 +618,7 @@ describe('Security: SQL Injection', () => {
     const maliciousInput = "'; DROP TABLE users; --";
 
     // Should not throw or execute SQL
-    await expect(service.searchUsers(maliciousInput))
-      .resolves
-      .toEqual([]);
+    await expect(service.searchUsers(maliciousInput)).resolves.toEqual([]);
   });
 });
 
@@ -614,6 +642,7 @@ describe('Security: Authorization', () => {
 ### Keeping Tests Up to Date
 
 When code changes:
+
 1. Update failing tests
 2. Add tests for new features
 3. Remove tests for deleted features
@@ -623,6 +652,7 @@ When code changes:
 ### Test Debt
 
 Avoid test debt:
+
 - ❌ No skipped tests in main branch
 - ❌ No commented-out tests
 - ❌ No TODO tests
@@ -631,6 +661,7 @@ Avoid test debt:
 ### Flaky Tests
 
 Handle flaky tests:
+
 1. Investigate root cause
 2. Fix immediately
 3. If can't fix: quarantine (separate suite)
@@ -652,6 +683,7 @@ Handle flaky tests:
 ### Coverage Reports
 
 Generate and review coverage reports:
+
 ```bash
 npm run test:coverage
 open coverage/index.html
@@ -660,6 +692,7 @@ open coverage/index.html
 ### Trend Analysis
 
 Monitor trends over time:
+
 - Coverage should increase or stay stable
 - Test count should increase with code
 - Execution time should stay reasonable
@@ -678,6 +711,7 @@ No code may be merged without tests. No exceptions.
 ### Emergency Hotfixes
 
 Even emergency hotfixes require:
+
 1. Tests written (can be simple)
 2. Tests passing
 3. Post-merge: Enhance tests within 24 hours
@@ -689,21 +723,25 @@ Even emergency hotfixes require:
 ### Recommended by Language
 
 **JavaScript/TypeScript**:
+
 - Unit: Jest, Vitest
 - E2E: Playwright, Cypress
 - Coverage: Istanbul/c8
 
 **Python**:
+
 - Unit: pytest
 - Coverage: coverage.py
 - E2E: Selenium
 
 **Go**:
+
 - Unit: testing package
 - Coverage: go test -cover
 - Mocking: testify
 
 **Java**:
+
 - Unit: JUnit 5
 - Mocking: Mockito
 - E2E: Selenium

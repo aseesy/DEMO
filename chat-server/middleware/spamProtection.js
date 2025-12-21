@@ -12,7 +12,8 @@ const rateLimitStore = new Map();
 setInterval(() => {
   const now = Date.now();
   for (const [key, data] of rateLimitStore.entries()) {
-    if (now - data.firstRequest > 3600000) { // 1 hour
+    if (now - data.firstRequest > 3600000) {
+      // 1 hour
       rateLimitStore.delete(key);
     }
   }
@@ -22,11 +23,13 @@ setInterval(() => {
  * Get client IP address from request
  */
 function getClientIP(req) {
-  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-         req.headers['x-real-ip'] ||
-         req.socket?.remoteAddress ||
-         req.ip ||
-         'unknown';
+  return (
+    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+    req.headers['x-real-ip'] ||
+    req.socket?.remoteAddress ||
+    req.ip ||
+    'unknown'
+  );
 }
 
 /**
@@ -44,12 +47,14 @@ function honeypotCheck(fieldName = 'website') {
 
     // If honeypot field is filled, silently reject (don't give bots info)
     if (honeypotValue && honeypotValue.trim() !== '') {
-      console.log(`[SPAM] Honeypot triggered from IP: ${getClientIP(req)}, field: ${fieldName}=${honeypotValue}`);
+      console.log(
+        `[SPAM] Honeypot triggered from IP: ${getClientIP(req)}, field: ${fieldName}=${honeypotValue}`
+      );
 
       // Return success to not tip off the bot, but don't actually process
       return res.json({
         success: true,
-        message: 'Your message has been sent successfully.'
+        message: 'Your message has been sent successfully.',
       });
     }
 
@@ -73,7 +78,7 @@ function rateLimit(options = {}) {
   const {
     windowMs = 3600000, // 1 hour
     maxRequests = 5,
-    message = 'Too many requests. Please try again later.'
+    message = 'Too many requests. Please try again later.',
   } = options;
 
   return (req, res, next) => {
@@ -101,10 +106,12 @@ function rateLimit(options = {}) {
     res.set('X-RateLimit-Reset', new Date(data.firstRequest + windowMs).toISOString());
 
     if (data.count > maxRequests) {
-      console.log(`[RATE LIMIT] IP ${clientIP} exceeded limit for ${req.path}: ${data.count}/${maxRequests}`);
+      console.log(
+        `[RATE LIMIT] IP ${clientIP} exceeded limit for ${req.path}: ${data.count}/${maxRequests}`
+      );
       return res.status(429).json({
         error: message,
-        retryAfter: Math.ceil((data.firstRequest + windowMs - now) / 1000)
+        retryAfter: Math.ceil((data.firstRequest + windowMs - now) / 1000),
       });
     }
 
@@ -123,10 +130,7 @@ function rateLimit(options = {}) {
  * @param {string} options.action - Expected action name
  */
 function recaptchaVerify(options = {}) {
-  const {
-    minScore = 0.5,
-    action = null
-  } = options;
+  const { minScore = 0.5, action = null } = options;
 
   return async (req, res, next) => {
     const secretKey = process.env.RECAPTCHA_SECRET_KEY;
@@ -149,7 +153,7 @@ function recaptchaVerify(options = {}) {
       const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `secret=${secretKey}&response=${token}&remoteip=${getClientIP(req)}`
+        body: `secret=${secretKey}&response=${token}&remoteip=${getClientIP(req)}`,
       });
 
       const data = await response.json();
@@ -157,15 +161,17 @@ function recaptchaVerify(options = {}) {
       if (!data.success) {
         console.log(`[RECAPTCHA] Verification failed: ${JSON.stringify(data['error-codes'])}`);
         return res.status(400).json({
-          error: 'Security verification failed. Please try again.'
+          error: 'Security verification failed. Please try again.',
         });
       }
 
       // Check score for v3
       if (data.score !== undefined && data.score < minScore) {
-        console.log(`[RECAPTCHA] Low score: ${data.score} (min: ${minScore}) from IP: ${getClientIP(req)}`);
+        console.log(
+          `[RECAPTCHA] Low score: ${data.score} (min: ${minScore}) from IP: ${getClientIP(req)}`
+        );
         return res.status(400).json({
-          error: 'Security verification failed. Please try again.'
+          error: 'Security verification failed. Please try again.',
         });
       }
 
@@ -173,7 +179,7 @@ function recaptchaVerify(options = {}) {
       if (action && data.action !== action) {
         console.log(`[RECAPTCHA] Action mismatch: expected ${action}, got ${data.action}`);
         return res.status(400).json({
-          error: 'Security verification failed. Please try again.'
+          error: 'Security verification failed. Please try again.',
         });
       }
 
@@ -201,13 +207,10 @@ function spamProtection(options = {}) {
   const {
     honeypotField = 'website',
     rateLimit: rateLimitOptions = {},
-    recaptcha: recaptchaOptions = {}
+    recaptcha: recaptchaOptions = {},
   } = options;
 
-  const middlewares = [
-    honeypotCheck(honeypotField),
-    rateLimit(rateLimitOptions)
-  ];
+  const middlewares = [honeypotCheck(honeypotField), rateLimit(rateLimitOptions)];
 
   // Only add reCAPTCHA if configured
   if (process.env.RECAPTCHA_SECRET_KEY) {
@@ -217,7 +220,7 @@ function spamProtection(options = {}) {
   return (req, res, next) => {
     // Chain middlewares
     let index = 0;
-    const runNext = (err) => {
+    const runNext = err => {
       if (err) return next(err);
       if (index >= middlewares.length) return next();
       middlewares[index++](req, res, runNext);
@@ -231,11 +234,24 @@ function spamProtection(options = {}) {
  * Rejects emails from known disposable email providers.
  */
 const DISPOSABLE_DOMAINS = new Set([
-  'guerrillamail.com', 'guerrillamail.org', 'sharklasers.com',
-  'mailinator.com', 'maildrop.cc', 'tempmail.com', 'temp-mail.org',
-  '10minutemail.com', 'throwaway.email', 'fakeinbox.com',
-  'trashmail.com', 'yopmail.com', 'tempail.com', 'dispostable.com',
-  'mailnesia.com', 'tempr.email', 'discard.email', 'spamgourmet.com'
+  'guerrillamail.com',
+  'guerrillamail.org',
+  'sharklasers.com',
+  'mailinator.com',
+  'maildrop.cc',
+  'tempmail.com',
+  'temp-mail.org',
+  '10minutemail.com',
+  'throwaway.email',
+  'fakeinbox.com',
+  'trashmail.com',
+  'yopmail.com',
+  'tempail.com',
+  'dispostable.com',
+  'mailnesia.com',
+  'tempr.email',
+  'discard.email',
+  'spamgourmet.com',
 ]);
 
 function rejectDisposableEmail(req, res, next) {
@@ -246,7 +262,7 @@ function rejectDisposableEmail(req, res, next) {
     if (domain && DISPOSABLE_DOMAINS.has(domain)) {
       console.log(`[SPAM] Disposable email rejected: ${email} from IP: ${getClientIP(req)}`);
       return res.status(400).json({
-        error: 'Please use a permanent email address, not a disposable one.'
+        error: 'Please use a permanent email address, not a disposable one.',
       });
     }
   }
@@ -260,5 +276,5 @@ module.exports = {
   recaptchaVerify,
   spamProtection,
   rejectDisposableEmail,
-  getClientIP
+  getClientIP,
 };

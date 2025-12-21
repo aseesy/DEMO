@@ -1,8 +1,8 @@
 /**
  * Types Library
- * 
+ *
  * Type definitions and interfaces (JSDoc format for JavaScript).
- * 
+ *
  * Note: For TypeScript projects, these would be .ts files with proper types.
  */
 
@@ -52,4 +52,3 @@
  * @property {number} [limit] - Items per page
  * @property {number} [offset] - Offset for pagination
  */
-

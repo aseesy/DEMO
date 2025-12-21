@@ -5,12 +5,14 @@ Standalone tools and utilities for testing and debugging the LiaiZen mediation s
 ## interceptor.py
 
 The Message Interceptor - A Python script that tests the LiaiZen mediation logic by:
+
 1. Loading the system prompt from `constitution.md` (the authoritative source)
 2. Taking a user message and context profiles
 3. Sending it to OpenAI API
 4. Returning structured JSON analysis
 
 The constitution contains:
+
 - **System Role**: Observer/Mediator identity
 - **The Primitives**: Metaphysical, Relational Axes, Communication Vector
 - **The Axioms**: Pattern detection rules (Indirect Communication, Context Triggered, Direct)
@@ -20,11 +22,13 @@ The constitution contains:
 ### Setup
 
 1. Install dependencies:
+
 ```bash
 pip install openai
 ```
 
 2. Set your OpenAI API key:
+
 ```bash
 export OPENAI_API_KEY=your_key_here
 ```
@@ -43,8 +47,8 @@ python interceptor.py
 ### Customizing
 
 Edit the mock data in the `if __name__ == "__main__":` section to test different scenarios:
+
 - Change `current_user` dict to test different sender profiles
 - Change `coparent` dict to test different receiver contexts
 - Modify `draft_message` to test different message patterns
 - The script will identify which Axioms fire based on the message and context
-

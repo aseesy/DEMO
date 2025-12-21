@@ -16,17 +16,53 @@
 
 // Common passwords to block (top passwords from breach databases)
 const BLOCKED_PASSWORDS = new Set([
-  'password', 'password1', 'password123', '123456', '12345678', '123456789',
-  'qwerty', 'abc123', 'monkey', 'master', 'dragon', 'letmein', 'login',
-  'welcome', 'shadow', 'sunshine', 'princess', 'football', 'baseball',
-  'iloveyou', 'trustno1', 'superman', 'batman', 'passw0rd', 'admin',
-  'qwerty123', 'welcome1', 'p@ssw0rd', 'pass1234', 'test1234', 'guest',
-  'changeme', 'default', 'secret', 'asdf1234', 'zxcvbnm', 'qwertyuiop',
-  '1234567890', '0987654321', 'abcdefgh', 'password!', 'coparent', 'liaizen',
+  'password',
+  'password1',
+  'password123',
+  '123456',
+  '12345678',
+  '123456789',
+  'qwerty',
+  'abc123',
+  'monkey',
+  'master',
+  'dragon',
+  'letmein',
+  'login',
+  'welcome',
+  'shadow',
+  'sunshine',
+  'princess',
+  'football',
+  'baseball',
+  'iloveyou',
+  'trustno1',
+  'superman',
+  'batman',
+  'passw0rd',
+  'admin',
+  'qwerty123',
+  'welcome1',
+  'p@ssw0rd',
+  'pass1234',
+  'test1234',
+  'guest',
+  'changeme',
+  'default',
+  'secret',
+  'asdf1234',
+  'zxcvbnm',
+  'qwertyuiop',
+  '1234567890',
+  '0987654321',
+  'abcdefgh',
+  'password!',
+  'coparent',
+  'liaizen',
 ]);
 
 const PASSWORD_REQUIREMENTS = {
-  minLength: 8,
+  minLength: 10,
   maxLength: 128,
   requireLowercase: false,
   requireUppercase: false,
@@ -108,10 +144,10 @@ function checkPasswordStrength(password) {
   let feedback = '';
 
   // Length is the primary factor (NIST recommendation)
-  if (password.length >= 8) score += 1;
-  if (password.length >= 12) score += 1;
-  if (password.length >= 16) score += 1;
-  if (password.length >= 20) score += 1;
+  if (password.length >= 10) score += 1;
+  if (password.length >= 14) score += 1;
+  if (password.length >= 18) score += 1;
+  if (password.length >= 22) score += 1;
 
   // Bonus for variety (not required, just encouraged)
   const hasLower = /[a-z]/.test(password);
@@ -159,12 +195,12 @@ function getPasswordRequirementsStructured() {
       {
         id: 'length',
         label: `At least ${PASSWORD_REQUIREMENTS.minLength} characters`,
-        test: (pw) => pw && pw.length >= PASSWORD_REQUIREMENTS.minLength,
+        test: pw => pw && pw.length >= PASSWORD_REQUIREMENTS.minLength,
       },
       {
         id: 'not-common',
         label: 'Not a commonly used password',
-        test: (pw) => !isBlockedPassword(pw),
+        test: pw => !isBlockedPassword(pw),
       },
     ],
   };

@@ -11,6 +11,7 @@ npm install -g @modelcontextprotocol/server-gemini
 ```
 
 Or install locally in your project:
+
 ```bash
 cd /Users/athenasees/Desktop/chat
 npm install @modelcontextprotocol/server-gemini
@@ -20,17 +21,20 @@ npm install @modelcontextprotocol/server-gemini
 
 The MCP configuration file location for Cursor:
 
-**macOS**: 
+**macOS**:
+
 ```
 ~/Library/Application Support/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
 ```
 
-**Windows**: 
+**Windows**:
+
 ```
 %APPDATA%\Cursor\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json
 ```
 
-**Linux**: 
+**Linux**:
+
 ```
 ~/.config/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
 ```
@@ -86,13 +90,13 @@ Create `server.js`:
 ```javascript
 #!/usr/bin/env node
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
-  console.error("GEMINI_API_KEY environment variable is required");
+  console.error('GEMINI_API_KEY environment variable is required');
   process.exit(1);
 }
 
@@ -100,8 +104,8 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 const server = new Server(
   {
-    name: "gemini-mcp-server",
-    version: "1.0.0",
+    name: 'gemini-mcp-server',
+    version: '1.0.0',
   },
   {
     capabilities: {
@@ -111,78 +115,78 @@ const server = new Server(
 );
 
 // Tool: Generate code with Gemini
-server.setRequestHandler("tools/list", async () => ({
+server.setRequestHandler('tools/list', async () => ({
   tools: [
     {
-      name: "generate_code",
-      description: "Generate code using Gemini AI",
+      name: 'generate_code',
+      description: 'Generate code using Gemini AI',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
           prompt: {
-            type: "string",
-            description: "The code generation prompt",
+            type: 'string',
+            description: 'The code generation prompt',
           },
           language: {
-            type: "string",
-            description: "Programming language (optional)",
+            type: 'string',
+            description: 'Programming language (optional)',
           },
         },
-        required: ["prompt"],
+        required: ['prompt'],
       },
     },
     {
-      name: "explain_code",
-      description: "Explain code using Gemini AI",
+      name: 'explain_code',
+      description: 'Explain code using Gemini AI',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
           code: {
-            type: "string",
-            description: "The code to explain",
+            type: 'string',
+            description: 'The code to explain',
           },
         },
-        required: ["code"],
+        required: ['code'],
       },
     },
     {
-      name: "refactor_code",
-      description: "Refactor code using Gemini AI",
+      name: 'refactor_code',
+      description: 'Refactor code using Gemini AI',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
           code: {
-            type: "string",
-            description: "The code to refactor",
+            type: 'string',
+            description: 'The code to refactor',
           },
           improvements: {
-            type: "string",
-            description: "Specific improvements to make (optional)",
+            type: 'string',
+            description: 'Specific improvements to make (optional)',
           },
         },
-        required: ["code"],
+        required: ['code'],
       },
     },
   ],
 }));
 
-server.setRequestHandler("tools/call", async (request) => {
+server.setRequestHandler('tools/call', async request => {
   const { name, arguments: args } = request.params;
 
-  const model = genAI.getGenerativeModel({ model: "gemini-3.0-pro" });
+  const model = genAI.getGenerativeModel({ model: 'gemini-3.0-pro' });
 
   try {
-    let prompt = "";
+    let prompt = '';
 
     switch (name) {
-      case "generate_code":
-        prompt = `Generate ${args.language || "JavaScript"} code for: ${args.prompt}`;
+      case 'generate_code':
+        prompt = `Generate ${args.language || 'JavaScript'} code for: ${args.prompt}`;
         break;
-      case "explain_code":
+      case 'explain_code':
         prompt = `Explain this code:\n\n${args.code}`;
         break;
-      case "refactor_code":
-        prompt = `Refactor this code${args.improvements ? ` with these improvements: ${args.improvements}` : ""}:\n\n${args.code}`;
+      case 'refactor_code':
+        prompt = `Refactor this code${args.improvements ? ` with these improvements: ${args.improvements}` : ''}:\n\n${args.code}`;
         break;
       default:
         throw new Error(`Unknown tool: ${name}`);
@@ -195,7 +199,7 @@ server.setRequestHandler("tools/call", async (request) => {
     return {
       content: [
         {
-          type: "text",
+          type: 'text',
           text: text,
         },
       ],
@@ -204,7 +208,7 @@ server.setRequestHandler("tools/call", async (request) => {
     return {
       content: [
         {
-          type: "text",
+          type: 'text',
           text: `Error: ${error.message}`,
         },
       ],
@@ -216,7 +220,7 @@ server.setRequestHandler("tools/call", async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Gemini MCP server running on stdio");
+  console.error('Gemini MCP server running on stdio');
 }
 
 main().catch(console.error);
@@ -231,6 +235,7 @@ chmod +x server.js
 ### Step 5: Update package.json
 
 Add to `package.json`:
+
 ```json
 {
   "type": "module",
@@ -264,11 +269,13 @@ Add to your MCP settings:
 If you prefer to keep your API key in an environment variable:
 
 1. Add to your shell profile (`~/.zshrc` or `~/.bashrc`):
+
 ```bash
 export GEMINI_API_KEY="your-api-key-here"
 ```
 
 2. Update MCP config to use the environment variable:
+
 ```json
 {
   "mcpServers": {
@@ -294,6 +301,7 @@ After setup, restart Cursor and test by:
 ## Available Tools (if using custom server)
 
 Once configured, you'll have access to:
+
 - **generate_code**: Generate code from natural language prompts
 - **explain_code**: Get explanations of code snippets
 - **refactor_code**: Refactor and improve code
@@ -311,4 +319,3 @@ Once configured, you'll have access to:
 - Use environment variables for API keys
 - Consider using a secrets manager for production
 - Rotate API keys regularly
-

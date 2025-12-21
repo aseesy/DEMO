@@ -22,93 +22,205 @@ const dbPostgres = require('../../../dbPostgres');
 const VALUE_CATEGORIES = {
   health_nutrition: {
     name: 'Health & Nutrition',
-    keywords: ['healthy', 'diet', 'nutrition', 'vegetables', 'junk food', 'mcdonalds', 'fast food',
-               'organic', 'sugar', 'eating', 'meals', 'food', 'weight', 'exercise', 'active'],
+    keywords: [
+      'healthy',
+      'diet',
+      'nutrition',
+      'vegetables',
+      'junk food',
+      'mcdonalds',
+      'fast food',
+      'organic',
+      'sugar',
+      'eating',
+      'meals',
+      'food',
+      'weight',
+      'exercise',
+      'active',
+    ],
     phrases: ['healthy eating', 'balanced diet', 'too much sugar', 'junk food', 'processed food'],
-    sentiment_boost: ['important', 'matters', 'care about', 'priority', 'essential', 'crucial']
+    sentiment_boost: ['important', 'matters', 'care about', 'priority', 'essential', 'crucial'],
   },
 
   education_learning: {
     name: 'Education & Learning',
-    keywords: ['school', 'homework', 'grades', 'education', 'learning', 'reading', 'studying',
-               'teacher', 'college', 'academic', 'smart', 'tutor', 'lessons'],
+    keywords: [
+      'school',
+      'homework',
+      'grades',
+      'education',
+      'learning',
+      'reading',
+      'studying',
+      'teacher',
+      'college',
+      'academic',
+      'smart',
+      'tutor',
+      'lessons',
+    ],
     phrases: ['good grades', 'do well in school', 'education matters', 'future success'],
-    sentiment_boost: ['important', 'priority', 'focus on', 'investment']
+    sentiment_boost: ['important', 'priority', 'focus on', 'investment'],
   },
 
   routine_structure: {
     name: 'Routine & Structure',
-    keywords: ['routine', 'schedule', 'bedtime', 'consistent', 'structure', 'organized', 'plan',
-               'on time', 'punctual', 'regular', 'predictable'],
+    keywords: [
+      'routine',
+      'schedule',
+      'bedtime',
+      'consistent',
+      'structure',
+      'organized',
+      'plan',
+      'on time',
+      'punctual',
+      'regular',
+      'predictable',
+    ],
     phrases: ['same time', 'every day', 'stick to', 'follow through', 'keep to schedule'],
-    sentiment_boost: ['need', 'must', 'should', 'always']
+    sentiment_boost: ['need', 'must', 'should', 'always'],
   },
 
   emotional_safety: {
     name: 'Emotional Safety',
-    keywords: ['feelings', 'emotions', 'scared', 'worried', 'anxiety', 'stress', 'happy', 'sad',
-               'comfort', 'secure', 'safe', 'loved', 'support', 'listen'],
+    keywords: [
+      'feelings',
+      'emotions',
+      'scared',
+      'worried',
+      'anxiety',
+      'stress',
+      'happy',
+      'sad',
+      'comfort',
+      'secure',
+      'safe',
+      'loved',
+      'support',
+      'listen',
+    ],
     phrases: ['how they feel', 'emotional needs', 'feel safe', 'be there for'],
-    sentiment_boost: ['important', 'matters', 'care about', 'worry about']
+    sentiment_boost: ['important', 'matters', 'care about', 'worry about'],
   },
 
   independence_growth: {
     name: 'Independence & Growth',
-    keywords: ['independent', 'responsibility', 'grow', 'learn', 'themselves', 'capable',
-               'confident', 'self-reliant', 'decision', 'choice'],
+    keywords: [
+      'independent',
+      'responsibility',
+      'grow',
+      'learn',
+      'themselves',
+      'capable',
+      'confident',
+      'self-reliant',
+      'decision',
+      'choice',
+    ],
     phrases: ['on their own', 'figure it out', 'learn from', 'grow up'],
-    sentiment_boost: ['important', 'need to', 'should']
+    sentiment_boost: ['important', 'need to', 'should'],
   },
 
   quality_time: {
     name: 'Quality Time',
-    keywords: ['together', 'time', 'activities', 'fun', 'play', 'bond', 'memories',
-               'experience', 'weekend', 'special'],
+    keywords: [
+      'together',
+      'time',
+      'activities',
+      'fun',
+      'play',
+      'bond',
+      'memories',
+      'experience',
+      'weekend',
+      'special',
+    ],
     phrases: ['spend time', 'do things together', 'quality time', 'make memories'],
-    sentiment_boost: ['love', 'enjoy', 'cherish', 'important']
+    sentiment_boost: ['love', 'enjoy', 'cherish', 'important'],
   },
 
   safety_protection: {
     name: 'Safety & Protection',
-    keywords: ['safe', 'danger', 'careful', 'protect', 'watch', 'supervise', 'risk',
-               'accident', 'hurt', 'injury'],
+    keywords: [
+      'safe',
+      'danger',
+      'careful',
+      'protect',
+      'watch',
+      'supervise',
+      'risk',
+      'accident',
+      'hurt',
+      'injury',
+    ],
     phrases: ['keep safe', 'be careful', 'watch out', 'not safe'],
-    sentiment_boost: ['worried', 'concerned', 'scared', 'important']
+    sentiment_boost: ['worried', 'concerned', 'scared', 'important'],
   },
 
   respect_manners: {
     name: 'Respect & Manners',
-    keywords: ['respect', 'manners', 'polite', 'please', 'thank you', 'behavior',
-               'attitude', 'rude', 'disrespectful'],
+    keywords: [
+      'respect',
+      'manners',
+      'polite',
+      'please',
+      'thank you',
+      'behavior',
+      'attitude',
+      'rude',
+      'disrespectful',
+    ],
     phrases: ['good manners', 'be respectful', 'proper behavior'],
-    sentiment_boost: ['important', 'expect', 'should', 'must']
+    sentiment_boost: ['important', 'expect', 'should', 'must'],
   },
 
   financial_responsibility: {
     name: 'Financial Responsibility',
-    keywords: ['money', 'afford', 'expensive', 'cost', 'budget', 'save', 'spend',
-               'waste', 'value', 'worth'],
-    phrases: ['can\'t afford', 'too expensive', 'waste money', 'value of money'],
-    sentiment_boost: ['important', 'careful', 'responsible']
+    keywords: [
+      'money',
+      'afford',
+      'expensive',
+      'cost',
+      'budget',
+      'save',
+      'spend',
+      'waste',
+      'value',
+      'worth',
+    ],
+    phrases: ["can't afford", 'too expensive', 'waste money', 'value of money'],
+    sentiment_boost: ['important', 'careful', 'responsible'],
   },
 
   screen_time: {
     name: 'Screen Time',
-    keywords: ['screen', 'phone', 'tablet', 'ipad', 'tv', 'video games', 'youtube',
-               'tiktok', 'social media', 'device'],
+    keywords: [
+      'screen',
+      'phone',
+      'tablet',
+      'ipad',
+      'tv',
+      'video games',
+      'youtube',
+      'tiktok',
+      'social media',
+      'device',
+    ],
     phrases: ['too much screen', 'limit screen', 'no phones', 'put down the'],
-    sentiment_boost: ['worried', 'concerned', 'too much', 'limit']
-  }
+    sentiment_boost: ['worried', 'concerned', 'too much', 'limit'],
+  },
 };
 
 // Self-image patterns
 const SELF_IMAGE_PATTERNS = {
   hands_on: ['I always', 'I make sure', 'I do', 'I take care of', 'I handle'],
   provider: ['I pay', 'I work', 'I provide', 'I buy', 'I afford'],
-  nurturer: ['I comfort', 'I listen', 'I support', 'I\'m there for', 'I help with feelings'],
+  nurturer: ['I comfort', 'I listen', 'I support', "I'm there for", 'I help with feelings'],
   organizer: ['I plan', 'I schedule', 'I organize', 'I keep track', 'I arrange'],
   educator: ['I teach', 'I help with homework', 'I read to', 'I explain', 'I show'],
-  protector: ['I protect', 'I watch', 'I make sure they\'re safe', 'I worry about']
+  protector: ['I protect', 'I watch', "I make sure they're safe", 'I worry about'],
 };
 
 // ============================================================
@@ -126,11 +238,20 @@ function extractValuesFromMessage(message) {
     values: {},
     stances: [],
     self_image: [],
-    intensity: 'normal' // normal, strong, passionate
+    intensity: 'normal', // normal, strong, passionate
   };
 
   // Check for intensity markers
-  const intensityMarkers = ['!', 'always', 'never', 'absolutely', 'must', 'need to', 'have to', 'so important'];
+  const intensityMarkers = [
+    '!',
+    'always',
+    'never',
+    'absolutely',
+    'must',
+    'need to',
+    'have to',
+    'so important',
+  ];
   const intensityCount = intensityMarkers.filter(m => lowerMessage.includes(m)).length;
   if (intensityCount >= 3) signals.intensity = 'passionate';
   else if (intensityCount >= 1) signals.intensity = 'strong';
@@ -171,7 +292,7 @@ function extractValuesFromMessage(message) {
       signals.values[categoryKey] = {
         name: category.name,
         score: Math.round(score * 10) / 10,
-        keywords: matchedKeywords
+        keywords: matchedKeywords,
       };
     }
   }
@@ -188,9 +309,12 @@ function extractValuesFromMessage(message) {
 
   // Extract stance (opinion/position) from the message
   const stancePatterns = [
-    { pattern: /(?:i believe|i think|for me|in my opinion|i feel that)\s+(.+?)(?:\.|$)/i, type: 'belief' },
+    {
+      pattern: /(?:i believe|i think|for me|in my opinion|i feel that)\s+(.+?)(?:\.|$)/i,
+      type: 'belief',
+    },
     { pattern: /(?:should|shouldn't|must|mustn't)\s+(.+?)(?:\.|$)/i, type: 'stance' },
-    { pattern: /(?:too much|not enough)\s+(\w+)/i, type: 'concern' }
+    { pattern: /(?:too much|not enough)\s+(\w+)/i, type: 'concern' },
   ];
 
   for (const { pattern, type } of stancePatterns) {
@@ -281,33 +405,30 @@ async function initializeTable() {
  */
 async function getValuesProfile(userId) {
   try {
-    const result = await dbPostgres.query(
-      'SELECT * FROM user_values_profile WHERE user_id = $1',
-      [userId]
-    );
+    const result = await dbPostgres.query('SELECT * FROM user_values_profile WHERE user_id = $1', [
+      userId,
+    ]);
 
     if (result.rows.length > 0) {
       const row = result.rows[0];
       return {
         userId: row.user_id,
-        valuesScores: typeof row.values_scores === 'string'
-          ? JSON.parse(row.values_scores)
-          : (row.values_scores || {}),
-        stances: typeof row.stances === 'string'
-          ? JSON.parse(row.stances)
-          : (row.stances || []),
-        selfImage: typeof row.self_image === 'string'
-          ? JSON.parse(row.self_image)
-          : (row.self_image || []),
-        nonNegotiables: typeof row.non_negotiables === 'string'
-          ? JSON.parse(row.non_negotiables)
-          : (row.non_negotiables || []),
-        motivations: typeof row.motivations === 'string'
-          ? JSON.parse(row.motivations)
-          : (row.motivations || []),
+        valuesScores:
+          typeof row.values_scores === 'string'
+            ? JSON.parse(row.values_scores)
+            : row.values_scores || {},
+        stances: typeof row.stances === 'string' ? JSON.parse(row.stances) : row.stances || [],
+        selfImage:
+          typeof row.self_image === 'string' ? JSON.parse(row.self_image) : row.self_image || [],
+        nonNegotiables:
+          typeof row.non_negotiables === 'string'
+            ? JSON.parse(row.non_negotiables)
+            : row.non_negotiables || [],
+        motivations:
+          typeof row.motivations === 'string' ? JSON.parse(row.motivations) : row.motivations || [],
         messagesAnalyzed: row.messages_analyzed || 0,
         createdAt: row.created_at,
-        updatedAt: row.updated_at
+        updatedAt: row.updated_at,
       };
     }
 
@@ -324,7 +445,7 @@ async function getValuesProfile(userId) {
       selfImage: [],
       nonNegotiables: [],
       motivations: [],
-      messagesAnalyzed: 0
+      messagesAnalyzed: 0,
     };
   } catch (error) {
     console.error('❌ Failed to get values profile:', error.message);
@@ -356,16 +477,17 @@ async function learnFromMessage(userId, message) {
         const weight = Math.min(profile.messagesAnalyzed / 10, 5); // max 5x weight to existing
         updatedValues[key] = {
           name: data.name,
-          score: Math.round(((updatedValues[key].score * weight) + data.score) / (weight + 1) * 10) / 10,
+          score:
+            Math.round(((updatedValues[key].score * weight + data.score) / (weight + 1)) * 10) / 10,
           lastSeen: new Date().toISOString(),
-          occurrences: (updatedValues[key].occurrences || 1) + 1
+          occurrences: (updatedValues[key].occurrences || 1) + 1,
         };
       } else {
         updatedValues[key] = {
           name: data.name,
           score: data.score,
           lastSeen: new Date().toISOString(),
-          occurrences: 1
+          occurrences: 1,
         };
       }
     }
@@ -389,7 +511,7 @@ async function learnFromMessage(userId, message) {
         JSON.stringify(updatedValues),
         JSON.stringify(updatedSelfImage),
         JSON.stringify(updatedStances),
-        userId
+        userId,
       ]
     );
 
@@ -398,7 +520,7 @@ async function learnFromMessage(userId, message) {
       valuesScores: updatedValues,
       selfImage: updatedSelfImage,
       stances: updatedStances,
-      messagesAnalyzed: profile.messagesAnalyzed + 1
+      messagesAnalyzed: profile.messagesAnalyzed + 1,
     };
   } catch (error) {
     console.error('❌ Failed to learn from message:', error.message);
@@ -419,7 +541,7 @@ async function addNonNegotiable(userId, nonNegotiable, source = 'inferred') {
 
     const updated = [
       { text: nonNegotiable, source, addedAt: new Date().toISOString() },
-      ...profile.nonNegotiables.filter(n => n.text !== nonNegotiable)
+      ...profile.nonNegotiables.filter(n => n.text !== nonNegotiable),
     ].slice(0, 10); // Keep max 10
 
     await dbPostgres.query(
@@ -449,7 +571,7 @@ async function addMotivation(userId, topic, motivation) {
 
     const updated = [
       { topic, motivation, addedAt: new Date().toISOString() },
-      ...profile.motivations.filter(m => m.topic !== topic)
+      ...profile.motivations.filter(m => m.topic !== topic),
     ].slice(0, 10); // Keep max 10
 
     await dbPostgres.query(
@@ -503,8 +625,8 @@ async function formatForAI(userId) {
       provider: 'identifies as the provider',
       nurturer: 'sees themselves as the emotional support',
       organizer: 'takes pride in keeping things organized',
-      educator: 'values being their child\'s teacher',
-      protector: 'prioritizes keeping their child safe'
+      educator: "values being their child's teacher",
+      protector: 'prioritizes keeping their child safe',
     };
     const images = profile.selfImage
       .map(i => imageDescriptions[i])
@@ -554,7 +676,7 @@ async function getQuickSummary(userId) {
     selfImage: profile.selfImage,
     nonNegotiables: profile.nonNegotiables.map(n => n.text),
     messagesAnalyzed: profile.messagesAnalyzed,
-    hasEnoughData: profile.messagesAnalyzed >= 3
+    hasEnoughData: profile.messagesAnalyzed >= 3,
   };
 }
 
@@ -576,5 +698,5 @@ module.exports = {
 
   // Constants
   VALUE_CATEGORIES,
-  SELF_IMAGE_PATTERNS
+  SELF_IMAGE_PATTERNS,
 };

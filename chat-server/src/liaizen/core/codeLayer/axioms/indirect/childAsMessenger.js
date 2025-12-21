@@ -22,7 +22,11 @@
 
 'use strict';
 
-const { AXIOM_CATEGORIES, createFiringAxiomResult, createNonFiringAxiomResult } = require('../../types');
+const {
+  AXIOM_CATEGORIES,
+  createFiringAxiomResult,
+  createNonFiringAxiomResult,
+} = require('../../types');
 
 // ============================================================================
 // AXIOM METADATA
@@ -31,7 +35,7 @@ const { AXIOM_CATEGORIES, createFiringAxiomResult, createNonFiringAxiomResult } 
 const id = 'AXIOM_010';
 const name = 'Child as Messenger';
 const category = AXIOM_CATEGORIES.INDIRECT_COMMUNICATION;
-const description = 'Uses child\'s voice to deliver criticism of receiver';
+const description = "Uses child's voice to deliver criticism of receiver";
 const pattern = '[Child] + [said/told] + [Negative about Receiver]';
 
 // ============================================================================
@@ -44,7 +48,7 @@ const pattern = '[Child] + [said/told] + [Negative about Receiver]';
 const CHILD_REFERENCES = [
   /\b(she|he|they)\b/gi,
   /\b(the\s+)?(kids?|children?|daughter|son)\b/gi,
-  /\b(our|my|your)\s+(daughter|son|child|kids?|children?)\b/gi
+  /\b(our|my|your)\s+(daughter|son|child|kids?|children?)\b/gi,
 ];
 
 /**
@@ -55,7 +59,7 @@ const REPORTING_VERBS = [
   /\b(the\s+)?(kids?|children?)\s+(said|told|mentioned|asked|complained)\b/gi,
   /\baccording\s+to\s+(her|him|them|the\s+kids?)\b/gi,
   /\b(she|he|they)\s+told\s+me\b/gi,
-  /\b(she|he|they)\s+(said|says)\s+that\b/gi
+  /\b(she|he|they)\s+(said|says)\s+that\b/gi,
 ];
 
 /**
@@ -70,17 +74,13 @@ const NEGATIVE_RECEIVER_CONTENT = [
   /\byour\s+(house|place)\b/gi,
   /\bwith\s+you\b/gi,
   /\byou\s+always\b/gi,
-  /\byou\s+never\b/gi
+  /\byou\s+never\b/gi,
 ];
 
 /**
  * Direct quote indicators
  */
-const QUOTE_INDICATORS = [
-  /["']/g,
-  /\bthat\s+you\b/gi,
-  /\bwhy\s+you\b/gi
-];
+const QUOTE_INDICATORS = [/["']/g, /\bthat\s+you\b/gi, /\bwhy\s+you\b/gi];
 
 // ============================================================================
 // DETECTION FUNCTIONS
@@ -205,7 +205,7 @@ function check(parsed, context = {}) {
     child_references: findChildReferences(text),
     reporting_verbs: findReportingVerbs(text),
     negative_content: findNegativeReceiverContent(text),
-    has_quotes: hasQuoteIndicators(text)
+    has_quotes: hasQuoteIndicators(text),
   };
 
   // Must have reporting verb (the key pattern)
@@ -242,7 +242,7 @@ function check(parsed, context = {}) {
       reporting_verb: evidence.reporting_verbs[0],
       negative_content: evidence.negative_content[0],
       trigger_phrase: triggerPhrase,
-      all_evidence: evidence
+      all_evidence: evidence,
     },
     intentImpactDelta
   );
@@ -254,9 +254,11 @@ function check(parsed, context = {}) {
 function buildIntentImpactDelta(evidence) {
   const reportingVerb = evidence.reporting_verbs[0] || 'said';
 
-  return `Frames criticism as child's words ("${reportingVerb}") rather than sender's opinion. ` +
+  return (
+    `Frames criticism as child's words ("${reportingVerb}") rather than sender's opinion. ` +
     `This is triangulation - using the child as a messenger to deliver blame. ` +
-    `The child is put in the middle, and the receiver can't defend without seeming to dismiss the child.`;
+    `The child is put in the middle, and the receiver can't defend without seeming to dismiss the child.`
+  );
 }
 
 // ============================================================================
@@ -279,5 +281,5 @@ module.exports = {
   findReportingVerbs,
   findNegativeReceiverContent,
   hasQuoteIndicators,
-  calculateConfidence
+  calculateConfidence,
 };

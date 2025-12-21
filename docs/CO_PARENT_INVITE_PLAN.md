@@ -1,11 +1,13 @@
 # Co-Parent Invite System - UI Implementation Plan
 
 ## Overview
+
 This document outlines the plan to implement a comprehensive co-parent invite system in the UI, building upon the existing backend infrastructure.
 
 ## Current State Analysis
 
 ### Backend API Endpoints (Available)
+
 - ✅ `POST /api/room/invite` - Create invite for a room
 - ✅ `GET /api/room/invite/:inviteCode` - Validate invite code
 - ✅ `POST /api/room/join` - Accept invite and join room
@@ -13,12 +15,14 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 - ✅ `GET /api/room/:roomId/members` - Get room members
 
 ### Current UI Features
+
 - ✅ Basic invite creation button in chat header
 - ✅ Invite modal showing invite link with copy functionality
 - ✅ Invite accept modal when URL contains invite code
 - ✅ Basic error handling for invite operations
 
 ### UI Gaps & Opportunities
+
 - ❌ No list view of active invites
 - ❌ No ability to revoke/delete invites
 - ❌ No expiration date/time display
@@ -35,9 +39,11 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 ### Phase 1: Enhanced Invite Management UI
 
 #### 1.1 Create Invite Management Panel
+
 **Location**: New section in Settings/Profile modal or dedicated Invites tab
 
 **Features**:
+
 - List all active invites with:
   - Invite code
   - Full invite link
@@ -52,18 +58,21 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
   - View details button
 
 **UI Components Needed**:
+
 - `InviteList` component - displays list of invites
 - `InviteCard` component - individual invite display
 - `InviteActions` component - action buttons for each invite
 - `InviteStatusBadge` component - visual status indicator
 
 **State Management**:
+
 - `activeInvites` - array of active invites
 - `inviteHistory` - array of used/expired invites (optional)
 - `isLoadingInvites` - loading state
 - `inviteError` - error state
 
 **API Integration**:
+
 - Fetch active invites: `GET /api/room/:roomId/invites`
 - Delete/revoke invite: Need to add backend endpoint `DELETE /api/room/invite/:inviteId`
 - Refresh invites list periodically or on demand
@@ -71,6 +80,7 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 #### 1.2 Enhanced Invite Creation Flow
 
 **Improvements**:
+
 - Pre-fill invite link in a more prominent text area
 - Show QR code option for easy mobile sharing
 - Multiple sharing options:
@@ -83,11 +93,13 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 - Preview of invite link in different formats
 
 **UI Components Needed**:
+
 - `InviteShareOptions` component - sharing buttons
 - `QRCodeGenerator` component - generates QR code for invite link
 - `InviteLinkPreview` component - formatted link display
 
 **State Management**:
+
 - `inviteLink` - current invite link
 - `inviteExpiresAt` - expiration timestamp
 - `showQRCode` - toggle QR code display
@@ -95,9 +107,11 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 ### Phase 2: Invite Display & Status Management
 
 #### 2.1 Room Members Section Enhancement
+
 **Location**: Sidebar or dedicated section in chat UI
 
 **Features**:
+
 - Display current room members with roles (Owner/Member)
 - Show member join date
 - Visual indicator for online/offline status
@@ -105,6 +119,7 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 - Invite button integrated in members section
 
 **UI Components Needed**:
+
 - `RoomMembersList` component - enhanced members display
 - `MemberCard` component - individual member info
 - `MemberRoleBadge` component - role indicator
@@ -112,6 +127,7 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 #### 2.2 Invite Status Indicators
 
 **Features**:
+
 - Real-time status updates for invites
 - Visual indicators:
   - 🟢 Active (green)
@@ -122,6 +138,7 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 - Toast notifications when invite is used
 
 **UI Components Needed**:
+
 - `InviteStatusIndicator` component
 - `CountdownTimer` component
 - `ToastNotification` component (if not existing)
@@ -129,26 +146,33 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 ### Phase 3: Advanced Invite Features
 
 #### 3.1 Invite History
+
 **Location**: Expandable section in invite management
 
 **Features**:
+
 - List of used/expired invites
 - Who used the invite (username)
 - When it was used
 - Whether invitee is still a member
 
 **Backend Requirements**:
+
 - May need endpoint: `GET /api/room/:roomId/invites/history` or modify existing to return all invites
 
 #### 3.2 Invite Analytics (Optional)
+
 **Features**:
+
 - Number of active invites
 - Number of used invites
 - Expiration timeline
 - Success rate (invites created vs used)
 
 #### 3.3 Bulk Invite Management
+
 **Features**:
+
 - Revoke all expired invites
 - Clear all used invites
 - Batch operations
@@ -156,7 +180,9 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 ### Phase 4: UX Enhancements
 
 #### 4.1 Better Invite Acceptance Flow
+
 **Improvements**:
+
 - Show room name in accept modal
 - Show current members before accepting
 - Show invite expiration in accept modal
@@ -167,7 +193,9 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 - Auto-refresh invite validation status
 
 #### 4.2 Visual Feedback
+
 **Features**:
+
 - Loading states for all invite operations
 - Success animations (checkmarks, confetti)
 - Error states with clear messages
@@ -175,7 +203,9 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 - Confirmation dialogs for destructive actions
 
 #### 4.3 Accessibility
+
 **Features**:
+
 - Keyboard navigation support
 - Screen reader announcements
 - ARIA labels
@@ -185,6 +215,7 @@ This document outlines the plan to implement a comprehensive co-parent invite sy
 ## Technical Implementation Details
 
 ### Component Structure
+
 ```
 ChatRoom
 ├── SettingsModal
@@ -214,6 +245,7 @@ ChatRoom
 ```
 
 ### State Management Structure
+
 ```javascript
 {
   // Invite Management
@@ -221,18 +253,18 @@ ChatRoom
   inviteHistory: [],
   isLoadingInvites: false,
   inviteError: null,
-  
+
   // Current Invite (being created/viewed)
   currentInvite: null,
   inviteLink: '',
   inviteExpiresAt: null,
   showQRCode: false,
-  
+
   // UI State
   showInviteModal: false,
   showInviteManagement: false,
   selectedInvite: null,
-  
+
   // Room Info
   roomInfo: {
     roomId: null,
@@ -245,7 +277,9 @@ ChatRoom
 ### API Integration Points
 
 #### New API Calls Needed
+
 1. **Delete Invite** (may need backend implementation)
+
    ```
    DELETE /api/room/invite/:inviteId
    ```
@@ -256,12 +290,14 @@ ChatRoom
    ```
 
 #### Existing API Enhancements
+
 - Enhance `GET /api/room/:roomId/invites` to return:
   - Used invites (optional query param)
   - More detailed invite information
   - Used by username (if available)
 
 ### Styling Guidelines
+
 - Use Tailwind CSS (as per project preference)
 - Follow existing design system:
   - Primary color: #275559
@@ -273,6 +309,7 @@ ChatRoom
 - 16px+ font sizes
 
 ### Error Handling
+
 - Network errors: Show retry option
 - Invalid invites: Clear error message with action
 - Permission errors: Show appropriate message
@@ -282,6 +319,7 @@ ChatRoom
 ## Implementation Priority
 
 ### High Priority (Phase 1)
+
 1. ✅ Enhanced invite modal with QR code
 2. ✅ Invite list in settings
 3. ✅ Copy/share functionality improvements
@@ -289,12 +327,14 @@ ChatRoom
 5. ✅ Basic revoke/delete functionality
 
 ### Medium Priority (Phase 2)
+
 1. ✅ Room members display enhancement
 2. ✅ Invite status indicators
 3. ✅ Better error handling
 4. ✅ Visual feedback improvements
 
 ### Low Priority (Phase 3 & 4)
+
 1. ⚠️ Invite history (nice to have)
 2. ⚠️ Analytics dashboard
 3. ⚠️ Bulk operations
@@ -303,6 +343,7 @@ ChatRoom
 ## Testing Checklist
 
 ### Functional Testing
+
 - [ ] Create invite successfully
 - [ ] Copy invite link to clipboard
 - [ ] Share invite via different methods
@@ -318,6 +359,7 @@ ChatRoom
 - [ ] Handle network errors gracefully
 
 ### UI/UX Testing
+
 - [ ] Responsive design on mobile
 - [ ] Loading states display correctly
 - [ ] Error messages are clear
@@ -326,6 +368,7 @@ ChatRoom
 - [ ] Screen reader compatibility
 
 ### Edge Cases
+
 - [ ] No active invites state
 - [ ] Multiple invites created
 - [ ] Invite expires while viewing
@@ -337,10 +380,13 @@ ChatRoom
 ## Backend Considerations
 
 ### Potential Backend Enhancements Needed
+
 1. **Delete Invite Endpoint**
+
    ```
    DELETE /api/room/invite/:inviteId
    ```
+
    - Verify user has permission (owner of room)
    - Delete invite from database
    - Return success/failure
@@ -358,12 +404,14 @@ ChatRoom
 ## Success Metrics
 
 ### User Experience
+
 - Time to create and share invite: < 30 seconds
 - Time to accept invite: < 1 minute
 - Invite link copy success rate: > 95%
 - Error rate on invite operations: < 5%
 
 ### Engagement
+
 - Invite acceptance rate
 - Average invites per room
 - Time to first invite creation after signup
@@ -410,4 +458,3 @@ ChatRoom
 - Consider backward compatibility with existing invites
 - Mobile experience should be prioritized
 - Follow existing code patterns and style guide
-

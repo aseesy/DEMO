@@ -10,6 +10,7 @@
 ### **Core Domain Concepts Identified**
 
 **Primary Entities:**
+
 1. User (parent/co-parent)
 2. Room (communication space)
 3. Message (communication)
@@ -18,26 +19,21 @@
 6. Child (children in relationship)
 7. CoParent (relationship)
 
-**AI/Mediation Concepts:**
-8. CommunicationProfile (user patterns)
-9. Intervention (AI action)
-10. Axiom (communication pattern)
-11. Assessment (conflict assessment)
-12. ParsedMessage (analyzed structure)
-13. MediationContext (AI context)
-14. RelationshipInsights (learned dynamics)
+**AI/Mediation Concepts:** 8. CommunicationProfile (user patterns) 9. Intervention (AI action) 10. Axiom (communication pattern) 11. Assessment (conflict assessment) 12. ParsedMessage (analyzed structure) 13. MediationContext (AI context) 14. RelationshipInsights (learned dynamics)
 
 ---
 
 ## ❌ Current State: Anemic Domain Model
 
 ### **What Exists**
+
 - ✅ Database schema (PostgreSQL tables)
 - ✅ Business logic (in service functions)
 - ✅ JSDoc types (Code Layer has typedefs)
 - ✅ Context modules (functional modules)
 
 ### **What's Missing**
+
 - ❌ Domain classes (`User`, `Message`, `Room`, etc.)
 - ❌ Type safety (plain objects)
 - ❌ Encapsulation (business rules scattered)
@@ -71,12 +67,14 @@ Three documents created:
 ## 🎯 Next Steps
 
 **Ready to Start Phase 1:**
+
 1. Create domain directory structure
 2. Implement value objects (`Email`, `Username`, `RoomId`, `MessageId`)
 3. Write tests
 4. Document usage
 
 **Benefits:**
+
 - Type safety
 - Encapsulation
 - Better maintainability
@@ -86,4 +84,3 @@ Three documents created:
 
 **Status**: ✅ Proposal Complete - Ready for Implementation  
 **Priority**: High (Architectural Foundation)
-

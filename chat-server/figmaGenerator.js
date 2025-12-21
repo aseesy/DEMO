@@ -1,6 +1,6 @@
 /**
  * Figma Generator
- * 
+ *
  * Generates Figma file structure from component data
  * Creates wireframes and design pages in Figma
  */
@@ -40,7 +40,7 @@ class FigmaGenerator {
    */
   generateStructureElements(structure, bounds) {
     const elements = [];
-    
+
     if (!structure || !structure.children) return elements;
 
     let currentY = bounds.y + 16; // Padding
@@ -55,7 +55,7 @@ class FigmaGenerator {
       });
 
       elements.push(element);
-      
+
       // Position next element
       if (structure.layout && structure.layout.direction === 'row') {
         currentX += element.width + 16;
@@ -84,13 +84,15 @@ class FigmaGenerator {
     if (element.attributes && element.attributes.className) {
       const styles = this.parseTailwindClasses(element.attributes.className);
       figmaElement.styles = styles;
-      
+
       // Apply background color
       if (styles.backgroundColor) {
-        figmaElement.fills = [{
-          type: 'SOLID',
-          color: this.hexToRgb(styles.backgroundColor),
-        }];
+        figmaElement.fills = [
+          {
+            type: 'SOLID',
+            color: this.hexToRgb(styles.backgroundColor),
+          },
+        ];
       }
     }
 
@@ -148,7 +150,7 @@ class FigmaGenerator {
     }
 
     const classes = element.attributes.className.split(' ');
-    
+
     // Check for width classes
     if (classes.includes('w-full')) return bounds.width;
     if (classes.includes('w-1/2')) return bounds.width / 2;
@@ -161,10 +163,10 @@ class FigmaGenerator {
     if (maxWidthMatch) {
       const maxWidth = maxWidthMatch.split('-')[2];
       const widthMap = {
-        'sm': 640,
-        'md': 768,
-        'lg': 1024,
-        'xl': 1280,
+        sm: 640,
+        md: 768,
+        lg: 1024,
+        xl: 1280,
         '2xl': 1536,
       };
       return Math.min(widthMap[maxWidth] || bounds.width, bounds.width);
@@ -209,22 +211,22 @@ class FigmaGenerator {
       if (cls.startsWith('bg-')) {
         styles.backgroundColor = this.mapTailwindColor(cls);
       }
-      
+
       // Text colors
       if (cls.startsWith('text-')) {
         styles.textColor = this.mapTailwindColor(cls);
       }
-      
+
       // Padding
       if (cls.startsWith('p-')) {
         styles.padding = this.mapTailwindSpacing(cls);
       }
-      
+
       // Margin
       if (cls.startsWith('m-')) {
         styles.margin = this.mapTailwindSpacing(cls);
       }
-      
+
       // Border radius
       if (cls.startsWith('rounded-')) {
         styles.borderRadius = this.mapTailwindRadius(cls);
@@ -294,11 +296,13 @@ class FigmaGenerator {
    */
   hexToRgb(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16) / 255,
-      g: parseInt(result[2], 16) / 255,
-      b: parseInt(result[3], 16) / 255,
-    } : { r: 1, g: 1, b: 1 };
+    return result
+      ? {
+          r: parseInt(result[1], 16) / 255,
+          g: parseInt(result[2], 16) / 255,
+          b: parseInt(result[3], 16) / 255,
+        }
+      : { r: 1, g: 1, b: 1 };
   }
 
   /**
@@ -319,7 +323,9 @@ class FigmaGenerator {
         page.children.push(wireframe);
       } else {
         // Generate design page with actual styling
-        const designPage = this.generateDesignPage ? this.generateDesignPage(component) : this.generateWireframe(component);
+        const designPage = this.generateDesignPage
+          ? this.generateDesignPage(component)
+          : this.generateWireframe(component);
         designPage.x = 0;
         designPage.y = index * 1200;
         page.children.push(designPage);
@@ -371,4 +377,3 @@ class FigmaGenerator {
 }
 
 module.exports = FigmaGenerator;
-

@@ -14,6 +14,7 @@ This constitution establishes the foundational principles and development practi
 ### Authority and Scope
 
 This document governs:
+
 - **Development Processes**: How features are specified, planned, and implemented
 - **Quality Standards**: Minimum acceptable standards for code and documentation
 - **Architectural Decisions**: Patterns and practices that must be followed
@@ -33,6 +34,7 @@ These three principles are the foundation of the framework and **CANNOT be amend
 **Mandate**: Every feature MUST begin its existence as a standalone library.
 
 **Requirements**:
+
 - No feature shall be implemented directly within application code without first being abstracted into a reusable library component
 - Libraries must be self-contained with their own tests, documentation, and clear boundaries
 - Library interfaces must be designed for reusability beyond the immediate use case
@@ -42,6 +44,7 @@ These three principles are the foundation of the framework and **CANNOT be amend
 **Rationale**: Library-first architecture enforces separation of concerns, enables code reuse, simplifies testing, and prevents monolithic coupling.
 
 **Compliance Check**:
+
 - [ ] Feature implemented as standalone library
 - [ ] Library has its own test suite
 - [ ] Library has README with usage examples
@@ -55,6 +58,7 @@ These three principles are the foundation of the framework and **CANNOT be amend
 **Mandate**: Test-Driven Development (TDD) is mandatory for all code.
 
 **Required Workflow**:
+
 1. **Write tests** that define expected behavior
 2. **Get user approval** on test scenarios
 3. **Run tests** (they should fail initially)
@@ -62,6 +66,7 @@ These three principles are the foundation of the framework and **CANNOT be amend
 5. **Refactor** while keeping tests green
 
 **Testing Requirements**:
+
 - Every library must have unit tests with >80% code coverage
 - Every integration point must have contract tests
 - Every user-facing feature must have end-to-end tests
@@ -71,6 +76,7 @@ These three principles are the foundation of the framework and **CANNOT be amend
 **Rationale**: TDD prevents bugs, documents behavior, enables confident refactoring, and ensures code meets requirements.
 
 **Compliance Check**:
+
 - [ ] Tests written before implementation
 - [ ] User approved test scenarios
 - [ ] Tests initially fail (red)
@@ -84,6 +90,7 @@ These three principles are the foundation of the framework and **CANNOT be amend
 **Mandate**: All integration points must be defined by explicit contracts before implementation.
 
 **Requirements**:
+
 - Libraries communicate through well-defined contracts, not shared code
 - All contracts must be versioned and backward compatible within major versions
 - Contract changes require migration paths and deprecation notices
@@ -91,6 +98,7 @@ These three principles are the foundation of the framework and **CANNOT be amend
 - Mock implementations must be provided for testing consumers
 
 **Contract Types**:
+
 - **API Contracts**: Request/response schemas, error codes, headers
 - **Event Contracts**: Message formats, topic names, delivery guarantees
 - **Database Contracts**: Schema definitions, query interfaces, migrations
@@ -99,6 +107,7 @@ These three principles are the foundation of the framework and **CANNOT be amend
 **Rationale**: Contract-first design enables independent development, prevents breaking changes, and documents integration boundaries.
 
 **Compliance Check**:
+
 - [ ] Contract defined before implementation
 - [ ] Contract is versioned
 - [ ] Integration tests verify contract
@@ -116,6 +125,7 @@ These principles ensure code quality, reliability, and security.
 **Mandate**: All operations should be safely repeatable without unintended side effects.
 
 **Requirements**:
+
 - Running the same operation multiple times produces the same result
 - State mutations must be explicit and reversible
 - Failure recovery must be automated where possible
@@ -123,6 +133,7 @@ These principles ensure code quality, reliability, and security.
 - All data modifications must support dry-run mode
 
 **Examples**:
+
 ```bash
 # Idempotent: Running multiple times is safe
 ./create-feature.sh my-feature  # Creates if not exists, skips if exists
@@ -134,6 +145,7 @@ These principles ensure code quality, reliability, and security.
 **Rationale**: Idempotency enables safe retry logic, simplifies error recovery, and prevents data corruption.
 
 **Compliance Check**:
+
 - [ ] Operation safe to run multiple times
 - [ ] State changes are explicit
 - [ ] Dry-run mode available
@@ -147,6 +159,7 @@ These principles ensure code quality, reliability, and security.
 **Mandate**: Start with the simplest solution that could possibly work. Add complexity only when proven necessary.
 
 **Requirements**:
+
 - YAGNI (You Aren't Gonna Need It) is the default position
 - Premature optimization is forbidden
 - Features must be feature-flagged and incrementally rollable
@@ -154,6 +167,7 @@ These principles ensure code quality, reliability, and security.
 - Always prefer simple, obvious code over clever code
 
 **Decision Framework**:
+
 1. Will this feature be used in the next sprint? → If no, don't build it
 2. Is this optimization measured and necessary? → If no, keep it simple
 3. Can this be solved with existing libraries? → If yes, use them
@@ -161,6 +175,7 @@ These principles ensure code quality, reliability, and security.
 **Rationale**: Premature complexity increases bugs, maintenance burden, and onboarding time while providing no immediate value.
 
 **Compliance Check**:
+
 - [ ] Simplest solution attempted first
 - [ ] Complexity justified with use cases
 - [ ] Feature flags used for new features
@@ -174,6 +189,7 @@ These principles ensure code quality, reliability, and security.
 **Mandate**: NO automatic git operations without explicit user approval.
 
 **Requirements**:
+
 - **Branch Operations**: MUST request approval before create/switch/delete
 - **Commits**: MUST request approval with preview of changes
 - **Push/Pull**: MUST request approval before remote operations
@@ -181,6 +197,7 @@ These principles ensure code quality, reliability, and security.
 - **Automated Tools**: Scripts and agents MUST NOT perform git operations autonomously
 
 **Approval Process**:
+
 ```bash
 # Example from create-new-feature.sh
 if ! request_git_approval "Branch Creation" "Create new branch: $BRANCH_NAME"; then
@@ -195,6 +212,7 @@ git checkout -b "$BRANCH_NAME"
 **Rationale**: User must maintain full control over version control. Autonomous git operations risk data loss, unintended commits, and unauthorized code changes.
 
 **Compliance Check**:
+
 - [ ] All git operations have approval prompts
 - [ ] User can cancel any operation
 - [ ] Approval explains what will happen
@@ -210,6 +228,7 @@ git checkout -b "$BRANCH_NAME"
 **Mandate**: Every operation must emit structured logs and metrics for debugging, monitoring, and audit trails.
 
 **Requirements**:
+
 - All operations must support structured logging with configurable verbosity
 - Logs must use JSON format for machine parseability
 - All operations must emit metrics about performance and errors
@@ -218,6 +237,7 @@ git checkout -b "$BRANCH_NAME"
 - Debug modes must provide detailed operational insights
 
 **Structured Log Format**:
+
 ```json
 {
   "timestamp": "2025-11-06T10:30:00Z",
@@ -236,6 +256,7 @@ git checkout -b "$BRANCH_NAME"
 ```
 
 **Audit Trail Requirements**:
+
 - All operations performed (who, what, when, why)
 - Constitutional compliance checks
 - Approval decisions (user approved/denied)
@@ -245,6 +266,7 @@ git checkout -b "$BRANCH_NAME"
 **Rationale**: Observability enables debugging, performance monitoring, security audits, and operational insights.
 
 **Compliance Check**:
+
 - [ ] Structured logging implemented
 - [ ] JSON format for logs
 - [ ] Metrics emitted
@@ -258,6 +280,7 @@ git checkout -b "$BRANCH_NAME"
 **Mandate**: Documentation must stay synchronized with code changes at all times.
 
 **Requirements**:
+
 - Documentation lives with code and is part of the definition of "done"
 - Every library must have README with purpose, usage, and examples
 - Every public API must have comprehensive docstrings
@@ -267,6 +290,7 @@ git checkout -b "$BRANCH_NAME"
 
 **Synchronization Process**:
 When code changes:
+
 1. Update relevant documentation files
 2. Update cross-references
 3. Check for dependent documents (use `constitution_update_checklist.md`)
@@ -274,15 +298,17 @@ When code changes:
 5. Update timestamps/versions
 
 **Key Documentation Types**:
+
 - **Constitutional**: constitution.md, constitution_update_checklist.md
 - **Instructions**: CLAUDE.md, AGENTS.md, README.md
-- **Policies**: .docs/policies/*.md
-- **Specifications**: specs/###-feature-name/*.md
-- **Agents**: .claude/agents/**/*.md
+- **Policies**: .docs/policies/\*.md
+- **Specifications**: specs/###-feature-name/\*.md
+- **Agents**: .claude/agents/\*_/_.md
 
 **Rationale**: Documentation drift creates confusion, onboarding friction, and incorrect implementations.
 
 **Compliance Check**:
+
 - [ ] Code changes include doc updates
 - [ ] Cross-references validated
 - [ ] Examples tested and accurate
@@ -296,6 +322,7 @@ When code changes:
 **Mandate**: All dependencies must be explicitly declared, version-pinned, and regularly audited.
 
 **Requirements**:
+
 - Development environments and tools must be explicitly defined per project
 - No implicit assumptions about available tools or frameworks
 - All dependencies must be declared in package.json / requirements.txt / etc.
@@ -305,6 +332,7 @@ When code changes:
 - Unused dependencies must be removed
 
 **Dependency Approval Process**:
+
 1. Justify why dependency is needed
 2. Evaluate alternatives (can existing deps solve this?)
 3. Check license compatibility
@@ -315,6 +343,7 @@ When code changes:
 **Rationale**: Explicit dependency management prevents supply chain attacks, version conflicts, and unpredictable builds.
 
 **Compliance Check**:
+
 - [ ] All dependencies declared
 - [ ] Versions pinned (exact, not range)
 - [ ] Licenses verified
@@ -334,39 +363,44 @@ These principles govern development workflows and agent coordination.
 **Work Session Initiation Protocol (MANDATORY for EVERY task)**:
 
 **Step 1: READ CONSTITUTION**
+
 - First action of any session, even for "simple" tasks
 - No exceptions: file reading, status checks, answering questions ALL require reading constitution first
 
 **Step 2: ANALYZE TASK DOMAIN**
+
 - Use automated tools: `detect-phase-domain.sh`, `constitutional-check.sh`
 - Manual scan for trigger keywords (see `agent-collaboration-triggers.md`)
 - Keywords: test, UI, database, security, frontend, backend, API, schema, etc.
 
 **Step 3: DELEGATION DECISION**
+
 - IF domain keywords matched → STOP, delegate to specialized agent
 - IF no keywords → Verify by reading files, document why no delegation
 - NEVER execute specialized work directly
 
 **Step 4: EXECUTION**
+
 - ONLY after steps 1-3 complete
 - Execute directly OR invoke specialized agent via Task tool
 
 **Delegation Triggers** (see `agent-collaboration-triggers.md` for full list):
 
-| Domain | Keywords | Agent |
-|--------|----------|-------|
-| Frontend | UI, component, React, responsive, design | frontend-specialist |
-| Backend | API, endpoint, service, server, auth | backend-architect |
-| Database | schema, migration, query, RLS, index | database-specialist |
-| Testing | test, E2E, integration, contract, QA | testing-specialist |
-| Security | auth, encryption, XSS, SQL injection | security-specialist |
-| Performance | optimization, caching, benchmark | performance-engineer |
-| DevOps | deploy, CI/CD, Docker, infrastructure | devops-engineer |
-| Specification | spec, requirements, user stories | specification-agent |
-| Tasks | task list, dependency, implementation | tasks-agent |
-| Orchestration | multi-domain, complex workflow | task-orchestrator |
+| Domain        | Keywords                                 | Agent                |
+| ------------- | ---------------------------------------- | -------------------- |
+| Frontend      | UI, component, React, responsive, design | frontend-specialist  |
+| Backend       | API, endpoint, service, server, auth     | backend-architect    |
+| Database      | schema, migration, query, RLS, index     | database-specialist  |
+| Testing       | test, E2E, integration, contract, QA     | testing-specialist   |
+| Security      | auth, encryption, XSS, SQL injection     | security-specialist  |
+| Performance   | optimization, caching, benchmark         | performance-engineer |
+| DevOps        | deploy, CI/CD, Docker, infrastructure    | devops-engineer      |
+| Specification | spec, requirements, user stories         | specification-agent  |
+| Tasks         | task list, dependency, implementation    | tasks-agent          |
+| Orchestration | multi-domain, complex workflow           | task-orchestrator    |
 
 **Multi-Agent Coordination**:
+
 - Features requiring 2+ domains → Use task-orchestrator
 - task-orchestrator manages context handoffs, dependencies, and quality gates
 - Each agent completes their domain work, passes context to next agent
@@ -374,6 +408,7 @@ These principles govern development workflows and agent coordination.
 **Rationale**: Specialized agents have domain expertise, proper tooling, and focused context that general-purpose agents lack.
 
 **Compliance Check**:
+
 - [ ] Constitution read at session start
 - [ ] Task domain analyzed
 - [ ] Delegation decision documented
@@ -389,6 +424,7 @@ These principles govern development workflows and agent coordination.
 **Mandate**: Security is not optional. All inputs must be validated and sanitized. All outputs must be properly escaped.
 
 **Requirements**:
+
 - All user inputs must be validated against expected schemas
 - All external data must be sanitized before use
 - All outputs must be escaped for their context (HTML, SQL, shell, etc.)
@@ -397,6 +433,7 @@ These principles govern development workflows and agent coordination.
 - Dependencies must be regularly audited for vulnerabilities
 
 **Input Validation Pattern**:
+
 ```typescript
 // Always validate user input
 function createFeature(input: unknown) {
@@ -406,6 +443,7 @@ function createFeature(input: unknown) {
 ```
 
 **Output Sanitization Pattern**:
+
 ```typescript
 // Always escape output for context
 const safeHTML = escapeHTML(userContent);
@@ -414,6 +452,7 @@ const safeShell = escapeShellArg(userPath);
 ```
 
 **Secrets Management**:
+
 - Use environment variables or secret managers
 - Never commit secrets to git
 - Never log secrets (even in debug mode)
@@ -423,6 +462,7 @@ const safeShell = escapeShellArg(userPath);
 **Rationale**: Input validation prevents injection attacks, data corruption, and security breaches.
 
 **Compliance Check**:
+
 - [ ] All inputs validated
 - [ ] All outputs sanitized/escaped
 - [ ] No secrets in logs
@@ -436,6 +476,7 @@ const safeShell = escapeShellArg(userPath);
 **Mandate**: All user-facing components must comply with the project's design system for consistency and accessibility.
 
 **Requirements**:
+
 - Project must define a design system (color palette, typography, spacing, components)
 - All UI components must use design system tokens/variables
 - Design system must include accessibility standards (WCAG 2.1 AA minimum)
@@ -443,6 +484,7 @@ const safeShell = escapeShellArg(userPath);
 - Design system must be documented with examples
 
 **Design System Components**:
+
 1. **Color Palette**: Define primary, secondary, accent, and semantic colors
 2. **Typography**: Define font families, sizes, weights, line heights
 3. **Spacing**: Define consistent spacing scale (4px, 8px, 16px, etc.)
@@ -450,6 +492,7 @@ const safeShell = escapeShellArg(userPath);
 5. **Accessibility**: Color contrast, keyboard navigation, screen reader support
 
 **Example Design System Structure**:
+
 ```typescript
 // theme.ts
 export const theme = {
@@ -463,12 +506,17 @@ export const theme = {
     sizes: { sm: 14, md: 16, lg: 20 },
   },
   spacing: {
-    xs: 4, sm: 8, md: 16, lg: 24, xl: 32,
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
   },
 };
 ```
 
 **Accessibility Requirements**:
+
 - Color contrast ratio ≥ 4.5:1 for normal text
 - Keyboard navigation supported
 - Screen reader labels on interactive elements
@@ -478,13 +526,14 @@ export const theme = {
 **Rationale**: Design system compliance ensures consistent user experience, reduces design debt, and improves accessibility.
 
 **Compliance Check**:
+
 - [ ] Design system defined
 - [ ] Components use design tokens
 - [ ] Accessibility standards met (WCAG 2.1 AA)
 - [ ] Responsive design implemented
 - [ ] Design system documented
 
-**Note**: Specific design system choices (for example: dark neumorphism, Material Design, Tailwind) are project-specific. This principle requires *a* design system, not *a specific* design system.
+**Note**: Specific design system choices (for example: dark neumorphism, Material Design, Tailwind) are project-specific. This principle requires _a_ design system, not _a specific_ design system.
 
 ---
 
@@ -495,12 +544,14 @@ export const theme = {
 **Dual-Layer Enforcement**:
 
 **Backend Enforcement (MANDATORY)**:
+
 - Database row-level security (RLS) policies
 - API authorization checks before data access
 - Access tier/role validated at data layer
 - Backend is the source of truth for access control
 
 **Frontend Enforcement (MANDATORY)**:
+
 - UI indicators for restricted features
 - Upgrade/access request prompts
 - Graceful degradation for limited access
@@ -509,6 +560,7 @@ export const theme = {
 **Access Control Pattern**:
 
 **Backend (PostgreSQL RLS Example)**:
+
 ```sql
 -- Enforce access control at database level
 CREATE POLICY "access_control"
@@ -524,6 +576,7 @@ WITH CHECK (
 ```
 
 **Frontend (React Example)**:
+
 ```typescript
 const FeatureGate = ({ requiredTier, children }) => {
   const { userTier } = useAuth();
@@ -542,6 +595,7 @@ const FeatureGate = ({ requiredTier, children }) => {
 ```
 
 **Access Tier Examples**:
+
 - **Free Tier**: Basic features with limitations
 - **Premium Tier**: Enhanced features and higher limits
 - **Enterprise Tier**: Full feature set and unlimited access
@@ -549,13 +603,14 @@ const FeatureGate = ({ requiredTier, children }) => {
 **Rationale**: Dual-layer enforcement prevents circumvention via API calls while providing good UX with frontend indicators.
 
 **Compliance Check**:
+
 - [ ] Backend enforcement implemented (RLS/API)
 - [ ] Frontend access indicators shown
 - [ ] Access restrictions tested
 - [ ] Upgrade/access paths clear
 - [ ] Edge cases handled (tier transitions)
 
-**Note**: Specific tier names and pricing are project-specific. This principle requires *access control patterns*, not *specific tiers*.
+**Note**: Specific tier names and pricing are project-specific. This principle requires _access control patterns_, not _specific tiers_.
 
 ---
 
@@ -564,6 +619,7 @@ const FeatureGate = ({ requiredTier, children }) => {
 **Mandate**: Use appropriate AI models for tasks based on complexity, cost, and quality requirements.
 
 **Default Model**: Claude Sonnet 4.5
+
 - Model ID: `claude-sonnet-4-5-20250929`
 - Use for: 90%+ of all agent tasks
 - Cost: $3/MTok input, $15/MTok output
@@ -571,12 +627,14 @@ const FeatureGate = ({ requiredTier, children }) => {
 - Rationale: Best balance of speed, intelligence, and cost for coding tasks
 
 **Escalation Model**: Claude Opus 4.1
+
 - Model ID: `claude-opus-4-1-20250805`
 - Cost: $15/MTok input, $75/MTok output (5x more expensive)
 - Context: 200K tokens
 - Use for: Complex reasoning, safety-critical decisions
 
 **Escalation Triggers** (use Opus if ANY apply):
+
 1. Multi-step complex reasoning (5+ interconnected logical steps)
 2. Safety-critical decisions (security, privacy, financial, data loss risk)
 3. Research depth required (novel problem spaces, no clear precedent)
@@ -585,6 +643,7 @@ const FeatureGate = ({ requiredTier, children }) => {
 6. Repeated Sonnet failures (2+ attempts on same task)
 
 **Decision Tree**:
+
 ```
 Task Type                    → Model        → Rationale
 Standard coding              → Sonnet 4.5   → Best coding model
@@ -596,6 +655,7 @@ Failed 2x with Sonnet        → Opus 4.1     → Escalation trigger met
 ```
 
 **Documentation Requirements**:
+
 - Log model selection in task descriptions
 - Document escalation reason when using Opus
 - Track costs for budget monitoring (future enhancement)
@@ -603,6 +663,7 @@ Failed 2x with Sonnet        → Opus 4.1     → Escalation trigger met
 **Rationale**: Cost efficiency while maintaining quality. Sonnet handles most tasks well at 1/5 the cost.
 
 **Compliance Check**:
+
 - [ ] Sonnet 4.5 used by default
 - [ ] Opus escalation justified
 - [ ] Escalation reason documented
@@ -615,6 +676,7 @@ Failed 2x with Sonnet        → Opus 4.1     → Escalation trigger met
 ### Quality Gates
 
 Before any code can be merged:
+
 - [ ] All tests must pass (unit, integration, e2e)
 - [ ] Code coverage must meet minimum threshold (80%)
 - [ ] Linting and formatting checks must pass
@@ -647,12 +709,14 @@ Before any code can be merged:
 The SDD Framework employs a **hybrid approach** combining agents and skills:
 
 **Agents** (Delegation Layer):
+
 - **Purpose**: Orchestration, delegation, and multi-agent coordination
 - **When**: Specialized work requiring autonomous decision-making
 - **How**: Use Task tool to invoke specialized agents
 - **Example**: task-orchestrator coordinates multiple specialists
 
 **Skills** (Capability Layer):
+
 - **Purpose**: Procedural "how-to" knowledge and step-by-step guidance
 - **When**: Reusable procedures, workflows, or validation checks
 - **How**: Claude loads skills dynamically using progressive disclosure
@@ -679,13 +743,14 @@ All skills must comply with:
 ```
 
 **Required SKILL.md Frontmatter**:
+
 ```yaml
 ---
 name: skill-name
 description: |
   What the skill does and when to use it (max 1024 chars).
   Include trigger conditions and expected outcomes.
-allowed-tools: Read, Write, Bash  # Optional: restricts tool access
+allowed-tools: Read, Write, Bash # Optional: restricts tool access
 ---
 ```
 
@@ -711,15 +776,18 @@ Need procedural guidance?
 ### Core Skills
 
 **Priority 1 (SDD Workflow)**:
+
 - `sdd-specification`: /specify command procedure
 - `sdd-planning`: /plan command procedure
 - `sdd-tasks`: /tasks command procedure
 
 **Priority 2 (Validation)**:
+
 - `constitutional-compliance`: Validate 14 principles
 - `domain-detection`: Identify domains and suggest agents
 
 **When to Use Skills vs Agents**:
+
 - **Use Skill**: Need step-by-step procedure guidance
 - **Use Agent**: Need specialized work executed autonomously
 - **Use Both**: Agent uses skill for procedural guidance
@@ -727,13 +795,13 @@ Need procedural guidance?
 
 ### Benefits of Hybrid Approach
 
-| Benefit | Impact |
-|---------|--------|
-| **Context Efficiency** | 30-50% reduction in tokens |
-| **User Extensibility** | Users add custom skills without framework mods |
-| **Better Separation** | Agents delegate, skills guide procedures |
-| **Constitutional Enforcement** | Dual-layer validation (agents + skills) |
-| **Knowledge Sharing** | Skills capture procedural knowledge |
+| Benefit                        | Impact                                         |
+| ------------------------------ | ---------------------------------------------- |
+| **Context Efficiency**         | 30-50% reduction in tokens                     |
+| **User Extensibility**         | Users add custom skills without framework mods |
+| **Better Separation**          | Agents delegate, skills guide procedures       |
+| **Constitutional Enforcement** | Dual-layer validation (agents + skills)        |
+| **Knowledge Sharing**          | Skills capture procedural knowledge            |
 
 ### Skills Compliance Requirements
 
@@ -781,6 +849,7 @@ Principles I, II, and III (Library-First, Test-First, Contract-First) are immuta
 ### Automated Checks
 
 Run before commits, PRs, and releases:
+
 ```bash
 # Check constitutional compliance
 ./.specify/scripts/bash/constitutional-check.sh
@@ -792,6 +861,7 @@ Run before commits, PRs, and releases:
 ### Manual Review Checklist
 
 Before declaring work complete:
+
 - [ ] All 14 principles reviewed for applicability
 - [ ] Work Session Initiation Protocol followed
 - [ ] Appropriate agent(s) delegated to

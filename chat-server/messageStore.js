@@ -21,7 +21,7 @@ async function saveMessage(message) {
     text: message.text || '',
     timestamp: message.timestamp || new Date().toISOString(),
     room_id: message.roomId || message.room_id || null,
-    thread_id: message.threadId || message.thread_id || null
+    thread_id: message.threadId || message.thread_id || null,
   };
 
   // Extended fields (added in migration 006)
@@ -37,7 +37,7 @@ async function saveMessage(message) {
     edited: message.edited ? 1 : 0,
     edited_at: message.editedAt || null,
     reactions: message.reactions ? JSON.stringify(message.reactions) : '{}',
-    user_flagged_by: message.user_flagged_by ? JSON.stringify(message.user_flagged_by) : '[]'
+    user_flagged_by: message.user_flagged_by ? JSON.stringify(message.user_flagged_by) : '[]',
   };
 
   try {
@@ -54,7 +54,7 @@ async function saveMessage(message) {
       // Insert new message
       await dbSafe.safeInsert('messages', fullData);
       console.log(`💾 Saved new message ${id} to database (room: ${coreData.room_id || 'none'})`);
-      
+
       // Sync relationship metadata to Neo4j (non-blocking, async)
       if (coreData.room_id) {
         setImmediate(() => {
@@ -111,34 +111,36 @@ async function getRecentMessages(limit = 50) {
     const messages = result.rows;
 
     // Convert to message format
-    return messages.map(message => {
-      const msg = {
-        id: message.id,
-        type: message.type,
-        username: message.username,
-        text: message.text,
-        timestamp: message.timestamp,
-        socketId: message.socket_id,
-        threadId: message.thread_id || null,
-        private: message.private === 1,
-        flagged: message.flagged === 1
-      };
+    return messages
+      .map(message => {
+        const msg = {
+          id: message.id,
+          type: message.type,
+          username: message.username,
+          text: message.text,
+          timestamp: message.timestamp,
+          socketId: message.socket_id,
+          threadId: message.thread_id || null,
+          private: message.private === 1,
+          flagged: message.flagged === 1,
+        };
 
-      // Add AI intervention fields if present
-      if (message.validation) msg.validation = message.validation;
-      if (message.tip1) msg.tip1 = message.tip1;
-      if (message.tip2) msg.tip2 = message.tip2;
-      if (message.rewrite) msg.rewrite = message.rewrite;
-      if (message.original_message) {
-        try {
-          msg.originalMessage = JSON.parse(message.original_message);
-        } catch (err) {
-          // Ignore parse errors
+        // Add AI intervention fields if present
+        if (message.validation) msg.validation = message.validation;
+        if (message.tip1) msg.tip1 = message.tip1;
+        if (message.tip2) msg.tip2 = message.tip2;
+        if (message.rewrite) msg.rewrite = message.rewrite;
+        if (message.original_message) {
+          try {
+            msg.originalMessage = JSON.parse(message.original_message);
+          } catch (err) {
+            // Ignore parse errors
+          }
         }
-      }
 
-      return msg;
-    }).reverse(); // Return in chronological order (oldest first)
+        return msg;
+      })
+      .reverse(); // Return in chronological order (oldest first)
   } catch (err) {
     console.error('Error loading messages from database:', err);
     return [];
@@ -169,7 +171,7 @@ async function getMessagesByRoom(roomId, limit = 500) {
         timestamp: message.timestamp,
         socketId: message.socket_id,
         threadId: message.thread_id || null,
-        roomId: message.room_id
+        roomId: message.room_id,
       };
 
       // Add extended fields if present
@@ -180,13 +182,25 @@ async function getMessagesByRoom(roomId, limit = 500) {
       if (message.edited) msg.edited = message.edited === 1;
       if (message.edited_at) msg.editedAt = message.edited_at;
       if (message.reactions) {
-        try { msg.reactions = JSON.parse(message.reactions); } catch (e) { msg.reactions = {}; }
+        try {
+          msg.reactions = JSON.parse(message.reactions);
+        } catch (e) {
+          msg.reactions = {};
+        }
       }
       if (message.user_flagged_by) {
-        try { msg.user_flagged_by = JSON.parse(message.user_flagged_by); } catch (e) { msg.user_flagged_by = []; }
+        try {
+          msg.user_flagged_by = JSON.parse(message.user_flagged_by);
+        } catch (e) {
+          msg.user_flagged_by = [];
+        }
       }
       if (message.original_message) {
-        try { msg.originalMessage = JSON.parse(message.original_message); } catch (e) { /* ignore */ }
+        try {
+          msg.originalMessage = JSON.parse(message.original_message);
+        } catch (e) {
+          /* ignore */
+        }
       }
 
       return msg;
@@ -226,6 +240,5 @@ module.exports = {
   saveMessage,
   getRecentMessages,
   getMessagesByRoom,
-  cleanOldMessages
+  cleanOldMessages,
 };
-

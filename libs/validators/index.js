@@ -1,6 +1,6 @@
 /**
  * Validation Library
- * 
+ *
  * Input validation and sanitization utilities.
  */
 
@@ -66,12 +66,8 @@ export function validatePassword(password, options = {}) {
  */
 export function sanitizeString(input, options = {}) {
   if (typeof input !== 'string') return '';
-  
-  const {
-    trim = true,
-    removeHtml = true,
-    maxLength = null,
-  } = options;
+
+  const { trim = true, removeHtml = true, maxLength = null } = options;
 
   let sanitized = input;
 
@@ -101,4 +97,3 @@ export function isValidPhone(phone) {
   const digitsOnly = phone.replace(/\D/g, '');
   return phoneRegex.test(phone) && digitsOnly.length >= 10;
 }
-

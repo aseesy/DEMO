@@ -4,7 +4,12 @@
  * Enhanced with error code mapping, retry logic, and user-friendly messages
  */
 
-import { trackError, trackAPIError, trackConnectionError, trackFormError } from './analyticsEnhancements.js';
+import {
+  trackError,
+  trackAPIError,
+  trackConnectionError,
+  trackFormError,
+} from './analyticsEnhancements.js';
 
 // ============================================================================
 // ERROR CODE MAPPINGS
@@ -22,7 +27,8 @@ const REGISTRATION_ERRORS = {
   },
   REG_002: {
     message: 'Invalid invitation token',
-    userMessage: 'This invitation link is not valid. Please check the link or request a new invitation.',
+    userMessage:
+      'This invitation link is not valid. Please check the link or request a new invitation.',
     action: 'request_new_invite',
     retryable: false,
   },
@@ -34,13 +40,15 @@ const REGISTRATION_ERRORS = {
   },
   REG_004: {
     message: 'Invitation already accepted',
-    userMessage: 'This invitation has already been accepted. If you already have an account, please sign in.',
+    userMessage:
+      'This invitation has already been accepted. If you already have an account, please sign in.',
     action: 'sign_in',
     retryable: false,
   },
   REG_005: {
     message: 'Could not create chat room',
-    userMessage: 'We had trouble setting up your chat room. Your account was created successfully. Please try again in a moment.',
+    userMessage:
+      'We had trouble setting up your chat room. Your account was created successfully. Please try again in a moment.',
     action: 'retry',
     retryable: true,
   },
@@ -58,7 +66,8 @@ const REGISTRATION_ERRORS = {
   },
   REG_008: {
     message: 'Inviter account no longer exists',
-    userMessage: 'The person who sent this invitation no longer has an account. Please contact support if you need assistance.',
+    userMessage:
+      'The person who sent this invitation no longer has an account. Please contact support if you need assistance.',
     action: 'contact_support',
     retryable: false,
   },
@@ -76,7 +85,8 @@ const REGISTRATION_ERRORS = {
 const INVITATION_ERRORS = {
   TOKEN_REQUIRED: {
     message: 'Token is required',
-    userMessage: 'This invitation link is missing required information. Please check your message for the correct link.',
+    userMessage:
+      'This invitation link is missing required information. Please check your message for the correct link.',
     action: 'check_link',
     retryable: false,
   },
@@ -94,25 +104,29 @@ const INVITATION_ERRORS = {
   },
   EXPIRED: {
     message: 'Invitation has expired',
-    userMessage: 'This invitation has expired. Invitations are valid for 7 days. Please ask your co-parent to send a new invitation.',
+    userMessage:
+      'This invitation has expired. Invitations are valid for 7 days. Please ask your co-parent to send a new invitation.',
     action: 'request_new_invite',
     retryable: false,
   },
   ALREADY_ACCEPTED: {
     message: 'Invitation already accepted',
-    userMessage: 'This invitation has already been accepted. If you already have an account, please sign in.',
+    userMessage:
+      'This invitation has already been accepted. If you already have an account, please sign in.',
     action: 'sign_in',
     retryable: false,
   },
   CANCELLED: {
     message: 'Invitation was cancelled',
-    userMessage: 'This invitation was cancelled by the sender. Please contact your co-parent if you believe this is a mistake.',
+    userMessage:
+      'This invitation was cancelled by the sender. Please contact your co-parent if you believe this is a mistake.',
     action: 'contact_coparent',
     retryable: false,
   },
   DECLINED: {
     message: 'Invitation was declined',
-    userMessage: 'You previously declined this invitation. If you\'d like to accept it now, please ask your co-parent to send a new invitation.',
+    userMessage:
+      "You previously declined this invitation. If you'd like to accept it now, please ask your co-parent to send a new invitation.",
     action: 'request_new_invite',
     retryable: false,
   },
@@ -124,8 +138,16 @@ const INVITATION_ERRORS = {
   },
   COPARENT_LIMIT: {
     message: 'Co-parent limit reached',
-    userMessage: 'You already have a co-parent connection. Please manage your existing connection first.',
+    userMessage:
+      'You already have a co-parent connection. Please manage your existing connection first.',
     action: 'manage_connections',
+    retryable: false,
+  },
+  ALREADY_PAIRED: {
+    message: 'You already have an active co-parent connection',
+    userMessage:
+      'You are already connected with a co-parent. Please check your dashboard or settings.',
+    action: 'go_to_dashboard',
     retryable: false,
   },
 };
@@ -136,7 +158,8 @@ const INVITATION_ERRORS = {
 const OAUTH_ERRORS = {
   popup_blocked: {
     message: 'Popup blocked by browser',
-    userMessage: 'Your browser blocked the sign-in popup. Please allow popups for this site and try again.',
+    userMessage:
+      'Your browser blocked the sign-in popup. Please allow popups for this site and try again.',
     action: 'allow_popups',
     retryable: true,
   },
@@ -148,7 +171,8 @@ const OAUTH_ERRORS = {
   },
   server_error: {
     message: 'OAuth server error',
-    userMessage: 'Google sign-in is temporarily unavailable. Please try again in a moment or use email/password.',
+    userMessage:
+      'Google sign-in is temporarily unavailable. Please try again in a moment or use email/password.',
     action: 'retry_or_email',
     retryable: true,
   },
@@ -207,12 +231,18 @@ const HTTP_ERRORS = {
   },
   403: {
     message: 'Forbidden',
-    userMessage: 'You don\'t have permission to perform this action.',
+    userMessage: "You don't have permission to perform this action.",
     retryable: false,
   },
   404: {
     message: 'Not found',
     userMessage: 'The requested resource was not found.',
+    retryable: false,
+  },
+  409: {
+    message: 'Conflict',
+    userMessage: 'This action conflicts with an existing resource or state.',
+    action: 'check_status',
     retryable: false,
   },
   429: {
@@ -302,8 +332,15 @@ export function categorizeError(error, statusCode = null) {
  */
 export function getErrorMessage(error, context = {}) {
   const errorCode = error?.code || error?.error?.code;
-  const statusCode = error?.status || error?.response?.status;
-  const errorMessage = error?.message || error?.error?.message || 'An unexpected error occurred';
+  const statusCode = error?.status || error?.response?.status || context?.statusCode;
+  // Handle various server response formats:
+  // - { message: "..." } - standard format
+  // - { error: "..." } - common API format (e.g., pairing routes)
+  // - { error: { message: "..." } } - nested format
+  const errorMessage =
+    error?.message ||
+    (typeof error?.error === 'string' ? error.error : error?.error?.message) ||
+    'An unexpected error occurred';
 
   // Check registration errors
   if (errorCode && REGISTRATION_ERRORS[errorCode]) {
@@ -319,6 +356,15 @@ export function getErrorMessage(error, context = {}) {
     return {
       ...INVITATION_ERRORS[errorCode],
       code: errorCode,
+      originalMessage: errorMessage,
+    };
+  }
+
+  // Fallback check for common error message strings
+  if (errorMessage?.includes('already have an active co-parent connection')) {
+    return {
+      ...INVITATION_ERRORS.ALREADY_PAIRED,
+      code: 'ALREADY_PAIRED',
       originalMessage: errorMessage,
     };
   }
@@ -361,7 +407,7 @@ export function getErrorMessage(error, context = {}) {
  */
 export function isRetryableError(error, statusCode = null) {
   const errorInfo = getErrorMessage(error, { statusCode });
-  
+
   // Explicitly marked as not retryable
   if (errorInfo.retryable === false) {
     return false;
@@ -408,45 +454,44 @@ export function calculateRetryDelay(attempt) {
  * @returns {Promise} Result of the function
  */
 export async function retryWithBackoff(fn, options = {}) {
-  const {
-    maxRetries = 3,
-    onRetry = null,
-    shouldRetry = isRetryableError,
-  } = options;
+  const { maxRetries = 3, onRetry = null, shouldRetry = isRetryableError } = options;
 
   let lastError;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const result = await fn();
-      
+
       // Check if result is a response object
       if (result && typeof result.ok !== 'undefined') {
         // It's a fetch response
         if (result.ok) {
           return result;
         }
-        
+
         // Check if we should retry this error
-        const errorData = await result.clone().json().catch(() => ({ error: result.statusText }));
+        const errorData = await result
+          .clone()
+          .json()
+          .catch(() => ({ error: result.statusText }));
         const error = { ...errorData, status: result.status };
-        
+
         if (attempt < maxRetries && shouldRetry(error, result.status)) {
           const delay = calculateRetryDelay(attempt);
           if (onRetry) onRetry(attempt + 1, delay, error);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
-        
+
         // Don't retry, return the error response
         return result;
       }
-      
+
       // Not a response object, return as-is
       return result;
     } catch (error) {
       lastError = error;
-      
+
       // Check if we should retry
       if (attempt < maxRetries && shouldRetry(error)) {
         const delay = calculateRetryDelay(attempt);
@@ -454,12 +499,12 @@ export async function retryWithBackoff(fn, options = {}) {
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
-      
+
       // Don't retry, throw the error
       throw error;
     }
   }
-  
+
   throw lastError;
 }
 
@@ -473,7 +518,7 @@ export async function retryWithBackoff(fn, options = {}) {
 export function logError(error, context = {}) {
   const errorInfo = getErrorMessage(error, context);
   const category = categorizeError(error, context.statusCode);
-  
+
   const logData = {
     timestamp: new Date().toISOString(),
     code: errorInfo.code,
@@ -489,15 +534,15 @@ export function logError(error, context = {}) {
     },
     stack: error?.stack,
   };
-  
+
   // Track with analytics
   trackError(error, `error_${category}`, true);
-  
+
   // Log to console in development
   if (process.env.NODE_ENV === 'development') {
     console.error('Error logged:', logData);
   }
-  
+
   return logData;
 }
 
@@ -508,54 +553,54 @@ export function logError(error, context = {}) {
 // Global error handler for unhandled errors
 export function setupGlobalErrorHandler() {
   // Handle unhandled promise rejections
-  window.addEventListener('unhandledrejection', (event) => {
+  window.addEventListener('unhandledrejection', event => {
     const error = event.reason;
     const errorMessage = error?.message || String(error);
     const errorString = String(error);
-    
+
     // Suppress Safari service worker errors - these are expected and handled
     // Check for various forms of the error message (check both message and string representation)
-    const isSafariServiceWorkerError = 
+    const isSafariServiceWorkerError =
       errorMessage.includes('newestWorker is null') ||
       errorString.includes('newestWorker is null') ||
-      (errorMessage.includes('InvalidStateError') && (
-        errorMessage.includes('worker') ||
-        errorMessage.includes('newestWorker') ||
-        errorMessage.includes('installing') ||
-        errorMessage.includes('waiting') ||
-        errorMessage.includes('null')
-      )) ||
-      (errorString.includes('InvalidStateError') && (
-        errorString.includes('worker') ||
-        errorString.includes('newestWorker') ||
-        errorString.includes('installing') ||
-        errorString.includes('waiting') ||
-        errorString.includes('null')
-      )) ||
-      (error?.name === 'InvalidStateError' && (
-        errorMessage.includes('null') ||
-        errorString.includes('null') ||
-        errorMessage.includes('worker') ||
-        errorString.includes('worker')
-      ));
-    
+      (errorMessage.includes('InvalidStateError') &&
+        (errorMessage.includes('worker') ||
+          errorMessage.includes('newestWorker') ||
+          errorMessage.includes('installing') ||
+          errorMessage.includes('waiting') ||
+          errorMessage.includes('null'))) ||
+      (errorString.includes('InvalidStateError') &&
+        (errorString.includes('worker') ||
+          errorString.includes('newestWorker') ||
+          errorString.includes('installing') ||
+          errorString.includes('waiting') ||
+          errorString.includes('null'))) ||
+      (error?.name === 'InvalidStateError' &&
+        (errorMessage.includes('null') ||
+          errorString.includes('null') ||
+          errorMessage.includes('worker') ||
+          errorString.includes('worker')));
+
     if (isSafariServiceWorkerError) {
       // Prevent default error handling for Safari service worker errors
       event.preventDefault();
       // Silently suppress - don't even log in production
       if (process.env.NODE_ENV === 'development') {
-        console.debug('[errorHandler] Suppressed Safari service worker error (expected):', errorMessage);
+        console.debug(
+          '[errorHandler] Suppressed Safari service worker error (expected):',
+          errorMessage
+        );
       }
       return;
     }
-    
+
     logError(error, { type: 'unhandled_promise_rejection' });
     trackError(error, 'unhandled_promise_rejection', false);
     console.error('Unhandled promise rejection:', error);
   });
 
   // Handle JavaScript errors
-  window.addEventListener('error', (event) => {
+  window.addEventListener('error', event => {
     const error = event.error || new Error(event.message);
     logError(error, { type: 'javascript_error' });
     trackError(error, 'javascript_error', true);
@@ -566,18 +611,18 @@ export function setupGlobalErrorHandler() {
 // Wrapper for API calls with error tracking and retry
 export async function trackAPIRequest(endpoint, requestFn, options = {}) {
   const { retry = true, ...retryOptions } = options;
-  
+
   const wrappedRequest = async () => {
     try {
       const response = await requestFn();
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         const error = { ...errorData, status: response.status };
         logError(error, { endpoint, statusCode: response.status });
         trackAPIError(endpoint, response.status, errorData.error || response.statusText);
       }
-      
+
       return response;
     } catch (error) {
       logError(error, { endpoint, statusCode: 0 });
@@ -585,7 +630,7 @@ export async function trackAPIRequest(endpoint, requestFn, options = {}) {
       throw error;
     }
   };
-  
+
   if (retry) {
     return retryWithBackoff(wrappedRequest, {
       ...retryOptions,
@@ -598,7 +643,7 @@ export async function trackAPIRequest(endpoint, requestFn, options = {}) {
       },
     });
   }
-  
+
   return wrappedRequest();
 }
 
@@ -635,15 +680,18 @@ export class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback || (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <h2 className="text-lg font-semibold text-red-800 mb-2">Something went wrong</h2>
-          <p className="text-red-600">Please refresh the page or contact support if the problem persists.</p>
-        </div>
+      return (
+        this.props.fallback || (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <h2 className="text-lg font-semibold text-red-800 mb-2">Something went wrong</h2>
+            <p className="text-red-600">
+              Please refresh the page or contact support if the problem persists.
+            </p>
+          </div>
+        )
       );
     }
 
     return this.props.children;
   }
 }
-

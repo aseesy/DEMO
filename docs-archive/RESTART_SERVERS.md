@@ -5,6 +5,7 @@ Automated script to kill and restart development servers with automatic import i
 ## Usage
 
 ### Restart Both Servers
+
 ```bash
 ./restart-servers.sh
 # or
@@ -12,6 +13,7 @@ npm run restart
 ```
 
 ### Restart Only Backend
+
 ```bash
 ./restart-servers.sh backend
 # or
@@ -19,6 +21,7 @@ npm run restart:backend
 ```
 
 ### Restart Only Frontend
+
 ```bash
 ./restart-servers.sh frontend
 # or
@@ -30,16 +33,19 @@ npm run restart:frontend
 The script automatically detects and fixes common issues:
 
 ### ✅ Import Path Fixes
+
 - **errorHandler.js → errorHandler.jsx**: Automatically corrects imports when the file contains JSX
 - **Double extensions (.jsxx)**: Fixes cases where replacements created invalid extensions
 - **Missing file detection**: Warns about potentially missing imported files
 
 ### ✅ Pre-Startup Checks
+
 - **Syntax validation**: Checks for JavaScript syntax errors before starting
 - **Environment validation**: Verifies .env file exists for backend
 - **Dependency check**: Installs npm packages if node_modules is missing
 
 ### ✅ Build Error Detection
+
 - **Vite errors**: Monitors build logs for import resolution errors
 - **Error reporting**: Shows recent errors from build logs
 - **Health verification**: Confirms servers started successfully
@@ -69,6 +75,7 @@ The script automatically detects and fixes common issues:
 ## Logs
 
 View server logs in real-time:
+
 ```bash
 # Backend logs
 tail -f /tmp/chat-server.log
@@ -104,6 +111,7 @@ tail -f /tmp/vite-dev.log
 ## When to Use
 
 Use this script when:
+
 - ✅ You've made backend code changes
 - ✅ You've changed environment variables
 - ✅ You see import resolution errors
@@ -115,18 +123,21 @@ Use this script when:
 ## Troubleshooting
 
 ### Import Errors Still Appear
+
 1. Check the logs: `tail -f /tmp/vite-dev.log`
 2. Verify the file exists: `ls -la chat-client-vite/src/utils/errorHandler.jsx`
 3. Check import syntax: Ensure quotes match (`'` vs `"`)
 4. Run the script again - it will attempt to fix issues
 
 ### Server Won't Start
+
 1. Check syntax: The script validates syntax before starting
 2. Check logs: `tail -f /tmp/chat-server.log` or `/tmp/vite-dev.log`
 3. Verify ports are free: `lsof -ti:3001 -ti:5173`
 4. Check environment: Ensure `.env` file exists in `chat-server/`
 
 ### Build Errors
+
 1. The script detects build errors automatically
 2. Check the output for "Potential build errors detected"
 3. Review the error messages shown

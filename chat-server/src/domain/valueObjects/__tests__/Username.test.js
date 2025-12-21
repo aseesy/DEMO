@@ -1,6 +1,6 @@
 /**
  * Unit Tests: Username Value Object
- * 
+ *
  * @module domain/valueObjects/__tests__/Username.test
  */
 
@@ -165,18 +165,17 @@ describe('Username', () => {
     it('should not allow value modification', () => {
       const username = new Username('alice');
       const originalValue = username.value;
-      
+
       // Try to modify (will fail silently in non-strict mode, throw in strict mode)
       try {
         username.value = 'hacked';
       } catch (e) {
         // In strict mode, this will throw - that's fine
       }
-      
+
       // Verify value didn't change
       expect(username.value).toBe(originalValue);
       expect(username.value).toBe('alice');
     });
   });
 });
-

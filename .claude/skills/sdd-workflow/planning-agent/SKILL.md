@@ -16,6 +16,7 @@ allowed-tools: Read, Write, Bash, Grep, Glob, TodoWrite
 ## When to Use
 
 Activate this skill when:
+
 - [TODO: Add specific trigger conditions]
 - User requests work that planning-agent handles
 - [TODO: Add workflow phase or command]
@@ -43,6 +44,7 @@ Activate this skill when:
 **Action**: [TODO: Describe core processing steps]
 
 **Details**:
+
 - [TODO: Important sub-step or consideration]
 - [TODO: Another important detail]
 - [TODO: Edge case handling]
@@ -54,6 +56,7 @@ Activate this skill when:
 **Action**: [TODO: Describe validation or finalization steps]
 
 **Checklist**:
+
 - [ ] [TODO: Validation item 1]
 - [ ] [TODO: Validation item 2]
 - [ ] [TODO: Validation item 3]
@@ -63,21 +66,27 @@ Activate this skill when:
 ## Constitutional Compliance
 
 ### Principle I: Library-First Architecture
+
 [TODO: How this skill ensures features start as standalone libraries]
 
 ### Principle II: Test-First Development
+
 [TODO: How this skill enforces writing tests before implementation]
 
 ### Principle VI: Git Operation Approval
+
 - **CRITICAL**: NO autonomous git operations
 - Request user approval for ANY git commands
 - Document git operations in procedure steps
 
 ### Principle VIII: Documentation Synchronization
+
 [TODO: How this skill maintains documentation]
 
 ### Principle X: Agent Delegation Protocol
+
 When to delegate to planning-agent:
+
 - [TODO: Complex scenarios requiring agent autonomy]
 - [TODO: Multi-step orchestration]
 - [TODO: Specialized domain work]
@@ -89,11 +98,13 @@ When to delegate to planning-agent:
 **User Request**: "[TODO: What the user asked for]"
 
 **Skill Execution**:
+
 1. [TODO: First action taken]
 2. [TODO: Second action taken]
 3. [TODO: Final action taken]
 
 **Generated Output**:
+
 ```
 [TODO: Show what files/artifacts were created]
 ```
@@ -105,6 +116,7 @@ When to delegate to planning-agent:
 **User Request**: "[TODO: Different user request]"
 
 **Skill Execution**:
+
 1. [TODO: Steps for this scenario]
 
 **Expected Result**: [TODO: Outcome]
@@ -112,6 +124,7 @@ When to delegate to planning-agent:
 ## Agent Collaboration
 
 ### planning-agent
+
 **When to delegate**: [TODO: Situations requiring this agent's autonomy]
 
 **What they handle**: [TODO: Specific capabilities of this agent]
@@ -119,7 +132,9 @@ When to delegate to planning-agent:
 **Handoff format**: [TODO: How to invoke the agent]
 
 ### Related Agents
+
 [TODO: List other agents this skill might reference]
+
 - **agent-name**: [TODO: When and why to use this agent]
 
 ## Validation
@@ -151,15 +166,18 @@ Verify the skill executed correctly:
 ## Notes
 
 **Important Considerations**:
+
 - [TODO: Critical information about this procedure]
 - [TODO: Performance implications]
 - [TODO: Known limitations]
 
 **Best Practices**:
+
 - [TODO: Recommended approach]
 - [TODO: Tips for efficiency]
 
 **Related Skills**:
+
 - **skill-name**: [TODO: How this skill relates]
 - **skill-name**: [TODO: Workflow sequence]
 
@@ -168,15 +186,19 @@ Verify the skill executed correctly:
 This skill directory can include:
 
 ### scripts/ (optional)
+
 Executable utilities to automate parts of the procedure
 
 ### templates/ (optional)
+
 Reusable content templates for generated artifacts
 
 ### reference.md (optional)
+
 Detailed technical documentation and API references
 
 ### examples.md (optional)
+
 Extended usage examples and edge cases
 
 ---

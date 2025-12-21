@@ -5,31 +5,37 @@
 For each unused item, we ask these questions to make the right choice:
 
 ### 1. **Is it part of a public API?**
+
 - Exported functions/components that external code might use
 - **Risk**: Breaking external integrations
 - **Mitigation**: Check imports, API routes, external docs
 
 ### 2. **Is it used in tests?**
+
 - Test files, benchmarks, integration tests
 - **Risk**: Breaking test suite
 - **Mitigation**: Run tests, check test files
 
 ### 3. **Does it provide future value?**
+
 - Utility functions, debugging tools, optimization potential
 - **Risk**: Losing useful functionality
 - **Mitigation**: Document as "future use", set review date
 
 ### 4. **What's the maintenance cost?**
+
 - Complexity, dependencies, breaking changes
 - **Risk**: Ongoing maintenance burden
 - **Mitigation**: Consider cost vs value
 
 ### 5. **What's the removal risk?**
+
 - Breaking changes, lost functionality, external dependencies
 - **Risk**: Production issues, broken integrations
 - **Mitigation**: Comprehensive testing, gradual rollout
 
 ### 6. **Is it documented as a feature?**
+
 - Specs, docs, planned usage, comments
 - **Risk**: Removing planned functionality
 - **Mitigation**: Check documentation, specs
@@ -39,44 +45,32 @@ For each unused item, we ask these questions to make the right choice:
 ### **REMOVE IMMEDIATELY** (18 items - Zero Risk)
 
 **Frontend (4 items):**
+
 1. ✅ `requireAuth` HOC - Not used, React Router handles this
 2. ✅ `toCamelCase` / `toSnakeCase` - Generic transformers unused
 3. ✅ `UserContextForm` - Legacy component, replaced by ProfilePanel
 4. ✅ `storageHelpers` - Replaced by migration utilities
 
-**Backend (14 items):**
-5. ✅ `analyzeAndIntervene` - Legacy alias, only in comments
-6. ✅ `resetEscalation` - Only in deprecated files
-7. ✅ `getPolicyState` - Only in deprecated files
-8. ✅ `getUserProfile` - Not used, can re-add if needed
-9. ✅ `getCodeLayerMetrics` - Not used, can re-add if needed
-10. ✅ `getSchemaHealth` - Not used, can re-add if needed
-11. ✅ `formatForPrompt` - Code Layer handles formatting
-12. ✅ `checkCategory` - `checkAll` covers this
-13. ✅ `checkOne` - Only used by unused `checkCategory`
-14. ✅ `getVectorRiskLevel` - Not used, can re-add if needed
-15. ✅ `getPrimaryDomain` - Domain already in conceptual primitives
-16. ✅ `getInterventionUrgency` - Not used, can re-add if needed
-17. ✅ `getAssessmentSummary` - Debugging only, not used
-18. ✅ `needsIntervention` - `assessment.transmit` already provides this
+**Backend (14 items):** 5. ✅ `analyzeAndIntervene` - Legacy alias, only in comments 6. ✅ `resetEscalation` - Only in deprecated files 7. ✅ `getPolicyState` - Only in deprecated files 8. ✅ `getUserProfile` - Not used, can re-add if needed 9. ✅ `getCodeLayerMetrics` - Not used, can re-add if needed 10. ✅ `getSchemaHealth` - Not used, can re-add if needed 11. ✅ `formatForPrompt` - Code Layer handles formatting 12. ✅ `checkCategory` - `checkAll` covers this 13. ✅ `checkOne` - Only used by unused `checkCategory` 14. ✅ `getVectorRiskLevel` - Not used, can re-add if needed 15. ✅ `getPrimaryDomain` - Domain already in conceptual primitives 16. ✅ `getInterventionUrgency` - Not used, can re-add if needed 17. ✅ `getAssessmentSummary` - Debugging only, not used 18. ✅ `needsIntervention` - `assessment.transmit` already provides this
 
 **Total Impact**: ~500-800 lines removed, zero risk
 
 ### **KEEP WITH 6-MONTH REVIEW** (4 items - Low Risk, Potential Value)
 
 **Backend (3 items):**
+
 1. ⚠️ `parseBatch` - Documented for "testing/benchmarking", zero maintenance
 2. ⚠️ `quickCheck` - Documented as "faster pre-screening" optimization
 3. ⚠️ `setPerformanceLogging` - Debugging utility, zero maintenance
 
-**Frontend (1 item):**
-4. ⚠️ `UIShowcase` - Design system documentation tool (intentional dev tool)
+**Frontend (1 item):** 4. ⚠️ `UIShowcase` - Design system documentation tool (intentional dev tool)
 
 **Action**: Add deprecation comments, review in 6 months
 
 ### **KEEP INDEFINITELY** (1 item - Actively Used)
 
 **Backend (1 item):**
+
 1. ✅ `secureCompare` - **Actively tested** in `crypto.test.js` (4 test cases)
    - **NOT unused** - this was a false positive
    - Security utility with comprehensive tests
@@ -107,6 +101,7 @@ For each item to remove:
 ### Phase 2: Safe Removal Process
 
 1. **Create Feature Branch**
+
    ```bash
    git checkout -b cleanup/remove-unused-code
    ```
@@ -146,6 +141,7 @@ For each item to remove:
 ### If Removed (18 items)
 
 **Positive Impacts:**
+
 - ✅ ~500-800 lines of code removed
 - ✅ Clearer codebase (less confusion)
 - ✅ Faster onboarding (less to understand)
@@ -153,6 +149,7 @@ For each item to remove:
 - ✅ Smaller bundle (minimal frontend reduction)
 
 **Negative Impacts:**
+
 - ❌ None - all items are completely unused
 
 **Risk Level**: **ZERO** - comprehensive verification shows no usage
@@ -160,11 +157,13 @@ For each item to remove:
 ### If Kept (5 items)
 
 **Positive Impacts:**
+
 - ✅ Preserve potential future utilities
 - ✅ Keep dev tools (UIShowcase)
 - ✅ Keep tested code (secureCompare)
 
 **Negative Impacts:**
+
 - ⚠️ Minimal - most are simple functions with zero maintenance cost
 - ⚠️ UIShowcase is large (~1800 lines) but intentional dev tool
 
@@ -173,33 +172,41 @@ For each item to remove:
 ## 🔍 What Could Go Wrong?
 
 ### Scenario 1: External Code Uses It
+
 **Probability**: Very Low (we've verified no imports)
 **Impact**: Medium (would break external code)
-**Mitigation**: 
+**Mitigation**:
+
 - Check git history for last usage
 - Search for dynamic imports
 - If found, don't remove
 
 ### Scenario 2: Tests Break
+
 **Probability**: Very Low (we've checked test files)
 **Impact**: Low (tests would catch it)
-**Mitigation**: 
+**Mitigation**:
+
 - Run tests before and after removal
 - If tests break, investigate and fix
 - Rollback if needed
 
 ### Scenario 3: Future Need Arises
+
 **Probability**: Low (most are simple utilities)
 **Impact**: Low (can re-add from git history)
-**Mitigation**: 
+**Mitigation**:
+
 - Git history preserves code
 - Can restore from git if needed
 - Document why it was removed
 
 ### Scenario 4: Performance Impact
+
 **Probability**: Zero (unused code has no performance impact)
 **Impact**: None
-**Mitigation**: 
+**Mitigation**:
+
 - None needed - removing unused code improves performance
 
 ## ✅ Verification Checklist
@@ -217,11 +224,11 @@ Before removing each item:
 
 ## 🎯 Final Decision Matrix
 
-| Category | Remove | Keep (6mo) | Keep (Forever) | Total |
-|----------|--------|-----------|----------------|-------|
-| Frontend | 4 | 1 | 0 | 5 |
-| Backend | 14 | 3 | 1 | 18 |
-| **Total** | **18** | **4** | **1** | **23** |
+| Category  | Remove | Keep (6mo) | Keep (Forever) | Total  |
+| --------- | ------ | ---------- | -------------- | ------ |
+| Frontend  | 4      | 1          | 0              | 5      |
+| Backend   | 14     | 3          | 1              | 18     |
+| **Total** | **18** | **4**      | **1**          | **23** |
 
 ## 📝 Implementation Steps
 
@@ -241,4 +248,3 @@ Before removing each item:
 **Last Updated**: 2025-01-27  
 **Status**: Ready for implementation  
 **Risk Level**: Zero (for removals), Low (for conditional keeps)
-

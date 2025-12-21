@@ -1,6 +1,7 @@
 # Trigger Vercel Deployment
 
 ## Issue
+
 Vercel hasn't detected the new changes and hasn't launched a new deployment.
 
 ## Solutions
@@ -47,6 +48,7 @@ If Vercel is connected to GitHub, any push to `main` should trigger a deployment
    - Or update a version number
 
 2. **Commit and push**:
+
    ```bash
    git add .
    git commit -m "Trigger Vercel deployment"
@@ -128,6 +130,3 @@ After triggering deployment:
 2. If that doesn't work, verify git push (Option 2)
 3. Check Vercel configuration (Option 4)
 4. Review build logs for errors (Option 5)
-
-
-

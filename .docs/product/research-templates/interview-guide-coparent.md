@@ -11,12 +11,14 @@
 ## Pre-Interview Preparation
 
 ### Participant Criteria
+
 - [ ] Currently shares custody of at least one child
 - [ ] Communicates with co-parent at least weekly
 - [ ] Has been separated/divorced for at least 6 months
 - [ ] Willing to discuss communication challenges openly
 
 ### Materials Needed
+
 - [ ] Recording device/software (with consent)
 - [ ] Note-taking document
 - [ ] Prototype/demo (if applicable)
@@ -24,6 +26,7 @@
 - [ ] Compensation details (gift card, etc.)
 
 ### Interviewer Mindset
+
 - **Listen more than talk** (80/20 rule)
 - **Follow curiosity** - dig into surprising answers
 - **Stay neutral** - don't lead or validate
@@ -45,6 +48,7 @@
 > Do you have any questions before we begin?"
 
 **Rapport Questions**:
+
 - How old are your children?
 - How long have you been co-parenting separately?
 
@@ -55,6 +59,7 @@
 **Goal**: Understand current tools and habits
 
 **Opening**:
+
 > "I'd like to start by understanding how you currently communicate with your co-parent."
 
 **Questions**:
@@ -81,6 +86,7 @@
 **Goal**: Uncover real struggles and emotional context
 
 **Opening**:
+
 > "Now I'd like to understand some of the challenges you face. There are no right or wrong answers - I'm just trying to understand your reality."
 
 **Questions**:
@@ -138,6 +144,7 @@
 **Goal**: Validate or invalidate assumed jobs
 
 **Opening**:
+
 > "I'm going to describe some situations. Tell me how much they resonate with your experience."
 
 **Scenario Questions**:
@@ -165,9 +172,11 @@
 **Goal**: Get reaction to AI mediation concept
 
 **If testing concept**:
+
 > "Let me describe an idea we're exploring and get your reaction."
 
 **Concept Description**:
+
 > "Imagine a messaging app that reads your message before you send it. If it detects language that might escalate conflict - like blame or accusation - it privately suggests a rewrite. Only you see the suggestion. You decide whether to send the original or the rewritten version."
 
 **Questions**:
@@ -195,6 +204,7 @@
 23. **Is there anyone else you know who might be willing to talk to us?**
 
 **Closing**:
+
 > "Thank you so much for sharing your experiences with me. This is incredibly valuable for our work. We're trying to build something that genuinely helps, and conversations like this are how we make sure we get it right."
 
 ---
@@ -202,27 +212,31 @@
 ## Post-Interview Protocol
 
 ### Immediately After (within 1 hour)
+
 - [ ] Write down key quotes verbatim
 - [ ] Note emotional moments
 - [ ] Record surprising insights
 - [ ] Identify follow-up questions
 
 ### Analysis Framework
+
 For each interview, document:
 
-| Category | Notes |
-|----------|-------|
-| **Current Tools** | What they use, why |
-| **Pain Points** | Top 3 challenges |
-| **Emotional State** | How communication makes them feel |
-| **Workarounds** | What they've tried |
-| **Jobs Validation** | Which jobs resonated (and didn't) |
-| **Concept Reaction** | Response to AI mediation |
-| **Quotes** | Verbatim memorable quotes |
-| **Surprises** | Anything unexpected |
+| Category             | Notes                             |
+| -------------------- | --------------------------------- |
+| **Current Tools**    | What they use, why                |
+| **Pain Points**      | Top 3 challenges                  |
+| **Emotional State**  | How communication makes them feel |
+| **Workarounds**      | What they've tried                |
+| **Jobs Validation**  | Which jobs resonated (and didn't) |
+| **Concept Reaction** | Response to AI mediation          |
+| **Quotes**           | Verbatim memorable quotes         |
+| **Surprises**        | Anything unexpected               |
 
 ### Synthesis Questions
+
 After 5+ interviews, analyze:
+
 - What patterns emerge across participants?
 - What assumptions were validated?
 - What assumptions were invalidated?
@@ -234,19 +248,25 @@ After 5+ interviews, analyze:
 ## Interview Variations
 
 ### High-Conflict Focus
+
 For participants in active high-conflict situations:
+
 - Spend more time on Part 3 (Pain Points)
 - Be extra sensitive to emotional responses
 - May need shorter interview or breaks
 
 ### Low-Conflict Focus
+
 For participants with generally good communication:
+
 - Focus on organizational challenges
 - Ask about what's working (to understand success patterns)
 - Explore partner inclusion needs
 
 ### Attorney Interview
+
 For family law professionals:
+
 - Focus on client patterns they observe
 - Ask about documentation needs
 - Explore referral scenarios
@@ -268,4 +288,4 @@ Keep these in your back pocket:
 
 ---
 
-*Interview Guide for coparentliaizen.com - Better Co-Parenting Through Better Communication*
+_Interview Guide for coparentliaizen.com - Better Co-Parenting Through Better Communication_

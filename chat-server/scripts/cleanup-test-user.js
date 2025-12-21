@@ -12,7 +12,7 @@ const { Pool } = require('pg');
 
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 async function cleanup() {
@@ -107,7 +107,7 @@ async function cleanup() {
       LIMIT 5
     `);
 
-    console.log('\n📋 Mom\'s recent pairing sessions:');
+    console.log("\n📋 Mom's recent pairing sessions:");
     if (momPairings.rows.length === 0) {
       console.log('   No pairing sessions found');
     } else {
@@ -117,7 +117,6 @@ async function cleanup() {
     }
 
     console.log('\n✅ Cleanup complete! Mom should now be able to create new invitations.');
-
   } catch (error) {
     console.error('❌ Cleanup failed:', error.message);
     throw error;

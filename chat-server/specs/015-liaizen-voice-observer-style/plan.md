@@ -9,6 +9,7 @@
 ## Overview
 
 This plan implements the "Observer Voice" for LiaiZen AI mediation - a distinctive coaching style characterized by:
+
 - Structural analysis (name patterns, not emotions)
 - Short, punchy sentences with white space
 - Direct consequences (will, not might)
@@ -22,6 +23,7 @@ This plan implements the "Observer Voice" for LiaiZen AI mediation - a distincti
 ### Task 1: Update SYSTEM ROLE Section (Lines 632-634)
 
 **Current** (Line 632-634):
+
 ```javascript
 const prompt = `# SYSTEM ROLE
 
@@ -29,6 +31,7 @@ You are LiaiZen. You are not a therapist, a judge, or a standard AI assistant.
 ```
 
 **Update to**:
+
 ```javascript
 const prompt = `# SYSTEM ROLE
 
@@ -125,6 +128,7 @@ Use "will" not "might/could/may".
 ### Task 3: Update personalMessage Format (Lines 817-833)
 
 **Current Format**:
+
 ```javascript
 1. ADDRESS (personalMessage): Name the SPECIFIC pattern and its consequence (max 2 sentences)
 
@@ -132,6 +136,7 @@ Use "will" not "might/could/may".
 ```
 
 **Update to Observer Voice Template**:
+
 ```javascript
 1. ADDRESS (personalMessage): Observer Voice format
 
@@ -174,11 +179,13 @@ Use "will" not "might/could/may".
 ### Task 4: Update tip1 Format (Lines 835-856)
 
 **Current**:
+
 ```javascript
 2. ONE TIP (tip1): A practical TECHNIQUE to help them express what they want (max 10 words)
 ```
 
 **Update to**:
+
 ```javascript
 2. ONE TIP (tip1): Structural technique (max 10 words)
 
@@ -278,13 +285,15 @@ Original: "You're such an irresponsible parent. You never think about what's bes
 ### Task 6: Update System Message (Line 1060)
 
 **Current**:
+
 ```javascript
-content: 'You are LiaiZen - a communication COACH for co-parents. RULES: 1) Identify the sender\'s ACTUAL GOAL first...'
+content: "You are LiaiZen - a communication COACH for co-parents. RULES: 1) Identify the sender's ACTUAL GOAL first...";
 ```
 
 **Update to**:
+
 ```javascript
-content: 'You are LiaiZen - the OBSERVER. You SEE structure, not emotions. RULES: 1) State what is TRUE about the message structure. 2) Short sentences. Space. No lectures. 3) Use "will" not "might". 4) Honor the real need FIRST, then name the weapons. 5) End ADDRESS with "There\'s another way to say this:". 6) No "I feel/hear/sense". 7) Tips are TOOLS ("State your need") not LECTURES ("Threats hinder trust"). Respond with valid JSON only.'
+content: 'You are LiaiZen - the OBSERVER. You SEE structure, not emotions. RULES: 1) State what is TRUE about the message structure. 2) Short sentences. Space. No lectures. 3) Use "will" not "might". 4) Honor the real need FIRST, then name the weapons. 5) End ADDRESS with "There\'s another way to say this:". 6) No "I feel/hear/sense". 7) Tips are TOOLS ("State your need") not LECTURES ("Threats hinder trust"). Respond with valid JSON only.';
 ```
 
 ---
@@ -292,6 +301,7 @@ content: 'You are LiaiZen - the OBSERVER. You SEE structure, not emotions. RULES
 ### Task 7: Update VALIDATION CHECKLIST (Lines 1041-1052)
 
 **Update to Observer Voice Checklist**:
+
 ```javascript
 === OBSERVER VOICE VALIDATION CHECKLIST ===
 
@@ -365,8 +375,8 @@ PROHIBITED:
 
 ## Files Modified
 
-| File | Changes |
-|------|---------|
+| File                                       | Changes             |
+| ------------------------------------------ | ------------------- |
 | `chat-server/src/liaizen/core/mediator.js` | Main prompt updates |
 
 ---
@@ -374,6 +384,7 @@ PROHIBITED:
 ## Rollback Plan
 
 If Observer Voice causes issues:
+
 1. Revert mediator.js to previous version
 2. Test with known hostile messages
 3. Verify interventions work as before

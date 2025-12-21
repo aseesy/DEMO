@@ -44,11 +44,13 @@ Users are experiencing issues saving profile data. Investigation revealed multip
 ## User Stories
 
 ### US-1: Profile Persistence
+
 **As a** co-parent using LiaiZen
 **I want to** save my profile information including personal details, work schedule, and background
 **So that** my co-parent can understand my availability and the system can provide better mediation
 
 **Acceptance Criteria**:
+
 - [ ] Profile data saves successfully to database
 - [ ] All 40+ profile fields persist correctly
 - [ ] Profile completion percentage updates after save
@@ -57,11 +59,13 @@ Users are experiencing issues saving profile data. Investigation revealed multip
 - [ ] Clear error messages on save failure
 
 ### US-2: Contacts Persistence
+
 **As a** co-parent
 **I want to** add and manage contacts (children, co-parent, professionals)
 **So that** I can track important people and their information
 
 **Acceptance Criteria**:
+
 - [ ] Create new contacts successfully
 - [ ] Edit existing contacts
 - [ ] Delete contacts with confirmation
@@ -70,22 +74,26 @@ Users are experiencing issues saving profile data. Investigation revealed multip
 - [ ] Linked contacts (parent-child relationships) persist
 
 ### US-3: School Selection with Google Places
+
 **As a** co-parent adding a child contact
 **I want to** search and select my child's school using autocomplete
 **So that** the school information is accurate and includes location data
 
 **Acceptance Criteria**:
+
 - [ ] School autocomplete appears when typing
 - [ ] Selected school name, address, and coordinates save to contact
 - [ ] Clear error message when Google Places API key is missing
 - [ ] Graceful fallback to manual entry when API unavailable
 
 ### US-4: Child Activities
+
 **As a** co-parent
 **I want to** track my children's activities (sports, lessons, etc.)
 **So that** we can coordinate schedules and split costs
 
 **Acceptance Criteria**:
+
 - [ ] Add activities to child contacts
 - [ ] Edit and delete activities
 - [ ] View activities for each child
@@ -96,17 +104,20 @@ Users are experiencing issues saving profile data. Investigation revealed multip
 ### TR-1: Consolidate Profile API Routes
 
 **Current State**:
+
 ```
 /api/profile/me (routes/profile.js) - authenticate middleware
 /api/user/profile (server.js) - manual JWT extraction
 ```
 
 **Target State**:
+
 - Use ONLY `/api/profile/me` routes for profile operations
 - Remove duplicate `/api/user/profile` routes OR redirect to `/api/profile/me`
 - Ensure frontend uses consistent endpoint
 
 **Implementation**:
+
 1. Update `useProfile.js` to use ONLY `/api/profile/me` endpoints
 2. Mark `/api/user/profile` as deprecated with redirect
 3. Use `authenticate` middleware consistently
@@ -116,13 +127,14 @@ Users are experiencing issues saving profile data. Investigation revealed multip
 **Problem**: Login creates `{ id }`, others create `{ userId }`
 
 **Solution**: Standardize ALL token creation to include BOTH:
+
 ```javascript
 const token = jwt.sign(
   {
     id: user.id,
-    userId: user.id,  // Add for backwards compatibility
+    userId: user.id, // Add for backwards compatibility
     username: user.username,
-    email: user.email
+    email: user.email,
   },
   JWT_SECRET,
   { expiresIn: '30d' }
@@ -130,6 +142,7 @@ const token = jwt.sign(
 ```
 
 **Files to Update**:
+
 - `chat-server/server.js` line 4626-4630 (login endpoint)
 - Verify all other jwt.sign calls match this pattern
 
@@ -185,9 +198,10 @@ export function useActivities(contactId) {
 ### TR-5: Standardize Relationship Values
 
 **Create mapping utility**:
+
 ```javascript
 // Frontend → Backend
-const toBackendRelationship = (display) => {
+const toBackendRelationship = display => {
   const map = {
     'My Co-Parent': 'co-parent',
     'My Child': 'my child',
@@ -197,7 +211,7 @@ const toBackendRelationship = (display) => {
 };
 
 // Backend → Frontend
-const toDisplayRelationship = (stored) => {
+const toDisplayRelationship = stored => {
   const map = {
     'co-parent': 'My Co-Parent',
     'my child': 'My Child',
@@ -210,6 +224,7 @@ const toDisplayRelationship = (stored) => {
 ### TR-6: Google Places Error Handling
 
 **Add clear error state**:
+
 ```javascript
 // In useGooglePlacesSchool.js
 if (!apiKey || apiKey.trim() === '') {
@@ -219,29 +234,32 @@ if (!apiKey || apiKey.trim() === '') {
 ```
 
 **Show user-friendly message in UI**:
+
 ```jsx
-{googlePlacesError === 'GOOGLE_PLACES_NOT_CONFIGURED' && (
-  <p className="text-amber-600 text-sm">
-    School autocomplete unavailable. Enter school name manually.
-  </p>
-)}
+{
+  googlePlacesError === 'GOOGLE_PLACES_NOT_CONFIGURED' && (
+    <p className="text-amber-600 text-sm">
+      School autocomplete unavailable. Enter school name manually.
+    </p>
+  );
+}
 ```
 
 ## Database Schema
 
 ### Profile Tables (Existing - Migration 010)
 
-| Table | Purpose |
-|-------|---------|
-| `users` | 40+ profile columns (personal, work, health, financial, background) |
-| `user_profile_privacy` | Section/field visibility settings |
-| `profile_audit_log` | Track profile views and changes |
+| Table                  | Purpose                                                             |
+| ---------------------- | ------------------------------------------------------------------- |
+| `users`                | 40+ profile columns (personal, work, health, financial, background) |
+| `user_profile_privacy` | Section/field visibility settings                                   |
+| `profile_audit_log`    | Track profile views and changes                                     |
 
 ### Contacts Tables (Existing - Migrations 001, 011)
 
-| Table | Purpose |
-|-------|---------|
-| `contacts` | All contact types with extended fields |
+| Table              | Purpose                                               |
+| ------------------ | ----------------------------------------------------- |
+| `contacts`         | All contact types with extended fields                |
 | `child_activities` | Activities linked to child contacts (NEEDS MIGRATION) |
 
 ### Indexes Required
@@ -259,51 +277,55 @@ CREATE INDEX idx_child_activities_user_id ON child_activities(user_id);
 
 ## API Endpoints
 
-### Profile Endpoints (Consolidated to /api/profile/*)
+### Profile Endpoints (Consolidated to /api/profile/\*)
 
-| Method | Endpoint | Auth | Purpose |
-|--------|----------|------|---------|
-| GET | `/api/profile/me` | JWT | Get current user's full profile |
-| PUT | `/api/profile/me` | JWT | Update current user's profile |
-| GET | `/api/profile/privacy/me` | JWT | Get privacy settings |
-| PUT | `/api/profile/privacy/me` | JWT | Update privacy settings |
-| GET | `/api/profile/preview-coparent-view` | JWT | Preview as co-parent sees it |
+| Method | Endpoint                             | Auth | Purpose                         |
+| ------ | ------------------------------------ | ---- | ------------------------------- |
+| GET    | `/api/profile/me`                    | JWT  | Get current user's full profile |
+| PUT    | `/api/profile/me`                    | JWT  | Update current user's profile   |
+| GET    | `/api/profile/privacy/me`            | JWT  | Get privacy settings            |
+| PUT    | `/api/profile/privacy/me`            | JWT  | Update privacy settings         |
+| GET    | `/api/profile/preview-coparent-view` | JWT  | Preview as co-parent sees it    |
 
 ### Contacts Endpoints (Existing)
 
-| Method | Endpoint | Auth | Purpose |
-|--------|----------|------|---------|
-| GET | `/api/contacts` | JWT | Get all user contacts |
-| POST | `/api/contacts` | JWT | Create new contact |
-| PUT | `/api/contacts/:id` | JWT | Update contact |
-| DELETE | `/api/contacts/:id` | JWT | Delete contact |
+| Method | Endpoint            | Auth | Purpose               |
+| ------ | ------------------- | ---- | --------------------- |
+| GET    | `/api/contacts`     | JWT  | Get all user contacts |
+| POST   | `/api/contacts`     | JWT  | Create new contact    |
+| PUT    | `/api/contacts/:id` | JWT  | Update contact        |
+| DELETE | `/api/contacts/:id` | JWT  | Delete contact        |
 
 ### Activities Endpoints (Need Implementation)
 
-| Method | Endpoint | Auth | Purpose |
-|--------|----------|------|---------|
-| GET | `/api/activities/:contactId` | JWT | Get activities for child |
-| POST | `/api/activities` | JWT | Create activity |
-| PUT | `/api/activities/:id` | JWT | Update activity |
-| DELETE | `/api/activities/:id` | JWT | Delete activity |
+| Method | Endpoint                     | Auth | Purpose                  |
+| ------ | ---------------------------- | ---- | ------------------------ |
+| GET    | `/api/activities/:contactId` | JWT  | Get activities for child |
+| POST   | `/api/activities`            | JWT  | Create activity          |
+| PUT    | `/api/activities/:id`        | JWT  | Update activity          |
+| DELETE | `/api/activities/:id`        | JWT  | Delete activity          |
 
 ## Implementation Plan
 
 ### Phase 1: Fix Critical Auth Issues (High Priority)
+
 1. Fix JWT token payload inconsistency (TR-2)
 2. Test all auth flows work correctly
 
 ### Phase 2: Consolidate Profile APIs (High Priority)
+
 1. Update frontend to use only `/api/profile/me` (TR-1)
 2. Mark duplicate routes as deprecated
 3. Add redirects for backwards compatibility
 
 ### Phase 3: Create Activities System (Medium Priority)
+
 1. Create database migration (TR-3)
 2. Implement useActivities hook (TR-4)
 3. Add activities UI to child contacts
 
 ### Phase 4: Standardize & Polish (Medium Priority)
+
 1. Implement relationship value mapping (TR-5)
 2. Improve Google Places error handling (TR-6)
 3. Add user-friendly error messages throughout
@@ -311,18 +333,21 @@ CREATE INDEX idx_child_activities_user_id ON child_activities(user_id);
 ## Testing Requirements
 
 ### Unit Tests
+
 - [ ] JWT token creation includes both `id` and `userId`
 - [ ] Profile save/load round-trips correctly
 - [ ] Contact relationship mapping works in both directions
 - [ ] Activities CRUD operations work
 
 ### Integration Tests
+
 - [ ] Login flow creates valid token for all endpoints
 - [ ] Profile endpoints accept tokens from login
 - [ ] Contact creation persists all fields
 - [ ] Activity creation linked to correct child contact
 
 ### Manual Testing Checklist
+
 - [ ] Create new account, verify token works
 - [ ] Fill out full profile, save, reload page, verify data persists
 - [ ] Add co-parent contact with all fields, verify saves
@@ -341,6 +366,7 @@ CREATE INDEX idx_child_activities_user_id ON child_activities(user_id);
 ## Rollback Plan
 
 If issues arise:
+
 1. Revert frontend to use `/api/user/profile` endpoints
 2. Revert JWT changes (may require re-login for affected users)
 3. Migration is additive (creates new table) - safe
@@ -362,17 +388,17 @@ If issues arise:
 
 ## Appendix: File Changes Summary
 
-| File | Changes |
-|------|---------|
-| `chat-server/server.js` | Fix JWT payload in login (line 4626-4630) |
-| `chat-server/routes/profile.js` | No changes needed (already correct) |
-| `chat-server/migrations/012_child_activities_table.sql` | NEW - Create activities table |
-| `chat-client-vite/src/hooks/useProfile.js` | Verify uses `/api/profile/me` consistently |
-| `chat-client-vite/src/hooks/useActivities.js` | NEW - Activities hook |
-| `chat-client-vite/src/hooks/useContacts.js` | Add relationship mapping |
-| `chat-client-vite/src/hooks/useGooglePlacesSchool.js` | Better error handling |
-| `chat-client-vite/src/components/ContactsPanel.jsx` | Integrate useActivities |
+| File                                                    | Changes                                    |
+| ------------------------------------------------------- | ------------------------------------------ |
+| `chat-server/server.js`                                 | Fix JWT payload in login (line 4626-4630)  |
+| `chat-server/routes/profile.js`                         | No changes needed (already correct)        |
+| `chat-server/migrations/012_child_activities_table.sql` | NEW - Create activities table              |
+| `chat-client-vite/src/hooks/useProfile.js`              | Verify uses `/api/profile/me` consistently |
+| `chat-client-vite/src/hooks/useActivities.js`           | NEW - Activities hook                      |
+| `chat-client-vite/src/hooks/useContacts.js`             | Add relationship mapping                   |
+| `chat-client-vite/src/hooks/useGooglePlacesSchool.js`   | Better error handling                      |
+| `chat-client-vite/src/components/ContactsPanel.jsx`     | Integrate useActivities                    |
 
 ---
 
-*This specification addresses the root causes of profile save failures and establishes a solid foundation for reliable data persistence across the LiaiZen platform.*
+_This specification addresses the root causes of profile save failures and establishes a solid foundation for reliable data persistence across the LiaiZen platform._

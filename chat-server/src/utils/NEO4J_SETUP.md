@@ -20,6 +20,7 @@ NEO4J_DATABASE=neo4j                       # Database name (default: neo4j)
 ### Local Development
 
 1. **Install Neo4j Desktop** or use Docker:
+
    ```bash
    docker run -d \
      --name neo4j \
@@ -29,6 +30,7 @@ NEO4J_DATABASE=neo4j                       # Database name (default: neo4j)
    ```
 
 2. **Set environment variables** in your `.env` file:
+
    ```bash
    NEO4J_URI=http://localhost:7474
    NEO4J_USER=neo4j
@@ -76,8 +78,8 @@ Neo4j user nodes are automatically created when users sign up via:
 **Important**: Neo4j integration is **non-blocking**. If Neo4j is unavailable or misconfigured:
 
 - ✅ User registration will still succeed
-- ⚠️  Errors are logged but don't prevent user creation
-- ℹ️  The application continues to function normally
+- ⚠️ Errors are logged but don't prevent user creation
+- ℹ️ The application continues to function normally
 
 This ensures that user signup is never blocked by Neo4j issues.
 
@@ -127,4 +129,3 @@ Potential graph relationships to add:
 - Ensure `NEO4J_URI` includes protocol (`http://` or `https://`)
 - Verify firewall/network allows connections to Neo4j port
 - Check Neo4j authentication credentials
-

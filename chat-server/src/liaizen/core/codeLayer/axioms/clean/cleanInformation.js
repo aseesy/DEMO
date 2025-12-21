@@ -21,7 +21,11 @@
 
 'use strict';
 
-const { AXIOM_CATEGORIES, createFiringAxiomResult, createNonFiringAxiomResult } = require('../../types');
+const {
+  AXIOM_CATEGORIES,
+  createFiringAxiomResult,
+  createNonFiringAxiomResult,
+} = require('../../types');
 
 // ============================================================================
 // AXIOM METADATA
@@ -46,7 +50,7 @@ const INFO_INTROS = [
   /\bfor\s+your\s+information\b/gi,
   /\bi\s+wanted\s+to\s+(let\s+you\s+know|inform\s+you|tell\s+you)\b/gi,
   /\breminder\b/gi,
-  /\bjust\s+a\s+(quick\s+)?note\b/gi
+  /\bjust\s+a\s+(quick\s+)?note\b/gi,
 ];
 
 /**
@@ -59,7 +63,7 @@ const EVENT_PATTERNS = [
   /\b(project|assignment|homework|test|exam)\b/gi,
   /\b(birthday|party|playdate|sleepover)\b/gi,
   /\b(class|lesson|tutoring|camp)\b/gi,
-  /\b(school|daycare|preschool)\b/gi
+  /\b(school|daycare|preschool)\b/gi,
 ];
 
 /**
@@ -69,10 +73,10 @@ const TIME_DATE_PATTERNS = [
   /\bat\s+\d{1,2}(:\d{2})?\s*(am|pm|o'clock)?\b/gi,
   /\bon\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/gi,
   /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}\b/gi,
-  /\b\d{1,2}\/\d{1,2}\b/gi,  // Date format 3/15
+  /\b\d{1,2}\/\d{1,2}\b/gi, // Date format 3/15
   /\b(tomorrow|today|tonight|this\s+weekend|next\s+week)\b/gi,
   /\bfrom\s+\d+\s*(am|pm)?\s*(to|until|-)\s*\d+\s*(am|pm)?\b/gi,
-  /\b(at|in)\s+(the\s+)?(school|gym|office|park|field|center)\b/gi
+  /\b(at|in)\s+(the\s+)?(school|gym|office|park|field|center)\b/gi,
 ];
 
 /**
@@ -84,7 +88,7 @@ const FACTUAL_VERBS = [
   /\bis\s+(scheduled|planned|set)\b/gi,
   /\bis\s+(at|on|due)\b/gi,
   /\bwill\s+be\b/gi,
-  /\bstarts\s+(at|on)\b/gi
+  /\bstarts\s+(at|on)\b/gi,
 ];
 
 /**
@@ -95,10 +99,10 @@ const DISQUALIFIERS = [
   /\byour\s+fault\b/gi,
   /\bbecause\s+(of\s+)?you\b/gi,
   /\b(again|as\s+usual)\b/gi,
-  /\b(she|he|they)\s+(said|told)\s+.*(you|your)\b/gi,  // Child as messenger
-  /\bif\s+you\s+(had|hadn't|would|wouldn't)\b/gi,  // Conditional blame
+  /\b(she|he|they)\s+(said|told)\s+.*(you|your)\b/gi, // Child as messenger
+  /\bif\s+you\s+(had|hadn't|would|wouldn't)\b/gi, // Conditional blame
   /\bunlike\s+you\b/gi,
-  /\bwhy\s+(can't|don't|won't)\s+you\b/gi
+  /\bwhy\s+(can't|don't|won't)\s+you\b/gi,
 ];
 
 // ============================================================================
@@ -253,7 +257,7 @@ function check(parsed, context = {}) {
     events: findEventPatterns(text),
     time_dates: findTimeDatePatterns(text),
     factual_verbs: findFactualVerbs(text),
-    disqualifiers: findDisqualifiers(text)
+    disqualifiers: findDisqualifiers(text),
   };
 
   // Check disqualifiers first
@@ -287,7 +291,7 @@ function check(parsed, context = {}) {
       time_date: evidence.time_dates[0] || null,
       intro: evidence.info_intros[0] || null,
       trigger_phrase: triggerPhrase,
-      all_evidence: evidence
+      all_evidence: evidence,
     },
     'Pure factual information about child activities. Safe to transmit.'
   );
@@ -324,5 +328,5 @@ module.exports = {
   findTimeDatePatterns,
   findFactualVerbs,
   findDisqualifiers,
-  calculateConfidence
+  calculateConfidence,
 };

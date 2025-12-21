@@ -13,6 +13,7 @@
 **Endpoint**: `POST /api/auth/register-with-invite`
 
 **Test Case 1.1: Short Code Registration with displayName**
+
 ```javascript
 POST /api/auth/register-with-invite
 Body: {
@@ -30,6 +31,7 @@ Expected:
 ```
 
 **Test Case 1.2: Pairing Token Registration with displayName**
+
 ```javascript
 POST /api/auth/register-with-invite
 Body: {
@@ -47,6 +49,7 @@ Expected:
 ```
 
 **Test Case 1.3: Invitation Token Registration with displayName**
+
 ```javascript
 POST /api/auth/register-with-invite
 Body: {
@@ -70,6 +73,7 @@ Expected:
 **Endpoint**: `POST /api/auth/register-with-invite`
 
 **Test Case 2.1: Short Code Registration with username (deprecated)**
+
 ```javascript
 POST /api/auth/register-with-invite
 Body: {
@@ -87,6 +91,7 @@ Expected:
 ```
 
 **Test Case 2.2: Both Parameters Provided (displayName takes precedence)**
+
 ```javascript
 POST /api/auth/register-with-invite
 Body: {
@@ -111,6 +116,7 @@ Expected:
 **Endpoint**: `POST /api/auth/register`
 
 **Test Case 3.1: Registration with displayName**
+
 ```javascript
 POST /api/auth/register
 Body: {
@@ -133,9 +139,10 @@ Expected:
 ### **4. Database Verification**
 
 **Test Case 4.1: Verify Database Username is Auto-Generated**
+
 ```sql
-SELECT id, username, email, display_name, first_name 
-FROM users 
+SELECT id, username, email, display_name, first_name
+FROM users
 WHERE email = 'alice@example.com';
 
 Expected:
@@ -146,14 +153,15 @@ Expected:
 ```
 
 **Test Case 4.2: Verify Display Name Fallback**
+
 ```javascript
 // User with display_name
-const user1 = { username: "alice123", display_name: "Alice Smith" };
+const user1 = { username: 'alice123', display_name: 'Alice Smith' };
 const display1 = user1.display_name || user1.username;
 // Expected: "Alice Smith"
 
 // User without display_name
-const user2 = { username: "bob456", display_name: null };
+const user2 = { username: 'bob456', display_name: null };
 const display2 = user2.display_name || user2.username;
 // Expected: "bob456" (fallback to username)
 ```
@@ -163,6 +171,7 @@ const display2 = user2.display_name || user2.username;
 ### **5. Frontend Integration**
 
 **Test Case 5.1: AcceptInvitationPage Registration**
+
 ```
 1. Navigate to accept-invite page
 2. Fill in form:
@@ -179,6 +188,7 @@ Expected:
 ```
 
 **Test Case 5.2: useAuth Registration**
+
 ```
 1. Use registration form
 2. Fill in:
@@ -199,6 +209,7 @@ Expected:
 ### **6. Error Cases**
 
 **Test Case 6.1: Missing Display Name**
+
 ```javascript
 POST /api/auth/register-with-invite
 Body: {
@@ -214,6 +225,7 @@ Expected:
 ```
 
 **Test Case 6.2: Empty Display Name**
+
 ```javascript
 POST /api/auth/register-with-invite
 Body: {
@@ -233,6 +245,7 @@ Expected:
 ## 📋 Test Checklist
 
 ### **Backend Tests**
+
 - [ ] Test short code registration with `displayName`
 - [ ] Test pairing token registration with `displayName`
 - [ ] Test invitation token registration with `displayName`
@@ -245,6 +258,7 @@ Expected:
 - [ ] Verify display_name is stored correctly
 
 ### **Frontend Tests**
+
 - [ ] Test AcceptInvitationPage registration flow
 - [ ] Test useAuth registration flow
 - [ ] Verify API calls use `displayName` parameter
@@ -252,6 +266,7 @@ Expected:
 - [ ] Test error handling for missing display name
 
 ### **Integration Tests**
+
 - [ ] Test full registration flow end-to-end
 - [ ] Test display name appears correctly in UI
 - [ ] Test database username is not shown to users
@@ -262,11 +277,12 @@ Expected:
 ## 🔍 Verification Points
 
 ### **Database Verification**
+
 ```sql
 -- Check that username is auto-generated and unique
-SELECT username, email, display_name 
-FROM users 
-ORDER BY created_at DESC 
+SELECT username, email, display_name
+FROM users
+ORDER BY created_at DESC
 LIMIT 10;
 
 -- Verify:
@@ -277,6 +293,7 @@ LIMIT 10;
 ```
 
 ### **Log Verification**
+
 ```bash
 # Check for deprecation warnings
 grep "DEPRECATED.*username.*parameter" server.log
@@ -285,6 +302,7 @@ grep "DEPRECATED.*username.*parameter" server.log
 ```
 
 ### **API Response Verification**
+
 ```javascript
 // Registration response should include:
 {
@@ -304,18 +322,21 @@ grep "DEPRECATED.*username.*parameter" server.log
 ## 🐛 Known Issues / Edge Cases
 
 ### **Edge Case 1: Display Name with Special Characters**
+
 - **Input**: `displayName: "Mary-Jane O'Brien"`
 - **Expected**: Stored as-is in `display_name` column
 - **Database Username**: Auto-generated from email (e.g., "maryjane123")
 
 ### **Edge Case 2: Very Long Display Name**
+
 - **Input**: `displayName: "A Very Long Display Name That Exceeds Normal Length"`
 - **Expected**: Stored in database (TEXT column, no length limit)
 - **Database Username**: Still auto-generated from email (max 20 chars)
 
 ### **Edge Case 3: Display Name Same as Email Prefix**
+
 - **Input**: `displayName: "alice"`, `email: "alice@example.com"`
-- **Expected**: 
+- **Expected**:
   - `display_name` = "alice"
   - `username` = "alice123" (auto-generated, may have suffix)
   - These are different values (correct!)
@@ -325,6 +346,7 @@ grep "DEPRECATED.*username.*parameter" server.log
 ## ✅ Success Criteria
 
 ### **Phase 1 Complete When:**
+
 - ✅ Backend accepts both `displayName` and `username` parameters
 - ✅ Deprecation warnings logged correctly
 - ✅ All registration paths work with `displayName`
@@ -332,12 +354,14 @@ grep "DEPRECATED.*username.*parameter" server.log
 - ✅ Display names are stored correctly
 
 ### **Phase 2 Complete When:**
+
 - ✅ Frontend uses `displayName` parameter
 - ✅ All registration forms work correctly
 - ✅ No errors in browser console
 - ✅ Users see correct display names
 
 ### **Overall Success:**
+
 - ✅ Clear distinction between database username and display name
 - ✅ No confusion in codebase
 - ✅ API parameters match their purpose
@@ -384,5 +408,3 @@ __________
 
 **Status**: ✅ **TEST PLAN READY**  
 **Next Step**: Execute tests and document results
-
-

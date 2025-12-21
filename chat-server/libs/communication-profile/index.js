@@ -19,8 +19,11 @@ const mediationContext = require('./mediationContext');
 
 module.exports = {
   // Profile Loading
-  loadProfile: profileLoader.loadProfile,
-  loadProfiles: profileLoader.loadProfiles,
+  getProfile: profileLoader.getProfile,
+  getProfiles: profileLoader.getProfiles,
+  // Deprecated aliases - use getProfile/getProfiles instead
+  loadProfile: profileLoader.getProfile,
+  loadProfiles: profileLoader.getProfiles,
 
   // Profile Persistence
   updateProfile: profilePersister.updateProfile,

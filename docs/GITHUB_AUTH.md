@@ -17,6 +17,7 @@ GitHub no longer accepts passwords for HTTPS authentication. You need to use a *
 ### Step 2: Use the Token
 
 When you push to GitHub, it will ask for:
+
 - **Username**: Your GitHub username (`aseesy`)
 - **Password**: **Paste your Personal Access Token** (not your GitHub password)
 
@@ -27,6 +28,7 @@ git push -u origin main
 ```
 
 When prompted:
+
 - Username: `aseesy`
 - Password: `[paste your token here]`
 
@@ -53,6 +55,7 @@ Press Enter to accept defaults.
 ### Step 3: Add SSH Key to GitHub
 
 1. Copy your public key:
+
 ```bash
 cat ~/.ssh/id_ed25519.pub
 ```
@@ -91,6 +94,7 @@ git push -u origin main
 ## ✅ Verify Connection
 
 After successful push, check your GitHub repository:
+
 - Go to: https://github.com/aseesy/DEMO
 - You should see all your files there!
 
@@ -99,6 +103,7 @@ After successful push, check your GitHub repository:
 ### "Authentication failed" error
 
 **Solution:**
+
 - Make sure you're using a Personal Access Token, not your password
 - Verify the token has `repo` scope
 - Check the token hasn't expired
@@ -106,6 +111,7 @@ After successful push, check your GitHub repository:
 ### "Permission denied" error
 
 **Solution:**
+
 - Verify you have access to the repository
 - Check the repository name is correct
 - Try using SSH instead
@@ -113,6 +119,7 @@ After successful push, check your GitHub repository:
 ### Token not working
 
 **Solution:**
+
 - Generate a new token
 - Make sure `repo` scope is selected
 - Try using SSH authentication instead
@@ -120,4 +127,3 @@ After successful push, check your GitHub repository:
 ---
 
 **Once authenticated, you can push your code and connect to Railway!** 🚀
-

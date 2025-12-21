@@ -10,12 +10,14 @@
 ### ✅ 1. Database & Data Hygiene Scripts
 
 #### `npm run db:validate`
+
 - **Location**: `chat-server/scripts/db-validate.js`
 - **Purpose**: Validates PostgreSQL schema matches expected structure
 - **Checks**: Required tables, required columns, schema integrity
 - **Usage**: `cd chat-server && npm run db:validate`
 
 #### `npm run reset:data`
+
 - **Location**: `chat-server/scripts/reset-data.js`
 - **Purpose**: Safely resets dev environment (deletes user data only)
 - **Safety**: Requires confirmation, blocks in production
@@ -26,9 +28,10 @@
 ### ✅ 2. AI Pipeline Quality Scripts
 
 #### `npm run prompts:lint`
+
 - **Location**: `chat-server/scripts/prompts-lint.js`
 - **Purpose**: Validates LiaiZen mediation prompts
-- **Checks**: 
+- **Checks**:
   - 1-2-3 framework structure (ADDRESS + TIP + REWRITES)
   - Banned phrases
   - Tone issues
@@ -37,6 +40,7 @@
 - **Usage**: `cd chat-server && npm run prompts:lint`
 
 #### `npm run ai:test`
+
 - **Location**: `chat-server/scripts/ai-test.js`
 - **Purpose**: Regression tests for AI mediation quality
 - **Tests**:
@@ -51,12 +55,14 @@
 ### ✅ 3. Developer Productivity Scripts
 
 #### `npm run dev:stack`
+
 - **Location**: `chat-server/scripts/dev-stack.js`
 - **Purpose**: Starts all development services with one command
 - **Starts**: Backend (3001), Frontend (5173), WebSocket
 - **Usage**: `npm run dev:stack` (from root)
 
 #### `npm run lint:fix`
+
 - **Location**: `chat-server/scripts/lint-fix.js`
 - **Purpose**: Auto-fixes common code quality issues
 - **Fixes**: Unused imports, formatting, ESLint issues
@@ -83,12 +89,16 @@ chat-server/
 ## 📝 Package.json Updates
 
 ### Root `package.json`
+
 Added:
+
 - `dev:stack` - Start all dev services
 - `lint:fix` - Auto-fix code quality
 
 ### `chat-server/package.json`
+
 Added:
+
 - `db:validate` - Validate schema
 - `reset:data` - Reset user data
 - `prompts:lint` - Lint prompts
@@ -128,6 +138,7 @@ npm run lint:fix
 ## ✅ Next Steps
 
 Phase 1 is complete! Ready for:
+
 - **Phase 2**: Quality & Safety scripts (safety:check, analyze:messages, docs:api, test:contracts)
 - **Phase 3**: Advanced features (tokens:sync, audit:a11y, context:rebuild, simulate:co-parenting)
 
@@ -141,7 +152,6 @@ See `DEVELOPMENT_SCRIPTS_PLAN.md` for Phase 2 and Phase 3 details.
 ✅ **AI Quality**: Maintain mediation quality as prompts evolve  
 ✅ **Developer Productivity**: Faster local development  
 ✅ **Code Quality**: Automated linting and fixes  
-✅ **Testing**: Regression tests for AI behavior  
+✅ **Testing**: Regression tests for AI behavior
 
 All scripts are production-ready and include proper error handling!
-

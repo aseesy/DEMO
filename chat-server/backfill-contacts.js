@@ -7,7 +7,7 @@ const users = ['mom', 'dad'];
 async function backfillContacts(username) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify({ username });
-    
+
     const options = {
       hostname: 'localhost',
       port: 3001,
@@ -15,13 +15,13 @@ async function backfillContacts(username) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': data.length
-      }
+        'Content-Length': data.length,
+      },
     };
 
-    const req = http.request(options, (res) => {
+    const req = http.request(options, res => {
       let body = '';
-      res.on('data', (chunk) => {
+      res.on('data', chunk => {
         body += chunk;
       });
       res.on('end', () => {
@@ -34,7 +34,7 @@ async function backfillContacts(username) {
       });
     });
 
-    req.on('error', (error) => {
+    req.on('error', error => {
       reject(error);
     });
 
@@ -45,7 +45,7 @@ async function backfillContacts(username) {
 
 async function main() {
   console.log('🔄 Backfilling contacts for shared rooms...\n');
-  
+
   for (const username of users) {
     try {
       console.log(`Processing ${username}...`);
@@ -57,9 +57,8 @@ async function main() {
       console.log('');
     }
   }
-  
+
   console.log('✨ Done! Check the server logs for contact creation details.');
 }
 
 main();
-

@@ -30,7 +30,7 @@ function analyzeConversationPatterns(messages, senderId, receiverId) {
       username: msg.username,
       text: msg.text,
       timestamp: typeof msg.timestamp === 'string' ? new Date(msg.timestamp) : msg.timestamp,
-      length: msg.text.length
+      length: msg.text.length,
     }))
     .sort((a, b) => a.timestamp - b.timestamp); // Sort chronologically
 
@@ -178,10 +178,10 @@ function analyzeResponseTimes(messages, senderId, receiverId) {
   }
 
   // Format average for display
-  const formatHours = (h) => {
+  const formatHours = h => {
     if (h < 1) return `${Math.round(h * 60)} minutes`;
     if (h < 24) return `${Math.round(h * 10) / 10} hours`;
-    return `${Math.round(h / 24 * 10) / 10} days`;
+    return `${Math.round((h / 24) * 10) / 10} days`;
   };
 
   return {
@@ -388,7 +388,9 @@ function formatPatternsForAI(patterns) {
   if (patterns.initiator_balance) {
     const ib = patterns.initiator_balance;
     if (ib.balance_type !== 'unknown') {
-      parts.push(`Initiator balance: ${ib.sender_percent}% sender, ${ib.receiver_percent}% receiver (${ib.balance_type})`);
+      parts.push(
+        `Initiator balance: ${ib.sender_percent}% sender, ${ib.receiver_percent}% receiver (${ib.balance_type})`
+      );
     }
   }
 
@@ -422,7 +424,9 @@ function formatPatternsForAI(patterns) {
     parts.push(`Recent topic shift: ${recentTransition.from} → ${recentTransition.to}`);
   }
 
-  parts.push('Use these patterns to understand the conversation dynamics and adapt your coaching accordingly.');
+  parts.push(
+    'Use these patterns to understand the conversation dynamics and adapt your coaching accordingly.'
+  );
   parts.push('=== END PATTERNS ===');
 
   return parts.join('\n');
@@ -433,11 +437,3 @@ module.exports = {
   formatPatternsForAI,
   getDefaultPatterns,
 };
-
-
-
-
-
-
-
-

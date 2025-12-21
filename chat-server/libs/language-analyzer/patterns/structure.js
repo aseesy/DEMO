@@ -15,14 +15,14 @@ const ACCUSATION_PATTERNS = [
   /\byou('re|'re| are)\s+(the|a|so|being|always)\b/i,
   /\bit's\s+(your|all your)\s+fault\b/i,
   /\bbecause\s+of\s+you\b/i,
-  /\byou\s+made\s+(me|her|him|this|it)\b/i
+  /\byou\s+made\s+(me|her|him|this|it)\b/i,
 ];
 
 // Question patterns
 const QUESTION_PATTERNS = [
   /\?$/,
   /^(can|could|would|will|do|did|are|is|have|has|why|what|when|where|how)\b/i,
-  /^(don't|doesn't|didn't|won't|wouldn't|isn't|aren't)\s+you\b/i
+  /^(don't|doesn't|didn't|won't|wouldn't|isn't|aren't)\s+you\b/i,
 ];
 
 // Request patterns (polite asks)
@@ -33,7 +33,7 @@ const REQUEST_PATTERNS = [
   /\bplease\b/i,
   /\bi('d| would)\s+appreciate\b/i,
   /\bi('d| would)\s+like\b/i,
-  /\bwhen\s+you\s+get\s+a\s+chance\b/i
+  /\bwhen\s+you\s+get\s+a\s+chance\b/i,
 ];
 
 // Demand patterns (forceful)
@@ -44,7 +44,7 @@ const DEMAND_PATTERNS = [
   /\byou\s+better\b/i,
   /\bjust\s+do\s+it\b/i,
   /\bstop\s+(doing|being|it)\b/i,
-  /^(do|stop|don't)\s+\w+/i
+  /^(do|stop|don't)\s+\w+/i,
 ];
 
 // Threat patterns
@@ -55,14 +55,14 @@ const THREAT_PATTERNS = [
   /\bi('m| am)\s+going\s+to\s+\w+\s+(you|the|my lawyer|court)\b/i,
   /\bmy\s+lawyer\b/i,
   /\btake\s+you\s+to\s+court\b/i,
-  /\bfull\s+custody\b/i
+  /\bfull\s+custody\b/i,
 ];
 
 // Statement patterns (neutral)
 const STATEMENT_PATTERNS = [
   /^(the|her|his|their|our|my|i|she|he|it)\s+\w+/i,
   /^(this|that|these|those)\s+\w+/i,
-  /\bis\s+(at|on|in|scheduled|planned)\b/i
+  /\bis\s+(at|on|in|scheduled|planned)\b/i,
 ];
 
 // Target detection
@@ -71,14 +71,14 @@ const TARGET_PATTERNS = {
   self: [/\bi\s+\b/i, /\bmy\s+\b/i, /\bi'm\b/i, /\bi've\b/i],
   child: [/\bshe\b/i, /\bhe\b/i, /\bthem\b/i, /\bthe\s+kids?\b/i],
   third_party: [/\b(teacher|doctor|lawyer|counselor|therapist)\b/i],
-  situation: [/\bthe\s+(situation|schedule|plan|arrangement)\b/i, /\bit\s+is\b/i, /\bthis\s+is\b/i]
+  situation: [/\bthe\s+(situation|schedule|plan|arrangement)\b/i, /\bit\s+is\b/i, /\bthis\s+is\b/i],
 };
 
 // Tense detection
 const TENSE_PATTERNS = {
   past: [/\b(did|was|were|had|went|said|forgot|remembered)\b/i, /\blast\s+(time|week|month)\b/i],
   present: [/\b(is|are|am|do|does|'s|'re|'m)\b/i, /\bright\s+now\b/i],
-  future: [/\b(will|going to|tomorrow|next\s+(time|week|month))\b/i]
+  future: [/\b(will|going to|tomorrow|next\s+(time|week|month))\b/i],
 };
 
 /**
@@ -171,9 +171,10 @@ function detect(text) {
   const tense = detectTense(text);
 
   // Check for concrete request/change
-  const hasConcreteRequest = /\b(can|could|would)\s+(you|we)\s+\w+\s+(the|her|him|on|at|by)\b/i.test(text);
-  const hasProposedChange = /\b(let's|how about|what if|could we|can we)\b/i.test(text) ||
-    /\bgoing forward\b/i.test(text);
+  const hasConcreteRequest =
+    /\b(can|could|would)\s+(you|we)\s+\w+\s+(the|her|him|on|at|by)\b/i.test(text);
+  const hasProposedChange =
+    /\b(let's|how about|what if|could we|can we)\b/i.test(text) || /\bgoing forward\b/i.test(text);
 
   return {
     sentence_type: sentenceType,
@@ -181,7 +182,7 @@ function detect(text) {
     tense: tense,
     has_concrete_request: hasConcreteRequest,
     has_proposed_change: hasProposedChange,
-    is_constructive: sentenceType === 'request' || sentenceType === 'question' || hasProposedChange
+    is_constructive: sentenceType === 'request' || sentenceType === 'question' || hasProposedChange,
   };
 }
 
@@ -200,7 +201,7 @@ function summarize(patterns) {
     request: 'Structured as polite request',
     statement: 'Structured as neutral statement',
     demand: 'Structured as demand/command',
-    threat: 'Contains threat or ultimatum'
+    threat: 'Contains threat or ultimatum',
   };
   observations.push(typeDescriptions[patterns.sentence_type] || 'Structure unclear');
 
@@ -240,5 +241,5 @@ module.exports = {
   ACCUSATION_PATTERNS,
   REQUEST_PATTERNS,
   DEMAND_PATTERNS,
-  THREAT_PATTERNS
+  THREAT_PATTERNS,
 };

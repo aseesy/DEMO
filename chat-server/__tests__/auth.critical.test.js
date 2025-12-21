@@ -18,7 +18,7 @@ jest.mock('../dbSafe', () => ({
   safeInsert: jest.fn(),
   safeUpdate: jest.fn(),
   safeInsertTx: jest.fn(),
-  parseResult: jest.fn((result) => result),
+  parseResult: jest.fn(result => result),
   withTransaction: jest.fn(),
 }));
 
@@ -60,7 +60,10 @@ const dbSafe = require('../dbSafe');
 const auth = require('../auth');
 const invitationManager = require('../libs/invitation-manager');
 const roomManager = require('../roomManager');
-const { generateToken, authenticate, JWT_SECRET } = require('../middleware/auth');
+const { generateToken, authenticate } = require('../middleware/auth');
+
+// Get JWT_SECRET from environment (set in jest.setup.js)
+const JWT_SECRET = process.env.JWT_SECRET;
 
 describe('CRITICAL: Account Creation', () => {
   beforeEach(() => {
@@ -89,8 +92,9 @@ describe('CRITICAL: Account Creation', () => {
 
       dbSafe.safeSelect.mockResolvedValue([{ id: 1, email }]);
 
-      await expect(auth.createUserWithEmail(email, 'password', {}))
-        .rejects.toThrow('Email already exists');
+      await expect(auth.createUserWithEmail(email, 'password', {})).rejects.toThrow(
+        'Email already exists'
+      );
     });
 
     test('MUST generate unique username on collision', async () => {
@@ -146,8 +150,9 @@ describe('CRITICAL: Account Creation', () => {
         coParentEmail: 'SELF@example.com', // Same email, different case
       };
 
-      await expect(auth.registerWithInvitation(params, {}))
-        .rejects.toThrow('You cannot invite yourself');
+      await expect(auth.registerWithInvitation(params, {})).rejects.toThrow(
+        'You cannot invite yourself'
+      );
     });
 
     test('MUST require co-parent email', async () => {
@@ -157,8 +162,9 @@ describe('CRITICAL: Account Creation', () => {
         coParentEmail: null,
       };
 
-      await expect(auth.registerWithInvitation(params, {}))
-        .rejects.toThrow('Co-parent email is required');
+      await expect(auth.registerWithInvitation(params, {})).rejects.toThrow(
+        'Co-parent email is required'
+      );
     });
   });
 });
@@ -175,12 +181,14 @@ describe('CRITICAL: User Login', () => {
       const hashedPassword = await auth.hashPassword(password);
 
       dbSafe.safeSelect
-        .mockResolvedValueOnce([{
-          id: 1,
-          username: 'validuser',
-          email,
-          password_hash: hashedPassword
-        }])
+        .mockResolvedValueOnce([
+          {
+            id: 1,
+            username: 'validuser',
+            email,
+            password_hash: hashedPassword,
+          },
+        ])
         .mockResolvedValueOnce([]); // user_context
 
       dbSafe.safeUpdate.mockResolvedValue(true);
@@ -207,12 +215,14 @@ describe('CRITICAL: User Login', () => {
       const email = 'user@example.com';
       const hashedPassword = await auth.hashPassword('correctPassword');
 
-      dbSafe.safeSelect.mockResolvedValue([{
-        id: 1,
-        username: 'user',
-        email,
-        password_hash: hashedPassword
-      }]);
+      dbSafe.safeSelect.mockResolvedValue([
+        {
+          id: 1,
+          username: 'user',
+          email,
+          password_hash: hashedPassword,
+        },
+      ]);
 
       try {
         await auth.authenticateUserByEmail(email, 'wrongPassword');
@@ -223,13 +233,15 @@ describe('CRITICAL: User Login', () => {
     });
 
     test('MUST return OAUTH_ONLY_ACCOUNT for Google-only users', async () => {
-      dbSafe.safeSelect.mockResolvedValue([{
-        id: 1,
-        username: 'googleuser',
-        email: 'google@example.com',
-        password_hash: null,
-        google_id: 'google-123'
-      }]);
+      dbSafe.safeSelect.mockResolvedValue([
+        {
+          id: 1,
+          username: 'googleuser',
+          email: 'google@example.com',
+          password_hash: null,
+          google_id: 'google-123',
+        },
+      ]);
 
       try {
         await auth.authenticateUserByEmail('google@example.com', 'anypassword');
@@ -245,12 +257,14 @@ describe('CRITICAL: User Login', () => {
       const hashedPassword = await auth.hashPassword(password);
 
       dbSafe.safeSelect
-        .mockResolvedValueOnce([{
-          id: 1,
-          username: 'user',
-          email,
-          password_hash: hashedPassword
-        }])
+        .mockResolvedValueOnce([
+          {
+            id: 1,
+            username: 'user',
+            email,
+            password_hash: hashedPassword,
+          },
+        ])
         .mockResolvedValueOnce([]);
 
       dbSafe.safeUpdate.mockResolvedValue(true);
@@ -275,12 +289,14 @@ describe('CRITICAL: User Login', () => {
       const sha256Hash = crypto.createHash('sha256').update(password).digest('hex');
 
       dbSafe.safeSelect
-        .mockResolvedValueOnce([{
-          id: 1,
-          username: 'legacyuser',
-          email,
-          password_hash: sha256Hash
-        }])
+        .mockResolvedValueOnce([
+          {
+            id: 1,
+            username: 'legacyuser',
+            email,
+            password_hash: sha256Hash,
+          },
+        ])
         .mockResolvedValueOnce([]);
 
       dbSafe.safeUpdate.mockResolvedValue(true);
@@ -391,18 +407,22 @@ describe('CRITICAL: Session Sync', () => {
       const username = 'testuser';
 
       dbSafe.safeSelect
-        .mockResolvedValueOnce([{
-          id: 1,
-          username,
-          email: 'test@example.com',
-          display_name: 'Test User'
-        }])
-        .mockResolvedValueOnce([{
-          user_id: username,
-          co_parent: 'Co-Parent',
-          children: JSON.stringify([{ name: 'Child' }]),
-          contacts: '[]'
-        }]);
+        .mockResolvedValueOnce([
+          {
+            id: 1,
+            username,
+            email: 'test@example.com',
+            display_name: 'Test User',
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            user_id: username,
+            co_parent: 'Co-Parent',
+            children: JSON.stringify([{ name: 'Child' }]),
+            contacts: '[]',
+          },
+        ]);
 
       roomManager.getUserRoom.mockResolvedValue({ roomId: 'room-123' });
 
@@ -442,23 +462,24 @@ describe('CRITICAL: Co-Parent Sync', () => {
         invitation: {
           id: 1,
           inviter_id: 100,
-          invitee_email: 'invitee@example.com'
+          invitee_email: 'invitee@example.com',
         },
         inviterName: 'Inviter',
-        inviterEmail: 'inviter@example.com'
+        inviterEmail: 'inviter@example.com',
       });
 
       // Mock transaction
       const mockClient = {
-        query: jest.fn()
+        query: jest
+          .fn()
           .mockResolvedValueOnce({ rows: [{ id: 200, username: 'invitee' }] }) // User insert
           .mockResolvedValueOnce({}) // Invitation update
           .mockResolvedValueOnce({}) // Room insert
           .mockResolvedValueOnce({}) // Room member 1
-          .mockResolvedValueOnce({}) // Room member 2
+          .mockResolvedValueOnce({}), // Room member 2
       };
 
-      dbSafe.withTransaction.mockImplementation(async (callback) => {
+      dbSafe.withTransaction.mockImplementation(async callback => {
         return callback(mockClient);
       });
 
@@ -484,11 +505,12 @@ describe('CRITICAL: Co-Parent Sync', () => {
       invitationManager.validateToken.mockResolvedValue({
         valid: false,
         code: 'EXPIRED',
-        error: 'Invitation has expired'
+        error: 'Invitation has expired',
       });
 
-      await expect(auth.registerFromInvitation(params, {}))
-        .rejects.toThrow('Invitation has expired');
+      await expect(auth.registerFromInvitation(params, {})).rejects.toThrow(
+        'Invitation has expired'
+      );
     });
 
     test('MUST reject already-accepted invitation', async () => {
@@ -502,11 +524,12 @@ describe('CRITICAL: Co-Parent Sync', () => {
       invitationManager.validateToken.mockResolvedValue({
         valid: false,
         code: 'ALREADY_ACCEPTED',
-        error: 'Invitation already accepted'
+        error: 'Invitation already accepted',
       });
 
-      await expect(auth.registerFromInvitation(params, {}))
-        .rejects.toThrow('Invitation already accepted');
+      await expect(auth.registerFromInvitation(params, {})).rejects.toThrow(
+        'Invitation already accepted'
+      );
     });
 
     test('MUST verify invitation email matches registration email', async () => {
@@ -606,9 +629,7 @@ describe('MONITORING: Self-Presenting Issues', () => {
         // Expected
       }
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Attempting login')
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Attempting login'));
 
       consoleSpy.mockRestore();
     });
@@ -622,9 +643,7 @@ describe('MONITORING: Self-Presenting Issues', () => {
 
       await auth.createUserWithEmail('logtest@example.com', 'password', {});
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Created user')
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Created user'));
 
       consoleSpy.mockRestore();
     });

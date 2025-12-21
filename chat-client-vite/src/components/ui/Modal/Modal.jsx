@@ -24,7 +24,7 @@ export const Modal = ({
   useEffect(() => {
     if (!isOpen || !closeOnEsc) return;
 
-    const handleEscape = (e) => {
+    const handleEscape = e => {
       if (e.key === 'Escape') onClose();
     };
 
@@ -51,15 +51,16 @@ export const Modal = ({
   return (
     <div
       className="fixed inset-0 bg-black/40 flex items-center justify-center z-modal p-4 pb-24 md:pb-4 overflow-y-auto"
+      style={{ zIndex: 'var(--z-modal)' }}
       onClick={closeOnOverlayClick ? onClose : undefined}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
-      aria-describedby={subtitle ? "modal-subtitle" : undefined}
+      aria-describedby={subtitle ? 'modal-subtitle' : undefined}
     >
       <div
         className={`bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full ${sizeClass} flex flex-col max-h-full my-auto ${className}`}
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         {/* Header - Always visible */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
@@ -80,16 +81,19 @@ export const Modal = ({
               aria-label="Close modal"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           )}
         </div>
 
         {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">{children}</div>
 
         {/* Footer - Conditionally rendered */}
         {footer && (

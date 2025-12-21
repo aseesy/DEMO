@@ -17,7 +17,9 @@ export function useGooglePlacesSchool(inputRef, onPlaceSelected) {
     if (!apiKey || apiKey.trim() === '') {
       // Use a specific error code for easier handling in UI
       setError('GOOGLE_PLACES_NOT_CONFIGURED');
-      console.warn('Google Places API key not configured. School autocomplete will be unavailable. Set VITE_GOOGLE_PLACES_API_KEY in your .env file.');
+      console.warn(
+        'Google Places API key not configured. School autocomplete will be unavailable. Set VITE_GOOGLE_PLACES_API_KEY in your .env file.'
+      );
       return;
     }
 
@@ -85,14 +87,11 @@ export function useGooglePlacesSchool(inputRef, onPlaceSelected) {
 
     try {
       // Initialize autocomplete for schools/educational institutions
-      const autocomplete = new window.google.maps.places.Autocomplete(
-        inputRef.current,
-        {
-          types: ['establishment'],
-          componentRestrictions: { country: 'us' },
-          fields: ['name', 'formatted_address', 'place_id', 'types', 'geometry'],
-        }
-      );
+      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+        types: ['establishment'],
+        componentRestrictions: { country: 'us' },
+        fields: ['name', 'formatted_address', 'place_id', 'types', 'geometry'],
+      });
 
       const listener = autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();

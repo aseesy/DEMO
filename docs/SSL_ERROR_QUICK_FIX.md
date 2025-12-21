@@ -5,6 +5,7 @@
 You're getting `ERR_CERT_COMMON_NAME_INVALID` when accessing `www.coparentliaizen.com`.
 
 This means:
+
 - DNS is not pointing to Vercel correctly, OR
 - Domain is not configured in Vercel, OR
 - SSL certificate hasn't been provisioned yet
@@ -56,7 +57,6 @@ This means:
      - **Type**: `A`
      - **Value**: (IP address from Vercel - copy from Vercel dashboard)
      - **TTL**: `3600`
-   
    - **CNAME Record** (www subdomain):
      - **Name**: `www`
      - **Type**: `CNAME`
@@ -114,6 +114,7 @@ This means:
 ### Issue 1: DNS Still Points to Railway
 
 **Solution**:
+
 1. Go to Hostinger DNS Zone Editor
 2. Remove ALL records pointing to Railway
 3. Add ONLY Vercel DNS records
@@ -122,6 +123,7 @@ This means:
 ### Issue 2: Domain Not Added to Vercel
 
 **Solution**:
+
 1. Go to Vercel Dashboard → Settings → Domains
 2. Add `coparentliaizen.com`
 3. Add `www.coparentliaizen.com`
@@ -131,6 +133,7 @@ This means:
 ### Issue 3: SSL Certificate Not Provisioned
 
 **Solution**:
+
 1. Verify DNS is pointing to Vercel correctly
 2. Wait 5-15 minutes for SSL provisioning
 3. Check SSL status in Vercel dashboard
@@ -139,6 +142,7 @@ This means:
 ### Issue 4: Mixed DNS Configuration
 
 **Solution**:
+
 1. Remove ALL old DNS records
 2. Add ONLY Vercel DNS records
 3. Verify all records point to Vercel (not Railway)
@@ -158,6 +162,7 @@ This means:
 ## 🎯 Summary
 
 **The fix**:
+
 1. ✅ Add domain to Vercel (if not added)
 2. ✅ Update DNS in Hostinger to point to Vercel (not Railway)
 3. ✅ Remove old DNS records pointing to Railway
@@ -172,4 +177,3 @@ This means:
 ---
 
 **Next Steps: Check DNS in Hostinger, ensure it points to Vercel (not Railway), then wait for DNS and SSL to complete!** 🔒
-

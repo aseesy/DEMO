@@ -1,9 +1,9 @@
 /**
  * Database Synchronization Validator
- * 
+ *
  * Validates consistency between PostgreSQL and Neo4j databases.
  * Ensures that relationship data stays in sync.
- * 
+ *
  * This strengthens the relationship between PostgreSQL (source of truth)
  * and Neo4j (graph analytics) by validating their consistency.
  */
@@ -14,7 +14,7 @@ const neo4jClient = require('./neo4jClient');
 
 /**
  * Validate that all co-parent relationships in PostgreSQL exist in Neo4j
- * 
+ *
  * @returns {Promise<Object>} Validation results with discrepancies
  */
 async function validateCoParentRelationships() {
@@ -22,7 +22,7 @@ async function validateCoParentRelationships() {
     return {
       valid: false,
       error: 'Neo4j not configured',
-      discrepancies: []
+      discrepancies: [],
     };
   }
 
@@ -43,7 +43,7 @@ async function validateCoParentRelationships() {
     const pgRelationships = roomsResult.rows.map(row => ({
       roomId: row.room_id,
       userIds: row.user_ids,
-      memberCount: row.member_count
+      memberCount: row.member_count,
     }));
 
     const discrepancies = [];
@@ -63,7 +63,7 @@ async function validateCoParentRelationships() {
             roomId: rel.roomId,
             userId1,
             userId2,
-            message: `Relationship exists in PostgreSQL but not in Neo4j`
+            message: `Relationship exists in PostgreSQL but not in Neo4j`,
           });
         }
       } catch (error) {
@@ -72,7 +72,7 @@ async function validateCoParentRelationships() {
           roomId: rel.roomId,
           userId1,
           userId2,
-          error: error.message
+          error: error.message,
         });
       }
     }
@@ -81,21 +81,21 @@ async function validateCoParentRelationships() {
       valid: discrepancies.length === 0,
       checked: pgRelationships.length,
       discrepancies,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   } catch (error) {
     console.error('❌ Error validating co-parent relationships:', error);
     return {
       valid: false,
       error: error.message,
-      discrepancies: []
+      discrepancies: [],
     };
   }
 }
 
 /**
  * Validate that all users in PostgreSQL have corresponding nodes in Neo4j
- * 
+ *
  * @returns {Promise<Object>} Validation results
  */
 async function validateUserNodes() {
@@ -103,7 +103,7 @@ async function validateUserNodes() {
     return {
       valid: false,
       error: 'Neo4j not configured',
-      missingUsers: []
+      missingUsers: [],
     };
   }
 
@@ -122,14 +122,14 @@ async function validateUserNodes() {
       checked: users.length,
       missingUsers,
       note: 'Full validation requires Neo4j query capabilities - consider implementing user count comparison',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   } catch (error) {
     console.error('❌ Error validating user nodes:', error);
     return {
       valid: false,
       error: error.message,
-      missingUsers: []
+      missingUsers: [],
     };
   }
 }
@@ -137,7 +137,7 @@ async function validateUserNodes() {
 /**
  * Sync relationship metadata from PostgreSQL to Neo4j
  * Strengthens Neo4j with activity data from PostgreSQL
- * 
+ *
  * @param {string} roomId - Room ID to sync
  * @returns {Promise<boolean>} Success status
  */
@@ -149,7 +149,7 @@ async function syncRelationshipMetadata(roomId) {
   try {
     // Get room members
     const members = await dbSafe.safeSelect('room_members', { room_id: roomId });
-    
+
     if (members.length !== 2) {
       // Not a co-parent relationship (needs exactly 2 members)
       return false;
@@ -173,22 +173,22 @@ async function syncRelationshipMetadata(roomId) {
 
     // Get intervention count from communication stats
     const statsResult = await dbSafe.safeSelect('communication_stats', { room_id: roomId });
-    const interventionCount = statsResult.reduce((sum, stat) => sum + (stat.total_interventions || 0), 0);
-
-    // Update Neo4j relationship metadata
-    const success = await neo4jClient.updateRelationshipMetadata(
-      user1,
-      user2,
-      roomId,
-      {
-        messageCount,
-        lastInteraction,
-        interventionCount
-      }
+    const interventionCount = statsResult.reduce(
+      (sum, stat) => sum + (stat.total_interventions || 0),
+      0
     );
 
+    // Update Neo4j relationship metadata
+    const success = await neo4jClient.updateRelationshipMetadata(user1, user2, roomId, {
+      messageCount,
+      lastInteraction,
+      interventionCount,
+    });
+
     if (success) {
-      console.log(`✅ Synced relationship metadata for room ${roomId}: ${messageCount} messages, ${interventionCount} interventions`);
+      console.log(
+        `✅ Synced relationship metadata for room ${roomId}: ${messageCount} messages, ${interventionCount} interventions`
+      );
     }
 
     return success;
@@ -200,7 +200,7 @@ async function syncRelationshipMetadata(roomId) {
 
 /**
  * Run full database synchronization validation
- * 
+ *
  * @returns {Promise<Object>} Complete validation results
  */
 async function runFullValidation() {
@@ -208,7 +208,7 @@ async function runFullValidation() {
 
   const [relationships, users] = await Promise.all([
     validateCoParentRelationships(),
-    validateUserNodes()
+    validateUserNodes(),
   ]);
 
   const results = {
@@ -217,8 +217,8 @@ async function runFullValidation() {
     users,
     overall: {
       valid: relationships.valid && users.valid,
-      hasDiscrepancies: relationships.discrepancies?.length > 0 || users.missingUsers?.length > 0
-    }
+      hasDiscrepancies: relationships.discrepancies?.length > 0 || users.missingUsers?.length > 0,
+    },
   };
 
   if (results.overall.hasDiscrepancies) {
@@ -236,6 +236,5 @@ module.exports = {
   validateCoParentRelationships,
   validateUserNodes,
   syncRelationshipMetadata,
-  runFullValidation
+  runFullValidation,
 };
-

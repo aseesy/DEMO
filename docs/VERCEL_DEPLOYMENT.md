@@ -5,6 +5,7 @@ Complete guide to deploy frontend to Vercel and connect it to Railway backend.
 ## ✅ Setup Complete
 
 The frontend is configured to work with Vercel:
+
 - ✅ `vercel.json` created with static file serving configuration
 - ✅ `config.js` updated to point to Railway backend
 - ✅ Security headers configured
@@ -34,6 +35,7 @@ vercel
 ```
 
 **When prompted:**
+
 - **Set up and deploy?** → Yes
 - **Which scope?** → Your account
 - **Link to existing project?** → No
@@ -69,6 +71,7 @@ const RAILWAY_DOMAIN = 'https://your-app.up.railway.app';
 ```
 
 Then commit and push:
+
 ```bash
 git add chat-client/config.js
 git commit -m "Update Railway domain in config"
@@ -82,6 +85,7 @@ Vercel will auto-deploy the updated config.
 ### Step 1: Set Root Directory
 
 In Railway Dashboard:
+
 1. Go to your service → **Settings** → **Source**
 2. Set **Root Directory** to: `chat-server`
 3. Save
@@ -95,8 +99,9 @@ FRONTEND_URL=https://coparentliaizen.com,https://www.coparentliaizen.com,https:/
 ```
 
 This allows:
+
 - Production domain (coparentliaizen.com)
-- Vercel preview deployments (*.vercel.app)
+- Vercel preview deployments (\*.vercel.app)
 
 ### Step 3: Redeploy Railway
 
@@ -150,10 +155,13 @@ After deployment:
 ## 🔧 Environment Variables
 
 ### Vercel (Frontend)
+
 No environment variables needed - API URL is configured in `config.js`
 
 ### Railway (Backend)
+
 All variables from `.env.example`:
+
 - `NODE_ENV=production`
 - `PORT=3001` (Railway sets this automatically)
 - `FRONTEND_URL=https://coparentliaizen.com,https://www.coparentliaizen.com,https://*.vercel.app`
@@ -167,6 +175,7 @@ All variables from `.env.example`:
 ### Frontend can't connect to backend
 
 **Check:**
+
 1. Railway domain is correct in `config.js`
 2. Railway backend is running (check Railway logs)
 3. CORS is configured correctly (check `FRONTEND_URL` in Railway)
@@ -175,6 +184,7 @@ All variables from `.env.example`:
 ### CORS Errors
 
 **Solution:**
+
 1. Verify `FRONTEND_URL` in Railway includes Vercel domains
 2. Check Railway logs for CORS warnings
 3. Verify frontend domain matches allowed origins
@@ -182,6 +192,7 @@ All variables from `.env.example`:
 ### WebSocket not connecting
 
 **Check:**
+
 1. Socket.io CORS configuration in `server.js`
 2. Railway domain is correct
 3. HTTPS is being used (WebSocket requires HTTPS in production)
@@ -195,4 +206,3 @@ All variables from `.env.example`:
 ---
 
 **Your frontend is now ready to deploy to Vercel!** 🚀
-

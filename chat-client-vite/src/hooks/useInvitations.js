@@ -1,11 +1,24 @@
-import React from 'react';
-import { apiGet, apiPost, apiDelete } from '../apiClient.js';
-import { getErrorMessage, logError, retryWithBackoff, isRetryableError } from '../utils/errorHandler.jsx';
-
 /**
- * Hook for managing invitation-related API calls and state
- * Handles token validation, accepting/declining invitations, and invitation management
+ * useInvitations Hook
+ *
+ * Manages invitation state and delegates to pure query/command functions.
+ * This hook follows Command-Query Separation (CQS):
+ * - Query functions (in utils/invitationQueries.js) only return data
+ * - This hook manages state mutations (commands)
  */
+
+import React from 'react';
+import {
+  queryValidateCode,
+  queryValidateToken,
+  commandAcceptByCode,
+  commandAcceptByToken,
+  commandDeclineInvitation,
+  queryFetchInvitations,
+  commandResendInvitation,
+  commandCancelInvitation,
+} from '../utils/invitationQueries.js';
+
 export function useInvitations() {
   const [isValidating, setIsValidating] = React.useState(false);
   const [isAccepting, setIsAccepting] = React.useState(false);
@@ -15,339 +28,170 @@ export function useInvitations() {
   const [error, setError] = React.useState('');
 
   /**
-   * Validate an invitation token
-   * @param {string} token - The invitation token to validate
-   * @returns {Promise<Object>} Validation result with invitation details
-   */
-  /**
    * Validate an invitation short code
+   * Command: Updates isValidating and error state
    * @param {string} code - The short code to validate (e.g., LZ-ABC123)
-   * @returns {Promise<Object>} Validation result with invitation details
    */
-  // Use new pairing API endpoints (Feature: 004-account-pairing-refactor)
-  const validateCode = React.useCallback(async (code) => {
-    if (!code) {
-      const errorInfo = getErrorMessage({ code: 'CODE_REQUIRED' });
-      return { valid: false, code: 'CODE_REQUIRED', errorInfo };
-    }
-
+  const validateCode = React.useCallback(async code => {
     setIsValidating(true);
     setError('');
 
-    try {
-      const response = await retryWithBackoff(
-        () => apiGet(`/api/pairing/validate/${encodeURIComponent(code)}`),
-        {
-          maxRetries: 3,
-          shouldRetry: (error, statusCode) => {
-            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
-              return false;
-            }
-            return isRetryableError(error, statusCode);
-          },
-        }
-      );
+    const result = await queryValidateCode(code);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/validate' });
-        logError(data, { endpoint: '/api/pairing/validate', operation: 'validate_code', code });
-        setError(errorInfo.userMessage);
-        return { valid: false, code: data.code || 'ERROR', error: errorInfo.userMessage, errorInfo };
-      }
-
-      return data;
-    } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/validate' });
-      logError(err, { endpoint: '/api/pairing/validate', operation: 'validate_code', code });
-      setError(errorInfo.userMessage);
-      return { valid: false, code: 'NETWORK_ERROR', error: errorInfo.userMessage, errorInfo };
-    } finally {
-      setIsValidating(false);
+    if (!result.valid && result.error) {
+      setError(result.error);
     }
-  }, []);
+    setIsValidating(false);
 
-  // Use new pairing API endpoints (Feature: 004-account-pairing-refactor)
-  const validateToken = React.useCallback(async (token) => {
-    if (!token) {
-      const errorInfo = getErrorMessage({ code: 'TOKEN_REQUIRED' });
-      return { valid: false, code: 'TOKEN_REQUIRED', errorInfo };
-    }
-
-    setIsValidating(true);
-    setError('');
-
-    try {
-      const response = await retryWithBackoff(
-        () => apiGet(`/api/pairing/validate-token/${encodeURIComponent(token)}`),
-        {
-          maxRetries: 3,
-          shouldRetry: (error, statusCode) => {
-            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
-              return false;
-            }
-            return isRetryableError(error, statusCode);
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/validate-token' });
-        logError(data, { endpoint: '/api/pairing/validate-token', operation: 'validate_token', token });
-        setError(errorInfo.userMessage);
-        return { valid: false, code: data.code || 'ERROR', error: errorInfo.userMessage, errorInfo };
-      }
-
-      return data;
-    } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/validate-token' });
-      logError(err, { endpoint: '/api/pairing/validate-token', operation: 'validate_token', token });
-      setError(errorInfo.userMessage);
-      return { valid: false, code: 'NETWORK_ERROR', error: errorInfo.userMessage, errorInfo };
-    } finally {
-      setIsValidating(false);
-    }
+    return result;
   }, []);
 
   /**
-   * Accept an invitation (for existing users)
-   * @param {string} token - The invitation token
-   * @returns {Promise<Object>} Result with room and co-parent info
+   * Validate an invitation token
+   * Command: Updates isValidating and error state
+   * @param {string} token - The invitation token to validate
    */
+  const validateToken = React.useCallback(async token => {
+    setIsValidating(true);
+    setError('');
+
+    const result = await queryValidateToken(token);
+
+    if (!result.valid && result.error) {
+      setError(result.error);
+    }
+    setIsValidating(false);
+
+    return result;
+  }, []);
+
   /**
    * Accept an invitation by short code
-   * Use new pairing API (Feature: 004-account-pairing-refactor)
+   * Command: Updates isAccepting and error state
    * @param {string} code - The short code (e.g., LZ-ABC123)
-   * @returns {Promise<Object>} Result with room and co-parent info
    */
-  const acceptByCode = React.useCallback(async (code) => {
-    if (!code) {
-      const errorInfo = getErrorMessage({ code: 'CODE_REQUIRED' });
-      setError(errorInfo.userMessage);
-      return { success: false, error: errorInfo.userMessage, errorInfo };
-    }
-
+  const acceptByCode = React.useCallback(async code => {
     setIsAccepting(true);
     setError('');
 
-    try {
-      const response = await retryWithBackoff(
-        () => apiPost('/api/pairing/accept', { code }),
-        {
-          maxRetries: 3,
-          shouldRetry: (error, statusCode) => {
-            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
-              return false;
-            }
-            return isRetryableError(error, statusCode);
-          },
-        }
-      );
+    const result = await commandAcceptByCode(code);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/accept' });
-        logError(data, { endpoint: '/api/pairing/accept', operation: 'accept_code', code });
-        setError(errorInfo.userMessage);
-        return { success: false, error: errorInfo.userMessage, errorInfo, code: data.code };
-      }
-
-      return { success: true, ...data };
-    } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/accept' });
-      logError(err, { endpoint: '/api/pairing/accept', operation: 'accept_code', code });
-      setError(errorInfo.userMessage);
-      return { success: false, error: errorInfo.userMessage, errorInfo };
-    } finally {
-      setIsAccepting(false);
+    if (!result.success && result.error) {
+      setError(result.error);
     }
+    setIsAccepting(false);
+
+    return result;
   }, []);
 
-  // Use new pairing API (Feature: 004-account-pairing-refactor)
-  const acceptInvitation = React.useCallback(async (token) => {
-    if (!token) {
-      const errorInfo = getErrorMessage({ code: 'TOKEN_REQUIRED' });
-      setError(errorInfo.userMessage);
-      return { success: false, error: errorInfo.userMessage, errorInfo };
-    }
-
+  /**
+   * Accept an invitation by token
+   * Command: Updates isAccepting and error state
+   * @param {string} token - The invitation token
+   */
+  const acceptInvitation = React.useCallback(async token => {
     setIsAccepting(true);
     setError('');
 
-    try {
-      const response = await retryWithBackoff(
-        () => apiPost('/api/pairing/accept', { token }),
-        {
-          maxRetries: 3,
-          shouldRetry: (error, statusCode) => {
-            if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
-              return false;
-            }
-            return isRetryableError(error, statusCode);
-          },
-        }
-      );
+    const result = await commandAcceptByToken(token);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorInfo = getErrorMessage(data, { statusCode: response.status, endpoint: '/api/pairing/accept' });
-        logError(data, { endpoint: '/api/pairing/accept', operation: 'accept_invitation', token });
-        setError(errorInfo.userMessage);
-        return { success: false, error: errorInfo.userMessage, errorInfo, code: data.code };
-      }
-
-      return { success: true, ...data };
-    } catch (err) {
-      const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/accept' });
-      logError(err, { endpoint: '/api/pairing/accept', operation: 'accept_invitation', token });
-      setError(errorInfo.userMessage);
-      return { success: false, error: errorInfo.userMessage, errorInfo };
-    } finally {
-      setIsAccepting(false);
+    if (!result.success && result.error) {
+      setError(result.error);
     }
+    setIsAccepting(false);
+
+    return result;
   }, []);
 
   /**
    * Decline an invitation
+   * Command: Updates isDeclining and error state
    * @param {string} token - The invitation token
-   * @returns {Promise<Object>} Result
    */
-  const declineInvitation = React.useCallback(async (token) => {
-    if (!token) {
-      setError('No invitation token provided');
-      return { success: false, error: 'No invitation token provided' };
-    }
-
+  const declineInvitation = React.useCallback(async token => {
     setIsDeclining(true);
     setError('');
 
-    try {
-      const response = await apiPost('/api/invitations/decline', { token });
-      const data = await response.json();
+    const result = await commandDeclineInvitation(token);
 
-      if (!response.ok) {
-        const errorMsg = data.error || 'Failed to decline invitation';
-        setError(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-
-      return { success: true, ...data };
-    } catch (err) {
-      console.error('Error declining invitation:', err);
-      const errorMsg = 'Unable to decline invitation. Please try again.';
-      setError(errorMsg);
-      return { success: false, error: errorMsg };
-    } finally {
-      setIsDeclining(false);
+    if (!result.success && result.error) {
+      setError(result.error);
     }
+    setIsDeclining(false);
+
+    return result;
   }, []);
 
   /**
-   * Fetch user's invitations (sent and received)
+   * Fetch user's invitations
+   * Command: Updates isLoading, invitations, and error state
    * @param {Object} options - Query options
-   * @param {string} options.status - Filter by status (pending, accepted, etc.)
-   * @returns {Promise<Array>} List of invitations
    */
   const fetchInvitations = React.useCallback(async (options = {}) => {
     setIsLoading(true);
     setError('');
 
-    try {
-      const queryParams = new URLSearchParams();
-      if (options.status) queryParams.append('status', options.status);
+    const result = await queryFetchInvitations(options);
 
-      const queryString = queryParams.toString();
-      const url = queryString ? `/api/invitations?${queryString}` : '/api/invitations';
-
-      const response = await apiGet(url);
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorMsg = data.error || 'Failed to fetch invitations';
-        setError(errorMsg);
-        return [];
-      }
-
-      setInvitations(data.invitations || []);
-      return data.invitations || [];
-    } catch (err) {
-      console.error('Error fetching invitations:', err);
-      const errorMsg = 'Unable to load invitations. Please try again.';
-      setError(errorMsg);
-      return [];
-    } finally {
-      setIsLoading(false);
+    if (result.success) {
+      setInvitations(result.invitations);
+    } else if (result.error) {
+      setError(result.error);
     }
+    setIsLoading(false);
+
+    return result.invitations;
   }, []);
 
   /**
    * Resend an expired or pending invitation
+   * Command: Updates isLoading and error state, refreshes invitations
    * @param {number} invitationId - The invitation ID to resend
-   * @returns {Promise<Object>} Result with new invitation details
    */
-  const resendInvitation = React.useCallback(async (invitationId) => {
-    setIsLoading(true);
-    setError('');
+  const resendInvitation = React.useCallback(
+    async invitationId => {
+      setIsLoading(true);
+      setError('');
 
-    try {
-      const response = await apiPost(`/api/invitations/resend/${invitationId}`);
-      const data = await response.json();
+      const result = await commandResendInvitation(invitationId);
 
-      if (!response.ok) {
-        const errorMsg = data.error || 'Failed to resend invitation';
-        setError(errorMsg);
-        return { success: false, error: errorMsg };
+      if (!result.success && result.error) {
+        setError(result.error);
+      } else {
+        // Refresh invitations list on success
+        await fetchInvitations();
       }
-
-      // Refresh invitations list
-      await fetchInvitations();
-      return { success: true, ...data };
-    } catch (err) {
-      console.error('Error resending invitation:', err);
-      const errorMsg = 'Unable to resend invitation. Please try again.';
-      setError(errorMsg);
-      return { success: false, error: errorMsg };
-    } finally {
       setIsLoading(false);
-    }
-  }, [fetchInvitations]);
+
+      return result;
+    },
+    [fetchInvitations]
+  );
 
   /**
    * Cancel a pending invitation
+   * Command: Updates isLoading and error state, refreshes invitations
    * @param {number} invitationId - The invitation ID to cancel
-   * @returns {Promise<Object>} Result
    */
-  const cancelInvitation = React.useCallback(async (invitationId) => {
-    setIsLoading(true);
-    setError('');
+  const cancelInvitation = React.useCallback(
+    async invitationId => {
+      setIsLoading(true);
+      setError('');
 
-    try {
-      const response = await apiDelete(`/api/invitations/${invitationId}`);
-      const data = await response.json();
+      const result = await commandCancelInvitation(invitationId);
 
-      if (!response.ok) {
-        const errorMsg = data.error || 'Failed to cancel invitation';
-        setError(errorMsg);
-        return { success: false, error: errorMsg };
+      if (!result.success && result.error) {
+        setError(result.error);
+      } else {
+        // Refresh invitations list on success
+        await fetchInvitations();
       }
-
-      // Refresh invitations list
-      await fetchInvitations();
-      return { success: true };
-    } catch (err) {
-      console.error('Error cancelling invitation:', err);
-      const errorMsg = 'Unable to cancel invitation. Please try again.';
-      setError(errorMsg);
-      return { success: false, error: errorMsg };
-    } finally {
       setIsLoading(false);
-    }
-  }, [fetchInvitations]);
+
+      return result;
+    },
+    [fetchInvitations]
+  );
 
   /**
    * Clear any error state
@@ -357,14 +201,15 @@ export function useInvitations() {
   }, []);
 
   return {
-    // State
+    // State (read-only queries)
     isValidating,
     isAccepting,
     isDeclining,
     isLoading,
     invitations,
     error,
-    // Actions
+
+    // Commands (state mutations)
     validateToken,
     validateCode,
     acceptInvitation,

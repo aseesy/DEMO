@@ -5,12 +5,14 @@
 Railway provides **two types of domains**:
 
 ### 1. Internal Domain (`*.railway.internal`)
+
 - **Format**: `demo.railway.internal`
 - **Purpose**: Internal communication within Railway network
 - **Accessibility**: ❌ **NOT accessible from the internet** (including Vercel)
 - **Use Case**: Service-to-service communication within Railway
 
 ### 2. Public Domain (`*.up.railway.app`)
+
 - **Format**: `your-app.up.railway.app`
 - **Purpose**: Public access from the internet
 - **Accessibility**: ✅ **Accessible from anywhere** (including Vercel)
@@ -70,6 +72,7 @@ const RAILWAY_DOMAIN = 'https://demo.railway.internal';
 ### For Environment Variables
 
 **In Railway Variables**:
+
 - `FRONTEND_URL` should use Vercel domains
 - Backend will accept requests from these domains
 
@@ -140,4 +143,3 @@ If you only see `demo.railway.internal`:
 ---
 
 **Remember: Use the public domain (`*.up.railway.app`) for frontend connections, not the internal domain (`*.railway.internal`)** 🚂
-

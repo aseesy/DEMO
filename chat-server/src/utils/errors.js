@@ -28,8 +28,8 @@ class AppError extends Error {
         type: this.type,
         retryable: this.retryable,
         context: this.metadata,
-        timestamp: this.timestamp
-      }
+        timestamp: this.timestamp,
+      },
     };
   }
 }
@@ -72,9 +72,9 @@ function withErrorHandling(fn, context = {}) {
       // Log error with context
       const logger = require('./logger').defaultLogger.child(context);
       logger.error(`Error in ${fn.name || 'async function'}`, error, {
-        args: args.map(arg => 
+        args: args.map(arg =>
           typeof arg === 'object' ? JSON.stringify(arg).substring(0, 100) : String(arg)
-        )
+        ),
       });
 
       // Re-throw if it's already an AppError
@@ -97,6 +97,5 @@ module.exports = {
   RetryableError,
   FatalError,
   OperationalError,
-  withErrorHandling
+  withErrorHandling,
 };
-

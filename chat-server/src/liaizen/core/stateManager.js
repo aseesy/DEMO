@@ -1,9 +1,9 @@
 /**
  * State Manager - Conversation State Management
- * 
+ *
  * Manages escalation, emotional, and policy state for conversations.
  * Handles state initialization, updates, and decay.
- * 
+ *
  * @module src/liaizen/core/stateManager
  */
 
@@ -31,6 +31,11 @@ function initializeEscalationState(roomId) {
     throw new Error('StateManager not initialized. Call initialize() first.');
   }
 
+  // Ensure escalationState Map exists
+  if (!conversationContext.escalationState) {
+    conversationContext.escalationState = new Map();
+  }
+
   if (!conversationContext.escalationState.has(roomId)) {
     conversationContext.escalationState.set(roomId, {
       escalationScore: 0,
@@ -39,8 +44,8 @@ function initializeEscalationState(roomId) {
         accusatory: 0,
         triangulation: 0,
         comparison: 0,
-        blaming: 0
-      }
+        blaming: 0,
+      },
     });
   }
   return conversationContext.escalationState.get(roomId);
@@ -56,12 +61,17 @@ function initializeEmotionalState(roomId) {
     throw new Error('StateManager not initialized. Call initialize() first.');
   }
 
+  // Ensure emotionalState Map exists
+  if (!conversationContext.emotionalState) {
+    conversationContext.emotionalState = new Map();
+  }
+
   if (!conversationContext.emotionalState.has(roomId)) {
     conversationContext.emotionalState.set(roomId, {
       participants: {},
       conversationEmotion: 'neutral',
       escalationRisk: 0,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     });
   }
   return conversationContext.emotionalState.get(roomId);
@@ -77,12 +87,17 @@ function initializePolicyState(roomId) {
     throw new Error('StateManager not initialized. Call initialize() first.');
   }
 
+  // Ensure policyState Map exists
+  if (!conversationContext.policyState) {
+    conversationContext.policyState = new Map();
+  }
+
   if (!conversationContext.policyState.has(roomId)) {
     conversationContext.policyState.set(roomId, {
       interventionThreshold: 50,
       interventionHistory: [],
       lastInterventionTime: null,
-      adaptationLevel: 'moderate'
+      adaptationLevel: 'moderate',
     });
   }
   return conversationContext.policyState.get(roomId);
@@ -147,7 +162,7 @@ function updateEmotionalState(roomId, username, emotionData) {
       stressTrajectory: 'stable',
       emotionalMomentum: 0,
       stressPoints: [],
-      recentTriggers: []
+      recentTriggers: [],
     };
   }
 
@@ -156,8 +171,10 @@ function updateEmotionalState(roomId, username, emotionData) {
   if (emotionData) {
     participantState.currentEmotion = emotionData.currentEmotion || participantState.currentEmotion;
     participantState.stressLevel = emotionData.stressLevel || participantState.stressLevel;
-    participantState.stressTrajectory = emotionData.stressTrajectory || participantState.stressTrajectory;
-    participantState.emotionalMomentum = emotionData.emotionalMomentum || participantState.emotionalMomentum;
+    participantState.stressTrajectory =
+      emotionData.stressTrajectory || participantState.stressTrajectory;
+    participantState.emotionalMomentum =
+      emotionData.emotionalMomentum || participantState.emotionalMomentum;
 
     // Track emotion history
     if (emotionData.currentEmotion) {
@@ -165,7 +182,7 @@ function updateEmotionalState(roomId, username, emotionData) {
         timestamp: Date.now(),
         emotion: emotionData.currentEmotion,
         intensity: emotionData.stressLevel || 0,
-        triggers: emotionData.triggers || []
+        triggers: emotionData.triggers || [],
       });
       if (participantState.emotionHistory.length > MESSAGE.MAX_EMOTION_HISTORY) {
         participantState.emotionHistory.shift();
@@ -176,7 +193,9 @@ function updateEmotionalState(roomId, username, emotionData) {
     if (emotionData.triggers && emotionData.triggers.length > 0) {
       participantState.recentTriggers.push(...emotionData.triggers);
       if (participantState.recentTriggers.length > MESSAGE.MAX_RECENT_TRIGGERS) {
-        participantState.recentTriggers = participantState.recentTriggers.slice(-MESSAGE.MAX_RECENT_TRIGGERS);
+        participantState.recentTriggers = participantState.recentTriggers.slice(
+          -MESSAGE.MAX_RECENT_TRIGGERS
+        );
       }
     }
   }
@@ -188,9 +207,10 @@ function updateEmotionalState(roomId, username, emotionData) {
 
   // Calculate overall escalation risk
   const allStressLevels = Object.values(emotionalState.participants).map(p => p.stressLevel);
-  const avgStress = allStressLevels.length > 0
-    ? allStressLevels.reduce((a, b) => a + b, 0) / allStressLevels.length
-    : 0;
+  const avgStress =
+    allStressLevels.length > 0
+      ? allStressLevels.reduce((a, b) => a + b, 0) / allStressLevels.length
+      : 0;
   emotionalState.escalationRisk = avgStress;
   emotionalState.lastUpdated = Date.now();
 
@@ -209,7 +229,7 @@ function updatePolicyState(roomId, intervention) {
     timestamp: Date.now(),
     type: (intervention && intervention.type) || 'intervene',
     escalationRisk: (intervention && intervention.escalationRisk) || 'unknown',
-    emotionalState: (intervention && intervention.emotionalState) || 'unknown'
+    emotionalState: (intervention && intervention.emotionalState) || 'unknown',
   });
 
   if (policyState.interventionHistory.length > MESSAGE.MAX_INTERVENTION_HISTORY) {
@@ -230,7 +250,8 @@ function recordInterventionFeedback(roomId, helpful) {
   const policyState = initializePolicyState(roomId);
 
   if (policyState.interventionHistory.length > 0) {
-    const lastIntervention = policyState.interventionHistory[policyState.interventionHistory.length - 1];
+    const lastIntervention =
+      policyState.interventionHistory[policyState.interventionHistory.length - 1];
     lastIntervention.outcome = helpful ? 'helpful' : 'unhelpful';
     lastIntervention.feedback = helpful ? 'User found helpful' : 'User found unhelpful';
 
@@ -259,4 +280,3 @@ module.exports = {
   updatePolicyState,
   recordInterventionFeedback,
 };
-

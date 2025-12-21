@@ -47,7 +47,7 @@ if (!validation.valid && validation.code === 'INVALID_TOKEN') {
       valid: true,
       inviterName: pairingValidation.initiatorName,
       // ... converted fields
-      isPairing: true,  // Flag indicating source
+      isPairing: true, // Flag indicating source
     });
   }
 }
@@ -62,22 +62,28 @@ The `/api/auth/register-with-invite` endpoint (lines 3518-3609 in `server.js`) d
 ```javascript
 if (inviteCode) {
   // Uses invitationManager.validateByShortCode
-  result = await auth.registerFromShortCode({
-    shortCode: inviteCode,
-    email: cleanEmail,
-    password,
-    displayName: username,
-    context: {}
-  }, db);
+  result = await auth.registerFromShortCode(
+    {
+      shortCode: inviteCode,
+      email: cleanEmail,
+      password,
+      displayName: username,
+      context: {},
+    },
+    db
+  );
 } else {
   // Uses invitationManager.validateToken (ONLY old system)
-  result = await auth.registerFromInvitation({
-    token: inviteToken,
-    email: cleanEmail,
-    password,
-    displayName: username,
-    context: {}
-  }, db);
+  result = await auth.registerFromInvitation(
+    {
+      token: inviteToken,
+      email: cleanEmail,
+      password,
+      displayName: username,
+      context: {},
+    },
+    db
+  );
 }
 ```
 
@@ -104,7 +110,10 @@ async function registerFromInvitation(params, db) {
 
   // Line 1108: Email matching only works for OLD system
   if (invitation.invitee_email.toLowerCase() !== emailLower) {
-    throw createRegistrationError(RegistrationError.INVALID_TOKEN, 'Email does not match invitation');
+    throw createRegistrationError(
+      RegistrationError.INVALID_TOKEN,
+      'Email does not match invitation'
+    );
   }
 
   // ... rest of registration logic ...
@@ -151,6 +160,7 @@ Users must receive **short codes** instead of token links to successfully regist
 **So that** I can connect with my co-parent
 
 **Acceptance Criteria**:
+
 - ✅ Link validates successfully (shows inviter's name)
 - ✅ User can fill out registration form
 - ✅ Form submission creates account and connects co-parents
@@ -169,6 +179,7 @@ Users must receive **short codes** instead of token links to successfully regist
 **So that** I can create my account and connect
 
 **Acceptance Criteria**:
+
 - ✅ Code validates successfully
 - ✅ User confirms inviter identity before proceeding
 - ✅ Registration form creates account
@@ -186,6 +197,7 @@ Users must receive **short codes** instead of token links to successfully regist
 **So that** I can connect with my co-parent without re-registering
 
 **Acceptance Criteria**:
+
 - ✅ Link validates successfully
 - ✅ User is redirected to sign-in if not authenticated
 - ✅ After sign-in, invitation is auto-accepted
@@ -205,6 +217,7 @@ Users must receive **short codes** instead of token links to successfully regist
 **Rationale**: Ensures backward compatibility with old invitations while supporting new pairing system.
 
 **Implementation**:
+
 1. Try `invitationManager.validateToken(token, db)` first
 2. If not found (`code: 'INVALID_TOKEN'`), try `pairingManager.validateToken(token, db)`
 3. If pairing found, call new function `registerFromPairing()` instead of `registerFromInvitation()`
@@ -219,6 +232,7 @@ Users must receive **short codes** instead of token links to successfully regist
 **Rationale**: Separation of concerns - different tables have different schemas and logic.
 
 **Signature**:
+
 ```javascript
 /**
  * Register a new user from a pairing session invitation
@@ -230,6 +244,7 @@ async function registerFromPairing(params, db)
 ```
 
 **Behavior**:
+
 1. Validate token using `pairingManager.validateToken(token, db)`
 2. Check email doesn't already exist
 3. Create user account with `createUserWithEmail()`
@@ -239,6 +254,7 @@ async function registerFromPairing(params, db)
 7. Send notification to inviter
 
 **Error Handling**:
+
 - Email exists → 409 with `REG_001: Email already exists`
 - Invalid token → 400 with `REG_002: Invalid invitation token`
 - Expired token → 400 with `REG_003: Invitation has expired`
@@ -251,6 +267,7 @@ async function registerFromPairing(params, db)
 **Requirement**: Both `invitations` and `pairing_sessions` systems MUST return consistent error codes and messages.
 
 **Error Codes**:
+
 - `REG_001` - Email already exists
 - `REG_002` - Invalid invitation token
 - `REG_003` - Invitation has expired
@@ -262,6 +279,7 @@ async function registerFromPairing(params, db)
 - `REG_009` - Could not generate unique username
 
 **Format**:
+
 ```json
 {
   "error": "Human-readable error message",
@@ -276,6 +294,7 @@ async function registerFromPairing(params, db)
 **Requirement**: Frontend MUST display clear, actionable error messages for all registration failures.
 
 **Current Gaps**:
+
 - Generic "Something went wrong" message for 400 errors
 - No distinction between token vs. code validation failures
 - No suggestion to contact co-parent for new invitation
@@ -298,6 +317,7 @@ async function registerFromPairing(params, db)
 **Requirement**: Document schema differences between `invitations` and `pairing_sessions` tables.
 
 **Invitations Table**:
+
 ```sql
 CREATE TABLE invitations (
   id SERIAL PRIMARY KEY,
@@ -316,6 +336,7 @@ CREATE TABLE invitations (
 ```
 
 **Pairing Sessions Table**:
+
 ```sql
 CREATE TABLE pairing_sessions (
   id SERIAL PRIMARY KEY,
@@ -335,6 +356,7 @@ CREATE TABLE pairing_sessions (
 ```
 
 **Key Differences**:
+
 1. Inviter field: `inviter_id` vs. `parent_a_id`
 2. Invitee field: `invitee_id` vs. `parent_b_id`
 3. Code field: `short_code` vs. `pairing_code`
@@ -352,6 +374,7 @@ CREATE TABLE pairing_sessions (
 **New Requirement**: `auth.registerFromPairing()` MUST also use transaction wrapper.
 
 **Transaction Steps**:
+
 1. Create user account
 2. Accept pairing/invitation
 3. Create shared room
@@ -360,12 +383,14 @@ CREATE TABLE pairing_sessions (
 6. (Optional) Create notification
 
 **Rollback Conditions**:
+
 - User creation fails
 - Pairing acceptance fails
 - Room creation fails
 - Contact creation fails
 
 **Non-Transactional Steps** (after commit):
+
 - Create welcome tasks
 - Send email notification
 
@@ -376,6 +401,7 @@ CREATE TABLE pairing_sessions (
 **Requirement**: Existing `invitations` table data MUST continue to work without modification.
 
 **Constraints**:
+
 - Do NOT migrate data from `invitations` to `pairing_sessions`
 - Do NOT deprecate `invitations` table endpoints
 - Both systems must coexist indefinitely
@@ -388,12 +414,14 @@ CREATE TABLE pairing_sessions (
 **Requirement**: All invitation acceptances MUST be logged for legal/custody audit purposes.
 
 **Current Logging**:
+
 ```javascript
 console.log(`✅ Accepted invitation ${invitation.id}`);
 console.log(`✅ Created shared room ${roomId}`);
 ```
 
 **Required Logging**:
+
 - Timestamp of acceptance
 - User ID and email
 - Invitation/pairing ID
@@ -403,6 +431,7 @@ console.log(`✅ Created shared room ${roomId}`);
 - IP address (for security)
 
 **Log Format**:
+
 ```javascript
 {
   event: 'invitation_accepted',
@@ -427,6 +456,7 @@ console.log(`✅ Created shared room ${roomId}`);
 **Requirement**: Invitation acceptance MUST complete within 3 seconds under normal conditions.
 
 **Targets**:
+
 - Token validation: < 100ms
 - User creation: < 500ms
 - Room creation: < 300ms
@@ -441,6 +471,7 @@ console.log(`✅ Created shared room ${roomId}`);
 **Requirement**: Partial failures MUST NOT leave database in inconsistent state.
 
 **Scenarios**:
+
 1. User created but room creation fails → Rollback user
 2. Room created but contact creation fails → Rollback room and user
 3. Transaction commits but task creation fails → Log warning, don't fail registration
@@ -455,12 +486,14 @@ console.log(`✅ Created shared room ${roomId}`);
 **Requirement**: Invitation flow MUST reduce friction and conflict between co-parents.
 
 **Principles**:
+
 - Clear error messages prevent blame ("Your co-parent sent a wrong link")
 - Automatic room creation ensures immediate communication
 - Bidirectional contacts prevent asymmetric relationships
 - Welcome tasks guide new users to set up profile
 
 **Metrics**:
+
 - Invitation acceptance rate > 80%
 - Time from invitation sent to first message < 24 hours
 - Support tickets related to invitations < 5% of signups
@@ -479,6 +512,7 @@ console.log(`✅ Created shared room ${roomId}`);
 **And** a shared room is created with both users as members
 
 **Validation**:
+
 ```bash
 # 1. Create pairing invitation
 curl -X POST https://coparentliaizen.com/api/pairings/create \
@@ -520,6 +554,7 @@ curl https://coparentliaizen.com/api/contacts \
 **And** no pairing-related errors occur
 
 **Validation**:
+
 ```bash
 # 1. Create old-style invitation
 INSERT INTO invitations (inviter_id, invitee_email, token_hash, status, ...)
@@ -548,6 +583,7 @@ curl -X POST https://coparentliaizen.com/api/auth/register-with-invite \
 **And** the error code is `REG_003`
 
 **Validation**:
+
 ```bash
 # 1. Create expired pairing
 UPDATE pairing_sessions SET expires_at = '2025-01-01' WHERE id = 123;
@@ -573,6 +609,7 @@ curl -X POST https://coparentliaizen.com/api/auth/register-with-invite \
 **And** the log can be queried for legal/custody purposes
 
 **Validation**:
+
 ```sql
 SELECT * FROM audit_logs
 WHERE event = 'invitation_accepted'
@@ -589,6 +626,7 @@ WHERE event = 'invitation_accepted'
 ### Phase 1: Backend Dual-System Support
 
 **Tasks**:
+
 1. Create `auth.registerFromPairing()` function
 2. Update `/api/auth/register-with-invite` to check both systems
 3. Add transaction safety to new function
@@ -604,6 +642,7 @@ WHERE event = 'invitation_accepted'
 ### Phase 2: Frontend Error Handling
 
 **Tasks**:
+
 1. Update `AcceptInvitationPage.jsx` error messages
 2. Add error code mapping to user-friendly messages
 3. Add "Request New Invitation" CTA for expired/invalid invitations
@@ -618,6 +657,7 @@ WHERE event = 'invitation_accepted'
 ### Phase 3: Testing & Validation
 
 **Tasks**:
+
 1. Create integration tests for both systems
 2. Test backward compatibility with old invitations
 3. Test new pairing system invitations
@@ -633,6 +673,7 @@ WHERE event = 'invitation_accepted'
 ### Phase 4: Documentation & Deployment
 
 **Tasks**:
+
 1. Update API documentation
 2. Create troubleshooting guide for support team
 3. Deploy to staging environment
@@ -651,6 +692,7 @@ WHERE event = 'invitation_accepted'
 ### Unit Tests
 
 **Test Suite 1: `auth.registerFromPairing()`**
+
 - ✅ Valid pairing token creates account
 - ✅ Email already exists returns REG_001
 - ✅ Invalid token returns REG_002
@@ -661,6 +703,7 @@ WHERE event = 'invitation_accepted'
 - ✅ Notification sent to inviter
 
 **Test Suite 2: `/api/auth/register-with-invite` Endpoint**
+
 - ✅ Token from `invitations` table succeeds
 - ✅ Token from `pairing_sessions` table succeeds
 - ✅ Invalid token in both tables returns 400
@@ -672,6 +715,7 @@ WHERE event = 'invitation_accepted'
 ### Integration Tests
 
 **Test Scenario 1: Complete Invitation Flow (Pairing)**
+
 1. User A creates pairing invitation for User B
 2. User B receives link with token
 3. User B validates token (GET `/api/invitations/validate/:token`)
@@ -682,12 +726,14 @@ WHERE event = 'invitation_accepted'
 8. Verify User A receives notification
 
 **Test Scenario 2: Complete Invitation Flow (Old System)**
+
 1. User A creates old-style invitation
 2. User B receives link with token
 3. User B registers
 4. Verify all steps complete successfully
 
 **Test Scenario 3: Error Scenarios**
+
 1. Expired invitation → REG_003 error
 2. Already accepted → REG_004 error
 3. Email already exists → REG_001 error
@@ -722,6 +768,7 @@ WHERE event = 'invitation_accepted'
 **Description**: User has invitation in both `invitations` and `pairing_sessions` with different status values.
 
 **Mitigation**:
+
 - Prioritize `invitations` table (old system) in dual-lookup
 - Add uniqueness constraint on `invitee_email` across both tables
 - Create database migration to identify and resolve duplicates
@@ -736,6 +783,7 @@ WHERE event = 'invitation_accepted'
 **Description**: Transaction rollback fails, leaving user created but invitation not accepted.
 
 **Mitigation**:
+
 - Use PostgreSQL's native transaction support (ACID guarantees)
 - Add retry logic for transient failures
 - Implement cleanup job to detect orphaned users (no contacts, no rooms)
@@ -752,6 +800,7 @@ WHERE event = 'invitation_accepted'
 **Current Design**: Short codes intentionally allow any user to accept (for flexibility).
 
 **Mitigation**:
+
 - Show inviter confirmation step before registration (already implemented)
 - Log IP address and user agent for audit trail
 - Add "Report Abuse" button if user receives unexpected invitation
@@ -766,6 +815,7 @@ WHERE event = 'invitation_accepted'
 **Description**: Code changes break existing invitation links in user emails/SMS.
 
 **Mitigation**:
+
 - Comprehensive backward compatibility testing
 - Gradual rollout with feature flag
 - Keep old endpoints functional
@@ -911,17 +961,19 @@ ORDER BY timestamp DESC;
 **Description**: Register a new user with an invitation token or short code. Supports both legacy `invitations` system and new `pairing_sessions` system.
 
 **Request Body**:
+
 ```json
 {
   "email": "user@example.com",
   "password": "securepassword",
   "username": "Display Name",
-  "inviteToken": "abc123...",  // Optional: token from invitation link
-  "inviteCode": "LZ-ABCDEF"     // Optional: short code
+  "inviteToken": "abc123...", // Optional: token from invitation link
+  "inviteCode": "LZ-ABCDEF" // Optional: short code
 }
 ```
 
 **Response (200 Success)**:
+
 ```json
 {
   "success": true,
@@ -946,18 +998,18 @@ ORDER BY timestamp DESC;
 
 **Error Responses**:
 
-| Code | Status | Error Code | Message |
-|------|--------|------------|---------|
-| 400 | Bad Request | - | Email and password are required |
-| 400 | Bad Request | - | Username is required |
-| 400 | Bad Request | - | Either inviteToken or inviteCode is required |
-| 400 | Bad Request | - | Please enter a valid email address |
-| 400 | Bad Request | - | Password must be at least 4 characters |
-| 400 | Bad Request | REG_002 | Invalid invitation token |
-| 400 | Bad Request | REG_003 | Invitation has expired |
-| 400 | Bad Request | REG_004 | Invitation already accepted |
-| 409 | Conflict | REG_001 | An account with this email already exists |
-| 500 | Server Error | REG_007 | Database error occurred |
+| Code | Status       | Error Code | Message                                      |
+| ---- | ------------ | ---------- | -------------------------------------------- |
+| 400  | Bad Request  | -          | Email and password are required              |
+| 400  | Bad Request  | -          | Username is required                         |
+| 400  | Bad Request  | -          | Either inviteToken or inviteCode is required |
+| 400  | Bad Request  | -          | Please enter a valid email address           |
+| 400  | Bad Request  | -          | Password must be at least 4 characters       |
+| 400  | Bad Request  | REG_002    | Invalid invitation token                     |
+| 400  | Bad Request  | REG_003    | Invitation has expired                       |
+| 400  | Bad Request  | REG_004    | Invitation already accepted                  |
+| 409  | Conflict     | REG_001    | An account with this email already exists    |
+| 500  | Server Error | REG_007    | Database error occurred                      |
 
 ---
 
@@ -1006,6 +1058,7 @@ Implementing this specification will restore invitation functionality while main
 ---
 
 **Next Steps**:
+
 1. Review and approve specification
 2. Create implementation tasks from Phase 1-4
 3. Assign to engineering team

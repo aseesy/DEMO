@@ -1,9 +1,9 @@
 /**
  * MessageId Value Object
- * 
+ *
  * Immutable, validated message identifier wrapper.
  * Provides type safety for message IDs.
- * 
+ *
  * @module domain/valueObjects/MessageId
  */
 
@@ -26,7 +26,7 @@ class MessageId {
     }
 
     this.value = trimmed;
-    
+
     // Make immutable
     Object.freeze(this);
   }
@@ -73,4 +73,3 @@ class MessageId {
 }
 
 module.exports = MessageId;
-

@@ -13,12 +13,14 @@
 The dual-database architecture (PostgreSQL + Neo4j) is well-designed with strong privacy considerations. The separation of concerns is appropriate, but there are opportunities for optimization and enhanced query capabilities.
 
 **Key Strengths:**
+
 - ✅ Excellent privacy-by-design implementation
 - ✅ Appropriate data separation (relational vs. graph)
 - ✅ Good indexing strategy in PostgreSQL
 - ✅ Non-blocking Neo4j integration (graceful degradation)
 
 **Areas for Improvement:**
+
 - ⚠️ Limited Neo4j query utilization (only basic relationship queries)
 - ⚠️ Missing composite indexes for common query patterns
 - ⚠️ No data synchronization validation
@@ -54,17 +56,19 @@ The dual-database architecture (PostgreSQL + Neo4j) is well-designed with strong
    **Issue:** Common query patterns may require multiple column lookups that aren't optimized.
 
    **Example:**
+
    ```sql
    -- Frequently queried but not optimized:
-   SELECT * FROM messages 
+   SELECT * FROM messages
    WHERE room_id = ? AND timestamp > ? AND deleted = false
    ORDER BY timestamp DESC;
    ```
 
    **Recommendation:**
+
    ```sql
-   CREATE INDEX idx_messages_room_timestamp_deleted 
-   ON messages(room_id, timestamp DESC) 
+   CREATE INDEX idx_messages_room_timestamp_deleted
+   ON messages(room_id, timestamp DESC)
    WHERE deleted = false;
    ```
 
@@ -73,6 +77,7 @@ The dual-database architecture (PostgreSQL + Neo4j) is well-designed with strong
    **Issue:** 40+ columns added to `users` table via migration 010. While functional, this creates a wide table.
 
    **Recommendation:** Consider vertical partitioning for rarely-accessed profile data:
+
    ```sql
    CREATE TABLE user_profile_extended (
      user_id INTEGER PRIMARY KEY REFERENCES users(id),
@@ -80,6 +85,7 @@ The dual-database architecture (PostgreSQL + Neo4j) is well-designed with strong
      ...
    );
    ```
+
    **Benefit:** Faster queries on core user data, better cache utilization.
 
 3. **JSONB Usage**
@@ -87,6 +93,7 @@ The dual-database architecture (PostgreSQL + Neo4j) is well-designed with strong
    **Current:** `user_context` uses JSONB for `children` and `contacts`.
 
    **Recommendation:** If these are frequently queried, consider normalized tables:
+
    ```sql
    CREATE TABLE user_children (
      id SERIAL PRIMARY KEY,
@@ -96,6 +103,7 @@ The dual-database architecture (PostgreSQL + Neo4j) is well-designed with strong
      ...
    );
    ```
+
    **Benefit:** Better query performance, type safety, easier indexing.
 
 4. **Missing Constraints**
@@ -103,12 +111,13 @@ The dual-database architecture (PostgreSQL + Neo4j) is well-designed with strong
    **Issue:** Some columns lack CHECK constraints for data integrity.
 
    **Example:**
+
    ```sql
    -- Add constraint for status fields
-   ALTER TABLE tasks ADD CONSTRAINT check_task_status 
+   ALTER TABLE tasks ADD CONSTRAINT check_task_status
    CHECK (status IN ('open', 'in_progress', 'completed', 'cancelled'));
-   
-   ALTER TABLE room_members ADD CONSTRAINT check_role 
+
+   ALTER TABLE room_members ADD CONSTRAINT check_role
    CHECK (role IN ('owner', 'member', 'admin'));
    ```
 
@@ -116,34 +125,34 @@ The dual-database architecture (PostgreSQL + Neo4j) is well-designed with strong
 
 #### Current Index Coverage
 
-| Query Pattern | Index Status | Recommendation |
-|--------------|--------------|---------------|
-| `WHERE user_id = ?` | ✅ Indexed | Good |
-| `WHERE room_id = ?` | ✅ Indexed | Good |
-| `WHERE room_id = ? AND timestamp > ?` | ⚠️ Partial | Add composite index |
-| `WHERE user_id = ? AND status = ?` | ⚠️ Partial | Add composite index |
-| `WHERE email = ?` | ✅ Unique index | Good |
-| `WHERE username = ?` | ✅ Unique index | Good |
+| Query Pattern                         | Index Status    | Recommendation      |
+| ------------------------------------- | --------------- | ------------------- |
+| `WHERE user_id = ?`                   | ✅ Indexed      | Good                |
+| `WHERE room_id = ?`                   | ✅ Indexed      | Good                |
+| `WHERE room_id = ? AND timestamp > ?` | ⚠️ Partial      | Add composite index |
+| `WHERE user_id = ? AND status = ?`    | ⚠️ Partial      | Add composite index |
+| `WHERE email = ?`                     | ✅ Unique index | Good                |
+| `WHERE username = ?`                  | ✅ Unique index | Good                |
 
 #### Recommended Additional Indexes
 
 ```sql
 -- Messages: Room + timestamp + deleted filter
-CREATE INDEX idx_messages_room_active 
-ON messages(room_id, timestamp DESC) 
+CREATE INDEX idx_messages_room_active
+ON messages(room_id, timestamp DESC)
 WHERE deleted = false;
 
 -- Tasks: User + status + due_date
-CREATE INDEX idx_tasks_user_status_due 
-ON tasks(user_id, status, due_date) 
+CREATE INDEX idx_tasks_user_status_due
+ON tasks(user_id, status, due_date)
 WHERE status != 'completed';
 
 -- Contacts: User + relationship type
-CREATE INDEX idx_contacts_user_relationship 
+CREATE INDEX idx_contacts_user_relationship
 ON contacts(user_id, relationship);
 
 -- Communication stats: User + room for analytics
-CREATE INDEX idx_comm_stats_user_room 
+CREATE INDEX idx_comm_stats_user_room
 ON communication_stats(user_id, room_id);
 ```
 
@@ -177,10 +186,11 @@ ON communication_stats(user_id, room_id);
    **Current:** Only `CO_PARENT_WITH` relationship type.
 
    **Recommendation:** Add relationship types for future extensibility:
+
    ```cypher
    // Current
    (u1)-[:CO_PARENT_WITH]->(u2)
-   
+
    // Enhanced
    (u1)-[:CO_PARENT_WITH {type: "primary"}]->(u2)
    (u1)-[:CO_PARENT_WITH {type: "secondary"}]->(u3)  // Step-parent, etc.
@@ -192,6 +202,7 @@ ON communication_stats(user_id, room_id);
    **Issue:** User nodes are minimal (only userId, username, createdAt).
 
    **Recommendation:** Add non-identifying metadata for analytics:
+
    ```cypher
    (:User {
      userId: 123,
@@ -209,6 +220,7 @@ ON communication_stats(user_id, room_id);
    **Issue:** All relationships are equal weight.
 
    **Recommendation:** Add relationship metrics:
+
    ```cypher
    (u1)-[:CO_PARENT_WITH {
      roomId: "room_123",
@@ -226,10 +238,11 @@ ON communication_stats(user_id, room_id);
    **Issue:** No history tracking for relationship changes.
 
    **Recommendation:** Use relationship versioning:
+
    ```cypher
    // Current active relationship
    (u1)-[:CO_PARENT_WITH {active: true}]->(u2)
-   
+
    // Historical relationship (when ended)
    (u1)-[:CO_PARENT_WITH_HISTORY {
      active: false,
@@ -243,6 +256,7 @@ ON communication_stats(user_id, room_id);
 #### Current Queries
 
 **Only one query function exists:**
+
 ```cypher
 MATCH (u:User {userId: $userId})-[r:CO_PARENT_WITH {active: true}]->(coParent:User)
 RETURN coParent.userId, coParent.username, r.roomId
@@ -251,6 +265,7 @@ RETURN coParent.userId, coParent.username, r.roomId
 #### Recommended Additional Queries
 
 1. **Relationship Strength Analysis**
+
    ```cypher
    MATCH (u:User {userId: $userId})-[r:CO_PARENT_WITH]->(cp:User)
    WHERE r.active = true
@@ -259,6 +274,7 @@ RETURN coParent.userId, coParent.username, r.roomId
    ```
 
 2. **Network Analysis**
+
    ```cypher
    MATCH (u:User {userId: $userId})-[:CO_PARENT_WITH*1..2]-(other:User)
    RETURN DISTINCT other.userId, other.username
@@ -266,6 +282,7 @@ RETURN coParent.userId, coParent.username, r.roomId
    ```
 
 3. **Room-Based Queries**
+
    ```cypher
    MATCH (u:User {userId: $userId})-[:MEMBER_OF]->(r:Room)
    MATCH (r)<-[:MEMBER_OF]-(member:User)
@@ -306,13 +323,14 @@ RETURN coParent.userId, coParent.username, r.roomId
    **Issue:** No mechanism to ensure PostgreSQL and Neo4j stay in sync.
 
    **Recommendation:** Add periodic sync validation:
+
    ```javascript
    async function validateSync() {
      // Get all co-parent relationships from PostgreSQL
      const pgRelationships = await dbSafe.safeSelect('room_members', {
        // Get rooms with 2 members (co-parent relationships)
      });
-     
+
      // Verify in Neo4j
      for (const rel of pgRelationships) {
        const neo4jRel = await neo4jClient.getCoParents(rel.user_id);
@@ -326,6 +344,7 @@ RETURN coParent.userId, coParent.username, r.roomId
    **Issue:** If Neo4j write succeeds but PostgreSQL transaction fails, Neo4j data is orphaned.
 
    **Recommendation:** Use PostgreSQL as source of truth, Neo4j as eventually consistent:
+
    ```javascript
    // Current: Neo4j write happens after PostgreSQL
    // Better: Write to PostgreSQL first, then Neo4j
@@ -337,6 +356,7 @@ RETURN coParent.userId, coParent.username, r.roomId
    **Issue:** Each relationship created individually.
 
    **Recommendation:** Batch Neo4j operations:
+
    ```cypher
    UNWIND $relationships AS rel
    MATCH (u1:User {userId: rel.userId1})
@@ -351,10 +371,12 @@ RETURN coParent.userId, coParent.username, r.roomId
 ### 4.1 Data Minimization ✅ **EXCELLENT**
 
 **PostgreSQL:**
+
 - Contains all PII (email, displayName, addresses, etc.)
 - Proper access control via application layer
 
 **Neo4j:**
+
 - ✅ No email stored
 - ✅ No displayName stored
 - ✅ No room names stored
@@ -378,9 +400,10 @@ RETURN coParent.userId, coParent.username, r.roomId
    **Current:** Application-level access control only.
 
    **Recommendation:** Enable PostgreSQL RLS for defense in depth:
+
    ```sql
    ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
-   
+
    CREATE POLICY contacts_user_policy ON contacts
    FOR ALL
    USING (user_id = current_setting('app.current_user_id')::INTEGER);
@@ -391,6 +414,7 @@ RETURN coParent.userId, coParent.username, r.roomId
    **Current:** Single service account with full access.
 
    **Recommendation:** Use Neo4j role-based access control:
+
    ```cypher
    // Create read-only role for analytics
    CREATE ROLE analyst;
@@ -403,6 +427,7 @@ RETURN coParent.userId, coParent.username, r.roomId
    **Current:** Privacy violations logged to console.
 
    **Recommendation:** Structured audit logging:
+
    ```sql
    CREATE TABLE neo4j_audit_log (
      id SERIAL PRIMARY KEY,
@@ -424,6 +449,7 @@ RETURN coParent.userId, coParent.username, r.roomId
 #### PostgreSQL Queries ✅ **GOOD**
 
 **Well-Supported:**
+
 - User lookups (by email, username, ID)
 - Room membership queries
 - Message history
@@ -435,6 +461,7 @@ RETURN coParent.userId, coParent.username, r.roomId
 **Current:** Only basic co-parent relationship queries.
 
 **Potential (Not Yet Implemented):**
+
 - Network analysis (find mutual connections)
 - Relationship strength analysis
 - Communication pattern analysis
@@ -444,6 +471,7 @@ RETURN coParent.userId, coParent.username, r.roomId
 ### 5.2 Recommended Query Enhancements
 
 1. **Relationship Analytics**
+
    ```cypher
    // Find users with multiple co-parent relationships
    MATCH (u:User)-[r:CO_PARENT_WITH]->(cp:User)
@@ -454,6 +482,7 @@ RETURN coParent.userId, coParent.username, r.roomId
    ```
 
 2. **Communication Network**
+
    ```cypher
    // Find all users connected through co-parent relationships
    MATCH path = (u:User {userId: $userId})-[*1..3]-(other:User)
@@ -478,6 +507,7 @@ RETURN coParent.userId, coParent.username, r.roomId
 ### 6.1 PostgreSQL Performance
 
 #### ✅ **Good Practices**
+
 - Appropriate indexes on foreign keys
 - Composite indexes where needed
 - JSONB for flexible schema
@@ -502,6 +532,7 @@ RETURN coParent.userId, coParent.username, r.roomId
    **Issue:** User lookups by `userId` may be slow at scale.
 
    **Recommendation:**
+
    ```cypher
    CREATE INDEX user_userId_index FOR (u:User) ON (u.userId);
    CREATE INDEX room_roomId_index FOR (r:Room) ON (r.roomId);
@@ -512,6 +543,7 @@ RETURN coParent.userId, coParent.username, r.roomId
    **Current:** Using HTTP API (higher latency than Bolt).
 
    **Recommendation:** Consider Neo4j driver for production:
+
    ```javascript
    const neo4j = require('neo4j-driver');
    const driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
@@ -520,6 +552,7 @@ RETURN coParent.userId, coParent.username, r.roomId
 3. **Query Caching**
 
    **Recommendation:** Cache frequently-accessed relationship queries:
+
    ```javascript
    const relationshipCache = new Map();
    // Cache co-parent relationships for 5 minutes
@@ -532,6 +565,7 @@ RETURN coParent.userId, coParent.username, r.roomId
 ### 🔴 **High Priority**
 
 1. **Add Neo4j Indexes**
+
    ```cypher
    CREATE INDEX user_userId_index FOR (u:User) ON (u.userId);
    CREATE INDEX room_roomId_index FOR (r:Room) ON (r.roomId);
@@ -580,12 +614,14 @@ RETURN coParent.userId, coParent.username, r.roomId
 ### Overall Assessment: **B+ (85/100)**
 
 **Strengths:**
+
 - Excellent privacy implementation
 - Good schema design
 - Appropriate technology choices
 - Non-blocking integration
 
 **Improvements Needed:**
+
 - Enhanced Neo4j query capabilities
 - Better indexing strategy
 - Sync validation
@@ -596,8 +632,8 @@ RETURN coParent.userId, coParent.username, r.roomId
 ---
 
 **Next Steps:**
+
 1. Implement high-priority recommendations
 2. Add monitoring for database performance
 3. Create query performance benchmarks
 4. Document query patterns for team
-

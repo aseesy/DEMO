@@ -53,10 +53,7 @@ const CLEAN_AXIOMS = new Set([
 /**
  * High-risk targets (attacking these is more harmful)
  */
-const HIGH_RISK_TARGETS = new Set([
-  TARGETS.CHARACTER,
-  TARGETS.PARENTING,
-]);
+const HIGH_RISK_TARGETS = new Set([TARGETS.CHARACTER, TARGETS.PARENTING]);
 
 /**
  * Attack surfaces map target types
@@ -93,7 +90,10 @@ function determineConflictPotential({ axiomsFired = [], vector = {}, markers = {
   }
 
   // Check for child as instrument with negative intent
-  if (vector.instrument === 'child' && (vector.aim === AIMS.ATTACK || vector.aim === AIMS.CONTROL)) {
+  if (
+    vector.instrument === 'child' &&
+    (vector.aim === AIMS.ATTACK || vector.aim === AIMS.CONTROL)
+  ) {
     return CONFLICT_LEVELS.HIGH;
   }
 
@@ -105,8 +105,8 @@ function determineConflictPotential({ axiomsFired = [], vector = {}, markers = {
 
   // Check marker patterns that suggest moderate conflict
   if (markers.patternMarkers && markers.patternMarkers.length > 0) {
-    const hasBlameOrGlobal = markers.patternMarkers.some(m =>
-      m.type === 'blame' || m.type === 'global_statement' || m.type === 'character_attack'
+    const hasBlameOrGlobal = markers.patternMarkers.some(
+      m => m.type === 'blame' || m.type === 'global_statement' || m.type === 'character_attack'
     );
     if (hasBlameOrGlobal) {
       return CONFLICT_LEVELS.MODERATE;
@@ -194,7 +194,9 @@ function determineDeniability(markers = {}, axiomsFired = []) {
   }
 
   // High deniability for indirect communication axioms
-  const indirectAxioms = axiomsFired.filter(a => a.category === AXIOM_CATEGORIES.INDIRECT_COMMUNICATION);
+  const indirectAxioms = axiomsFired.filter(
+    a => a.category === AXIOM_CATEGORIES.INDIRECT_COMMUNICATION
+  );
   if (indirectAxioms.length > 0) {
     return 'high';
   }
@@ -292,12 +294,12 @@ function generate({ axiomsFired = [], vector = {}, markers = {}, conceptual = {}
     attackSurface,
     childAsInstrument,
     deniability,
-    transmit
+    transmit,
   };
 
   return {
     assessment,
-    latencyMs: Date.now() - startTime
+    latencyMs: Date.now() - startTime,
   };
 }
 
@@ -324,5 +326,5 @@ module.exports = {
   HIGH_RISK_AXIOMS,
   MODERATE_RISK_AXIOMS,
   CLEAN_AXIOMS,
-  HIGH_RISK_TARGETS
+  HIGH_RISK_TARGETS,
 };

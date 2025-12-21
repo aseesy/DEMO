@@ -1,9 +1,9 @@
 /**
  * Gmail OAuth2 Refresh Token Generator
- * 
+ *
  * This script helps you generate a refresh token for Gmail OAuth2 authentication.
  * It uses a local web server to receive the OAuth callback (Google deprecated OOB flow).
- * 
+ *
  * Usage:
  * 1. Get your Client Secret from Google Cloud Console
  * 2. Add http://localhost:3000/oauth/callback to your authorized redirect URIs
@@ -17,18 +17,19 @@ const readline = require('readline');
 const https = require('https');
 
 // Default Client ID (can be overridden by environment variable or prompt)
-const DEFAULT_CLIENT_ID = process.env.GMAIL_CLIENT_ID || 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
+const DEFAULT_CLIENT_ID =
+  process.env.GMAIL_CLIENT_ID || 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
 const REDIRECT_URI = 'http://localhost:3000/oauth/callback';
 const PORT = 3000;
 const SCOPES = ['https://www.googleapis.com/auth/gmail.send'];
 
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 
 function question(prompt) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     rl.question(prompt, resolve);
   });
 }
@@ -36,7 +37,7 @@ function question(prompt) {
 async function generateRefreshToken() {
   console.log('\n📧 Gmail OAuth2 Refresh Token Generator');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-  
+
   // Get Client ID (from env var, default, or prompt)
   let clientId = DEFAULT_CLIENT_ID;
   if (clientId === 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com') {
@@ -44,7 +45,7 @@ async function generateRefreshToken() {
     console.log('   You can find it in Google Cloud Console:');
     console.log('   https://console.cloud.google.com/apis/credentials\n');
     clientId = await question('Enter your Gmail Client ID: ');
-    
+
     if (!clientId || clientId.trim() === '' || clientId.includes('YOUR_CLIENT_ID_HERE')) {
       console.error('\n❌ Client ID is required!');
       console.log('\n📋 Steps to get your Client ID:');
@@ -57,13 +58,13 @@ async function generateRefreshToken() {
     }
     clientId = clientId.trim();
   }
-  
+
   console.log(`\n✅ Using Client ID: ${clientId}\n`);
-  
+
   console.log('⚠️  IMPORTANT: Before continuing, make sure you have added');
   console.log('   this redirect URI to your Google Cloud Console:');
   console.log(`   ${REDIRECT_URI}\n`);
-  
+
   const proceed = await question('Have you added the redirect URI? (yes/no): ');
   if (proceed.toLowerCase() !== 'yes' && proceed.toLowerCase() !== 'y') {
     console.log('\n📋 Steps to add redirect URI:');
@@ -78,8 +79,10 @@ async function generateRefreshToken() {
   }
 
   // Get client secret
-  const clientSecret = await question('\nEnter your Gmail Client Secret (from Google Cloud Console): ');
-  
+  const clientSecret = await question(
+    '\nEnter your Gmail Client Secret (from Google Cloud Console): '
+  );
+
   if (!clientSecret || clientSecret.trim() === '') {
     console.error('\n❌ Client Secret is required!');
     rl.close();
@@ -87,7 +90,8 @@ async function generateRefreshToken() {
   }
 
   // Step 1: Generate authorization URL
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+  const authUrl =
+    `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${encodeURIComponent(clientId)}&` +
     `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
     `response_type=code&` +
@@ -103,14 +107,14 @@ async function generateRefreshToken() {
     // Create a simple HTTP server to receive the callback
     const server = http.createServer((req, res) => {
       const parsedUrl = url.parse(req.url, true);
-      
+
       // Handle favicon requests (browsers request this automatically)
       if (parsedUrl.pathname === '/favicon.ico') {
         res.writeHead(204, { 'Content-Type': 'image/x-icon' });
         res.end();
         return;
       }
-      
+
       if (parsedUrl.pathname === '/oauth/callback') {
         const code = parsedUrl.query.code;
         const error = parsedUrl.query.error;
@@ -161,17 +165,19 @@ async function generateRefreshToken() {
       console.log('\n📋 Step 2: Authorize the application');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('\n1. Opening authorization URL in your browser...');
-      console.log('2. Sign in with your Google account (the one you want to use for sending emails)');
+      console.log(
+        '2. Sign in with your Google account (the one you want to use for sending emails)'
+      );
       console.log('3. Click "Allow" to grant permission');
       console.log('4. You will be redirected back to this script\n');
-      console.log('If the browser doesn\'t open automatically, visit:');
+      console.log("If the browser doesn't open automatically, visit:");
       console.log('\n   ' + authUrl + '\n');
-      
+
       // Try to open browser (works on macOS, Linux, Windows)
       const { exec } = require('child_process');
       const platform = process.platform;
       let command;
-      
+
       if (platform === 'darwin') {
         command = 'open';
       } else if (platform === 'win32') {
@@ -179,8 +185,8 @@ async function generateRefreshToken() {
       } else {
         command = 'xdg-open';
       }
-      
-      exec(`${command} "${authUrl}"`, (err) => {
+
+      exec(`${command} "${authUrl}"`, err => {
         if (err) {
           console.log('   (Could not open browser automatically)\n');
         }
@@ -188,10 +194,13 @@ async function generateRefreshToken() {
     });
 
     // Timeout after 5 minutes
-    setTimeout(() => {
-      server.close();
-      reject(new Error('Timeout: No authorization received within 5 minutes'));
-    }, 5 * 60 * 1000);
+    setTimeout(
+      () => {
+        server.close();
+        reject(new Error('Timeout: No authorization received within 5 minutes'));
+      },
+      5 * 60 * 1000
+    );
   });
 
   // Wait for authorization code
@@ -213,7 +222,7 @@ async function generateRefreshToken() {
     client_secret: clientSecret.trim(),
     code: authCode,
     redirect_uri: REDIRECT_URI,
-    grant_type: 'authorization_code'
+    grant_type: 'authorization_code',
   });
 
   const options = {
@@ -222,15 +231,15 @@ async function generateRefreshToken() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Content-Length': postData.length
-    }
+      'Content-Length': postData.length,
+    },
   };
 
   return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
+    const req = https.request(options, res => {
       let data = '';
 
-      res.on('data', (chunk) => {
+      res.on('data', chunk => {
         data += chunk;
       });
 
@@ -241,7 +250,7 @@ async function generateRefreshToken() {
           if (response.error) {
             console.error('\n❌ Error:', response.error);
             console.error('   Description:', response.error_description || 'Unknown error');
-            
+
             if (response.error === 'invalid_client') {
               console.error('\n💡 Troubleshooting:');
               console.error('   This usually means the Client Secret is incorrect.');
@@ -249,10 +258,12 @@ async function generateRefreshToken() {
               console.error('   1. Go to: https://console.cloud.google.com/apis/credentials');
               console.error('   2. Find your OAuth 2.0 Client ID');
               console.error('   3. Click on it and verify the Client Secret');
-              console.error('   4. Make sure you copied the entire Client Secret (no spaces/truncation)');
+              console.error(
+                '   4. Make sure you copied the entire Client Secret (no spaces/truncation)'
+              );
               console.error('   5. Try generating a new Client Secret if needed');
             }
-            
+
             rl.close();
             reject(new Error(response.error_description || response.error));
             return;
@@ -294,7 +305,7 @@ async function generateRefreshToken() {
       });
     });
 
-    req.on('error', (err) => {
+    req.on('error', err => {
       console.error('\n❌ Request error:', err);
       rl.close();
       reject(err);
@@ -311,7 +322,7 @@ generateRefreshToken()
     console.log('✅ Done!\n');
     process.exit(0);
   })
-  .catch((err) => {
+  .catch(err => {
     console.error('\n❌ Failed to generate refresh token:', err.message);
     process.exit(1);
   });

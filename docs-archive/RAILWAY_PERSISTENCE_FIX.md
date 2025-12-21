@@ -1,6 +1,7 @@
 # Railway Database Persistence Fix
 
 ## 🚨 Problem
+
 Railway uses an **ephemeral filesystem** - any files saved to disk are lost when the service restarts or redeploys. Your `chat.db` file is being lost, causing all users and data to disappear.
 
 ## ✅ Solution: Add Railway Volume
@@ -42,6 +43,7 @@ Railway will automatically redeploy with the new volume mounted.
 ## ✅ Verification
 
 After deploying, check Railway logs for:
+
 ```
 ✅ Created database directory: /data
 ✅ Database saved to: /data/chat.db
@@ -73,12 +75,14 @@ Then update your Node.js app to use PostgreSQL (requires code changes).
 ## 🎯 Recommended Immediate Action
 
 **Use Railway Volume** (5 minutes):
+
 - Quick fix
 - No code changes
 - Works with current sql.js setup
 - Good for small-medium scale
 
 **Later: Migrate to PostgreSQL** (1-2 hours):
+
 - Production-grade database
 - Better scalability
 - Industry standard

@@ -68,12 +68,14 @@ cypher-shell -a neo4j://127.0.0.1:7687 -u neo4j -p kajsdfaijeoivjr \
 ## 📊 Current Configuration
 
 ### Local Development
+
 - **Neo4j URI**: `http://127.0.0.1:7474`
 - **Neo4j User**: `neo4j`
 - **Neo4j Database**: `neo4j`
 - **Status**: ✅ Configured
 
 ### Production (Railway)
+
 - **Neo4j URI**: `http://127.0.0.1:7474` (same as local)
 - **Neo4j User**: `neo4j`
 - **Neo4j Database**: `neo4j`
@@ -92,6 +94,7 @@ When users sign up, Neo4j nodes are automatically created:
 ### Integration Points
 
 Neo4j integration is active in:
+
 - ✅ `auth.js` - User creation functions
 - ✅ `roomManager.js` - Co-parent relationship creation
 - ✅ All user registration flows
@@ -101,6 +104,7 @@ Neo4j integration is active in:
 ### Issue: "Neo4j not configured" in logs
 
 **Solution:**
+
 1. Verify variables in Railway Dashboard → Variables tab
 2. Check variable names are exact: `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`, `NEO4J_DATABASE`
 3. Ensure no typos in values
@@ -109,6 +113,7 @@ Neo4j integration is active in:
 ### Issue: Connection refused errors
 
 **Solution:**
+
 1. Verify Neo4j is running locally: `neo4j status`
 2. Check `NEO4J_URI` is correct: `http://127.0.0.1:7474`
 3. For production, ensure Neo4j is accessible from Railway
@@ -116,6 +121,7 @@ Neo4j integration is active in:
 ### Issue: Authentication failed
 
 **Solution:**
+
 1. Verify `NEO4J_USER` and `NEO4J_PASSWORD` are correct
 2. Test locally: `cypher-shell -a neo4j://127.0.0.1:7687 -u neo4j -p [password]`
 
@@ -138,4 +144,3 @@ Neo4j integration is active in:
 ---
 
 **Note**: If Railway is connecting to a remote Neo4j instance, make sure the `NEO4J_URI` in Railway points to that instance, not `http://127.0.0.1:7474`.
-

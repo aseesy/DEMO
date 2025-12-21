@@ -104,6 +104,7 @@
 ### Getting "invalid_client" Error?
 
 This means the credentials are set but incorrect:
+
 - Verify Client ID matches Google Cloud Console
 - Verify Client Secret matches Google Cloud Console
 - Check redirect URI matches exactly
@@ -111,6 +112,7 @@ This means the credentials are set but incorrect:
 ### Redirect URI Mismatch?
 
 The redirect URI in Railway must **exactly match** Google Cloud Console:
+
 - ✅ `https://coparentliaizen.com/auth/google/callback`
 - ❌ `https://coparentliaizen.com/auth/google/callback/` (trailing slash)
 - ❌ `http://coparentliaizen.com/auth/google/callback` (http not https)
@@ -118,8 +120,8 @@ The redirect URI in Railway must **exactly match** Google Cloud Console:
 ## Need Help?
 
 If issues persist:
+
 1. Check Railway deployment logs
 2. Verify all environment variables are set
 3. Double-check Google Cloud Console configuration
 4. Ensure redirect URIs match exactly
-

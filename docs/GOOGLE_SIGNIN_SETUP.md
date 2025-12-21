@@ -5,6 +5,7 @@ This guide will help you set up Google Sign-In (OAuth 2.0) for user authenticati
 ## Quick Overview
 
 You need to:
+
 1. Create a Google Cloud project
 2. Enable OAuth 2.0 API
 3. Configure OAuth consent screen
@@ -93,18 +94,15 @@ You need to:
 
 3. **Configure OAuth Client:**
    - **Name:** `LiaiZen Google Sign-In` or `LiaiZen OAuth Client`
-   
    - **Authorized JavaScript origins:**
      - `http://localhost:3000` (for local development)
      - `https://coparentliaizen.com` (for production)
      - `https://www.coparentliaizen.com` (for www subdomain)
      - If using Vercel preview deployments, you can add: `https://*.vercel.app` (but individual domains are better)
-   
    - **Authorized redirect URIs:**
      - `http://localhost:3000/auth/google/callback` (for local development)
      - `https://coparentliaizen.com/auth/google/callback` (for production)
      - `https://www.coparentliaizen.com/auth/google/callback` (for www subdomain)
-   
    - Click "Create"
 
 4. **Save Your Credentials:**
@@ -141,11 +139,9 @@ FRONTEND_URL=http://localhost:3000
      - **Name:** `GOOGLE_CLIENT_ID`
      - **Value:** Your Client ID from Step 4
      - Click "Add"
-   
    - **Name:** `GOOGLE_CLIENT_SECRET`
    - **Value:** Your Client Secret from Step 4
    - Click "Add"
-   
    - **Name:** `FRONTEND_URL`
    - **Value:** `https://coparentliaizen.com,https://www.coparentliaizen.com`
    - Click "Add"
@@ -159,12 +155,14 @@ FRONTEND_URL=http://localhost:3000
 ### Local Testing:
 
 1. **Start your backend server:**
+
    ```bash
    cd chat-server
    node server.js
    ```
 
 2. **Start your frontend:**
+
    ```bash
    cd chat-client
    pnpm dev
@@ -240,6 +238,7 @@ FRONTEND_URL=http://localhost:3000
 ## Next Steps
 
 After setting up OAuth:
+
 1. Test the sign-in flow locally
 2. Deploy to production
 3. Test on production domain
@@ -250,4 +249,3 @@ After setting up OAuth:
 - [Gmail OAuth Setup](./GMAIL_NEW_CLIENT_SETUP.md) - For email sending (can use same OAuth client)
 - [Railway Deployment](./RAILWAY_DEPLOYMENT.md) - Backend deployment guide
 - [Vercel Deployment](./VERCEL_DEPLOYMENT.md) - Frontend deployment guide
-

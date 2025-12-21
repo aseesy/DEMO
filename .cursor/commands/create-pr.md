@@ -19,6 +19,7 @@ Please provide a title and body for your pull request.
 ```
 {{CURSOR_INPUT_PR_TITLE}}
 ```
+
 ```
 {{CURSOR_INPUT_PR_BODY}}
 ```

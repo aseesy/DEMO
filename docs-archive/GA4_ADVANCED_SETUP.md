@@ -11,11 +11,13 @@ This guide covers advanced GA4 configurations that will provide deeper insights 
 **Why**: Track your most important user actions as conversions to measure success.
 
 ### Steps:
+
 1. Go to **Admin** → **Data Streams** → Select your stream
 2. Click **Events** tab
 3. Toggle "Mark as conversion" for these events:
 
 **Recommended Conversions:**
+
 - ✅ `sign_up` - User registration
 - ✅ `conversion` - General conversions (already tracked)
 - ✅ `message_sent` - First message sent (engagement milestone)
@@ -24,6 +26,7 @@ This guide covers advanced GA4 configurations that will provide deeper insights 
 - ✅ `rewrite_used` - AI rewrite accepted (AI feature adoption)
 
 ### How to Set Up:
+
 1. Find each event in the Events list
 2. Toggle the switch to mark as conversion
 3. Optionally add a value (e.g., `message_sent` = $1 engagement value)
@@ -39,6 +42,7 @@ This guide covers advanced GA4 configurations that will provide deeper insights 
 ### Recommended Custom Dimensions:
 
 #### User-Scoped Dimensions:
+
 1. **User Type** (`user_type`)
    - Values: `new_user`, `returning_user`, `active_user`, `inactive_user`
    - Use: Segment users by engagement level
@@ -56,6 +60,7 @@ This guide covers advanced GA4 configurations that will provide deeper insights 
    - Use: Understand multi-user vs single-user behavior
 
 #### Event-Scoped Dimensions:
+
 5. **Message Sentiment** (`message_sentiment`)
    - Values: `positive`, `neutral`, `negative`, `flagged`
    - Use: Track communication quality
@@ -69,6 +74,7 @@ This guide covers advanced GA4 configurations that will provide deeper insights 
    - Use: Analyze task management patterns
 
 ### How to Set Up:
+
 1. Go to **Admin** → **Custom Definitions** → **Custom Dimensions**
 2. Click **Create custom dimension**
 3. Choose scope (User or Event)
@@ -86,22 +92,24 @@ This guide covers advanced GA4 configurations that will provide deeper insights 
 ### Recommended User Properties:
 
 1. **User Engagement Level**
+
    ```javascript
    window.gtag('set', 'user_properties', {
      engagement_level: 'high', // high, medium, low
      days_since_signup: 30,
      total_messages: 150,
-     has_completed_onboarding: true
+     has_completed_onboarding: true,
    });
    ```
 
 2. **Product Usage**
+
    ```javascript
    window.gtag('set', 'user_properties', {
      features_used: ['chat', 'tasks', 'contacts'],
      ai_interventions_accepted: 5,
      tasks_completed: 12,
-     contacts_count: 3
+     contacts_count: 3,
    });
    ```
 
@@ -110,18 +118,19 @@ This guide covers advanced GA4 configurations that will provide deeper insights 
    window.gtag('set', 'user_properties', {
      has_coparent_connected: true,
      room_member_count: 2,
-     relationship_duration_days: 180
+     relationship_duration_days: 180,
    });
    ```
 
 ### How to Set Up:
+
 Add to your analytics code when user logs in or profile updates:
 
 ```javascript
 // In your login/authentication handler
 export function setUserProperties(properties) {
   if (!window.gtag) return;
-  
+
   window.gtag('set', 'user_properties', properties);
 }
 ```
@@ -159,6 +168,7 @@ export function setUserProperties(properties) {
    - Use: Feature usage analysis
 
 ### How to Set Up:
+
 1. Go to **Admin** → **Audiences**
 2. Click **New Audience**
 3. Choose **Create a custom audience**
@@ -176,31 +186,39 @@ export function setUserProperties(properties) {
 ### Recommended Reports:
 
 #### 1. **User Engagement Dashboard**
+
 **Metrics:**
+
 - Messages sent per user
 - Sessions per user
 - Average session duration
 - Feature usage (chat, tasks, contacts)
 
 **Dimensions:**
+
 - User type (new vs returning)
 - Days since signup
 - Has co-parent connected
 
 #### 2. **AI Feature Performance**
+
 **Metrics:**
+
 - AI interventions triggered
 - Rewrite acceptance rate
 - Intervention override rate
 - Most common intervention types
 
 **Dimensions:**
+
 - Intervention type
 - Risk level
 - User engagement level
 
 #### 3. **Conversion Funnel**
+
 **Steps:**
+
 1. Landing page view
 2. CTA click
 3. Sign-up
@@ -212,18 +230,22 @@ export function setUserProperties(properties) {
 **Use**: Identify drop-off points in user journey
 
 #### 4. **Task Management Analytics**
+
 **Metrics:**
+
 - Tasks created
 - Tasks completed
 - Completion rate by priority
 - Average time to complete
 
 **Dimensions:**
+
 - Task type
 - Priority
 - User segment
 
 ### How to Set Up:
+
 1. Go to **Explore** → **Blank** (or use template)
 2. Add dimensions and metrics
 3. Configure visualization
@@ -237,6 +259,7 @@ export function setUserProperties(properties) {
 **Why**: Automatically track common web interactions.
 
 ### Enable in GA4:
+
 1. Go to **Admin** → **Data Streams** → Select stream
 2. Click **Enhanced measurement**
 3. Enable:
@@ -255,11 +278,12 @@ export function setUserProperties(properties) {
 **Why**: Test and verify tracking in real-time during development.
 
 ### How to Set Up:
+
 1. Install **Google Analytics Debugger** Chrome extension
 2. Or add debug mode to your code:
    ```javascript
    gtag('config', GA_MEASUREMENT_ID, {
-     debug_mode: true
+     debug_mode: true,
    });
    ```
 3. Go to **Admin** → **DebugView**
@@ -274,6 +298,7 @@ export function setUserProperties(properties) {
 **Why**: Understand which touchpoints drive conversions.
 
 ### Recommended Settings:
+
 1. Go to **Admin** → **Attribution Settings**
 2. Choose **Data-driven attribution** (default)
 3. Set lookback windows:
@@ -289,13 +314,14 @@ export function setUserProperties(properties) {
 **Why**: Track users across devices and sessions accurately.
 
 ### How to Set Up:
+
 1. Go to **Admin** → **Data Streams** → Select stream
 2. Enable **User ID**
 3. Update your tracking code:
    ```javascript
    // When user logs in
    window.gtag('config', GA_MEASUREMENT_ID, {
-     user_id: username // or user ID from your database
+     user_id: username, // or user ID from your database
    });
    ```
 
@@ -310,22 +336,25 @@ export function setUserProperties(properties) {
 **Why**: Monitor app errors and issues.
 
 ### Recommended Events:
+
 - `exception` - JavaScript errors
 - `api_error` - Failed API calls
 - `form_error` - Form validation errors
 - `connection_error` - WebSocket/connection issues
 
 ### Implementation:
+
 Add to your error handlers:
+
 ```javascript
 export function trackError(error, errorType = 'exception') {
   if (!window.gtag) return;
-  
+
   window.gtag('event', 'exception', {
     description: error.message,
     fatal: false,
     error_type: errorType,
-    error_stack: error.stack?.substring(0, 500) // Truncate for privacy
+    error_stack: error.stack?.substring(0, 500), // Truncate for privacy
   });
 }
 ```
@@ -337,34 +366,36 @@ export function trackError(error, errorType = 'exception') {
 **Why**: Track page load times and performance metrics.
 
 ### Recommended Metrics:
+
 - Page load time
 - Time to interactive
 - API response time
 - Component render time
 
 ### Implementation:
+
 ```javascript
 // Track page load performance
 export function trackPagePerformance() {
   if (!window.gtag || !window.performance) return;
-  
+
   const perfData = window.performance.timing;
   const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
-  
+
   window.gtag('event', 'page_load_time', {
     value: Math.round(pageLoadTime),
-    event_category: 'performance'
+    event_category: 'performance',
   });
 }
 
 // Track API response time
 export function trackAPIResponseTime(endpoint, duration) {
   if (!window.gtag) return;
-  
+
   window.gtag('event', 'api_response_time', {
     endpoint: endpoint,
     duration: duration,
-    event_category: 'performance'
+    event_category: 'performance',
   });
 }
 ```
@@ -376,6 +407,7 @@ export function trackAPIResponseTime(endpoint, duration) {
 **Why**: Track subscription signups, upgrades, or purchases.
 
 ### If You Add Paid Plans:
+
 1. Go to **Admin** → **Data Streams** → Select stream
 2. Enable **Enhanced ecommerce**
 3. Track purchase events:
@@ -384,12 +416,14 @@ export function trackAPIResponseTime(endpoint, duration) {
      transaction_id: 'T12345',
      value: 29.99,
      currency: 'USD',
-     items: [{
-       item_id: 'premium_monthly',
-       item_name: 'Premium Monthly',
-       price: 29.99,
-       quantity: 1
-     }]
+     items: [
+       {
+         item_id: 'premium_monthly',
+         item_name: 'Premium Monthly',
+         price: 29.99,
+         quantity: 1,
+       },
+     ],
    });
    ```
 
@@ -418,6 +452,7 @@ export function trackAPIResponseTime(endpoint, duration) {
    - Notification: Email (good news!)
 
 ### How to Set Up:
+
 1. Go to **Admin** → **Custom Alerts**
 2. Click **Create Alert**
 3. Define condition
@@ -431,13 +466,15 @@ export function trackAPIResponseTime(endpoint, duration) {
 **Why**: Create beautiful, shareable dashboards.
 
 ### Steps:
+
 1. Go to [Looker Studio](https://lookerstudio.google.com/)
 2. Create new report
 3. Connect Google Analytics 4 data source
 4. Build custom visualizations
 5. Share with team
 
-**Benefits**: 
+**Benefits**:
+
 - Professional dashboards
 - Automated reports
 - Easy sharing
@@ -452,30 +489,33 @@ export function trackAPIResponseTime(endpoint, duration) {
 ### Enhance Existing Events:
 
 #### `message_sent`:
+
 ```javascript
 trackMessageSent(messageLength, isPreApprovedRewrite, {
   has_attachment: false,
   message_type: 'text', // text, image, file
   thread_id: threadId || null,
-  reply_to: replyToMessageId || null
+  reply_to: replyToMessageId || null,
 });
 ```
 
 #### `ai_intervention`:
+
 ```javascript
 trackAIIntervention(interventionType, confidence, riskLevel, {
   message_sentiment: 'negative',
   intervention_category: 'tone',
-  user_response: 'accepted' // accepted, overridden, ignored
+  user_response: 'accepted', // accepted, overridden, ignored
 });
 ```
 
 #### `task_created`:
+
 ```javascript
 trackTaskCreated(taskType, priority, {
   assigned_to: 'self', // self, coparent, both
   has_due_date: true,
-  related_people_count: 2
+  related_people_count: 2,
 });
 ```
 
@@ -484,18 +524,21 @@ trackTaskCreated(taskType, priority, {
 ## 🚀 Implementation Priority
 
 ### Phase 1 (Immediate - High Impact):
+
 1. ✅ Mark key events as conversions
 2. ✅ Create conversion funnels
 3. ✅ Set up DebugView
 4. ✅ Create basic custom reports
 
 ### Phase 2 (Short-term - Medium Impact):
+
 5. ✅ Set user properties
 6. ✅ Create audiences
 7. ✅ Add custom dimensions
 8. ✅ Set up alerts
 
 ### Phase 3 (Long-term - Advanced):
+
 9. ✅ User ID tracking
 10. ✅ Error tracking
 11. ✅ Performance monitoring
@@ -538,4 +581,3 @@ trackTaskCreated(taskType, priority, {
 ---
 
 **Next Steps**: Start with Phase 1 items, then gradually implement Phase 2 and 3 based on your analytics needs!
-

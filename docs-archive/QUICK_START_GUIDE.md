@@ -9,6 +9,7 @@
 Let Claude Code create the components for you using the implementation plan.
 
 **Command:**
+
 ```
 Ask Claude: "Create the Button component following IMPLEMENTATION_PLAN.md Step 1.2"
 ```
@@ -42,7 +43,8 @@ import React from 'react';
 const variants = {
   primary: 'bg-teal-dark text-white hover:bg-teal-darkest disabled:bg-gray-400',
   secondary: 'bg-teal-medium text-white hover:bg-teal-dark disabled:bg-gray-400',
-  tertiary: 'border-2 border-teal-dark text-teal-dark hover:bg-teal-lightest disabled:border-gray-400 disabled:text-gray-400',
+  tertiary:
+    'border-2 border-teal-dark text-teal-dark hover:bg-teal-lightest disabled:border-gray-400 disabled:text-gray-400',
   ghost: 'text-teal-dark hover:bg-teal-lightest disabled:text-gray-400',
   danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400',
 };
@@ -67,13 +69,15 @@ export const Button = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = 'font-semibold rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2';
+  const baseClasses =
+    'font-semibold rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2';
 
   const variantClasses = variants[variant] || variants.primary;
   const sizeClasses = sizes[size] || sizes.medium;
   const widthClass = fullWidth ? 'w-full' : '';
 
-  const combinedClasses = `${baseClasses} ${variantClasses} ${sizeClasses} ${widthClass} ${className}`.trim();
+  const combinedClasses =
+    `${baseClasses} ${variantClasses} ${sizeClasses} ${widthClass} ${className}`.trim();
 
   return (
     <button
@@ -86,9 +90,25 @@ export const Button = ({
     >
       {loading ? (
         <>
-          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <svg
+            className="animate-spin h-5 w-5"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
           </svg>
           <span>Loading...</span>
         </>
@@ -149,6 +169,7 @@ http://localhost:5173/signin
 ```
 
 **Check:**
+
 - [ ] Button renders correctly
 - [ ] Colors match original (teal dark background)
 - [ ] Hover effect works (darker teal)
@@ -161,16 +182,16 @@ http://localhost:5173/signin
 
 When replacing hardcoded colors:
 
-| Old (Hardcoded) | New (Token) | Usage |
-|-----------------|-------------|-------|
-| `bg-[#275559]` | `bg-teal-dark` | Primary buttons, emphasis |
-| `bg-[#1f4447]` | `bg-teal-darkest` | Hover states |
-| `bg-[#4DA8B0]` | `bg-teal-medium` | Secondary buttons, interactive |
-| `bg-[#E6F7F5]` | `bg-teal-lightest` | Subtle backgrounds |
-| `bg-[#C5E8E4]` | `bg-teal-light` | Borders, soft backgrounds |
-| `border-[#E5E7EB]` | `border-ui-border` | Default borders |
-| `text-[#111827]` | `text-ui-text-primary` | Primary text |
-| `text-[#4b5563]` | `text-ui-text-secondary` | Secondary text |
+| Old (Hardcoded)    | New (Token)              | Usage                          |
+| ------------------ | ------------------------ | ------------------------------ |
+| `bg-[#275559]`     | `bg-teal-dark`           | Primary buttons, emphasis      |
+| `bg-[#1f4447]`     | `bg-teal-darkest`        | Hover states                   |
+| `bg-[#4DA8B0]`     | `bg-teal-medium`         | Secondary buttons, interactive |
+| `bg-[#E6F7F5]`     | `bg-teal-lightest`       | Subtle backgrounds             |
+| `bg-[#C5E8E4]`     | `bg-teal-light`          | Borders, soft backgrounds      |
+| `border-[#E5E7EB]` | `border-ui-border`       | Default borders                |
+| `text-[#111827]`   | `text-ui-text-primary`   | Primary text                   |
+| `text-[#4b5563]`   | `text-ui-text-secondary` | Secondary text                 |
 
 ---
 
@@ -209,12 +230,14 @@ After completing the Button component:
 ## 💡 Tips
 
 **Use Find & Replace (VSCode):**
+
 - Mac: `Cmd + Shift + H`
 - Windows/Linux: `Ctrl + Shift + H`
 - Select "Replace in Files"
 - Set filter: `**/*.{jsx,js}`
 
 **Common Replacements:**
+
 ```
 Find: bg-[#275559]
 Replace: bg-teal-dark
@@ -231,20 +254,24 @@ Replace: text-teal-dark
 ## 🆘 Troubleshooting
 
 **"Cannot find module './ui/Button'"**
+
 - Check import path matches your file structure
 - Use `import { Button } from '../ui/Button'` (adjust `../` based on depth)
 
 **Button doesn't render / white screen**
+
 - Check browser console for errors
 - Verify Tailwind classes are recognized
 - Check `tailwind.config.js` has token definitions
 
 **Colors don't match**
+
 - Verify `tailwind.config.js` loads design tokens
 - Check token values in `.design-tokens-mcp/tokens.json`
 - Run `npm run build` to rebuild
 
 **Hot reload not working**
+
 ```bash
 npm run kill-ports
 npm run dev

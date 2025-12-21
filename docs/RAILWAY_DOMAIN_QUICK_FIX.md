@@ -38,12 +38,14 @@ You need Railway's **public domain** (format: `*.up.railway.app`). ✅
 Once you have the public domain (e.g., `demo.up.railway.app`):
 
 1. **Update `chat-client/config.js`**:
+
    ```javascript
    // Replace RAILWAY_DOMAIN_PLACEHOLDER with your public Railway domain
    const RAILWAY_DOMAIN = 'https://demo.up.railway.app'; // ✅ Public domain
    ```
 
 2. **Commit and Push**:
+
    ```bash
    git add chat-client/config.js
    git commit -m "Update Railway domain in config"
@@ -56,20 +58,24 @@ Once you have the public domain (e.g., `demo.up.railway.app`):
 ## 🔍 Where to Find Public Domain in Railway
 
 ### Option 1: Settings → Networking
+
 - Go to Railway Dashboard → Service → Settings → Networking
 - Look for **Public Domain** section
 - Should show: `demo.up.railway.app` (or similar)
 
 ### Option 2: Service Header
+
 - Look at the top of your service page
 - May show the public domain URL
 
 ### Option 3: Deployments Tab
+
 - Go to **Deployments** tab
 - Click on latest deployment
 - May show the domain in deployment details
 
 ### Option 4: Generate Domain
+
 - If no public domain exists, click **Generate Domain**
 - Railway will create a public domain for you
 
@@ -103,4 +109,3 @@ const RAILWAY_DOMAIN = 'https://demo.up.railway.app';
 ---
 
 **Next Step: Find your public Railway domain in Railway Dashboard → Settings → Networking, then update `config.js` with it!** 🚂
-

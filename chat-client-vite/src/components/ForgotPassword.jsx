@@ -14,7 +14,7 @@ export function ForgotPassword() {
   const [isSubmitted, setIsSubmitted] = React.useState(false);
   const [error, setError] = React.useState('');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
@@ -46,7 +46,13 @@ export function ForgotPassword() {
   // Success state - email sent
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4 py-6 sm:py-8" style={{ backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)' }}>
+      <div
+        className="h-dvh bg-white flex items-center justify-center px-4 py-6 sm:py-8"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)',
+        }}
+      >
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-200/50 p-6 sm:p-8">
           {/* Header */}
           <div className="flex flex-col items-center mb-8">
@@ -56,19 +62,25 @@ export function ForgotPassword() {
                 alt="LiaiZen Logo"
                 className="h-12 sm:h-14 w-auto transition-transform hover:scale-105"
               />
-              <img
-                src="/assets/wordmark.svg"
-                alt="LiaiZen"
-                className="h-14 sm:h-16 w-auto"
-              />
+              <img src="/assets/wordmark.svg" alt="LiaiZen" className="h-14 sm:h-16 w-auto" />
             </div>
           </div>
 
           {/* Success Icon */}
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <svg
+                className="w-8 h-8 text-emerald-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
               </svg>
             </div>
           </div>
@@ -78,7 +90,8 @@ export function ForgotPassword() {
           </h1>
 
           <p className="text-gray-600 text-center mb-6">
-            If an account exists for <span className="font-semibold text-gray-800">{email}</span>, you'll receive a password reset link shortly.
+            If an account exists for <span className="font-semibold text-gray-800">{email}</span>,
+            you'll receive a password reset link shortly.
           </p>
 
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
@@ -120,7 +133,13 @@ export function ForgotPassword() {
 
   // Request form
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-6 sm:py-8" style={{ backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)' }}>
+    <div
+      className="h-dvh bg-white flex items-center justify-center px-4 py-6 sm:py-8"
+      style={{
+        backgroundImage:
+          'radial-gradient(circle at 10% 20%, rgba(197, 232, 228, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(197, 232, 228, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(230, 247, 245, 0.3) 0%, transparent 60%)',
+      }}
+    >
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-200/50 p-6 sm:p-8">
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
@@ -130,19 +149,25 @@ export function ForgotPassword() {
               alt="LiaiZen Logo"
               className="h-12 sm:h-14 w-auto transition-transform hover:scale-105"
             />
-            <img
-              src="/assets/wordmark.svg"
-              alt="LiaiZen"
-              className="h-14 sm:h-16 w-auto"
-            />
+            <img src="/assets/wordmark.svg" alt="LiaiZen" className="h-14 sm:h-16 w-auto" />
           </div>
         </div>
 
         {/* Lock Icon */}
         <div className="flex justify-center mb-6">
           <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            <svg
+              className="w-8 h-8 text-teal-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
             </svg>
           </div>
         </div>

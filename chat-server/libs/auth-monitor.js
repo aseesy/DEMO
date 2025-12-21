@@ -45,9 +45,9 @@ const AUTH_EVENTS = {
 
 const SEVERITY = {
   CRITICAL: 'CRITICAL', // Immediate user impact, needs attention now
-  WARNING: 'WARNING',   // Potential issue, monitor closely
-  INFO: 'INFO',         // Normal operation
-  DEBUG: 'DEBUG',       // Detailed debugging info
+  WARNING: 'WARNING', // Potential issue, monitor closely
+  INFO: 'INFO', // Normal operation
+  DEBUG: 'DEBUG', // Detailed debugging info
 };
 
 /**
@@ -74,11 +74,11 @@ const metrics = {
 function resetMetricsIfNeeded() {
   const oneHour = 60 * 60 * 1000;
   if (Date.now() - metrics.lastReset > oneHour) {
-    Object.keys(metrics.signupAttempts).forEach(k => metrics.signupAttempts[k] = 0);
-    Object.keys(metrics.loginAttempts).forEach(k => metrics.loginAttempts[k] = 0);
-    Object.keys(metrics.verifyAttempts).forEach(k => metrics.verifyAttempts[k] = 0);
-    Object.keys(metrics.inviteAttempts).forEach(k => metrics.inviteAttempts[k] = 0);
-    Object.keys(metrics.errors).forEach(k => metrics.errors[k] = 0);
+    Object.keys(metrics.signupAttempts).forEach(k => (metrics.signupAttempts[k] = 0));
+    Object.keys(metrics.loginAttempts).forEach(k => (metrics.loginAttempts[k] = 0));
+    Object.keys(metrics.verifyAttempts).forEach(k => (metrics.verifyAttempts[k] = 0));
+    Object.keys(metrics.inviteAttempts).forEach(k => (metrics.inviteAttempts[k] = 0));
+    Object.keys(metrics.errors).forEach(k => (metrics.errors[k] = 0));
     metrics.lastReset = Date.now();
   }
 }
@@ -100,9 +100,14 @@ function logAuthEvent(event, severity, data = {}) {
   };
 
   // Format for easy grep/search in Railway logs
-  const prefix = severity === SEVERITY.CRITICAL ? '🚨 CRITICAL' :
-                 severity === SEVERITY.WARNING ? '⚠️ WARNING' :
-                 severity === SEVERITY.INFO ? '✅ INFO' : '🔍 DEBUG';
+  const prefix =
+    severity === SEVERITY.CRITICAL
+      ? '🚨 CRITICAL'
+      : severity === SEVERITY.WARNING
+        ? '⚠️ WARNING'
+        : severity === SEVERITY.INFO
+          ? '✅ INFO'
+          : '🔍 DEBUG';
 
   const message = `[AUTH] ${prefix} | ${event} | ${JSON.stringify(logEntry)}`;
 
@@ -315,15 +320,25 @@ function getMetricsSummary() {
     windowMinutes,
     signup: {
       ...metrics.signupAttempts,
-      successRate: metrics.signupAttempts.success + metrics.signupAttempts.failed > 0
-        ? (metrics.signupAttempts.success / (metrics.signupAttempts.success + metrics.signupAttempts.failed) * 100).toFixed(1) + '%'
-        : 'N/A',
+      successRate:
+        metrics.signupAttempts.success + metrics.signupAttempts.failed > 0
+          ? (
+              (metrics.signupAttempts.success /
+                (metrics.signupAttempts.success + metrics.signupAttempts.failed)) *
+              100
+            ).toFixed(1) + '%'
+          : 'N/A',
     },
     login: {
       ...metrics.loginAttempts,
-      successRate: metrics.loginAttempts.success + metrics.loginAttempts.failed > 0
-        ? (metrics.loginAttempts.success / (metrics.loginAttempts.success + metrics.loginAttempts.failed) * 100).toFixed(1) + '%'
-        : 'N/A',
+      successRate:
+        metrics.loginAttempts.success + metrics.loginAttempts.failed > 0
+          ? (
+              (metrics.loginAttempts.success /
+                (metrics.loginAttempts.success + metrics.loginAttempts.failed)) *
+              100
+            ).toFixed(1) + '%'
+          : 'N/A',
     },
     errors: metrics.errors,
   };

@@ -44,17 +44,16 @@ describe('Profile Loader', () => {
 
       expect(result.user_id).toBe('newuser');
       expect(result.is_new).toBe(true);
-      expect(result.communication_patterns).toEqual(profileLoader.DEFAULT_PROFILE.communication_patterns);
+      expect(result.communication_patterns).toEqual(
+        profileLoader.DEFAULT_PROFILE.communication_patterns
+      );
     });
 
     it('should normalize user ID to lowercase', async () => {
       const db = createMockDb([]);
       await profileLoader.loadProfile('Alex', db);
 
-      expect(db.query).toHaveBeenCalledWith(
-        expect.any(String),
-        ['alex']
-      );
+      expect(db.query).toHaveBeenCalledWith(expect.any(String), ['alex']);
     });
 
     it('should return default profile with null user_id when userId is missing', async () => {
@@ -137,9 +136,7 @@ describe('Profile Loader', () => {
     });
 
     it('should add default profiles for users not found', async () => {
-      const mockProfiles = [
-        { user_id: 'alex', communication_patterns: {}, triggers: {} },
-      ];
+      const mockProfiles = [{ user_id: 'alex', communication_patterns: {}, triggers: {} }];
 
       const db = createMockDb(mockProfiles);
       const result = await profileLoader.loadProfiles(['alex', 'missing'], db);
@@ -153,10 +150,10 @@ describe('Profile Loader', () => {
       const db = createMockDb([]);
       await profileLoader.loadProfiles(['Alex', 'JORDAN'], db);
 
-      expect(db.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE user_id IN'),
-        ['alex', 'jordan']
-      );
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('WHERE user_id IN'), [
+        'alex',
+        'jordan',
+      ]);
     });
 
     it('should handle database errors gracefully', async () => {

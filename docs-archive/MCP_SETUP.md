@@ -7,6 +7,7 @@ This project is configured with Model Context Protocol (MCP) servers to enhance 
 ## Configured MCP Servers
 
 ### 1. **SQLite MCP Server**
+
 - **Purpose**: Direct database access and queries
 - **Benefits**:
   - Query user data, messages, rooms, and contacts directly
@@ -16,6 +17,7 @@ This project is configured with Model Context Protocol (MCP) servers to enhance 
 - **Database**: `/Users/athenasees/Desktop/chat/chat-server/chat.db`
 
 ### 2. **Filesystem MCP Server**
+
 - **Purpose**: Advanced file operations
 - **Benefits**:
   - Better file search and navigation
@@ -25,6 +27,7 @@ This project is configured with Model Context Protocol (MCP) servers to enhance 
 - **Scope**: `/Users/athenasees/Desktop/chat`
 
 ### 3. **GitHub MCP Server**
+
 - **Purpose**: Repository management and collaboration
 - **Benefits**:
   - Create and manage issues
@@ -34,6 +37,7 @@ This project is configured with Model Context Protocol (MCP) servers to enhance 
 - **Setup Required**: Add GitHub Personal Access Token (see below)
 
 ### 4. **Fetch MCP Server**
+
 - **Purpose**: HTTP requests and API testing
 - **Benefits**:
   - Test backend API endpoints
@@ -42,6 +46,7 @@ This project is configured with Model Context Protocol (MCP) servers to enhance 
   - Monitor service health
 
 ### 5. **Memory MCP Server**
+
 - **Purpose**: Persistent context across Claude sessions
 - **Benefits**:
   - Remember project-specific decisions
@@ -52,7 +57,9 @@ This project is configured with Model Context Protocol (MCP) servers to enhance 
 ## Setup Instructions
 
 ### 1. Configuration File Location
+
 The MCP configuration is stored at:
+
 ```
 ~/.config/Claude/claude_desktop_config.json
 ```
@@ -74,11 +81,13 @@ To enable GitHub MCP server:
 5. Replace `YOUR_GITHUB_TOKEN_HERE` with your actual token
 
 ### 3. Restart Claude Code
+
 After configuration changes, restart Claude Code to load the MCP servers.
 
 ## Usage Examples
 
 ### SQLite MCP
+
 ```
 "Show me all users in the database"
 "Query messages from the last 7 days"
@@ -87,6 +96,7 @@ After configuration changes, restart Claude Code to load the MCP servers.
 ```
 
 ### Filesystem MCP
+
 ```
 "Find all React components that use Socket.io"
 "Search for files containing 'AI mediation' logic"
@@ -94,6 +104,7 @@ After configuration changes, restart Claude Code to load the MCP servers.
 ```
 
 ### GitHub MCP
+
 ```
 "Create an issue for implementing calendar feature"
 "Show me recent pull requests"
@@ -101,6 +112,7 @@ After configuration changes, restart Claude Code to load the MCP servers.
 ```
 
 ### Fetch MCP
+
 ```
 "Test the /api/health endpoint"
 "Check if the backend server is running"
@@ -110,6 +122,7 @@ After configuration changes, restart Claude Code to load the MCP servers.
 ```
 
 ### Memory MCP
+
 ```
 "Remember that we're using Railway for deployment"
 "What did we decide about the database migration?"
@@ -127,17 +140,20 @@ After configuration changes, restart Claude Code to load the MCP servers.
 ## Troubleshooting
 
 ### MCP Servers Not Loading
+
 1. Check config file syntax: `cat ~/.config/Claude/claude_desktop_config.json`
 2. Ensure Node.js is installed: `node --version` (requires v18+)
 3. Restart Claude Code completely
 4. Check Claude Code logs for errors
 
 ### Database Connection Issues
+
 - Verify database path: `/Users/athenasees/Desktop/chat/chat-server/chat.db`
 - Check file permissions: `ls -la chat-server/chat.db`
 - Ensure database is not locked by another process
 
 ### GitHub MCP Not Working
+
 - Verify token has correct permissions
 - Check token hasn't expired
 - Ensure no quotes around token in config file
@@ -180,5 +196,5 @@ Consider adding these if needed:
 
 ---
 
-*Last Updated: 2025-11-19*
-*Project: LiaiZen Co-Parenting Platform*
+_Last Updated: 2025-11-19_
+_Project: LiaiZen Co-Parenting Platform_

@@ -106,6 +106,7 @@ JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 **Issue**: Frontend can't connect to Railway backend
 
 **Solution**:
+
 1. **Check `FRONTEND_URL` in Railway**:
    - Ensure it includes: `https://*.vercel.app`
    - Should be: `https://coparentliaizen.com,https://www.coparentliaizen.com,https://*.vercel.app`
@@ -124,6 +125,7 @@ JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 **Issue**: Railway backend not accessible
 
 **Solution**:
+
 1. **Check Railway Deployment**:
    - Go to **Deployments** tab
    - Verify latest deployment is successful
@@ -144,6 +146,7 @@ JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 **Issue**: WebSocket connections fail
 
 **Solution**:
+
 1. **Check Socket.io CORS**:
    - Verify Socket.io CORS allows Vercel domains
    - Check `chat-server/server.js` Socket.io configuration
@@ -166,4 +169,3 @@ JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 ---
 
 **Railway backend is configured and ready! Make sure all environment variables are set correctly.** 🚂
-

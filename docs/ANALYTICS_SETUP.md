@@ -5,6 +5,7 @@ This guide explains how to set up and use analytics tracking for LiaiZen to moni
 ## Overview
 
 The analytics system tracks:
+
 - **CTA clicks** by section (hero, navigation, final CTA, etc.)
 - **Section views** (when users scroll to different sections)
 - **Conversions** (sign-ups) attributed to specific sources
@@ -28,6 +29,7 @@ VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
 **For Production:**
+
 - Add this to your Vercel/Railway environment variables
 - Variable name: `VITE_GA_MEASUREMENT_ID`
 - Value: Your GA4 Measurement ID
@@ -46,16 +48,18 @@ VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 Tracks when users click "Get Started" or "Sign Up" buttons:
 
 ```javascript
-trackCTAClick(section, ctaText, ctaPosition)
+trackCTAClick(section, ctaText, ctaPosition);
 ```
 
 **Sections tracked:**
+
 - `hero` - Main hero CTA
 - `navigation` - Header "Get Started" button
 - `final_cta` - Bottom CTA section
 - `product_preview` - CTA in product preview section
 
 **Example events:**
+
 - `cta_click` with `section: "hero"`, `cta_text: "Start Free Beta Access"`
 - `cta_click` with `section: "final_cta"`, `cta_text: "Start Free Beta Access Now"`
 
@@ -64,10 +68,11 @@ trackCTAClick(section, ctaText, ctaPosition)
 Tracks when users scroll to different sections:
 
 ```javascript
-trackSectionView(sectionName)
+trackSectionView(sectionName);
 ```
 
 **Sections tracked:**
+
 - `value_proposition` - "Why LiaiZen?" section
 - `social_proof` - Beta stats section
 - `testimonials` - User testimonials
@@ -79,10 +84,11 @@ trackSectionView(sectionName)
 Tracks successful sign-ups:
 
 ```javascript
-trackConversion(source, method)
+trackConversion(source, method);
 ```
 
 **Sources tracked:**
+
 - `hero` - Signed up from hero CTA
 - `navigation` - Signed up from header CTA
 - `final_cta` - Signed up from bottom CTA
@@ -91,6 +97,7 @@ trackConversion(source, method)
 - `signup_form` - Signed up via main signup form
 
 **Methods:**
+
 - `signup` - New account creation
 - `login` - Existing user login
 - `email` - Email waitlist signup
@@ -100,10 +107,11 @@ trackConversion(source, method)
 Tracks form interactions:
 
 ```javascript
-trackFormSubmit(formName, formType)
+trackFormSubmit(formName, formType);
 ```
 
 **Forms tracked:**
+
 - `newsletter` - Newsletter signup form
 - `exit_intent` - Exit intent email capture
 
@@ -129,6 +137,7 @@ trackFormSubmit(formName, formType)
 **Path:** Reports → Engagement → Events → `cta_click`
 
 Filter by `section` parameter to see:
+
 - Which sections drive the most clicks
 - Conversion rate: `conversion` events / `cta_click` events per section
 
@@ -137,6 +146,7 @@ Filter by `section` parameter to see:
 **Path:** Reports → Engagement → Events → `section_view`
 
 See which sections users view most:
+
 - `value_proposition`
 - `social_proof`
 - `testimonials`
@@ -148,6 +158,7 @@ See which sections users view most:
 **Path:** Explore → Funnel exploration
 
 Create funnel:
+
 1. `section_view` (hero)
 2. `cta_click` (hero)
 3. `conversion` (any source)
@@ -157,6 +168,7 @@ Create funnel:
 **Path:** Reports → Engagement → Events → `scroll`
 
 See how far users scroll:
+
 - 25% - Early drop-off
 - 50% - Mid-page engagement
 - 75% - High engagement
@@ -208,6 +220,7 @@ Create a custom report in GA4:
 ### Analytics Not Working
 
 1. **Check environment variable:**
+
    ```bash
    echo $VITE_GA_MEASUREMENT_ID
    ```
@@ -261,7 +274,7 @@ Create a custom report in GA4:
 
 ```sql
 -- In GA4 BigQuery (if enabled)
-SELECT 
+SELECT
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'section') as section,
   COUNTIF(event_name = 'conversion') as conversions,
   COUNTIF(event_name = 'cta_click') as clicks,
@@ -275,7 +288,7 @@ ORDER BY conversion_rate DESC
 ### Section Engagement Analysis
 
 ```sql
-SELECT 
+SELECT
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'section_name') as section,
   COUNT(DISTINCT user_pseudo_id) as unique_viewers,
   AVG((SELECT value.int_value FROM UNNEST(event_params) WHERE key = 'time_spent')) as avg_time_seconds
@@ -288,8 +301,8 @@ ORDER BY unique_viewers DESC
 ## Support
 
 For issues or questions:
+
 1. Check browser console for errors
 2. Verify GA4 Measurement ID is correct
 3. Check GA4 Realtime report to verify events
 4. Review this documentation
-

@@ -14,6 +14,7 @@ This document describes the comprehensive risk mitigation system built to addres
 **Problem**: Per-message sentiment is insufficient. Need to track emotional trajectories, stress points, escalation risk, and "emotional momentum" over multiple turns.
 
 **Solution Implemented**:
+
 - **`emotionalModel.js`**: Comprehensive emotional state tracking system
   - Tracks current emotion, intensity, stress level per participant
   - Calculates stress trajectory (increasing/decreasing/stable)
@@ -23,6 +24,7 @@ This document describes the comprehensive risk mitigation system built to addres
   - Calculates conversation-level emotion and escalation risk
 
 **Key Features**:
+
 - **Emotion History**: Tracks last 20 emotional states per participant
 - **Stress Trajectory**: Identifies if stress is increasing, decreasing, or stable
 - **Emotional Momentum**: Calculates rate of emotional change (0-100)
@@ -31,6 +33,7 @@ This document describes the comprehensive risk mitigation system built to addres
 - **Trend Analysis**: Calculates emotion trends (worsening/improving/stable)
 
 **Risk Mitigation**:
+
 - Falls back to default neutral state if analysis fails
 - Confidence scores included in analysis
 - Graceful degradation if emotional state unclear
@@ -40,6 +43,7 @@ This document describes the comprehensive risk mitigation system built to addres
 **Problem**: Need dynamic policies that decide when/how to intervene, customized to participants' styles and conversation history.
 
 **Solution Implemented**:
+
 - **`interventionPolicy.js`**: Adaptive policy engine
   - Generates policies based on emotional state, escalation risk, and feedback
   - Decides intervention type (suggestion, reframing, tone_smoothing, delay_prompt)
@@ -48,6 +52,7 @@ This document describes the comprehensive risk mitigation system built to addres
   - Customizes approach based on user preferences
 
 **Key Features**:
+
 - **Dynamic Decision-Making**: AI-powered policy generation per conversation
 - **Intervention Types**: suggestion, reframing, tone_smoothing, delay_prompt, none
 - **Style Adaptation**: gentle, moderate, firm based on context
@@ -55,6 +60,7 @@ This document describes the comprehensive risk mitigation system built to addres
 - **Policy History**: Tracks last 20 interventions for learning
 
 **Risk Mitigation**:
+
 - Default policy if generation fails
 - Confidence scores for policy decisions
 - Fallback plans included in policies
@@ -65,6 +71,7 @@ This document describes the comprehensive risk mitigation system built to addres
 **Problem**: System must calibrate with feedback and adapt moderation/coaching style over time.
 
 **Solution Implemented**:
+
 - **`feedbackLearner.js`**: Comprehensive feedback learning system
   - Records explicit feedback (flags, "not helpful", "helpful")
   - Records implicit feedback (ignored suggestions, skipped rewrites, overrides)
@@ -73,6 +80,7 @@ This document describes the comprehensive risk mitigation system built to addres
   - Tracks what types of interventions were unhelpful
 
 **Key Features**:
+
 - **Explicit Feedback**: User-provided feedback on interventions
 - **Implicit Feedback**: Learned from user behavior (ignored suggestions, etc.)
 - **Adaptation Recommendations**: Personalized intervention preferences
@@ -80,12 +88,14 @@ This document describes the comprehensive risk mitigation system built to addres
 - **Avoid Types**: Learns which intervention types to avoid for each user
 
 **Integration Points**:
+
 - Flagging messages → Records as explicit feedback
 - Intervention feedback buttons → Records helpful/unhelpful
 - Override actions → Records as implicit feedback
 - Adaptation recommendations → Passed to AI mediator
 
 **Risk Mitigation**:
+
 - Default recommendations if no feedback available
 - Gradual adaptation (doesn't overreact to single feedback)
 - Tracks both positive and negative feedback
@@ -95,6 +105,7 @@ This document describes the comprehensive risk mitigation system built to addres
 **Problem**: System must avoid missteps, provide transparency, and degrade gracefully when uncertain.
 
 **Solution Implemented**:
+
 - **`safetyControls.js`**: Comprehensive safety system
   - Generates human-readable explanations for interventions
   - Validates intervention safety before applying
@@ -105,35 +116,41 @@ This document describes the comprehensive risk mitigation system built to addres
 **Key Safety Features**:
 
 **1. Explanation System**:
+
 - Human-readable explanations for why intervention occurred
 - Includes emotional state context
 - Includes escalation risk context
 - Shows confidence levels
 
 **2. Safety Validation**:
+
 - Checks for potential misinterpretation
 - Detects tone policing risks
 - Prevents censorship (must provide alternatives)
 - Validates confidence levels
 
 **3. Graceful Degradation**:
+
 - Degrades to gentle suggestions if confidence low
 - Degrades to monitoring if emotional state unclear
 - Never blocks without alternatives
 - Always allows message through if intervention unsafe
 
 **4. Override Controls**:
+
 - "Send anyway" option
 - "Edit first" option
 - "Get more help" option
 - User maintains control
 
 **5. Confidence Thresholds**:
+
 - Default threshold: 60%
 - Blocks intervention if confidence < 40%
 - Warns if confidence < 50%
 
 **Risk Mitigation**:
+
 - **Never blocks without alternatives**: Always provides rewrite options
 - **Always allows override**: User can send message anyway
 - **Transparency**: Explains why intervention occurred
@@ -215,6 +232,7 @@ This document describes the comprehensive risk mitigation system built to addres
 ## Database Schema
 
 **New Tables**:
+
 - `user_feedback`: Stores explicit and implicit feedback
 - `user_intervention_preferences`: User preferences (ready for future use)
 - `escalation_tracking`: Escalation history (ready for future use)
@@ -254,6 +272,7 @@ This document describes the comprehensive risk mitigation system built to addres
 ## Conclusion
 
 The risk mitigation system provides:
+
 - ✅ Extended emotional modeling with trajectories and momentum
 - ✅ Adaptive intervention policies (not static rules)
 - ✅ Comprehensive feedback learning and personalization
@@ -262,4 +281,3 @@ The risk mitigation system provides:
 - ✅ Multiple safety nets to prevent missteps
 
 The system is designed to fail gracefully, learn continuously, and always give users control.
-

@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-push checks..."
+
+# Run tests for backend
+if [ -d "chat-server" ]; then
+  echo "📦 Running backend tests..."
+  cd chat-server
+  npm test -- --passWithNoTests || {
+    echo "❌ Backend tests failed. Please fix before pushing."
+    exit 1
+  }
+  cd ..
+fi
+
+# Run tests for frontend
+if [ -d "chat-client-vite" ]; then
+  echo "📦 Running frontend tests..."
+  cd chat-client-vite
+  npm test -- --run || {
+    echo "❌ Frontend tests failed. Please fix before pushing."
+    exit 1
+  }
+  cd ..
+fi
+
+echo "✅ All pre-push checks passed!"

@@ -24,6 +24,7 @@ A production-ready, real-time chat application built with Node.js, Express, Sock
 ## ✨ Features
 
 ### Core Functionality
+
 - **Real-time messaging** using WebSocket connections
 - **Multiple concurrent users** with live user list
 - **Typing indicators** to show when users are composing messages
@@ -32,6 +33,7 @@ A production-ready, real-time chat application built with Node.js, Express, Sock
 - **System notifications** for user join/leave events
 
 ### Security Features
+
 - **Input sanitization** to prevent XSS attacks
 - **Rate limiting** to prevent spam and DoS attacks
 - **CORS protection** with configurable origins
@@ -40,6 +42,7 @@ A production-ready, real-time chat application built with Node.js, Express, Sock
 - **Message length limits** to prevent abuse
 
 ### User Experience
+
 - **Beautiful, responsive UI** with Tailwind CSS
 - **Color-coded user avatars** for easy identification
 - **Auto-scrolling messages** with smooth animations
@@ -51,18 +54,21 @@ A production-ready, real-time chat application built with Node.js, Express, Sock
 This application follows a **client-server architecture** with complete separation of concerns:
 
 ### Backend (chat-server/)
+
 - **Express.js** HTTP server
 - **Socket.io** WebSocket server for real-time communication
 - **Event-driven architecture** for scalability
 - **In-memory state management** (can be extended to Redis)
 
 ### Frontend (chat-client/)
+
 - **React** with functional components and hooks
 - **Socket.io client** for WebSocket communication
 - **Lucide React** icons for beautiful UI elements
 - **Tailwind CSS** for responsive styling
 
 ### Communication Flow
+
 ```
 Client Browser ←→ Socket.io (WebSocket) ←→ Express Server
      ↓                                              ↓
@@ -84,11 +90,13 @@ For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
 ### Automatic Setup (Recommended)
 
 **On macOS/Linux:**
+
 ```bash
 ./setup.sh
 ```
 
 **On Windows:**
+
 ```bash
 setup.bat
 ```
@@ -96,12 +104,14 @@ setup.bat
 ### Manual Setup
 
 1. **Install server dependencies:**
+
 ```bash
 cd chat-server
 npm install
 ```
 
 2. **Install client dependencies:**
+
 ```bash
 cd chat-client
 npm install
@@ -112,24 +122,28 @@ npm install
 You need to run **two separate processes**:
 
 ### Terminal 1 - Start the Backend Server
+
 ```bash
 cd chat-server
 npm start
 ```
 
 You should see:
+
 ```
 ✅ Chat server running on port 3001
    Press Ctrl+C to stop
 ```
 
 ### Terminal 2 - Start the Frontend Client
+
 ```bash
 cd chat-client
 npm start
 ```
 
 You should see:
+
 ```
 Starting up http-server, serving ./
 Available on:
@@ -181,8 +195,8 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 // Rate limiting
 const MESSAGE_RATE_LIMIT = {
-  windowMs: 1000,      // 1 second
-  max: 5               // 5 messages per second
+  windowMs: 1000, // 1 second
+  max: 5, // 5 messages per second
 };
 
 // Validation
@@ -202,23 +216,26 @@ const socketOptions = {
   transports: ['websocket', 'polling'],
   reconnection: true,
   reconnectionDelay: 1000,
-  reconnectionAttempts: 5
+  reconnectionAttempts: 5,
 };
 ```
 
 ## 🔒 Security Features
 
 ### Input Validation
+
 - Username: 2-20 characters, sanitized for XSS
 - Messages: Max 500 characters, HTML tags stripped
 - All user input sanitized before processing
 
 ### Rate Limiting
+
 - **Connection rate limit**: 100 connections per 15 minutes per IP
 - **Message rate limit**: 5 messages per second per user
 - Automatic blocking of rate limit violators
 
 ### Security Headers (Helmet.js)
+
 - Content Security Policy
 - X-Frame-Options
 - X-Content-Type-Options
@@ -226,6 +243,7 @@ const socketOptions = {
 - And more...
 
 ### CORS Protection
+
 - Configurable allowed origins
 - Credentials support for authenticated requests
 - Preflight request handling
@@ -237,16 +255,19 @@ const socketOptions = {
 #### Client → Server
 
 **`join`** - User joins the chat room
+
 ```javascript
 socket.emit('join', { username: 'John' });
 ```
 
 **`send_message`** - Send a chat message
+
 ```javascript
 socket.emit('send_message', { text: 'Hello world!' });
 ```
 
 **`typing`** - Notify typing status
+
 ```javascript
 socket.emit('typing', { isTyping: true });
 ```
@@ -254,6 +275,7 @@ socket.emit('typing', { isTyping: true });
 #### Server → Client
 
 **`join_success`** - Successful join confirmation
+
 ```javascript
 socket.on('join_success', ({ username, users }) => {
   // username: confirmed username
@@ -262,20 +284,23 @@ socket.on('join_success', ({ username, users }) => {
 ```
 
 **`message_history`** - Past messages for new users
+
 ```javascript
-socket.on('message_history', (messages) => {
+socket.on('message_history', messages => {
   // Array of previous messages
 });
 ```
 
 **`new_message`** - New message received
+
 ```javascript
-socket.on('new_message', (message) => {
+socket.on('new_message', message => {
   // message: { id, type, username, text, timestamp }
 });
 ```
 
 **`user_joined`** - Another user joined
+
 ```javascript
 socket.on('user_joined', ({ message, users }) => {
   // System notification and updated user list
@@ -283,6 +308,7 @@ socket.on('user_joined', ({ message, users }) => {
 ```
 
 **`user_left`** - User disconnected
+
 ```javascript
 socket.on('user_left', ({ message, users }) => {
   // System notification and updated user list
@@ -290,6 +316,7 @@ socket.on('user_left', ({ message, users }) => {
 ```
 
 **`user_typing`** - Typing indicator
+
 ```javascript
 socket.on('user_typing', ({ username, isTyping }) => {
   // Show/hide typing indicator
@@ -297,6 +324,7 @@ socket.on('user_typing', ({ username, isTyping }) => {
 ```
 
 **`error`** - Error notification
+
 ```javascript
 socket.on('error', ({ message }) => {
   // Display error to user
@@ -310,6 +338,7 @@ socket.on('error', ({ message }) => {
 **Error:** `EADDRINUSE: address already in use :::3001`
 
 **Solution:**
+
 ```bash
 # macOS/Linux
 lsof -ti:3001 | xargs kill -9
@@ -324,6 +353,7 @@ taskkill /PID <PID> /F
 **Error:** "Unable to connect to chat server"
 
 **Checklist:**
+
 1. Is the backend server running? Check Terminal 1
 2. Is it on the correct port (3001)?
 3. Check firewall settings
@@ -332,6 +362,7 @@ taskkill /PID <PID> /F
 ### Dependencies Not Installing
 
 **Solution:**
+
 ```bash
 # Clear npm cache
 npm cache clean --force
@@ -366,7 +397,7 @@ npm install jsonwebtoken bcrypt
 socket.on('private_message', ({ to, text }) => {
   io.to(userSockets[to]).emit('private_message', {
     from: username,
-    text: text
+    text: text,
   });
 });
 ```

@@ -208,8 +208,8 @@ describe('Password Validator', () => {
       const lengthReq = result.requirements.find(r => r.id === 'length');
       const commonReq = result.requirements.find(r => r.id === 'not-common');
 
-      expect(lengthReq.met).toBe(false);  // too short
-      expect(commonReq.met).toBe(true);   // not common
+      expect(lengthReq.met).toBe(false); // too short
+      expect(commonReq.met).toBe(true); // not common
     });
 
     test('should include minLength in response', () => {

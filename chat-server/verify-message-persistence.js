@@ -6,16 +6,18 @@
 
 const { Pool } = require('pg');
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:sUFZaVbVBfcmYnrPdSlVAiXhYtopCbvO@autorack.proxy.rlwy.net:45464/railway';
+const DATABASE_URL =
+  process.env.DATABASE_URL ||
+  'postgresql://postgres:sUFZaVbVBfcmYnrPdSlVAiXhYtopCbvO@autorack.proxy.rlwy.net:45464/railway';
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 async function verifyMessagePersistence() {
   console.log('🔍 Verifying Message Persistence\n');
-  console.log('=' .repeat(60));
+  console.log('='.repeat(60));
 
   try {
     // 1. Test connection
@@ -48,10 +50,25 @@ async function verifyMessagePersistence() {
     `);
 
     const expectedColumns = [
-      'id', 'type', 'username', 'text', 'timestamp', 'room_id', 'thread_id',
-      'socket_id', 'private', 'flagged', 'validation', 'tip1', 'tip2',
-      'rewrite', 'original_message', 'edited', 'edited_at', 'reactions',
-      'user_flagged_by'
+      'id',
+      'type',
+      'username',
+      'text',
+      'timestamp',
+      'room_id',
+      'thread_id',
+      'socket_id',
+      'private',
+      'flagged',
+      'validation',
+      'tip1',
+      'tip2',
+      'rewrite',
+      'original_message',
+      'edited',
+      'edited_at',
+      'reactions',
+      'user_flagged_by',
     ];
 
     const actualColumns = columnsCheck.rows.map(r => r.column_name);
@@ -113,13 +130,17 @@ async function verifyMessagePersistence() {
         console.log(`\n   Message ${i + 1}:`);
         console.log(`      ID: ${msg.id}`);
         console.log(`      User: ${msg.username}`);
-        console.log(`      Text: ${msg.text_preview}${msg.text_preview.length === 50 ? '...' : ''}`);
+        console.log(
+          `      Text: ${msg.text_preview}${msg.text_preview.length === 50 ? '...' : ''}`
+        );
         console.log(`      Room: ${msg.room_id || 'none'}`);
         console.log(`      Time: ${msg.timestamp}`);
         console.log(`      Socket: ${msg.socket_id || 'none'}`);
         console.log(`      Private: ${msg.private === 1 ? 'yes' : 'no'}`);
         console.log(`      Flagged: ${msg.flagged === 1 ? 'yes' : 'no'}`);
-        console.log(`      AI Data: validation=${msg.has_validation}, tip1=${msg.has_tip1}, tip2=${msg.has_tip2}, rewrite=${msg.has_rewrite}`);
+        console.log(
+          `      AI Data: validation=${msg.has_validation}, tip1=${msg.has_tip1}, tip2=${msg.has_tip2}, rewrite=${msg.has_rewrite}`
+        );
       });
     }
 
@@ -127,7 +148,9 @@ async function verifyMessagePersistence() {
     console.log('\n' + '='.repeat(60));
     console.log('\n📊 SUMMARY:');
     console.log(`   ✅ Database: Connected`);
-    console.log(`   ${missingColumns.length === 0 ? '✅' : '⚠️ '} Schema: ${missingColumns.length === 0 ? 'Complete' : `Missing ${missingColumns.length} columns`}`);
+    console.log(
+      `   ${missingColumns.length === 0 ? '✅' : '⚠️ '} Schema: ${missingColumns.length === 0 ? 'Complete' : `Missing ${missingColumns.length} columns`}`
+    );
     console.log(`   ✅ Indexes: ${indexCheck.rows.length} present`);
     console.log(`   ℹ️  Messages: ${messagesCheck.rows.length} recent`);
 
@@ -138,7 +161,6 @@ async function verifyMessagePersistence() {
       console.log('\n⚠️  Migration 006 needs to run!');
       console.log('   To fix: Restart the Railway service or run migration manually.');
     }
-
   } catch (error) {
     console.error('\n❌ Error:', error.message);
     console.error('Stack:', error.stack);

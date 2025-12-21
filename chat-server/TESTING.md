@@ -7,23 +7,27 @@ Quick reference for testing the LiaiZen chat server.
 ## Quick Tests
 
 ### Health Check
+
 ```bash
 curl https://demo-production-6dcd.up.railway.app/health
 ```
 
 Expected response:
+
 ```json
-{"status":"ok","timestamp":"2025-11-26T..."}
+{ "status": "ok", "timestamp": "2025-11-26T..." }
 ```
 
 ### API Info
+
 ```bash
 curl https://demo-production-6dcd.up.railway.app/api/info
 ```
 
 Expected response:
+
 ```json
-{"name":"Multi-User Chat Server","version":"1.0.0","activeUsers":0}
+{ "name": "Multi-User Chat Server", "version": "1.0.0", "activeUsers": 0 }
 ```
 
 ---
@@ -31,12 +35,14 @@ Expected response:
 ## Message Persistence Test
 
 ### Automated Test
+
 ```bash
 cd chat-server
 node test-message-persistence.js
 ```
 
 This will verify:
+
 - ✅ Server health
 - ✅ API connectivity
 - ✅ Database connection
@@ -44,6 +50,7 @@ This will verify:
 - ✅ Message count and samples
 
 ### Manual Test Instructions
+
 ```bash
 node test-message-persistence.js --manual
 ```
@@ -55,18 +62,21 @@ Displays step-by-step instructions for manually testing message persistence thro
 ## Database Tests
 
 ### PostgreSQL Connection Test
+
 ```bash
 cd chat-server
 node test-postgres-connection.js
 ```
 
 This checks:
+
 - Database connectivity
 - PostgreSQL version
 - Existing tables
 - Connection configuration
 
 ### Check Database Tables
+
 ```bash
 # Via test script (shows all tables)
 node test-postgres-connection.js
@@ -83,6 +93,7 @@ SELECT COUNT(*) FROM messages;  # Count messages
 ## Server Logs
 
 ### View Railway Logs
+
 1. Go to https://railway.app
 2. Select project: LiaiZen Chat Server
 3. Click "Deployments" → Latest deployment
@@ -91,6 +102,7 @@ SELECT COUNT(*) FROM messages;  # Count messages
 ### Important Log Messages
 
 **Success indicators:**
+
 ```
 💾 Saved new message [id] to database
 📜 Loading [N] messages for room [room-id]
@@ -98,6 +110,7 @@ SELECT COUNT(*) FROM messages;  # Count messages
 ```
 
 **Error indicators:**
+
 ```
 ❌ Error saving message to database
 ❌ Error loading messages from database
@@ -109,6 +122,7 @@ SELECT COUNT(*) FROM messages;  # Count messages
 ## Frontend Testing
 
 ### Local Development
+
 ```bash
 cd chat-client-vite
 npm run dev
@@ -116,9 +130,11 @@ npm run dev
 ```
 
 ### Production
+
 Open: https://coparentliaizen.com
 
 ### Test Message Persistence
+
 1. Login to app
 2. Send test messages
 3. Refresh browser (F5)
@@ -132,6 +148,7 @@ Open: https://coparentliaizen.com
 ## Common Test Scenarios
 
 ### Test 1: Basic Message Persistence
+
 1. Send message
 2. Refresh page
 3. Verify message is still there
@@ -139,6 +156,7 @@ Open: https://coparentliaizen.com
 **Expected:** ✅ Message persists
 
 ### Test 2: Multi-User Persistence
+
 1. User A sends message
 2. User B refreshes page
 3. User B sees User A's message
@@ -146,6 +164,7 @@ Open: https://coparentliaizen.com
 **Expected:** ✅ Both users see same history
 
 ### Test 3: Session Persistence
+
 1. Send messages
 2. Logout
 3. Close browser
@@ -155,6 +174,7 @@ Open: https://coparentliaizen.com
 **Expected:** ✅ Messages persist across sessions
 
 ### Test 4: AI Mediation Persistence
+
 1. Send message that triggers AI mediation
 2. View AI tips/rewrite suggestions
 3. Refresh page
@@ -163,6 +183,7 @@ Open: https://coparentliaizen.com
 **Expected:** ✅ AI mediation data persists
 
 ### Test 5: Room Isolation
+
 1. User A in Room 1 sends message
 2. User B in Room 2 sends message
 3. Each user refreshes
@@ -210,6 +231,7 @@ curl https://demo-production-6dcd.up.railway.app/api/protected-endpoint \
 ## Performance Testing
 
 ### Message Load Testing
+
 ```bash
 # Run the persistence test multiple times
 for i in {1..10}; do
@@ -220,6 +242,7 @@ done
 ```
 
 ### Socket.io Load Testing
+
 Use a tool like `socket.io-client` to simulate multiple concurrent users:
 
 ```javascript
@@ -287,6 +310,7 @@ Before deploying to production:
 ### Set Up Alerts
 
 Monitor these metrics:
+
 - Server uptime
 - Database connection status
 - Message save success rate
@@ -296,6 +320,7 @@ Monitor these metrics:
 ### Regular Health Checks
 
 Run automated tests daily:
+
 ```bash
 # Add to cron or CI/CD
 0 9 * * * cd /path/to/chat-server && node test-message-persistence.js

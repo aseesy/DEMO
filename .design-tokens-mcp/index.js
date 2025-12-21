@@ -113,7 +113,7 @@ class DesignTokensServer {
     }));
 
     // Read resource
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    this.server.setRequestHandler(ReadResourceRequestSchema, async request => {
       if (request.params.uri === 'liaizen://design-tokens') {
         const tokens = await this.loadTokens();
         return {
@@ -130,7 +130,7 @@ class DesignTokensServer {
     });
 
     // Handle tool calls
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async request => {
       const { name, arguments: args } = request.params;
 
       switch (name) {
@@ -280,9 +280,10 @@ class DesignTokensServer {
       content: [
         {
           type: 'text',
-          text: results.length > 0
-            ? JSON.stringify(results, null, 2)
-            : `No tokens found matching: ${query}`,
+          text:
+            results.length > 0
+              ? JSON.stringify(results, null, 2)
+              : `No tokens found matching: ${query}`,
         },
       ],
     };

@@ -11,21 +11,25 @@ This document outlines all test scenarios to verify login error handling is work
 ### 1. Client-Side Validation
 
 #### 1.1 Empty Email
+
 - **Input**: Email: "", Password: "test123"
 - **Expected**: Error: "Email is required" (or "Please enter a valid email address")
 - **Status**: ✅ Handled by frontend validation
 
 #### 1.2 Invalid Email Format
+
 - **Input**: Email: "notanemail", Password: "test123"
 - **Expected**: Error: "Please enter a valid email address"
 - **Status**: ✅ Handled by frontend regex validation
 
 #### 1.3 Empty Password
+
 - **Input**: Email: "test@example.com", Password: ""
 - **Expected**: Error: "Password is required" (or "Password must be at least 4 characters")
 - **Status**: ✅ Handled by frontend validation
 
 #### 1.4 Password Too Short
+
 - **Input**: Email: "test@example.com", Password: "123"
 - **Expected**: Error: "Password must be at least 4 characters"
 - **Status**: ✅ Handled by frontend validation
@@ -35,16 +39,19 @@ This document outlines all test scenarios to verify login error handling is work
 ### 2. Backend Validation Errors
 
 #### 2.1 Missing Email (Backend Check)
+
 - **Input**: Email: null/undefined, Password: "test123"
 - **Expected**: 400 Bad Request - "Email and password are required"
 - **Status**: ✅ Handled by backend
 
 #### 2.2 Missing Password (Backend Check)
+
 - **Input**: Email: "test@example.com", Password: null/undefined
 - **Expected**: 400 Bad Request - "Email and password are required"
 - **Status**: ✅ Handled by backend
 
 #### 2.3 Invalid Email Format (Backend Check)
+
 - **Input**: Email: "invalid", Password: "test123"
 - **Expected**: 400 Bad Request - "Please enter a valid email address"
 - **Status**: ✅ Handled by backend
@@ -54,13 +61,15 @@ This document outlines all test scenarios to verify login error handling is work
 ### 3. Authentication Errors
 
 #### 3.1 Account Not Found
+
 - **Input**: Email: "nonexistent@example.com", Password: "anypassword"
-- **Expected**: 
+- **Expected**:
   - Backend: 404 Not Found - "No account found with this email", code: "ACCOUNT_NOT_FOUND"
   - Frontend: Shows error with "Create account" button
 - **Status**: ✅ Fixed - Backend now returns 404 with code
 
 #### 3.2 Wrong Password
+
 - **Input**: Email: "existing@example.com", Password: "wrongpassword"
 - **Expected**:
   - Backend: 401 Unauthorized - "Incorrect password", code: "INVALID_PASSWORD"
@@ -68,6 +77,7 @@ This document outlines all test scenarios to verify login error handling is work
 - **Status**: ✅ Fixed - Backend now returns 401 with code
 
 #### 3.3 OAuth-Only Account (No Password)
+
 - **Input**: Email: "oauthuser@example.com", Password: "anypassword"
 - **Expected**:
   - Backend: 403 Forbidden - "This account uses Google sign-in. Please sign in with Google.", code: "OAUTH_ONLY_ACCOUNT"
@@ -79,22 +89,25 @@ This document outlines all test scenarios to verify login error handling is work
 ### 4. Network Errors
 
 #### 4.1 Network Timeout
+
 - **Scenario**: Network request times out
-- **Expected**: 
+- **Expected**:
   - Retry logic attempts 3 times with exponential backoff
   - Shows "Connection problem" error with retry option
 - **Status**: ✅ Handled by retry logic
 
 #### 4.2 Network Disconnected
+
 - **Scenario**: User loses internet connection
-- **Expected**: 
+- **Expected**:
   - Error: "Unable to connect to server. Please try again."
   - Retry button available
 - **Status**: ✅ Handled by error handler
 
 #### 4.3 Server Unavailable (503)
+
 - **Scenario**: Server returns 503 Service Unavailable
-- **Expected**: 
+- **Expected**:
   - Retry logic attempts retry
   - Shows "Service temporarily unavailable"
 - **Status**: ✅ Handled by retry logic
@@ -104,16 +117,18 @@ This document outlines all test scenarios to verify login error handling is work
 ### 5. Server Errors
 
 #### 5.1 Internal Server Error (500)
+
 - **Scenario**: Backend throws unexpected error
-- **Expected**: 
+- **Expected**:
   - 500 Internal Server Error
   - Error: "We encountered an unexpected error. Please try again in a moment."
   - Retry option available
 - **Status**: ✅ Handled by error handler
 
 #### 5.2 Database Connection Error
+
 - **Scenario**: Database is unavailable
-- **Expected**: 
+- **Expected**:
   - 500 Internal Server Error
   - Error: "Service temporarily unavailable"
   - Retry option available
@@ -124,8 +139,9 @@ This document outlines all test scenarios to verify login error handling is work
 ### 6. Rate Limiting
 
 #### 6.1 Too Many Requests (429)
+
 - **Scenario**: User makes too many login attempts
-- **Expected**: 
+- **Expected**:
   - 429 Too Many Requests
   - Error: "Too many requests. Please wait a moment and try again."
   - Retry logic will retry after delay
@@ -136,8 +152,9 @@ This document outlines all test scenarios to verify login error handling is work
 ### 7. Success Scenarios
 
 #### 7.1 Valid Credentials
+
 - **Input**: Email: "valid@example.com", Password: "correctpassword"
-- **Expected**: 
+- **Expected**:
   - 200 OK
   - User authenticated
   - Redirected to dashboard
@@ -145,8 +162,9 @@ This document outlines all test scenarios to verify login error handling is work
 - **Status**: ✅ Working
 
 #### 7.2 Login with Retry After Network Error
+
 - **Scenario**: First attempt fails due to network, second succeeds
-- **Expected**: 
+- **Expected**:
   - First attempt: Network error, retry
   - Second attempt: Success, user logged in
 - **Status**: ✅ Handled by retry logic
@@ -180,6 +198,7 @@ This document outlines all test scenarios to verify login error handling is work
 ## Implementation Status
 
 ### ✅ Completed:
+
 - Client-side validation
 - Backend validation
 - Account not found (404) vs wrong password (401) distinction
@@ -190,6 +209,7 @@ This document outlines all test scenarios to verify login error handling is work
 - Error messages with actionable buttons
 
 ### 🔍 To Test:
+
 - Manual testing of each scenario
 - Verify error messages display correctly
 - Verify action buttons work
@@ -219,5 +239,4 @@ This document outlines all test scenarios to verify login error handling is work
 
 ---
 
-*Test plan created: 2025-01-27*
-
+_Test plan created: 2025-01-27_

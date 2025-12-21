@@ -7,6 +7,7 @@
 ## Prerequisites
 
 ### Local Development Setup
+
 ```bash
 # 1. Start PostgreSQL database
 # (Ensure DATABASE_URL environment variable is set)
@@ -32,6 +33,7 @@ npm run dev
 ```
 
 ### Test Data
+
 - **Parent 1 Email**: `test.parent1@example.com`
 - **Parent 1 Password**: `TestPassword123`
 - **Parent 2 Email**: `test.parent2@example.com`
@@ -48,6 +50,7 @@ npm run dev
 **Then**: Account is created, they are logged in, and dashboard is shown
 
 **Steps**:
+
 1. Open browser to `http://localhost:3000/signup`
 2. Fill in signup form:
    - Email: `test.parent1@example.com`
@@ -63,6 +66,7 @@ npm run dev
    - Invitation confirmation badge/notification shown
 
 **Verification**:
+
 ```sql
 -- Check user was created
 SELECT id, username, email, created_at FROM users
@@ -79,6 +83,7 @@ WHERE invitee_email = 'test.parent2@example.com';
 ```
 
 **Pass Criteria**:
+
 - ✅ User record exists in database
 - ✅ User's private room exists
 - ✅ Invitation record exists with status='pending'
@@ -94,6 +99,7 @@ WHERE invitee_email = 'test.parent2@example.com';
 **Then**: Co-parent receives email with secure invitation link
 
 **Steps**:
+
 1. Login as Parent 1: `test.parent1@example.com` / `TestPassword123`
 2. (Invitation should have been sent during signup in Scenario 1)
 3. Check email inbox (or console logs in development mode)
@@ -106,6 +112,7 @@ WHERE invitee_email = 'test.parent2@example.com';
    - Expiration notice: "This invitation will expire in 7 days"
 
 **Development Mode**:
+
 ```bash
 # Email will be logged to console, not sent
 # Look for output like:
@@ -124,6 +131,7 @@ http://localhost:3000/join?token=abc123def456...
 ```
 
 **Verification**:
+
 ```bash
 # Test API endpoint directly
 curl -X POST http://localhost:8080/api/invitations/send \
@@ -136,6 +144,7 @@ curl -X POST http://localhost:8080/api/invitations/send \
 ```
 
 **Pass Criteria**:
+
 - ✅ Email received (or logged in dev mode)
 - ✅ Email contains invitation link with token
 - ✅ Email layout is responsive (test on mobile)
@@ -151,6 +160,7 @@ curl -X POST http://localhost:8080/api/invitations/send \
 **Then**: Account created AND automatically connected to inviter's room
 
 **Steps**:
+
 1. Copy invitation link from Scenario 2 email
    - Format: `http://localhost:3000/join?token=<token>`
 2. Open link in browser (can use incognito mode to simulate new user)
@@ -170,6 +180,7 @@ curl -X POST http://localhost:8080/api/invitations/send \
    - Welcome message: "You're now connected with Test Parent One"
 
 **Verification**:
+
 ```sql
 -- Check Parent 2 account created
 SELECT id, username, email FROM users
@@ -193,6 +204,7 @@ ORDER BY rm.joined_at;
 ```
 
 **Pass Criteria**:
+
 - ✅ Parent 2 account created
 - ✅ Invitation status changed to 'accepted'
 - ✅ Both parents are members of same room
@@ -208,6 +220,7 @@ ORDER BY rm.joined_at;
 **Then**: They see shared private chat room with both members
 
 **Steps**:
+
 1. **Test as Parent 1**:
    - Login: `test.parent1@example.com` / `TestPassword123`
    - Navigate to Messages/Chat page
@@ -224,6 +237,7 @@ ORDER BY rm.joined_at;
    - Messages should appear instantly via Socket.io (no page refresh needed)
 
 **Verification**:
+
 ```sql
 -- Get room members
 SELECT u.username, u.email, rm.role, rm.joined_at
@@ -245,6 +259,7 @@ ORDER BY m.timestamp DESC;
 ```
 
 **Pass Criteria**:
+
 - ✅ Both parents see same room
 - ✅ Both parents can send messages
 - ✅ Messages appear in real-time for both users
@@ -260,6 +275,7 @@ ORDER BY m.timestamp DESC;
 **Then**: They see in-app notification with option to accept/decline
 
 **Setup**:
+
 ```sql
 -- Create Parent 3 account manually (existing user)
 INSERT INTO users (username, email, password_hash, created_at)
@@ -268,6 +284,7 @@ VALUES ('testparent3', 'test.parent3@example.com',
 ```
 
 **Steps**:
+
 1. Login as Parent 1: `test.parent1@example.com` / `TestPassword123`
 2. Send invitation to existing user: `test.parent3@example.com`
    - (Use invitation form or API call)
@@ -287,6 +304,7 @@ VALUES ('testparent3', 'test.parent3@example.com',
     - Success message: "You're now connected with Test Parent One"
 
 **Verification**:
+
 ```sql
 -- Check in-app notification was created (NOT email)
 SELECT id, user_id, type, message, is_read, data
@@ -306,6 +324,7 @@ WHERE user_id = (SELECT id FROM users WHERE email = 'test.parent3@example.com');
 ```
 
 **Pass Criteria**:
+
 - ✅ In-app notification created (NOT email)
 - ✅ Notification badge shows unread count
 - ✅ Notification panel displays invitation
@@ -322,6 +341,7 @@ WHERE user_id = (SELECT id FROM users WHERE email = 'test.parent3@example.com');
 **Then**: Error message shown: "Invitation expired, request new one"
 
 **Setup**:
+
 ```sql
 -- Manually create expired invitation (backdated expires_at)
 INSERT INTO invitations (inviter_id, invitee_email, token_hash, room_id, status, expires_at, created_at)
@@ -337,6 +357,7 @@ VALUES (
 ```
 
 **Steps**:
+
 1. Construct invitation URL with expired token:
    - `http://localhost:3000/join?token=<expired-token>`
 2. Open URL in browser
@@ -350,6 +371,7 @@ VALUES (
    - **Expected**: Error message: "Invalid or expired invitation code"
 
 **Verification**:
+
 ```bash
 # Test API endpoint with expired token
 curl -X GET http://localhost:8080/api/invitations/<expired-token>
@@ -367,6 +389,7 @@ curl -X POST http://localhost:8080/api/invitations/<expired-token>/accept \
 ```
 
 **Cron Job Test** (daily cleanup):
+
 ```sql
 -- Run manual cleanup (simulate cron job)
 UPDATE invitations
@@ -381,6 +404,7 @@ WHERE invitee_email = 'test.expired@example.com';
 ```
 
 **Pass Criteria**:
+
 - ✅ Expired token validation fails
 - ✅ Clear error message displayed
 - ✅ User cannot create account with expired token
@@ -396,11 +420,13 @@ WHERE invitee_email = 'test.expired@example.com';
 **Test**: User tries to invite themselves
 
 **Steps**:
+
 1. Login as Parent 1
 2. Try to send invitation to own email: `test.parent1@example.com`
 3. **Expected**: Error message: "You cannot invite yourself"
 
 **API Test**:
+
 ```bash
 curl -X POST http://localhost:8080/api/invitations/send \
   -H "Authorization: Bearer <parent1-jwt-token>" \
@@ -418,6 +444,7 @@ curl -X POST http://localhost:8080/api/invitations/send \
 **Test**: User sends multiple invitations to same email
 
 **Steps**:
+
 1. Login as Parent 1
 2. Send invitation to `test.duplicate@example.com`
 3. Immediately send another invitation to same email
@@ -426,6 +453,7 @@ curl -X POST http://localhost:8080/api/invitations/send \
    - Only one invitation created in database (or second one updates first)
 
 **Verification**:
+
 ```sql
 -- Check only one pending invitation exists
 SELECT COUNT(*) FROM invitations
@@ -441,12 +469,14 @@ AND status = 'pending';
 **Test**: User enters invalid email format
 
 **Steps**:
+
 1. Try to register with invalid email: `not-an-email`
 2. **Expected**: Frontend validation error: "Invalid email format"
 3. Try to send invitation to invalid email: `also-not-an-email`
 4. **Expected**: Error message before API call
 
 **API Test** (if frontend validation bypassed):
+
 ```bash
 curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
@@ -463,6 +493,7 @@ curl -X POST http://localhost:8080/api/auth/register \
 **Test**: User tries to create account with weak password
 
 **Steps**:
+
 1. Try passwords that don't meet requirements:
    - `short` (too short)
    - `alllowercase123` (no uppercase)
@@ -479,12 +510,14 @@ curl -X POST http://localhost:8080/api/auth/register \
 **Test**: User sends too many invitations
 
 **Steps**:
+
 1. Login as Parent 1
 2. Send 6 invitations rapidly (one per second)
 3. **Expected**: First 5 succeed, 6th fails
 4. Error message: "Too many invitations sent. Please try again later."
 
 **API Test**:
+
 ```bash
 # Send 6 invitations in a loop
 for i in {1..6}; do
@@ -508,6 +541,7 @@ done
 **Requirement**: Account creation must complete within 3 seconds
 
 **Test**:
+
 ```bash
 # Measure API response time
 time curl -X POST http://localhost:8080/api/auth/register \
@@ -524,6 +558,7 @@ time curl -X POST http://localhost:8080/api/auth/register \
 **Requirement**: Invitation email delivered within 5 minutes
 
 **Test**:
+
 1. Send invitation at T0
 2. Check email inbox (or email service logs)
 3. Record delivery time
@@ -536,6 +571,7 @@ time curl -X POST http://localhost:8080/api/auth/register \
 **Requirement**: <200ms p95 latency
 
 **Test**:
+
 ```bash
 # Test token validation speed (100 requests)
 for i in {1..100}; do
@@ -552,6 +588,7 @@ done | grep real | sort -n
 ### Screen Reader Test
 
 **Steps**:
+
 1. Enable screen reader (VoiceOver on Mac, NVDA on Windows)
 2. Navigate signup form using keyboard only (Tab key)
 3. **Expected**:
@@ -561,6 +598,7 @@ done | grep real | sort -n
    - Submit button is reachable via keyboard
 
 **WCAG 2.1 AA Requirements**:
+
 - ✅ Color contrast ≥ 4.5:1 for text
 - ✅ All interactive elements keyboard accessible
 - ✅ Focus indicators visible
@@ -572,12 +610,14 @@ done | grep real | sort -n
 ## Browser Compatibility
 
 Test in all major browsers:
+
 - ✅ Chrome/Chromium (latest)
 - ✅ Firefox (latest)
 - ✅ Safari (latest)
 - ✅ Edge (latest)
 
 Test on mobile devices:
+
 - ✅ iOS Safari (iPhone)
 - ✅ Chrome Mobile (Android)
 
@@ -602,6 +642,7 @@ SELECT COUNT(*) FROM users WHERE email LIKE 'test%';
 ## Test Summary Checklist
 
 ### Acceptance Scenarios
+
 - [ ] Scenario 1: New User Account Creation
 - [ ] Scenario 2: Co-Parent Invitation (Email)
 - [ ] Scenario 3: Co-Parent Accepts Invitation
@@ -610,6 +651,7 @@ SELECT COUNT(*) FROM users WHERE email LIKE 'test%';
 - [ ] Scenario 6: Expired Invitation
 
 ### Edge Cases
+
 - [ ] Self-invitation prevention
 - [ ] Duplicate invitation handling
 - [ ] Invalid email format rejection
@@ -617,16 +659,19 @@ SELECT COUNT(*) FROM users WHERE email LIKE 'test%';
 - [ ] Rate limiting enforcement
 
 ### Performance
+
 - [ ] Account creation < 3 seconds
 - [ ] Email delivery < 5 minutes
 - [ ] Token validation < 200ms p95
 
 ### Accessibility
+
 - [ ] Screen reader compatibility
 - [ ] Keyboard navigation
 - [ ] WCAG 2.1 AA compliance
 
 ### Browser Compatibility
+
 - [ ] Chrome
 - [ ] Firefox
 - [ ] Safari

@@ -15,9 +15,11 @@ This plan outlines the step-by-step implementation of first-class domain types f
 ## 📅 Phase 1: Foundation - Value Objects (Week 1)
 
 ### **Goal**
+
 Create typed value objects for primitive domain concepts.
 
 ### **Tasks**
+
 1. ✅ Create `src/domain/` directory structure
 2. ⏳ Implement `Email` value object
 3. ⏳ Implement `Username` value object
@@ -27,12 +29,14 @@ Create typed value objects for primitive domain concepts.
 7. ⏳ Document usage patterns
 
 ### **Success Criteria**
+
 - ✅ All value objects implemented
 - ✅ Tests passing (100% coverage)
 - ✅ No breaking changes to existing code
 - ✅ Documentation complete
 
 ### **Files to Create**
+
 ```
 src/domain/
 ├── valueObjects/
@@ -50,6 +54,7 @@ src/domain/
 ```
 
 ### **Example Usage**
+
 ```javascript
 // Before
 const username = 'alice';
@@ -65,9 +70,11 @@ const email = new Email('alice@example.com');
 ## 📅 Phase 2: Core Entities - User, Message, Room (Week 2-3)
 
 ### **Goal**
+
 Implement the three most critical domain entities.
 
 ### **Tasks**
+
 1. ⏳ Implement `User` entity
 2. ⏳ Implement `Message` entity
 3. ⏳ Implement `Room` entity
@@ -77,6 +84,7 @@ Implement the three most critical domain entities.
 7. ⏳ Create migration utilities
 
 ### **Success Criteria**
+
 - ✅ Core entities implemented
 - ✅ Factory methods working
 - ✅ Domain validation in place
@@ -84,6 +92,7 @@ Implement the three most critical domain entities.
 - ✅ Can use alongside existing code
 
 ### **Files to Create**
+
 ```
 src/domain/
 ├── entities/
@@ -98,6 +107,7 @@ src/domain/
 ```
 
 ### **Example Usage**
+
 ```javascript
 // Create from database row
 const user = User.fromDbRow(dbRow);
@@ -116,9 +126,11 @@ const dbRow = user.toDbRow();
 ## 📅 Phase 3: Business Logic Migration (Week 4)
 
 ### **Goal**
+
 Move business rules from service functions into entity methods.
 
 ### **Tasks**
+
 1. ⏳ Identify business rules in service functions
 2. ⏳ Move rules to entity methods
 3. ⏳ Update service functions to use entities
@@ -127,6 +139,7 @@ Move business rules from service functions into entity methods.
 6. ⏳ Update tests
 
 ### **Success Criteria**
+
 - ✅ Business rules in entities
 - ✅ Service functions refactored
 - ✅ All tests passing
@@ -135,15 +148,16 @@ Move business rules from service functions into entity methods.
 ### **Example Migration**
 
 **Before:**
+
 ```javascript
 // server.js
 function canUserEditMessage(user, message) {
-  return user.username === message.username && 
-         Date.now() - message.timestamp < 5 * 60 * 1000;
+  return user.username === message.username && Date.now() - message.timestamp < 5 * 60 * 1000;
 }
 ```
 
 **After:**
+
 ```javascript
 // Message.js
 canBeEditedBy(user) {
@@ -166,9 +180,11 @@ if (message.canBeEditedBy(user)) {
 ## 📅 Phase 4: Remaining Entities (Week 5)
 
 ### **Goal**
+
 Implement remaining domain entities.
 
 ### **Tasks**
+
 1. ⏳ Implement `Task` entity
 2. ⏳ Implement `Contact` entity
 3. ⏳ Implement `Child` entity
@@ -178,6 +194,7 @@ Implement remaining domain entities.
 7. ⏳ Write tests
 
 ### **Success Criteria**
+
 - ✅ All entities implemented
 - ✅ Relationship methods working
 - ✅ Tests passing
@@ -188,9 +205,11 @@ Implement remaining domain entities.
 ## 📅 Phase 5: Repository Pattern (Week 6)
 
 ### **Goal**
+
 Abstract data access with repository pattern.
 
 ### **Tasks**
+
 1. ⏳ Create repository interfaces
 2. ⏳ Implement `UserRepository`
 3. ⏳ Implement `RoomRepository`
@@ -199,12 +218,14 @@ Abstract data access with repository pattern.
 6. ⏳ Complete migration
 
 ### **Success Criteria**
+
 - ✅ Repository pattern in place
 - ✅ Data access abstracted
 - ✅ 100% of new code uses domain classes
 - ✅ Documentation complete
 
 ### **Example Usage**
+
 ```javascript
 // Before
 const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
@@ -246,6 +267,7 @@ const user = User.fromDbRow(dbRow);
 ## 📊 Progress Tracking
 
 ### **Phase 1: Foundation**
+
 - [ ] Directory structure created
 - [ ] Email value object
 - [ ] Username value object
@@ -255,6 +277,7 @@ const user = User.fromDbRow(dbRow);
 - [ ] Documentation complete
 
 ### **Phase 2: Core Entities**
+
 - [ ] User entity
 - [ ] Message entity
 - [ ] Room entity
@@ -263,12 +286,14 @@ const user = User.fromDbRow(dbRow);
 - [ ] Tests written
 
 ### **Phase 3: Business Logic**
+
 - [ ] Business rules identified
 - [ ] Rules moved to entities
 - [ ] Service functions refactored
 - [ ] Tests updated
 
 ### **Phase 4: Remaining Entities**
+
 - [ ] Task entity
 - [ ] Contact entity
 - [ ] Child entity
@@ -277,6 +302,7 @@ const user = User.fromDbRow(dbRow);
 - [ ] Tests written
 
 ### **Phase 5: Repository Pattern**
+
 - [ ] Repository interfaces
 - [ ] UserRepository
 - [ ] RoomRepository
@@ -288,18 +314,21 @@ const user = User.fromDbRow(dbRow);
 ## 🎯 Success Metrics
 
 ### **Code Quality**
+
 - ✅ 100% test coverage for domain classes
 - ✅ All business rules in entities
 - ✅ No plain objects for domain concepts
 - ✅ Type safety throughout
 
 ### **Developer Experience**
+
 - ✅ Domain concepts obvious in code
 - ✅ Easy to find business rules
 - ✅ Self-documenting code
 - ✅ Reduced cognitive load
 
 ### **Maintainability**
+
 - ✅ Single source of truth for entities
 - ✅ Easy to change domain rules
 - ✅ Clear separation of concerns
@@ -318,4 +347,3 @@ const user = User.fromDbRow(dbRow);
 
 **Status**: Ready to Start  
 **Next Action**: Begin Phase 1 - Implement value objects
-

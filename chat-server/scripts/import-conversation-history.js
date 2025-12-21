@@ -64,7 +64,9 @@ async function initDatabase() {
   if (!databaseUrl) {
     console.error('❌ DATABASE_URL not set in environment');
     console.log('\nTo connect to Railway production database, run:');
-    console.log('  DATABASE_URL="postgresql://..." node scripts/import-conversation-history.js <file>');
+    console.log(
+      '  DATABASE_URL="postgresql://..." node scripts/import-conversation-history.js <file>'
+    );
     process.exit(1);
   }
 
@@ -78,7 +80,7 @@ async function initDatabase() {
 
   pool = new Pool({
     connectionString: databaseUrl,
-    ssl: databaseUrl.includes('localhost') ? false : { rejectUnauthorized: false }
+    ssl: databaseUrl.includes('localhost') ? false : { rejectUnauthorized: false },
   });
 
   // Test connection
@@ -136,7 +138,11 @@ function parseConversationFile(filePath) {
 
   // Check if it's a CSV file
   const firstLine = lines[0];
-  if (firstLine.includes('message_id') && firstLine.includes('timestamp') && firstLine.includes('sender_name')) {
+  if (
+    firstLine.includes('message_id') &&
+    firstLine.includes('timestamp') &&
+    firstLine.includes('sender_name')
+  ) {
     return parseCSVFormat(lines);
   }
 
@@ -165,7 +171,7 @@ function parseCSVFormat(lines) {
         messages.push({
           sender: sender,
           text: text.trim(),
-          timestamp: timestamp
+          timestamp: timestamp,
         });
       }
     }
@@ -227,7 +233,7 @@ function parseTextFormat(lines) {
       currentMessage = {
         sender: match[2].trim(),
         text: match[3].trim(),
-        timestamp: timestamp
+        timestamp: timestamp,
       };
     } else if (currentMessage) {
       // This is a continuation line (multi-line message)
@@ -415,26 +421,16 @@ async function updateNeo4jMetadata(users, room, totalMessages) {
     const totalInRoom = parseInt(countResult.rows[0].count, 10);
 
     // Update relationship metadata
-    await neo4jClient.updateRelationshipMetadata(
-      users.user1.id,
-      users.user2.id,
-      room.id,
-      {
-        messageCount: totalInRoom,
-        lastInteraction: new Date()
-      }
-    );
+    await neo4jClient.updateRelationshipMetadata(users.user1.id, users.user2.id, room.id, {
+      messageCount: totalInRoom,
+      lastInteraction: new Date(),
+    });
 
     // Update reverse direction too
-    await neo4jClient.updateRelationshipMetadata(
-      users.user2.id,
-      users.user1.id,
-      room.id,
-      {
-        messageCount: totalInRoom,
-        lastInteraction: new Date()
-      }
-    );
+    await neo4jClient.updateRelationshipMetadata(users.user2.id, users.user1.id, room.id, {
+      messageCount: totalInRoom,
+      lastInteraction: new Date(),
+    });
 
     console.log('✅ Neo4j metadata updated');
   } catch (error) {
@@ -445,11 +441,11 @@ async function updateNeo4jMetadata(users, room, totalMessages) {
 async function promptConfirmation(question) {
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
   });
 
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
+  return new Promise(resolve => {
+    rl.question(question, answer => {
       rl.close();
       resolve(answer.toLowerCase().startsWith('y'));
     });
@@ -465,7 +461,9 @@ async function main() {
 
   if (!filePath) {
     console.log('Usage: node scripts/import-conversation-history.js <path-to-txt-file>\n');
-    console.log('Example: node scripts/import-conversation-history.js ~/Desktop/conversation.txt\n');
+    console.log(
+      'Example: node scripts/import-conversation-history.js ~/Desktop/conversation.txt\n'
+    );
     process.exit(1);
   }
 
@@ -488,8 +486,12 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`   User 1: ${users.user1.display_name || users.user1.username} (${users.user1.email})`);
-  console.log(`   User 2: ${users.user2.display_name || users.user2.username} (${users.user2.email})`);
+  console.log(
+    `   User 1: ${users.user1.display_name || users.user1.username} (${users.user1.email})`
+  );
+  console.log(
+    `   User 2: ${users.user2.display_name || users.user2.username} (${users.user2.email})`
+  );
 
   // Get shared room
   console.log('\n🏠 Finding shared room...');
@@ -518,7 +520,9 @@ async function main() {
   const sample = messages.slice(0, 3);
   for (const msg of sample) {
     const senderMatch = identifySender(msg.sender, users.user1, users.user2);
-    const senderStatus = senderMatch ? `✓ ${senderMatch.display_name || senderMatch.username}` : '? Unknown';
+    const senderStatus = senderMatch
+      ? `✓ ${senderMatch.display_name || senderMatch.username}`
+      : '? Unknown';
     console.log(`   [${msg.timestamp.toISOString()}] ${msg.sender} (${senderStatus})`);
     console.log(`   "${msg.text.substring(0, 50)}${msg.text.length > 50 ? '...' : ''}"\n`);
   }
@@ -550,8 +554,12 @@ async function main() {
   console.log(`   Total parsed: ${messages.length}`);
   console.log(`   Imported: ${imported}`);
   console.log(`   Skipped: ${skipped}`);
-  console.log(`   ${users.user1.display_name || users.user1.username}: ${stats.user1Messages} messages`);
-  console.log(`   ${users.user2.display_name || users.user2.username}: ${stats.user2Messages} messages`);
+  console.log(
+    `   ${users.user1.display_name || users.user1.username}: ${stats.user1Messages} messages`
+  );
+  console.log(
+    `   ${users.user2.display_name || users.user2.username}: ${stats.user2Messages} messages`
+  );
 
   if (stats.unknownSender.length > 0) {
     const uniqueUnknown = [...new Set(stats.unknownSender)];

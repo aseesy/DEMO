@@ -14,8 +14,8 @@ This file tracks current design context, active decisions, and working state.
 
 ## Active Design Decisions
 
-*None yet - will be populated as design decisions are made.*
+_None yet - will be populated as design decisions are made._
 
 ## Pending Approvals
 
-*None - Design Evolution mode changes requiring approval will be listed here.*
+_None - Design Evolution mode changes requiring approval will be listed here._

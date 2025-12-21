@@ -16,6 +16,7 @@ This policy establishes deployment standards, procedures, and safeguards for the
 ## Constitutional Alignment
 
 This policy enforces:
+
 - **Principle IV**: Idempotent Operations - Deployments are repeatable and safe
 - **Principle V**: Progressive Enhancement - Gradual rollout and feature flags
 - **Principle VI**: Git Operation Approval - No autonomous deployments
@@ -27,6 +28,7 @@ This policy enforces:
 ## Scope
 
 All deployments to production and production-like environments must follow this policy, including:
+
 - Application code deployments
 - Infrastructure changes
 - Database migrations
@@ -43,6 +45,7 @@ All deployments to production and production-like environments must follow this 
 **Requirement**: Deployments must not cause service interruptions
 
 **Strategies**:
+
 - Blue-green deployments
 - Rolling deployments
 - Canary deployments
@@ -53,6 +56,7 @@ All deployments to production and production-like environments must follow this 
 **Requirement**: Manual deployments are discouraged; automation is preferred
 
 **Benefits**:
+
 - Consistency and repeatability
 - Reduced human error
 - Faster deployment cycles
@@ -63,6 +67,7 @@ All deployments to production and production-like environments must follow this 
 **Requirement**: Every deployment must have a rollback plan
 
 **Requirements**:
+
 - Rollback procedure documented
 - Rollback tested in staging
 - Rollback executable within 5 minutes
@@ -73,6 +78,7 @@ All deployments to production and production-like environments must follow this 
 **Requirement**: New versions deployed gradually, not all-at-once
 
 **Stages**:
+
 1. Development environment
 2. Staging environment
 3. Production canary (1-5% traffic)
@@ -88,6 +94,7 @@ All deployments to production and production-like environments must follow this 
 **Purpose**: Active development and testing
 
 **Characteristics**:
+
 - Frequent deployments (multiple per day)
 - May be unstable
 - Uses development dependencies
@@ -101,6 +108,7 @@ All deployments to production and production-like environments must follow this 
 **Purpose**: Pre-production verification
 
 **Characteristics**:
+
 - Production-like configuration
 - Production-like data (anonymized)
 - Performance testing
@@ -110,6 +118,7 @@ All deployments to production and production-like environments must follow this 
 **Deployment**: Automatic on push to `staging` branch
 
 **Requirements**:
+
 - All tests pass
 - Performance benchmarks meet targets
 - Security scan passes
@@ -119,6 +128,7 @@ All deployments to production and production-like environments must follow this 
 **Purpose**: Live user-facing environment
 
 **Characteristics**:
+
 - Stable releases only
 - Real user data
 - High availability
@@ -128,6 +138,7 @@ All deployments to production and production-like environments must follow this 
 **Deployment**: Manual trigger after approval
 
 **Requirements**:
+
 - Staging deployment successful for ≥24 hours
 - All smoke tests pass
 - Team approval obtained
@@ -141,6 +152,7 @@ All deployments to production and production-like environments must follow this 
 ### Step 1: Pre-Deployment Checks
 
 **Required Checks**:
+
 - [ ] All tests passing (unit, integration, E2E)
 - [ ] Code review approved
 - [ ] Security scan clear
@@ -150,6 +162,7 @@ All deployments to production and production-like environments must follow this 
 - [ ] Deployment runbook updated
 
 **Automated Checks** (CI/CD):
+
 ```yaml
 pre-deployment:
   - run: npm test
@@ -163,14 +176,15 @@ pre-deployment:
 
 **Approval Requirements**:
 
-| Deployment Type | Approvers Required | Notice Period |
-|----------------|-------------------|---------------|
-| Hotfix | 1 (on-call engineer) | Immediate |
-| Minor release | 1 (team lead) | 4 hours |
-| Major release | 2 (team lead + architect) | 24 hours |
-| Breaking change | Team consensus | 48 hours |
+| Deployment Type | Approvers Required        | Notice Period |
+| --------------- | ------------------------- | ------------- |
+| Hotfix          | 1 (on-call engineer)      | Immediate     |
+| Minor release   | 1 (team lead)             | 4 hours       |
+| Major release   | 2 (team lead + architect) | 24 hours      |
+| Breaking change | Team consensus            | 48 hours      |
 
 **Approval Process**:
+
 1. Create deployment request (ticket/issue)
 2. Notify required approvers
 3. Wait for approval
@@ -181,11 +195,13 @@ pre-deployment:
 **If database changes required**:
 
 1. **Create Migration**:
+
    ```bash
    npm run migration:create -- add_users_table
    ```
 
 2. **Test Migration** (staging):
+
    ```bash
    npm run migration:up    # Apply
    npm run migration:down  # Rollback
@@ -193,6 +209,7 @@ pre-deployment:
    ```
 
 3. **Backup Production Database**:
+
    ```bash
    pg_dump production > backup_$(date +%Y%m%d_%H%M%S).sql
    ```
@@ -203,6 +220,7 @@ pre-deployment:
    ```
 
 **Migration Requirements**:
+
 - Migrations are reversible
 - Migrations are idempotent
 - Migrations tested in staging
@@ -211,6 +229,7 @@ pre-deployment:
 ### Step 4: Deployment Execution
 
 **Blue-Green Deployment** (Recommended):
+
 ```bash
 # 1. Deploy to green environment
 deploy-to-environment green
@@ -229,6 +248,7 @@ monitor-health-checks
 ```
 
 **Rolling Deployment** (Alternative):
+
 ```bash
 # 1. Deploy to 1 instance
 deploy-to-instance instance-1
@@ -242,6 +262,7 @@ if healthy:
 ```
 
 **Canary Deployment** (New features):
+
 ```bash
 # 1. Deploy canary with feature flag
 deploy-canary --feature-flag=new_feature
@@ -264,6 +285,7 @@ set-traffic-split canary=0% stable=100%
 ### Step 5: Post-Deployment Verification
 
 **Smoke Tests** (Must pass):
+
 - [ ] Application starts successfully
 - [ ] Health check endpoint returns 200
 - [ ] Database connection established
@@ -271,6 +293,7 @@ set-traffic-split canary=0% stable=100%
 - [ ] No error spikes in logs
 
 **Monitoring Checks** (First 10 minutes):
+
 - [ ] Error rate < baseline + 10%
 - [ ] Response time < baseline + 20%
 - [ ] CPU/Memory within normal range
@@ -278,6 +301,7 @@ set-traffic-split canary=0% stable=100%
 - [ ] No 5xx errors
 
 **If Issues Detected**:
+
 1. Execute rollback immediately
 2. Investigate root cause
 3. Fix issue
@@ -287,6 +311,7 @@ set-traffic-split canary=0% stable=100%
 ### Step 6: Deployment Communication
 
 **Announce Deployment**:
+
 ```markdown
 📢 Deployment Announcement
 
@@ -296,6 +321,7 @@ Deployed By: [Name]
 Deployed At: 2025-11-07 14:30 UTC
 
 Changes:
+
 - Added user profile feature
 - Fixed password reset bug
 - Updated dependencies
@@ -307,6 +333,7 @@ Status: ✅ Healthy
 ```
 
 **Communication Channels**:
+
 - Team Slack/chat
 - Status page (if user-facing)
 - Deployment log/dashboard
@@ -318,6 +345,7 @@ Status: ✅ Healthy
 ### When to Rollback
 
 Rollback immediately if:
+
 - Error rate > baseline + 50%
 - Response time > baseline + 100%
 - Critical feature broken
@@ -327,6 +355,7 @@ Rollback immediately if:
 ### Rollback Execution
 
 **Application Rollback**:
+
 ```bash
 # Blue-Green: Switch traffic back
 switch-traffic green -> blue
@@ -339,6 +368,7 @@ set-traffic-split canary=0% stable=100%
 ```
 
 **Database Rollback**:
+
 ```bash
 # Run down migration
 npm run migration:down
@@ -348,6 +378,7 @@ psql production < backup_20251107_143000.sql
 ```
 
 **Rollback Timeline**:
+
 - Decision: Within 2 minutes of issue detection
 - Execution: Within 5 minutes of decision
 - Verification: Within 3 minutes of execution
@@ -356,6 +387,7 @@ psql production < backup_20251107_143000.sql
 ### Post-Rollback
 
 After rollback:
+
 1. **Announce**: Notify team and users of rollback
 2. **Investigate**: Root cause analysis
 3. **Fix**: Address the issue
@@ -370,6 +402,7 @@ After rollback:
 ### Purpose
 
 Feature flags enable:
+
 - Gradual rollout to subset of users
 - A/B testing
 - Quick disabling of problematic features
@@ -383,8 +416,8 @@ const featureFlags = {
   newUserProfile: {
     enabled: true,
     rollout: 25, // 25% of users
-    environments: ['staging', 'production']
-  }
+    environments: ['staging', 'production'],
+  },
 };
 
 // Usage in code
@@ -398,6 +431,7 @@ if (featureFlags.isEnabled('newUserProfile', user)) {
 ### Feature Flag Management
 
 **Best Practices**:
+
 - Default to disabled for new features
 - Start with small rollout percentage
 - Monitor metrics during rollout
@@ -405,6 +439,7 @@ if (featureFlags.isEnabled('newUserProfile', user)) {
 - Don't accumulate technical debt (clean up flags)
 
 **Flag Lifecycle**:
+
 1. Create flag (disabled, 0% rollout)
 2. Enable in staging
 3. Enable in production (5% → 25% → 50% → 100%)
@@ -449,18 +484,21 @@ if (featureFlags.isEnabled('newUserProfile', user)) {
 ### Required Metrics
 
 **Application Metrics**:
+
 - Request rate
 - Error rate
 - Response time (p50, p95, p99)
 - Throughput
 
 **System Metrics**:
+
 - CPU usage
 - Memory usage
 - Disk I/O
 - Network I/O
 
 **Business Metrics**:
+
 - User signups
 - Active users
 - Core feature usage
@@ -469,12 +507,14 @@ if (featureFlags.isEnabled('newUserProfile', user)) {
 ### Alerting
 
 **Critical Alerts** (Page on-call):
+
 - Error rate > 10%
 - Response time > 5s (p95)
 - Service down
 - Database connection errors
 
 **Warning Alerts** (Notify team):
+
 - Error rate > 5%
 - Response time > 2s (p95)
 - CPU/Memory > 80%
@@ -483,6 +523,7 @@ if (featureFlags.isEnabled('newUserProfile', user)) {
 ### Logging
 
 **Log All Deployments**:
+
 ```json
 {
   "event": "deployment",
@@ -497,6 +538,7 @@ if (featureFlags.isEnabled('newUserProfile', user)) {
 ```
 
 **Log Levels**:
+
 - ERROR: Deployment failures
 - WARN: Rollbacks, retries
 - INFO: Successful deployments
@@ -509,11 +551,13 @@ if (featureFlags.isEnabled('newUserProfile', user)) {
 ### Hotfix Deployment
 
 **When Needed**:
+
 - Critical production bug
 - Security vulnerability
 - Data corruption
 
 **Fast-Track Process**:
+
 1. Create hotfix branch from `main`
 2. Implement minimal fix
 3. Test in staging (abbreviated)
@@ -523,6 +567,7 @@ if (featureFlags.isEnabled('newUserProfile', user)) {
 7. Post-mortem within 24 hours
 
 **Hotfix Timeline**:
+
 - Fix development: ≤2 hours
 - Testing: ≤30 minutes
 - Approval: ≤15 minutes
@@ -532,11 +577,13 @@ if (featureFlags.isEnabled('newUserProfile', user)) {
 ### Disaster Recovery
 
 **Scenarios**:
+
 - Complete service outage
 - Data loss
 - Infrastructure failure
 
 **Recovery Procedure**:
+
 1. **Assess**: Determine scope and impact
 2. **Communicate**: Notify users and team
 3. **Restore**: From most recent backup
@@ -544,6 +591,7 @@ if (featureFlags.isEnabled('newUserProfile', user)) {
 5. **Post-Mortem**: Root cause and prevention
 
 **Recovery Time Objectives**:
+
 - RTO (Recovery Time Objective): 1 hour
 - RPO (Recovery Point Objective): 15 minutes
 
@@ -556,6 +604,7 @@ if (featureFlags.isEnabled('newUserProfile', user)) {
 **Trigger**: On every push to any branch
 
 **Pipeline**:
+
 ```yaml
 ci:
   - checkout code
@@ -571,6 +620,7 @@ ci:
 ### Continuous Deployment
 
 **Development** (Automatic):
+
 ```yaml
 deploy-dev:
   trigger: push to develop branch
@@ -581,6 +631,7 @@ deploy-dev:
 ```
 
 **Staging** (Automatic):
+
 ```yaml
 deploy-staging:
   trigger: push to staging branch
@@ -593,6 +644,7 @@ deploy-staging:
 ```
 
 **Production** (Manual):
+
 ```yaml
 deploy-production:
   trigger: manual approval
@@ -622,13 +674,13 @@ deploy-production:
 
 ### Targets (DevOps Research)
 
-| Metric | Target (Elite Performers) |
-|--------|---------------------------|
-| Deployment frequency | Multiple per day |
-| Lead time | < 1 hour |
-| Change failure rate | < 15% |
-| MTTR | < 1 hour |
-| Rollback rate | < 5% |
+| Metric               | Target (Elite Performers) |
+| -------------------- | ------------------------- |
+| Deployment frequency | Multiple per day          |
+| Lead time            | < 1 hour                  |
+| Change failure rate  | < 15%                     |
+| MTTR                 | < 1 hour                  |
+| Rollback rate        | < 5%                      |
 
 ---
 
@@ -637,6 +689,7 @@ deploy-production:
 ### Audit Requirements
 
 All deployments must be auditable:
+
 - Who deployed
 - What was deployed (version, changes)
 - When deployed (timestamp)
@@ -647,6 +700,7 @@ All deployments must be auditable:
 ### Retention
 
 Deployment logs retained for:
+
 - 90 days (standard deployments)
 - 1 year (production deployments)
 - 3 years (compliance-sensitive industries)

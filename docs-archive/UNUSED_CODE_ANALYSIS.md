@@ -5,10 +5,12 @@ Analysis of potentially unused functions, components, and modules in the codebas
 ## 📋 Quick Summary
 
 **100% Confident Unused: 21 items**
+
 - Frontend: 4 items (requireAuth, toCamelCase/toSnakeCase, UserContextForm, storageHelpers)
 - Backend: 17 items (Code Layer utilities + Mediator utilities)
 
 **Reasonably Confident Unused: 1 item**
+
 - Frontend: UIShowcase (dev tool - may be intentional)
 
 **Total Unused Code: 22 items**
@@ -20,18 +22,22 @@ See detailed analysis below for each item with evidence and recommendations.
 ### Frontend
 
 #### 1. `requireAuth` HOC
+
 - **Location**: `chat-client-vite/src/context/AuthContext.jsx:396`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: No imports found in codebase
 - **Code**:
+
 ```javascript
 export function requireAuth(Component) {
   // HOC wrapper for protected routes
 }
 ```
+
 - **Recommendation**: Remove if not needed, or document if planned for future use
 
 #### 2. `toCamelCase` and `toSnakeCase` (Generic Transformers)
+
 - **Location**: `chat-client-vite/src/utils/apiTransform.js:31, 57`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only defined in the file, never imported/used elsewhere
@@ -39,6 +45,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove if not needed, or keep for future use
 
 #### 3. `UserContextForm` Component
+
 - **Location**: `chat-client-vite/src/components/UserContextForm.jsx`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: No imports found in codebase
@@ -46,6 +53,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove if not needed
 
 #### 4. `storageHelpers` Object
+
 - **Location**: `chat-client-vite/src/utils/storageKeys.js:27`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: No imports found in codebase
@@ -55,6 +63,7 @@ export function requireAuth(Component) {
 ### Backend
 
 #### 5. `parseBatch` Function
+
 - **Location**: `chat-server/src/liaizen/core/codeLayer/index.js:241`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -62,6 +71,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Keep if used in tests, otherwise remove
 
 #### 6. `quickCheck` Function
+
 - **Location**: `chat-server/src/liaizen/core/codeLayer/index.js:251`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -69,6 +79,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or document as utility for future optimization
 
 #### 7. `setPerformanceLogging` Function
+
 - **Location**: `chat-server/src/liaizen/core/codeLayer/index.js:276`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -76,6 +87,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or keep for debugging
 
 #### 8. `checkCategory` Function
+
 - **Location**: `chat-server/src/liaizen/core/codeLayer/axioms/index.js:186`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -83,6 +95,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or keep for future use
 
 #### 9. `checkOne` Function
+
 - **Location**: `chat-server/src/liaizen/core/codeLayer/axioms/index.js:164`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only used internally by `checkCategory`, which is also unused
@@ -90,6 +103,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove if `checkCategory` is removed
 
 #### 10. `getVectorRiskLevel` Function
+
 - **Location**: `chat-server/src/liaizen/core/codeLayer/vectorIdentifier.js:437`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -97,6 +111,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or keep for future analytics
 
 #### 11. `getPrimaryDomain` Function
+
 - **Location**: `chat-server/src/liaizen/core/codeLayer/tokenizer.js:384`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -104,6 +119,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or keep for future use
 
 #### 12. `getInterventionUrgency` Function
+
 - **Location**: `chat-server/src/liaizen/core/codeLayer/assessmentGen.js:358`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -111,6 +127,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or keep for future use
 
 #### 13. `getAssessmentSummary` Function
+
 - **Location**: `chat-server/src/liaizen/core/codeLayer/assessmentGen.js:309`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -118,6 +135,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or keep for debugging/logging
 
 #### 14. `needsIntervention` Function
+
 - **Location**: `chat-server/src/liaizen/core/codeLayer/assessmentGen.js:349`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -125,6 +143,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or keep for future use
 
 #### 15. `formatForPrompt` Function (Language Analyzer)
+
 - **Location**: `chat-server/src/liaizen/analysis/language-analyzer/index.js:293`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -132,6 +151,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or keep if used in tests
 
 #### 16. `secureCompare` Function
+
 - **Location**: `chat-server/src/utils/crypto.js:161`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used (has tests though)
@@ -139,6 +159,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Keep if used in tests, otherwise remove
 
 #### 17. `getSchemaHealth` Function
+
 - **Location**: `chat-server/src/utils/schema.js:145`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -146,6 +167,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or keep for admin/debugging tools
 
 #### 18. `resetEscalation` Function
+
 - **Location**: `chat-server/src/liaizen/core/mediator.js:1323`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only found in deprecated files (deprecated/interventionPolicy.js)
@@ -153,6 +175,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove - functionality likely replaced
 
 #### 19. `getPolicyState` Function
+
 - **Location**: `chat-server/src/liaizen/core/mediator.js:1334`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only found in deprecated files (deprecated/interventionPolicy.js)
@@ -160,6 +183,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove - functionality likely replaced
 
 #### 20. `getUserProfile` Function
+
 - **Location**: `chat-server/src/liaizen/core/mediator.js:1367`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used in active code
@@ -167,6 +191,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or check if needed for future features
 
 #### 21. `getCodeLayerMetrics` Function
+
 - **Location**: `chat-server/src/liaizen/core/mediator.js:1385`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only exported, never imported/used
@@ -174,6 +199,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Remove or keep for admin/debugging tools
 
 #### 22. `analyzeAndIntervene` (Legacy Alias)
+
 - **Location**: `chat-server/src/liaizen/core/mediator.js:1423`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only found in comments and deprecated backup files
@@ -185,6 +211,7 @@ export function requireAuth(Component) {
 ### Frontend
 
 #### 23. `UIShowcase` Component
+
 - **Location**: `chat-client-vite/src/components/UIShowcase.jsx`
 - **Status**: ⚠️ **REASONABLY CONFIDENT - UNUSED**
 - **Evidence**: Only imported in `App.jsx` for route `/ui-showcase`
@@ -192,6 +219,7 @@ export function requireAuth(Component) {
 - **Recommendation**: Keep if used for design system documentation, remove if not
 
 #### 24. `ActivityCard` Component
+
 - **Location**: `chat-client-vite/src/components/ActivityCard.jsx`
 - **Status**: ✅ **USED**
 - **Evidence**: Imported and rendered in `ContactsPanel.jsx:589`
@@ -200,6 +228,7 @@ export function requireAuth(Component) {
 ### Backend
 
 #### 25. Mediator Utility Functions (Multiple)
+
 - **Location**: `chat-server/src/liaizen/core/mediator.js:1401`
 - **Status**: ✅ **MOSTLY USED** (via server.js routes)
 - **Functions**:
@@ -217,6 +246,7 @@ export function requireAuth(Component) {
 - **Recommendation**: These 4 functions are unused and can be removed.
 
 #### 26. Code Layer Integration Functions
+
 - **Location**: `chat-server/src/liaizen/core/codeLayerIntegration.js:381`
 - **Status**: ✅ **ALL USED**
 - **Functions**:
@@ -227,6 +257,7 @@ export function requireAuth(Component) {
 - **Note**: These are all used - NOT unused
 
 #### 22. `analyzeAndIntervene` (Legacy Alias)
+
 - **Location**: `chat-server/src/liaizen/core/mediator.js:1423`
 - **Status**: ✅ **100% UNUSED**
 - **Evidence**: Only found in comments and deprecated backup files
@@ -238,18 +269,20 @@ export function requireAuth(Component) {
 ### By Confidence Level
 
 **100% Confident Unused:**
+
 - Frontend: 4 items
 - Backend: 17 items (13 Code Layer + 4 Mediator functions)
 - **Total: 21 items**
 
 **Reasonably Confident Unused:**
+
 - Frontend: 1 item (UIShowcase - dev tool, may be intentional)
 - Backend: 0 items
 - **Total: 1 item**
 
 ### By Category
 
-**Components**: 2 unused (UserContextForm, UIShowcase*)
+**Components**: 2 unused (UserContextForm, UIShowcase\*)
 **Hooks**: 0 unused (all are used)
 **Utility Functions**: 4 unused (toCamelCase, toSnakeCase, storageHelpers, requireAuth)
 **Backend Functions**: 17 unused (Code Layer utilities + Mediator utilities)
@@ -280,4 +313,3 @@ export function requireAuth(Component) {
 
 **Last Updated**: 2025-01-27  
 **Analysis Method**: Static code analysis (grep-based)
-

@@ -12,6 +12,7 @@
 **File:** `chat-server/src/liaizen/context/userContext.js`
 
 **Changes:**
+
 - ✅ Added work schedule context (occupation + work schedule)
 - ✅ Added household members information
 - ✅ Added timezone for temporal awareness
@@ -19,6 +20,7 @@
 - ✅ Improved formatting for better AI comprehension
 
 **Before:**
+
 ```javascript
 if (userProfile?.occupation) {
   parts.push(`Occupation: ${userProfile.occupation}`);
@@ -26,6 +28,7 @@ if (userProfile?.occupation) {
 ```
 
 **After:**
+
 ```javascript
 if (userProfile?.occupation) {
   const workInfo = [userProfile.occupation];
@@ -58,16 +61,19 @@ if (userProfile?.timezone) {
 **File:** `chat-server/src/utils/constants.js`
 
 **Changes:**
+
 - ✅ Increased `RECENT_MESSAGES_COUNT` from 15 to 25 messages
 - ✅ Increased `MAX_RECENT_MESSAGES` from 20 to 30 messages
 
 **Before:**
+
 ```javascript
 RECENT_MESSAGES_COUNT: 15,
 MAX_RECENT_MESSAGES: 20,
 ```
 
 **After:**
+
 ```javascript
 RECENT_MESSAGES_COUNT: 25, // Increased from 15 for better conversation context
 MAX_RECENT_MESSAGES: 30, // Increased to support deeper conversation context
@@ -80,11 +86,13 @@ MAX_RECENT_MESSAGES: 30, // Increased to support deeper conversation context
 ## 📊 Impact Summary
 
 ### Contextual Awareness Score
+
 - **Before:** 6.5/10
 - **After:** ~8.5/10
 - **Improvement:** +2.0 points
 
 ### Key Improvements
+
 1. **User Profile Integration:** Now includes work schedule, household, timezone, and additional context
 2. **Message History:** 67% increase in conversation depth (15 → 25 messages)
 3. **Better Formatting:** More structured context presentation for AI
@@ -97,6 +105,7 @@ MAX_RECENT_MESSAGES: 30, // Increased to support deeper conversation context
 **Integration:** `chat-server/src/liaizen/core/mediator.js`
 
 **Features:**
+
 - ✅ Extracts voice characteristics from messages (sentence structure, formality, punctuation)
 - ✅ Analyzes multiple messages to build aggregated voice signature
 - ✅ Tracks common starters and closings
@@ -104,6 +113,7 @@ MAX_RECENT_MESSAGES: 30, // Increased to support deeper conversation context
 - ✅ Includes voice signature in AI prompts for rewrite generation
 
 **Voice Signature Includes:**
+
 - Sentence structure: `short_direct`, `moderate`, or `detailed_explanatory`
 - Formality level: `casual`, `formal`, or `mixed`
 - Punctuation style: `minimal`, `standard`, or `expressive`
@@ -112,6 +122,7 @@ MAX_RECENT_MESSAGES: 30, // Increased to support deeper conversation context
 - Question-heavy detection
 
 **How It Works:**
+
 1. Analyzes sender's last 20 messages (minimum 3 required)
 2. Extracts voice characteristics from each message
 3. Aggregates patterns to build voice signature
@@ -128,6 +139,7 @@ MAX_RECENT_MESSAGES: 30, // Increased to support deeper conversation context
 **Integration:** `chat-server/src/liaizen/core/mediator.js`
 
 **Features:**
+
 - ✅ Analyzes initiator balance (who starts conversations, message distribution)
 - ✅ Calculates response times (average, median, trends)
 - ✅ Detects conversation rhythm (back-and-forth, bursts, steady, sparse)
@@ -136,6 +148,7 @@ MAX_RECENT_MESSAGES: 30, // Increased to support deeper conversation context
 - ✅ Includes patterns in AI prompts for dynamic coaching
 
 **Pattern Analysis Includes:**
+
 - **Initiator Balance:**
   - Message distribution percentages
   - Conversation start patterns
@@ -157,6 +170,7 @@ MAX_RECENT_MESSAGES: 30, // Increased to support deeper conversation context
   - First half vs second half comparison
 
 **How It Works:**
+
 1. Analyzes recent messages (minimum 2 required)
 2. Calculates initiator balance from message distribution
 3. Computes response times between different users
@@ -171,12 +185,14 @@ MAX_RECENT_MESSAGES: 30, // Increased to support deeper conversation context
 ## 🎉 Phase 1 Complete!
 
 All Phase 1 Quick Wins have been implemented:
+
 1. ✅ Enhanced User Profile Integration
 2. ✅ Increased Message History Depth
 3. ✅ Voice Signature Extraction
 4. ✅ Conversation Pattern Analysis
 
 **Contextual Awareness Score:**
+
 - **Before:** 6.5/10
 - **After:** ~8.5/10
 - **Improvement:** +2.0 points
@@ -192,6 +208,7 @@ All Phase 1 Quick Wins have been implemented:
 **Integration:** `chat-server/src/liaizen/core/mediator.js`
 
 **Features:**
+
 - ✅ Tracks intervention outcomes (accepted, rejected, modified)
 - ✅ Learns user preferences (rewrites vs comments, metaphors, clinical language)
 - ✅ Identifies successful patterns per user
@@ -199,6 +216,7 @@ All Phase 1 Quick Wins have been implemented:
 - ✅ Includes learning data in AI prompts for adaptive coaching
 
 **Learning Data Includes:**
+
 - **Successful Interventions:** Last 50 accepted/helpful interventions
 - **Unsuccessful Interventions:** Last 50 rejected/unhelpful interventions
 - **User Preferences:**
@@ -209,6 +227,7 @@ All Phase 1 Quick Wins have been implemented:
 - **Pattern Success Rates:** Success rate per pattern type (schedule_conflict, blame_attack, etc.)
 
 **How It Works:**
+
 1. Records outcome when user accepts/rejects a rewrite
 2. Updates user preferences based on outcomes
 3. Calculates pattern success rates
@@ -222,6 +241,7 @@ All Phase 1 Quick Wins have been implemented:
 ## 📊 Current Status
 
 **Contextual Awareness Score:**
+
 - **Before:** 6.5/10
 - **After Phase 1:** ~8.5/10
 - **After Phase 2 (so far):** ~9.0/10
@@ -251,6 +271,7 @@ All Phase 1 Quick Wins have been implemented:
 ## 🎯 Success Metrics
 
 Track these metrics to measure improvement:
+
 - **Intervention Acceptance Rate:** Target >70% (baseline to be established)
 - **Context Usage:** How often AI references specific profile data
 - **User Satisfaction:** Feedback on AI helpfulness
@@ -267,5 +288,4 @@ Track these metrics to measure improvement:
 
 ---
 
-*Last Updated: December 8, 2025*
-
+_Last Updated: December 8, 2025_

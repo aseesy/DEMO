@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
  * AI Mediation Regression Tests
- * 
+ *
  * Runs sample conversations through the mediation system to ensure:
  * - Toxic message rewrites work correctly
  * - Safety rules are enforced
  * - Mediation quality is maintained
- * 
+ *
  * Usage: npm run ai:test
  */
 
@@ -24,7 +24,7 @@ const TEST_CASES = [
       shouldIntervene: true,
       hasRewrites: true,
       hasTip: true,
-    }
+    },
   },
   {
     name: 'Neutral message - should pass through',
@@ -34,7 +34,7 @@ const TEST_CASES = [
     roomId: 'test-room-2',
     expected: {
       shouldIntervene: false,
-    }
+    },
   },
   {
     name: 'Blaming language - should trigger intervention',
@@ -45,7 +45,7 @@ const TEST_CASES = [
     expected: {
       shouldIntervene: true,
       hasRewrites: true,
-    }
+    },
   },
   {
     name: 'Child-focused message - should be preserved',
@@ -55,7 +55,7 @@ const TEST_CASES = [
     roomId: 'test-room-4',
     expected: {
       shouldIntervene: false,
-    }
+    },
   },
 ];
 
@@ -84,7 +84,7 @@ async function runAITests() {
         text: testCase.message,
         username: testCase.sender,
         room_id: testCase.roomId,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       const intervention = await mediator.analyzeMessage(
@@ -132,7 +132,7 @@ async function runAITests() {
           /when you said that/i,
           /i don't appreciate/i,
         ];
-        
+
         receiverPatterns.forEach(pattern => {
           if (pattern.test(intervention.rewrite1)) {
             issues.push('Rewrite uses receiver perspective (should be sender perspective)');
@@ -148,7 +148,6 @@ async function runAITests() {
         console.log(`   ✅ PASSED`);
         results.passed++;
       }
-
     } catch (error) {
       console.log(`   ❌ ERROR: ${error.message}`);
       results.errors++;
@@ -175,4 +174,3 @@ async function runAITests() {
 
 // Run tests
 runAITests();
-

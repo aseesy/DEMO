@@ -3,6 +3,7 @@
 ## The Problem
 
 You have **two Railway deployments**:
+
 1. **"LiaiZen Demo"** (service: positive-recreation) - Active Railway deployment
 2. **"LiaiZen/production"** - Another Railway deployment (unused)
 
@@ -11,9 +12,11 @@ This is causing confusion about which backend URL is being used.
 ## Current Configuration
 
 The codebase currently references:
+
 - **Railway URL**: `https://demo-production-6dcd.up.railway.app`
 
 This URL is hardcoded in several places:
+
 - Documentation files
 - Configuration scripts
 - API contracts
@@ -102,6 +105,7 @@ Both should return: `{"status":"ok",...}`
 ### Option 3: Consolidate (If both have different purposes)
 
 If you need both for different reasons:
+
 - **Production**: One for production (connected to Vercel)
 - **Staging**: One for staging/testing
 - **Update Vercel** to use the production one
@@ -112,6 +116,7 @@ If you need both for different reasons:
 ### Step 1: Identify the Correct Railway Domain
 
 Once you know which Railway deployment to use, note its domain:
+
 - Example: `https://liaizen-production.up.railway.app`
 
 ### Step 2: Update Vercel Environment Variable
@@ -133,6 +138,7 @@ Once you know which Railway deployment to use, note its domain:
 ### Step 4: Update Documentation (Optional)
 
 If you want to update hardcoded references in docs:
+
 - `docs/RAILWAY_BACKEND_CONFIG.md`
 - `check-deployment-config.sh`
 - `quick-check.js`
@@ -143,9 +149,11 @@ If you want to update hardcoded references in docs:
 After updating:
 
 1. **Test Railway Backend**:
+
    ```bash
    curl https://[your-railway-domain].up.railway.app/health
    ```
+
    Should return: `{"status":"ok",...}`
 
 2. **Test from Vercel Frontend**:
@@ -181,4 +189,3 @@ After updating:
 3. **Delete the unused one** to avoid confusion and costs
 
 4. **Update any mismatches** in configuration
-

@@ -19,6 +19,7 @@ allowed-tools: Read, Bash, Grep
 ## When to Use
 
 Activate this skill when:
+
 - Checking if work follows constitutional principles
 - Before creating pull requests or commits
 - User asks "does this comply with the constitution?"
@@ -29,6 +30,7 @@ Activate this skill when:
 **Trigger Keywords**: constitutional, compliance, constitution check, validate principles, follows rules
 
 **Critical Moments**:
+
 - After creating specification (validate Principle VIII)
 - After creating plan (validate Principles I, II, III)
 - Before committing code (validate all applicable principles)
@@ -40,6 +42,7 @@ Activate this skill when:
 ### Step 1: Read the Constitution
 
 **Load the constitution**:
+
 ```bash
 Read: .specify/memory/constitution.md
 ```
@@ -47,11 +50,13 @@ Read: .specify/memory/constitution.md
 **Understand the 14 principles** organized in 3 tiers:
 
 **Immutable Principles (I-III)** - NON-NEGOTIABLE:
+
 - **Principle I**: Library-First Architecture
 - **Principle II**: Test-First Development
 - **Principle III**: Contract-First Design
 
 **Quality & Safety Principles (IV-IX)** - STANDARD:
+
 - **Principle IV**: Idempotent Operations
 - **Principle V**: Progressive Enhancement
 - **Principle VI**: Git Operation Approval
@@ -60,6 +65,7 @@ Read: .specify/memory/constitution.md
 - **Principle IX**: Dependency Management
 
 **Workflow & Delegation Principles (X-XIV)** - CRITICAL/STANDARD:
+
 - **Principle X**: Agent Delegation Protocol (CRITICAL)
 - **Principle XI**: Input Validation & Output Sanitization (CRITICAL)
 - **Principle XII**: Design System Compliance
@@ -69,11 +75,13 @@ Read: .specify/memory/constitution.md
 ### Step 2: Run Automated Compliance Check
 
 **Execute the constitutional check script**:
+
 ```bash
 .specify/scripts/bash/constitutional-check.sh
 ```
 
 **Script checks for**:
+
 - Principle I: Library-first architecture evidence
 - Principle II: Test files and TDD workflow
 - Principle III: Contract definitions
@@ -85,6 +93,7 @@ Read: .specify/memory/constitution.md
 - Principle XI: Input validation patterns
 
 **Interpret results**:
+
 - ✅ PASSING: Principle compliance detected
 - ⚠️ SKIPPED: Check not applicable to current context
 - ❌ FAILING: Principle violation detected
@@ -94,12 +103,15 @@ Read: .specify/memory/constitution.md
 Some principles require human judgment. Review manually:
 
 #### Principle IV: Idempotent Operations
+
 **Check**:
+
 - Can operations be safely repeated?
 - Do operations check current state before acting?
 - Are operations deterministic (same input → same output)?
 
 **Examples**:
+
 ```typescript
 // ✅ Idempotent
 async function ensureUserExists(email: string) {
@@ -115,31 +127,40 @@ async function createUser(email: string) {
 ```
 
 #### Principle V: Progressive Enhancement
+
 **Check**:
+
 - Does implementation start with simplest solution?
 - Is complexity added only when needed (YAGNI)?
 - Can features be enabled incrementally?
 
 **Red Flags**:
+
 - Premature optimization
 - Over-engineered solutions
 - Features not in specification
 
 #### Principle XII: Design System Compliance
+
 **Check** (for UI work):
+
 - Uses design system components?
 - Follows design tokens (colors, spacing, typography)?
 - Matches design mockups?
 
 #### Principle XIII: Access Control
+
 **Check** (for user-facing features):
+
 - Authentication implemented?
 - Authorization checks at every boundary?
 - Role-based access control (RBAC)?
 - Row-level security (RLS) in database?
 
 #### Principle XIV: AI Model Selection
+
 **Check** (for AI-assisted work):
+
 - Haiku for quick, straightforward tasks?
 - Sonnet for complex, multi-step work?
 - Opus for critical, high-stakes decisions?
@@ -147,10 +168,12 @@ async function createUser(email: string) {
 ### Step 4: Context-Specific Compliance
 
 **For Specifications**:
+
 - [ ] Principle VIII: Documentation includes spec.md
 - [ ] Principle X: Identifies required domains/agents
 
 **For Plans**:
+
 - [ ] Principle I: Describes library-first architecture
 - [ ] Principle II: Includes testing strategy
 - [ ] Principle III: Defines contracts before implementation
@@ -158,11 +181,13 @@ async function createUser(email: string) {
 - [ ] Principle IX: Lists all dependencies with versions
 
 **For Tasks**:
+
 - [ ] Principle II: Test tasks before implementation tasks
 - [ ] Principle III: Contract test tasks included
 - [ ] Principle X: Identifies agents for task execution
 
 **For Code**:
+
 - [ ] Principle I: Implemented as standalone library
 - [ ] Principle II: Tests written and passing
 - [ ] Principle III: Contracts implemented as specified
@@ -171,9 +196,11 @@ async function createUser(email: string) {
 - [ ] Principle XIII: Authorization checks (if user-facing)
 
 **For Git Operations**:
+
 - [ ] Principle VI: User approval obtained BEFORE git operations
 
 **For Scripts**:
+
 - [ ] Principle IV: Idempotent (safe to re-run)
 - [ ] Principle VI: Requests approval for git operations
 - [ ] Principle VII: Logs operations and outcomes
@@ -181,6 +208,7 @@ async function createUser(email: string) {
 ### Step 5: Report Compliance Status
 
 **Provide compliance report**:
+
 ```
 🏛️ Constitutional Compliance Report
 
@@ -224,14 +252,17 @@ Recommendations: [suggested improvements]
 5. **Verify** - Re-check after fix applied
 
 **Immutable Principle Violations** (I-III):
+
 - **BLOCKING** - Cannot proceed without fix
 - Must be resolved before any commit/merge
 
 **Critical Principle Violations** (X, XI):
+
 - **HIGH PRIORITY** - Must resolve before release
 - May be acceptable for WIP but must be tracked
 
 **Standard Principle Violations** (IV-IX, XII-XIV):
+
 - **SHOULD FIX** - Address before PR
 - Document if intentional exception (rare)
 
@@ -251,6 +282,7 @@ This skill EMBODIES constitutional compliance:
 **User Request**: "Check if my changes comply with the constitution before I commit"
 
 **Skill Execution**:
+
 1. Read constitution
 2. Run: `.specify/scripts/bash/constitutional-check.sh`
 3. Automated results: 8/9 passing, 1 skipped (design system N/A)
@@ -265,6 +297,7 @@ This skill EMBODIES constitutional compliance:
 **User Request**: "Validate my implementation plan follows constitutional principles"
 
 **Skill Execution**:
+
 1. Read constitution
 2. Run: `.specify/scripts/bash/constitutional-check.sh`
 3. Automated results: 5/9 passing
@@ -282,6 +315,7 @@ This skill EMBODIES constitutional compliance:
 **User Request**: "Review this PR for constitutional compliance"
 
 **Skill Execution**:
+
 1. Read constitution
 2. Run automated check
 3. Automated results: 9/9 passing ✅
@@ -312,6 +346,7 @@ Verify the skill executed correctly:
 **Cause**: Not in repository root directory
 
 **Solution**:
+
 - Run from repository root
 - Use absolute path to constitution: `/workspaces/sdd-agentic-framework/.specify/memory/constitution.md`
 
@@ -320,6 +355,7 @@ Verify the skill executed correctly:
 **Cause**: Checks not applicable to current work type
 
 **Solution**:
+
 - This is normal - not all principles apply to all work
 - Focus on PASSING and FAILING statuses
 - Skipped checks don't indicate problems
@@ -329,6 +365,7 @@ Verify the skill executed correctly:
 **Cause**: Input validation can be subtle
 
 **Solution**:
+
 - Look for: zod schemas, joi validation, input type checking
 - Check all user inputs (forms, query params, path params, headers)
 - Check all external data (API responses, file uploads, database reads)
@@ -339,6 +376,7 @@ Verify the skill executed correctly:
 **Cause**: Constitution has 14 principles
 
 **Solution**:
+
 - **All work**: I, II, III (immutable - always apply)
 - **APIs/Services**: VII, IX, XI
 - **UI work**: XII, XIII

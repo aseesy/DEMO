@@ -1,12 +1,17 @@
 import React from 'react';
 import { Modal, Button } from '../ui';
 
-export function ContactSuggestionModal({ pendingContactSuggestion, onAddContact, onDismiss, setDismissedSuggestions }) {
+export function ContactSuggestionModal({
+  pendingContactSuggestion,
+  onAddContact,
+  onDismiss,
+  setDismissedSuggestions,
+}) {
   if (!pendingContactSuggestion) return null;
 
   const handleDismiss = () => {
     if (pendingContactSuggestion?.id) {
-      setDismissedSuggestions((prev) => new Set(prev).add(pendingContactSuggestion.id));
+      setDismissedSuggestions(prev => new Set(prev).add(pendingContactSuggestion.id));
     }
     onDismiss();
   };
@@ -26,33 +31,22 @@ export function ContactSuggestionModal({ pendingContactSuggestion, onAddContact,
       size="small"
       footer={
         <div className="flex flex-col sm:flex-row gap-3 w-full">
-          <Button
-            variant="secondary"
-            onClick={onAddContact}
-            className="flex-1"
-          >
+          <Button variant="secondary" onClick={onAddContact} className="flex-1">
             Yes, Add Contact
           </Button>
-          <Button
-            variant="tertiary"
-            onClick={handleDismiss}
-            className="whitespace-nowrap"
-          >
+          <Button variant="tertiary" onClick={handleDismiss} className="whitespace-nowrap">
             Not Now
           </Button>
         </div>
       }
     >
       <p className="text-sm text-teal-medium mb-4">
-        {pendingContactSuggestion.text || `Would you like to add ${pendingContactSuggestion.detectedName} to your contacts?`}
+        {pendingContactSuggestion.text ||
+          `Would you like to add ${pendingContactSuggestion.detectedName} to your contacts?`}
       </p>
       <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4">
-        <p className="text-xs font-semibold text-teal-900 mb-1">
-          Detected name:
-        </p>
-        <p className="text-sm text-teal-800 font-medium">
-          {pendingContactSuggestion.detectedName}
-        </p>
+        <p className="text-xs font-semibold text-teal-900 mb-1">Detected name:</p>
+        <p className="text-sm text-teal-800 font-medium">{pendingContactSuggestion.detectedName}</p>
       </div>
     </Modal>
   );

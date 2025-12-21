@@ -21,7 +21,11 @@
 
 'use strict';
 
-const { AXIOM_CATEGORIES, createFiringAxiomResult, createNonFiringAxiomResult } = require('../../types');
+const {
+  AXIOM_CATEGORIES,
+  createFiringAxiomResult,
+  createNonFiringAxiomResult,
+} = require('../../types');
 
 // ============================================================================
 // AXIOM METADATA
@@ -54,7 +58,7 @@ const AGREEMENT_PATTERNS = [
   /\bsure\b/gi,
   /\bof\s+course\b/gi,
   /\bi\s+admit\b/gi,
-  /\bi'm\s+willing\b/gi
+  /\bi'm\s+willing\b/gi,
 ];
 
 /**
@@ -68,7 +72,7 @@ const CONTRAST_MARKERS = [
   /\byet\b/gi,
   /\bstill\b/gi,
   /\bnevertheless\b/gi,
-  /\bnonetheless\b/gi
+  /\bnonetheless\b/gi,
 ];
 
 /**
@@ -83,15 +87,22 @@ const CRITICISM_PATTERNS = [
   /\bunlike\s+you\b/gi,
   /\bi\s+would\s+never\b/gi,
   /\bthe\s+(kids?|children?)\s+(need|deserve)\b/gi,
-  /\byour\b/gi  // Often followed by criticism
+  /\byour\b/gi, // Often followed by criticism
 ];
 
 /**
  * Negative intensifiers (after the "but")
  */
 const NEGATIVE_INTENSIFIERS = [
-  'always', 'never', 'nothing', 'no one', 'nobody',
-  'constantly', 'repeatedly', 'again', 'every time'
+  'always',
+  'never',
+  'nothing',
+  'no one',
+  'nobody',
+  'constantly',
+  'repeatedly',
+  'again',
+  'every time',
 ];
 
 // ============================================================================
@@ -134,7 +145,7 @@ function findContrastSplit(text) {
       return {
         marker: match[0].trim(),
         before: text.substring(0, index).trim(),
-        after: text.substring(index + match[0].length).trim()
+        after: text.substring(index + match[0].length).trim(),
       };
     }
   }
@@ -236,7 +247,7 @@ function check(parsed, context = {}) {
     before_text: contrastSplit.before,
     after_text: contrastSplit.after,
     criticism_phrases: criticismPhrases,
-    after_intensifiers: afterIntensifiers
+    after_intensifiers: afterIntensifiers,
   };
 
   // Must have agreement AND criticism
@@ -270,7 +281,7 @@ function check(parsed, context = {}) {
       trigger_phrase: triggerPhrase,
       before_text: contrastSplit.before,
       after_text: contrastSplit.after,
-      all_evidence: evidence
+      all_evidence: evidence,
     },
     intentImpactDelta
   );
@@ -280,10 +291,12 @@ function check(parsed, context = {}) {
  * Build intent vs impact delta explanation
  */
 function buildIntentImpactDelta(evidence) {
-  return `Opens with apparent agreement ("${evidence.agreement_phrases[0]}") ` +
+  return (
+    `Opens with apparent agreement ("${evidence.agreement_phrases[0]}") ` +
     `but uses "${evidence.contrast_marker}" to pivot to criticism. ` +
     `The agreement is rhetorical - it doesn't reflect genuine understanding, ` +
-    `it sets up the attack. Receiver will feel the agreement was fake.`;
+    `it sets up the attack. Receiver will feel the agreement was fake.`
+  );
 }
 
 // ============================================================================
@@ -306,5 +319,5 @@ module.exports = {
   findContrastSplit,
   findCriticismPhrases,
   findNegativeIntensifiers,
-  calculateConfidence
+  calculateConfidence,
 };

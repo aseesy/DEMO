@@ -25,11 +25,36 @@ function hashToken(token) {
   return crypto.createHash(TOKEN_CONFIG.algorithm).update(token).digest('hex');
 }
 
+// ============================================================================
+// PURE SIDE-EFFECT FUNCTIONS (explicit mutations)
+// ============================================================================
+
+/**
+ * Mark an invitation as expired
+ * SIDE EFFECT: Updates database record
+ *
+ * @param {object} db - Database connection
+ * @param {number} invitationId - Invitation ID to expire
+ * @returns {Promise<void>}
+ */
+async function markInvitationExpired(db, invitationId) {
+  await db.query('UPDATE invitations SET status = $1 WHERE id = $2', [
+    INVITATION_STATUS.EXPIRED,
+    invitationId,
+  ]);
+}
+
+// ============================================================================
+// PURE VALIDATION FUNCTIONS (no side effects - read-only)
+// ============================================================================
+
 /**
  * Validate an invitation token
+ * PURE FUNCTION: Read-only validation, no database mutations
+ *
  * @param {string} token - Raw invitation token
  * @param {object} db - Database connection
- * @returns {Promise<object>} Validation result with invitation details
+ * @returns {Promise<object>} Validation result with `needsExpiration` flag if expired
  */
 async function validateToken(token, db) {
   if (!token) {
@@ -52,7 +77,7 @@ async function validateToken(token, db) {
 
   // Find invitation by token hash
   const result = await db.query(
-    `SELECT i.*, COALESCE(u.display_name, u.username) as inviter_name, u.email as inviter_email
+    `SELECT i.*, COALESCE(u.first_name, u.display_name, u.username) as inviter_name, u.email as inviter_email
      FROM invitations i
      JOIN users u ON i.inviter_id = u.id
      WHERE i.token_hash = $1`,
@@ -99,21 +124,16 @@ async function validateToken(token, db) {
     };
   }
 
-  // Check expiration
+  // Check expiration - NO SIDE EFFECT, just flag it
   const now = new Date();
   const expiresAt = new Date(invitation.expires_at);
   if (now > expiresAt) {
-    // Update status to expired
-    await db.query(
-      'UPDATE invitations SET status = $1 WHERE id = $2',
-      [INVITATION_STATUS.EXPIRED, invitation.id]
-    );
-
     return {
       valid: false,
       error: 'This invitation has expired',
       code: 'EXPIRED',
-      invitation: { ...invitation, status: INVITATION_STATUS.EXPIRED },
+      invitation,
+      needsExpiration: true, // Flag for caller to handle mutation
     };
   }
 
@@ -126,7 +146,32 @@ async function validateToken(token, db) {
 }
 
 /**
+ * Validate token AND update expired status if needed
+ * SIDE EFFECT: May update database if invitation is expired
+ *
+ * Use this when you want the old behavior where validation also marks expired.
+ * Prefer validateToken() + explicit markInvitationExpired() for clearer code.
+ *
+ * @param {string} token - Raw invitation token
+ * @param {object} db - Database connection
+ * @returns {Promise<object>} Validation result
+ */
+async function validateTokenAndExpire(token, db) {
+  const result = await validateToken(token, db);
+
+  if (result.needsExpiration && result.invitation) {
+    await markInvitationExpired(db, result.invitation.id);
+    result.invitation = { ...result.invitation, status: INVITATION_STATUS.EXPIRED };
+    delete result.needsExpiration;
+  }
+
+  return result;
+}
+
+/**
  * Accept an invitation
+ * Uses validateTokenAndExpire to mark expired tokens during acceptance flow
+ *
  * @param {string} token - Raw invitation token
  * @param {string} acceptingUserId - User ID of the person accepting
  * @param {object} db - Database connection
@@ -137,8 +182,8 @@ async function acceptInvitation(token, acceptingUserId, db) {
     throw new Error('token, acceptingUserId, and db are required');
   }
 
-  // First validate the token
-  const validation = await validateToken(token, db);
+  // Use the version with side effects - acceptance is when we want to mark expired
+  const validation = await validateTokenAndExpire(token, db);
   if (!validation.valid) {
     throw new Error(validation.error);
   }
@@ -177,6 +222,8 @@ async function acceptInvitation(token, acceptingUserId, db) {
 
 /**
  * Decline an invitation
+ * Uses validateTokenAndExpire to mark expired tokens during decline flow
+ *
  * @param {string} token - Raw invitation token
  * @param {string} decliningUserId - User ID of the person declining
  * @param {object} db - Database connection
@@ -187,8 +234,8 @@ async function declineInvitation(token, decliningUserId, db) {
     throw new Error('token, decliningUserId, and db are required');
   }
 
-  // First validate the token
-  const validation = await validateToken(token, db);
+  // Use the version with side effects - decline is when we want to mark expired
+  const validation = await validateTokenAndExpire(token, db);
   if (!validation.valid) {
     throw new Error(validation.error);
   }
@@ -220,7 +267,7 @@ async function getInvitationById(invitationId, db) {
   if (!invitationId || !db) return null;
 
   const result = await db.query(
-    `SELECT i.*, COALESCE(u.display_name, u.username) as inviter_name, u.email as inviter_email
+    `SELECT i.*, COALESCE(u.first_name, u.display_name, u.username) as inviter_name, u.email as inviter_email
      FROM invitations i
      JOIN users u ON i.inviter_id = u.id
      WHERE i.id = $1`,
@@ -252,7 +299,7 @@ async function getUserInvitations(userId, db, options = {}) {
   `;
 
   let receivedQuery = `
-    SELECT i.*, COALESCE(u.display_name, u.username) as inviter_name, u.email as inviter_email
+    SELECT i.*, COALESCE(u.first_name, u.display_name, u.username) as inviter_name, u.email as inviter_email
     FROM invitations i
     JOIN users u ON i.inviter_id = u.id
     WHERE i.invitee_id = $1 OR LOWER(i.invitee_email) = (
@@ -306,9 +353,11 @@ async function expireOldInvitations(db) {
 
 /**
  * Validate an invitation by short code (e.g., LZ-ABC123)
+ * PURE FUNCTION: Read-only validation, no database mutations
+ *
  * @param {string} shortCode - Short invite code
  * @param {object} db - Database connection
- * @returns {Promise<object>} Validation result with invitation details
+ * @returns {Promise<object>} Validation result with `needsExpiration` flag if expired
  */
 async function validateByShortCode(shortCode, db) {
   if (!shortCode) {
@@ -332,7 +381,7 @@ async function validateByShortCode(shortCode, db) {
 
   // Find invitation by short code
   const result = await db.query(
-    `SELECT i.*, COALESCE(u.display_name, u.username) as inviter_name, u.email as inviter_email
+    `SELECT i.*, COALESCE(u.first_name, u.display_name, u.username) as inviter_name, u.email as inviter_email
      FROM invitations i
      JOIN users u ON i.inviter_id = u.id
      WHERE i.short_code = $1`,
@@ -379,21 +428,16 @@ async function validateByShortCode(shortCode, db) {
     };
   }
 
-  // Check expiration
+  // Check expiration - NO SIDE EFFECT, just flag it
   const now = new Date();
   const expiresAt = new Date(invitation.expires_at);
   if (now > expiresAt) {
-    // Update status to expired
-    await db.query(
-      'UPDATE invitations SET status = $1 WHERE id = $2',
-      [INVITATION_STATUS.EXPIRED, invitation.id]
-    );
-
     return {
       valid: false,
       error: 'This invitation has expired',
       code: 'EXPIRED',
-      invitation: { ...invitation, status: INVITATION_STATUS.EXPIRED },
+      invitation,
+      needsExpiration: true, // Flag for caller to handle mutation
     };
   }
 
@@ -406,7 +450,29 @@ async function validateByShortCode(shortCode, db) {
 }
 
 /**
+ * Validate short code AND update expired status if needed
+ * SIDE EFFECT: May update database if invitation is expired
+ *
+ * @param {string} shortCode - Short invite code
+ * @param {object} db - Database connection
+ * @returns {Promise<object>} Validation result
+ */
+async function validateByShortCodeAndExpire(shortCode, db) {
+  const result = await validateByShortCode(shortCode, db);
+
+  if (result.needsExpiration && result.invitation) {
+    await markInvitationExpired(db, result.invitation.id);
+    result.invitation = { ...result.invitation, status: INVITATION_STATUS.EXPIRED };
+    delete result.needsExpiration;
+  }
+
+  return result;
+}
+
+/**
  * Accept an invitation by short code
+ * Uses validateByShortCodeAndExpire to mark expired codes during acceptance flow
+ *
  * @param {string} shortCode - Short invite code
  * @param {string} acceptingUserId - User ID of the person accepting
  * @param {object} db - Database connection
@@ -417,8 +483,8 @@ async function acceptByShortCode(shortCode, acceptingUserId, db) {
     throw new Error('shortCode, acceptingUserId, and db are required');
   }
 
-  // First validate the short code
-  const validation = await validateByShortCode(shortCode, db);
+  // Use the version with side effects - acceptance is when we want to mark expired
+  const validation = await validateByShortCodeAndExpire(shortCode, db);
   if (!validation.valid) {
     throw new Error(validation.error);
   }
@@ -456,14 +522,30 @@ async function acceptByShortCode(shortCode, acceptingUserId, db) {
 }
 
 module.exports = {
+  // Pure validation functions (no side effects - read-only)
   validateToken,
   validateByShortCode,
+
+  // Validation with side effects (explicitly named)
+  validateTokenAndExpire,
+  validateByShortCodeAndExpire,
+
+  // Explicit mutation functions
+  markInvitationExpired,
+
+  // Acceptance/decline functions
   acceptInvitation,
   acceptByShortCode,
   declineInvitation,
+
+  // Query functions
   getInvitationById,
   getUserInvitations,
+
+  // Maintenance functions
   expireOldInvitations,
+
+  // Utilities
   hashToken,
   INVITATION_STATUS,
 };

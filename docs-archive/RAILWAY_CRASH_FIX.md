@@ -1,7 +1,9 @@
 # 🚨 Railway Crash After Removing DATABASE_URL
 
 ## Problem
+
 Railway crashed after:
+
 - Setting `NODE_ENV=production`
 - Removing `DATABASE_URL`
 - Redeploying
@@ -13,6 +15,7 @@ Railway crashed after:
 Railway **MUST** have these variables set:
 
 #### Critical Variables:
+
 - ✅ `NODE_ENV=production` (you set this)
 - ❌ `FRONTEND_URL` - **MUST BE SET**
   - Value: `https://www.coparentliaizen.com,https://coparentliaizen.com,https://*.vercel.app`
@@ -25,6 +28,7 @@ Railway **MUST** have these variables set:
 ### 2. SQLite Database Initialization Issue
 
 When `DATABASE_URL` is removed, the server uses SQLite. Check if:
+
 - Database file path is writable
 - `DB_PATH` environment variable is set correctly (if using Railway volume)
 
@@ -35,11 +39,13 @@ Some code might be checking for PostgreSQL even when `DATABASE_URL` is not set.
 ## Immediate Fix Steps
 
 ### Step 1: Check Railway Logs
+
 ```bash
 railway logs
 ```
 
 Look for:
+
 - `❌ DATABASE_URL is not set` (this is OK, just a warning)
 - `❌ Failed to start server`
 - `❌ Error:`
@@ -50,6 +56,7 @@ Look for:
 Go to Railway Dashboard → Variables and ensure these are set:
 
 **Required:**
+
 ```
 NODE_ENV=production
 FRONTEND_URL=https://www.coparentliaizen.com,https://coparentliaizen.com,https://*.vercel.app
@@ -57,14 +64,17 @@ JWT_SECRET=<your-32-char-secret>
 ```
 
 **Optional (for SQLite persistence):**
+
 ```
 DB_PATH=/data/chat.db
 ```
+
 (Only if you have a Railway volume mounted at `/data`)
 
 ### Step 3: Check What the Error Actually Is
 
 The crash could be from:
+
 1. **Missing FRONTEND_URL** - Server needs this for CORS
 2. **Missing JWT_SECRET** - Auth will fail
 3. **SQLite initialization error** - Database file path issue
@@ -87,6 +97,7 @@ curl https://demo-production-6dcd.up.railway.app/health
 The server code requires `FRONTEND_URL` for CORS configuration. If it's not set, the server might crash or fail to start properly.
 
 **Fix:** Add to Railway Variables:
+
 ```
 FRONTEND_URL=https://www.coparentliaizen.com,https://coparentliaizen.com,https://*.vercel.app
 ```
@@ -97,6 +108,3 @@ FRONTEND_URL=https://www.coparentliaizen.com,https://coparentliaizen.com,https:/
 2. Verify all required variables are set (see checklist above)
 3. Check if there are any other error messages in the logs
 4. Share the error message from Railway logs so we can fix it specifically
-
-
-

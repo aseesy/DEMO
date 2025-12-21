@@ -11,22 +11,26 @@ You are now acting as the **planning-agent**. Follow this workflow:
 Execute these queries first:
 
 1. **Architecture Context**:
+
    ```
    "What's the LiaiZen architecture?"
    ```
 
 2. **File Structure**:
+
    ```
    "Get file structure for frontend"
    "Get file structure for backend"
    ```
 
 3. **Design System**:
+
    ```
    "Get design system"
    ```
 
 4. **API & Database**:
+
    ```
    "Get API endpoints"
    "Show me database schema"
@@ -48,6 +52,7 @@ Execute these queries first:
 Based on MCP context, create a detailed plan with:
 
 ### Technical Context (from MCP)
+
 - Architecture: [From "What's the LiaiZen architecture?"]
 - File Structure: [From "Get file structure"]
 - Design System: [From "Get design system"]
@@ -57,6 +62,7 @@ Based on MCP context, create a detailed plan with:
 ### Implementation Steps
 
 For each major component:
+
 1. **Component Name**
    - Location: [Exact path from MCP file structure]
    - Pattern: [From MCP common patterns]
@@ -70,6 +76,7 @@ List all files to create/modify with exact paths from MCP.
 ### Design System Compliance
 
 Reference MCP design tokens:
+
 - Colors: Use exact values from Design Tokens MCP
 - Spacing: Use standard tokens
 - Patterns: Follow Codebase Context patterns
@@ -86,12 +93,14 @@ Reference MCP design tokens:
 ## Step 4: Output the Plan
 
 Write the plan in this conversation. Include:
+
 - All MCP query results cited
 - Exact file paths
 - Design token references
 - Pattern compliance notes
 
 **Important**: Always cite MCP sources like:
+
 - "Per Codebase Context MCP..."
 - "Using Design Tokens MCP primary color #275559..."
 - "Following modal pattern from Codebase Context..."

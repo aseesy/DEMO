@@ -9,6 +9,7 @@ MCP servers enable Claude to access real-time data, documentation, and tools dir
 ## Installed MCP Servers
 
 ### 1. 🎨 **Design Tokens MCP Server**
+
 **Status**: ✅ Active
 **Type**: Custom
 **Location**: `/Users/athenasees/Desktop/chat/.design-tokens-mcp/`
@@ -16,12 +17,14 @@ MCP servers enable Claude to access real-time data, documentation, and tools dir
 Access LiaiZen's complete design system including colors, spacing, typography, shadows, and component specifications.
 
 **Key Features:**
+
 - Get specific token values
 - List all tokens by category
 - Search tokens by keyword
 - Update token values programmatically
 
 **Quick Examples:**
+
 ```
 "What's the primary brand color?"
 "List all spacing tokens"
@@ -33,6 +36,7 @@ Access LiaiZen's complete design system including colors, spacing, typography, s
 ---
 
 ### 2. 🎨 **Tailwind CSS MCP Server**
+
 **Status**: ✅ Active
 **Type**: npm package (`tailwindcss-mcp-server`)
 **Project Path**: `/Users/athenasees/Desktop/chat/chat-client-vite`
@@ -40,6 +44,7 @@ Access LiaiZen's complete design system including colors, spacing, typography, s
 Comprehensive Tailwind CSS utilities, documentation, conversion tools, and template generation.
 
 **Key Features:**
+
 - Get utility class information
 - Browse color palette
 - Convert CSS to Tailwind
@@ -48,6 +53,7 @@ Comprehensive Tailwind CSS utilities, documentation, conversion tools, and templ
 - Configuration guidance
 
 **Quick Examples:**
+
 ```
 "Convert this CSS to Tailwind: padding: 1rem; background: #275559;"
 "What are the responsive breakpoints?"
@@ -59,6 +65,7 @@ Comprehensive Tailwind CSS utilities, documentation, conversion tools, and templ
 ---
 
 ### 3. 🧠 **Codebase Context MCP Server**
+
 **Status**: ✅ Active
 **Type**: Custom
 **Location**: `/Users/athenasees/Desktop/chat/.codebase-context-mcp/`
@@ -66,6 +73,7 @@ Comprehensive Tailwind CSS utilities, documentation, conversion tools, and templ
 Deep codebase knowledge including architecture, patterns, conventions, API endpoints, database schema, and best practices.
 
 **Key Features:**
+
 - Get architecture overview
 - Access design system context
 - Understand file structure
@@ -75,6 +83,7 @@ Deep codebase knowledge including architecture, patterns, conventions, API endpo
 - Get best practices and common issues
 
 **Quick Examples:**
+
 ```
 "What's the LiaiZen architecture?"
 "Where are modal components located?"
@@ -87,12 +96,14 @@ Deep codebase knowledge including architecture, patterns, conventions, API endpo
 ---
 
 ### 4. 🔍 **Brave Search MCP Server**
+
 **Status**: ✅ Active
 **Type**: Official (@modelcontextprotocol/server-brave-search)
 
 Web search capabilities for up-to-date information and research.
 
 **Use Cases:**
+
 - Search for technical documentation
 - Find solutions to errors
 - Research best practices
@@ -101,12 +112,14 @@ Web search capabilities for up-to-date information and research.
 ---
 
 ### 5. 🌐 **Chrome DevTools MCP Server**
+
 **Status**: ✅ Active
 **Type**: Community (chrome-devtools-mcp@latest)
 
 Browser automation and debugging capabilities.
 
 **Use Cases:**
+
 - Test UI in real browsers
 - Debug frontend issues
 - Take screenshots
@@ -115,12 +128,14 @@ Browser automation and debugging capabilities.
 ---
 
 ### 6. 🎭 **Playwright MCP Server**
+
 **Status**: ✅ Active
 **Type**: Official (@playwright/mcp@latest)
 
 Automated browser testing and end-to-end testing capabilities.
 
 **Use Cases:**
+
 - Write E2E tests
 - Test user flows
 - Capture screenshots
@@ -129,6 +144,7 @@ Automated browser testing and end-to-end testing capabilities.
 ---
 
 ### 7. 🗄️ **Neo4j Database MCP Server**
+
 **Status**: ✅ Active
 **Type**: Community (@alanse/mcp-neo4j-server)
 **Connection**: bolt://localhost:7687
@@ -136,6 +152,7 @@ Automated browser testing and end-to-end testing capabilities.
 Access to Neo4j graph database for relationship mapping.
 
 **Use Cases:**
+
 - Query co-parent relationships
 - Analyze family connections
 - Visualize contact networks
@@ -144,15 +161,18 @@ Access to Neo4j graph database for relationship mapping.
 ---
 
 ### 8. 📁 **Filesystem MCP Server**
+
 **Status**: ✅ Active
 **Type**: Official (@modelcontextprotocol/server-filesystem)
 **Allowed Paths**:
+
 - `/Users/athenasees/Desktop`
 - `/Users/athenasees/Downloads`
 
 Safe file system access for reading and writing files.
 
 **Use Cases:**
+
 - Read project files
 - Write documentation
 - Manage configurations
@@ -161,12 +181,14 @@ Safe file system access for reading and writing files.
 ---
 
 ### 9. 🐙 **GitHub MCP Server**
+
 **Status**: ✅ Active
 **Type**: Official (@modelcontextprotocol/server-github)
 
 GitHub API integration for repository management.
 
 **Use Cases:**
+
 - Create issues
 - Manage pull requests
 - Review code
@@ -177,6 +199,7 @@ GitHub API integration for repository management.
 ## Configuration
 
 All MCP servers are configured in:
+
 ```
 /Users/athenasees/Library/Application Support/Claude/claude_desktop_config.json
 ```
@@ -192,6 +215,7 @@ After adding or modifying MCP servers:
 ## Using MCP Servers
 
 ### Ask Questions
+
 ```
 "What's our primary brand color?" → Design Tokens
 "Convert this CSS to Tailwind" → Tailwind CSS
@@ -200,6 +224,7 @@ After adding or modifying MCP servers:
 ```
 
 ### Combine Multiple Servers
+
 ```
 1. "Get the primary brand color" (Design Tokens)
    → Returns: #275559
@@ -214,17 +239,20 @@ After adding or modifying MCP servers:
 ## Development Workflow
 
 ### Frontend Development
+
 1. **Design Tokens MCP**: Get brand colors, spacing, typography
 2. **Tailwind MCP**: Convert to Tailwind classes
 3. **Filesystem MCP**: Read/write component files
 4. **Chrome DevTools MCP**: Test in browser
 
 ### Backend Development
+
 1. **Neo4j MCP**: Query database relationships
 2. **GitHub MCP**: Manage code and PRs
 3. **Brave Search MCP**: Research solutions
 
 ### Testing
+
 1. **Playwright MCP**: E2E test automation
 2. **Chrome DevTools MCP**: Manual browser testing
 3. **Filesystem MCP**: Read test files
@@ -232,6 +260,7 @@ After adding or modifying MCP servers:
 ## MCP Server Statuses
 
 Check if MCP servers are working:
+
 ```
 "List all available MCP servers"
 "Test the Design Tokens MCP server"
@@ -241,16 +270,19 @@ Check if MCP servers are working:
 ## Troubleshooting
 
 ### Server Not Loading
+
 1. Verify configuration in `claude_desktop_config.json`
 2. Restart Claude Desktop
 3. Check server logs in Claude Desktop settings
 
 ### Tool Not Working
+
 1. Ensure server is in the active list
 2. Check required environment variables
 3. Verify file paths exist
 
 ### Conflicting Servers
+
 - Each server has a unique name
 - Use descriptive names when asking questions
 - Specify which server if ambiguous
@@ -258,11 +290,14 @@ Check if MCP servers are working:
 ## Best Practices
 
 ### 1. **Use Specific Queries**
+
 ❌ "What colors do we have?"
 ✅ "What's the primary brand color from Design Tokens?"
 
 ### 2. **Combine Tools**
+
 Use multiple MCP servers together for complex tasks:
+
 ```
 1. Design Tokens → Get value
 2. Tailwind CSS → Convert to classes
@@ -270,7 +305,9 @@ Use multiple MCP servers together for complex tasks:
 ```
 
 ### 3. **Update Tokens**
+
 When brand values change:
+
 ```
 1. Update Design Tokens MCP
 2. Regenerate Tailwind config
@@ -280,6 +317,7 @@ When brand values change:
 ## Future MCP Servers
 
 Consider adding:
+
 - **Figma MCP**: Design-to-code workflow
 - **Firebase MCP**: Direct database access
 - **OpenAI MCP**: AI model integration
@@ -296,17 +334,17 @@ Consider adding:
 
 ## Quick Reference
 
-| Server | Primary Use | Quick Command |
-|--------|-------------|---------------|
-| Design Tokens | Brand values | "Get primary color" |
-| Tailwind CSS | Class utilities | "Convert CSS to Tailwind" |
+| Server           | Primary Use       | Quick Command              |
+| ---------------- | ----------------- | -------------------------- |
+| Design Tokens    | Brand values      | "Get primary color"        |
+| Tailwind CSS     | Class utilities   | "Convert CSS to Tailwind"  |
 | Codebase Context | Project knowledge | "What's the architecture?" |
-| Brave Search | Web research | "Search for..." |
-| Chrome DevTools | Browser testing | "Test in Chrome" |
-| Playwright | E2E testing | "Write test for..." |
-| Neo4j | Graph queries | "Query relationships" |
-| Filesystem | File operations | "Read component file" |
-| GitHub | Repository mgmt | "Create PR" |
+| Brave Search     | Web research      | "Search for..."            |
+| Chrome DevTools  | Browser testing   | "Test in Chrome"           |
+| Playwright       | E2E testing       | "Write test for..."        |
+| Neo4j            | Graph queries     | "Query relationships"      |
+| Filesystem       | File operations   | "Read component file"      |
+| GitHub           | Repository mgmt   | "Create PR"                |
 
 ---
 

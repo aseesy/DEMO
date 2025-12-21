@@ -1,4 +1,5 @@
 # LiaiZen Design System: Executive Summary & Action Plan
+
 ## Product Management & UX/UI Expert Analysis
 
 **Date:** November 21, 2025
@@ -13,14 +14,14 @@ The LiaiZen chat application has **excellent design token infrastructure** but *
 
 ### Critical Metrics
 
-| Metric | Current | Target | Gap |
-|--------|---------|--------|-----|
-| **Token Usage Rate** | 30% | 95%+ | -65% ⚠️ |
-| **Hardcoded Colors** | 120+ instances | 0 | -120 🔴 |
-| **Button Duplicates** | 45 variants | 1-2 components | -43 🔴 |
-| **Modal Duplicates** | 6 wrappers (150+ lines) | 1 component | -5 🔴 |
-| **Input Duplicates** | 30+ variants | 1-2 components | -28 🔴 |
-| **Arbitrary Values** | ~200 instances | <10 | -190 🔴 |
+| Metric                | Current                 | Target         | Gap     |
+| --------------------- | ----------------------- | -------------- | ------- |
+| **Token Usage Rate**  | 30%                     | 95%+           | -65% ⚠️ |
+| **Hardcoded Colors**  | 120+ instances          | 0              | -120 🔴 |
+| **Button Duplicates** | 45 variants             | 1-2 components | -43 🔴  |
+| **Modal Duplicates**  | 6 wrappers (150+ lines) | 1 component    | -5 🔴   |
+| **Input Duplicates**  | 30+ variants            | 1-2 components | -28 🔴  |
+| **Arbitrary Values**  | ~200 instances          | <10            | -190 🔴 |
 
 ### Financial Impact
 
@@ -34,18 +35,21 @@ The LiaiZen chat application has **excellent design token infrastructure** but *
 ## 🚨 Critical Issues Requiring Immediate Action
 
 ### 1. **Token Infrastructure vs. Usage Disconnect** 🔴 CRITICAL
+
 **Problem:** You have perfect design tokens, but nobody uses them.
 
 **Evidence:**
+
 ```jsx
 // ❌ Current (120+ instances like this)
-className="bg-[#275559] hover:bg-[#1f4447] text-[#4DA8B0]"
+className = 'bg-[#275559] hover:bg-[#1f4447] text-[#4DA8B0]';
 
 // ✅ Should be
-className="bg-teal-dark hover:bg-teal-darkest text-teal-medium"
+className = 'bg-teal-dark hover:bg-teal-darkest text-teal-medium';
 ```
 
 **Business Impact:**
+
 - Brand inconsistency when designers update tokens
 - Changes require find-replace across 120+ files
 - High risk of bugs during updates
@@ -58,9 +62,11 @@ className="bg-teal-dark hover:bg-teal-darkest text-teal-medium"
 ---
 
 ### 2. **Component Duplication Catastrophe** 🔴 CRITICAL
+
 **Problem:** Same UI pattern copied 45+ times instead of reusable components.
 
 #### Button Duplication (45 instances)
+
 ```jsx
 // Currently in 15+ files:
 <button className="w-full mt-2 bg-[#275559] text-white py-3 rounded-lg font-semibold">
@@ -70,6 +76,7 @@ className="bg-teal-dark hover:bg-teal-darkest text-teal-medium"
 ```
 
 **Should be:**
+
 ```jsx
 <Button variant="primary" size="medium" fullWidth>Submit</Button>
 <Button variant="secondary" size="large">Get Started</Button>
@@ -77,6 +84,7 @@ className="bg-teal-dark hover:bg-teal-darkest text-teal-medium"
 ```
 
 **Business Impact:**
+
 - Design changes require updating 45 files
 - Accessibility improvements don't propagate
 - Testing requires checking 45 implementations
@@ -89,6 +97,7 @@ className="bg-teal-dark hover:bg-teal-darkest text-teal-medium"
 ---
 
 #### Modal Duplication (6 wrappers, 150+ LOC duplicate)
+
 ```jsx
 // Same 50-line structure in 6 files:
 TaskFormModal.jsx (13.7 KB)
@@ -100,13 +109,9 @@ WelcomeModal.jsx (1.6 KB)
 ```
 
 **Should be:**
+
 ```jsx
-<Modal
-  isOpen={isOpen}
-  onClose={onClose}
-  title="Add Task"
-  size="large"
->
+<Modal isOpen={isOpen} onClose={onClose} title="Add Task" size="large">
   {/* Content */}
 </Modal>
 ```
@@ -118,6 +123,7 @@ WelcomeModal.jsx (1.6 KB)
 ---
 
 #### Input Field Duplication (30+ instances)
+
 **Problem:** Every form reinvents text inputs with different styling.
 
 ```jsx
@@ -128,13 +134,9 @@ WelcomeModal.jsx (1.6 KB)
 ```
 
 **Should be:**
+
 ```jsx
-<Input
-  label="Email"
-  placeholder="you@example.com"
-  error={errors.email}
-  required
-/>
+<Input label="Email" placeholder="you@example.com" error={errors.email} required />
 ```
 
 **Fix Priority:** 🟠 HIGH (Week 2)
@@ -144,19 +146,22 @@ WelcomeModal.jsx (1.6 KB)
 ---
 
 ### 3. **Spacing Chaos** 🟠 HIGH
+
 **Problem:** Arbitrary spacing values instead of design system scale.
 
 **Examples:**
+
 ```jsx
 // ❌ Currently (200+ instances)
-className="px-[18px] py-[13px] mb-[22px] gap-[14px]"
+className = 'px-[18px] py-[13px] mb-[22px] gap-[14px]';
 
 // ✅ Should be (using tokens)
-className="px-4 py-3 mb-6 gap-3.5"
+className = 'px-4 py-3 mb-6 gap-3.5';
 // OR better yet, standardized spacing: px-4 py-3 mb-6 gap-4
 ```
 
 **Business Impact:**
+
 - Impossible to maintain consistent visual rhythm
 - Design changes require find-replace across codebase
 - New developers introduce random spacing values
@@ -170,9 +175,11 @@ className="px-4 py-3 mb-6 gap-3.5"
 ## 📋 Recommended Refactoring Plan
 
 ### Phase 1: Foundation (Week 1) - CRITICAL PATH
+
 **Goal:** Fix the bleeding - stop adding technical debt.
 
 #### 1.1 Create Core Components (Day 1-2)
+
 ```
 src/components/ui/
 ├── Button/
@@ -188,6 +195,7 @@ src/components/ui/
 ```
 
 **Button Component Spec:**
+
 ```jsx
 <Button
   variant="primary" | "secondary" | "tertiary" | "ghost" | "danger"
@@ -204,6 +212,7 @@ src/components/ui/
 ```
 
 **Variants:**
+
 - `primary`: bg-teal-dark, white text, hover:bg-teal-darkest
 - `secondary`: bg-teal-medium, black text, hover:bg-teal-dark
 - `tertiary`: border-teal-dark, teal-dark text, hover:bg-teal-lightest
@@ -211,6 +220,7 @@ src/components/ui/
 - `danger`: bg-semantic-error, white text
 
 **Sizes:**
+
 - `small`: px-3 py-2 text-sm
 - `medium`: px-4 py-3 text-base (default)
 - `large`: px-6 py-4 text-lg
@@ -221,6 +231,7 @@ src/components/ui/
 ---
 
 #### 1.2 Create Modal Wrapper (Day 2)
+
 ```jsx
 <Modal
   isOpen={boolean}
@@ -238,6 +249,7 @@ src/components/ui/
 ```
 
 **Features:**
+
 - Proper z-index (z-modal from tokens)
 - Mobile-safe padding (96px bottom on mobile)
 - Keyboard navigation (Escape to close)
@@ -251,6 +263,7 @@ src/components/ui/
 ---
 
 #### 1.3 Create Input Component (Day 3)
+
 ```jsx
 <Input
   type="text" | "email" | "password" | "tel" | "number"
@@ -269,6 +282,7 @@ src/components/ui/
 ```
 
 **Features:**
+
 - Consistent focus states (focus:border-teal-dark)
 - Error states with semantic colors
 - Required field indicator
@@ -282,9 +296,11 @@ src/components/ui/
 ---
 
 #### 1.4 Replace Critical Hardcoded Colors (Day 3-5)
+
 **Target:** 50 most-used instances (quick wins)
 
 **Find & Replace Strategy:**
+
 ```bash
 # Primary teal
 bg-[#275559]  →  bg-teal-dark
@@ -301,6 +317,7 @@ bg-[#46BD92]  →  bg-semantic-success
 ```
 
 **Priority Files:**
+
 1. LoginSignup.jsx (7 hardcoded colors)
 2. LandingPage.jsx (83 KB - needs major cleanup)
 3. ContactsPanel.jsx (39 KB - needs refactor)
@@ -315,9 +332,11 @@ bg-[#46BD92]  →  bg-semantic-success
 ### Phase 2: Expansion (Week 2) - HIGH PRIORITY
 
 #### 2.1 Replace All Buttons (Day 1-3)
+
 **Strategy:** File-by-file replacement with new Button component.
 
 **Order of Replacement:**
+
 1. LoginSignup.jsx (3-4 buttons)
 2. ContactsPanel.jsx (8-10 buttons)
 3. All Modal files (20+ buttons)
@@ -325,6 +344,7 @@ bg-[#46BD92]  →  bg-semantic-success
 5. Remaining files (10-12 buttons)
 
 **Validation Checklist per File:**
+
 - [ ] All buttons replaced with <Button>
 - [ ] Visual regression test passed
 - [ ] Hover states work correctly
@@ -338,9 +358,11 @@ bg-[#46BD92]  →  bg-semantic-success
 ---
 
 #### 2.2 Refactor All Modals (Day 3-4)
+
 **Strategy:** Wrap existing content with new <Modal> component.
 
 **Order:**
+
 1. ProfileTaskModal.jsx (smallest, easiest)
 2. WelcomeModal.jsx
 3. FlaggingModal.jsx
@@ -354,9 +376,11 @@ bg-[#46BD92]  →  bg-semantic-success
 ---
 
 #### 2.3 Replace All Inputs (Day 4-5)
+
 **Strategy:** Replace all text inputs with <Input> component.
 
 **Files:**
+
 - LoginSignup.jsx (email, password)
 - ProfilePanel.jsx (all profile fields)
 - ContactsPanel.jsx (search, forms)
@@ -369,6 +393,7 @@ bg-[#46BD92]  →  bg-semantic-success
 ---
 
 #### 2.4 Remaining Hardcoded Colors (Day 5)
+
 **Target:** 70 remaining instances from Phase 1.
 
 **Strategy:** Systematic grep and replace.
@@ -381,6 +406,7 @@ bg-[#46BD92]  →  bg-semantic-success
 ### Phase 3: Polish & Expansion (Week 3) - MEDIUM PRIORITY
 
 #### 3.1 Additional Components (Day 1-3)
+
 ```
 src/components/ui/
 ├── Card/           (consistent card styling)
@@ -397,9 +423,11 @@ src/components/ui/
 ---
 
 #### 3.2 Spacing Standardization (Day 3-4)
+
 **Goal:** Replace arbitrary spacing with token-based spacing.
 
 **Find & Replace:**
+
 ```bash
 # Common arbitrary values
 px-[18px]  →  px-4 (16px)
@@ -414,9 +442,11 @@ mb-[22px]  →  mb-6 (24px)
 ---
 
 #### 3.3 Component Documentation (Day 4-5)
+
 **Goal:** Document all components for team.
 
 **Deliverables:**
+
 - README.md for each component
 - Props documentation
 - Usage examples
@@ -431,17 +461,18 @@ mb-[22px]  →  mb-6 (24px)
 ## 🎨 Refined Token System
 
 ### Current Tokens: Good Foundation
+
 Your token system is **excellent**. The only additions needed:
 
 ```json
 {
   "colors": {
     "semantic": {
-      "success": { "value": "#46BD92" },  // Currently #10b981, but you use #46BD92/#6dd4b0
+      "success": { "value": "#46BD92" } // Currently #10b981, but you use #46BD92/#6dd4b0
       // Keep existing warning, error, info
     },
     "focus": {
-      "ring": { "value": "#4DA8B0" },  // Teal-medium for focus rings
+      "ring": { "value": "#4DA8B0" }, // Teal-medium for focus rings
       "ringOffset": { "value": "#FFFFFF" }
     }
   },
@@ -457,13 +488,14 @@ Your token system is **excellent**. The only additions needed:
     }
   },
   "touchTargets": {
-    "minimum": { "value": "44px" },  // iOS HIG, WCAG 2.1 AAA
+    "minimum": { "value": "44px" }, // iOS HIG, WCAG 2.1 AAA
     "comfortable": { "value": "48px" }
   }
 }
 ```
 
 **Additions to Tailwind Config:**
+
 ```js
 extend: {
   colors: {
@@ -488,12 +520,15 @@ extend: {
 ## 🗑️ Code to Delete
 
 ### 1. Deprecated/Unused Components
+
 **Audit needed - likely candidates:**
+
 - Old modal wrappers after refactor
 - Unused utility components
 - Duplicate helper functions
 
 ### 2. Inline Styles to Remove
+
 ```jsx
 // Delete all instances of:
 <div style={{ backgroundColor: '#275559' }}>  ❌
@@ -501,6 +536,7 @@ extend: {
 ```
 
 ### 3. Arbitrary Tailwind Classes (200+ instances)
+
 ```jsx
 // Delete these patterns:
 bg-[#275559]  ❌
@@ -513,6 +549,7 @@ gap-[14px]    ❌
 ## 📊 Implementation Metrics & Success Criteria
 
 ### Week 1 Metrics
+
 - [ ] Button component created and tested
 - [ ] Modal component created and tested
 - [ ] Input component created and tested
@@ -520,6 +557,7 @@ gap-[14px]    ❌
 - [ ] Zero new hardcoded values added
 
 ### Week 2 Metrics
+
 - [ ] All 45 buttons replaced
 - [ ] All 6 modals refactored
 - [ ] All 30 inputs replaced
@@ -527,31 +565,37 @@ gap-[14px]    ❌
 - [ ] Token usage rate: 30% → 85%+
 
 ### Week 3 Metrics
+
 - [ ] 5+ additional UI components created
 - [ ] Arbitrary spacing reduced by 80%
 - [ ] Component documentation complete
 - [ ] Token usage rate: 85% → 95%+
 
 ### Success Indicators
+
 ✅ **Code Quality:**
+
 - Zero hardcoded hex colors
 - <10 arbitrary Tailwind values
 - All buttons use <Button> component
 - All modals use <Modal> wrapper
 
 ✅ **Developer Experience:**
+
 - New features use design system
 - Design changes = token updates only
 - Component props self-documenting
 - Storybook (optional) for component preview
 
 ✅ **Brand Consistency:**
+
 - All teal colors from tokens
 - Consistent button styling
 - Consistent spacing rhythm
 - Consistent typography scale
 
 ✅ **Maintenance:**
+
 - Monthly maintenance time: 8-12h → 2-3h (75% reduction)
 - Bug count related to styling: -60%
 - Time to implement new features: -40%
@@ -561,7 +605,9 @@ gap-[14px]    ❌
 ## 🚀 Quick Start Actions
 
 ### Immediate (Today)
+
 1. **Create component folders:**
+
    ```bash
    mkdir -p chat-client-vite/src/components/ui/{Button,Modal,Input}
    ```
@@ -574,15 +620,17 @@ gap-[14px]    ❌
 3. **Document token usage rules:**
    - Add to CLAUDE.md or CONTRIBUTING.md
    - "NEVER use hardcoded colors"
-   - "ALWAYS use bg-teal-* classes"
+   - "ALWAYS use bg-teal-\* classes"
 
 ### This Week
+
 1. Complete Phase 1 (Foundation)
 2. Replace 20 most-used buttons
 3. Refactor 2 smallest modals
 4. Set up code review checklist
 
 ### This Month
+
 1. Complete all 3 phases
 2. Achieve 95%+ token usage
 3. Zero hardcoded colors
@@ -593,6 +641,7 @@ gap-[14px]    ❌
 ## 📄 Appendix: Component Templates
 
 ### Button Component Template
+
 ```jsx
 // src/components/ui/Button/Button.jsx
 import React from 'react';
@@ -600,7 +649,8 @@ import React from 'react';
 const variants = {
   primary: 'bg-teal-dark text-white hover:bg-teal-darkest disabled:bg-gray-400',
   secondary: 'bg-teal-medium text-black hover:bg-teal-dark disabled:bg-gray-400',
-  tertiary: 'border-2 border-teal-dark text-teal-dark hover:bg-teal-lightest disabled:border-gray-400 disabled:text-gray-400',
+  tertiary:
+    'border-2 border-teal-dark text-teal-dark hover:bg-teal-lightest disabled:border-gray-400 disabled:text-gray-400',
   ghost: 'text-teal-dark hover:bg-teal-lightest disabled:text-gray-400',
   danger: 'bg-semantic-error text-white hover:bg-red-700 disabled:bg-gray-400',
 };
@@ -625,13 +675,15 @@ export const Button = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = 'font-semibold rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2 disabled:cursor-not-allowed min-h-touch flex items-center justify-center gap-2';
+  const baseClasses =
+    'font-semibold rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-teal-medium focus:ring-offset-2 disabled:cursor-not-allowed min-h-touch flex items-center justify-center gap-2';
 
   const variantClasses = variants[variant] || variants.primary;
   const sizeClasses = sizes[size] || sizes.medium;
   const widthClass = fullWidth ? 'w-full' : '';
 
-  const combinedClasses = `${baseClasses} ${variantClasses} ${sizeClasses} ${widthClass} ${className}`.trim();
+  const combinedClasses =
+    `${baseClasses} ${variantClasses} ${sizeClasses} ${widthClass} ${className}`.trim();
 
   return (
     <button
@@ -643,9 +695,25 @@ export const Button = ({
     >
       {loading ? (
         <>
-          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <svg
+            className="animate-spin h-5 w-5"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
           </svg>
           <span>Loading...</span>
         </>
@@ -664,6 +732,7 @@ export default Button;
 ```
 
 ### Modal Component Template
+
 ```jsx
 // src/components/ui/Modal/Modal.jsx
 import React, { useEffect } from 'react';
@@ -692,7 +761,7 @@ export const Modal = ({
   useEffect(() => {
     if (!isOpen || !closeOnEsc) return;
 
-    const handleEscape = (e) => {
+    const handleEscape = e => {
       if (e.key === 'Escape') onClose();
     };
 
@@ -726,17 +795,18 @@ export const Modal = ({
     >
       <div
         className={`bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full ${sizeClass} flex flex-col max-h-full my-auto ${className}`}
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-ui-border flex items-center justify-between flex-shrink-0">
           <div>
-            <h3 id="modal-title" className="text-base sm:text-lg font-semibold text-ui-text-primary">
+            <h3
+              id="modal-title"
+              className="text-base sm:text-lg font-semibold text-ui-text-primary"
+            >
               {title}
             </h3>
-            {subtitle && (
-              <p className="text-sm text-ui-text-secondary mt-1">{subtitle}</p>
-            )}
+            {subtitle && <p className="text-sm text-ui-text-secondary mt-1">{subtitle}</p>}
           </div>
           {showCloseButton && (
             <button
@@ -745,16 +815,19 @@ export const Modal = ({
               aria-label="Close modal"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           )}
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">{children}</div>
 
         {/* Footer */}
         {footer && (
@@ -771,6 +844,7 @@ export default Modal;
 ```
 
 ### Input Component Template
+
 ```jsx
 // src/components/ui/Input/Input.jsx
 import React from 'react';
@@ -794,7 +868,8 @@ export const Input = ({
 }) => {
   const inputId = props.id || `input-${label?.toLowerCase().replace(/\s+/g, '-')}`;
 
-  const baseInputClasses = 'w-full px-4 py-3 border-2 rounded-lg transition-all text-base text-ui-text-primary placeholder-ui-text-tertiary min-h-touch focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed';
+  const baseInputClasses =
+    'w-full px-4 py-3 border-2 rounded-lg transition-all text-base text-ui-text-primary placeholder-ui-text-tertiary min-h-touch focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed';
 
   const borderClasses = error
     ? 'border-semantic-error focus:border-semantic-error focus:ring-2 focus:ring-semantic-error/20'
@@ -805,10 +880,7 @@ export const Input = ({
   return (
     <div className={fullWidth ? 'w-full' : ''}>
       {label && (
-        <label
-          htmlFor={inputId}
-          className="block text-sm font-medium text-ui-text-primary mb-2"
-        >
+        <label htmlFor={inputId} className="block text-sm font-medium text-ui-text-primary mb-2">
           {label}
           {required && <span className="text-semantic-error ml-1">*</span>}
         </label>
@@ -833,7 +905,9 @@ export const Input = ({
           className={inputClasses}
           style={icon && iconPosition === 'left' ? { paddingLeft: '2.5rem' } : {}}
           aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
+          aria-describedby={
+            error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
+          }
           {...props}
         />
 

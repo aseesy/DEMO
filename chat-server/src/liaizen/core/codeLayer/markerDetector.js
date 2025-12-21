@@ -48,7 +48,7 @@ const SOFTENER_PATTERNS = [
   /\bi suppose\b/gi,
   /\bit seems\b/gi,
   /\bi'm just\b/gi,
-  /\bi was just\b/gi
+  /\bi was just\b/gi,
 ];
 
 /**
@@ -83,7 +83,7 @@ const INTENSIFIER_PATTERNS = [
   /\bdefinitely\b/gi,
   /\bcertainly\b/gi,
   /\bobviously\b/gi,
-  /\bclearly\b/gi
+  /\bclearly\b/gi,
 ];
 
 /**
@@ -92,35 +92,79 @@ const INTENSIFIER_PATTERNS = [
  */
 const PATTERN_MARKERS = [
   // Global statements (overgeneralizations)
-  { pattern: /\byou always\b/gi, type: 'global_statement', description: 'Overgeneralization about receiver' },
-  { pattern: /\byou never\b/gi, type: 'global_statement', description: 'Negative overgeneralization' },
-  { pattern: /\byou('re| are) always\b/gi, type: 'global_statement', description: 'Character overgeneralization' },
-  { pattern: /\byou('re| are) never\b/gi, type: 'global_statement', description: 'Negative character overgeneralization' },
+  {
+    pattern: /\byou always\b/gi,
+    type: 'global_statement',
+    description: 'Overgeneralization about receiver',
+  },
+  {
+    pattern: /\byou never\b/gi,
+    type: 'global_statement',
+    description: 'Negative overgeneralization',
+  },
+  {
+    pattern: /\byou('re| are) always\b/gi,
+    type: 'global_statement',
+    description: 'Character overgeneralization',
+  },
+  {
+    pattern: /\byou('re| are) never\b/gi,
+    type: 'global_statement',
+    description: 'Negative character overgeneralization',
+  },
   { pattern: /\bevery time you\b/gi, type: 'global_statement', description: 'Pattern accusation' },
-  { pattern: /\byou('re| are) the (kind|type|sort) of person\b/gi, type: 'character_attack', description: 'Character labeling' },
+  {
+    pattern: /\byou('re| are) the (kind|type|sort) of person\b/gi,
+    type: 'character_attack',
+    description: 'Character labeling',
+  },
 
   // Evaluative language (judgments)
   { pattern: /\byou should\b/gi, type: 'evaluative', description: 'Prescriptive statement' },
   { pattern: /\byou need to\b/gi, type: 'evaluative', description: 'Prescriptive demand' },
   { pattern: /\byou have to\b/gi, type: 'evaluative', description: 'Prescriptive demand' },
   { pattern: /\byou must\b/gi, type: 'evaluative', description: 'Strong prescriptive' },
-  { pattern: /\byou ought to\b/gi, type: 'evaluative', description: 'Prescriptive with moral weight' },
+  {
+    pattern: /\byou ought to\b/gi,
+    type: 'evaluative',
+    description: 'Prescriptive with moral weight',
+  },
 
   // Rhetorical questions (often accusatory)
-  { pattern: /\bwhy (did|do|don't|didn't|can't|won't|wouldn't) you\b/gi, type: 'rhetorical_question', description: 'Accusatory question' },
-  { pattern: /\bhow could you\b/gi, type: 'rhetorical_question', description: 'Accusatory question' },
-  { pattern: /\bwhat were you thinking\b/gi, type: 'rhetorical_question', description: 'Judgment question' },
+  {
+    pattern: /\bwhy (did|do|don't|didn't|can't|won't|wouldn't) you\b/gi,
+    type: 'rhetorical_question',
+    description: 'Accusatory question',
+  },
+  {
+    pattern: /\bhow could you\b/gi,
+    type: 'rhetorical_question',
+    description: 'Accusatory question',
+  },
+  {
+    pattern: /\bwhat were you thinking\b/gi,
+    type: 'rhetorical_question',
+    description: 'Judgment question',
+  },
 
   // Blame patterns
   { pattern: /\byour fault\b/gi, type: 'blame', description: 'Direct blame attribution' },
   { pattern: /\bbecause of you\b/gi, type: 'blame', description: 'Causation blame' },
   { pattern: /\bthanks to you\b/gi, type: 'blame', description: 'Sarcastic blame' },
-  { pattern: /\bif you (had|hadn't|would|wouldn't)\b/gi, type: 'blame', description: 'Conditional blame' },
+  {
+    pattern: /\bif you (had|hadn't|would|wouldn't)\b/gi,
+    type: 'blame',
+    description: 'Conditional blame',
+  },
 
   // Comparison patterns
   { pattern: /\bunlike you\b/gi, type: 'comparison', description: 'Negative comparison' },
   { pattern: /\bat least i\b/gi, type: 'comparison', description: 'Self-elevating comparison' },
-  { pattern: /\bi would never\b/gi, type: 'comparison', description: 'Implicit criticism via contrast' }
+  {
+    pattern: /\bi would never\b/gi,
+    type: 'comparison',
+    description: 'Implicit criticism via contrast',
+  },
 ];
 
 /**
@@ -138,7 +182,7 @@ const CONTRAST_MARKERS = [
   /\bnevertheless\b/gi,
   /\bnonetheless\b/gi,
   /\bstill\b/gi,
-  /\bon the other hand\b/gi
+  /\bon the other hand\b/gi,
 ];
 
 /**
@@ -159,7 +203,7 @@ const NEGATION_PATTERNS = [
   /\bcannot\b/gi,
   /\bnobody\b/gi,
   /\bnothing\b/gi,
-  /\bnowhere\b/gi
+  /\bnowhere\b/gi,
 ];
 
 // ============================================================================
@@ -203,7 +247,7 @@ function extractPatternMarkers(text) {
         match: match[0].toLowerCase().trim(),
         type,
         description,
-        position: match.index
+        position: match.index,
       });
     }
   }
@@ -250,7 +294,7 @@ function detect(text, tokens = null) {
       patternMarkers: [],
       contrastMarkers: [],
       negations: [],
-      latencyMs: Date.now() - startTime
+      latencyMs: Date.now() - startTime,
     };
   }
 
@@ -282,7 +326,7 @@ function detect(text, tokens = null) {
     patternMarkers,
     contrastMarkers,
     negations,
-    latencyMs: Date.now() - startTime
+    latencyMs: Date.now() - startTime,
   };
 }
 
@@ -303,7 +347,7 @@ function getMarkerStats(markers) {
     hasBlamePatterns: markers.patternMarkers.some(m => m.type === 'blame'),
     hasRhetoricalQuestions: markers.patternMarkers.some(m => m.type === 'rhetorical_question'),
     hasCharacterAttacks: markers.patternMarkers.some(m => m.type === 'character_attack'),
-    deniability_level: markers.softeners.length > 0 ? 'high' : 'low'
+    deniability_level: markers.softeners.length > 0 ? 'high' : 'low',
   };
 }
 
@@ -368,7 +412,7 @@ function analyzeButContrast(text) {
     after_but: afterBut,
     softener_before: hasSoftenerBeforeBut,
     intensifier_after: hasIntensifierAfterBut,
-    likely_criticism: hasSoftenerBeforeBut || hasIntensifierAfterBut
+    likely_criticism: hasSoftenerBeforeBut || hasIntensifierAfterBut,
   };
 }
 
@@ -394,5 +438,5 @@ module.exports = {
   INTENSIFIER_PATTERNS,
   PATTERN_MARKERS,
   CONTRAST_MARKERS,
-  NEGATION_PATTERNS
+  NEGATION_PATTERNS,
 };

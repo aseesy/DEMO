@@ -41,6 +41,7 @@ This audit identifies inconsistencies in naming conventions across the codebase 
 **Issue**: Object properties use `snake_case` instead of `camelCase`
 
 **Affected Properties**:
+
 - `latency_ms` → should be `latencyMs`
 - `error_message` → should be `errorMessage`
 - `tokenizer_ms` → should be `tokenizerMs`
@@ -52,6 +53,7 @@ This audit identifies inconsistencies in naming conventions across the codebase 
 - `component_latency` → should be `componentLatency`
 
 **Files Affected**:
+
 - `codeLayer/index.js`
 - `codeLayer/types.js`
 - `codeLayer/tokenizer.js`
@@ -72,6 +74,7 @@ This audit identifies inconsistencies in naming conventions across the codebase 
 **Issue**: Some object properties use `snake_case` (likely from database/API)
 
 **Examples**:
+
 - `personal_visibility`, `work_visibility`, `health_visibility`, `financial_visibility`
 - `field_overrides`
 - `has_coparent`, `room_status`
@@ -85,6 +88,7 @@ This audit identifies inconsistencies in naming conventions across the codebase 
 **Issue**: localStorage keys use `snake_case` instead of `camelCase`
 
 **Affected Keys**:
+
 - `auth_token_backup` → should be `authTokenBackup`
 - `notification_preferences` → should be `notificationPreferences`
 - `pending_invite_code` → should be `pendingInviteCode`
@@ -154,6 +158,7 @@ This audit identifies inconsistencies in naming conventions across the codebase 
 4. ⚠️ Tests may need updating (not checked)
 
 **Properties Changed:**
+
 - `latency_ms` → `latencyMs`
 - `error_message` → `errorMessage`
 - `tokenizer_ms` → `tokenizerMs`
@@ -225,6 +230,7 @@ This audit identifies inconsistencies in naming conventions across the codebase 
 ## ESLint Configuration Suggestion
 
 Add to `.eslintrc.js`:
+
 ```javascript
 rules: {
   'camelcase': ['error', {
@@ -246,15 +252,16 @@ rules: {
 
 ✅ **Phase 3 Complete**: API transformation utility created for converting snake_case API responses to camelCase. Frontend object properties updated (has_coparent → hasCoparent, room_status → roomStatus).
 
-**Impact**: 
+**Impact**:
+
 - Code Layer refactoring: All internal consumers updated. External consumers (if any) will need to use new camelCase property names.
 - localStorage migration: Automatic migration on app startup ensures no data loss. Old keys are migrated to new keys transparently.
 - API transformation: Privacy settings and other API responses can be transformed using the utility layer.
 
 **Remaining Minor Work** (see NAMING_CONVENTIONS_COMPLETION.md):
+
 - Update localStorage references in remaining files (useAuth.js, AuthContext.jsx, useContacts.js, etc.) - can use migration utilities
 - Integrate API transformation in privacy settings API calls
 - Update PrivacySettings.jsx to use camelCase keys internally
 
 All critical infrastructure is in place. Remaining work is straightforward application of the established patterns.
-

@@ -22,7 +22,11 @@
 
 'use strict';
 
-const { AXIOM_CATEGORIES, createFiringAxiomResult, createNonFiringAxiomResult } = require('../../types');
+const {
+  AXIOM_CATEGORIES,
+  createFiringAxiomResult,
+  createNonFiringAxiomResult,
+} = require('../../types');
 
 // ============================================================================
 // AXIOM METADATA
@@ -31,7 +35,7 @@ const { AXIOM_CATEGORIES, createFiringAxiomResult, createNonFiringAxiomResult } 
 const id = 'AXIOM_001';
 const name = 'Displaced Accusation';
 const category = AXIOM_CATEGORIES.INDIRECT_COMMUNICATION;
-const description = 'Uses child\'s negative state to imply blame toward receiver';
+const description = "Uses child's negative state to imply blame toward receiver";
 const pattern = '[Negative Child State] + [Receiver Link] + [Optional Softener]';
 
 // ============================================================================
@@ -45,19 +49,44 @@ const CHILD_REFERENCES = [
   /\b(she|he|they)\b/gi,
   /\b(she's|he's|they're|she has|he has|they have)\b/gi,
   /\b(the\s+)?(kids?|children?|daughter|son)\b/gi,
-  /\b(our|my|your)\s+(daughter|son|child|kids?|children?)\b/gi
+  /\b(our|my|your)\s+(daughter|son|child|kids?|children?)\b/gi,
 ];
 
 /**
  * Negative emotional states
  */
 const NEGATIVE_STATES = [
-  'upset', 'sad', 'unhappy', 'worried', 'anxious', 'stressed',
-  'crying', 'crying', 'struggling', 'confused', 'scared', 'afraid',
-  'angry', 'frustrated', 'disappointed', 'hurt', 'lonely', 'depressed',
-  'withdrawn', 'quiet', 'not herself', 'not himself', 'acting out',
-  'having trouble', 'having problems', 'not eating', 'not sleeping',
-  'nightmares', 'clingy', 'acting different', 'not doing well'
+  'upset',
+  'sad',
+  'unhappy',
+  'worried',
+  'anxious',
+  'stressed',
+  'crying',
+  'crying',
+  'struggling',
+  'confused',
+  'scared',
+  'afraid',
+  'angry',
+  'frustrated',
+  'disappointed',
+  'hurt',
+  'lonely',
+  'depressed',
+  'withdrawn',
+  'quiet',
+  'not herself',
+  'not himself',
+  'acting out',
+  'having trouble',
+  'having problems',
+  'not eating',
+  'not sleeping',
+  'nightmares',
+  'clingy',
+  'acting different',
+  'not doing well',
 ];
 
 /**
@@ -73,7 +102,7 @@ const RECEIVER_LINKS = [
   /\bdue\s+to\s+your\b/gi,
   /\bwith\s+your\b/gi,
   /\babout\s+your\b/gi,
-  /\bat\s+your\s+(house|place)\b/gi
+  /\bat\s+your\s+(house|place)\b/gi,
 ];
 
 /**
@@ -87,7 +116,7 @@ const SOFTENERS = [
   /\bi\s+wanted\s+to\s+(let\s+you\s+know|tell\s+you|share)\b/gi,
   /\bi\s+noticed\b/gi,
   /\bi'm\s+worried\b/gi,
-  /\bi'm\s+concerned\b/gi
+  /\bi'm\s+concerned\b/gi,
 ];
 
 // ============================================================================
@@ -235,7 +264,7 @@ function check(parsed, context = {}) {
     child_references: findChildReferences(text, parsed.conceptual),
     negative_states: findNegativeStates(text),
     receiver_links: findReceiverLinks(text),
-    softeners: findSofteners(text, parsed.linguistic)
+    softeners: findSofteners(text, parsed.linguistic),
   };
 
   // All three core elements required
@@ -272,7 +301,7 @@ function check(parsed, context = {}) {
       receiver_link: evidence.receiver_links[0],
       softener: evidence.softeners[0] || null,
       trigger_phrase: triggerPhrase,
-      all_evidence: evidence
+      all_evidence: evidence,
     },
     intentImpactDelta
   );
@@ -296,9 +325,11 @@ function buildIntentImpactDelta(evidence) {
   const childRef = evidence.child_references[0] || 'the child';
   const negativeState = evidence.negative_states[0] || 'upset';
 
-  return `Framed as concern for ${childRef}'s wellbeing (${negativeState}), ` +
+  return (
+    `Framed as concern for ${childRef}'s wellbeing (${negativeState}), ` +
     `but receiver will hear as blame for causing the child's emotional state. ` +
-    `The child's feelings are being used to deliver a criticism.`;
+    `The child's feelings are being used to deliver a criticism.`
+  );
 }
 
 // ============================================================================
@@ -321,5 +352,5 @@ module.exports = {
   findNegativeStates,
   findReceiverLinks,
   findSofteners,
-  calculateConfidence
+  calculateConfidence,
 };

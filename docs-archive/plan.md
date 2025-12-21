@@ -23,6 +23,7 @@
 ### Architecture (from Codebase Context MCP)
 
 **Frontend:**
+
 - **Path**: `chat-client-vite/`
 - **Framework**: React 18+ with Vite
 - **Styling**: Tailwind CSS v4
@@ -31,6 +32,7 @@
 - **Deployment**: Vercel (coparentliaizen.com)
 
 **Component Organization** (from Codebase Context MCP):
+
 ```
 chat-client-vite/src/
 ├── components/              # React components
@@ -51,6 +53,7 @@ chat-client-vite/src/
 ```
 
 **Backend:**
+
 - **Path**: `chat-server/`
 - **Framework**: Node.js 18+ with Express.js
 - **Database**: SQLite (with PostgreSQL migration path)
@@ -60,16 +63,19 @@ chat-client-vite/src/
 ### Design System (from Design Tokens MCP)
 
 **Colors** (`.design-tokens-mcp/tokens.json`):
+
 - Primary: `#275559` (teal-dark)
 - Secondary: `#4DA8B0` (teal-medium)
 - Background: `#FFFFFF` (white)
 - Text: `#111827` (gray-900)
 
 **Spacing** (from Design Tokens MCP):
+
 - Base unit: 8px (0.5rem)
 - Standard scale: xs (4px), sm (8px), md (16px), lg (24px), xl (32px), 2xl (48px), 3xl (64px)
 
 **Patterns** (from Codebase Context MCP):
+
 - Components: Functional components with hooks
 - Exports: Named exports preferred
 - Modals: Fixed overlay with centered modal, z-index 100
@@ -78,12 +84,14 @@ chat-client-vite/src/
 ### Existing Analytics Setup
 
 **Current Files:**
+
 - ✅ `chat-client-vite/src/utils/analytics.js` - Core tracking functions (395 lines)
 - ✅ `chat-client-vite/src/utils/analyticsEnhancements.js` - Enhanced functions (232 lines)
 - ✅ `chat-client-vite/src/ChatRoom.jsx` - Integrated tracking for chat events
 - ✅ `chat-client-vite/src/components/LandingPage.jsx` - Landing page tracking
 
 **Current Tracking:**
+
 - Landing page events (CTA clicks, section views, conversions)
 - Chat room events (messages, AI interventions, tasks, contacts)
 - Navigation tracking
@@ -96,26 +104,20 @@ chat-client-vite/src/
 ### Feature Requirements (from GA4_ADVANCED_SETUP.md)
 
 **Phase 1 - Immediate (High Impact):**
+
 1. Mark key events as conversions in GA4 UI
 2. Create conversion funnels
 3. Set up DebugView
 4. Create basic custom reports
 
-**Phase 2 - Short-term (Medium Impact):**
-5. Set user properties on login/profile update
-6. Create audiences (user segments)
-7. Add custom dimensions (code + GA4 UI)
-8. Set up alerts
+**Phase 2 - Short-term (Medium Impact):** 5. Set user properties on login/profile update 6. Create audiences (user segments) 7. Add custom dimensions (code + GA4 UI) 8. Set up alerts
 
-**Phase 3 - Long-term (Advanced):**
-9. User ID tracking
-10. Error tracking integration
-11. Performance monitoring
-12. Data Studio dashboards
+**Phase 3 - Long-term (Advanced):** 9. User ID tracking 10. Error tracking integration 11. Performance monitoring 12. Data Studio dashboards
 
 ### Implementation Scope
 
 **Code Changes Required:**
+
 - Integrate user properties tracking
 - Add User ID tracking
 - Integrate error tracking
@@ -123,6 +125,7 @@ chat-client-vite/src/
 - Enhance existing events with custom dimensions
 
 **GA4 UI Configuration:**
+
 - Mark events as conversions
 - Create custom dimensions
 - Create audiences
@@ -130,6 +133,7 @@ chat-client-vite/src/
 - Configure DebugView
 
 **No Design Changes Required:**
+
 - All tracking is invisible to users
 - No UI components needed
 - No design tokens needed (backend tracking only)
@@ -141,7 +145,9 @@ chat-client-vite/src/
 ### Phase 1: Foundation & Conversions (2-3 hours)
 
 #### Step 1.1: Mark Events as Conversions (GA4 UI - 15 min)
+
 **Location**: Google Analytics Admin Panel
+
 - Navigate to **Admin** → **Data Streams** → Select stream → **Events**
 - Mark as conversions:
   - ✅ `sign_up`
@@ -153,7 +159,9 @@ chat-client-vite/src/
 **Deliverable**: 5 events marked as conversions
 
 #### Step 1.2: Create Conversion Funnel (GA4 UI - 30 min)
+
 **Location**: Google Analytics Explore → Funnel exploration
+
 - Create funnel: Landing → Sign-up → First Message → Co-parent Connected
 - Steps:
   1. `section_view` (hero)
@@ -165,14 +173,18 @@ chat-client-vite/src/
 **Deliverable**: Conversion funnel report
 
 #### Step 1.3: Set Up DebugView (GA4 UI - 15 min)
+
 **Location**: Google Analytics Admin → DebugView
+
 - Install Google Analytics Debugger Chrome extension
 - Or add debug mode to code (see Step 2.3)
 
 **Deliverable**: DebugView accessible for testing
 
 #### Step 1.4: Create Basic Custom Report (GA4 UI - 30 min)
+
 **Location**: Google Analytics Explore → Blank
+
 - **User Engagement Dashboard**:
   - Metrics: Messages sent, Sessions, Avg session duration
   - Dimensions: User type, Days since signup
@@ -189,11 +201,13 @@ chat-client-vite/src/
 **File**: `chat-client-vite/src/hooks/useAuth.js`
 **Pattern**: Per Codebase Context MCP, hooks are in `hooks/` directory
 **Implementation**:
+
 - Import `setUserProperties` from `utils/analyticsEnhancements.js`
 - Call on successful login/signup
 - Set properties: engagement_level, days_since_signup, has_coparent_connected
 
 **Code Location**: After successful authentication
+
 ```javascript
 // After login/signup success
 import { setUserProperties } from '../utils/analyticsEnhancements.js';
@@ -209,6 +223,7 @@ setUserProperties(userProperties);
 ```
 
 **Files to Modify**:
+
 - `chat-client-vite/src/hooks/useAuth.js` - Add user properties on login
 - `chat-client-vite/src/ChatRoom.jsx` - Update user properties when co-parent connects
 
@@ -218,11 +233,13 @@ setUserProperties(userProperties);
 
 **File**: `chat-client-vite/src/hooks/useAuth.js`
 **Implementation**:
+
 - Import `setUserID` from `utils/analyticsEnhancements.js`
 - Call on successful login with username/user ID
 - Ensure privacy compliance (only if user consents)
 
 **Code Location**: After successful authentication
+
 ```javascript
 import { setUserID } from '../utils/analyticsEnhancements.js';
 
@@ -233,6 +250,7 @@ if (user && user.username) {
 ```
 
 **Files to Modify**:
+
 - `chat-client-vite/src/hooks/useAuth.js` - Set User ID on login
 
 **Deliverable**: User ID tracking enabled
@@ -240,6 +258,7 @@ if (user && user.username) {
 #### Step 2.3: Create Custom Dimensions (GA4 UI + Code - 1 hour)
 
 **GA4 UI Configuration** (30 min):
+
 1. Go to **Admin** → **Custom Definitions** → **Custom Dimensions**
 2. Create dimensions:
    - `user_type` (User-scoped): new_user, returning_user, active_user, inactive_user
@@ -248,11 +267,13 @@ if (user && user.username) {
    - `task_priority` (Event-scoped): low, medium, high, urgent
 
 **Code Integration** (30 min):
+
 - Update existing tracking calls to include custom dimensions
 - Modify `trackAIIntervention` to send `intervention_type` dimension
 - Modify `trackTaskCreated` to send `task_priority` dimension
 
 **Files to Modify**:
+
 - `chat-client-vite/src/utils/analytics.js` - Add dimension parameters
 - `chat-client-vite/src/ChatRoom.jsx` - Pass dimensions in tracking calls
 
@@ -262,6 +283,7 @@ if (user && user.username) {
 
 **Location**: Google Analytics Admin → Audiences
 **Create Audiences**:
+
 1. **High-Value Users**
    - Condition: `message_sent` events > 50 AND `task_completed` > 10
 2. **AI Feature Adopters**
@@ -279,6 +301,7 @@ if (user && user.username) {
 
 **Location**: Google Analytics Admin → Custom Alerts
 **Create Alerts**:
+
 1. **Conversion Rate Drop**
    - Condition: Conversion rate drops > 20% vs previous week
 2. **Error Spike**
@@ -299,19 +322,23 @@ if (user && user.username) {
 **File**: `chat-client-vite/src/utils/errorHandler.js` (NEW)
 **Pattern**: Per Codebase Context MCP, utilities in `utils/` directory
 **Implementation**:
+
 - Create global error handler
 - Wrap API calls with error tracking
 - Track WebSocket connection errors
 
 **Files to Create**:
+
 - `chat-client-vite/src/utils/errorHandler.js` - Global error handler
 
 **Files to Modify**:
+
 - `chat-client-vite/src/apiClient.js` - Add error tracking to API calls
 - `chat-client-vite/src/hooks/useChat.js` - Track WebSocket errors
 - `chat-client-vite/src/main.jsx` - Add global error boundary
 
 **Code Example**:
+
 ```javascript
 // In apiClient.js
 import { trackAPIError } from './utils/analyticsEnhancements.js';
@@ -333,15 +360,18 @@ try {
 
 **File**: `chat-client-vite/src/main.jsx`
 **Implementation**:
+
 - Track page load performance on app initialization
 - Track API response times in apiClient
 - Track component render times (optional, advanced)
 
 **Files to Modify**:
+
 - `chat-client-vite/src/main.jsx` - Add page load tracking
 - `chat-client-vite/src/apiClient.js` - Add API response time tracking
 
 **Code Example**:
+
 ```javascript
 // In main.jsx
 import { trackPagePerformance } from './utils/analyticsEnhancements.js';
@@ -365,18 +395,24 @@ trackAPIResponseTime(endpoint, duration);
 #### Step 3.3: Enhanced Event Tracking (Code - 1 hour)
 
 **Files to Modify**:
+
 - `chat-client-vite/src/ChatRoom.jsx` - Use enhanced tracking functions
 - `chat-client-vite/src/utils/analytics.js` - Update to include custom dimensions
 
 **Implementation**:
+
 - Replace `trackMessageSent` with `trackMessageSentEnhanced` where applicable
 - Add engagement milestone tracking
 - Track feature discovery
 
 **Code Example**:
+
 ```javascript
 // In ChatRoom.jsx
-import { trackMessageSentEnhanced, trackEngagementMilestone } from './utils/analyticsEnhancements.js';
+import {
+  trackMessageSentEnhanced,
+  trackEngagementMilestone,
+} from './utils/analyticsEnhancements.js';
 
 // Track first message milestone
 if (isFirstMessage) {
@@ -400,6 +436,7 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 #### Step 4.1: Update Documentation (30 min)
 
 **Files to Update**:
+
 - `ANALYTICS_STATUS.md` - Add new tracking capabilities
 - `CHAT_TRACKING_ADDED.md` - Update with new features
 - Create `GA4_IMPLEMENTATION_STATUS.md` - Track implementation progress
@@ -409,6 +446,7 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 #### Step 4.2: Testing & Validation (1 hour)
 
 **Test Checklist**:
+
 - [ ] User properties set on login
 - [ ] User ID tracking works
 - [ ] Error tracking captures API errors
@@ -419,6 +457,7 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 - [ ] DebugView shows all events
 
 **Files to Test**:
+
 - All modified files in Phases 1-3
 - GA4 UI configurations
 
@@ -485,12 +524,14 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 ### No Design Changes Required
 
 **Rationale**: All analytics tracking is:
+
 - ✅ Backend/invisible to users
 - ✅ No UI components needed
 - ✅ No visual design changes
 - ✅ No design tokens needed
 
 **Compliance Notes**:
+
 - ✅ Follows Codebase Context MCP patterns (utilities in `utils/`, hooks in `hooks/`)
 - ✅ Uses existing file structure
 - ✅ No new components needed
@@ -501,6 +542,7 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 ## ✅ Validation Checklist
 
 ### Code Quality
+
 - [ ] All functions follow existing patterns from Codebase Context MCP
 - [ ] Named exports used (per Codebase Context MCP)
 - [ ] Error handling implemented
@@ -508,6 +550,7 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 - [ ] TypeScript/ESLint passes (if configured)
 
 ### Analytics Implementation
+
 - [ ] User properties set on login
 - [ ] User ID tracking enabled
 - [ ] Error tracking captures all error types
@@ -518,6 +561,7 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 - [ ] Alerts configured and tested
 
 ### Testing
+
 - [ ] Test login flow - verify user properties set
 - [ ] Test error scenarios - verify error tracking
 - [ ] Test performance - verify page load tracking
@@ -527,12 +571,14 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 - [ ] Test audiences - verify segments populate
 
 ### Documentation
+
 - [ ] ANALYTICS_STATUS.md updated
 - [ ] CHAT_TRACKING_ADDED.md updated
 - [ ] GA4_IMPLEMENTATION_STATUS.md created
 - [ ] Code comments added where needed
 
 ### Privacy & Compliance
+
 - [ ] User ID only set with consent
 - [ ] No PII tracked
 - [ ] Error stack traces truncated (500 chars)
@@ -543,12 +589,14 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 ## 📊 Success Criteria
 
 ### Phase 1 Complete When:
+
 - ✅ 5 events marked as conversions in GA4
 - ✅ Conversion funnel created and visible
 - ✅ DebugView accessible
 - ✅ Custom report created
 
 ### Phase 2 Complete When:
+
 - ✅ User properties set on login (visible in GA4)
 - ✅ User ID tracking enabled
 - ✅ 4 custom dimensions created and populated
@@ -556,11 +604,13 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 - ✅ 4 alerts configured
 
 ### Phase 3 Complete When:
+
 - ✅ Error tracking captures API errors
 - ✅ Performance tracking logs page load times
 - ✅ Enhanced events include custom dimensions
 
 ### Overall Success:
+
 - ✅ All tracking data visible in GA4
 - ✅ Custom reports show meaningful insights
 - ✅ Alerts notify of important changes
@@ -572,16 +622,19 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 ## 🚀 Quick Start Guide
 
 ### Immediate Actions (Today):
+
 1. **Mark conversions** (15 min) - GA4 UI
 2. **Create funnel** (30 min) - GA4 UI
 3. **Set up DebugView** (15 min) - GA4 UI
 
 ### This Week:
+
 4. **Integrate user properties** (1 hour) - Code
 5. **Add User ID tracking** (30 min) - Code
 6. **Create custom dimensions** (1 hour) - GA4 UI + Code
 
 ### Next Week:
+
 7. **Error tracking** (1.5 hours) - Code
 8. **Performance monitoring** (1 hour) - Code
 9. **Create audiences** (1 hour) - GA4 UI
@@ -592,12 +645,14 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 ## 📝 Notes
 
 ### Dependencies
+
 - ✅ `analyticsEnhancements.js` already created
 - ✅ `analytics.js` already has base functions
 - ✅ No new npm packages needed
 - ✅ No backend changes required
 
 ### Risks & Mitigation
+
 - **Risk**: User ID tracking may require privacy policy update
   - **Mitigation**: Only enable if privacy-compliant, make optional
 - **Risk**: Error tracking may capture sensitive data
@@ -606,6 +661,7 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
   - **Mitigation**: Use async tracking, minimal overhead
 
 ### Future Enhancements
+
 - Data Studio/Looker Studio dashboards
 - Advanced attribution models
 - Cohort analysis
@@ -615,4 +671,3 @@ trackMessageSentEnhanced(messageLength, isPreApprovedRewrite, {
 
 **Status**: 📋 Ready for Implementation  
 **Next Step**: Begin Phase 1 - Mark events as conversions in GA4 UI
-

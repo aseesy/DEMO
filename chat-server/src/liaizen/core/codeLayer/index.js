@@ -18,12 +18,7 @@
 
 'use strict';
 
-const {
-  VERSION,
-  createEmptyParsedMessage,
-  CONFLICT_LEVELS,
-  AXIOM_CATEGORIES
-} = require('./types');
+const { VERSION, createEmptyParsedMessage, CONFLICT_LEVELS, AXIOM_CATEGORIES } = require('./types');
 
 const tokenizer = require('./tokenizer');
 const markerDetector = require('./markerDetector');
@@ -40,8 +35,8 @@ const axiomChecker = require('./axioms');
  * Performance thresholds for logging warnings
  */
 const PERFORMANCE_THRESHOLDS = {
-  TOTAL_MS: 100,      // Warn if total parsing exceeds this
-  COMPONENT_MS: 50,   // Warn if any component exceeds this
+  TOTAL_MS: 100, // Warn if total parsing exceeds this
+  COMPONENT_MS: 50, // Warn if any component exceeds this
 };
 
 /**
@@ -102,7 +97,10 @@ async function parse(messageText, context = {}) {
     const tokenizerResult = tokenizer.tokenize(trimmedText);
     componentLatency.tokenizerMs = Date.now() - tokenizerStart;
 
-    if (componentLatency.tokenizerMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS && performanceLoggingEnabled) {
+    if (
+      componentLatency.tokenizerMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
+      performanceLoggingEnabled
+    ) {
       console.warn(`[CodeLayer] ⚠️ Tokenizer slow: ${componentLatency.tokenizerMs}ms`);
     }
 
@@ -113,7 +111,10 @@ async function parse(messageText, context = {}) {
     const markerResult = markerDetector.detect(trimmedText, tokenizerResult.tokens);
     componentLatency.markerDetectorMs = Date.now() - markerStart;
 
-    if (componentLatency.markerDetectorMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS && performanceLoggingEnabled) {
+    if (
+      componentLatency.markerDetectorMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
+      performanceLoggingEnabled
+    ) {
       console.warn(`[CodeLayer] ⚠️ Marker Detector slow: ${componentLatency.markerDetectorMs}ms`);
     }
 
@@ -129,7 +130,10 @@ async function parse(messageText, context = {}) {
     );
     componentLatency.primitiveMapperMs = Date.now() - primitiveStart;
 
-    if (componentLatency.primitiveMapperMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS && performanceLoggingEnabled) {
+    if (
+      componentLatency.primitiveMapperMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
+      performanceLoggingEnabled
+    ) {
       console.warn(`[CodeLayer] ⚠️ Primitive Mapper slow: ${componentLatency.primitiveMapperMs}ms`);
     }
 
@@ -146,8 +150,13 @@ async function parse(messageText, context = {}) {
     );
     componentLatency.vectorIdentifierMs = Date.now() - vectorStart;
 
-    if (componentLatency.vectorIdentifierMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS && performanceLoggingEnabled) {
-      console.warn(`[CodeLayer] ⚠️ Vector Identifier slow: ${componentLatency.vectorIdentifierMs}ms`);
+    if (
+      componentLatency.vectorIdentifierMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
+      performanceLoggingEnabled
+    ) {
+      console.warn(
+        `[CodeLayer] ⚠️ Vector Identifier slow: ${componentLatency.vectorIdentifierMs}ms`
+      );
     }
 
     // =========================================================================
@@ -160,14 +169,17 @@ async function parse(messageText, context = {}) {
       raw: trimmedText,
       linguistic: markerResult,
       conceptual: primitiveResult.conceptual,
-      vector: vectorResult.vector
+      vector: vectorResult.vector,
     };
 
     // Check all axioms
     const axiomResult = await axiomChecker.checkAll(partialParsed, context);
     componentLatency.axiomCheckerMs = Date.now() - axiomStart;
 
-    if (componentLatency.axiomCheckerMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS && performanceLoggingEnabled) {
+    if (
+      componentLatency.axiomCheckerMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
+      performanceLoggingEnabled
+    ) {
       console.warn(`[CodeLayer] ⚠️ Axiom Checker slow: ${componentLatency.axiomCheckerMs}ms`);
     }
 
@@ -179,12 +191,17 @@ async function parse(messageText, context = {}) {
       axiomsFired: axiomResult.axiomsFired,
       vector: vectorResult.vector,
       markers: markerResult,
-      conceptual: primitiveResult.conceptual
+      conceptual: primitiveResult.conceptual,
     });
     componentLatency.assessmentGenMs = Date.now() - assessmentStart;
 
-    if (componentLatency.assessmentGenMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS && performanceLoggingEnabled) {
-      console.warn(`[CodeLayer] ⚠️ Assessment Generator slow: ${componentLatency.assessmentGenMs}ms`);
+    if (
+      componentLatency.assessmentGenMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
+      performanceLoggingEnabled
+    ) {
+      console.warn(
+        `[CodeLayer] ⚠️ Assessment Generator slow: ${componentLatency.assessmentGenMs}ms`
+      );
     }
 
     // =========================================================================
@@ -204,7 +221,7 @@ async function parse(messageText, context = {}) {
         intensifiers: markerResult.intensifiers,
         patternMarkers: markerResult.patternMarkers,
         contrastMarkers: markerResult.contrastMarkers,
-        negations: markerResult.negations
+        negations: markerResult.negations,
       },
       conceptual: primitiveResult.conceptual,
       vector: vectorResult.vector,
@@ -213,12 +230,11 @@ async function parse(messageText, context = {}) {
       meta: {
         version: VERSION,
         latencyMs: totalLatency,
-        componentLatency: componentLatency
-      }
+        componentLatency: componentLatency,
+      },
     };
 
     return parsedMessage;
-
   } catch (error) {
     // Handle errors gracefully - return partial ParsedMessage with error flag
     console.error('[CodeLayer] ❌ Parse error:', error.message);
@@ -267,7 +283,7 @@ function quickCheck(messageText) {
     /\bbecause\s+of\s+you\b/,
     /\b(she|he|they)\s+(said|told)\s+.*(you|your)\b/,
     /\bhow\s+could\s+you\b/,
-    /\bwhat\s+(is|were)\s+you\s+thinking\b/
+    /\bwhat\s+(is|were)\s+you\s+thinking\b/,
   ];
 
   return redFlags.some(pattern => pattern.test(text));
@@ -315,5 +331,5 @@ module.exports = {
   axiomChecker,
 
   // Re-export types
-  types: require('./types')
+  types: require('./types'),
 };
