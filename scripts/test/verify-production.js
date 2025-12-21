@@ -12,6 +12,7 @@
 
 const https = require('https');
 const http = require('http');
+const { execSync } = require('child_process');
 
 const PRODUCTION_URL = 'https://coparentliaizen.com';
 const TIMEOUT_MS = 30000;
@@ -81,8 +82,35 @@ async function runTests() {
   const results = [];
   let startTime = Date.now();
 
+  // Test 0: Check Vercel deployment status
+  log('0. Vercel Deployment Status:', 'bold');
+  try {
+    const vercelOutput = execSync('cd /Users/athenasees/Desktop/chat/chat-client-vite && vercel ls 2>&1', { encoding: 'utf8' });
+    const lines = vercelOutput.split('\n');
+    const deploymentLine = lines.find(line => line.includes('Production') && !line.includes('Age'));
+
+    if (deploymentLine) {
+      const isReady = deploymentLine.includes('● Ready');
+      const isError = deploymentLine.includes('● Error');
+      const match = deploymentLine.match(/(\d+[smhd])\s+/);
+      const age = match ? match[1] : 'unknown';
+
+      if (isReady) {
+        results.push(logResult('Latest deployment status', true, `Ready (${age} ago)`));
+      } else if (isError) {
+        results.push(logResult('Latest deployment status', false, `Error (${age} ago) - run: vercel --prod`));
+      } else {
+        results.push(logResult('Latest deployment status', false, 'Building or unknown'));
+      }
+    } else {
+      results.push(logResult('Latest deployment status', false, 'Could not parse Vercel output'));
+    }
+  } catch (err) {
+    log(`  ⚠ Could not check Vercel status: ${err.message}`, 'yellow');
+  }
+
   // Test 1: Site is reachable
-  log('1. Connectivity Tests:', 'bold');
+  log('\n1. Connectivity Tests:', 'bold');
   try {
     const response = await fetch(PRODUCTION_URL);
     results.push(logResult('Site reachable', response.status === 200, `HTTP ${response.status}`));
