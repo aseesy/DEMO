@@ -90,16 +90,11 @@ export function useSessionVerification({ setUsername, setIsAuthenticated }) {
       }
     };
 
-    const storedUsername = authStorage.getUsername();
-    const storedAuth = authStorage.isAuthenticated();
     const storedToken = authStorage.getToken();
 
-    if (storedUsername && storedAuth && storedToken) {
-      setUsername(storedUsername);
-      setIsAuthenticated(true);
-      setIsCheckingAuth(false);
-      verifySession();
-    } else if (storedUsername || storedAuth || storedToken) {
+    // Always verify with server if we have any stored credentials
+    // Do NOT set isAuthenticated until server confirms - prevents flash on stale tokens
+    if (storedToken) {
       verifySession();
     } else {
       setIsCheckingAuth(false);
