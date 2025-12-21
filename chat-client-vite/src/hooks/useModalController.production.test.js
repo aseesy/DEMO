@@ -76,15 +76,21 @@ describe('Modal Controller Production Stability', () => {
   });
 
   describe('Modal Controller Instantiation', () => {
-    it('should not throw when instantiated with minimal props', async () => {
+    it('should not throw when instantiated with required props', async () => {
       const { useModalController } = await import('./useModalController.js');
+      const { getRegisteredModals } = await import('./modalRegistry.js');
+      const { registerAllModalHooks } = await import('./modalHooks.registration.js');
       const { renderHook } = await import('@testing-library/react');
+
+      // Register modals first
+      registerAllModalHooks();
 
       expect(() => {
         renderHook(() =>
           useModalController({
             messages: [],
             setCurrentView: vi.fn(),
+            getRegistry: getRegisteredModals,
           })
         );
       }).not.toThrow();
@@ -93,6 +99,7 @@ describe('Modal Controller Production Stability', () => {
     it('should return modal objects with expected structure', async () => {
       // Register modals first (this normally happens in main.jsx)
       const { registerAllModalHooks } = await import('./modalHooks.registration.js');
+      const { getRegisteredModals } = await import('./modalRegistry.js');
       registerAllModalHooks();
 
       const { useModalController } = await import('./useModalController.js');
@@ -102,6 +109,7 @@ describe('Modal Controller Production Stability', () => {
         useModalController({
           messages: [],
           setCurrentView: vi.fn(),
+          getRegistry: getRegisteredModals,
         })
       );
 

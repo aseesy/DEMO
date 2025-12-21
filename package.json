@@ -19,7 +19,8 @@
     "test:frontend": "cd chat-client-vite && npm test -- --run --passWithNoTests || true",
     "test:coverage": "npm run test:coverage:backend && npm run test:coverage:frontend",
     "test:coverage:backend": "cd chat-server && npm run test:coverage -- --passWithNoTests || true",
-    "test:coverage:frontend": "cd chat-client-vite && npm run test:coverage -- --passWithNoTests || true"
+    "test:coverage:frontend": "cd chat-client-vite && npm run test:coverage -- --passWithNoTests || true",
+    "verify:production": "node scripts/test/verify-production.js"
   },
   "private": true,
   "engines": {
