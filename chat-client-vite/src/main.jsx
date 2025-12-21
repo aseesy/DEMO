@@ -7,6 +7,20 @@ import { initAnalytics } from './utils/analytics.js';
 import { setupGlobalErrorHandler } from './utils/errorHandler.jsx';
 import { trackPagePerformance } from './utils/analyticsEnhancements.js';
 import { runMigrations } from './utils/storageMigration.js';
+import { registerAllModalHooks } from './hooks/modalHooks.registration.js';
+
+// ============================================================================
+// COMPOSITION ROOT - Application Bootstrap
+// ============================================================================
+// This is where all application-level initialization happens.
+// Side-effects are explicitly called here, not hidden in module imports.
+// This makes the application's dependencies explicit and testable.
+// ============================================================================
+
+// Bootstrap: Register all modal hooks
+// This happens at application startup, not as a side-effect of importing useModalController
+// This allows tests to control when registration happens
+registerAllModalHooks();
 
 // Initialize error monitoring FIRST - before any other code runs
 // This ensures Safari service worker errors are caught early

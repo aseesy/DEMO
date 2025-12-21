@@ -1,11 +1,7 @@
 import { getRegisteredModals } from './modalRegistry.js';
 import { useSimpleModals } from './useSimpleModals.js';
-import { registerAllModalHooks } from './modalHooks.registration.js';
-
-// Explicit registration to avoid temporal coupling
-// This ensures plugins are registered before controller uses them
-// No reliance on import order or side-effects
-registerAllModalHooks();
+// NOTE: Modal registration is handled at the Composition Root (main.jsx)
+// This avoids side-effects at module level, making unit testing easier
 
 /**
  * useModalController - Composition hook for all modals
