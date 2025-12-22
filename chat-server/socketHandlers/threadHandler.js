@@ -122,17 +122,23 @@ function registerThreadHandlers(socket, io, services, activeUsers) {
       }
 
       const result = await threadManager.analyzeConversationHistory(roomId, limit || 100);
-      
+
       // If threads were created, refresh the threads list for all room members
       if (result.createdThreads && result.createdThreads.length > 0) {
         const threads = await threadManager.getThreadsForRoom(roomId);
         io.to(roomId).emit('threads_updated', threads);
       }
 
-      socket.emit('conversation_analysis', { 
-        roomId, 
-        suggestions: result.suggestions || result,
+      socket.emit('conversation_analysis', {
+        roomId,
+        suggestions: result.suggestions || [],
         createdThreads: result.createdThreads || [],
+      });
+
+      // Also emit completion event for consistency
+      socket.emit('conversation_analysis_complete', {
+        roomId,
+        createdThreadsCount: result.createdThreads?.length || 0,
       });
     } catch (error) {
       console.error('Error analyzing conversation history:', error);
@@ -142,4 +148,3 @@ function registerThreadHandlers(socket, io, services, activeUsers) {
 }
 
 module.exports = { registerThreadHandlers };
-

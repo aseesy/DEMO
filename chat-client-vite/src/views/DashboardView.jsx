@@ -74,9 +74,7 @@ export function DashboardView({
   return (
     <div className="space-y-6 md:space-y-8">
       {/* Co-parent connection prompt */}
-      {!hasCoParentConnected && (
-        <InvitePromptBanner onInvite={() => setShowInviteModal(true)} />
-      )}
+      {!hasCoParentConnected && <InvitePromptBanner onInvite={() => setShowInviteModal(true)} />}
 
       {/* Dashboard Grid: Updates and Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
@@ -394,7 +392,13 @@ function TaskList({
 /**
  * Threads section component
  */
-function ThreadsSection({ threads, setSelectedThreadId, setCurrentView, analyzeConversation, isLoadingThreads }) {
+function ThreadsSection({
+  threads,
+  setSelectedThreadId,
+  setCurrentView,
+  analyzeConversation,
+  isLoadingThreads,
+}) {
   return (
     <div className="bg-white rounded-2xl border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow overflow-hidden mt-6 md:mt-8">
       <div className="p-6 sm:p-8">
@@ -453,28 +457,29 @@ function EmptyThreadsState({ onAnalyze, isLoading }) {
           d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
         />
       </svg>
-      <p className="text-gray-600 text-base mb-4">
-        No conversation threads yet. Click below to automatically organize your conversation into topics.
-      </p>
-      {onAnalyze && (
-        <button
-          onClick={onAnalyze}
-          disabled={isLoading}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-teal-medium text-white rounded-lg hover:bg-teal-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
-        >
-          {isLoading ? (
-            <>
-              <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-              Analyzing conversation...
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+      {isLoading ? (
+        <>
+          <p className="text-gray-600 text-base mb-4">
+            Automatically analyzing your conversation history to organize it into threads...
+          </p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-teal-light text-teal-dark rounded-lg text-sm font-semibold">
+            <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-teal-dark border-t-transparent" />
+            Analyzing conversation...
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-gray-600 text-base mb-4">
+            No conversation threads yet. Analysis runs automatically, or you can trigger it manually
+            below.
+          </p>
+          {onAnalyze && (
+            <button
+              onClick={onAnalyze}
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-teal-medium text-white rounded-lg hover:bg-teal-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -483,9 +488,9 @@ function EmptyThreadsState({ onAnalyze, isLoading }) {
                 />
               </svg>
               Analyze Conversation History
-            </>
+            </button>
           )}
-        </button>
+        </>
       )}
     </div>
   );

@@ -1,4 +1,3 @@
-/* global window, fetch */
 import React from 'react';
 import { io } from 'socket.io-client';
 import { API_BASE_URL } from '../config.js';
@@ -28,7 +27,7 @@ function getSocketUrl() {
 
 /**
  * useThreads - Hook to load and manage threads for the dashboard
- * 
+ *
  * @param {string} username - Current user's username
  * @param {boolean} isAuthenticated - Whether user is authenticated
  * @returns {Object} Thread state and handlers
@@ -43,9 +42,12 @@ export function useThreads(username, isAuthenticated) {
   const socketRef = React.useRef(null);
   const usernameRef = React.useRef(username);
   const loadTimeoutRef = React.useRef(null);
+  const hasAnalyzedRef = React.useRef(false); // Track if we've already analyzed this session
 
   React.useEffect(() => {
     usernameRef.current = username;
+    // Reset analysis flag when username changes (different user/room)
+    hasAnalyzedRef.current = false;
   }, [username]);
 
   // Fetch user's room ID
@@ -57,7 +59,7 @@ export function useThreads(username, isAuthenticated) {
 
     let cancelled = false;
 
-    async function fetchRoom() {
+    async function getRoom() {
       try {
         const response = await fetch(`${API_BASE_URL}/api/room/${encodeURIComponent(username)}`);
         if (!response.ok) {
@@ -86,7 +88,7 @@ export function useThreads(username, isAuthenticated) {
       }
     }
 
-    fetchRoom();
+    getRoom();
 
     return () => {
       cancelled = true;
@@ -114,7 +116,7 @@ export function useThreads(username, isAuthenticated) {
       console.log('[useThreads] Socket connected for room:', roomId);
       // Join the room first
       socket.emit('join', { username: usernameRef.current });
-      
+
       // Set a timeout in case 'joined' event doesn't fire
       loadTimeoutRef.current = setTimeout(() => {
         console.warn('[useThreads] Timeout waiting for join, requesting threads directly');
@@ -144,14 +146,33 @@ export function useThreads(username, isAuthenticated) {
 
     socket.on('threads_list', threadList => {
       console.log('[useThreads] Received threads:', threadList?.length || 0);
-      setThreads(Array.isArray(threadList) ? threadList : []);
+      const threadArray = Array.isArray(threadList) ? threadList : [];
+      setThreads(threadArray);
       setIsLoadingThreads(false);
       setError(null);
+
+      // Automatically analyze conversation if no threads exist and we haven't analyzed yet
+      if (threadArray.length === 0 && !hasAnalyzedRef.current && socket.connected && roomId) {
+        console.log(
+          '[useThreads] No threads found, automatically analyzing conversation history...'
+        );
+        hasAnalyzedRef.current = true;
+        // Small delay to ensure socket is fully ready
+        setTimeout(() => {
+          socket.emit('analyze_conversation_history', { roomId, limit: 100 });
+        }, 1000);
+      }
     });
 
     socket.on('threads_updated', threadList => {
       console.log('[useThreads] Threads updated:', threadList?.length || 0);
-      setThreads(Array.isArray(threadList) ? threadList : []);
+      const threadArray = Array.isArray(threadList) ? threadList : [];
+      setThreads(threadArray);
+
+      // If threads were created, mark as analyzed
+      if (threadArray.length > 0) {
+        hasAnalyzedRef.current = true;
+      }
     });
 
     socket.on('error', err => {
@@ -183,14 +204,11 @@ export function useThreads(username, isAuthenticated) {
     };
   }, [username, isAuthenticated, roomId]);
 
-  const getThreadMessages = React.useCallback(
-    threadId => {
-      if (socketRef.current?.connected && threadId) {
-        socketRef.current.emit('get_thread_messages', { threadId });
-      }
-    },
-    []
-  );
+  const getThreadMessages = React.useCallback(threadId => {
+    if (socketRef.current?.connected && threadId) {
+      socketRef.current.emit('get_thread_messages', { threadId });
+    }
+  }, []);
 
   const analyzeConversation = React.useCallback(() => {
     if (socketRef.current?.connected && roomId) {
@@ -211,7 +229,7 @@ export function useThreads(username, isAuthenticated) {
           suggestions: suggestions?.length || 0,
           createdThreads: createdThreads?.length || 0,
         });
-        
+
         // If threads were created, they will be updated via threads_updated event
         // But also reload to ensure we have the latest
         if (createdThreads && createdThreads.length > 0) {
@@ -220,15 +238,34 @@ export function useThreads(username, isAuthenticated) {
           setTimeout(() => {
             socket.emit('get_threads', { roomId });
           }, 500);
+        } else {
+          // Mark as analyzed even if no threads were created (to avoid repeated attempts)
+          hasAnalyzedRef.current = true;
         }
       }
       setIsLoadingThreads(false);
     };
 
+    const handleAnalysisComplete = ({ roomId: analyzedRoomId, createdThreadsCount }) => {
+      if (analyzedRoomId === roomId) {
+        console.log(
+          '[useThreads] Conversation analysis complete, created threads:',
+          createdThreadsCount
+        );
+        // Request updated threads list
+        setTimeout(() => {
+          socket.emit('get_threads', { roomId });
+        }, 500);
+        setIsLoadingThreads(false);
+      }
+    };
+
     socket.on('conversation_analysis', handleAnalysis);
+    socket.on('conversation_analysis_complete', handleAnalysisComplete);
 
     return () => {
       socket.off('conversation_analysis', handleAnalysis);
+      socket.off('conversation_analysis_complete', handleAnalysisComplete);
     };
   }, [roomId]);
 
@@ -243,4 +280,3 @@ export function useThreads(username, isAuthenticated) {
     roomId,
   };
 }
-
