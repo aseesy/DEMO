@@ -74,7 +74,11 @@ function calculateAge(birthdate) {
  * @returns {Object} Child context
  */
 function buildChildContext(contacts) {
-  const children = contacts.filter(c => c.relationship === 'child');
+  // Check multiple possible relationship values for children
+  const children = contacts.filter(c => {
+    const rel = (c.relationship || '').toLowerCase();
+    return rel === 'child' || rel === 'my child';
+  });
 
   if (children.length === 0) {
     return {
@@ -86,7 +90,7 @@ function buildChildContext(contacts) {
     };
   }
 
-  const childNames = children.map(c => c.name).filter(Boolean);
+  const childNames = children.map(c => c.contact_name || c.name).filter(Boolean);
   const childAges = children
     .map(c => c.child_age || calculateAge(c.child_birthdate))
     .filter(age => age !== null);
@@ -148,8 +152,11 @@ function normalizeCustodyArrangement(arrangement) {
  * @returns {Object} Co-parent context
  */
 function buildCoparentRelationshipContext(contacts) {
-  // Find the co-parent contact
-  const coparent = contacts.find(c => c.relationship === 'coparent');
+  // Find the co-parent contact - check multiple possible relationship values
+  const coparent = contacts.find(c => {
+    const rel = (c.relationship || '').toLowerCase();
+    return rel === 'coparent' || rel === 'co-parent' || rel === 'my co-parent';
+  });
 
   if (!coparent) {
     return {
@@ -284,14 +291,18 @@ function extractCommunicationChallenges(coparent) {
  * @returns {Object} Partner context
  */
 function buildPartnerContext(contacts) {
-  // Look for partner relationships
-  const senderPartner = contacts.find(
-    c => c.relationship === 'partner' || c.relationship === 'spouse'
-  );
+  // Look for partner relationships - check multiple possible values
+  const senderPartner = contacts.find(c => {
+    const rel = (c.relationship || '').toLowerCase();
+    return rel === 'partner' || rel === 'spouse' || rel === 'my partner';
+  });
 
   // Co-parent's partner info might be in notes or additional contacts
   // For now, check if "new partner" is mentioned as a friction area
-  const coparent = contacts.find(c => c.relationship === 'coparent');
+  const coparent = contacts.find(c => {
+    const rel = (c.relationship || '').toLowerCase();
+    return rel === 'coparent' || rel === 'co-parent' || rel === 'my co-parent';
+  });
   const receiverHasPartner =
     coparent?.friction_situations?.toLowerCase().includes('partner') ||
     coparent?.difficult_aspects?.toLowerCase().includes('partner');
