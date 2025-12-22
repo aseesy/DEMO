@@ -66,7 +66,7 @@ export function MessagesContainer({
   return (
     <div
       ref={messagesContainerRef}
-      className="px-3 sm:px-4 md:px-6 pt-3 pb-3 space-y-2 bg-linear-to-b from-white to-gray-50"
+      className="px-2 sm:px-3 md:px-4 pt-2 pb-2 space-y-1 bg-linear-to-b from-white to-gray-50"
       style={{
         fontFamily: "'Inter', sans-serif",
         opacity: isInitialLoad ? 0 : 1,
@@ -96,7 +96,7 @@ export function MessagesContainer({
       {messageGroups.map((group, groupIndex) => (
         <div key={groupIndex}>
           {/* Date separator */}
-          <div className="flex items-center gap-3 my-3">
+          <div className="flex items-center gap-2 my-2">
             <div className="flex-1 h-px bg-gray-200" />
             <span className="text-xs font-medium text-gray-500 px-3 py-1 bg-gray-100 rounded-full">
               {group.date}
@@ -117,14 +117,14 @@ export function MessagesContainer({
               <div
                 key={msg.id || msgIndex}
                 id={`message-${msg.id}`}
-                className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2 ${
+                className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 ${
                   isHighlighted ? 'animate-pulse bg-yellow-100 rounded-lg p-2 -mx-2' : ''
                 }`}
               >
                 <div className={`max-w-[85%] sm:max-w-[75%] ${isOwn ? 'order-2' : 'order-1'}`}>
-                  {/* Message bubble */}
+                  {/* Message bubble - only text inside */}
                   <div
-                    className={`px-4 py-2.5 rounded-2xl ${
+                    className={`px-3 py-2 rounded-2xl ${
                       isAI
                         ? 'bg-purple-50 border border-purple-200 text-purple-900'
                         : isOwn
@@ -137,30 +137,34 @@ export function MessagesContainer({
                     <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">
                       {msg.text || msg.message}
                     </p>
-                    <div
-                      className={`text-xs mt-1 flex items-center gap-1 ${isOwn ? 'text-teal-200' : 'text-gray-400'}`}
-                    >
-                      {new Date(msg.created_at || msg.timestamp).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })}
-                      {/* Show sending/sent indicator for own messages */}
-                      {isOwn && isSending && (
-                        <span className="ml-1" title="Sending...">
-                          ○
-                        </span>
-                      )}
-                      {isOwn && !isSending && !isAI && (
-                        <span className="ml-1" title="Sent">
-                          ✓
-                        </span>
-                      )}
-                    </div>
+                  </div>
+
+                  {/* Timestamp and indicators - outside bubble */}
+                  <div
+                    className={`text-xs mt-0.5 flex items-center gap-1 ${isOwn ? 'justify-end' : 'justify-start'} ${
+                      isOwn ? 'text-gray-400' : 'text-gray-400'
+                    }`}
+                  >
+                    {new Date(msg.created_at || msg.timestamp).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                    {/* Show sending/sent indicator for own messages */}
+                    {isOwn && isSending && (
+                      <span className="ml-1" title="Sending...">
+                        ○
+                      </span>
+                    )}
+                    {isOwn && !isSending && !isAI && (
+                      <span className="ml-1" title="Sent">
+                        ✓
+                      </span>
+                    )}
                   </div>
 
                   {/* Intervention feedback buttons */}
                   {msg.intervention_id && !feedbackGiven.has(msg.intervention_id) && (
-                    <div className="flex gap-2 mt-2 justify-end">
+                    <div className="flex gap-2 mt-1 justify-end">
                       <button
                         onClick={() => sendInterventionFeedback(msg.intervention_id, 'helpful')}
                         className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200"
@@ -178,7 +182,7 @@ export function MessagesContainer({
 
                   {/* Message actions */}
                   {!isAI && (
-                    <div className="flex gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => setFlaggingMessage(msg)}
                         className="text-xs text-gray-400 hover:text-red-500"
@@ -209,22 +213,22 @@ export function MessagesContainer({
         draftCoaching.observerData &&
         !draftCoaching.shouldSend &&
         draftCoaching.originalText && (
-          <div className="flex justify-end mb-2">
+          <div className="flex justify-end mb-1">
             <div className="max-w-[85%] sm:max-w-[75%]">
               {/* Blocked message bubble */}
-              <div className="px-4 py-2.5 rounded-2xl bg-gray-100 border-2 border-orange-300 text-gray-600 relative">
-                <div className="absolute -top-2 left-4 px-2 py-0.5 bg-orange-100 border border-orange-300 rounded text-xs font-medium text-orange-700">
+              <div className="px-3 py-2 rounded-2xl bg-gray-100 border-2 border-orange-300 text-gray-600 relative">
+                <div className="absolute -top-2 left-3 px-2 py-0.5 bg-orange-100 border border-orange-300 rounded text-xs font-medium text-orange-700">
                   Not sent
                 </div>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word mt-2">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">
                   {draftCoaching.originalText}
                 </p>
-                <div className="text-xs mt-1 text-gray-400">
-                  {new Date().toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })}
-                </div>
+              </div>
+              <div className="text-xs mt-0.5 text-gray-400 text-right">
+                {new Date().toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })}
               </div>
             </div>
           </div>
@@ -232,7 +236,7 @@ export function MessagesContainer({
 
       {/* Observer Card - Inline in messages when intervention occurs */}
       {draftCoaching && draftCoaching.observerData && !draftCoaching.shouldSend && (
-        <div className="mb-2">
+        <div className="mb-1">
           <ObserverCard
             observerData={draftCoaching.observerData}
             originalText={draftCoaching.originalText || inputMessage}
@@ -251,7 +255,7 @@ export function MessagesContainer({
 
       {/* Loading state when analyzing */}
       {draftCoaching && draftCoaching.analyzing && (
-        <div className="mb-2">
+        <div className="mb-1">
           <div className="flex items-center gap-3 text-sm text-gray-600">
             <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-teal-medium" />
             <span>Analyzing message...</span>
