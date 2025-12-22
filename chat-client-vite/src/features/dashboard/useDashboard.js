@@ -95,11 +95,8 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
 
   const taskState = React.useMemo(
     () => ({
-      // Abstracted task collection (hides array implementation)
-      tasks: taskCollection,
-      // Expose array for backward compatibility (DashboardView still uses .length, .map)
-      // TODO: Refactor DashboardView to use taskCollection methods
-      tasksArray: taskCollection.getAll(),
+      // Return array for DashboardView compatibility (uses .length, .map, filterTasksForDashboard)
+      tasks: taskCollection.getAll(),
       isLoadingTasks,
       taskSearch,
       taskFilter,

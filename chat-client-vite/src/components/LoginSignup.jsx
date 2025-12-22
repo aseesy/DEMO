@@ -59,11 +59,12 @@ export function LoginSignup() {
     autoRedirect: true,
   });
 
-  // Handle post-auth redirect
+  // Handle post-auth redirect - immediate redirect for already-authenticated users
   useAuthRedirect({
     isAuthenticated,
     isNewSignup,
     clearInviteCode: true,
+    delay: isNewSignup ? 100 : 0, // Immediate redirect if already logged in
   });
 
   // Clear form when mode changes
@@ -107,7 +108,7 @@ export function LoginSignup() {
         }}
       >
         <div className="text-center">
-          <div className="w-10 h-10 border-3 border-teal-medium border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-10 h-10 border-2 border-teal-medium border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-teal-medium font-medium">
             {isNewSignup ? 'Setting up your account...' : 'Signing in...'}
           </p>
