@@ -1,5 +1,5 @@
 /**
  * Backward compatibility shim for communicationStats.js
- * Re-exports from LiaiZen namespace
+ * Re-exports from core namespace
  */
-module.exports = require('./src/liaizen').communicationStats;
+module.exports = require('./src/core').communicationStats;

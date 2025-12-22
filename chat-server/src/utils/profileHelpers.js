@@ -50,7 +50,7 @@ const { validateProfileFields } = require('./validators');
 const {
   buildProfileContextForAI,
   buildDualProfileContext,
-} = require('../liaizen/context/profileContext');
+} = require('../core/context/profileContext');
 
 // Re-export everything for backward compatibility
 module.exports = {

@@ -1,5 +1,5 @@
 /**
  * Backward compatibility shim for contactIntelligence.js
- * Re-exports from LiaiZen namespace
+ * Re-exports from core namespace
  */
-module.exports = require('./src/liaizen').contactIntelligence;
+module.exports = require('./src/core').contactIntelligence;

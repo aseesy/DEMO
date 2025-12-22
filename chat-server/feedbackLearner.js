@@ -1,5 +1,5 @@
 /**
  * Backward compatibility shim for feedbackLearner.js
- * Re-exports from LiaiZen namespace
+ * Re-exports from core namespace
  */
-module.exports = require('./src/liaizen').feedbackLearner;
+module.exports = require('./src/core').feedbackLearner;

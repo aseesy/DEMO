@@ -309,7 +309,7 @@ async function generateEmbedding(text) {
   }
 
   try {
-    const openaiClient = require('../liaizen/core/client');
+    const openaiClient = require('../core/core/client');
     const client = openaiClient.getClient();
 
     if (!client) {

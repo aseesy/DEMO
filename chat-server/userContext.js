@@ -1,5 +1,5 @@
 /**
  * Backward compatibility shim for userContext.js
- * Re-exports from LiaiZen namespace
+ * Re-exports from core namespace
  */
-module.exports = require('./src/liaizen').userContext;
+module.exports = require('./src/core').userContext;

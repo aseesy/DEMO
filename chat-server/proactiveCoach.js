@@ -1,5 +1,5 @@
 /**
  * Backward compatibility shim for proactiveCoach.js
- * Re-exports from LiaiZen namespace
+ * Re-exports from core namespace
  */
-module.exports = require('./src/liaizen').proactiveCoach;
+module.exports = require('./src/core').proactiveCoach;

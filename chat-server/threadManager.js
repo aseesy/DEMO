@@ -605,8 +605,8 @@ async function generateEmbeddingForText(text) {
   }
 
   try {
-    // Use the OpenAI client from liaizen/core/client
-    const openaiClient = require('./src/liaizen/core/client');
+    // Use the OpenAI client from core/core/client
+    const openaiClient = require('./src/core/core/client');
     const client = openaiClient.getClient();
 
     if (!client) {

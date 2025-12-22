@@ -10,7 +10,7 @@
  * Usage: npm run ai:test
  */
 
-const { mediator } = require('../src/liaizen');
+const { mediator } = require('../src/core');
 
 // Test cases: message -> expected behavior
 const TEST_CASES = [
