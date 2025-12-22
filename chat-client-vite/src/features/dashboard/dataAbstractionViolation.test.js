@@ -46,7 +46,10 @@ describe('Data Abstraction Violation Detection', () => {
     });
 
     it('detects if useDashboard reaches inside modal objects', () => {
-      const useDashboardContent = fs.readFileSync(path.join(hooksDir, 'useDashboard.js'), 'utf-8');
+      const useDashboardContent = fs.readFileSync(
+        path.join(dashboardDir, 'useDashboard.js'),
+        'utf-8'
+      );
 
       // Violation: Reaching inside modal objects
       // Pattern: welcomeModal.setShow, profileTaskModal.setShow, etc.
@@ -62,7 +65,10 @@ describe('Data Abstraction Violation Detection', () => {
     });
 
     it('detects if useDashboard knows about task object structure', () => {
-      const useDashboardContent = fs.readFileSync(path.join(hooksDir, 'useDashboard.js'), 'utf-8');
+      const useDashboardContent = fs.readFileSync(
+        path.join(dashboardDir, 'useDashboard.js'),
+        'utf-8'
+      );
 
       // Violation: Direct access to task properties
       // Pattern: task.id, task.title, task.status, etc.
@@ -76,7 +82,10 @@ describe('Data Abstraction Violation Detection', () => {
     });
 
     it('detects if useDashboard exposes raw data structures', () => {
-      const useDashboardContent = fs.readFileSync(path.join(hooksDir, 'useDashboard.js'), 'utf-8');
+      const useDashboardContent = fs.readFileSync(
+        path.join(dashboardDir, 'useDashboard.js'),
+        'utf-8'
+      );
 
       // Violation: Exposing raw arrays, objects directly
       // Should expose through abstracted interface
@@ -198,7 +207,10 @@ describe('Data Abstraction Violation Detection', () => {
 
   describe('General Violation Patterns', () => {
     it('detects nested property access patterns', () => {
-      const useDashboardContent = fs.readFileSync(path.join(hooksDir, 'useDashboard.js'), 'utf-8');
+      const useDashboardContent = fs.readFileSync(
+        path.join(dashboardDir, 'useDashboard.js'),
+        'utf-8'
+      );
 
       // Violation: Deep nested property access
       // Pattern: obj.prop.subprop.method()
@@ -211,7 +223,10 @@ describe('Data Abstraction Violation Detection', () => {
     });
 
     it('detects direct state manipulation', () => {
-      const useDashboardContent = fs.readFileSync(path.join(hooksDir, 'useDashboard.js'), 'utf-8');
+      const useDashboardContent = fs.readFileSync(
+        path.join(dashboardDir, 'useDashboard.js'),
+        'utf-8'
+      );
 
       // Violation: Direct state assignment
       // Pattern: obj.prop = value (instead of using setter)
