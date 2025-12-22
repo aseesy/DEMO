@@ -5,6 +5,35 @@ import { STORAGE_KEYS } from './utils/storageKeys.js';
 // Thin wrappers around fetch so we have a single place to adjust
 // base URLs, credentials, and common headers.
 
+// Auth failure event for global handling
+const AUTH_FAILURE_EVENT = 'liaizen:auth-failure';
+
+/**
+ * Dispatch auth failure event for global handling
+ * Components can listen to this to trigger re-login
+ */
+function dispatchAuthFailure(endpoint) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(AUTH_FAILURE_EVENT, {
+        detail: { endpoint, timestamp: Date.now() },
+      })
+    );
+  }
+}
+
+/**
+ * Subscribe to auth failure events
+ * @param {Function} callback - Called when auth fails
+ * @returns {Function} Unsubscribe function
+ */
+export function onAuthFailure(callback) {
+  if (typeof window === 'undefined') return () => {};
+  const handler = e => callback(e.detail);
+  window.addEventListener(AUTH_FAILURE_EVENT, handler);
+  return () => window.removeEventListener(AUTH_FAILURE_EVENT, handler);
+}
+
 /**
  * Get authentication token from localStorage
  * @returns {string|null} The auth token or null if not available
@@ -52,6 +81,10 @@ export async function apiGet(path, options = {}) {
     // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
       trackAPIError(endpoint, response.status, response.statusText);
+      // Dispatch auth failure for 401 errors (except for auth endpoints)
+      if (response.status === 401 && !endpoint.includes('/api/auth/')) {
+        dispatchAuthFailure(endpoint);
+      }
     }
 
     return response;
@@ -90,6 +123,9 @@ export async function apiPost(path, body, options = {}) {
     // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
       trackAPIError(endpoint, response.status, response.statusText);
+      if (response.status === 401 && !endpoint.includes('/api/auth/')) {
+        dispatchAuthFailure(endpoint);
+      }
     }
 
     return response;
@@ -128,6 +164,9 @@ export async function apiPut(path, body, options = {}) {
     // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
       trackAPIError(endpoint, response.status, response.statusText);
+      if (response.status === 401 && !endpoint.includes('/api/auth/')) {
+        dispatchAuthFailure(endpoint);
+      }
     }
 
     return response;
@@ -164,6 +203,9 @@ export async function apiDelete(path, params = {}) {
     // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
       trackAPIError(endpoint, response.status, response.statusText);
+      if (response.status === 401 && !endpoint.includes('/api/auth/')) {
+        dispatchAuthFailure(endpoint);
+      }
     }
 
     return response;

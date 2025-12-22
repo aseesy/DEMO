@@ -1,5 +1,5 @@
 import React from 'react';
-import { apiGet, apiPost } from '../apiClient.js';
+import { apiGet, apiPost, onAuthFailure } from '../apiClient.js';
 import { getErrorMessage, logError, isRetryableError } from '../utils/errorHandler.jsx';
 import { setUserProperties, setUserID } from '../utils/analyticsEnhancements.js';
 
@@ -355,6 +355,18 @@ export function AuthProvider({ children }) {
     const interval = setInterval(checkExpiration, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [token, verifySession]);
+
+  /**
+   * Listen for auth failures from API calls (401 errors)
+   * When the token is invalid/expired, clear auth state to trigger re-login
+   */
+  React.useEffect(() => {
+    return onAuthFailure(detail => {
+      console.log('Auth failure detected on endpoint:', detail.endpoint);
+      // Clear invalid auth state - this will trigger redirect to login
+      clearAuthState();
+    });
+  }, [clearAuthState]);
 
   const value = {
     // State
