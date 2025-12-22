@@ -20,20 +20,54 @@ async function ensureContactsForRoomMembers(roomId) {
       for (const other of members) {
         if (member.user_id === other.user_id) continue;
 
-        const existing = await dbSafe.safeSelect(
-          'contacts',
-          { user_id: member.user_id, linked_user_id: other.user_id },
-          { limit: 1 }
-        );
+        // Check if linked_user_id column exists before using it
+        let existing;
+        try {
+          existing = await dbSafe.safeSelect(
+            'contacts',
+            { user_id: member.user_id, linked_user_id: other.user_id },
+            { limit: 1 }
+          );
+        } catch (err) {
+          // Fallback if linked_user_id column doesn't exist yet
+          if (err.message && err.message.includes('linked_user_id')) {
+            existing = await dbSafe.safeSelect(
+              'contacts',
+              {
+                user_id: member.user_id,
+                contact_name: other.first_name || other.display_name || other.username,
+                relationship: 'co-parent',
+              },
+              { limit: 1 }
+            );
+          } else {
+            throw err;
+          }
+        }
+
         if (existing.length === 0) {
-          await dbSafe.safeInsert('contacts', {
+          const contactData = {
             user_id: member.user_id,
             contact_name: other.first_name || other.display_name || other.username,
             contact_email: other.email,
             relationship: 'co-parent',
-            linked_user_id: other.user_id,
             created_at: new Date().toISOString(),
-          });
+          };
+
+          // Only add linked_user_id if column exists
+          try {
+            // Try to insert with linked_user_id
+            contactData.linked_user_id = other.user_id;
+            await dbSafe.safeInsert('contacts', contactData);
+          } catch (err) {
+            // If linked_user_id column doesn't exist, insert without it
+            if (err.message && err.message.includes('linked_user_id')) {
+              delete contactData.linked_user_id;
+              await dbSafe.safeInsert('contacts', contactData);
+            } else {
+              throw err;
+            }
+          }
         }
       }
     }

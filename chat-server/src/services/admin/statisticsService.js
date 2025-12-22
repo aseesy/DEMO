@@ -9,11 +9,15 @@
  */
 
 const { BaseService } = require('../BaseService');
+const { PostgresGenericRepository } = require('../../repositories');
 
 class StatisticsService extends BaseService {
   constructor() {
     // No primary table - this service queries multiple tables
-    super(null);
+    // Use a generic repository with 'users' as the base table for query access
+    super('users');
+    // Set repository explicitly to enable query methods
+    this.setRepository(new PostgresGenericRepository('users'));
   }
 
   /**
