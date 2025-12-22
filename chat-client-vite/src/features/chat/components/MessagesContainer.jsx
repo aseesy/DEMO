@@ -98,7 +98,7 @@ export function MessagesContainer({
           {/* Date separator */}
           <div className="flex items-center gap-2 my-2">
             <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs font-medium text-gray-500 px-3 py-1 bg-gray-100 rounded-full">
+            <span className="text-xs font-medium text-gray-700 px-3 py-1 bg-gray-50 border border-gray-200 rounded-full">
               {group.date}
             </span>
             <div className="flex-1 h-px bg-gray-200" />
@@ -126,7 +126,7 @@ export function MessagesContainer({
                   <div
                     className={`px-3 py-2 rounded-2xl ${
                       isAI
-                        ? 'bg-purple-50 border border-purple-200 text-purple-900'
+                        ? 'bg-teal-lightest border border-teal-light text-teal-dark'
                         : isOwn
                           ? isSending
                             ? 'bg-teal-500 text-white' // Slightly lighter while sending
@@ -142,7 +142,7 @@ export function MessagesContainer({
                   {/* Timestamp and indicators - outside bubble */}
                   <div
                     className={`text-xs mt-0.5 flex items-center gap-1 ${isOwn ? 'justify-end' : 'justify-start'} ${
-                      isOwn ? 'text-gray-400' : 'text-gray-400'
+                      isOwn ? 'text-gray-600' : 'text-gray-600'
                     }`}
                   >
                     {new Date(msg.created_at || msg.timestamp).toLocaleTimeString('en-US', {
@@ -224,7 +224,7 @@ export function MessagesContainer({
                   {draftCoaching.originalText}
                 </p>
               </div>
-              <div className="text-xs mt-0.5 text-gray-400 text-right">
+              <div className="text-xs mt-0.5 text-gray-600 text-right">
                 {new Date().toLocaleTimeString('en-US', {
                   hour: 'numeric',
                   minute: '2-digit',
