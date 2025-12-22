@@ -55,6 +55,7 @@ describe('Modal Controller Production Stability', () => {
   describe('File Existence Verification', () => {
     const hooksDir = path.resolve(__dirname);
 
+    // Files that must exist in hooks/ directory
     const requiredFiles = [
       'useModalController.js',
       'modalRegistry.js',
@@ -62,8 +63,8 @@ describe('Modal Controller Production Stability', () => {
       'modalCollisionDetector.js',
       'dependencyValidator.js',
       'modalHooks.registration.js',
-      'useTaskFormModal.js',
-      'useContactSuggestionModal.js',
+      // 'useTaskFormModal.js' - moved to features/tasks/
+      // 'useContactSuggestionModal.js' - moved to features/contacts/
       'useMessageFlaggingModal.js',
     ];
 
@@ -138,10 +139,14 @@ describe('Modal Controller Production Stability', () => {
       const { validateDependencies } = await import('./dependencyValidator.js');
 
       expect(() => {
-        validateDependencies(['messages', 'setCurrentView'], {
-          messages: [],
-          setCurrentView: () => {},
-        }, 'testModal');
+        validateDependencies(
+          ['messages', 'setCurrentView'],
+          {
+            messages: [],
+            setCurrentView: () => {},
+          },
+          'testModal'
+        );
       }).not.toThrow();
     });
   });

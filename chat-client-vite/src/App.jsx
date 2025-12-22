@@ -3,8 +3,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ChatRoom from './ChatRoom.jsx';
 import { LoginSignup } from './components/LoginSignup.jsx';
-import { AcceptInvitationPage } from './components/AcceptInvitationPage.jsx';
-import { InviteCoParentPage } from './components/InviteCoParentPage.jsx';
+import { AcceptInvitationPage, InviteCoParentPage } from './features/invitations';
 import { GoogleOAuthCallback } from './components/GoogleOAuthCallback.jsx';
 import { UIShowcase } from './components/UIShowcase.jsx'; // Design system showcase
 import { PrivacyPage } from './components/PrivacyPage.jsx';

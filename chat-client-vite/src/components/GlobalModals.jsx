@@ -1,9 +1,9 @@
 import React from 'react';
-import { TaskFormModal } from './modals/TaskFormModal.jsx';
+import { TaskFormModal } from '../features/tasks';
 import { WelcomeModal } from './modals/WelcomeModal.jsx';
 import { ProfileTaskModal } from './modals/ProfileTaskModal.jsx';
-import { ContactSuggestionModal } from './modals/ContactSuggestionModal.jsx';
-import { InviteTaskModal } from './InviteTaskModal.jsx';
+import { ContactSuggestionModal } from '../features/contacts';
+import { InviteTaskModal } from '../features/invitations';
 
 /**
  * GlobalModals - Consolidates all application-level modals

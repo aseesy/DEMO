@@ -2,7 +2,7 @@ import React from 'react';
 import './index.css';
 import { useAuth } from './hooks/useAuth.js';
 import { useDashboard } from './features/dashboard';
-import { useContacts } from './hooks/useContacts.js';
+import { useContacts } from './features/contacts';
 import { useNotifications } from './hooks/useNotifications.js';
 import { useInAppNotifications } from './hooks/useInAppNotifications.js';
 import { useToast } from './hooks/useToast.js';
@@ -10,7 +10,7 @@ import { useInviteManagement } from './hooks/useInviteManagement.js';
 import { useModalControllerDefault } from './hooks/useModalController.js';
 import { ChatProvider, useChatContext } from './context/ChatContext.jsx';
 import { ToastContainer } from './components/ui/Toast/Toast.jsx';
-import { ContactsPanel } from './components/ContactsPanel.jsx';
+import { ContactsPanel } from './features/contacts';
 import { ProfilePanel } from './components/ProfilePanel.jsx';
 import { Navigation } from './components/Navigation.jsx';
 import { LandingPage } from './components/LandingPage.jsx';
@@ -349,30 +349,32 @@ function ChatRoomContent({
               <ChatView
                 username={username}
                 isAuthenticated={isAuthenticated}
-                currentView={currentView}
-                onNewMessage={handleNewMessage}
-                inviteLink={inviteLink}
-                setInviteLink={setInviteLink}
-                inviteCode={inviteCode}
-                setInviteCode={setInviteCode}
-                inviteCopied={inviteCopied}
-                setInviteCopied={setInviteCopied}
-                inviteError={inviteError}
-                setInviteError={setInviteError}
-                isLoadingInvite={isLoadingInvite}
-                handleLoadInvite={handleLoadInvite}
-                handleCopyInvite={handleCopyInvite}
-                hasCoParentConnected={hasCoParentConnected}
-                hasPendingInvitation={hasPendingInvitation}
-                hasAcceptedInvitation={hasAcceptedInvitation}
-                showManualInvite={showManualInvite}
-                setShowManualInvite={setShowManualInvite}
-                manualInviteCode={manualInviteCode}
-                setManualInviteCode={setManualInviteCode}
-                pendingInviteCode={pendingInviteCode}
-                setPendingInviteCode={setPendingInviteCode}
-                isAcceptingInvite={isAcceptingInvite}
-                handleManualAcceptInvite={handleManualAcceptInvite}
+                inviteState={{
+                  inviteLink,
+                  inviteCode,
+                  inviteCopied,
+                  inviteError,
+                  isLoadingInvite,
+                  hasCoParentConnected,
+                  hasPendingInvitation,
+                  hasAcceptedInvitation,
+                  showManualInvite,
+                  manualInviteCode,
+                  pendingInviteCode,
+                  isAcceptingInvite,
+                }}
+                inviteHandlers={{
+                  setInviteLink,
+                  setInviteCode,
+                  setInviteCopied,
+                  setInviteError,
+                  handleLoadInvite,
+                  handleCopyInvite,
+                  setShowManualInvite,
+                  setManualInviteCode,
+                  setPendingInviteCode,
+                  handleManualAcceptInvite,
+                }}
               />
             )}
 

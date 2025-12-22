@@ -8,9 +8,9 @@
 import React from 'react';
 import { UpdatesPanel } from '../../components/UpdatesPanel.jsx';
 import { CommunicationStatsWidget } from '../../components/CommunicationStatsWidget.jsx';
-import { TaskCard } from '../../components/tasks/TaskCard.jsx';
-import { filterTasksForDashboard } from '../../utils/taskTypeDetection.js';
-import { getDefaultTaskFormData } from '../../utils/taskHelpers.js';
+import { TaskCard } from '../tasks/components/TaskCard.jsx';
+import { filterTasksForDashboard } from '../tasks/taskTypeDetection.js';
+import { getDefaultTaskFormData } from '../tasks/taskHelpers.js';
 
 /**
  * DashboardView component

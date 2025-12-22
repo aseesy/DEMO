@@ -1,7 +1,7 @@
 import React from 'react';
-import { useTasks } from '../../hooks/useTasks.js';
+import { useTasks } from '../tasks/useTasks.js';
 import { useModalControllerDefault } from '../../hooks/useModalController.js';
-import { createTaskCollection } from '../../hooks/taskAbstraction.js';
+import { createTaskCollection } from '../tasks/taskAbstraction.js';
 import { useThreads } from '../../hooks/useThreads.js';
 
 /**
