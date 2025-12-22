@@ -25,4 +25,42 @@ if [ -d "chat-client-vite" ]; then
   cd ..
 fi
 
+# Quick export verification (fast check before full build)
+if [ -d "chat-client-vite" ]; then
+  echo "🔗 Verifying critical exports..."
+
+  # Check useModalControllerDefault export matches import
+  if grep -q "useModalControllerDefault" chat-client-vite/src/hooks/useDashboard.js 2>/dev/null; then
+    if ! grep -q "export.*useModalControllerDefault" chat-client-vite/src/hooks/useModalController.js 2>/dev/null; then
+      echo "❌ FATAL: useDashboard imports useModalControllerDefault but useModalController doesn't export it"
+      exit 1
+    fi
+  fi
+
+  # Check getRegisteredModals export matches import
+  if grep -q "getRegisteredModals" chat-client-vite/src/hooks/useModalController.js 2>/dev/null; then
+    if ! grep -q "export.*getRegisteredModals" chat-client-vite/src/hooks/modalRegistry.js 2>/dev/null; then
+      echo "❌ FATAL: useModalController imports getRegisteredModals but modalRegistry doesn't export it"
+      exit 1
+    fi
+  fi
+
+  echo "✅ Critical exports verified"
+fi
+
+# CRITICAL: Run production build to catch missing exports/imports
+# This catches issues that tests miss but would fail on Vercel
+if [ -d "chat-client-vite" ]; then
+  echo "🏗️  Running production build verification..."
+  cd chat-client-vite
+  npm run build 2>&1 | tail -5 || {
+    echo "❌ Production build failed. This would fail on Vercel."
+    echo "   Fix build errors before pushing."
+    exit 1
+  }
+  echo "✅ Production build succeeded"
+  cd ..
+fi
+
 echo "✅ All pre-push checks passed!"
+
