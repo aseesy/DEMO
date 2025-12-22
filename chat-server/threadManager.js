@@ -1,6 +1,14 @@
 const dbSafe = require('./dbSafe');
 const openaiClient = require('./openaiClient');
 
+// Neo4j client for semantic threading
+let neo4jClient = null;
+try {
+  neo4jClient = require('./src/utils/neo4jClient');
+} catch (err) {
+  console.warn('⚠️  Neo4j client not available - semantic threading will use fallback');
+}
+
 /**
  * Create a new thread
  */
@@ -20,9 +28,18 @@ async function createThread(roomId, title, createdBy, initialMessageId = null) {
       is_archived: 0,
     });
 
+    // Create thread node in Neo4j for semantic search
+    if (neo4jClient && neo4jClient.isAvailable()) {
+      try {
+        await neo4jClient.createOrUpdateThreadNode(threadId, roomId, title);
+      } catch (err) {
+        console.warn('⚠️  Failed to create Neo4j thread node (non-fatal):', err.message);
+      }
+    }
+
     // If initial message provided, associate it with the thread
     if (initialMessageId) {
-      await dbSafe.safeUpdate('messages', { thread_id: threadId }, { id: initialMessageId });
+      await addMessageToThread(initialMessageId, threadId);
     }
 
     // PostgreSQL auto-commits, no manual save needed
@@ -68,9 +85,9 @@ async function getThreadMessages(threadId, limit = 50) {
       ORDER BY timestamp ASC
       LIMIT $2
     `;
-    
+
     const result = await db.query(query, [threadId, limit]);
-    
+
     return result.rows.map(msg => ({
       id: msg.id,
       type: msg.type,
@@ -93,6 +110,15 @@ async function addMessageToThread(messageId, threadId) {
   try {
     // Update message
     await dbSafe.safeUpdate('messages', { thread_id: threadId }, { id: messageId });
+
+    // Link message to thread in Neo4j for semantic search
+    if (neo4jClient && neo4jClient.isAvailable()) {
+      try {
+        await neo4jClient.linkMessageToThread(messageId, threadId);
+      } catch (err) {
+        console.warn('⚠️  Failed to link message to thread in Neo4j (non-fatal):', err.message);
+      }
+    }
 
     // Update thread stats
     const threadResult = await dbSafe.safeSelect('threads', { id: threadId }, { limit: 1 });
@@ -305,7 +331,7 @@ async function getThread(threadId) {
  * Analyze conversation history to identify recurring topics and automatically create threads
  * Reviews all messages in a room to find ongoing or recurring conversation patterns
  * Automatically creates threads for identified topics
- * 
+ *
  * @param {string} roomId - Room ID to analyze
  * @param {number} limit - Maximum number of messages to analyze (default: 100)
  * @returns {Promise<Object>} Object with suggestions and createdThreads arrays
@@ -313,28 +339,39 @@ async function getThread(threadId) {
 async function analyzeConversationHistory(roomId, limit = 100) {
   if (!process.env.OPENAI_API_KEY) {
     console.warn('OpenAI API key not configured, skipping conversation analysis');
-    return [];
+    return {
+      suggestions: [],
+      createdThreads: [],
+    };
   }
 
   try {
+    console.log(
+      `[threadManager] Starting conversation analysis for room: ${roomId}, limit: ${limit}`
+    );
     const messageStore = require('./messageStore');
 
     // Get recent messages for the room (excluding system messages)
     const messages = await messageStore.getMessagesByRoom(roomId, limit);
     // Filter out system messages, private messages, flagged messages, and messages without text
     const filteredMessages = messages.filter(
-      m =>
-        m.text &&
-        m.type !== 'system' &&
-        !m.private &&
-        !m.flagged &&
-        m.username // Ensure username exists
+      m => m.text && m.type !== 'system' && !m.private && !m.flagged && m.username // Ensure username exists
     );
 
     if (filteredMessages.length < 5) {
       // Not enough messages to analyze
-      return [];
+      console.log(
+        `[threadManager] Not enough messages to analyze (${filteredMessages.length} < 5)`
+      );
+      return {
+        suggestions: [],
+        createdThreads: [],
+      };
     }
+
+    console.log(
+      `[threadManager] Analyzing ${filteredMessages.length} messages for room: ${roomId}`
+    );
 
     // Get existing threads to avoid duplicates
     const existingThreads = await getThreadsForRoom(roomId, false);
@@ -406,46 +443,107 @@ Only include topics with confidence >= 60 and at least 3 related messages.`;
         // Check if similar thread already exists
         const titleLower = s.title.toLowerCase();
         return !existingThreads.some(
-          t => t.title.toLowerCase().includes(titleLower) || titleLower.includes(t.title.toLowerCase())
+          t =>
+            t.title.toLowerCase().includes(titleLower) || titleLower.includes(t.title.toLowerCase())
         );
       })
       .sort((a, b) => b.messageCount - a.messageCount) // Sort by message count
       .slice(0, 5); // Limit to top 5 suggestions
 
-    // Automatically create threads from suggestions
+    // Automatically create threads from suggestions using semantic search
     const createdThreads = [];
+    console.log(`[threadManager] Processing ${validSuggestions.length} valid suggestions`);
+
     for (const suggestion of validSuggestions) {
       try {
-        // Find messages that match this topic
-        // Use keyword matching based on title and reasoning
-        const topicKeywords = suggestion.title.toLowerCase().split(/\s+/).filter(k => k.length > 2);
-        const reasoningKeywords = (suggestion.reasoning || '')
-          .toLowerCase()
-          .split(/\s+/)
-          .filter(k => k.length > 3);
-        
-        const allKeywords = [...new Set([...topicKeywords, ...reasoningKeywords])];
-        
-        const matchingMessages = filteredMessages.filter(msg => {
-          if (!msg.id || msg.threadId) {
-            // Skip messages already in a thread
-            return false;
+        let matchingMessages = [];
+        console.log(
+          `[threadManager] Processing suggestion: "${suggestion.title}" (${suggestion.messageCount} messages)`
+        );
+
+        // Use Neo4j semantic search if available, otherwise fall back to keyword matching
+        if (neo4jClient && neo4jClient.isAvailable()) {
+          try {
+            // Generate embedding for the thread title
+            const threadEmbedding = await generateEmbeddingForText(suggestion.title);
+
+            if (threadEmbedding) {
+              console.log(`[threadManager] Using Neo4j semantic search for "${suggestion.title}"`);
+              // Use cosine similarity function to find similar messages
+              const similarMessages = await neo4jClient.findSimilarMessages(
+                threadEmbedding,
+                roomId,
+                suggestion.messageCount || 20,
+                0.7 // 70% similarity threshold
+              );
+
+              console.log(
+                `[threadManager] Found ${similarMessages.length} similar messages via Neo4j`
+              );
+              // Map Neo4j results to message objects
+              const messageIds = similarMessages.map(m => m.messageId);
+              matchingMessages = filteredMessages.filter(
+                msg => messageIds.includes(msg.id) && !msg.threadId
+              );
+            } else {
+              console.warn(
+                `[threadManager] Failed to generate embedding for "${suggestion.title}", using keyword fallback`
+              );
+            }
+          } catch (neo4jError) {
+            console.warn(
+              `⚠️  Neo4j semantic search failed for "${suggestion.title}", using keyword fallback:`,
+              neo4jError.message
+            );
+            // Fall through to keyword matching
           }
-          const msgText = (msg.text || '').toLowerCase();
-          // Match if message contains at least 2 keywords from the topic
-          const matchCount = allKeywords.filter(keyword => msgText.includes(keyword)).length;
-          return matchCount >= 2 || (matchCount >= 1 && topicKeywords.some(k => msgText.includes(k)));
-        });
+        } else {
+          console.log(
+            `[threadManager] Neo4j not available, using keyword matching for "${suggestion.title}"`
+          );
+        }
+
+        // Fallback to keyword matching if Neo4j not available or failed
+        if (matchingMessages.length < 3) {
+          const topicKeywords = suggestion.title
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(k => k.length > 2);
+          const reasoningKeywords = (suggestion.reasoning || '')
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(k => k.length > 3);
+
+          const allKeywords = [...new Set([...topicKeywords, ...reasoningKeywords])];
+
+          matchingMessages = filteredMessages.filter(msg => {
+            if (!msg.id || msg.threadId) {
+              return false;
+            }
+            const msgText = (msg.text || '').toLowerCase();
+            const matchCount = allKeywords.filter(keyword => msgText.includes(keyword)).length;
+            return (
+              matchCount >= 2 || (matchCount >= 1 && topicKeywords.some(k => msgText.includes(k)))
+            );
+          });
+        }
+
+        console.log(
+          `[threadManager] Found ${matchingMessages.length} matching messages for "${suggestion.title}"`
+        );
 
         if (matchingMessages.length >= 3) {
           // Create thread
+          console.log(
+            `[threadManager] Creating thread "${suggestion.title}" with ${matchingMessages.length} messages`
+          );
           const threadId = await createThread(roomId, suggestion.title, 'system');
-          
+
           // Add matching messages to the thread (limit to avoid too many, prioritize recent)
           const messagesToAdd = matchingMessages
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) // Most recent first
             .slice(0, Math.min(suggestion.messageCount || 20, matchingMessages.length));
-          
+
           let addedCount = 0;
           for (const msg of messagesToAdd) {
             if (msg.id && !msg.threadId) {
@@ -456,21 +554,33 @@ Only include topics with confidence >= 60 and at least 3 related messages.`;
           }
 
           if (addedCount > 0) {
+            console.log(
+              `[threadManager] ✅ Created thread "${suggestion.title}" with ${addedCount} messages`
+            );
             createdThreads.push({
               threadId,
               title: suggestion.title,
               messageCount: addedCount,
             });
           } else {
+            console.warn(
+              `[threadManager] ⚠️  No messages added to thread "${suggestion.title}", archiving empty thread`
+            );
             // If no messages were added, delete the empty thread
             await archiveThread(threadId, true);
           }
+        } else {
+          console.log(
+            `[threadManager] ⚠️  Not enough matching messages (${matchingMessages.length} < 3) for "${suggestion.title}"`
+          );
         }
       } catch (error) {
-        console.error(`Error creating thread for "${suggestion.title}":`, error);
+        console.error(`[threadManager] ❌ Error creating thread for "${suggestion.title}":`, error);
         // Continue with other suggestions even if one fails
       }
     }
+
+    console.log(`[threadManager] Analysis complete: ${createdThreads.length} threads created`);
 
     return {
       suggestions: validSuggestions,
@@ -482,6 +592,40 @@ Only include topics with confidence >= 60 and at least 3 related messages.`;
       suggestions: [],
       createdThreads: [],
     };
+  }
+}
+
+/**
+ * Generate embedding for text (helper function)
+ * @private
+ */
+async function generateEmbeddingForText(text) {
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    return null;
+  }
+
+  try {
+    // Use the OpenAI client from liaizen/core/client
+    const openaiClient = require('./src/liaizen/core/client');
+    const client = openaiClient.getClient();
+
+    if (!client) {
+      return null;
+    }
+
+    const response = await client.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: text.trim(),
+    });
+
+    if (!response.data || !response.data[0] || !response.data[0].embedding) {
+      return null;
+    }
+
+    return response.data[0].embedding;
+  } catch (error) {
+    console.error('❌ Failed to generate embedding:', error.message);
+    return null;
   }
 }
 

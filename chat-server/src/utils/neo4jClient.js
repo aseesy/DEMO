@@ -298,6 +298,337 @@ async function getCoParentsSecure(authenticatedUserId) {
 }
 
 /**
+ * Generate embedding for text using OpenAI
+ * @private
+ * @param {string} text - Text to generate embedding for
+ * @returns {Promise<Array<number>>} Embedding vector
+ */
+async function generateEmbedding(text) {
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    throw new Error('Text must be a non-empty string');
+  }
+
+  try {
+    const openaiClient = require('../liaizen/core/client');
+    const client = openaiClient.getClient();
+
+    if (!client) {
+      throw new Error('OpenAI client not configured');
+    }
+
+    const response = await client.embeddings.create({
+      model: 'text-embedding-3-small', // Cost-effective, 1536 dimensions
+      input: text.trim(),
+    });
+
+    if (!response.data || !response.data[0] || !response.data[0].embedding) {
+      throw new Error('Invalid embedding response from OpenAI');
+    }
+
+    return response.data[0].embedding;
+  } catch (error) {
+    console.error('❌ Failed to generate embedding:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Create or update a Message node in Neo4j with embedding
+ * @param {string} messageId - Message ID from PostgreSQL
+ * @param {string} roomId - Room ID
+ * @param {string} text - Message text
+ * @param {string} username - Username
+ * @param {string} timestamp - ISO timestamp
+ * @param {Array<number>} [embedding] - Optional pre-computed embedding
+ * @returns {Promise<Object>} Created/updated node information
+ */
+async function createOrUpdateMessageNode(
+  messageId,
+  roomId,
+  text,
+  username,
+  timestamp,
+  embedding = null
+) {
+  if (!isNeo4jConfigured) {
+    return null;
+  }
+
+  try {
+    // Generate embedding if not provided
+    let messageEmbedding = embedding;
+    if (!messageEmbedding && text) {
+      messageEmbedding = await generateEmbedding(text);
+    }
+
+    const query = `
+      // Ensure Room node exists first
+      MERGE (r:Room {roomId: $roomId})
+      ON CREATE SET r.type = "co-parent", r.createdAt = datetime()
+      
+      // Create or update Message node
+      MERGE (m:Message {messageId: $messageId})
+      SET m.roomId = $roomId,
+          m.text = $text,
+          m.username = $username,
+          m.timestamp = $timestamp,
+          m.embedding = $embedding,
+          m.updatedAt = datetime()
+      ON CREATE SET m.createdAt = datetime()
+      
+      // Link message to Room
+      WITH m, r
+      MERGE (m)-[:IN_ROOM]->(r)
+      
+      RETURN m
+    `;
+
+    const params = {
+      messageId,
+      roomId,
+      text: text || '',
+      username,
+      timestamp,
+      embedding: messageEmbedding || [],
+    };
+
+    const result = await executeCypher(query, params);
+
+    if (result.records.length > 0) {
+      return result.records[0].get('m').properties;
+    }
+
+    throw new Error('Neo4j query returned no results');
+  } catch (error) {
+    console.error(
+      `❌ Failed to create/update message node for messageId ${messageId}:`,
+      error.message
+    );
+    return null;
+  }
+}
+
+/**
+ * Create or update a Thread node in Neo4j
+ * @param {string} threadId - Thread ID from PostgreSQL
+ * @param {string} roomId - Room ID
+ * @param {string} title - Thread title
+ * @param {Array<number>} [embedding] - Optional embedding for thread title
+ * @returns {Promise<Object>} Created/updated node information
+ */
+async function createOrUpdateThreadNode(threadId, roomId, title, embedding = null) {
+  if (!isNeo4jConfigured) {
+    return null;
+  }
+
+  try {
+    // Generate embedding for thread title if not provided
+    let threadEmbedding = embedding;
+    if (!threadEmbedding && title) {
+      threadEmbedding = await generateEmbedding(title);
+    }
+
+    const query = `
+      // Ensure Room node exists first
+      MERGE (r:Room {roomId: $roomId})
+      ON CREATE SET r.type = "co-parent", r.createdAt = datetime()
+      
+      // Create or update Thread node
+      MERGE (t:Thread {threadId: $threadId})
+      SET t.roomId = $roomId,
+          t.title = $title,
+          t.embedding = $embedding,
+          t.updatedAt = datetime()
+      ON CREATE SET t.createdAt = datetime()
+      
+      // Link thread to Room
+      WITH t, r
+      MERGE (t)-[:IN_ROOM]->(r)
+      
+      RETURN t
+    `;
+
+    const params = {
+      threadId,
+      roomId,
+      title,
+      embedding: threadEmbedding || [],
+    };
+
+    const result = await executeCypher(query, params);
+
+    if (result.records.length > 0) {
+      return result.records[0].get('t').properties;
+    }
+
+    throw new Error('Neo4j query returned no results');
+  } catch (error) {
+    console.error(
+      `❌ Failed to create/update thread node for threadId ${threadId}:`,
+      error.message
+    );
+    return null;
+  }
+}
+
+/**
+ * Link a message to a thread in Neo4j
+ * @param {string} messageId - Message ID
+ * @param {string} threadId - Thread ID
+ * @returns {Promise<boolean>} Success status
+ */
+async function linkMessageToThread(messageId, threadId) {
+  if (!isNeo4jConfigured) {
+    return false;
+  }
+
+  try {
+    const query = `
+      MATCH (m:Message {messageId: $messageId})
+      MATCH (t:Thread {threadId: $threadId})
+      MERGE (m)-[:BELONGS_TO_THREAD]->(t)
+      RETURN m, t
+    `;
+
+    const params = { messageId, threadId };
+    const result = await executeCypher(query, params);
+
+    return result.records.length > 0;
+  } catch (error) {
+    console.error(`❌ Failed to link message ${messageId} to thread ${threadId}:`, error.message);
+    return false;
+  }
+}
+
+/**
+ * Find semantically similar messages using cosine similarity
+ * @param {Array<number>} queryEmbedding - Query embedding vector
+ * @param {string} roomId - Room ID to search within
+ * @param {number} [limit=10] - Maximum number of results
+ * @param {number} [minSimilarity=0.7] - Minimum similarity threshold
+ * @returns {Promise<Array>} Array of similar messages with similarity scores
+ */
+async function findSimilarMessages(queryEmbedding, roomId, limit = 10, minSimilarity = 0.7) {
+  if (!isNeo4jConfigured) {
+    return [];
+  }
+
+  if (!queryEmbedding || !Array.isArray(queryEmbedding) || queryEmbedding.length === 0) {
+    return [];
+  }
+
+  try {
+    // Calculate cosine similarity in Cypher
+    // Cosine similarity = dot(a,b) / (norm(a) * norm(b))
+    const query = `
+      MATCH (m:Message)-[:IN_ROOM]->(r:Room {roomId: $roomId})
+      WHERE m.embedding IS NOT NULL AND size(m.embedding) > 0
+      
+      // Calculate cosine similarity
+      WITH m, 
+           reduce(dot = 0.0, i IN range(0, size($queryEmbedding) - 1) | 
+             dot + m.embedding[i] * $queryEmbedding[i]
+           ) AS dotProduct,
+           sqrt(reduce(sum = 0.0, val IN m.embedding | sum + val * val)) AS normM,
+           sqrt(reduce(sum = 0.0, val IN $queryEmbedding | sum + val * val)) AS normQ
+      
+      WHERE normM > 0 AND normQ > 0
+      WITH m, (dotProduct / (normM * normQ)) AS similarity
+      WHERE similarity >= $minSimilarity
+      
+      RETURN m.messageId AS messageId,
+             m.text AS text,
+             m.username AS username,
+             m.timestamp AS timestamp,
+             similarity
+      ORDER BY similarity DESC
+      LIMIT $limit
+    `;
+
+    const params = {
+      queryEmbedding,
+      roomId,
+      limit,
+      minSimilarity,
+    };
+
+    const result = await executeCypher(query, params);
+
+    return result.records.map(record => ({
+      messageId: record.get('messageId'),
+      text: record.get('text'),
+      username: record.get('username'),
+      timestamp: record.get('timestamp'),
+      similarity: record.get('similarity'),
+    }));
+  } catch (error) {
+    console.error(`❌ Failed to find similar messages:`, error.message);
+    return [];
+  }
+}
+
+/**
+ * Find semantically similar threads using cosine similarity
+ * @param {Array<number>} queryEmbedding - Query embedding vector
+ * @param {string} roomId - Room ID to search within
+ * @param {number} [limit=5] - Maximum number of results
+ * @param {number} [minSimilarity=0.6] - Minimum similarity threshold
+ * @returns {Promise<Array>} Array of similar threads with similarity scores
+ */
+async function findSimilarThreads(queryEmbedding, roomId, limit = 5, minSimilarity = 0.6) {
+  if (!isNeo4jConfigured) {
+    return [];
+  }
+
+  if (!queryEmbedding || !Array.isArray(queryEmbedding) || queryEmbedding.length === 0) {
+    return [];
+  }
+
+  try {
+    const query = `
+      MATCH (t:Thread)-[:IN_ROOM]->(r:Room {roomId: $roomId})
+      WHERE t.embedding IS NOT NULL AND size(t.embedding) > 0
+      
+      // Calculate cosine similarity
+      WITH t,
+           reduce(dot = 0.0, i IN range(0, size($queryEmbedding) - 1) | 
+             dot + t.embedding[i] * $queryEmbedding[i]
+           ) AS dotProduct,
+           sqrt(reduce(sum = 0.0, val IN t.embedding | sum + val * val)) AS normT,
+           sqrt(reduce(sum = 0.0, val IN $queryEmbedding | sum + val * val)) AS normQ
+      
+      WHERE normT > 0 AND normQ > 0
+      WITH t, (dotProduct / (normT * normQ)) AS similarity
+      WHERE similarity >= $minSimilarity
+      
+      RETURN t.threadId AS threadId,
+             t.title AS title,
+             similarity
+      ORDER BY similarity DESC
+      LIMIT $limit
+    `;
+
+    const params = {
+      queryEmbedding,
+      roomId,
+      limit,
+      minSimilarity,
+    };
+
+    const result = await executeCypher(query, params);
+
+    return result.records.map(record => ({
+      threadId: record.get('threadId'),
+      title: record.get('title'),
+      similarity: record.get('similarity'),
+    }));
+  } catch (error) {
+    console.error(`❌ Failed to find similar threads:`, error.message);
+    return [];
+  }
+}
+
+/**
  * Initialize Neo4j indexes for optimal performance
  * Should be called once on application startup
  * @returns {Promise<boolean>} Success status
@@ -322,6 +653,31 @@ async function initializeIndexes() {
     await executeCypher(`
       CREATE INDEX room_roomId_index IF NOT EXISTS FOR (r:Room) ON (r.roomId)
     `);
+
+    // Create indexes for Message nodes
+    await executeCypher(`
+      CREATE INDEX message_messageId_index IF NOT EXISTS FOR (m:Message) ON (m.messageId)
+    `);
+
+    await executeCypher(`
+      CREATE INDEX message_roomId_index IF NOT EXISTS FOR (m:Message) ON (m.roomId)
+    `);
+
+    // Create indexes for Thread nodes
+    await executeCypher(`
+      CREATE INDEX thread_threadId_index IF NOT EXISTS FOR (t:Thread) ON (t.threadId)
+    `);
+
+    await executeCypher(`
+      CREATE INDEX thread_roomId_index IF NOT EXISTS FOR (t:Thread) ON (t.roomId)
+    `);
+
+    // Note: Neo4j 5.x+ supports vector indexes, but for compatibility we'll use
+    // cosine similarity calculation in Cypher queries
+    // If using Neo4j 5.11+, you can create vector indexes like:
+    // CREATE VECTOR INDEX message_embedding_index IF NOT EXISTS
+    // FOR (m:Message) ON m.embedding
+    // OPTIONS {indexConfig: {`vector.dimensions`: 1536, `vector.similarity_function`: 'cosine'}}
 
     console.log('✅ Neo4j indexes initialized successfully');
     return true;
@@ -575,6 +931,12 @@ module.exports = {
   close,
   isAvailable,
   isNeo4jConfigured,
+  // Semantic threading functions
+  createOrUpdateMessageNode,
+  createOrUpdateThreadNode,
+  linkMessageToThread,
+  findSimilarMessages,
+  findSimilarThreads,
   // Internal - exported for testing only
   _executeCypher: executeCypher,
 };

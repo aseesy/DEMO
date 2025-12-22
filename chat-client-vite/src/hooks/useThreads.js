@@ -118,11 +118,12 @@ export function useThreads(username, isAuthenticated) {
       socket.emit('join', { username: usernameRef.current });
 
       // Set a timeout in case 'joined' event doesn't fire
+      // Note: This is a fallback - normally we wait for 'joined' event
       loadTimeoutRef.current = setTimeout(() => {
-        console.warn('[useThreads] Timeout waiting for join, requesting threads directly');
-        setIsLoadingThreads(true);
-        socket.emit('get_threads', { roomId });
-      }, 3000);
+        console.warn('[useThreads] Timeout waiting for join event, will retry when joined');
+        // Don't request threads yet - wait for joined event
+        // The joined event handler will request threads
+      }, 5000);
     });
 
     socket.on('joined', data => {
@@ -175,9 +176,20 @@ export function useThreads(username, isAuthenticated) {
       }
     });
 
+    // Handle custom error events from backend (format: { message: '...' })
     socket.on('error', err => {
-      console.error('[useThreads] Socket error:', err);
-      const errorMessage = typeof err === 'string' ? err : err?.message || 'Failed to load threads';
+      // Backend emits errors as { message: '...' }
+      const errorMessage =
+        err?.message || (typeof err === 'string' ? err : 'Failed to load threads');
+
+      // Don't show "must join" errors as critical - they're expected during connection
+      if (errorMessage.includes('must join') || errorMessage.includes('You must join')) {
+        console.log('[useThreads] Waiting for join before loading threads:', errorMessage);
+        // Don't set error state for join-related errors - they're expected
+        return;
+      }
+
+      console.error('[useThreads] Socket error event:', errorMessage, err);
       setError(errorMessage);
       setIsLoadingThreads(false);
     });
