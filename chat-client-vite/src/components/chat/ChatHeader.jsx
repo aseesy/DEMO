@@ -42,10 +42,18 @@ export function ChatHeader({
   };
 
   const getPlaceholder = () => {
-    const other = messages.find(
-      m => m.username && m.username.toLowerCase() !== username?.toLowerCase()
+    // Find the co-parent (other human user, not AI/system)
+    const aiNames = ['alex', 'liaizen', 'ai assistant', 'system', 'liaizen ai'];
+    const coParent = messages.find(
+      m =>
+        m.username &&
+        m.username.toLowerCase() !== username?.toLowerCase() &&
+        !aiNames.includes(m.username.toLowerCase()) &&
+        !m.type?.startsWith('ai_') &&
+        m.type !== 'contact_suggestion' &&
+        m.type !== 'system'
     );
-    const name = other?.displayName || other?.username;
+    const name = coParent?.displayName || coParent?.username;
     return name ? `Search Conversation With ${name}` : 'Search messages...';
   };
 
@@ -57,9 +65,7 @@ export function ChatHeader({
     !hasAcceptedInvitation;
 
   return (
-    <div
-      className="sticky top-0 md:hidden z-20 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center gap-3"
-    >
+    <div className="sticky top-0 md:hidden z-20 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center gap-3">
       {/* Search Bar */}
       <div className="flex-1 relative max-w-3xl mx-auto">
         <svg
