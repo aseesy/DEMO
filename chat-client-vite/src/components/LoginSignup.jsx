@@ -40,6 +40,7 @@ export function LoginSignup() {
     password,
     username,
     isAuthenticated,
+    isCheckingAuth,
     isLoggingIn,
     isSigningUp,
     isGoogleLoggingIn,
@@ -97,8 +98,8 @@ export function LoginSignup() {
 
   const isSubmitting = isLoggingIn || isSigningUp || isGoogleLoggingIn;
 
-  // Show transitional state after successful auth (before redirect)
-  if (isAuthenticated) {
+  // Show loading while checking auth status or after successful auth (before redirect)
+  if (isCheckingAuth || isAuthenticated) {
     return (
       <div
         className="min-h-dvh bg-white flex items-center justify-center px-4 py-6 sm:py-8"
@@ -110,7 +111,11 @@ export function LoginSignup() {
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-teal-medium border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-teal-medium font-medium">
-            {isNewSignup ? 'Setting up your account...' : 'Signing in...'}
+            {isCheckingAuth
+              ? 'Checking session...'
+              : isNewSignup
+                ? 'Setting up your account...'
+                : 'Redirecting...'}
           </p>
         </div>
       </div>
