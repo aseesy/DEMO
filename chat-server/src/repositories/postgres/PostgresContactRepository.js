@@ -49,12 +49,35 @@ class PostgresContactRepository extends PostgresGenericRepository {
    * Get all relationships for a user
    */
   async getRelationships(userId) {
-    return this.query(
-      'SELECT relationship FROM contacts WHERE user_id = $1',
-      [userId]
-    );
+    return this.query('SELECT relationship FROM contacts WHERE user_id = $1', [userId]);
+  }
+
+  /**
+   * Check if a contact exists for a user by email
+   */
+  async existsByEmail(userId, contactEmail) {
+    const results = await this.find({ user_id: userId, contact_email: contactEmail }, { limit: 1 });
+    return results.length > 0;
+  }
+
+  /**
+   * Create a contact, handling duplicate key errors gracefully
+   * Returns true if created, false if duplicate (or other non-fatal error)
+   */
+  async createOrIgnore(contactData) {
+    try {
+      await this.create(contactData);
+      return true;
+    } catch (error) {
+      // Duplicate key violations are expected (race conditions, concurrent requests)
+      if (error?.code === '23505') {
+        return false;
+      }
+      // Other errors (schema issues, etc.) are logged but non-fatal
+      console.warn(`Error inserting contact (non-fatal):`, error.message);
+      return false;
+    }
   }
 }
 
 module.exports = { PostgresContactRepository };
-
