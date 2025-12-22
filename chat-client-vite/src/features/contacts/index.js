@@ -13,20 +13,21 @@
  * - ContactSuggestionModal: Modal for AI-suggested contacts
  */
 
-// Hooks
-export { useContacts, useContactsApi, useContactForm, useContactTriggers } from './useContacts.js';
-export { useContactSuggestionModal } from './useContactSuggestionModal.js';
-
-// Components
+// Page (The View)
 export { ContactsPanel } from './ContactsPanel.jsx';
-export { ContactSuggestionModal } from './components/ContactSuggestionModal.jsx';
-export { ContactForm } from './components/ContactForm.jsx';
-export { ContactsList } from './components/ContactsList.jsx';
 
-// Utilities
+// Model (The Logic)
+export { useContacts, useContactsApi, useContactForm, useContactTriggers } from './model/useContacts.js';
+export { useContactSuggestionModal } from './model/useContactSuggestionModal.js';
 export {
   mapContactToFormData,
   mapFormDataToContact,
   getContactFormFields,
-} from './contactMapper.js';
-export { getDefaultContactFormData, DEFAULT_CONTACT_FORM_DATA } from './contactFormDefaults.js';
+} from './model/contactMapper.js';
+export { getDefaultContactFormData, DEFAULT_CONTACT_FORM_DATA } from './model/contactFormDefaults.js';
+export { getContactHelpers } from './model/contactHelpers.js';
+
+// Components (The UI Details)
+export { ContactSuggestionModal } from './components/ContactSuggestionModal.jsx';
+export { ContactForm } from './components/ContactForm.jsx';
+export { ContactsList } from './components/ContactsList.jsx';

@@ -5,16 +5,14 @@
  * Delete this folder to remove the Tasks feature entirely.
  */
 
-// Hooks
-export { useTasks } from './useTasks.js';
-export { useTaskFormModal } from './useTaskFormModal.js';
+// Model (The Logic)
+export { useTasks } from './model/useTasks.js';
+export { useTaskFormModal } from './model/useTaskFormModal.js';
+export { createTaskCollection } from './model/taskAbstraction.js';
+export { getDefaultTaskFormData } from './model/taskHelpers.js';
+export { filterTasksForDashboard, getTaskType } from './model/taskTypeDetection.js';
 
-// Utilities
-export { createTaskCollection } from './taskAbstraction.js';
-export { getDefaultTaskFormData } from './taskHelpers.js';
-export { filterTasksForDashboard, getTaskType } from './taskTypeDetection.js';
-
-// Components
+// Components (The UI Details)
 export { TaskCard } from './components/TaskCard.jsx';
 export { TaskIcon } from './components/TaskIcon.jsx';
 export { TaskFormModal } from './components/TaskFormModal.jsx';

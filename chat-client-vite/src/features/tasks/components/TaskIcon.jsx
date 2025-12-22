@@ -5,7 +5,7 @@ import {
   isInviteTask,
   isCoparentTask,
   isChildrenTask,
-} from '../taskTypeDetection.js';
+} from '../model/taskTypeDetection.js';
 
 /**
  * TaskIcon - Renders appropriate icon based on task type

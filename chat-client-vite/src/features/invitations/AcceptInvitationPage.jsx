@@ -13,7 +13,7 @@
  */
 
 import React from 'react';
-import { useAcceptInvitation } from './useAcceptInvitation.js';
+import { useAcceptInvitation } from './model/useAcceptInvitation.js';
 import {
   LoadingView,
   InvalidLinkView,

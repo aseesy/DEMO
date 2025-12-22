@@ -20,8 +20,8 @@
  */
 
 import { registerModalHook, getRegisteredModals } from './modalRegistry.js';
-import { useTaskFormModal } from '../features/tasks/useTaskFormModal.js';
-import { useContactSuggestionModal } from '../features/contacts/useContactSuggestionModal.js';
+import { useTaskFormModal } from '../features/tasks';
+import { useContactSuggestionModal } from '../features/contacts';
 import { useMessageFlaggingModal } from './useMessageFlaggingModal.js';
 
 /**

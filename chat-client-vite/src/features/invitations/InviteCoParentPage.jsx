@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { useInviteCoParent } from './useInviteCoParent.js';
+import { useInviteCoParent } from './model/useInviteCoParent.js';
 import { InvitePreGenerationView, InviteGeneratedView } from './components/invite';
 
 export function InviteCoParentPage() {

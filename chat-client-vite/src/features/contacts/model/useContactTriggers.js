@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { getWithMigration, removeWithMigration } from '../../utils/storageMigration.js';
+import { getWithMigration, removeWithMigration } from '../../../utils/storageMigration.js';
 
 /**
  * Hook to handle external triggers for contact operations

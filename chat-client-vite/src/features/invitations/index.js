@@ -5,14 +5,14 @@
  * Delete this folder to remove the Invitations feature entirely.
  */
 
-// Pages
+// Pages (The View)
 export { AcceptInvitationPage } from './AcceptInvitationPage.jsx';
 export { InviteCoParentPage } from './InviteCoParentPage.jsx';
 
-// Components
-export { InviteTaskModal } from './components/InviteTaskModal.jsx';
+// Model (The Logic)
+export { useAcceptInvitation } from './model/useAcceptInvitation.js';
+export { useInviteCoParent } from './model/useInviteCoParent.js';
+export { useInvitations } from './model/useInvitations.js';
 
-// Hooks
-export { useAcceptInvitation } from './useAcceptInvitation.js';
-export { useInviteCoParent } from './useInviteCoParent.js';
-export { useInvitations } from './useInvitations.js';
+// Components (The UI Details)
+export { InviteTaskModal } from './components/InviteTaskModal.jsx';

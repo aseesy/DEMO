@@ -1,6 +1,6 @@
 import React from 'react';
-import { trackContactAdded } from '../../utils/analytics.js';
-import { setWithMigration } from '../../utils/storageMigration.js';
+import { trackContactAdded } from '../../../utils/analytics.js';
+import { setWithMigration } from '../../../utils/storageMigration.js';
 import {
   detectContactSuggestion,
   createContactData,

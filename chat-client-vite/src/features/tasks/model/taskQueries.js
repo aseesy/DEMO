@@ -5,8 +5,8 @@
  * Error handling is done by the caller.
  */
 
-import { apiGet, apiPost, apiPut } from '../../apiClient.js';
-import { logger } from '../../utils/logger.js';
+import { apiGet, apiPost, apiPut } from '../../../apiClient.js';
+import { logger } from '../../../utils/logger.js';
 import { sortTasksByPriorityAndDate } from './taskHelpers.js';
 
 /**

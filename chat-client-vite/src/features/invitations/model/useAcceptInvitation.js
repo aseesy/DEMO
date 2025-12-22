@@ -10,18 +10,18 @@
 
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth.js';
+import { useAuth } from '../../../hooks/useAuth.js';
 import { useInvitations } from './useInvitations.js';
-import { useInvitationContext } from '../../context/InvitationContext.jsx';
-import { apiPost } from '../../apiClient.js';
+import { useInvitationContext } from '../../../context/InvitationContext.jsx';
+import { apiPost } from '../../../apiClient.js';
 import {
   getErrorMessage,
   logError,
   retryWithBackoff,
   isRetryableError,
-} from '../../utils/errorHandler.jsx';
-import { storage, StorageKeys, authStorage } from '../../adapters/storage';
-import { NavigationPaths } from '../../adapters/navigation';
+} from '../../../utils/errorHandler.jsx';
+import { storage, StorageKeys, authStorage } from '../../../adapters/storage';
+import { NavigationPaths } from '../../../adapters/navigation';
 
 /**
  * Validate signup form fields

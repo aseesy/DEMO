@@ -10,7 +10,7 @@
  * When a field is added to the database, update this mapper once.
  */
 
-import { toDisplayRelationship } from '../../utils/relationshipMapping.js';
+import { toDisplayRelationship } from '../../../utils/relationshipMapping.js';
 import { DEFAULT_CONTACT_FORM_DATA } from './contactFormDefaults.js';
 
 /**

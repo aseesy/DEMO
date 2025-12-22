@@ -8,7 +8,7 @@ import {
   isSmartTask,
   getTaskDisplayTitle,
   shouldShowActionArrow,
-} from '../taskTypeDetection.js';
+} from '../model/taskTypeDetection.js';
 
 /**
  * TaskCard - Individual task card component

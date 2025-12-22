@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import { apiGet, apiPost, apiPut } from '../../apiClient.js';
-import { toBackendRelationship } from '../../utils/relationshipMapping.js';
+import { apiGet, apiPost, apiPut } from '../../../apiClient.js';
+import { toBackendRelationship } from '../../../utils/relationshipMapping.js';
 import { mapFormDataToContact } from './contactMapper.js';
 
 export function useContactsApi(username, isAuthenticated = true) {

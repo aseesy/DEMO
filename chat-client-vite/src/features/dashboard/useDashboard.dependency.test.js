@@ -19,6 +19,7 @@ const __dirname = path.dirname(__filename);
 const dashboardDir = path.join(__dirname);
 const hooksDir = path.join(__dirname, '..', '..', 'hooks');
 const tasksDir = path.join(__dirname, '..', 'tasks');
+const tasksModelDir = path.join(__dirname, '..', 'tasks', 'model');
 
 describe('Dependency Direction Test - useDashboard', () => {
   it('useDashboard imports useTasks (downward dependency)', () => {
@@ -27,9 +28,9 @@ describe('Dependency Direction Test - useDashboard', () => {
       'utf-8'
     );
 
-    // useDashboard should import useTasks (downward - correct)
-    // Note: useTasks is now in features/tasks/ following package-by-feature pattern
-    expect(useDashboardContent).toContain("import { useTasks } from '../tasks/useTasks.js'");
+    // useDashboard should import useTasks from the tasks feature's public API
+    // Note: useTasks is now in features/tasks/model/ but exported via features/tasks/index.js
+    expect(useDashboardContent).toContain("import { useTasks, createTaskCollection } from '../tasks'");
   });
 
   it('useDashboard imports useModalControllerDefault (downward dependency)', () => {
@@ -45,8 +46,8 @@ describe('Dependency Direction Test - useDashboard', () => {
   });
 
   it('useTasks does NOT import useDashboard (no upward dependency)', () => {
-    // Note: useTasks is now in features/tasks/ following package-by-feature pattern
-    const useTasksPath = path.join(tasksDir, 'useTasks.js');
+    // Note: useTasks is now in features/tasks/model/ following package-by-feature pattern
+    const useTasksPath = path.join(tasksModelDir, 'useTasks.js');
 
     if (fs.existsSync(useTasksPath)) {
       const useTasksContent = fs.readFileSync(useTasksPath, 'utf-8');
@@ -92,8 +93,8 @@ describe('Dependency Direction Test - useDashboard', () => {
   });
 
   it('useTasks does NOT call useDashboard (no upward function call)', () => {
-    // Note: useTasks is now in features/tasks/ following package-by-feature pattern
-    const useTasksPath = path.join(tasksDir, 'useTasks.js');
+    // Note: useTasks is now in features/tasks/model/ following package-by-feature pattern
+    const useTasksPath = path.join(tasksModelDir, 'useTasks.js');
 
     if (fs.existsSync(useTasksPath)) {
       const useTasksContent = fs.readFileSync(useTasksPath, 'utf-8');
@@ -143,8 +144,8 @@ describe('Dependency Direction Test - useDashboard', () => {
       'utf-8'
     );
 
-    // Note: useTasks is now in features/tasks/ following package-by-feature pattern
-    const useTasksPath = path.join(tasksDir, 'useTasks.js');
+    // Note: useTasks is now in features/tasks/model/ following package-by-feature pattern
+    const useTasksPath = path.join(tasksModelDir, 'useTasks.js');
     const useModalControllerPath = path.join(hooksDir, 'useModalController.js');
 
     // Check for circular dependencies

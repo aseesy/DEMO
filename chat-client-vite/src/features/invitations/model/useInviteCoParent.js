@@ -7,10 +7,10 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePairing } from '../../hooks/usePairing.js';
-import { authStorage } from '../../adapters/storage';
-import { NavigationPaths } from '../../adapters/navigation';
-import { validateInviteEmail } from '../../utils/validators.js';
+import { usePairing } from '../../../hooks/usePairing.js';
+import { authStorage } from '../../../adapters/storage';
+import { NavigationPaths } from '../../../adapters/navigation';
+import { validateInviteEmail } from '../../../utils/validators.js';
 
 /**
  * Get expiration text based on invite type

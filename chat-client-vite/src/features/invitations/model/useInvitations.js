@@ -17,7 +17,7 @@ import {
   queryFetchInvitations,
   commandResendInvitation,
   commandCancelInvitation,
-} from '../../utils/invitationQueries.js';
+} from '../../../utils/invitationQueries.js';
 
 export function useInvitations() {
   const [isValidating, setIsValidating] = React.useState(false);

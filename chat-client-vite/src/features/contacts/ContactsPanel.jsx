@@ -1,7 +1,7 @@
 import React from 'react';
-import { useContacts } from './useContacts.js';
+import { useContacts } from './model/useContacts.js';
 import { Button } from '../../components/ui';
-import { disambiguateContacts, filterContactsBySearch } from './contactHelpers.js';
+import { disambiguateContacts, filterContactsBySearch } from './model/contactHelpers.js';
 import { ContactsList } from './components/ContactsList.jsx';
 import { ContactForm } from './components/ContactForm.jsx';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { trackTaskCreated, trackTaskCompleted } from '../../utils/analytics.js';
+import { trackTaskCreated, trackTaskCompleted } from '../../../utils/analytics.js';
 import {
   getTaskAction as getTaskActionFromHelper,
   getNextTaskStatus,
