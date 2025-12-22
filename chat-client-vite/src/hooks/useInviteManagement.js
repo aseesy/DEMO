@@ -47,8 +47,11 @@ export function useInviteManagement({
   const [manualInviteCode, setManualInviteCode] = React.useState('');
   const [showManualInvite, setShowManualInvite] = React.useState(false);
 
-  // Co-parent connection state
-  const [hasCoParentConnected, setHasCoParentConnected] = React.useState(false);
+  // Co-parent connection state - initialize from localStorage for faster UI
+  const [hasCoParentConnected, setHasCoParentConnected] = React.useState(() => {
+    const cached = getWithMigration('hasCoParentConnected', 'has_coparent_connected');
+    return cached === 'true' || cached === true;
+  });
   const [hasPendingInvitation, setHasPendingInvitation] = React.useState(false);
   const [hasAcceptedInvitation, setHasAcceptedInvitation] = React.useState(false);
 
@@ -57,6 +60,7 @@ export function useInviteManagement({
    */
   const applyCoParentConnected = React.useCallback(() => {
     setHasCoParentConnected(true);
+    setWithMigration('hasCoParentConnected', 'has_coparent_connected', 'true');
     setUserProperties({
       hasCoparent: true,
       roomStatus: 'multi_user',
@@ -153,7 +157,9 @@ export function useInviteManagement({
       setInviteError('You are already connected with this co-parent!');
       setHasCoParentConnected(true);
     } else {
-      setInviteError(result.error || 'Failed to accept invite. Please check the code and try again.');
+      setInviteError(
+        result.error || 'Failed to accept invite. Please check the code and try again.'
+      );
     }
 
     setIsAcceptingInvite(false);
@@ -161,7 +167,7 @@ export function useInviteManagement({
 
   /**
    * Check if co-parents are connected
-   * Command: Updates hasCoParentConnected state
+   * Command: Updates hasCoParentConnected state and persists to localStorage
    */
   const checkRoomMembers = React.useCallback(async () => {
     if (!isAuthenticated) return;
@@ -170,6 +176,12 @@ export function useInviteManagement({
 
     if (result.success) {
       setHasCoParentConnected(result.hasMultipleMembers);
+      // Persist to localStorage for faster initial load
+      setWithMigration(
+        'hasCoParentConnected',
+        'has_coparent_connected',
+        result.hasMultipleMembers ? 'true' : 'false'
+      );
       if (result.hasMultipleMembers) {
         setUserProperties({
           hasCoparent: true,
@@ -180,10 +192,16 @@ export function useInviteManagement({
       // Fallback to message-based detection
       const hasMultiple = queryCoParentFromMessages(messages, username);
       setHasCoParentConnected(hasMultiple);
+      if (hasMultiple) {
+        setWithMigration('hasCoParentConnected', 'has_coparent_connected', 'true');
+      }
     } else {
       // Other error - try message-based detection
       const hasMultiple = queryCoParentFromMessages(messages, username);
       setHasCoParentConnected(hasMultiple);
+      if (hasMultiple) {
+        setWithMigration('hasCoParentConnected', 'has_coparent_connected', 'true');
+      }
     }
   }, [isAuthenticated, messages, username]);
 
