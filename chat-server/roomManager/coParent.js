@@ -3,12 +3,16 @@
  *
  * Applies Clean Code principles:
  * - Single Responsibility: Each function has one clear purpose
+ * - Repository Pattern: Database details hidden behind repository interface
  * - Proper Error Handling: Neo4j sync is awaited and errors are logged (not silently ignored)
  * - Data Consistency: All operations are properly tracked, even if Neo4j is optional
  */
-const dbSafe = require('../dbSafe');
+const { PostgresRoomRepository } = require('../src/repositories/postgres/PostgresRoomRepository');
 const neo4jClient = require('../src/utils/neo4jClient');
 const { generateRoomId, sendWelcomeMessage } = require('./utils');
+
+// Repository instance - encapsulates all database access
+const roomRepo = new PostgresRoomRepository();
 
 /**
  * Sync co-parent relationship to Neo4j graph database
@@ -48,7 +52,8 @@ async function syncCoParentRelationshipToNeo4j(inviterId, inviteeId, roomId, roo
 }
 
 /**
- * Create room and member records in PostgreSQL
+ * Create room and member records
+ * Uses repository to hide SQL implementation details
  * @param {string} roomId - Room ID
  * @param {string} roomName - Room name
  * @param {number} inviterId - Inviter user ID
@@ -57,7 +62,8 @@ async function syncCoParentRelationshipToNeo4j(inviterId, inviteeId, roomId, roo
  * @returns {Promise<void>}
  */
 async function createRoomAndMembers(roomId, roomName, inviterId, inviteeId, now) {
-  await dbSafe.safeInsert('rooms', {
+  // Create room (repository handles SQL)
+  await roomRepo.create({
     id: roomId,
     name: roomName,
     created_by: inviterId,
@@ -65,19 +71,9 @@ async function createRoomAndMembers(roomId, roomName, inviterId, inviteeId, now)
     created_at: now,
   });
 
-  await dbSafe.safeInsert('room_members', {
-    room_id: roomId,
-    user_id: inviterId,
-    role: 'owner',
-    joined_at: now,
-  });
-
-  await dbSafe.safeInsert('room_members', {
-    room_id: roomId,
-    user_id: inviteeId,
-    role: 'member',
-    joined_at: now,
-  });
+  // Add members (repository handles SQL)
+  await roomRepo.addMember(roomId, inviterId, 'owner');
+  await roomRepo.addMember(roomId, inviteeId, 'member');
 }
 
 /**

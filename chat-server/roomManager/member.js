@@ -1,69 +1,103 @@
 /**
  * Room Member Management Logic
+ *
+ * Applies Clean Code principles:
+ * - Single Responsibility: Each function has one clear purpose
+ * - Repository Pattern: Database details hidden behind repository interface
+ * - Proper Error Handling: Neo4j sync is awaited and errors are logged
  */
-const dbSafe = require('../dbSafe');
+const { PostgresRoomRepository } = require('../src/repositories/postgres/PostgresRoomRepository');
 const neo4jClient = require('../src/utils/neo4jClient');
 
+// Repository instance - encapsulates all database access
+const roomRepo = new PostgresRoomRepository();
+
+/**
+ * Sync co-parent relationship to Neo4j when second member joins
+ * @param {Array} membersBefore - Members before adding new user
+ * @param {number} newUserId - New user ID being added
+ * @param {string} roomId - Room ID
+ * @returns {Promise<void>}
+ */
+async function syncCoParentRelationshipToNeo4j(membersBefore, newUserId, roomId) {
+  // Only sync if this is the second member (creating a co-parent relationship)
+  if (membersBefore.length !== 1) return;
+
+  try {
+    const room = await roomRepo.findById(roomId);
+    if (!room) return;
+
+    const result = await neo4jClient.createCoParentRelationship(
+      membersBefore[0].userId,
+      newUserId,
+      roomId,
+      room.name
+    );
+
+    if (result === null) {
+      // Neo4j not configured - this is expected and fine
+      return;
+    }
+
+    // Success - relationship created in Neo4j
+    // Logging is handled by createCoParentRelationship itself
+  } catch (error) {
+    // Neo4j sync failed - log but don't fail the entire operation
+    console.warn(`⚠️  Failed to sync co-parent relationship to Neo4j (non-fatal):`, error.message);
+    // Don't throw - Neo4j is optional, PostgreSQL is the source of truth
+  }
+}
+
+/**
+ * Get room members with user details
+ * @param {string} roomId - Room ID
+ * @returns {Promise<Array>} Array of member objects
+ */
 async function getRoomMembers(roomId) {
   try {
-    const query = `
-      SELECT rm.user_id, u.username, u.display_name, u.first_name, rm.role, rm.joined_at
-      FROM room_members rm
-      JOIN users u ON rm.user_id = u.id
-      WHERE rm.room_id = $1
-    `;
-    const result = await require('../dbPostgres').query(query, [roomId]);
-    return result.rows.map(row => ({
-      userId: row.user_id,
-      username: row.username,
-      displayName: row.first_name || row.display_name || row.username,
-      role: row.role,
-      joinedAt: row.joined_at,
-    }));
+    return await roomRepo.getMembersWithDetails(roomId);
   } catch (error) {
     console.error('Error getting room members:', error);
     return [];
   }
 }
 
+/**
+ * Add user to room
+ * @param {string} roomId - Room ID
+ * @param {number} userId - User ID
+ * @param {string} role - Member role
+ * @returns {Promise<void>}
+ */
 async function addUserToRoom(roomId, userId, role = 'member') {
-  const now = new Date().toISOString();
   try {
-    const existing = await dbSafe.safeSelect(
-      'room_members',
-      { room_id: roomId, user_id: userId },
-      { limit: 1 }
-    );
-    if (existing.length > 0) return;
+    // Check if member already exists (repository handles SQL)
+    const exists = await roomRepo.memberExists(roomId, userId);
+    if (exists) return;
 
+    // Get members before adding (to check if this creates a co-parent relationship)
     const membersBefore = await getRoomMembers(roomId);
-    await dbSafe.safeInsert('room_members', {
-      room_id: roomId,
-      user_id: userId,
-      role,
-      joined_at: now,
-    });
 
-    if (membersBefore.length === 1) {
-      const room = await dbSafe.safeSelect('rooms', { id: roomId }, { limit: 1 });
-      if (room.length > 0) {
-        neo4jClient
-          .createCoParentRelationship(membersBefore[0].userId, userId, roomId, room[0].name)
-          .catch(() => {});
-      }
-    }
+    // Add member (repository handles SQL)
+    await roomRepo.addMember(roomId, userId, role);
+
+    // Sync to Neo4j if this creates a co-parent relationship
+    await syncCoParentRelationshipToNeo4j(membersBefore, userId, roomId);
   } catch (error) {
     console.error('Error adding user to room:', error);
     throw error;
   }
 }
 
+/**
+ * Remove user from room
+ * @param {string} roomId - Room ID
+ * @param {number} userId - User ID
+ * @returns {Promise<void>}
+ */
 async function removeUserFromRoom(roomId, userId) {
   try {
-    await require('../dbPostgres').query(
-      'DELETE FROM room_members WHERE room_id = $1 AND user_id = $2',
-      [roomId, userId]
-    );
+    await roomRepo.removeMember(roomId, userId);
   } catch (error) {
     console.error('Error removing user from room:', error);
     throw error;

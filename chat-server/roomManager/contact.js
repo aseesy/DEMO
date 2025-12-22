@@ -6,28 +6,31 @@
  * - Repository Pattern: Database details hidden behind repository interface
  * - Fail Fast: Optimized to reduce N^2 complexity where possible
  */
-const dbPostgres = require('../dbPostgres');
 const {
   PostgresContactRepository,
 } = require('../src/repositories/postgres/PostgresContactRepository');
+const { PostgresRoomRepository } = require('../src/repositories/postgres/PostgresRoomRepository');
 
-// Repository instance - encapsulates all database access
+// Repository instances - encapsulate all database access
 const contactRepo = new PostgresContactRepository();
+const roomRepo = new PostgresRoomRepository();
 
 /**
  * Get all members of a room with their user details
+ * Uses repository to hide SQL implementation details
  * @param {string} roomId - Room ID
- * @returns {Promise<Array>} Array of member objects
+ * @returns {Promise<Array>} Array of member objects with user details
  */
 async function getRoomMembers(roomId) {
-  const query = `
-    SELECT rm.user_id, u.username, u.display_name, u.first_name, u.email
-    FROM room_members rm
-    JOIN users u ON rm.user_id = u.id
-    WHERE rm.room_id = $1
-  `;
-  const result = await dbPostgres.query(query, [roomId]);
-  return result.rows;
+  const members = await roomRepo.getMembersWithDetails(roomId);
+  // Map to format expected by contact creation logic
+  return members.map(member => ({
+    user_id: member.userId,
+    username: member.username,
+    display_name: member.displayName,
+    first_name: member.displayName, // Use displayName as first_name fallback
+    email: member.email,
+  }));
 }
 
 /**

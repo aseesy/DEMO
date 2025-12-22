@@ -40,7 +40,55 @@ class IRoomRepository extends IGenericRepository {
   async findSharedRooms(userId) {
     throw new Error('findSharedRooms() must be implemented by subclass');
   }
+
+  /**
+   * Get room members with user details
+   * @param {string} roomId - Room ID
+   * @returns {Promise<Array>} Array of member objects with user details
+   */
+  async getMembersWithDetails(roomId) {
+    throw new Error('getMembersWithDetails() must be implemented by subclass');
+  }
+
+  /**
+   * Get user's primary room (room with most members, or first joined)
+   * @param {number} userId - User ID
+   * @returns {Promise<Object|null>} Room object or null
+   */
+  async getUserPrimaryRoom(userId) {
+    throw new Error('getUserPrimaryRoom() must be implemented by subclass');
+  }
+
+  /**
+   * Add member to room
+   * @param {string} roomId - Room ID
+   * @param {number} userId - User ID
+   * @param {string} role - Member role
+   * @returns {Promise<boolean>} True if added, false if already exists
+   */
+  async addMember(roomId, userId, role) {
+    throw new Error('addMember() must be implemented by subclass');
+  }
+
+  /**
+   * Remove member from room
+   * @param {string} roomId - Room ID
+   * @param {number} userId - User ID
+   * @returns {Promise<boolean>} True if removed
+   */
+  async removeMember(roomId, userId) {
+    throw new Error('removeMember() must be implemented by subclass');
+  }
+
+  /**
+   * Check if member exists in room
+   * @param {string} roomId - Room ID
+   * @param {number} userId - User ID
+   * @returns {Promise<boolean>} True if member exists
+   */
+  async memberExists(roomId, userId) {
+    throw new Error('memberExists() must be implemented by subclass');
+  }
 }
 
 module.exports = { IRoomRepository };
-
