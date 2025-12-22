@@ -8,7 +8,7 @@ import { useInAppNotifications } from './hooks/useInAppNotifications.js';
 import { useToast } from './hooks/useToast.js';
 import { useInviteManagement } from './hooks/useInviteManagement.js';
 import { useModalControllerDefault } from './hooks/useModalController.js';
-import { ChatProvider, useChatContext } from './context/ChatContext.jsx';
+import { ChatProvider, useChatContext } from './features/chat';
 import { ToastContainer } from './components/ui/Toast/Toast.jsx';
 import { ContactsPanel } from './features/contacts';
 import { ProfilePanel } from './components/ProfilePanel.jsx';

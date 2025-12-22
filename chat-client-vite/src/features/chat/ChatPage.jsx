@@ -1,5 +1,5 @@
 /**
- * ChatView - Main chat interface with messages, input, and threads
+ * ChatPage - Main chat interface with messages, input, and threads
  *
  * Consumes chat state from ChatContext. Socket connection persists across view changes.
  * Refactored to use grouped props for invite state management.
@@ -17,7 +17,7 @@ import {
   ChatHeader,
   MessageInput,
 } from './components';
-import { useChatContext } from '../../context/ChatContext.jsx';
+import { useChatContext } from './context/ChatContext.jsx';
 import {
   trackMessageSent,
   trackMessageFlagged,
@@ -37,7 +37,7 @@ import {
  * @param {Object} props.inviteState - Grouped invite state
  * @param {Object} props.inviteHandlers - Grouped invite handlers
  */
-export function ChatView({ username, isAuthenticated, inviteState, inviteHandlers }) {
+export function ChatPage({ username, isAuthenticated, inviteState, inviteHandlers }) {
   // Get all chat state from context (socket persists across view changes)
   const {
     messages,
@@ -456,7 +456,7 @@ export function ChatViewLegacy({
   };
 
   return (
-    <ChatView
+    <ChatPage
       username={username}
       isAuthenticated={isAuthenticated}
       inviteState={inviteState}

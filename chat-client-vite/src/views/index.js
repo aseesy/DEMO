@@ -7,4 +7,4 @@
 
 export { SettingsView } from './SettingsView';
 export { DashboardView } from '../features/dashboard';
-export { ChatView } from '../features/chat';
+export { ChatPage, ChatPage as ChatView } from '../features/chat';

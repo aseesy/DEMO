@@ -5,10 +5,22 @@
  * Delete this folder to remove the Chat feature entirely.
  */
 
-// View
-export { ChatView } from './ChatView.jsx';
+// Page (The View)
+export { ChatPage, ChatPage as ChatView } from './ChatPage.jsx';
 
-// Components
+// Context
+export { ChatProvider, useChatContext } from './context/ChatContext.jsx';
+
+// Model (The Logic)
+export { useChatSocket } from './model/useChatSocket.js';
+export { useInputMessage } from './model/useInputMessage.js';
+export { useSearchMessages } from './model/useSearchMessages.js';
+export { useSendMessage } from './model/useSendMessage.js';
+export { useMessageHandlers } from './model/useMessageHandlers.js';
+export { useNewMessageHandler } from './model/useNewMessageHandler.js';
+export { useScrollManager } from './model/useScrollManager.js';
+
+// Components (The UI Details)
 export { ThreadsSidebar } from './components/ThreadsSidebar.jsx';
 export { ManualInvitePanel } from './components/ManualInvitePanel.jsx';
 export { InviteErrorPanel } from './components/InviteErrorPanel.jsx';

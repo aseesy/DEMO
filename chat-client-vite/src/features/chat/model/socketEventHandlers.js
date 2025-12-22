@@ -1,4 +1,4 @@
-import { trackConnectionError } from '../utils/analyticsEnhancements.js';
+import { trackConnectionError } from '../../../utils/analyticsEnhancements.js';
 
 /**
  * Sets up socket event handlers for the chat connection

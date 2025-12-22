@@ -6,7 +6,7 @@ import {
   trackInterventionOverride,
   trackMessageFlagged,
   trackThreadCreated,
-} from '../utils/analytics.js';
+} from '../../../utils/analytics.js';
 
 /**
  * useMessageHandlers Hook

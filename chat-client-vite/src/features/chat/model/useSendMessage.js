@@ -14,8 +14,8 @@ import {
   createMessagePayload,
   saveOfflineQueue,
   MESSAGE_STATUS,
-} from '../utils/messageBuilder.js';
-import { DEFAULT_SENDER_PROFILE, DEFAULT_RECEIVER_PROFILE } from '../utils/profileBuilder.js';
+} from '../../../utils/messageBuilder.js';
+import { DEFAULT_SENDER_PROFILE, DEFAULT_RECEIVER_PROFILE } from '../../../utils/profileBuilder.js';
 
 export function useSendMessage({
   socketRef,
@@ -42,7 +42,7 @@ export function useSendMessage({
       if (!clean || !socketRef?.current) return;
 
       // OBSERVER/MEDIATOR FRAMEWORK: Analyze message before sending
-      const { analyzeMessage, shouldSendMessage } = await import('../utils/messageAnalyzer.js');
+      const { analyzeMessage, shouldSendMessage } = await import('../../../utils/messageAnalyzer.js');
 
       try {
         // 1. Show "Analyzing..." state

@@ -1,11 +1,11 @@
 import React from 'react';
 import { io } from 'socket.io-client';
-import { API_BASE_URL } from '../config.js';
+import { API_BASE_URL } from '../../../config.js';
 import { setupSocketEventHandlers } from './socketEventHandlers.js';
 
 // Import SocketEvents for type-safe event names
 // Note: Full migration to SocketAdapter pending - current code uses raw socket.io
-import { SocketEvents, getSocketUrl as getAdapterSocketUrl } from '../adapters/socket';
+import { SocketEvents, getSocketUrl as getAdapterSocketUrl } from '../../../adapters/socket';
 
 /**
  * getSocketUrl - Determines the correct socket URL based on environment

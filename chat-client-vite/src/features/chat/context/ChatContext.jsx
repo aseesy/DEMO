@@ -1,5 +1,5 @@
 import React from 'react';
-import { useChatSocket } from '../hooks/useChatSocket.js';
+import { useChatSocket } from '../model/useChatSocket.js';
 
 /**
  * ChatContext - Provides socket connection and message state app-wide
@@ -205,7 +205,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       }
 
       // FAST PATH 3: Quick local check for obviously safe messages
-      const { shouldSendMessage } = await import('../utils/messageAnalyzer.js');
+      const { shouldSendMessage } = await import('../../../utils/messageAnalyzer.js');
       const quickCheck = shouldSendMessage({ action: 'QUICK_CHECK', messageText: clean });
       if (quickCheck.shouldSend && quickCheck.reason === 'polite_request') {
         // Polite request - send immediately without full analysis
@@ -216,7 +216,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       }
 
       // STANDARD PATH: Need full analysis
-      const { analyzeMessage } = await import('../utils/messageAnalyzer.js');
+      const { analyzeMessage } = await import('../../../utils/messageAnalyzer.js');
 
       try {
         setDraftCoaching({ analyzing: true, riskLevel: 'low', shouldSend: false });
@@ -278,7 +278,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
 
       // Quick local check - if message passes fast filters, mark as analyzed
       if (trimmed.length >= 3) {
-        import('../utils/messageAnalyzer.js').then(({ shouldSendMessage }) => {
+        import('../../../utils/messageAnalyzer.js').then(({ shouldSendMessage }) => {
           const quickCheck = shouldSendMessage({ action: 'QUICK_CHECK', messageText: trimmed });
           if (quickCheck.shouldSend) {
             // Message passes quick check - cache it as analyzed
