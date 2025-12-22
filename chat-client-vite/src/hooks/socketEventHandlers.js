@@ -113,7 +113,9 @@ export function setupSocketEventHandlers(socket, handlers) {
       timestamp: message.timestamp || new Date().toISOString(),
     };
 
-    if (message.username?.toLowerCase() === usernameRef.current?.toLowerCase() && message.id) {
+    const isOwnMessage = message.username?.toLowerCase() === usernameRef.current?.toLowerCase();
+
+    if (isOwnMessage && message.id) {
       setMessageStatuses(prev => new Map(prev).set(message.id, 'sent'));
       setPendingMessages(prev => {
         const next = new Map(prev);
@@ -123,7 +125,34 @@ export function setupSocketEventHandlers(socket, handlers) {
       offlineQueueRef.current = offlineQueueRef.current.filter(m => m.id !== message.id);
     }
 
-    setMessages(prev => [...prev, messageWithTimestamp]);
+    // Handle optimistic update replacement for own messages
+    if (isOwnMessage) {
+      setMessages(prev => {
+        // Find and remove any optimistic message with matching text from this user
+        // (optimistic messages have isOptimistic: true and id starting with 'pending_')
+        const withoutOptimistic = prev.filter(msg => {
+          if (msg.isOptimistic && msg.text === message.text) {
+            // Clean up pending message tracking
+            setPendingMessages(p => {
+              const next = new Map(p);
+              next.delete(msg.id);
+              return next;
+            });
+            setMessageStatuses(p => {
+              const next = new Map(p);
+              next.delete(msg.id);
+              return next;
+            });
+            return false; // Remove this optimistic message
+          }
+          return true;
+        });
+        return [...withoutOptimistic, messageWithTimestamp];
+      });
+    } else {
+      // For messages from others, just append
+      setMessages(prev => [...prev, messageWithTimestamp]);
+    }
 
     if (onNewMessageRef.current) onNewMessageRef.current(messageWithTimestamp);
 

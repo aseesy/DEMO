@@ -1,276 +1,90 @@
+/**
+ * useContacts - Composition Hook
+ *
+ * Composes separate concern hooks into a single interface for backward compatibility.
+ * New code should import individual hooks directly for better separation.
+ *
+ * Composed from:
+ * - useContactsApi: Data operations (Infrastructure)
+ * - useContactForm: Form state (Product/UX)
+ * - useContactTriggers: External events (Integration)
+ *
+ * ACTOR: Backward compatibility layer
+ * REASON TO CHANGE: Only when composed hooks change their interface
+ */
+
 import React from 'react';
-import { apiGet, apiPost, apiPut } from '../apiClient.js';
-import { toBackendRelationship, toDisplayRelationship } from '../utils/relationshipMapping.js';
-import { getDefaultContactFormData } from '../utils/contactFormDefaults.js';
-import { getWithMigration, removeWithMigration } from '../utils/storageMigration.js';
+import { useContactsApi } from './useContactsApi.js';
+import { useContactForm } from './useContactForm.js';
+import { useContactTriggers } from './useContactTriggers.js';
 
 export function useContacts(username, isAuthenticated = true) {
-  const [contacts, setContacts] = React.useState([]);
-  const [isLoadingContacts, setIsLoadingContacts] = React.useState(false);
-  const [showContactForm, setShowContactForm] = React.useState(false);
-  const [contactSearch, setContactSearch] = React.useState('');
-  const [editingContact, setEditingContact] = React.useState(null);
-  const [contactFormData, setContactFormData] = React.useState(getDefaultContactFormData());
-  const [isSavingContact, setIsSavingContact] = React.useState(false);
-  const [error, setError] = React.useState('');
+  // Infrastructure: Data operations
+  const api = useContactsApi(username, isAuthenticated);
 
-  // Handle smart-task triggered actions (e.g., Add Co-parent)
-  React.useEffect(() => {
-    const pending = getWithMigration('liaizenSmartTask');
-    if (!pending) return;
+  // Product/UX: Form state
+  const form = useContactForm();
 
-    if (pending === 'add_coparent') {
-      resetForm();
-      setContactFormData(prev => ({
-        ...prev,
-        relationship: 'My Co-Parent',
-      }));
-      setShowContactForm(true);
+  // Integration: External triggers
+  useContactTriggers({
+    openNewContactForm: form.openNewContactForm,
+    loadContacts: api.loadContacts,
+    isAuthenticated,
+  });
+
+  // Composed save that closes form on success
+  const saveContact = React.useCallback(async () => {
+    const result = await api.saveContact(form.contactFormData, form.editingContact);
+    if (result) {
+      form.closeForm();
     }
+    return result;
+  }, [api, form]);
 
-    removeWithMigration('liaizenSmartTask');
-  }, []);
-
-  // Handle contact suggestion from chat (e.g., "Would you like to add Vira?")
-  React.useEffect(() => {
-    const addContactData = getWithMigration('liaizenAddContact');
-    if (!addContactData) return;
-
-    try {
-      const data = JSON.parse(addContactData);
-      if (data.name) {
-        resetForm();
-        setContactFormData(prev => ({
-          ...prev,
-          contact_name: data.name,
-          notes: data.context || '',
-        }));
-        setShowContactForm(true);
-      }
-    } catch (err) {
-      console.error('Error parsing add contact data:', err);
-    }
-
-    removeWithMigration('liaizenAddContact');
-  }, []);
-
-  const loadContacts = React.useCallback(
-    async (isAuthenticated = true) => {
-      if (!username || !isAuthenticated) {
-        // Silently skip if no username or not authenticated (e.g., on landing page)
-        // This prevents race conditions during auth verification
-        setContacts([]);
-        return;
-      }
-      setIsLoadingContacts(true);
-      try {
-        const response = await apiGet(`/api/contacts?username=${encodeURIComponent(username)}`);
-        if (response.ok) {
-          const data = await response.json();
-          const contactsList = data.contacts || [];
-          // Debug log commented out to reduce console noise
-          // console.log('Contacts loaded:', contactsList.length, 'contacts for', username);
-          setContacts(contactsList);
-        } else if (response.status === 401) {
-          // User not authenticated - silently ignore
-          setContacts([]);
-        } else {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          console.error('Failed to load contacts:', response.status, errorData);
-          setError(`Failed to load contacts: ${errorData.error || 'Unknown error'}`);
-        }
-      } catch (err) {
-        console.error('Error loading contacts (Vite):', err);
-        setError('Failed to load contacts');
-      } finally {
-        setIsLoadingContacts(false);
-      }
+  // Composed delete
+  const deleteContact = React.useCallback(
+    async contactId => {
+      return api.deleteContact(contactId);
     },
-    [username, isAuthenticated]
+    [api]
   );
 
-  React.useEffect(() => {
-    loadContacts(isAuthenticated);
-  }, [loadContacts, isAuthenticated]);
+  // Backward-compatible editContact
+  const editContact = React.useCallback(
+    contact => {
+      form.openEditContactForm(contact);
+    },
+    [form]
+  );
 
-  // Reload contacts when a co-parent joins the room
-  React.useEffect(() => {
-    const handleCoParentJoined = () => {
-      // Reload contacts after a short delay to ensure backend has created them
-      setTimeout(() => {
-        loadContacts(isAuthenticated);
-      }, 1000);
-    };
-
-    window.addEventListener('coparent-joined', handleCoParentJoined);
-
-    return () => {
-      window.removeEventListener('coparent-joined', handleCoParentJoined);
-    };
-  }, [loadContacts]);
-
-  const resetForm = () => {
-    setEditingContact(null);
-    setContactFormData(getDefaultContactFormData());
-  };
-
-  const saveContact = async () => {
-    if (!username || !contactFormData.contact_name.trim()) {
-      setError('Contact name is required');
-      return;
-    }
-    if (!contactFormData.relationship) {
-      setError('Relationship is required');
-      return;
-    }
-
-    setIsSavingContact(true);
-    setError('');
-    try {
-      // Normalize relationship value for backend storage
-      const relationshipValue = toBackendRelationship(contactFormData.relationship);
-
-      const path = editingContact ? `/api/contacts/${editingContact.id}` : '/api/contacts';
-      const method = editingContact ? apiPut : apiPost;
-
-      const payload = {
-        username,
-        ...contactFormData,
-        relationship: relationshipValue,
-      };
-
-      console.log('Saving contact:', {
-        username,
-        contact_name: contactFormData.contact_name,
-        relationship: relationshipValue,
-      });
-
-      const response = await method(path, payload);
-
-      let data;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        if (!text) {
-          throw new Error('Empty response from server');
-        }
-        data = JSON.parse(text);
-      }
-
-      if (response.ok) {
-        console.log('Contact saved successfully:', data);
-        setShowContactForm(false);
-        resetForm();
-        // Reload contacts immediately and also after a short delay to ensure it's updated
-        console.log('Reloading contacts after save...');
-        await loadContacts();
-        setTimeout(() => {
-          console.log('Reloading contacts again after delay...');
-          loadContacts();
-        }, 500);
-        return data;
-      } else {
-        const errorMessage =
-          data.error || data.message || `Failed to save contact (Status: ${response.status})`;
-        setError(errorMessage);
-        console.error('Contact save failed:', response.status, errorMessage, data);
-      }
-    } catch (err) {
-      console.error('Error saving contact (Vite):', err);
-      setError(
-        err.message || 'Failed to save contact. Please check your connection and try again.'
-      );
-    } finally {
-      setIsSavingContact(false);
-    }
-  };
-
-  const deleteContact = async contactId => {
-    if (!username) return;
-    if (!window.confirm('Are you sure you want to delete this contact?')) return;
-    try {
-      const response = await apiPut(
-        `/api/contacts/${contactId}?username=${encodeURIComponent(username)}`,
-        { _method: 'DELETE' }
-      );
-      const data = await response.json();
-      if (response.ok) {
-        loadContacts();
-      } else {
-        setError(data.error || 'Failed to delete contact');
-      }
-    } catch (err) {
-      console.error('Error deleting contact (Vite):', err);
-      setError('Failed to delete contact. Please try again.');
-    }
-  };
-
-  const editContact = contact => {
-    setEditingContact(contact);
-    // Normalize relationship values to match dropdown options using utility
-    const relationshipDisplay = toDisplayRelationship(contact.relationship);
-    setContactFormData({
-      contact_name: contact.contact_name || '',
-      contact_email: contact.contact_email || '',
-      relationship: relationshipDisplay,
-      separation_details: contact.separation_details || '',
-      separation_date: contact.separation_date || '',
-      address: contact.address || '',
-      difficult_aspects: contact.difficult_aspects || '',
-      friction_situations: contact.friction_situations || '',
-      legal_matters: contact.legal_matters || '',
-      safety_concerns: contact.safety_concerns || '',
-      substance_mental_health: contact.substance_mental_health || '',
-      additional_thoughts: contact.additional_thoughts || '',
-      other_parent: contact.other_parent || '',
-      child_age: contact.child_age || '',
-      child_birthdate: contact.child_birthdate || '',
-      school: contact.school || '',
-      phone: contact.phone || '',
-      partner_duration: contact.partner_duration || '',
-      has_children: contact.has_children || '',
-      partner_living_together: contact.partner_living_together || '',
-      partner_living_together_since: contact.partner_living_together_since || '',
-      partner_relationship_notes: contact.partner_relationship_notes || '',
-      custody_arrangement: contact.custody_arrangement || '',
-      linked_contact_id: contact.linked_contact_id || '',
-      // Child health fields
-      child_health_physical_conditions: contact.child_health_physical_conditions || '',
-      child_health_allergies: contact.child_health_allergies || '',
-      child_health_medications: contact.child_health_medications || '',
-      child_health_doctor: contact.child_health_doctor || '',
-      child_health_mental_conditions: contact.child_health_mental_conditions || '',
-      child_health_mental_diagnosis: contact.child_health_mental_diagnosis || '',
-      child_health_mental_treatment: contact.child_health_mental_treatment || '',
-      child_health_therapist: contact.child_health_therapist || '',
-      child_health_developmental_delays: contact.child_health_developmental_delays || '',
-      child_health_developmental_supports: contact.child_health_developmental_supports || '',
-      // Co-parent financial and work fields
-      coparent_pays_child_support: contact.coparent_pays_child_support || '',
-      coparent_receives_child_support: contact.coparent_receives_child_support || '',
-      coparent_work_schedule: contact.coparent_work_schedule || '',
-      coparent_work_flexibility: contact.coparent_work_flexibility || '',
-    });
-    setShowContactForm(true);
-  };
-
+  // Return unified interface for backward compatibility
   return {
-    contacts,
-    isLoadingContacts,
-    showContactForm,
-    contactSearch,
-    editingContact,
-    contactFormData,
-    isSavingContact,
-    error,
-    setShowContactForm,
-    setContactSearch,
-    setContactFormData,
+    // From API hook
+    contacts: api.contacts,
+    isLoadingContacts: api.isLoadingContacts,
+    isSavingContact: api.isSavingContact,
+    error: api.error,
+
+    // From Form hook
+    showContactForm: form.showContactForm,
+    contactSearch: form.contactSearch,
+    editingContact: form.editingContact,
+    contactFormData: form.contactFormData,
+    setShowContactForm: form.setShowContactForm,
+    setContactSearch: form.setContactSearch,
+    setContactFormData: form.setContactFormData,
+    resetForm: form.resetForm,
+
+    // Composed operations
     saveContact,
     deleteContact,
     editContact,
-    resetForm,
   };
 }
+
+// Also export individual hooks for new code
+export { useContactsApi } from './useContactsApi.js';
+export { useContactForm } from './useContactForm.js';
+export { useContactTriggers } from './useContactTriggers.js';
+
+export default useContacts;

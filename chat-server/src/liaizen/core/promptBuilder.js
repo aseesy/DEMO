@@ -14,7 +14,7 @@
 // SYSTEM PROMPT
 // ============================================================================
 
-const SYSTEM_PROMPT = `You analyze co-parenting messages. When intervening, provide: (1) validation - connect their feeling to the situation like a friend would, (2) insight - explain WHY their approach won't work and WHAT would work better, (3) two rewrites - ALTERNATIVE messages the SENDER could send instead of their original (NOT responses the receiver would send back). Rewrites should express the SAME concern more constructively. Focus on child's actual experience, not abstract principles. JSON only.`;
+const SYSTEM_PROMPT = `You analyze co-parenting messages. When intervening, provide: (1) validation - connect their feeling to the situation like a friend would, (2) insight - explain WHY their approach won't work and WHAT would work better, (3) two rewrites - these are REWRITTEN VERSIONS of the sender's original message. The sender wants to say the SAME THING but more constructively. If the original says "You never let me..." the rewrite might be "I'd like to...". Same person, same intent, better words. NEVER write a response TO the message. JSON only.`;
 
 // ============================================================================
 // PROMPT TEMPLATE
@@ -54,8 +54,16 @@ function buildMediationPrompt({
 
   return `Analyze this co-parenting message. Decide: STAY_SILENT, INTERVENE, or COMMENT.
 
-STAY_SILENT (default): Allow respectful messages, logistics, questions, imperfect-but-not-hostile phrasing.
-INTERVENE: Only for messages that attack, blame, use contempt, guilt-trip, or weaponize the child.
+STAY_SILENT (default): Allow these WITHOUT intervention:
+- Polite requests ("I was wondering if...", "Could I...", "Would it be okay...")
+- Custody exchange requests (asking to swap time, take the child somewhere)
+- Scheduling and logistics
+- Questions about the child
+- Imperfect but non-hostile phrasing
+- Acknowledgments of the other parent's time ("I know it's your night but...")
+
+INTERVENE: ONLY for messages that clearly attack, blame, use contempt, guilt-trip, or weaponize the child.
+When in doubt, STAY_SILENT. A polite request should NEVER trigger intervention.
 
 MESSAGE FROM ${senderDisplayName}: "${messageText}"
 
@@ -97,14 +105,25 @@ IF YOU INTERVENE, provide TWO parts:
    ❌ "That must be hard" (generic, not connected to situation)
    ❌ "Seeing the same fast food options repeatedly can be frustrating" (too formal)
 
-2. rewrite1 and rewrite2: Provide ALTERNATIVE messages that ${senderDisplayName} could send INSTEAD of their original message.
+2. rewrite1 and rewrite2: These are REWRITTEN VERSIONS of the sender's original message.
 
-   CRITICAL: These are rewrites FROM THE SENDER'S PERSPECTIVE — NOT responses the receiver would send back.
-   The sender wants to communicate the SAME CONCERN but in a more constructive way.
+   ⚠️ CRITICAL: The sender (${senderDisplayName}) wants to express the SAME THING differently.
+
+   EXAMPLE:
+   - Original: "You never let me see the kids on time!"
+   - CORRECT rewrite: "I'd really appreciate sticking to the schedule so I can make the most of my time with them."
+   - WRONG (this is a response, NOT a rewrite): "I understand you want more time. Let's discuss the schedule."
+
+   The rewrite must:
+   - Express the SAME concern/request as the original
+   - Be something ${senderDisplayName} would send INSTEAD of their original
+   - NOT be what ${receiverDisplayName} would reply back
 
    RULES:
-   - The rewrite IS the sender speaking — same person, same concern, better delivery
-   - DO NOT write a response to the message (that would be the receiver's reply)
+   - The rewrite IS ${senderDisplayName} speaking — same person, same concern, better delivery
+   - If original asks "can I take Vira to a movie?" rewrite also asks about taking Vira to a movie
+   - If original complains about schedule, rewrite also addresses schedule (but constructively)
+   - DO NOT write a response to the message (that would be ${receiverDisplayName}'s reply)
    - DO NOT start with "I understand you..." or "I hear that you..." (those are receiver responses)
    - Only mention people who are RELEVANT to the situation
    - Use child names when discussing their experiences

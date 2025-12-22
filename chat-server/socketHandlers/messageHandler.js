@@ -107,7 +107,12 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
     // Step 3: Verify ownership
     let originalMessage;
     try {
-      const ownership = await verifyMessageOwnership(messageId, user.username, user.roomId, dbPostgres);
+      const ownership = await verifyMessageOwnership(
+        messageId,
+        user.username,
+        user.roomId,
+        dbPostgres
+      );
       if (!ownership.valid) {
         emitError(socket, ownership.error);
         return;
@@ -135,7 +140,11 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
     }
 
     // Step 5: Broadcast edited message
-    const editedMessage = createEditedMessage(originalMessage, textValidation.cleanText, user.roomId);
+    const editedMessage = createEditedMessage(
+      originalMessage,
+      textValidation.cleanText,
+      user.roomId
+    );
     io.to(user.roomId).emit('message_edited', editedMessage);
   });
 
@@ -151,7 +160,12 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
 
     // Step 2: Verify ownership
     try {
-      const ownership = await verifyMessageOwnership(messageId, user.username, user.roomId, dbPostgres);
+      const ownership = await verifyMessageOwnership(
+        messageId,
+        user.username,
+        user.roomId,
+        dbPostgres
+      );
       if (!ownership.valid) {
         emitError(socket, ownership.error);
         return;

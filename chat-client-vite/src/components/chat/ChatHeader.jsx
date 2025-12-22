@@ -78,7 +78,7 @@ export function ChatHeader({
     !hasAcceptedInvitation;
 
   return (
-    <div className="sticky top-0 md:hidden z-20 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center gap-3">
+    <div className="sticky top-0 md:hidden z-20 bg-white border-b border-gray-200 px-3 sm:px-4 py-2 flex items-center gap-2">
       {/* Search Bar */}
       <div className="flex-1 relative max-w-3xl mx-auto">
         <svg
@@ -122,7 +122,7 @@ export function ChatHeader({
       </div>
 
       {/* Right side: Threads and invite actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         {threads.length > 0 && (
           <button
             type="button"

@@ -1,7 +1,7 @@
 import React from 'react';
 import './index.css';
 import { useAuth } from './hooks/useAuth.js';
-import { useDashboard } from './hooks/useDashboard.js';
+import { useDashboard } from './features/dashboard';
 import { useContacts } from './hooks/useContacts.js';
 import { useNotifications } from './hooks/useNotifications.js';
 import { useInAppNotifications } from './hooks/useInAppNotifications.js';
@@ -62,7 +62,16 @@ function ChatRoomContent({
   const { handleLogout } = useAuth();
 
   // Shared chat state from context
-  const { unreadCount, hasMeanMessage, searchQuery, searchMessages, searchMode, toggleSearchMode, exitSearchMode, messages } = useChatContext();
+  const {
+    unreadCount,
+    hasMeanMessage,
+    searchQuery,
+    searchMessages,
+    searchMode,
+    toggleSearchMode,
+    exitSearchMode,
+    messages,
+  } = useChatContext();
 
   // Landing page state
   const [showLanding, setShowLanding] = React.useState(() => {
@@ -208,11 +217,8 @@ function ChatRoomContent({
 
   // Modal state for non-Dashboard views (contact suggestions, message flagging)
   // These modals need messages, so they're separate from Dashboard modals
-  const {
-    contactSuggestionModal,
-    messageFlaggingModal,
-  } = useModalControllerDefault({ 
-    messages, 
+  const { contactSuggestionModal, messageFlaggingModal } = useModalControllerDefault({
+    messages,
     setCurrentView,
     dependencies: {},
   });
@@ -321,7 +327,7 @@ function ChatRoomContent({
 
       <div className="h-dvh bg-white flex flex-col overflow-hidden overscroll-none relative z-0">
         <div
-          className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-14 md:pt-14 md:pb-0' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto' : 'pt-0 md:pt-14 pb-14 md:pb-8 overflow-y-auto px-4 sm:px-6 md:px-8'}`}
+          className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-14 md:pt-14 md:pb-0' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto' : 'pt-0 md:pt-14 pb-14 md:pb-6 overflow-y-auto px-3 sm:px-4 md:px-6'}`}
         >
           <div
             className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : currentView === 'profile' ? 'w-full' : 'max-w-7xl mx-auto w-full'}`}
@@ -470,7 +476,9 @@ function ChatRoomContent({
               }}
               pendingContactSuggestion={contactSuggestionModal.pendingContactSuggestion}
               onAddContact={contactSuggestionModal.handleAddContactFromSuggestion}
-              onDismissContactSuggestion={() => contactSuggestionModal.setPendingContactSuggestion(null)}
+              onDismissContactSuggestion={() =>
+                contactSuggestionModal.setPendingContactSuggestion(null)
+              }
               setDismissedSuggestions={contactSuggestionModal.setDismissedSuggestions}
             />
           </div>

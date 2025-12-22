@@ -1,23 +1,23 @@
 import React from 'react';
-import { useTasks } from './useTasks.js';
-import { useModalControllerDefault } from './useModalController.js';
-import { createTaskCollection } from './taskAbstraction.js';
-import { useThreads } from './useThreads.js';
+import { useTasks } from '../../hooks/useTasks.js';
+import { useModalControllerDefault } from '../../hooks/useModalController.js';
+import { createTaskCollection } from '../../hooks/taskAbstraction.js';
+import { useThreads } from '../../hooks/useThreads.js';
 
 /**
  * useDashboard - ViewModel for DashboardView
- * 
+ *
  * We create explicit objects. This prepares the data for the view.
  * If you are using a custom hook (which you should be, to separate logic from view),
  * this is even easier.
- * 
+ *
  * This hook acts as the ViewModel, encapsulating all dashboard state and behavior.
  * It internalizes state management (Dependency Inversion Principle) so the parent
  * component doesn't need to know about low-level details like taskSearch or taskFilter.
- * 
+ *
  * The Dashboard owns its dependencies - it manages tasks, modals, and threads internally.
  * The parent component only needs to provide high-level dependencies (username, auth state).
- * 
+ *
  * @param {Object} options
  * @param {string} options.username - Current user's username
  * @param {boolean} options.isAuthenticated - Whether user is authenticated
@@ -69,8 +69,8 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     setShowWelcomeModal,
     setShowProfileTaskModal,
     setShowInviteModal,
-  } = useModalControllerDefault({ 
-    messages, 
+  } = useModalControllerDefault({
+    messages,
     setCurrentView,
     dependencies: {},
   });
@@ -90,12 +90,9 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
   // ============================================
   // We create explicit objects. This prepares the data for the view.
   // Using a custom hook makes this easier by separating logic from view.
-  
+
   // Create abstracted task collection to hide array implementation
-  const taskCollection = React.useMemo(
-    () => createTaskCollection(tasks),
-    [tasks]
-  );
+  const taskCollection = React.useMemo(() => createTaskCollection(tasks), [tasks]);
 
   const taskState = React.useMemo(
     () => ({
@@ -123,7 +120,15 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
       setTaskFormData,
       toggleTaskStatus,
     }),
-    [setEditingTask, setShowTaskForm, setTaskFormMode, setAiTaskDetails, setIsGeneratingTask, setTaskFormData, toggleTaskStatus]
+    [
+      setEditingTask,
+      setShowTaskForm,
+      setTaskFormMode,
+      setAiTaskDetails,
+      setIsGeneratingTask,
+      setTaskFormData,
+      toggleTaskStatus,
+    ]
   );
 
   const modalHandlers = React.useMemo(
@@ -145,7 +150,14 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
       getThreadMessages,
       analyzeConversation,
     }),
-    [threads, isLoadingThreads, selectedThreadId, setSelectedThreadId, getThreadMessages, analyzeConversation]
+    [
+      threads,
+      isLoadingThreads,
+      selectedThreadId,
+      setSelectedThreadId,
+      getThreadMessages,
+      analyzeConversation,
+    ]
   );
 
   // ============================================
@@ -157,7 +169,7 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     taskHandlers,
     modalHandlers,
     threadState,
-    
+
     // Flat handlers for ChatRoom (abstracted - no reaching inside objects)
     // These are extracted from modalController to prevent reaching inside
     taskFormMode: taskFormModal.taskFormMode,
@@ -169,7 +181,7 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     setShowWelcomeModal,
     setShowProfileTaskModal,
     setShowInviteModal,
-    
+
     // Raw task state for ChatRoom (GlobalModals) - marked as implementation detail
     // TODO: Refactor ChatRoom to use abstracted interface
     // These are exposed for backward compatibility only
@@ -194,4 +206,3 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     },
   };
 }
-

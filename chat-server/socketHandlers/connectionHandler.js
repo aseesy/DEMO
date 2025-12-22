@@ -92,7 +92,11 @@ function registerConnectionHandlers(socket, io, services, activeUsers, messageHi
     });
 
     // Step 8: Create and save system message
-    const systemMessage = createSystemMessage(socket.id, `${cleanUsername} joined the chat`, roomId);
+    const systemMessage = createSystemMessage(
+      socket.id,
+      `${cleanUsername} joined the chat`,
+      roomId
+    );
 
     try {
       await saveSystemMessage(systemMessage, dbSafe);

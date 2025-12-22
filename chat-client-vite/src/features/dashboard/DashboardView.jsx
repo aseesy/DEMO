@@ -6,11 +6,11 @@
  */
 
 import React from 'react';
-import { UpdatesPanel } from '../components/UpdatesPanel.jsx';
-import { CommunicationStatsWidget } from '../components/CommunicationStatsWidget.jsx';
-import { TaskCard } from '../components/tasks/TaskCard.jsx';
-import { filterTasksForDashboard } from '../utils/taskTypeDetection.js';
-import { getDefaultTaskFormData } from '../utils/taskHelpers.js';
+import { UpdatesPanel } from '../../components/UpdatesPanel.jsx';
+import { CommunicationStatsWidget } from '../../components/CommunicationStatsWidget.jsx';
+import { TaskCard } from '../../components/tasks/TaskCard.jsx';
+import { filterTasksForDashboard } from '../../utils/taskTypeDetection.js';
+import { getDefaultTaskFormData } from '../../utils/taskHelpers.js';
 
 /**
  * DashboardView component
@@ -72,12 +72,12 @@ export function DashboardView({
   };
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-4 md:space-y-6">
       {/* Co-parent connection prompt */}
       {!hasCoParentConnected && <InvitePromptBanner onInvite={() => setShowInviteModal(true)} />}
 
       {/* Dashboard Grid: Updates and Tasks */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* Updates Section */}
         <UpdatesPanel
           username={username}
@@ -107,7 +107,7 @@ export function DashboardView({
         />
 
         {/* Communication Stats Widget */}
-        <div className="mt-4">
+        <div className="mt-3">
           <CommunicationStatsWidget username={username} />
         </div>
 
@@ -195,7 +195,7 @@ function TasksSection({
 }) {
   return (
     <div className="bg-white rounded-xl border-2 border-teal-light p-4 md:p-5 shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-4">
+      <div className="mb-3">
         <h2 className="text-lg md:text-xl font-semibold text-teal-dark">Your Tasks</h2>
       </div>
 
@@ -240,7 +240,7 @@ function TaskFilters({ taskSearch, setTaskSearch, taskFilter, setTaskFilter, onA
   ];
 
   return (
-    <div className="mb-4 space-y-3">
+    <div className="mb-3 space-y-2">
       {/* Search Input */}
       <div className="relative">
         <input
@@ -400,9 +400,9 @@ function ThreadsSection({
   isLoadingThreads,
 }) {
   return (
-    <div className="bg-white rounded-2xl border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow overflow-hidden mt-6 md:mt-8">
-      <div className="p-6 sm:p-8">
-        <div className="flex items-center justify-between mb-6">
+    <div className="bg-white rounded-2xl border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow overflow-hidden mt-4 md:mt-6">
+      <div className="p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-semibold text-teal-dark mb-1">Threads</h2>
             <p className="text-sm text-gray-600">Organized conversation topics</p>
@@ -420,7 +420,7 @@ function ThreadsSection({
         {threads.length === 0 ? (
           <EmptyThreadsState onAnalyze={analyzeConversation} isLoading={isLoadingThreads} />
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {threads.slice(0, 3).map(thread => (
               <ThreadCard
                 key={thread.id}
@@ -443,7 +443,7 @@ function ThreadsSection({
  */
 function EmptyThreadsState({ onAnalyze, isLoading }) {
   return (
-    <div className="text-center py-12">
+    <div className="text-center py-8">
       <svg
         className="w-16 h-16 text-gray-300 mx-auto mb-4"
         fill="none"

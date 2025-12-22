@@ -107,6 +107,24 @@ function generateInviteId() {
 }
 
 /**
+ * Generate a human-readable invite code (for sharing)
+ *
+ * @returns {string} 9-character alphanumeric code (e.g., 'ABC123XYZ')
+ *
+ * @example
+ * generateInviteCode() // 'K7M2P9X4Q'
+ */
+function generateInviteCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  const randomBytes = crypto.randomBytes(9);
+  for (let i = 0; i < 9; i++) {
+    code += chars[randomBytes[i] % chars.length];
+  }
+  return code;
+}
+
+/**
  * Generate a message ID
  *
  * @returns {string} Message identifier
@@ -323,6 +341,7 @@ module.exports = {
   generateSimpleId,
   generateRoomId,
   generateInviteId,
+  generateInviteCode,
   generateMessageId,
   generateThreadId,
   generateSessionToken,

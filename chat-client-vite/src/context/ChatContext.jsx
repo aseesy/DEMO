@@ -114,33 +114,49 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     }
   }, [currentView, scrollToBottom]); // Don't include messages to avoid re-scrolling on every new message
 
-  // Helper to emit or queue a message
+  // Helper to emit or queue a message - with optimistic updates for instant UI feedback
   const emitOrQueueMessage = React.useCallback(
     text => {
-      const messageId = `${Date.now()}-${socketRef.current?.id || 'local'}`;
-      const pendingMessage = {
+      const messageId = `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const now = new Date().toISOString();
+
+      const optimisticMessage = {
         id: messageId,
         text,
         username,
-        timestamp: new Date().toISOString(),
+        displayName: username,
+        timestamp: now,
+        created_at: now,
         isPreApprovedRewrite,
         originalRewrite,
-        status: 'pending',
+        status: 'sending', // Visual indicator
+        isOptimistic: true, // Flag for optimistic update
       };
 
-      setPendingMessages(prev => new Map(prev).set(messageId, pendingMessage));
-      setMessageStatuses(prev => new Map(prev).set(messageId, 'pending'));
+      // OPTIMISTIC UPDATE: Add message to UI immediately
+      setMessages(prev => [...prev, optimisticMessage]);
+
+      // Track in pending messages for status updates
+      setPendingMessages(prev => new Map(prev).set(messageId, optimisticMessage));
+      setMessageStatuses(prev => new Map(prev).set(messageId, 'sending'));
 
       if (socketRef.current?.connected) {
-        socketRef.current.emit('send_message', { text, isPreApprovedRewrite, originalRewrite });
+        socketRef.current.emit('send_message', {
+          text,
+          isPreApprovedRewrite,
+          originalRewrite,
+          optimisticId: messageId, // Send ID so server can correlate
+        });
       } else {
-        offlineQueueRef.current.push(pendingMessage);
+        offlineQueueRef.current.push(optimisticMessage);
         try {
           localStorage.setItem('liaizen_offline_queue', JSON.stringify(offlineQueueRef.current));
         } catch (e) {
           /* ignore */
         }
         setError('Not connected. Message will be sent when connection is restored.');
+        // Update status to queued
+        setMessageStatuses(prev => new Map(prev).set(messageId, 'queued'));
       }
 
       setInputMessage('');
@@ -156,19 +172,51 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       offlineQueueRef,
       setError,
       setDraftCoaching,
+      setMessages,
       setPendingMessages,
       setMessageStatuses,
     ]
   );
 
-  // Send message with analysis
+  // Track what message was last analyzed to use cached results
+  const lastAnalyzedTextRef = React.useRef('');
+
+  // Send message with analysis - uses cached draft analysis when available
   const sendMessage = React.useCallback(
     async e => {
       if (e?.preventDefault) e.preventDefault();
       const clean = inputMessage.trim();
       if (!clean || !socketRef.current) return;
 
-      const { analyzeMessage, shouldSendMessage } = await import('../utils/messageAnalyzer.js');
+      // FAST PATH 1: If we already have a draft coaching result for this exact message
+      // and it shows intervention needed, use it immediately (no new analysis)
+      if (draftCoaching && draftCoaching.observerData && draftCoaching.originalText === clean) {
+        // Already showing intervention - don't send, just keep showing it
+        return;
+      }
+
+      // FAST PATH 2: If we analyzed this message while typing and it was clean, send immediately
+      if (draftCoaching === null && lastAnalyzedTextRef.current === clean) {
+        // Message was already analyzed and passed - send immediately
+        emitOrQueueMessage(clean);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        socketRef.current.emit('typing', { isTyping: false });
+        return;
+      }
+
+      // FAST PATH 3: Quick local check for obviously safe messages
+      const { shouldSendMessage } = await import('../utils/messageAnalyzer.js');
+      const quickCheck = shouldSendMessage({ action: 'QUICK_CHECK', messageText: clean });
+      if (quickCheck.shouldSend && quickCheck.reason === 'polite_request') {
+        // Polite request - send immediately without full analysis
+        emitOrQueueMessage(clean);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        socketRef.current.emit('typing', { isTyping: false });
+        return;
+      }
+
+      // STANDARD PATH: Need full analysis
+      const { analyzeMessage } = await import('../utils/messageAnalyzer.js');
 
       try {
         setDraftCoaching({ analyzing: true, riskLevel: 'low', shouldSend: false });
@@ -208,7 +256,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
         emitOrQueueMessage(clean); // Fail open - send anyway
       }
     },
-    [inputMessage, emitOrQueueMessage, socketRef, setDraftCoaching]
+    [inputMessage, emitOrQueueMessage, socketRef, setDraftCoaching, draftCoaching]
   );
 
   const handleInputChange = React.useCallback(
@@ -225,12 +273,28 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       }, 1000);
 
       if (draftAnalysisTimeoutRef.current) clearTimeout(draftAnalysisTimeoutRef.current);
-      if (value.trim().length >= 10 && socketRef.current?.connected) {
-        draftAnalysisTimeoutRef.current = setTimeout(() => {
-          socketRef.current?.emit('analyze_draft', { draftText: value.trim() });
-        }, 1000);
+
+      const trimmed = value.trim();
+
+      // Quick local check - if message passes fast filters, mark as analyzed
+      if (trimmed.length >= 3) {
+        import('../utils/messageAnalyzer.js').then(({ shouldSendMessage }) => {
+          const quickCheck = shouldSendMessage({ action: 'QUICK_CHECK', messageText: trimmed });
+          if (quickCheck.shouldSend) {
+            // Message passes quick check - cache it as analyzed
+            lastAnalyzedTextRef.current = trimmed;
+            setDraftCoaching(null); // Clear any previous coaching
+          } else if (trimmed.length >= 10 && socketRef.current?.connected) {
+            // Needs full analysis - send to server after delay
+            draftAnalysisTimeoutRef.current = setTimeout(() => {
+              socketRef.current?.emit('analyze_draft', { draftText: trimmed });
+              lastAnalyzedTextRef.current = trimmed; // Track what we analyzed
+            }, 800); // Reduced from 1000ms for faster feedback
+          }
+        });
       } else {
         setDraftCoaching(null);
+        lastAnalyzedTextRef.current = '';
       }
     },
     [socketRef, setDraftCoaching]

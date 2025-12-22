@@ -17,7 +17,7 @@ import { renderHook } from '@testing-library/react';
 import { useDashboard } from './useDashboard.js';
 
 // Mock dependencies
-vi.mock('./useModalController.js', () => ({
+vi.mock('../../hooks/useModalController.js', () => ({
   useModalControllerDefault: () => ({
     welcomeModal: { show: false, setShow: vi.fn() },
     profileTaskModal: { show: false, setShow: vi.fn() },
@@ -44,7 +44,7 @@ vi.mock('./useModalController.js', () => ({
   }),
 }));
 
-vi.mock('./useTasks.js', () => ({
+vi.mock('../../hooks/useTasks.js', () => ({
   useTasks: () => ({
     tasks: [],
     isLoadingTasks: false,
@@ -59,7 +59,7 @@ vi.mock('./useTasks.js', () => ({
   }),
 }));
 
-vi.mock('./useThreads.js', () => ({
+vi.mock('../../hooks/useThreads.js', () => ({
   useThreads: () => ({
     threads: [],
     selectedThreadId: null,
@@ -183,7 +183,7 @@ describe('Data Abstraction - useDashboard', () => {
       // Consumer should be able to use tasks without knowing it's an array
       // If we changed to a Set or Map internally, this should still work
       expect(taskState.tasks).toBeDefined();
-      
+
       // Consumer can iterate without knowing implementation
       if (taskState.tasks && typeof taskState.tasks[Symbol.iterator] === 'function') {
         const items = [...taskState.tasks];
@@ -253,7 +253,7 @@ describe('Data Abstraction - useDashboard', () => {
       // If tasks have internal fields, they should be abstracted
       if (taskState.tasks && taskState.tasks.length > 0) {
         const firstTask = taskState.tasks[0];
-        
+
         // We can't fully test this without knowing the task structure
         // But we can verify taskState doesn't expose implementation details
         expect(firstTask).toBeDefined();
@@ -355,4 +355,3 @@ describe('Data Abstraction - useDashboard', () => {
     });
   });
 });
-

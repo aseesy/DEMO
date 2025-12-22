@@ -68,6 +68,31 @@ async function saveMessage(message) {
           }
         });
       }
+
+      // Store message in Neo4j for semantic threading (non-blocking, async)
+      if (coreData.room_id && coreData.text && coreData.text.trim().length > 0) {
+        setImmediate(() => {
+          try {
+            const neo4jClient = require('./src/utils/neo4jClient');
+            if (neo4jClient && neo4jClient.isAvailable()) {
+              neo4jClient
+                .createOrUpdateMessageNode(
+                  id,
+                  coreData.room_id,
+                  coreData.text,
+                  coreData.username,
+                  coreData.timestamp
+                )
+                .catch(err => {
+                  // Silently fail - Neo4j storage is optional
+                  console.warn('⚠️  Failed to store message in Neo4j (non-fatal):', err.message);
+                });
+            }
+          } catch (err) {
+            // Neo4j client not available - that's okay
+          }
+        });
+      }
     }
   } catch (err) {
     // If extended columns don't exist, try with just core data

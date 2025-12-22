@@ -5,3 +5,4 @@
 *.naming-validation.log
 node_modules
 screenshots/*.webm
+.vercel

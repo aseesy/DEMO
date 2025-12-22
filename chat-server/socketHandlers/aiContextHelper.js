@@ -21,7 +21,9 @@ async function getParticipantUsernames(dbSafe, roomId, activeUsers) {
       const memberUsers = await dbSafe.safeSelect('users', { id: userIds });
       return memberUsers.map(u => u.username);
     }
-  } catch (err) {}
+  } catch {
+    // Ignore errors, fallback to activeUsers
+  }
   return Array.from(activeUsers.values())
     .filter(u => u.roomId === roomId)
     .map(u => u.username);
@@ -72,7 +74,9 @@ async function getTaskContext(services, user) {
         return activeTasks.map(t => t.title).join(', ');
       }
     }
-  } catch (err) {}
+  } catch {
+    // Ignore errors, fallback to activeUsers
+  }
   return null;
 }
 
@@ -87,7 +91,9 @@ async function getFlaggedContext(services, user) {
     if (flagsResult.length > 0) {
       return 'User has flagged similar messages before.';
     }
-  } catch (err) {}
+  } catch {
+    // Ignore errors, fallback to activeUsers
+  }
   return null;
 }
 

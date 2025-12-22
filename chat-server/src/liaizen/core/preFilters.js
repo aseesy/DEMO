@@ -63,6 +63,18 @@ const ALLOWED_POLITE = [
   'sounds good',
 ];
 
+// Polite request patterns - custody exchanges, scheduling, questions
+const POLITE_REQUEST_PATTERNS = [
+  /\b(I was wondering if|would it be okay if|would you mind if|could I|can I|may I)\b/i,
+  /\b(I know it'?s your|I know its your|I know you have)\b.*\b(but|and)\b/i,
+  /\b(would it be possible|is it possible|is it okay if)\b/i,
+  /\b(do you think|would you be open to|would you consider)\b/i,
+  /\b(I'?d like to|I would like to)\b.*\b(if that'?s okay|if that works|if you don'?t mind)\b/i,
+  /\b(can we|could we|shall we)\b.*\b(talk about|discuss|arrange|schedule|plan)\b/i,
+  /\b(just wanted to ask|just checking if|quick question)\b/i,
+  /\b(let me know if|let me know what you think)\b/i,
+];
+
 // Positive sentiment patterns (never mediate friendly messages)
 const POSITIVE_PATTERNS = [
   /\b(you'?re|you are)\s+(my\s+)?(friend|best|great|awesome|amazing|wonderful|the best|so kind|so helpful|so great|incredible|fantastic)\b/i,
@@ -123,6 +135,16 @@ function hasPositiveSentiment(text) {
 }
 
 /**
+ * Check if message is a polite request (custody exchange, scheduling, questions)
+ * These should never be flagged - they represent good co-parenting communication
+ * @param {string} text - Original message text
+ * @returns {boolean}
+ */
+function isPoliteRequest(text) {
+  return POLITE_REQUEST_PATTERNS.some(pattern => pattern.test(text));
+}
+
+/**
  * Run all pre-filters on a message
  * Returns early decision if message can be allowed without AI
  *
@@ -152,6 +174,11 @@ function runPreFilters(messageText) {
     return { shouldSkipAI: true, reason: 'positive_sentiment' };
   }
 
+  // Check polite requests (custody exchanges, scheduling, questions)
+  if (isPoliteRequest(messageText)) {
+    return { shouldSkipAI: true, reason: 'polite_request' };
+  }
+
   return { shouldSkipAI: false, reason: null };
 }
 
@@ -164,6 +191,7 @@ module.exports = {
   isPoliteResponse,
   isThirdPartyStatement,
   hasPositiveSentiment,
+  isPoliteRequest,
 
   // Combined filter
   runPreFilters,
@@ -172,4 +200,5 @@ module.exports = {
   ALLOWED_GREETINGS,
   ALLOWED_POLITE,
   POSITIVE_PATTERNS,
+  POLITE_REQUEST_PATTERNS,
 };
