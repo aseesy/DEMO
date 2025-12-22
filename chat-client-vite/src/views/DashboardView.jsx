@@ -60,7 +60,7 @@ export function DashboardView({
   const { setShowInviteModal, setShowWelcomeModal, setShowProfileTaskModal } = modalHandlers;
 
   // Destructure thread state
-  const { threads, selectedThreadId, setSelectedThreadId } = threadState;
+  const { threads, setSelectedThreadId } = threadState;
 
   const handleAddTask = () => {
     setEditingTask(null);
@@ -118,6 +118,8 @@ export function DashboardView({
           threads={threads}
           setSelectedThreadId={setSelectedThreadId}
           setCurrentView={setCurrentView}
+          analyzeConversation={threadState.analyzeConversation}
+          isLoadingThreads={threadState.isLoadingThreads}
         />
       </div>
     </div>
@@ -392,7 +394,7 @@ function TaskList({
 /**
  * Threads section component
  */
-function ThreadsSection({ threads, setSelectedThreadId, setCurrentView }) {
+function ThreadsSection({ threads, setSelectedThreadId, setCurrentView, analyzeConversation, isLoadingThreads }) {
   return (
     <div className="bg-white rounded-2xl border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow overflow-hidden mt-6 md:mt-8">
       <div className="p-6 sm:p-8">
@@ -412,7 +414,7 @@ function ThreadsSection({ threads, setSelectedThreadId, setCurrentView }) {
         </div>
 
         {threads.length === 0 ? (
-          <EmptyThreadsState />
+          <EmptyThreadsState onAnalyze={analyzeConversation} isLoading={isLoadingThreads} />
         ) : (
           <div className="space-y-3">
             {threads.slice(0, 3).map(thread => (
@@ -435,7 +437,7 @@ function ThreadsSection({ threads, setSelectedThreadId, setCurrentView }) {
 /**
  * Empty threads state
  */
-function EmptyThreadsState() {
+function EmptyThreadsState({ onAnalyze, isLoading }) {
   return (
     <div className="text-center py-12">
       <svg
@@ -451,9 +453,40 @@ function EmptyThreadsState() {
           d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
         />
       </svg>
-      <p className="text-gray-600 text-base">
-        No conversation threads yet. Start a chat to create threads!
+      <p className="text-gray-600 text-base mb-4">
+        No conversation threads yet. Click below to automatically organize your conversation into topics.
       </p>
+      {onAnalyze && (
+        <button
+          onClick={onAnalyze}
+          disabled={isLoading}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-teal-medium text-white rounded-lg hover:bg-teal-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+        >
+          {isLoading ? (
+            <>
+              <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              Analyzing conversation...
+            </>
+          ) : (
+            <>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+              Analyze Conversation History
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }

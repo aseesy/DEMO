@@ -26,6 +26,9 @@ export const DEFAULT_CONTACT_FORM_DATA = {
   phone: '',
   partner_duration: '',
   has_children: '',
+  partner_living_together: '',
+  partner_living_together_since: '',
+  partner_relationship_notes: '',
   custody_arrangement: '',
   linked_contact_id: '',
   // Child health fields

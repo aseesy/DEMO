@@ -1,7 +1,9 @@
+/* global window */
 import React from 'react';
 import { apiGet, apiPost, apiPut } from '../apiClient.js';
 import { toBackendRelationship, toDisplayRelationship } from '../utils/relationshipMapping.js';
 import { getDefaultContactFormData } from '../utils/contactFormDefaults.js';
+import { getWithMigration, removeWithMigration } from '../utils/storageMigration.js';
 
 export function useContacts(username, isAuthenticated = true) {
   const [contacts, setContacts] = React.useState([]);
@@ -15,7 +17,7 @@ export function useContacts(username, isAuthenticated = true) {
 
   // Handle smart-task triggered actions (e.g., Add Co-parent)
   React.useEffect(() => {
-    const pending = localStorage.getItem('liaizen_smart_task');
+    const pending = getWithMigration('liaizenSmartTask');
     if (!pending) return;
 
     if (pending === 'add_coparent') {
@@ -27,12 +29,12 @@ export function useContacts(username, isAuthenticated = true) {
       setShowContactForm(true);
     }
 
-    localStorage.removeItem('liaizen_smart_task');
+    removeWithMigration('liaizenSmartTask');
   }, []);
 
   // Handle contact suggestion from chat (e.g., "Would you like to add Vira?")
   React.useEffect(() => {
-    const addContactData = localStorage.getItem('liaizen_add_contact');
+    const addContactData = getWithMigration('liaizenAddContact');
     if (!addContactData) return;
 
     try {
@@ -50,7 +52,7 @@ export function useContacts(username, isAuthenticated = true) {
       console.error('Error parsing add contact data:', err);
     }
 
-    localStorage.removeItem('liaizen_add_contact');
+    removeWithMigration('liaizenAddContact');
   }, []);
 
   const loadContacts = React.useCallback(
@@ -230,6 +232,9 @@ export function useContacts(username, isAuthenticated = true) {
       phone: contact.phone || '',
       partner_duration: contact.partner_duration || '',
       has_children: contact.has_children || '',
+      partner_living_together: contact.partner_living_together || '',
+      partner_living_together_since: contact.partner_living_together_since || '',
+      partner_relationship_notes: contact.partner_relationship_notes || '',
       custody_arrangement: contact.custody_arrangement || '',
       linked_contact_id: contact.linked_contact_id || '',
       // Child health fields

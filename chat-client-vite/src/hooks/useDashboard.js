@@ -2,6 +2,7 @@ import React from 'react';
 import { useTasks } from './useTasks.js';
 import { useModalControllerDefault } from './useModalController.js';
 import { createTaskCollection } from './taskAbstraction.js';
+import { useThreads } from './useThreads.js';
 
 /**
  * useDashboard - ViewModel for DashboardView
@@ -29,6 +30,7 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
   // 1. DERIVED VALUES (computed from params)
   // ============================================
   const shouldLoadTasks = isAuthenticated && !!username;
+  const shouldLoadThreads = isAuthenticated && !!username;
 
   // ============================================
   // 2. HOOK CALLS (dependencies)
@@ -72,6 +74,16 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     setCurrentView,
     dependencies: {},
   });
+
+  // Thread state management - loads threads for the user's room
+  const {
+    threads,
+    isLoadingThreads,
+    selectedThreadId,
+    setSelectedThreadId,
+    getThreadMessages,
+    analyzeConversation,
+  } = useThreads(username, shouldLoadThreads);
 
   // ============================================
   // 3. COMPUTED VALUES (useMemo - grouped props for DashboardView)
@@ -126,12 +138,14 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
 
   const threadState = React.useMemo(
     () => ({
-      threads: [],
-      selectedThreadId: null,
-      setSelectedThreadId: () => {},
-      getThreadMessages: () => {},
+      threads,
+      isLoadingThreads,
+      selectedThreadId,
+      setSelectedThreadId,
+      getThreadMessages,
+      analyzeConversation,
     }),
-    []
+    [threads, isLoadingThreads, selectedThreadId, setSelectedThreadId, getThreadMessages, analyzeConversation]
   );
 
   // ============================================

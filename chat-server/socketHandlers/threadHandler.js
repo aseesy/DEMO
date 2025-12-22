@@ -111,6 +111,35 @@ function registerThreadHandlers(socket, io, services, activeUsers) {
       socket.emit('error', { message: 'Failed to remove message from thread.' });
     }
   });
+
+  // analyze_conversation_history handler
+  socket.on('analyze_conversation_history', async ({ roomId, limit }) => {
+    try {
+      const user = activeUsers.get(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before analyzing conversation history.' });
+        return;
+      }
+
+      const result = await threadManager.analyzeConversationHistory(roomId, limit || 100);
+      
+      // If threads were created, refresh the threads list for all room members
+      if (result.createdThreads && result.createdThreads.length > 0) {
+        const threads = await threadManager.getThreadsForRoom(roomId);
+        io.to(roomId).emit('threads_updated', threads);
+      }
+
+      socket.emit('conversation_analysis', { 
+        roomId, 
+        suggestions: result.suggestions || result,
+        createdThreads: result.createdThreads || [],
+      });
+    } catch (error) {
+      console.error('Error analyzing conversation history:', error);
+      socket.emit('error', { message: 'Failed to analyze conversation history.' });
+    }
+  });
 }
 
 module.exports = { registerThreadHandlers };
+

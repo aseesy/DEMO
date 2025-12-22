@@ -625,6 +625,8 @@ function HealthSubsection({ title, children }) {
  * PartnerFields - Fields specific to partner contacts
  */
 function PartnerFields({ formData, onChange }) {
+  const isLivingTogether = formData.partner_living_together === 'yes';
+
   return (
     <>
       <div>
@@ -635,9 +637,36 @@ function PartnerFields({ formData, onChange }) {
           type="date"
           value={formData.partner_duration || ''}
           onChange={onChange('partner_duration')}
-          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900"
+          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900 min-h-[44px]"
         />
       </div>
+      <div>
+        <label className="block text-xs font-semibold text-teal-medium mb-1">
+          Are you living together?
+        </label>
+        <select
+          value={formData.partner_living_together || ''}
+          onChange={onChange('partner_living_together')}
+          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900 min-h-[44px]"
+        >
+          <option value="">Select...</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+      {isLivingTogether && (
+        <div>
+          <label className="block text-xs font-semibold text-teal-medium mb-1">
+            Since when?
+          </label>
+          <input
+            type="date"
+            value={formData.partner_living_together_since || ''}
+            onChange={onChange('partner_living_together_since')}
+            className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium text-sm text-gray-900 min-h-[44px]"
+          />
+        </div>
+      )}
       <div>
         <label className="block text-xs font-semibold text-teal-medium mb-1">
           Does your partner have children?
@@ -645,13 +674,20 @@ function PartnerFields({ formData, onChange }) {
         <select
           value={formData.has_children || ''}
           onChange={onChange('has_children')}
-          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900"
+          className="w-full px-3 py-2 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium bg-white text-sm text-gray-900 min-h-[44px]"
         >
           <option value="">Select...</option>
           <option value="yes">Yes</option>
           <option value="no">No</option>
         </select>
       </div>
+      <FormTextarea
+        label="Relationship Notes"
+        value={formData.partner_relationship_notes}
+        onChange={onChange('partner_relationship_notes')}
+        placeholder="Any additional notes about your relationship..."
+        rows={3}
+      />
     </>
   );
 }
