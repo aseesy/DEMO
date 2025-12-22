@@ -359,7 +359,7 @@ export function Navigation({
       {/* Top Navigation - Desktop Only */}
       {!isMobile && (
         <nav
-          className="fixed top-0 left-0 right-0 z-nav bg-white border-b border-gray-100"
+          className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100"
           style={{ height: '3.5rem' }}
         >
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 h-full">
@@ -576,7 +576,7 @@ export function Navigation({
       {/* Bottom Navigation - Mobile Only */}
       {/* Using isMobile state since Tailwind responsive classes aren't working */}
       <nav
-        className="fixed left-0 right-0 z-nav bg-white shadow-[0_-4px_12px_-1px_rgba(0,0,0,0.08)] border-t border-gray-100"
+        className="fixed left-0 right-0 z-50 bg-white shadow-[0_-4px_12px_-1px_rgba(0,0,0,0.08)] border-t border-gray-100"
         style={{
           // Show only on mobile
           display: isMobile ? 'block' : 'none',
@@ -589,7 +589,7 @@ export function Navigation({
           position: 'fixed',
           left: 0,
           right: 0,
-          zIndex: 'var(--z-nav)',
+          zIndex: 50,
           backgroundColor: 'white',
         }}
         data-testid="mobile-nav"

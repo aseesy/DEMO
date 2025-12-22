@@ -13,10 +13,10 @@ export function StickyMobileCTA({ show, scrollToWaitlistForm }) {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-nav bg-white border-t-2 border-teal-light shadow-lg transform transition-transform duration-300 pb-safe ${
+      className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-teal-light shadow-lg transform transition-transform duration-300 pb-safe ${
         show ? 'translate-y-0' : 'translate-y-full'
       }`}
-      style={{ zIndex: 'var(--z-nav)' }}
+      style={{ zIndex: 50 }}
     >
       <div className="px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex-1 min-w-0">

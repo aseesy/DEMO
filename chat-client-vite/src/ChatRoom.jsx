@@ -1,14 +1,13 @@
 import React from 'react';
 import './index.css';
 import { useAuth } from './hooks/useAuth.js';
-import { useTasks } from './hooks/useTasks.js';
 import { useDashboard } from './hooks/useDashboard.js';
 import { useContacts } from './hooks/useContacts.js';
 import { useNotifications } from './hooks/useNotifications.js';
 import { useInAppNotifications } from './hooks/useInAppNotifications.js';
 import { useToast } from './hooks/useToast.js';
 import { useInviteManagement } from './hooks/useInviteManagement.js';
-import { useModalController } from './hooks/useModalController.js';
+import { useModalControllerDefault } from './hooks/useModalController.js';
 import { ChatProvider, useChatContext } from './context/ChatContext.jsx';
 import { ToastContainer } from './components/ui/Toast/Toast.jsx';
 import { ContactsPanel } from './components/ContactsPanel.jsx';
@@ -126,34 +125,45 @@ function ChatRoomContent({
     }
   }, [isAuthenticated, currentView]);
 
-  // Tasks - still needed for GlobalModals and other views
-  const shouldLoadTasks = isAuthenticated && !showLanding && !isCheckingAuth;
+  // Dashboard hook - ViewModel that owns its state
+  // The Dashboard manages its own dependencies internally
+  // This is the single source of truth for Dashboard-related state (tasks and modals)
+  const dashboardProps = useDashboard({
+    username,
+    isAuthenticated,
+    messages, // Use actual messages from context (for contact suggestions if needed)
+    setCurrentView,
+  });
+
+  // Extract task state and Dashboard modals from useDashboard
+  // This eliminates duplication - we use Dashboard's state for GlobalModals
+  // Use abstracted interfaces, not raw state
   const {
-    tasks,
-    isLoadingTasks,
-    taskSearch,
-    taskFilter,
     showTaskForm,
     editingTask,
     taskFormData,
     setShowTaskForm,
     setEditingTask,
     setTaskFormData,
-    setTaskSearch,
-    setTaskFilter,
-    toggleTaskStatus,
     saveTask,
     loadTasks,
-  } = useTasks(username, shouldLoadTasks);
-
-  // Dashboard hook - ViewModel that owns its state
-  // The Dashboard manages its own dependencies internally
-  const dashboardProps = useDashboard({
-    username,
-    isAuthenticated,
-    messages: [],
-    setCurrentView,
-  });
+    toggleTaskStatus,
+    // Modal objects (for backward compatibility)
+    welcomeModal,
+    profileTaskModal,
+    inviteModal,
+    taskFormModal,
+    // Flat handlers (abstracted - no reaching inside)
+    taskFormMode,
+    setTaskFormMode,
+    aiTaskDetails,
+    setAiTaskDetails,
+    isGeneratingTask,
+    setIsGeneratingTask,
+    setShowWelcomeModal,
+    setShowProfileTaskModal,
+    setShowInviteModal,
+  } = dashboardProps;
 
   // Contacts
   const { contacts } = useContacts(
@@ -196,16 +206,16 @@ function ChatRoomContent({
     handleManualAcceptInvite,
   } = useInviteManagement({ username, isAuthenticated, messages: [], currentView });
 
-  // Modal state (extracted to hook for SRP)
-  // Note: Dashboard uses modalHandlers from useDashboard, but we still need these for other views
+  // Modal state for non-Dashboard views (contact suggestions, message flagging)
+  // These modals need messages, so they're separate from Dashboard modals
   const {
-    welcomeModal,
-    profileTaskModal,
-    inviteModal,
-    taskFormModal,
     contactSuggestionModal,
     messageFlaggingModal,
-  } = useModalController({ messages: [], setCurrentView });
+  } = useModalControllerDefault({ 
+    messages, 
+    setCurrentView,
+    dependencies: {},
+  });
 
   // Handlers
   const handleNavigateToContacts = React.useCallback(
@@ -309,9 +319,9 @@ function ChatRoomContent({
         }}
       />
 
-      <div className="h-dvh bg-white flex flex-col overflow-hidden overscroll-none">
+      <div className="h-dvh bg-white flex flex-col overflow-hidden overscroll-none relative z-0">
         <div
-          className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-14 md:pt-14 md:pb-0' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto' : 'pt-0 md:pt-14 pb-14 md:pb-8 overflow-y-auto px-4 sm:px-6 md:px-8'} relative z-10`}
+          className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-14 md:pt-14 md:pb-0' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto' : 'pt-0 md:pt-14 pb-14 md:pb-8 overflow-y-auto px-4 sm:px-6 md:px-8'}`}
         >
           <div
             className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : currentView === 'profile' ? 'w-full' : 'max-w-7xl mx-auto w-full'}`}
@@ -416,12 +426,12 @@ function ChatRoomContent({
             <GlobalModals
               showTaskForm={showTaskForm}
               editingTask={editingTask}
-              taskFormMode={taskFormModal.taskFormMode}
-              setTaskFormMode={taskFormModal.setTaskFormMode}
-              aiTaskDetails={taskFormModal.aiTaskDetails}
-              setAiTaskDetails={taskFormModal.setAiTaskDetails}
-              isGeneratingTask={taskFormModal.isGeneratingTask}
-              setIsGeneratingTask={taskFormModal.setIsGeneratingTask}
+              taskFormMode={taskFormMode}
+              setTaskFormMode={setTaskFormMode}
+              aiTaskDetails={aiTaskDetails}
+              setAiTaskDetails={setAiTaskDetails}
+              isGeneratingTask={isGeneratingTask}
+              setIsGeneratingTask={setIsGeneratingTask}
               taskFormData={taskFormData}
               setTaskFormData={setTaskFormData}
               contacts={contacts}
@@ -431,30 +441,30 @@ function ChatRoomContent({
                 setEditingTask(null);
               }}
               onSaveTask={saveTask}
-              showWelcomeModal={welcomeModal.show}
+              showWelcomeModal={welcomeModal?.show || false}
               onCloseWelcome={() => {
-                welcomeModal.setShow(false);
+                setShowWelcomeModal(false);
                 setEditingTask(null);
               }}
               onCompleteWelcome={() => {
                 toggleTaskStatus(editingTask);
-                welcomeModal.setShow(false);
+                setShowWelcomeModal(false);
                 setEditingTask(null);
               }}
-              showProfileTaskModal={profileTaskModal.show}
+              showProfileTaskModal={profileTaskModal?.show || false}
               onCloseProfileTask={() => {
-                profileTaskModal.setShow(false);
+                setShowProfileTaskModal(false);
                 setEditingTask(null);
               }}
               onNavigateToProfile={() => {
-                profileTaskModal.setShow(false);
+                setShowProfileTaskModal(false);
                 setEditingTask(null);
                 setCurrentView('profile');
               }}
-              showInviteModal={inviteModal.show}
-              onCloseInvite={() => inviteModal.setShow(false)}
+              showInviteModal={inviteModal?.show || false}
+              onCloseInvite={() => setShowInviteModal(false)}
               onInviteSuccess={() => {
-                inviteModal.setShow(false);
+                setShowInviteModal(false);
                 if (loadTasks) loadTasks();
                 setHasCoParentConnected(true);
               }}

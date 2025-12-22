@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTasks } from './useTasks.js';
-import { useModalController } from './useModalController.js';
+import { useModalControllerDefault } from './useModalController.js';
+import { createTaskCollection } from './taskAbstraction.js';
 
 /**
  * useDashboard - ViewModel for DashboardView
@@ -24,67 +25,103 @@ import { useModalController } from './useModalController.js';
  * @returns {Object} Dashboard props grouped into taskState, taskHandlers, modalHandlers, threadState
  */
 export function useDashboard({ username, isAuthenticated, messages = [], setCurrentView }) {
+  // ============================================
+  // 1. DERIVED VALUES (computed from params)
+  // ============================================
   const shouldLoadTasks = isAuthenticated && !!username;
 
-  // Internalize state management - Dashboard owns its dependencies
+  // ============================================
+  // 2. HOOK CALLS (dependencies)
+  // ============================================
+  // Task state management - Dashboard owns its dependencies internally
   // The parent component doesn't need to know about taskSearch, taskFilter, etc.
   const {
     tasks,
     isLoadingTasks,
     taskSearch,
     taskFilter,
+    showTaskForm,
+    editingTask,
+    taskFormData,
     setShowTaskForm,
     setEditingTask,
     setTaskFormData,
     setTaskSearch,
     setTaskFilter,
     toggleTaskStatus,
+    saveTask,
+    loadTasks,
   } = useTasks(username, shouldLoadTasks);
 
-  // Modal handlers - also internalized
+  // Modal state management - single source of truth for Dashboard-related modals
   const {
     welcomeModal,
     profileTaskModal,
     inviteModal,
     taskFormModal,
-  } = useModalController({ messages, setCurrentView });
+    // Flat handlers for task operations (no need to reach inside taskFormModal)
+    setTaskFormMode,
+    setAiTaskDetails,
+    setIsGeneratingTask,
+    // Flat handlers for modal control (no need to reach inside modal objects)
+    setShowWelcomeModal,
+    setShowProfileTaskModal,
+    setShowInviteModal,
+  } = useModalControllerDefault({ 
+    messages, 
+    setCurrentView,
+    dependencies: {},
+  });
 
+  // ============================================
+  // 3. COMPUTED VALUES (useMemo - grouped props for DashboardView)
+  // ============================================
   // We create explicit objects. This prepares the data for the view.
   // Using a custom hook makes this easier by separating logic from view.
   
-  // Prepare grouped props for DashboardView
+  // Create abstracted task collection to hide array implementation
+  const taskCollection = React.useMemo(
+    () => createTaskCollection(tasks),
+    [tasks]
+  );
+
   const taskState = React.useMemo(
     () => ({
-      tasks,
+      // Abstracted task collection (hides array implementation)
+      tasks: taskCollection,
+      // Expose array for backward compatibility (DashboardView still uses .length, .map)
+      // TODO: Refactor DashboardView to use taskCollection methods
+      tasksArray: taskCollection.getAll(),
       isLoadingTasks,
       taskSearch,
       taskFilter,
       setTaskSearch,
       setTaskFilter,
     }),
-    [tasks, isLoadingTasks, taskSearch, taskFilter]
+    [taskCollection, isLoadingTasks, taskSearch, taskFilter]
   );
 
   const taskHandlers = React.useMemo(
     () => ({
       setEditingTask,
       setShowTaskForm,
-      setTaskFormMode: taskFormModal.setTaskFormMode,
-      setAiTaskDetails: taskFormModal.setAiTaskDetails,
-      setIsGeneratingTask: taskFormModal.setIsGeneratingTask,
+      setTaskFormMode,
+      setAiTaskDetails,
+      setIsGeneratingTask,
       setTaskFormData,
       toggleTaskStatus,
     }),
-    [setEditingTask, setShowTaskForm, taskFormModal.setTaskFormMode, taskFormModal.setAiTaskDetails, taskFormModal.setIsGeneratingTask, setTaskFormData, toggleTaskStatus]
+    [setEditingTask, setShowTaskForm, setTaskFormMode, setAiTaskDetails, setIsGeneratingTask, setTaskFormData, toggleTaskStatus]
   );
 
   const modalHandlers = React.useMemo(
     () => ({
-      setShowWelcomeModal: welcomeModal.setShow,
-      setShowProfileTaskModal: profileTaskModal.setShow,
-      setShowInviteModal: inviteModal.setShow,
+      // Use flat handlers directly - no reaching inside modal objects
+      setShowWelcomeModal,
+      setShowProfileTaskModal,
+      setShowInviteModal,
     }),
-    [welcomeModal.setShow, profileTaskModal.setShow, inviteModal.setShow]
+    [setShowWelcomeModal, setShowProfileTaskModal, setShowInviteModal]
   );
 
   const threadState = React.useMemo(
@@ -97,11 +134,50 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     []
   );
 
+  // ============================================
+  // 4. RETURN (organized by conceptual groups)
+  // ============================================
   return {
+    // Grouped props for DashboardView (abstracted interface)
     taskState,
     taskHandlers,
     modalHandlers,
     threadState,
+    
+    // Flat handlers for ChatRoom (abstracted - no reaching inside objects)
+    // These are extracted from modalController to prevent reaching inside
+    taskFormMode: taskFormModal.taskFormMode,
+    setTaskFormMode,
+    aiTaskDetails: taskFormModal.aiTaskDetails,
+    setAiTaskDetails,
+    isGeneratingTask: taskFormModal.isGeneratingTask,
+    setIsGeneratingTask,
+    setShowWelcomeModal,
+    setShowProfileTaskModal,
+    setShowInviteModal,
+    
+    // Raw task state for ChatRoom (GlobalModals) - marked as implementation detail
+    // TODO: Refactor ChatRoom to use abstracted interface
+    // These are exposed for backward compatibility only
+    _raw: {
+      tasks,
+      isLoadingTasks,
+      showTaskForm,
+      editingTask,
+      taskFormData,
+      setShowTaskForm,
+      setEditingTask,
+      setTaskFormData,
+      setTaskSearch,
+      setTaskFilter,
+      toggleTaskStatus,
+      saveTask,
+      loadTasks,
+      welcomeModal,
+      profileTaskModal,
+      inviteModal,
+      taskFormModal,
+    },
   };
 }
 
