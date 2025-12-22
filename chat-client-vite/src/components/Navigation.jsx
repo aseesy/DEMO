@@ -393,11 +393,20 @@ export function Navigation({
                           exitSearchMode();
                         }
                       }}
-                      placeholder={
-                        messages.find(m => m.username && m.username.toLowerCase() !== username?.toLowerCase())
-                          ? `Search Conversation With ${messages.find(m => m.username && m.username.toLowerCase() !== username?.toLowerCase())?.displayName || messages.find(m => m.username && m.username.toLowerCase() !== username?.toLowerCase())?.username}`
-                          : 'Search messages...'
-                      }
+                      placeholder={(() => {
+                        // Find the co-parent (other human user, not AI/system)
+                        const aiNames = ['alex', 'liaizen', 'ai assistant', 'system'];
+                        const coParent = messages.find(m =>
+                          m.username &&
+                          m.username.toLowerCase() !== username?.toLowerCase() &&
+                          !aiNames.includes(m.username.toLowerCase()) &&
+                          !m.type?.startsWith('ai_') &&
+                          m.type !== 'contact_suggestion'
+                        );
+                        return coParent
+                          ? `Search conversation with ${coParent.displayName || coParent.username}`
+                          : 'Search messages...';
+                      })()}
                       className="w-full pl-10 pr-8 py-1.5 border border-gray-200 rounded-full bg-white focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-sm text-gray-900 placeholder-gray-400 h-8"
                     />
                     {searchQuery && (

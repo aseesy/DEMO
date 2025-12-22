@@ -1,4 +1,3 @@
-/* global window */
 import React from 'react';
 import { apiGet, apiPost, apiPut } from '../apiClient.js';
 import { toBackendRelationship, toDisplayRelationship } from '../utils/relationshipMapping.js';

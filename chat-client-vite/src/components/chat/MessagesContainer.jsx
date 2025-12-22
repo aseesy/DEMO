@@ -60,7 +60,10 @@ export function MessagesContainer({
     let currentGroup = null;
     let currentDate = null;
 
-    messages.forEach((msg, index) => {
+    // Filter out contact_suggestion messages - they only trigger modals, not chat display
+    const displayMessages = messages.filter(msg => msg.type !== 'contact_suggestion');
+
+    displayMessages.forEach((msg, index) => {
       const msgDate = new Date(msg.created_at || msg.timestamp);
       const dateLabel = msgDate.toLocaleDateString('en-US', {
         weekday: 'long',
