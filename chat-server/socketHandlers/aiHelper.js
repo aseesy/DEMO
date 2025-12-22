@@ -114,11 +114,15 @@ async function handleAiMediation(socket, io, services, context) {
 
       let contactSuggestion = null;
       if (!intervention) {
+        console.log('[NameDetection] Running name detection for:', message.text.substring(0, 50));
         contactSuggestion = await handleNameDetection(socket, aiMediator, {
           text: message.text,
           existingContacts: contactContext.existingContacts,
           participantUsernames,
         });
+        console.log('[NameDetection] Result:', contactSuggestion ? `Found: ${contactSuggestion.detectedName}` : 'No names detected');
+      } else {
+        console.log('[NameDetection] Skipped - message triggered intervention');
       }
 
       if (intervention) {

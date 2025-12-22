@@ -19,8 +19,10 @@ const { AI, VALIDATION } = require('../../../utils/constants');
  */
 async function detectNamesInMessage(text, existingContacts = [], participantUsernames = []) {
   if (!openaiClient.isConfigured()) {
+    console.log('[NameDetector] OpenAI not configured, skipping');
     return [];
   }
+  console.log('[NameDetector] Detecting names in:', text.substring(0, 100));
 
   try {
     const existingNames = [
@@ -55,17 +57,21 @@ Return ONLY names, one per line, or "NONE" if no new names found.`;
     });
 
     const response = completion.choices[0].message.content.trim();
+    console.log('[NameDetector] OpenAI response:', response);
     if (response === 'NONE' || !response) {
+      console.log('[NameDetector] No names found (NONE response)');
       return [];
     }
 
-    return response
+    const names = response
       .split('\n')
       .map(line => line.trim())
       .filter(line => line && line !== 'NONE')
       .filter(line => line.length > VALIDATION.MIN_MESSAGE_LENGTH && /^[A-Z]/.test(line));
+    console.log('[NameDetector] Detected names after filtering:', names);
+    return names;
   } catch (error) {
-    console.error('Error detecting names:', error.message);
+    console.error('[NameDetector] Error detecting names:', error.message);
     return [];
   }
 }
