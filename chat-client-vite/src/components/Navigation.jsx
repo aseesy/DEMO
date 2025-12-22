@@ -396,15 +396,30 @@ export function Navigation({
                       placeholder={(() => {
                         // Find the co-parent (other human user, not AI/system)
                         const aiNames = ['alex', 'liaizen', 'ai assistant', 'system'];
-                        const coParent = messages.find(m =>
-                          m.username &&
-                          m.username.toLowerCase() !== username?.toLowerCase() &&
-                          !aiNames.includes(m.username.toLowerCase()) &&
-                          !m.type?.startsWith('ai_') &&
-                          m.type !== 'contact_suggestion'
+                        const coParent = messages.find(
+                          m =>
+                            m.username &&
+                            m.username.toLowerCase() !== username?.toLowerCase() &&
+                            !aiNames.includes(m.username.toLowerCase()) &&
+                            !m.type?.startsWith('ai_') &&
+                            m.type !== 'contact_suggestion'
                         );
-                        return coParent
-                          ? `Search conversation with ${coParent.displayName || coParent.username}`
+
+                        // Extract first name only (not full name)
+                        let firstName = '';
+                        if (coParent) {
+                          if (coParent.first_name) {
+                            firstName = coParent.first_name;
+                          } else if (coParent.displayName) {
+                            // Extract first word from displayName (first name)
+                            firstName = coParent.displayName.split(' ')[0];
+                          } else if (coParent.username) {
+                            firstName = coParent.username;
+                          }
+                        }
+
+                        return firstName
+                          ? `Search conversation with ${firstName}`
                           : 'Search messages...';
                       })()}
                       className="w-full pl-10 pr-8 py-1.5 border border-gray-200 rounded-full bg-white focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-sm text-gray-900 placeholder-gray-400 h-8"
@@ -426,14 +441,18 @@ export function Navigation({
                           viewBox="0 0 24 24"
                           strokeWidth={2}
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
                         </svg>
                       </button>
                     )}
                   </div>
                 </div>
               )}
-              
+
               {/* Right side: Navigation Items + LiaiZen Branding with Dropdown Menu */}
               <div className="flex items-center gap-1">
                 {navItems.map(item => {

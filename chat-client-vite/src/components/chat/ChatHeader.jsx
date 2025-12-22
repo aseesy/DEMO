@@ -53,8 +53,21 @@ export function ChatHeader({
         m.type !== 'contact_suggestion' &&
         m.type !== 'system'
     );
-    const name = coParent?.displayName || coParent?.username;
-    return name ? `Search Conversation With ${name}` : 'Search messages...';
+
+    // Extract first name only (not full name)
+    let firstName = '';
+    if (coParent) {
+      if (coParent.first_name) {
+        firstName = coParent.first_name;
+      } else if (coParent.displayName) {
+        // Extract first word from displayName (first name)
+        firstName = coParent.displayName.split(' ')[0];
+      } else if (coParent.username) {
+        firstName = coParent.username;
+      }
+    }
+
+    return firstName ? `Search Conversation With ${firstName}` : 'Search messages...';
   };
 
   const shouldShowInvite =
