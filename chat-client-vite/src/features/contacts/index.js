@@ -17,15 +17,29 @@
 export { ContactsPanel } from './ContactsPanel.jsx';
 
 // Model (The Logic)
-export { useContacts, useContactsApi, useContactForm, useContactTriggers } from './model/useContacts.js';
+export {
+  useContacts,
+  useContactsApi,
+  useContactForm,
+  useContactTriggers,
+} from './model/useContacts.js';
 export { useContactSuggestionModal } from './model/useContactSuggestionModal.js';
 export {
   mapContactToFormData,
   mapFormDataToContact,
   getContactFormFields,
 } from './model/contactMapper.js';
-export { getDefaultContactFormData, DEFAULT_CONTACT_FORM_DATA } from './model/contactFormDefaults.js';
-export { getContactHelpers } from './model/contactHelpers.js';
+export {
+  getDefaultContactFormData,
+  DEFAULT_CONTACT_FORM_DATA,
+} from './model/contactFormDefaults.js';
+export {
+  disambiguateContacts,
+  filterContactsBySearch,
+  getContactsByRelationship,
+  getCoParentContacts,
+  getChildContacts,
+} from './model/contactHelpers.js';
 
 // Components (The UI Details)
 export { ContactSuggestionModal } from './components/ContactSuggestionModal.jsx';
