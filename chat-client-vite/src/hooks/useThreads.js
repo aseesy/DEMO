@@ -78,7 +78,7 @@ export function useThreads(username, isAuthenticated) {
           setRoomId(room.roomId);
         }
       } catch (err) {
-        console.error('Error fetching user room:', err);
+        console.error('Error getting user room:', err);
         if (!cancelled) {
           // Don't set error for 404 - user just doesn't have a room yet
           if (!err.message.includes('404')) {
