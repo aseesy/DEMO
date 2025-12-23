@@ -11,8 +11,11 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth, useAuthRedirect } from '../index.js';
-import { useInviteDetection } from '../../invitations';
+// Direct imports to avoid circular dependency with ../index.js
+import { useAuth } from '../model/useAuth.js';
+import { useAuthRedirect } from '../model/useAuthRedirect.js';
+// Direct import to avoid circular dependency with feature index
+import { useInviteDetection } from '../../invitations/model/useInviteDetection.js';
 import { Button, Input } from '../../../components/ui';
 import {
   AuthHeader,

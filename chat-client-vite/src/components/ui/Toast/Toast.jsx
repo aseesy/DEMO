@@ -1,5 +1,6 @@
 import React from 'react';
-import { Button } from '../index.js';
+// Direct import to avoid circular dependency with ../index.js
+import { Button } from '../Button/Button.jsx';
 
 /**
  * Toast Notification Component

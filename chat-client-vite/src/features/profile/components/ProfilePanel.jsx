@@ -10,7 +10,8 @@
 
 import React, { useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useProfile } from '../index.js';
+// Direct import to avoid circular dependency with ../index.js
+import { useProfile } from '../model/useProfile.js';
 import { useGooglePlaces } from '../../../hooks/integrations/useGooglePlaces.js';
 import { useImageUpload } from '../../../hooks/files/useImageUpload.js';
 import { Button } from '../../../components/ui';

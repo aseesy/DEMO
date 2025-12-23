@@ -1,5 +1,6 @@
 import React from 'react';
-import { useProfile } from '../index.js';
+// Direct import to avoid circular dependency with ../index.js
+import { useProfile } from '../model/useProfile.js';
 
 /**
  * AccountView - Account settings and password management component

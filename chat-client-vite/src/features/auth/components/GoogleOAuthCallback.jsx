@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../index.js';
+// Direct import to avoid circular dependency with ../index.js
+import { useAuth } from '../model/useAuth.js';
 import { parseOAuthError, clearOAuthState } from '../../../utils/oauthHelper.js';
 import { getErrorMessage, logError } from '../../../utils/errorHandler.jsx';
 
