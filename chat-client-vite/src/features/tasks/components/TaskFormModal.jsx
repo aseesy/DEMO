@@ -47,12 +47,21 @@ export function TaskFormModal({
       if (response.ok) {
         const data = await response.json();
         if (data.task) {
+          // Destructure at boundary - don't reach inside data.task multiple times
+          const {
+            title,
+            description,
+            status = 'open',
+            priority = 'medium',
+            due_date = '',
+          } = data.task;
+
           setTaskFormData({
-            title: data.task.title,
-            description: data.task.description,
-            status: data.task.status || 'open',
-            priority: data.task.priority || 'medium',
-            due_date: data.task.due_date || '',
+            title,
+            description,
+            status,
+            priority,
+            due_date,
             assigned_to: 'self',
             related_people: [],
           });
