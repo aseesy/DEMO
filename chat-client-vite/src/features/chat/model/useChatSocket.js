@@ -2,6 +2,7 @@ import React from 'react';
 import { io } from 'socket.io-client';
 import { setupSocketEventHandlers } from './socketEventHandlers.js';
 import { useRoomId } from '../../../hooks/room/useRoomId.js';
+import { useMessages } from './useMessages.js';
 
 // Import SocketEvents for type-safe event names
 // Note: Full migration to SocketAdapter pending - current code uses raw socket.io
@@ -34,8 +35,7 @@ function getSocketUrl() {
  * useChatSocket - Manages socket connection and message state
  */
 export function useChatSocket({ username, isAuthenticated, currentView, onNewMessage }) {
-  // Message state
-  const [messages, setMessages] = React.useState([]);
+  // Connection state
   const [isConnected, setIsConnected] = React.useState(false);
   const [isJoined, setIsJoined] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -48,9 +48,8 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   // Room ID management - extracted to useRoomId hook
   const { roomId, setRoomId } = useRoomId(username, isAuthenticated);
 
-  // Message tracking
-  const [pendingMessages, setPendingMessages] = React.useState(new Map());
-  const [messageStatuses, setMessageStatuses] = React.useState(new Map());
+  // Message state management - extracted to useMessages hook
+  const { messages, setMessages, pendingMessages, setPendingMessages, messageStatuses, setMessageStatuses } = useMessages({ socketRef });
 
   // Pagination
   const [isLoadingOlder, setIsLoadingOlder] = React.useState(false);
