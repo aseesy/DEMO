@@ -2,42 +2,47 @@ import './index.css';
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ChatRoom from './ChatRoom.jsx';
-import { LoginSignup } from './components/LoginSignup.jsx';
 import { AcceptInvitationPage, InviteCoParentPage } from './features/invitations';
-import { GoogleOAuthCallback } from './components/GoogleOAuthCallback.jsx';
-import { UIShowcase } from './components/UIShowcase.jsx'; // Design system showcase
-import { PrivacyPage } from './components/PrivacyPage.jsx';
-import { TermsPage } from './components/TermsPage.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { usePWA } from './hooks/pwa/usePWA.js';
 import { MediatorProvider } from './context/MediatorContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { InvitationProvider } from './context/InvitationContext.jsx';
-import { WhyArgumentsRepeat } from './components/blog/WhyArgumentsRepeat.jsx';
-import { EmotionalTriggers } from './components/blog/EmotionalTriggers.jsx';
-import { EmotionalRegulation } from './components/blog/EmotionalRegulation.jsx';
-import { ReactionVsResponse } from './components/blog/ReactionVsResponse.jsx';
-import { PauseBeforeReacting } from './components/blog/PauseBeforeReacting.jsx';
-import { DefensivenessStrategies } from './components/blog/DefensivenessStrategies.jsx';
-import { WhyItFeelsImpossible } from './components/blog/WhyItFeelsImpossible.jsx';
-import { DeEscalationTechniques } from './components/blog/DeEscalationTechniques.jsx';
-import { GaslightingGuiltBlame } from './components/blog/GaslightingGuiltBlame.jsx';
-import { MentalHealthProtection } from './components/blog/MentalHealthProtection.jsx';
-import { EveryConversationFight } from './components/blog/EveryConversationFight.jsx';
-import { LongTermEffects } from './components/blog/LongTermEffects.jsx';
-import { WhatKidsNeed } from './components/blog/WhatKidsNeed.jsx';
-import { StabilityStress } from './components/blog/StabilityStress.jsx';
-import { ModelingCommunication } from './components/blog/ModelingCommunication.jsx';
-import { BlogPillarPage } from './components/blog/BlogPillarPage.jsx';
-import { AiGuidedMediation } from './components/blog/AiGuidedMediation.jsx';
-import { EscalationPrevention } from './components/blog/EscalationPrevention.jsx';
-import { CalmCommunication } from './components/blog/CalmCommunication.jsx';
-import { AiSafety } from './components/blog/AiSafety.jsx';
-import { AiVsImpulse } from './components/blog/AiVsImpulse.jsx';
-import { ForgotPassword } from './components/ForgotPassword.jsx';
-import { ResetPassword } from './components/ResetPassword.jsx';
-import { QuizzesPage } from './components/quizzes/QuizzesPage.jsx';
-import { CoParentingStanceQuiz } from './components/quizzes/CoParentingStanceQuiz.jsx';
+// Auth features
+import { LoginSignup } from './features/auth/components/LoginSignup.jsx';
+import { GoogleOAuthCallback } from './features/auth/components/GoogleOAuthCallback.jsx';
+import { ForgotPassword } from './features/auth/components/ForgotPassword.jsx';
+import { ResetPassword } from './features/auth/components/ResetPassword.jsx';
+// Legal pages
+import { PrivacyPage } from './features/legal/PrivacyPage.jsx';
+import { TermsPage } from './features/legal/TermsPage.jsx';
+// Showcase
+import { UIShowcase } from './features/showcase/UIShowcase.jsx';
+// Quizzes
+import { QuizzesPage } from './features/quizzes/QuizzesPage.jsx';
+import { CoParentingStanceQuiz } from './features/quizzes/CoParentingStanceQuiz.jsx';
+// Blog articles
+import { WhyArgumentsRepeat } from './features/blog/WhyArgumentsRepeat.jsx';
+import { EmotionalTriggers } from './features/blog/EmotionalTriggers.jsx';
+import { EmotionalRegulation } from './features/blog/EmotionalRegulation.jsx';
+import { ReactionVsResponse } from './features/blog/ReactionVsResponse.jsx';
+import { PauseBeforeReacting } from './features/blog/PauseBeforeReacting.jsx';
+import { DefensivenessStrategies } from './features/blog/DefensivenessStrategies.jsx';
+import { WhyItFeelsImpossible } from './features/blog/WhyItFeelsImpossible.jsx';
+import { DeEscalationTechniques } from './features/blog/DeEscalationTechniques.jsx';
+import { GaslightingGuiltBlame } from './features/blog/GaslightingGuiltBlame.jsx';
+import { MentalHealthProtection } from './features/blog/MentalHealthProtection.jsx';
+import { EveryConversationFight } from './features/blog/EveryConversationFight.jsx';
+import { LongTermEffects } from './features/blog/LongTermEffects.jsx';
+import { WhatKidsNeed } from './features/blog/WhatKidsNeed.jsx';
+import { StabilityStress } from './features/blog/StabilityStress.jsx';
+import { ModelingCommunication } from './features/blog/ModelingCommunication.jsx';
+import { BlogPillarPage } from './features/blog/BlogPillarPage.jsx';
+import { AiGuidedMediation } from './features/blog/AiGuidedMediation.jsx';
+import { EscalationPrevention } from './features/blog/EscalationPrevention.jsx';
+import { CalmCommunication } from './features/blog/CalmCommunication.jsx';
+import { AiSafety } from './features/blog/AiSafety.jsx';
+import { AiVsImpulse } from './features/blog/AiVsImpulse.jsx';
 
 function App() {
   // Initialize PWA - registers Service Worker and enables push notifications

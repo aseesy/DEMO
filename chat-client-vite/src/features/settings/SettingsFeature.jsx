@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { PWAInstallButton } from '../../components/PWAInstallButton.jsx';
+import { PWAInstallButton } from '../pwa/PWAInstallButton.jsx';
 import { NotificationSettingsCard } from '../notifications/components/NotificationSettingsCard.jsx';
 import { InviteGenerationCard } from '../invitations/components/InviteGenerationCard.jsx';
 import { InviteCodeEntryCard } from '../invitations/components/InviteCodeEntryCard.jsx';

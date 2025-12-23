@@ -1,5 +1,5 @@
 import React from 'react';
-import { ObserverCard } from '../../../components/ObserverCard.jsx';
+import { ObserverCard } from '../../dashboard/components/ObserverCard.jsx';
 
 /**
  * MessagesContainer - Renders the scrollable message list with date grouping

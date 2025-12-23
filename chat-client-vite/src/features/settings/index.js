@@ -1,7 +1,7 @@
 /**
- * Settings Feature
+ * Settings Feature Index
  *
- * Entry point for settings-related functionality.
+ * Exports the main settings view component.
  */
 
-export { SettingsView, SettingsViewLegacy } from './SettingsFeature.jsx';
+export { SettingsView } from './SettingsFeature.jsx';

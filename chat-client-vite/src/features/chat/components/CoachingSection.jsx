@@ -1,5 +1,5 @@
 import React from 'react';
-import { ObserverCard } from '../../../components/ObserverCard.jsx';
+import { ObserverCard } from '../../dashboard/components/ObserverCard.jsx';
 
 /**
  * CoachingSection - Displays AI coaching feedback and analyzing state

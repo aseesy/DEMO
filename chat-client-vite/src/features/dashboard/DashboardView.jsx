@@ -6,8 +6,8 @@
  */
 
 import React from 'react';
-import { UpdatesPanel } from '../../components/UpdatesPanel.jsx';
-import { CommunicationStatsWidget } from '../../components/CommunicationStatsWidget.jsx';
+import { UpdatesPanel } from '../updates/UpdatesPanel.jsx';
+import { CommunicationStatsWidget } from './components/CommunicationStatsWidget.jsx';
 import { TaskCard, filterTasksForDashboard, getDefaultTaskFormData } from '../tasks';
 
 /**

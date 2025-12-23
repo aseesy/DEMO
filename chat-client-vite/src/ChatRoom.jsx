@@ -10,10 +10,10 @@ import { useModalControllerDefault } from './hooks/ui/useModalController.js';
 import { ChatProvider, useChatContext } from './features/chat';
 import { ToastContainer } from './components/ui/Toast/Toast.jsx';
 import { ContactsPanel } from './features/contacts';
-import { ProfilePanel } from './components/ProfilePanel.jsx';
-import { Navigation } from './components/Navigation.jsx';
-import { LandingPage } from './components/LandingPage.jsx';
-import { GlobalModals } from './components/GlobalModals.jsx';
+import { ProfilePanel } from './features/profile/components/ProfilePanel.jsx';
+import { Navigation } from './features/shell/Navigation.jsx';
+import { LandingPage } from './features/landing/LandingPage.jsx';
+import { GlobalModals } from './features/shell/GlobalModals.jsx';
 import { SettingsView } from './features/settings';
 import { DashboardView } from './features/dashboard';
 import { ChatPage as ChatView } from './features/chat';
@@ -23,7 +23,7 @@ import { useAppNavigation, NavigationPaths } from './adapters/navigation';
 import { storage, StorageKeys } from './adapters/storage';
 
 // Lazy-load AccountView for code-splitting
-const AccountView = React.lazy(() => import('./components/AccountView.jsx'));
+const AccountView = React.lazy(() => import('./features/profile/components/AccountView.jsx'));
 import { trackViewChange } from './utils/analytics.js';
 import { setUserProperties } from './utils/analyticsEnhancements.js';
 import { logger } from './utils/logger.js';

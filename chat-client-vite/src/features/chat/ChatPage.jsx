@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { MessageSearch } from '../../components/MessageSearch.jsx';
+import { MessageSearch } from './components/MessageSearch.jsx';
 import { FlaggingModal } from './components/FlaggingModal.jsx';
 import {
   ThreadsSidebar,
