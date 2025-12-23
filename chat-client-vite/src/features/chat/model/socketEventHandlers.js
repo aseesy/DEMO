@@ -34,6 +34,7 @@ export function setupSocketEventHandlers(socket, handlers) {
     setHighlightedMessageId,
     setDraftCoaching,
     setUnreadCount,
+    setRoomId,
   } = handlers;
 
   // Connection events
@@ -73,9 +74,14 @@ export function setupSocketEventHandlers(socket, handlers) {
     trackConnectionError('socket_connect_error', err.message || String(err));
   });
 
-  socket.on('join_success', () => {
+  socket.on('join_success', data => {
     setIsJoined(true);
     setError('');
+    // Extract roomId from join_success event (authoritative source from backend)
+    // This takes precedence over HTTP-fetched roomId since it's from the actual join
+    if (data?.roomId && setRoomId) {
+      setRoomId(data.roomId);
+    }
   });
 
   // Message history

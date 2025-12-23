@@ -73,6 +73,8 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   const messagesContainerRef = React.useRef(null);
   const offlineQueueRef = React.useRef([]);
   const loadingTimeoutRef = React.useRef(null);
+  const lastLoadedRoomIdRef = React.useRef(null); // Track last loaded roomId to prevent duplicate thread loads
+  const previousUsernameRef = React.useRef(username); // Track username changes to clear roomId
 
   // Keep refs updated to avoid socket reconnection
   const currentViewRef = React.useRef(currentView);
@@ -141,13 +143,22 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
       setHighlightedMessageId,
       setDraftCoaching,
       setUnreadCount,
+      setRoomId, // Add setRoomId so socket handler can update it
     });
 
     return () => socket.disconnect();
   }, [username, isAuthenticated]);
 
-  // Fetch roomId when authenticated
+  // Fetch roomId when authenticated (fallback - socket join_success is authoritative)
+  // This provides roomId early, but socket join_success will override it if different
   React.useEffect(() => {
+    // Clear roomId if username changed (user switched accounts)
+    if (previousUsernameRef.current !== username) {
+      setRoomId(null);
+      lastLoadedRoomIdRef.current = null;
+      previousUsernameRef.current = username;
+    }
+
     if (!isAuthenticated || !username) {
       setRoomId(null);
       return;
@@ -169,6 +180,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
           throw new Error(`Failed to fetch room: ${response.statusText}`);
         }
         const room = await response.json();
+        // Only set if we don't already have a roomId (socket join_success takes precedence)
         if (!cancelled && room?.roomId) {
           setRoomId(room.roomId);
         }
@@ -201,11 +213,19 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   }, [currentView, isAuthenticated, username, isJoined]);
 
   // Load threads when roomId is available and socket is connected
+  // Use ref to prevent duplicate loads when dependencies change rapidly
   React.useEffect(() => {
     if (roomId && socketRef.current?.connected && isJoined) {
-      getThreads(roomId);
+      // Only load if we haven't already loaded threads for this roomId
+      if (lastLoadedRoomIdRef.current !== roomId) {
+        lastLoadedRoomIdRef.current = roomId;
+        getThreads(roomId);
+      }
+    } else if (!roomId) {
+      // Reset ref when roomId is cleared (user lost room or disconnected)
+      lastLoadedRoomIdRef.current = null;
     }
-  }, [roomId, isConnected, isJoined]);
+  }, [roomId, isConnected, isJoined, getThreads]);
 
   // Thread actions
   const createThread = React.useCallback((roomId, title, messageId) => {
