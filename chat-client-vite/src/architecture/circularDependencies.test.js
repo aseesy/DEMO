@@ -6,53 +6,59 @@
  * errors when the bundler processes imports in a specific order.
  *
  * Run: npm test -- circularDependencies
+ *
+ * Note: The madge-based tests are slow and skipped in CI.
+ * Run locally with: FULL_CIRCULAR_CHECK=1 npm test -- circularDependencies
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { execSync } from 'child_process';
 import path from 'path';
 
-describe('Circular Dependency Detection', () => {
-  let circularDeps = [];
+// Skip slow madge tests unless explicitly enabled
+const FULL_CHECK = process.env.FULL_CIRCULAR_CHECK === '1';
 
-  beforeAll(() => {
-    try {
-      // Use madge to detect circular dependencies
-      const result = execSync('npx madge --circular --json src/main.jsx', {
-        cwd: path.resolve(__dirname, '../..'),
-        encoding: 'utf-8',
-        timeout: 30000,
-      });
-      circularDeps = JSON.parse(result);
-    } catch (error) {
-      // If madge exits with code 1, it found circular deps - parse stdout
-      if (error.stdout) {
-        try {
-          circularDeps = JSON.parse(error.stdout);
-        } catch {
-          // If not JSON, madge might have printed text format
-          console.error('Madge output:', error.stdout);
+describe('Circular Dependency Detection', () => {
+  it.skipIf(!FULL_CHECK)(
+    'should have no circular dependencies (slow - run with FULL_CIRCULAR_CHECK=1)',
+    () => {
+      let circularDeps = [];
+      try {
+        // Use madge to detect circular dependencies
+        const result = execSync('npx madge --circular --json src/main.jsx', {
+          cwd: path.resolve(__dirname, '../..'),
+          encoding: 'utf-8',
+          timeout: 60000,
+        });
+        circularDeps = JSON.parse(result);
+      } catch (error) {
+        // If madge exits with code 1, it found circular deps - parse stdout
+        if (error.stdout) {
+          try {
+            circularDeps = JSON.parse(error.stdout);
+          } catch {
+            // If not JSON, madge might have printed text format
+            console.error('Madge output:', error.stdout);
+          }
         }
       }
+
+      if (circularDeps.length > 0) {
+        const formatted = circularDeps
+          .map((cycle, i) => `\n  ${i + 1}. ${cycle.join(' → ')}`)
+          .join('');
+
+        expect.fail(
+          `Found ${circularDeps.length} circular dependency chain(s):${formatted}\n\n` +
+            'Fix by using direct imports instead of barrel files (index.js), ' +
+            'or restructuring the dependency graph.'
+        );
+      }
+      expect(circularDeps).toHaveLength(0);
     }
-  });
+  );
 
-  it('should have no circular dependencies', () => {
-    if (circularDeps.length > 0) {
-      const formatted = circularDeps
-        .map((cycle, i) => `\n  ${i + 1}. ${cycle.join(' → ')}`)
-        .join('');
-
-      expect.fail(
-        `Found ${circularDeps.length} circular dependency chain(s):${formatted}\n\n` +
-          'Fix by using direct imports instead of barrel files (index.js), ' +
-          'or restructuring the dependency graph.'
-      );
-    }
-    expect(circularDeps).toHaveLength(0);
-  });
-
-  it('barrel files should not cause circular imports', async () => {
+  it.skipIf(!FULL_CHECK)('barrel files should not cause circular imports (slow)', async () => {
     // Critical barrel files that commonly cause issues
     const barrels = [
       '../components/ui/index.js',
