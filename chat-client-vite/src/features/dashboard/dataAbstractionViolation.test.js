@@ -26,18 +26,19 @@ const srcDir = path.join(__dirname, '..', '..');
 
 describe('Data Abstraction Violation Detection', () => {
   describe('useDashboard - Object Internals Access', () => {
-    it('useDashboard extracts taskFormModal properties to create flat interface', () => {
+    it('useDashboard does NOT reach inside taskFormModal (uses flat interface from useModalController)', () => {
       const useDashboardContent = fs.readFileSync(
         path.join(dashboardDir, 'useDashboard.js'),
         'utf-8'
       );
 
-      const extractsFromTaskFormModal =
+      // Should NOT reach inside taskFormModal - useModalController returns these flattened
+      const reachesInsideTaskFormModal =
         /taskFormModal\.(setTaskFormMode|setAiTaskDetails|setIsGeneratingTask|taskFormMode|aiTaskDetails|isGeneratingTask)/.test(
           useDashboardContent
         );
 
-      expect(extractsFromTaskFormModal).toBe(true);
+      expect(reachesInsideTaskFormModal).toBe(false);
     });
 
     it('detects if useDashboard reaches inside modal objects', () => {

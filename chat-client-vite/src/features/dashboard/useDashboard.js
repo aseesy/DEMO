@@ -60,11 +60,15 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     profileTaskModal,
     inviteModal,
     taskFormModal,
-    // Flat handlers for task operations (no need to reach inside taskFormModal)
+    // Flat values for task operations (prevents reaching inside taskFormModal)
+    taskFormMode,
+    aiTaskDetails,
+    isGeneratingTask,
+    // Flat setters for task operations
     setTaskFormMode,
     setAiTaskDetails,
     setIsGeneratingTask,
-    // Flat handlers for modal control (no need to reach inside modal objects)
+    // Flat handlers for modal control (prevents reaching inside modal objects)
     setShowWelcomeModal,
     setShowProfileTaskModal,
     setShowInviteModal,
@@ -167,12 +171,12 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     threadState,
 
     // Flat handlers for ChatRoom (abstracted - no reaching inside objects)
-    // These are extracted from modalController to prevent reaching inside
-    taskFormMode: taskFormModal.taskFormMode,
+    // These come from useModalController's flattened interface
+    taskFormMode,
     setTaskFormMode,
-    aiTaskDetails: taskFormModal.aiTaskDetails,
+    aiTaskDetails,
     setAiTaskDetails,
-    isGeneratingTask: taskFormModal.isGeneratingTask,
+    isGeneratingTask,
     setIsGeneratingTask,
     setShowWelcomeModal,
     setShowProfileTaskModal,
