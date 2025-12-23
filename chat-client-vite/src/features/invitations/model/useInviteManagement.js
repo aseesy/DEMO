@@ -52,12 +52,14 @@ export function useInviteManagement({
     const cached = getWithMigration('hasCoParentConnected', 'has_coparent_connected');
     return cached === 'true' || cached === true;
   });
-  // Loading state to prevent banner flash - start as true if we have a cached value, false otherwise
+  // Loading state to prevent banner flash
+  // Start as true unless we have a confirmed co-parent (cached 'true')
+  // This prevents the "invite to chat" banner from flashing before API check completes
   const [isCheckingCoParent, setIsCheckingCoParent] = React.useState(() => {
     const cached = getWithMigration('hasCoParentConnected', 'has_coparent_connected');
-    // If we have a cached value, we can trust it initially (set to false)
-    // If no cached value, we need to check (set to true)
-    return !cached;
+    // Only skip check if we have confirmed co-parent connection
+    // If cached is 'false' or missing, we need to verify with server
+    return cached !== 'true' && cached !== true;
   });
   const [hasPendingInvitation, setHasPendingInvitation] = React.useState(false);
   const [hasAcceptedInvitation, setHasAcceptedInvitation] = React.useState(false);
@@ -301,13 +303,10 @@ export function useInviteManagement({
     };
   }, [currentView, isAuthenticated, hasCoParentConnected, checkRoomMembers]);
 
-  // Check once when user first authenticates
+  // Check once when user first authenticates - immediate check to avoid banner flash
   React.useEffect(() => {
     if (isAuthenticated && !hasCoParentConnected) {
-      const timer = setTimeout(() => {
-        checkRoomMembers();
-      }, 1000);
-      return () => clearTimeout(timer);
+      checkRoomMembers();
     }
   }, [isAuthenticated, hasCoParentConnected, checkRoomMembers]);
 
