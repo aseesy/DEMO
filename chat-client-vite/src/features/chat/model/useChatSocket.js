@@ -76,8 +76,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   // Unread count
   const [unreadCount, setUnreadCount] = React.useState(0);
 
-  // Refs
-  const socketRef = React.useRef(null);
+  // Refs (socketRef created earlier for useMessagePagination)
   const messagesEndRef = React.useRef(null);
   const messagesContainerRef = React.useRef(null);
   const offlineQueueRef = React.useRef([]);
@@ -209,26 +208,22 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
       socketRef.current.emit('add_to_thread', { messageId, threadId });
   }, []);
 
-  // Pagination
-  const loadOlderMessages = React.useCallback(() => {
-    if (
-      !socketRef.current?.connected ||
-      isLoadingOlder ||
-      !hasMoreMessages ||
-      messages.length === 0
-    )
-      return;
-    setIsLoadingOlder(true);
-    if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
-    loadingTimeoutRef.current = setTimeout(() => {
-      console.warn('Loading older messages timed out');
-      setIsLoadingOlder(false);
-    }, 10000);
-    socketRef.current.emit('load_older_messages', {
-      beforeTimestamp: messages[0].timestamp,
-      limit: 50,
-    });
-  }, [messages, isLoadingOlder, hasMoreMessages]);
+  // Pagination - loadOlderMessages provided by useMessagePagination hook
+  // Timeout handling still managed here (could be extracted later)
+  React.useEffect(() => {
+    if (isLoadingOlder) {
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.warn('Loading older messages timed out');
+        setIsLoadingOlder(false);
+      }, 10000);
+    }
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, [isLoadingOlder]);
 
   // Search - removed (use useSearchMessages hook instead)
 
