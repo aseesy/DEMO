@@ -36,21 +36,19 @@ if (!DATABASE_URL) {
     connectionReady = false;
   });
 
-  // Test connection in background (non-blocking)
-  // This will log once when the pool is ready
-  pool
-    .query('SELECT 1')
-    .then(() => {
+  const testConnection = async () => {
+    try {
+      await pool.query('SELECT 1');
       console.log('✅ PostgreSQL connection test passed');
       connectionReady = true;
-    })
-    .catch(err => {
-      console.warn(
-        '⚠️  PostgreSQL connection test failed (will retry on first query):',
-        err.message
-      );
+    } catch (err) {
+      console.warn('⚠️ PostgreSQL connection test failed, retrying...', err.message);
       connectionReady = false;
-    });
+      setTimeout(testConnection, 5000); // Retry after 5 seconds
+    }
+  };
+
+  testConnection();
 
   db = pool;
 }

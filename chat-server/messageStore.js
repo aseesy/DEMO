@@ -3,11 +3,18 @@ const dbPostgres = require('./dbPostgres');
 
 /**
  * Save a message to the database (PostgreSQL)
+ * Includes retry logic for transient errors and proper error logging.
  */
 async function saveMessage(message) {
   // Don't save private, flagged, or pending_original messages to database
   // pending_original messages are temporary UI-only messages that should never be persisted
   if (message.private || message.flagged || message.type === 'pending_original') {
+    return;
+  }
+
+  // Validate required fields (username required, text can be empty for system messages)
+  if (!message.username) {
+    console.error('❌ Invalid message data: username is required', { message });
     return;
   }
 
@@ -40,80 +47,104 @@ async function saveMessage(message) {
     user_flagged_by: message.user_flagged_by ? JSON.stringify(message.user_flagged_by) : '[]',
   };
 
+  const fullData = { ...coreData, ...extendedData };
+
+  /**
+   * Attempt to save or update the message with retry logic
+   */
+  const saveWithRetry = async (data, maxRetries = 3) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const existing = await dbSafe.safeSelect('messages', { id: id }, { limit: 1 });
+        if (dbSafe.parseResult(existing).length > 0) {
+          await dbSafe.safeUpdate('messages', data, { id: id });
+          console.log(`💾 Updated message ${id} in database (room: ${coreData.room_id || 'none'})`);
+        } else {
+          await dbSafe.safeInsert('messages', data);
+          console.log(
+            `💾 Saved new message ${id} to database (room: ${coreData.room_id || 'none'})`
+          );
+        }
+        return true; // Success
+      } catch (err) {
+        const isRetryable =
+          err.code === 'ECONNRESET' ||
+          err.code === 'ETIMEDOUT' ||
+          err.message?.includes('connection');
+
+        if (attempt < maxRetries && isRetryable) {
+          const delay = 1000 * attempt; // Exponential backoff
+          console.warn(
+            `⚠️ Attempt ${attempt}/${maxRetries} failed, retrying in ${delay}ms...`,
+            err.message
+          );
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          throw err; // Final attempt failed or non-retryable error
+        }
+      }
+    }
+  };
+
   try {
     // Try with all fields first (after migration 006)
-    const fullData = { ...coreData, ...extendedData };
+    await saveWithRetry(fullData);
 
-    // Check if message exists
-    const existing = await dbSafe.safeSelect('messages', { id: id }, { limit: 1 });
-    if (dbSafe.parseResult(existing).length > 0) {
-      // Update existing message
-      await dbSafe.safeUpdate('messages', fullData, { id: id });
-      console.log(`💾 Updated message ${id} in database (room: ${coreData.room_id || 'none'})`);
-    } else {
-      // Insert new message
-      await dbSafe.safeInsert('messages', fullData);
-      console.log(`💾 Saved new message ${id} to database (room: ${coreData.room_id || 'none'})`);
+    // Sync relationship metadata to Neo4j (non-blocking, async) - only after successful save
+    if (coreData.room_id) {
+      setImmediate(() => {
+        try {
+          const relationshipSync = require('./src/services/sync/relationshipSync');
+          relationshipSync.syncRoomMetadata(coreData.room_id).catch(() => {
+            // Silently fail - sync is optional and will retry periodically
+          });
+        } catch (err) {
+          // relationshipSync not available or Neo4j not configured - that's okay
+        }
+      });
+    }
 
-      // Sync relationship metadata to Neo4j (non-blocking, async)
-      if (coreData.room_id) {
-        setImmediate(() => {
-          try {
-            const relationshipSync = require('./src/services/sync/relationshipSync');
-            relationshipSync.syncRoomMetadata(coreData.room_id).catch(err => {
-              // Silently fail - sync is optional and will retry periodically
-            });
-          } catch (err) {
-            // relationshipSync not available or Neo4j not configured - that's okay
+    // Store message in Neo4j for semantic threading (non-blocking, async)
+    if (coreData.room_id && coreData.text && coreData.text.trim().length > 0) {
+      setImmediate(() => {
+        try {
+          const neo4jClient = require('./src/infrastructure/database/neo4jClient');
+          if (neo4jClient && neo4jClient.isAvailable()) {
+            neo4jClient
+              .createOrUpdateMessageNode(
+                id,
+                coreData.room_id,
+                coreData.text,
+                coreData.username,
+                coreData.timestamp
+              )
+              .catch(err => {
+                // Silently fail - Neo4j storage is optional
+                console.warn('⚠️  Failed to store message in Neo4j (non-fatal):', err.message);
+              });
           }
-        });
-      }
-
-      // Store message in Neo4j for semantic threading (non-blocking, async)
-      if (coreData.room_id && coreData.text && coreData.text.trim().length > 0) {
-        setImmediate(() => {
-          try {
-            const neo4jClient = require('./src/infrastructure/database/neo4jClient');
-            if (neo4jClient && neo4jClient.isAvailable()) {
-              neo4jClient
-                .createOrUpdateMessageNode(
-                  id,
-                  coreData.room_id,
-                  coreData.text,
-                  coreData.username,
-                  coreData.timestamp
-                )
-                .catch(err => {
-                  // Silently fail - Neo4j storage is optional
-                  console.warn('⚠️  Failed to store message in Neo4j (non-fatal):', err.message);
-                });
-            }
-          } catch (err) {
-            // Neo4j client not available - that's okay
-          }
-        });
-      }
+        } catch (err) {
+          // Neo4j client not available - that's okay
+        }
+      });
     }
   } catch (err) {
     // If extended columns don't exist, try with just core data
     if (err.message && err.message.includes('does not exist')) {
       console.warn('⚠️ Extended message columns not available, saving core data only');
       try {
-        const existing = await dbSafe.safeSelect('messages', { id: id }, { limit: 1 });
-        if (dbSafe.parseResult(existing).length > 0) {
-          await dbSafe.safeUpdate('messages', coreData, { id: id });
-          console.log(`💾 Updated message ${id} with core data only`);
-        } else {
-          await dbSafe.safeInsert('messages', coreData);
-          console.log(`💾 Saved new message ${id} with core data only`);
-        }
+        await saveWithRetry(coreData);
         return;
       } catch (fallbackErr) {
-        console.error('❌ Error saving message (fallback):', fallbackErr);
+        console.error('❌ Error saving message (fallback):', fallbackErr.message);
       }
     }
-    console.error('❌ Error saving message to database:', err);
-    console.error('Message ID:', id);
+    console.error('❌ Error saving message to database:', {
+      error: err.message,
+      messageId: id,
+      roomId: coreData.room_id,
+      username: coreData.username,
+    });
   }
 }
 
