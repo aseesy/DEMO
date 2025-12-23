@@ -44,6 +44,11 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
       title: 'Add Your Children',
       description: 'Add your children as contacts so LiaiZen can help coordinate.',
     },
+    {
+      title: 'Install LiaiZen on Your Phone',
+      description:
+        'Access LiaiZen anytime from your home screen. On iOS: tap Share > Add to Home Screen. On Android: tap the menu > Install app.',
+    },
   ];
 
   for (const task of tasks) {
@@ -59,7 +64,7 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
           title: task.title,
           description: task.description,
           status: 'open',
-          category: 'onboarding',
+          type: 'onboarding',
           created_at: now,
           updated_at: now,
         });
