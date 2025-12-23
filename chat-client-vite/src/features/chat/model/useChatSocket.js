@@ -1,7 +1,7 @@
 import React from 'react';
 import { io } from 'socket.io-client';
-import { API_BASE_URL } from '../../../config.js';
 import { setupSocketEventHandlers } from './socketEventHandlers.js';
+import { useRoomId } from '../../../hooks/room/useRoomId.js';
 
 // Import SocketEvents for type-safe event names
 // Note: Full migration to SocketAdapter pending - current code uses raw socket.io
@@ -44,7 +44,9 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   // Threads
   const [threads, setThreads] = React.useState([]);
   const [threadMessages, setThreadMessages] = React.useState({});
-  const [roomId, setRoomId] = React.useState(null);
+  
+  // Room ID management - extracted to useRoomId hook
+  const { roomId, setRoomId } = useRoomId(username, isAuthenticated);
 
   // Message tracking
   const [pendingMessages, setPendingMessages] = React.useState(new Map());
@@ -74,7 +76,6 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   const offlineQueueRef = React.useRef([]);
   const loadingTimeoutRef = React.useRef(null);
   const lastLoadedRoomIdRef = React.useRef(null); // Track last loaded roomId to prevent duplicate thread loads
-  const previousUsernameRef = React.useRef(username); // Track username changes to clear roomId
 
   // Keep refs updated to avoid socket reconnection
   const currentViewRef = React.useRef(currentView);
@@ -149,55 +150,13 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
     return () => socket.disconnect();
   }, [username, isAuthenticated]);
 
-  // Fetch roomId when authenticated (fallback - socket join_success is authoritative)
-  // This provides roomId early, but socket join_success will override it if different
+  // Room ID is now managed by useRoomId hook
+  // Reset thread loading ref when roomId changes (username change handled by useRoomId)
   React.useEffect(() => {
-    // Clear roomId if username changed (user switched accounts)
-    if (previousUsernameRef.current !== username) {
-      setRoomId(null);
+    if (!roomId) {
       lastLoadedRoomIdRef.current = null;
-      previousUsernameRef.current = username;
     }
-
-    if (!isAuthenticated || !username) {
-      setRoomId(null);
-      return;
-    }
-
-    let cancelled = false;
-
-    async function fetchRoomId() {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/room/${encodeURIComponent(username)}`);
-        if (!response.ok) {
-          if (response.status === 404) {
-            // User doesn't have a room yet - this is okay, threads will be empty
-            if (!cancelled) {
-              setRoomId(null);
-            }
-            return;
-          }
-          throw new Error(`Failed to fetch room: ${response.statusText}`);
-        }
-        const room = await response.json();
-        // Only set if we don't already have a roomId (socket join_success takes precedence)
-        if (!cancelled && room?.roomId) {
-          setRoomId(room.roomId);
-        }
-      } catch (err) {
-        console.error('[useChatSocket] Error getting user room:', err);
-        if (!cancelled && !err.message.includes('404')) {
-          setError(err.message);
-        }
-      }
-    }
-
-    fetchRoomId();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [username, isAuthenticated]);
+  }, [roomId]);
 
   // Auto-join when navigating to chat view
   React.useEffect(() => {

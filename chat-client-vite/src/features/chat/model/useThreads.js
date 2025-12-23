@@ -1,6 +1,6 @@
 import React from 'react';
 import { io } from 'socket.io-client';
-import { API_BASE_URL } from '../../../config.js';
+import { useRoomId } from '../../../hooks/room/useRoomId.js';
 
 /**
  * getSocketUrl - Determines the correct socket URL based on environment
@@ -36,8 +36,10 @@ export function useThreads(username, isAuthenticated) {
   const [threads, setThreads] = React.useState([]);
   const [isLoadingThreads, setIsLoadingThreads] = React.useState(false);
   const [selectedThreadId, setSelectedThreadId] = React.useState(null);
-  const [roomId, setRoomId] = React.useState(null);
   const [error, setError] = React.useState(null);
+  
+  // Room ID management - extracted to useRoomId hook
+  const { roomId, setRoomId } = useRoomId(username, isAuthenticated);
 
   const socketRef = React.useRef(null);
   const usernameRef = React.useRef(username);
@@ -50,50 +52,7 @@ export function useThreads(username, isAuthenticated) {
     hasAnalyzedRef.current = false;
   }, [username]);
 
-  // Fetch user's room ID
-  React.useEffect(() => {
-    if (!isAuthenticated || !username) {
-      setRoomId(null);
-      return;
-    }
-
-    let cancelled = false;
-
-    async function getRoom() {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/room/${encodeURIComponent(username)}`);
-        if (!response.ok) {
-          if (response.status === 404) {
-            // User doesn't have a room yet - this is okay, threads will be empty
-            console.log('[useThreads] User does not have a room yet');
-            if (!cancelled) {
-              setRoomId(null);
-            }
-            return;
-          }
-          throw new Error(`Failed to fetch room: ${response.statusText}`);
-        }
-        const room = await response.json();
-        if (!cancelled && room?.roomId) {
-          setRoomId(room.roomId);
-        }
-      } catch (err) {
-        console.error('Error getting user room:', err);
-        if (!cancelled) {
-          // Don't set error for 404 - user just doesn't have a room yet
-          if (!err.message.includes('404')) {
-            setError(err.message);
-          }
-        }
-      }
-    }
-
-    getRoom();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [username, isAuthenticated]);
+  // Room ID is now managed by useRoomId hook - no need to fetch here
 
   // Connect to socket and load threads
   React.useEffect(() => {
@@ -136,6 +95,12 @@ export function useThreads(username, isAuthenticated) {
         loadTimeoutRef.current = null;
       }
       setIsLoadingThreads(true);
+      
+      // Update roomId from socket event if provided (authoritative source)
+      if (data?.roomId && setRoomId) {
+        setRoomId(data.roomId);
+      }
+      
       // Request threads for the room
       // Use the roomId from the joined event if available, otherwise use state
       const targetRoomId = data?.roomId || roomId;
