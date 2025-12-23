@@ -243,7 +243,10 @@ describe('Migration File Integrity', () => {
       const content = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
 
       // Basic SQL syntax checks
-      expect(content.length, `${file} is empty`).toBeGreaterThan(0);
+      if (content.length === 0) {
+        throw new Error(`${file} is empty`);
+      }
+      expect(content.length).toBeGreaterThan(0);
 
       // Check for common SQL errors
       const danglingBegin = (content.match(/BEGIN/gi) || []).length;
@@ -251,7 +254,10 @@ describe('Migration File Integrity', () => {
 
       // Transactions should be balanced (or use DO $$ blocks)
       if (danglingBegin > 0 && !content.includes('DO $$')) {
-        expect(commits, `${file}: Unbalanced BEGIN/COMMIT`).toBeGreaterThanOrEqual(danglingBegin);
+        if (commits < danglingBegin) {
+          throw new Error(`${file}: Unbalanced BEGIN/COMMIT`);
+        }
+        expect(commits).toBeGreaterThanOrEqual(danglingBegin);
       }
     }
   });
@@ -259,7 +265,10 @@ describe('Migration File Integrity', () => {
   it('migration 023 exists and is complete', () => {
     const migrationPath = path.join(__dirname, '../migrations/023_schema_normalization.sql');
 
-    expect(fs.existsSync(migrationPath), 'Migration 023 file missing').toBe(true);
+    if (!fs.existsSync(migrationPath)) {
+      throw new Error('Migration 023 file missing');
+    }
+    expect(fs.existsSync(migrationPath)).toBe(true);
 
     const content = fs.readFileSync(migrationPath, 'utf-8');
 
@@ -273,9 +282,10 @@ describe('Migration File Integrity', () => {
     ];
 
     for (const table of requiredTables) {
-      expect(content, `Migration 023 missing CREATE TABLE for ${table}`).toContain(
-        `CREATE TABLE IF NOT EXISTS ${table}`
-      );
+      if (!content.includes(`CREATE TABLE IF NOT EXISTS ${table}`)) {
+        throw new Error(`Migration 023 missing CREATE TABLE for ${table}`);
+      }
+      expect(content).toContain(`CREATE TABLE IF NOT EXISTS ${table}`);
     }
   });
 });
