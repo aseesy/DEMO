@@ -58,7 +58,6 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
     threads,
     selectedThreadId,
     setSelectedThreadId,
-    getThreads,
     getThreadMessages,
     addToThread,
     socket,
@@ -76,7 +75,6 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
     jumpToMessage,
     highlightedMessageId,
     isInitialLoad,
-    isConnected,
   } = useChatContext();
 
   // Local state
@@ -123,16 +121,8 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
     });
   }, [messages]);
 
-  // Load threads when room is known
-  const roomIdRef = React.useRef(null);
-  React.useEffect(() => {
-    if (messages.length > 0 && messages[0].roomId) {
-      roomIdRef.current = messages[0].roomId;
-      if (roomIdRef.current && isConnected) {
-        getThreads(roomIdRef.current);
-      }
-    }
-  }, [messages, isConnected, getThreads]);
+  // Threads are now automatically loaded by useChatSocket when roomId is available
+  // No need to manually load threads here - useChatSocket handles it
 
   // Listen for rewrite-sent event to clean up pending messages
   React.useEffect(() => {

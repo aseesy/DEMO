@@ -95,17 +95,26 @@ async function createContact(userId, contactData) {
     throw new ServiceError('Contact name is required', 400);
   }
 
+  // Log the creation attempt
+  console.log('[ContactService] Creating contact', {
+    userId,
+    contactName: contactData.contact_name,
+    relationship: contactData.relationship || 'NOT SET',
+    hasEmail: !!contactData.contact_email,
+  });
+
   return withRetry(
     async () => {
       const now = new Date().toISOString();
 
-      const contactId = await dbSafe.safeInsert('contacts', {
-        user_id: userId,
-        contact_name: contactData.contact_name.trim(),
-        contact_email: contactData.contact_email
-          ? contactData.contact_email.trim().toLowerCase()
-          : null,
-        relationship: contactData.relationship || null,
+      try {
+        const contactId = await dbSafe.safeInsert('contacts', {
+          user_id: userId,
+          contact_name: contactData.contact_name.trim(),
+          contact_email: contactData.contact_email
+            ? contactData.contact_email.trim().toLowerCase()
+            : null,
+          relationship: contactData.relationship || null,
         separation_date: contactData.separation_date || null,
         separation_details: contactData.separation_details || null,
         address: contactData.address || null,
@@ -131,7 +140,26 @@ async function createContact(userId, contactData) {
         updated_at: now,
       });
 
-      return contactId;
+        console.log('[ContactService] ✅ Contact inserted successfully', {
+          contactId,
+          userId,
+          contactName: contactData.contact_name,
+          relationship: contactData.relationship,
+        });
+
+        return contactId;
+      } catch (insertError) {
+        console.error('[ContactService] ❌ Database insert failed', {
+          error: insertError.message,
+          code: insertError.code,
+          detail: insertError.detail,
+          constraint: insertError.constraint,
+          userId,
+          contactName: contactData.contact_name,
+          relationship: contactData.relationship,
+        });
+        throw insertError;
+      }
     },
     {
       operationName: 'createContact',

@@ -6,3 +6,4 @@
 node_modules
 screenshots/*.webm
 .vercel
+.aider*

@@ -142,6 +142,41 @@ async function createCoParentRelationship(userId1, userId2, roomId, roomName = n
   }
 
   try {
+    // First, ensure user nodes exist with proper data
+    // Fetch usernames from PostgreSQL to ensure complete nodes
+    const dbPostgres = require('../../../dbPostgres');
+    const usersResult = await dbPostgres.query(
+      'SELECT id, username FROM users WHERE id = $1 OR id = $2',
+      [userId1, userId2]
+    );
+    
+    const userMap = new Map();
+    usersResult.rows.forEach(row => {
+      userMap.set(row.id, row.username);
+    });
+
+    const username1 = userMap.get(userId1) || `user_${userId1}`;
+    const username2 = userMap.get(userId2) || `user_${userId2}`;
+
+    // MERGE user nodes with username (required for queries and privacy model)
+    const ensureUsersQuery = `
+      MERGE (u1:User {userId: $userId1})
+      ON CREATE SET u1.username = $username1, u1.createdAt = datetime()
+      ON MATCH SET u1.username = COALESCE(u1.username, $username1)
+      MERGE (u2:User {userId: $userId2})
+      ON CREATE SET u2.username = $username2, u2.createdAt = datetime()
+      ON MATCH SET u2.username = COALESCE(u2.username, $username2)
+      RETURN u1, u2
+    `;
+
+    await executeCypher(ensureUsersQuery, {
+      userId1: neo4j.int(userId1),
+      userId2: neo4j.int(userId2),
+      username1: username1,
+      username2: username2,
+    });
+
+    // Now create the relationship (user nodes are guaranteed to exist)
     const query = `
       MATCH (u1:User {userId: $userId1})
       MATCH (u2:User {userId: $userId2})

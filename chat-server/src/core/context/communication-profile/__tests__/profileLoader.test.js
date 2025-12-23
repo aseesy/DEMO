@@ -2,36 +2,45 @@
  * Unit Tests: Profile Loader
  *
  * Tests for loading user communication profiles from the database.
- * Uses mock database for isolation.
+ * Updated: 2024-12-23 to use repository pattern instead of direct SQL.
  *
  * Feature: 002-sender-profile-mediation
  */
 
+// Mock the repository before requiring the module
+jest.mock('../../../../repositories/postgres', () => {
+  const mockGetCommunicationProfile = jest.fn();
+  return {
+    PostgresCommunicationRepository: jest.fn().mockImplementation(() => ({
+      getCommunicationProfile: mockGetCommunicationProfile,
+    })),
+    __mockGetCommunicationProfile: mockGetCommunicationProfile,
+  };
+});
+
 const profileLoader = require('../profileLoader');
+const { __mockGetCommunicationProfile } = require('../../../../repositories/postgres');
 
 describe('Profile Loader', () => {
-  // Mock database
-  const createMockDb = (rows = []) => ({
-    query: jest.fn().mockResolvedValue({
-      rows,
-      rowCount: rows.length,
-    }),
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  describe('loadProfile', () => {
-    it('should load existing profile from database', async () => {
+  describe('getProfile (new naming)', () => {
+    it('should load existing profile from repository', async () => {
       const mockProfile = {
         user_id: 'alex',
         communication_patterns: { tone_tendencies: ['assertive'] },
-        triggers: { topics: ['schedule'] },
+        triggers: { topics: ['schedule'], phrases: [], intensity: 0.5 },
         successful_rewrites: [],
         intervention_history: { total_interventions: 5 },
         profile_version: 2,
         last_profile_update: '2024-01-01T00:00:00Z',
+        is_new: false,
       };
 
-      const db = createMockDb([mockProfile]);
-      const result = await profileLoader.loadProfile('alex', db);
+      __mockGetCommunicationProfile.mockResolvedValue(mockProfile);
+      const result = await profileLoader.getProfile('alex');
 
       expect(result.user_id).toBe('alex');
       expect(result.communication_patterns.tone_tendencies).toContain('assertive');
@@ -39,82 +48,63 @@ describe('Profile Loader', () => {
     });
 
     it('should return default profile for new user', async () => {
-      const db = createMockDb([]); // No rows returned
-      const result = await profileLoader.loadProfile('newuser', db);
+      const defaultProfile = {
+        user_id: 'newuser',
+        communication_patterns: { tone_tendencies: [], common_phrases: [], avg_message_length: 0 },
+        triggers: { topics: [], phrases: [], intensity: 0 },
+        successful_rewrites: [],
+        intervention_history: { total_interventions: 0 },
+        profile_version: 1,
+        is_new: true,
+      };
+
+      __mockGetCommunicationProfile.mockResolvedValue(defaultProfile);
+      const result = await profileLoader.getProfile('newuser');
 
       expect(result.user_id).toBe('newuser');
       expect(result.is_new).toBe(true);
-      expect(result.communication_patterns).toEqual(
-        profileLoader.DEFAULT_PROFILE.communication_patterns
-      );
-    });
-
-    it('should normalize user ID to lowercase', async () => {
-      const db = createMockDb([]);
-      await profileLoader.loadProfile('Alex', db);
-
-      expect(db.query).toHaveBeenCalledWith(expect.any(String), ['alex']);
+      expect(result.communication_patterns.tone_tendencies).toEqual([]);
     });
 
     it('should return default profile with null user_id when userId is missing', async () => {
-      const db = createMockDb([]);
-      const result = await profileLoader.loadProfile(null, db);
+      const result = await profileLoader.getProfile(null);
 
       expect(result.user_id).toBeNull();
+      expect(result.is_new).toBe(undefined); // DEFAULT_PROFILE doesn't have is_new
     });
 
-    it('should return default profile with error flag on database error', async () => {
-      const db = {
-        query: jest.fn().mockRejectedValue(new Error('Connection failed')),
-      };
+    it('should return default profile with error flag on repository error', async () => {
+      __mockGetCommunicationProfile.mockRejectedValue(new Error('Connection failed'));
 
-      const result = await profileLoader.loadProfile('alex', db);
+      const result = await profileLoader.getProfile('alex');
 
       expect(result.is_new).toBe(true);
       expect(result.load_error).toBe('Connection failed');
     });
 
-    it('should parse JSONB fields that are strings', async () => {
-      const mockProfile = {
-        user_id: 'alex',
-        communication_patterns: '{"tone_tendencies": ["direct"]}',
-        triggers: '{"topics": ["money"]}',
-        successful_rewrites: '[]',
-        intervention_history: '{"total_interventions": 3}',
-      };
+    it('should log message for new profiles', async () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      __mockGetCommunicationProfile.mockResolvedValue({
+        user_id: 'newuser',
+        is_new: true,
+      });
 
-      const db = createMockDb([mockProfile]);
-      const result = await profileLoader.loadProfile('alex', db);
+      await profileLoader.getProfile('newuser');
 
-      expect(result.communication_patterns.tone_tendencies).toContain('direct');
-      expect(result.triggers.topics).toContain('money');
-    });
-
-    it('should handle already-parsed JSONB objects', async () => {
-      const mockProfile = {
-        user_id: 'alex',
-        communication_patterns: { tone_tendencies: ['direct'] },
-        triggers: { topics: ['money'] },
-        successful_rewrites: [],
-        intervention_history: { total_interventions: 3 },
-      };
-
-      const db = createMockDb([mockProfile]);
-      const result = await profileLoader.loadProfile('alex', db);
-
-      expect(result.communication_patterns.tone_tendencies).toContain('direct');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('No profile for newuser')
+      );
+      consoleSpy.mockRestore();
     });
   });
 
-  describe('loadProfiles', () => {
+  describe('getProfiles (batch loading)', () => {
     it('should batch load multiple profiles', async () => {
-      const mockProfiles = [
-        { user_id: 'alex', communication_patterns: {}, triggers: {} },
-        { user_id: 'jordan', communication_patterns: {}, triggers: {} },
-      ];
+      __mockGetCommunicationProfile
+        .mockResolvedValueOnce({ user_id: 'alex', is_new: false })
+        .mockResolvedValueOnce({ user_id: 'jordan', is_new: false });
 
-      const db = createMockDb(mockProfiles);
-      const result = await profileLoader.loadProfiles(['alex', 'jordan'], db);
+      const result = await profileLoader.getProfiles(['alex', 'jordan']);
 
       expect(result.size).toBe(2);
       expect(result.has('alex')).toBe(true);
@@ -122,24 +112,21 @@ describe('Profile Loader', () => {
     });
 
     it('should return empty map for empty userIds array', async () => {
-      const db = createMockDb([]);
-      const result = await profileLoader.loadProfiles([], db);
-
+      const result = await profileLoader.getProfiles([]);
       expect(result.size).toBe(0);
     });
 
     it('should return empty map for null userIds', async () => {
-      const db = createMockDb([]);
-      const result = await profileLoader.loadProfiles(null, db);
-
+      const result = await profileLoader.getProfiles(null);
       expect(result.size).toBe(0);
     });
 
-    it('should add default profiles for users not found', async () => {
-      const mockProfiles = [{ user_id: 'alex', communication_patterns: {}, triggers: {} }];
+    it('should handle users with and without profiles', async () => {
+      __mockGetCommunicationProfile
+        .mockResolvedValueOnce({ user_id: 'alex', is_new: false })
+        .mockResolvedValueOnce({ user_id: 'missing', is_new: true });
 
-      const db = createMockDb(mockProfiles);
-      const result = await profileLoader.loadProfiles(['alex', 'missing'], db);
+      const result = await profileLoader.getProfiles(['alex', 'missing']);
 
       expect(result.size).toBe(2);
       expect(result.get('alex').is_new).toBe(false);
@@ -147,25 +134,35 @@ describe('Profile Loader', () => {
     });
 
     it('should normalize all user IDs to lowercase', async () => {
-      const db = createMockDb([]);
-      await profileLoader.loadProfiles(['Alex', 'JORDAN'], db);
+      __mockGetCommunicationProfile.mockResolvedValue({ user_id: 'alex', is_new: true });
 
-      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('WHERE user_id IN'), [
-        'alex',
-        'jordan',
-      ]);
+      await profileLoader.getProfiles(['Alex', 'JORDAN']);
+
+      // The repository should be called with lowercase userIds
+      expect(__mockGetCommunicationProfile).toHaveBeenCalledWith('alex');
+      expect(__mockGetCommunicationProfile).toHaveBeenCalledWith('jordan');
     });
 
-    it('should handle database errors gracefully', async () => {
-      const db = {
-        query: jest.fn().mockRejectedValue(new Error('Connection failed')),
-      };
+    it('should handle repository errors gracefully', async () => {
+      __mockGetCommunicationProfile.mockRejectedValue(new Error('Connection failed'));
 
-      const result = await profileLoader.loadProfiles(['alex', 'jordan'], db);
+      const result = await profileLoader.getProfiles(['alex', 'jordan']);
 
       expect(result.size).toBe(2);
       expect(result.get('alex').load_error).toBe('Connection failed');
       expect(result.get('jordan').load_error).toBe('Connection failed');
+    });
+  });
+
+  describe('loadProfile (deprecated alias)', () => {
+    it('should be an alias for getProfile', () => {
+      expect(profileLoader.loadProfile).toBe(profileLoader.getProfile);
+    });
+  });
+
+  describe('loadProfiles (deprecated alias)', () => {
+    it('should be an alias for getProfiles', () => {
+      expect(profileLoader.loadProfiles).toBe(profileLoader.getProfiles);
     });
   });
 

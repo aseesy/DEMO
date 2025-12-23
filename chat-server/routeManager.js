@@ -190,6 +190,7 @@ function setupRoutes(app, services) {
   const figmaRoutes = require('./routes/figma');
   const aiRoutes = require('./routes/ai');
   const connectionsRoutes = require('./routes/connections');
+  const profileRoutes = require('./routes/profile');
 
   tasksRoutes.setHelpers({ autoCompleteOnboardingTasks, backfillOnboardingTasks });
   pairingRoutes.setHelpers({ roomManager });
@@ -203,12 +204,17 @@ function setupRoutes(app, services) {
     autoCompleteOnboardingTasks,
   });
   contactsRoutes.setHelpers({ autoCompleteOnboardingTasks, contactIntelligence });
+  
+  // Inject services into profile routes
+  if (services.profileService && profileRoutes.setServices) {
+    profileRoutes.setServices({ profileService: services.profileService });
+  }
 
   // ========================================
   // API Route Registration
   // ========================================
   app.use('/api/userContext', require('./routes/userContext'));
-  app.use('/api/profile', require('./routes/profile'));
+  app.use('/api/profile', profileRoutes);
   app.use('/api/auth', authRoutes);
   app.use('/api/waitlist', waitlistRoutes);
   app.use('/api/notifications', notificationsRoutes);

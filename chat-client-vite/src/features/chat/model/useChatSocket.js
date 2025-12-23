@@ -44,6 +44,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   // Threads
   const [threads, setThreads] = React.useState([]);
   const [threadMessages, setThreadMessages] = React.useState({});
+  const [roomId, setRoomId] = React.useState(null);
 
   // Message tracking
   const [pendingMessages, setPendingMessages] = React.useState(new Map());
@@ -145,6 +146,47 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
     return () => socket.disconnect();
   }, [username, isAuthenticated]);
 
+  // Fetch roomId when authenticated
+  React.useEffect(() => {
+    if (!isAuthenticated || !username) {
+      setRoomId(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchRoomId() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/room/${encodeURIComponent(username)}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            // User doesn't have a room yet - this is okay, threads will be empty
+            if (!cancelled) {
+              setRoomId(null);
+            }
+            return;
+          }
+          throw new Error(`Failed to fetch room: ${response.statusText}`);
+        }
+        const room = await response.json();
+        if (!cancelled && room?.roomId) {
+          setRoomId(room.roomId);
+        }
+      } catch (err) {
+        console.error('[useChatSocket] Error getting user room:', err);
+        if (!cancelled && !err.message.includes('404')) {
+          setError(err.message);
+        }
+      }
+    }
+
+    fetchRoomId();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [username, isAuthenticated]);
+
   // Auto-join when navigating to chat view
   React.useEffect(() => {
     if (
@@ -157,6 +199,13 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
       socketRef.current.emit('join', { username });
     }
   }, [currentView, isAuthenticated, username, isJoined]);
+
+  // Load threads when roomId is available and socket is connected
+  React.useEffect(() => {
+    if (roomId && socketRef.current?.connected && isJoined) {
+      getThreads(roomId);
+    }
+  }, [roomId, isConnected, isJoined]);
 
   // Thread actions
   const createThread = React.useCallback((roomId, title, messageId) => {

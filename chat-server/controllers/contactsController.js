@@ -73,6 +73,7 @@ async function getContacts(req, res) {
 async function createContact(req, res) {
   try {
     if (!req.body || typeof req.body !== 'object') {
+      console.error('[Contact Creation] Invalid request body:', req.body);
       return res.status(400).json({ error: 'Invalid request body' });
     }
 
@@ -80,14 +81,33 @@ async function createContact(req, res) {
     const { username: _ignoredUsername, contact_name, ...contactData } = req.body;
 
     if (!contact_name) {
+      console.error('[Contact Creation] Missing contact_name in request');
       return res.status(400).json({ error: 'Contact name is required' });
     }
 
     // Use authenticated user's ID from JWT, not user-supplied input
     const userId = req.user.id;
+    const username = req.user.username || 'unknown';
+
+    console.log('[Contact Creation] Starting contact creation', {
+      userId,
+      username,
+      contactName: contact_name,
+      relationship: contactData.relationship || 'not set',
+      hasEmail: !!contactData.contact_email,
+    });
+
     const contactId = await contactsService.createContact(userId, {
       contact_name,
       ...contactData,
+    });
+
+    console.log('[Contact Creation] ✅ Contact created successfully', {
+      contactId,
+      userId,
+      username,
+      contactName: contact_name,
+      relationship: contactData.relationship,
     });
 
     // Auto-complete onboarding tasks
@@ -105,6 +125,17 @@ async function createContact(req, res) {
       contactId,
     });
   } catch (error) {
+    console.error('[Contact Creation] ❌ Error creating contact:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.id,
+      username: req.user?.username,
+      contactName: req.body?.contact_name,
+      relationship: req.body?.relationship,
+      errorCode: error.code,
+      errorDetail: error.detail,
+      errorConstraint: error.constraint,
+    });
     handleError(res, error, 'Error creating contact');
   }
 }

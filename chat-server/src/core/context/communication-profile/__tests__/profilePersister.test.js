@@ -2,398 +2,285 @@
  * Unit Tests: Profile Persister
  *
  * Tests for saving and updating user communication profiles.
- * Uses mock database for isolation.
+ * Updated: 2024-12-23 to use repository pattern instead of direct SQL.
  *
  * Feature: 002-sender-profile-mediation
  */
 
+// Mock the repository before requiring the module
+jest.mock('../../../../repositories/postgres', () => {
+  const mockUpdateCommunicationPatterns = jest.fn().mockResolvedValue({});
+  const mockRecordTrigger = jest.fn().mockResolvedValue({});
+  const mockRecordIntervention = jest.fn().mockResolvedValue({
+    total_interventions: 1,
+    accepted_count: 0,
+    rejected_count: 0,
+    last_intervention_at: new Date().toISOString(),
+  });
+  const mockRecordAcceptedRewrite = jest.fn().mockResolvedValue({
+    accepted_count: 1,
+  });
+  const mockGetCommunicationProfile = jest.fn().mockResolvedValue({
+    user_id: 'alex',
+    successful_rewrites: [],
+    intervention_history: {
+      total_interventions: 1,
+      accepted_count: 1,
+      acceptance_rate: 1,
+    },
+  });
+
+  return {
+    PostgresCommunicationRepository: jest.fn().mockImplementation(() => ({
+      updateCommunicationPatterns: mockUpdateCommunicationPatterns,
+      recordTrigger: mockRecordTrigger,
+      recordIntervention: mockRecordIntervention,
+      recordAcceptedRewrite: mockRecordAcceptedRewrite,
+      getCommunicationProfile: mockGetCommunicationProfile,
+    })),
+    __mockUpdateCommunicationPatterns: mockUpdateCommunicationPatterns,
+    __mockRecordTrigger: mockRecordTrigger,
+    __mockRecordIntervention: mockRecordIntervention,
+    __mockRecordAcceptedRewrite: mockRecordAcceptedRewrite,
+    __mockGetCommunicationProfile: mockGetCommunicationProfile,
+  };
+});
+
 const profilePersister = require('../profilePersister');
+const {
+  __mockUpdateCommunicationPatterns,
+  __mockRecordTrigger,
+  __mockRecordIntervention,
+  __mockRecordAcceptedRewrite,
+  __mockGetCommunicationProfile,
+} = require('../../../../repositories/postgres');
 
 describe('Profile Persister', () => {
-  // Mock database
-  const createMockDb = (returnRows = []) => ({
-    query: jest.fn().mockResolvedValue({
-      rows: returnRows,
-      rowCount: returnRows.length,
-    }),
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('updateProfile', () => {
     it('should update profile with communication_patterns', async () => {
-      const db = createMockDb([{ user_id: 'alex' }]);
+      __mockGetCommunicationProfile.mockResolvedValue({
+        user_id: 'alex',
+        communication_patterns: { tone_tendencies: ['assertive'] },
+      });
 
-      await profilePersister.updateProfile(
-        'alex',
-        {
-          communication_patterns: { tone_tendencies: ['assertive'] },
-        },
-        db
-      );
+      await profilePersister.updateProfile('alex', {
+        communication_patterns: { tone_tendencies: ['assertive'] },
+      });
 
-      expect(db.query).toHaveBeenCalled();
-      const callArgs = db.query.mock.calls[0];
-      expect(callArgs[0]).toContain('communication_patterns');
+      expect(__mockUpdateCommunicationPatterns).toHaveBeenCalledWith('alex', {
+        tone_tendencies: ['assertive'],
+      });
     });
 
     it('should update profile with triggers', async () => {
-      const db = createMockDb([{ user_id: 'alex' }]);
+      __mockGetCommunicationProfile.mockResolvedValue({
+        user_id: 'alex',
+        triggers: { topics: ['schedule'], phrases: [] },
+      });
 
-      await profilePersister.updateProfile(
-        'alex',
-        {
-          triggers: { topics: ['schedule'] },
+      await profilePersister.updateProfile('alex', {
+        triggers: {
+          topics: ['schedule', 'money'],
+          phrases: ['you always'],
+          intensity: 0.7,
         },
-        db
-      );
+      });
 
-      expect(db.query).toHaveBeenCalled();
-      const callArgs = db.query.mock.calls[0];
-      expect(callArgs[0]).toContain('triggers');
-    });
-
-    it('should normalize user ID to lowercase', async () => {
-      const db = createMockDb([{ user_id: 'alex' }]);
-
-      await profilePersister.updateProfile(
-        'ALEX',
-        {
-          communication_patterns: {},
-        },
-        db
-      );
-
-      const callArgs = db.query.mock.calls[0];
-      expect(callArgs[1][0]).toBe('alex');
+      // Should call recordTrigger for each topic and phrase
+      expect(__mockRecordTrigger).toHaveBeenCalledWith('alex', 'topic', 'schedule', 0.7);
+      expect(__mockRecordTrigger).toHaveBeenCalledWith('alex', 'topic', 'money', 0.7);
+      expect(__mockRecordTrigger).toHaveBeenCalledWith('alex', 'phrase', 'you always', 0.7);
     });
 
     it('should throw error for missing userId', async () => {
-      const db = createMockDb([]);
-
       await expect(
-        profilePersister.updateProfile(null, { communication_patterns: {} }, db)
+        profilePersister.updateProfile(null, { communication_patterns: {} })
       ).rejects.toThrow('userId is required');
     });
 
-    it('should still update timestamp when given empty updates', async () => {
-      const db = createMockDb([{ user_id: 'alex' }]);
+    it('should return the updated profile', async () => {
+      __mockGetCommunicationProfile.mockResolvedValue({
+        user_id: 'alex',
+        communication_patterns: { tone_tendencies: ['calm'] },
+        is_new: false,
+      });
 
-      const result = await profilePersister.updateProfile('alex', {}, db);
+      const result = await profilePersister.updateProfile('alex', {
+        communication_patterns: { tone_tendencies: ['calm'] },
+      });
 
-      // Even with empty updates, timestamp and version are always updated
-      expect(db.query).toHaveBeenCalled();
-      const callArgs = db.query.mock.calls[0];
-      expect(callArgs[0]).toContain('last_profile_update');
+      expect(result.user_id).toBe('alex');
+      expect(result.is_new).toBe(false);
     });
 
-    it('should always update last_profile_update timestamp', async () => {
-      const db = createMockDb([{ user_id: 'alex' }]);
+    it('should handle empty updates gracefully', async () => {
+      __mockGetCommunicationProfile.mockResolvedValue({ user_id: 'alex' });
 
-      await profilePersister.updateProfile(
-        'alex',
-        {
-          communication_patterns: {},
-        },
-        db
+      const result = await profilePersister.updateProfile('alex', {});
+
+      // No repository methods should be called for empty updates
+      expect(__mockUpdateCommunicationPatterns).not.toHaveBeenCalled();
+      expect(__mockRecordTrigger).not.toHaveBeenCalled();
+    });
+
+    it('should log success message', async () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      __mockGetCommunicationProfile.mockResolvedValue({ user_id: 'alex' });
+
+      await profilePersister.updateProfile('alex', {
+        communication_patterns: { tone_tendencies: [] },
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Updated profile for alex')
       );
-
-      const callArgs = db.query.mock.calls[0];
-      expect(callArgs[0]).toContain('last_profile_update');
+      consoleSpy.mockRestore();
     });
 
-    it('should increment profile_version', async () => {
-      const db = createMockDb([{ user_id: 'alex' }]);
-
-      await profilePersister.updateProfile(
-        'alex',
-        {
-          communication_patterns: {},
-        },
-        db
-      );
-
-      const callArgs = db.query.mock.calls[0];
-      expect(callArgs[0]).toContain('profile_version = COALESCE(profile_version, 0) + 1');
-    });
-
-    it('should handle database errors', async () => {
-      const db = {
-        query: jest.fn().mockRejectedValue(new Error('Connection failed')),
-      };
+    it('should handle repository errors', async () => {
+      __mockUpdateCommunicationPatterns.mockRejectedValue(new Error('Connection failed'));
 
       await expect(
-        profilePersister.updateProfile('alex', { communication_patterns: {} }, db)
+        profilePersister.updateProfile('alex', { communication_patterns: {} })
       ).rejects.toThrow('Connection failed');
     });
   });
 
   describe('recordIntervention', () => {
-    it('should create new intervention history for user without history', async () => {
-      const db = createMockDb([]);
-      // First query returns no existing history
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-      // Second query is the upsert
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
-
-      const result = await profilePersister.recordIntervention(
-        'alex',
-        {
-          type: 'suggestion',
-          escalation_level: 'low',
-          original_message: 'Test message',
-        },
-        db
-      );
-
-      expect(result.total_interventions).toBe(1);
-    });
-
-    it('should increment intervention count for existing history', async () => {
-      const existingHistory = {
+    it('should record intervention and return updated history', async () => {
+      __mockRecordIntervention.mockResolvedValue({
         total_interventions: 5,
         accepted_count: 3,
-        recent_interventions: [],
-      };
-
-      const db = createMockDb([{ intervention_history: existingHistory }]);
-      // First query returns existing history
-      db.query.mockResolvedValueOnce({
-        rows: [{ intervention_history: existingHistory }],
-        rowCount: 1,
+        rejected_count: 2,
+        last_intervention_at: '2024-01-01T00:00:00Z',
       });
-      // Second query is the upsert
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const result = await profilePersister.recordIntervention(
-        'alex',
-        {
-          type: 'suggestion',
-        },
-        db
-      );
-
-      expect(result.total_interventions).toBe(6);
-    });
-
-    it('should add intervention to recent_interventions', async () => {
-      const db = createMockDb([]);
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
-
-      const result = await profilePersister.recordIntervention(
-        'alex',
-        {
-          type: 'rewrite',
-          escalation_level: 'medium',
-          original_message: 'Test message preview here',
-        },
-        db
-      );
-
-      expect(result.recent_interventions).toHaveLength(1);
-      expect(result.recent_interventions[0].type).toBe('rewrite');
-      expect(result.recent_interventions[0].escalation_level).toBe('medium');
-    });
-
-    it('should limit recent_interventions to 20', async () => {
-      const existingHistory = {
-        total_interventions: 20,
-        recent_interventions: Array(20).fill({ type: 'old' }),
-      };
-
-      const db = createMockDb([{ intervention_history: existingHistory }]);
-      db.query.mockResolvedValueOnce({
-        rows: [{ intervention_history: existingHistory }],
-        rowCount: 1,
+      const result = await profilePersister.recordIntervention('alex', {
+        type: 'suggestion',
+        escalation_level: 'low',
       });
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const result = await profilePersister.recordIntervention(
-        'alex',
-        {
-          type: 'new',
-        },
-        db
-      );
-
-      expect(result.recent_interventions).toHaveLength(20);
-      expect(result.recent_interventions[0].type).toBe('new');
+      expect(result.total_interventions).toBe(5);
+      expect(result.accepted_count).toBe(3);
+      expect(result.acceptance_rate).toBe(0.6); // 3/5
+      expect(__mockRecordIntervention).toHaveBeenCalledWith('alex', {
+        type: 'suggestion',
+        escalation_level: 'low',
+      });
     });
 
-    it('should normalize user ID to lowercase', async () => {
-      const db = createMockDb([]);
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    it('should calculate acceptance_rate correctly', async () => {
+      __mockRecordIntervention.mockResolvedValue({
+        total_interventions: 10,
+        accepted_count: 7,
+        rejected_count: 3,
+        last_intervention_at: '2024-01-01T00:00:00Z',
+      });
 
-      await profilePersister.recordIntervention('ALEX', { type: 'test' }, db);
+      const result = await profilePersister.recordIntervention('alex', {});
 
-      expect(db.query.mock.calls[0][1][0]).toBe('alex');
+      expect(result.acceptance_rate).toBe(0.7);
+    });
+
+    it('should handle zero interventions', async () => {
+      __mockRecordIntervention.mockResolvedValue({
+        total_interventions: 0,
+        accepted_count: 0,
+        rejected_count: 0,
+      });
+
+      const result = await profilePersister.recordIntervention('alex', {});
+
+      expect(result.acceptance_rate).toBe(0);
     });
 
     it('should throw error for missing userId', async () => {
-      const db = createMockDb([]);
-
-      await expect(profilePersister.recordIntervention(null, {}, db)).rejects.toThrow(
+      await expect(profilePersister.recordIntervention(null, {})).rejects.toThrow(
         'userId is required'
       );
     });
 
-    it('should handle JSON string history', async () => {
-      const historyJson = JSON.stringify({
-        total_interventions: 2,
-        recent_interventions: [],
+    it('should log success message', async () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      __mockRecordIntervention.mockResolvedValue({
+        total_interventions: 3,
+        accepted_count: 1,
+        rejected_count: 2,
       });
 
-      const db = createMockDb([{ intervention_history: historyJson }]);
-      db.query.mockResolvedValueOnce({
-        rows: [{ intervention_history: historyJson }],
-        rowCount: 1,
-      });
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+      await profilePersister.recordIntervention('alex', {});
 
-      const result = await profilePersister.recordIntervention('alex', {}, db);
-
-      expect(result.total_interventions).toBe(3);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Recorded intervention for alex (total: 3)')
+      );
+      consoleSpy.mockRestore();
     });
   });
 
   describe('recordAcceptedRewrite', () => {
-    it('should add rewrite to successful_rewrites', async () => {
-      const db = createMockDb([]);
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
-
-      const result = await profilePersister.recordAcceptedRewrite(
-        'alex',
-        {
-          original: 'You never listen',
-          rewrite: 'I feel unheard when...',
-          tip: 'Use I-statements',
+    it('should record accepted rewrite and return updated data', async () => {
+      __mockRecordAcceptedRewrite.mockResolvedValue({ accepted_count: 3 });
+      __mockGetCommunicationProfile.mockResolvedValue({
+        successful_rewrites: [
+          { original: 'test', rewrite: 'better', accepted_at: '2024-01-01' },
+        ],
+        intervention_history: {
+          total_interventions: 5,
+          accepted_count: 3,
+          acceptance_rate: 0.6,
         },
-        db
-      );
+      });
+
+      const result = await profilePersister.recordAcceptedRewrite('alex', {
+        original: 'You never listen',
+        rewrite: 'I feel unheard when...',
+        tip: 'Use I-statements',
+      });
 
       expect(result.successful_rewrites).toHaveLength(1);
-      expect(result.successful_rewrites[0].original).toBe('You never listen');
-      expect(result.successful_rewrites[0].rewrite).toBe('I feel unheard when...');
-    });
-
-    it('should increment accepted_count', async () => {
-      const existingHistory = {
-        total_interventions: 5,
-        accepted_count: 2,
-        acceptance_rate: 0.4,
-      };
-
-      const db = createMockDb([]);
-      db.query.mockResolvedValueOnce({
-        rows: [{ intervention_history: existingHistory, successful_rewrites: [] }],
-        rowCount: 1,
-      });
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
-
-      const result = await profilePersister.recordAcceptedRewrite(
-        'alex',
-        {
-          original: 'test',
-          rewrite: 'test',
-        },
-        db
-      );
-
       expect(result.intervention_history.accepted_count).toBe(3);
-    });
-
-    it('should recalculate acceptance_rate', async () => {
-      const existingHistory = {
-        total_interventions: 10,
-        accepted_count: 4,
-        acceptance_rate: 0.4,
-      };
-
-      const db = createMockDb([]);
-      db.query.mockResolvedValueOnce({
-        rows: [{ intervention_history: existingHistory, successful_rewrites: [] }],
-        rowCount: 1,
+      expect(__mockRecordAcceptedRewrite).toHaveBeenCalledWith('alex', {
+        original: 'You never listen',
+        rewrite: 'I feel unheard when...',
+        tip: 'Use I-statements',
       });
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
-
-      const result = await profilePersister.recordAcceptedRewrite(
-        'alex',
-        {
-          original: 'test',
-          rewrite: 'test',
-        },
-        db
-      );
-
-      expect(result.intervention_history.acceptance_rate).toBe(0.5); // 5/10
-    });
-
-    it('should limit successful_rewrites to 50', async () => {
-      const existingRewrites = Array(50).fill({ original: 'old' });
-
-      const db = createMockDb([]);
-      db.query.mockResolvedValueOnce({
-        rows: [
-          {
-            successful_rewrites: existingRewrites,
-            intervention_history: { total_interventions: 1 },
-          },
-        ],
-        rowCount: 1,
-      });
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
-
-      const result = await profilePersister.recordAcceptedRewrite(
-        'alex',
-        {
-          original: 'new',
-          rewrite: 'new rewrite',
-        },
-        db
-      );
-
-      expect(result.successful_rewrites).toHaveLength(50);
-      expect(result.successful_rewrites[0].original).toBe('new');
-    });
-
-    it('should add accepted_at timestamp', async () => {
-      const db = createMockDb([]);
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
-
-      const result = await profilePersister.recordAcceptedRewrite(
-        'alex',
-        {
-          original: 'test',
-          rewrite: 'test',
-        },
-        db
-      );
-
-      expect(result.successful_rewrites[0].accepted_at).toBeDefined();
     });
 
     it('should throw error for missing userId', async () => {
-      const db = createMockDb([]);
-
-      await expect(profilePersister.recordAcceptedRewrite(null, {}, db)).rejects.toThrow(
-        'userId is required'
-      );
+      await expect(
+        profilePersister.recordAcceptedRewrite(null, { original: 'test', rewrite: 'test' })
+      ).rejects.toThrow('userId is required');
     });
 
-    it('should normalize user ID to lowercase', async () => {
-      const db = createMockDb([]);
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-      db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    it('should log success message', async () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      __mockRecordAcceptedRewrite.mockResolvedValue({ accepted_count: 5 });
+      __mockGetCommunicationProfile.mockResolvedValue({
+        successful_rewrites: [],
+        intervention_history: {},
+      });
 
-      await profilePersister.recordAcceptedRewrite(
-        'ALEX',
-        { original: 'test', rewrite: 'test' },
-        db
+      await profilePersister.recordAcceptedRewrite('alex', {
+        original: 'test',
+        rewrite: 'better',
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Recorded accepted rewrite for alex (total accepted: 5)')
       );
+      consoleSpy.mockRestore();
+    });
 
-      expect(db.query.mock.calls[0][1][0]).toBe('alex');
+    it('should handle repository errors', async () => {
+      __mockRecordAcceptedRewrite.mockRejectedValue(new Error('Connection failed'));
+
+      await expect(
+        profilePersister.recordAcceptedRewrite('alex', { original: 'test', rewrite: 'test' })
+      ).rejects.toThrow('Connection failed');
     });
   });
 });

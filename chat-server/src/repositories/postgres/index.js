@@ -14,6 +14,8 @@ const { PostgresTaskRepository } = require('./PostgresTaskRepository');
 const { PostgresContactRepository } = require('./PostgresContactRepository');
 const { PostgresInvitationRepository, invitationRepository } = require('./PostgresInvitationRepository');
 const { PostgresPairingRepository, pairingRepository } = require('./PostgresPairingRepository');
+const { PostgresProfileRepository } = require('./PostgresProfileRepository');
+const { PostgresCommunicationRepository } = require('./PostgresCommunicationRepository');
 
 module.exports = {
   PostgresGenericRepository,
@@ -25,5 +27,7 @@ module.exports = {
   invitationRepository,
   PostgresPairingRepository,
   pairingRepository,
+  PostgresProfileRepository,
+  PostgresCommunicationRepository,
 };
 

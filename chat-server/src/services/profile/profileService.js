@@ -9,7 +9,12 @@
 
 const { BaseService } = require('../BaseService');
 const { NotFoundError, ValidationError, AuthenticationError } = require('../errors');
-const { PostgresUserRepository, PostgresContactRepository } = require('../../repositories');
+const {
+  PostgresUserRepository,
+  PostgresContactRepository,
+  PostgresProfileRepository,
+  PostgresGenericRepository,
+} = require('../../repositories');
 const { ensureProfileColumnsExist } = require('../../infrastructure/database/schema');
 const { withRetry } = require('../../../utils/dbRetry');
 
@@ -64,6 +69,8 @@ class ProfileService extends BaseService {
     super(null, new PostgresUserRepository());
     this.userRepository = this.repository; // Alias for clarity
     this.contactRepository = new PostgresContactRepository();
+    this.profileRepository = new PostgresProfileRepository();
+    this.privacyRepository = new PostgresGenericRepository('user_profile_privacy');
     this.auth = null; // Injected via setAuth
   }
 
@@ -214,6 +221,177 @@ class ProfileService extends BaseService {
       isConnected,
       hasChildren,
       showDashboard: !profileComplete || !hasCoparent || !hasChildren,
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // COMPREHENSIVE PROFILE (Normalized Tables)
+  // These methods work with the new normalized profile tables
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Get comprehensive profile from normalized tables
+   * Combines data from users table with normalized profile tables
+   *
+   * @param {number} userId - User ID
+   * @returns {Promise<Object>} Complete profile data
+   */
+  async getComprehensiveProfile(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId');
+    }
+
+    // Get base user info
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundError('User', userId);
+    }
+
+    // Get profile data from normalized tables
+    const profileData = await this.profileRepository.getCompleteProfile(userId);
+
+    // Merge user identity fields with profile data
+    return {
+      // Identity from users table (auth-related)
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      display_name: user.display_name,
+      profile_picture_url: user.profile_picture_url,
+      profile_completion_percentage: user.profile_completion_percentage || 0,
+      profile_last_updated: user.profile_last_updated,
+      created_at: user.created_at,
+      // Normalized profile data
+      ...(profileData || {}),
+    };
+  }
+
+  /**
+   * Update comprehensive profile to normalized tables
+   * Routes updates to appropriate tables based on field names
+   *
+   * @param {number} userId - User ID
+   * @param {Object} updates - Profile updates
+   * @param {Function} calculateCompletion - Function to calculate completion %
+   * @returns {Promise<Object>} Updated profile with completion percentage
+   */
+  async updateComprehensiveProfile(userId, updates, calculateCompletion) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId');
+    }
+    if (!updates || Object.keys(updates).length === 0) {
+      throw new ValidationError('Updates are required', 'updates');
+    }
+
+    return withRetry(
+      async () => {
+        // Separate user table fields from profile table fields
+        const userTableFields = [
+          'first_name',
+          'last_name',
+          'email',
+          'display_name',
+          'phone',
+          'profile_picture_url',
+        ];
+
+        const userUpdates = {};
+        const profileUpdates = {};
+
+        for (const [key, value] of Object.entries(updates)) {
+          if (userTableFields.includes(key)) {
+            userUpdates[key] = value;
+          } else {
+            profileUpdates[key] = value;
+          }
+        }
+
+        // Update users table if needed
+        if (Object.keys(userUpdates).length > 0) {
+          userUpdates.profile_last_updated = new Date().toISOString();
+          await this.userRepository.updateById(userId, userUpdates);
+        }
+
+        // Update normalized profile tables
+        if (Object.keys(profileUpdates).length > 0) {
+          await this.profileRepository.updateProfile(userId, profileUpdates);
+        }
+
+        // Calculate and update completion percentage
+        const fullProfile = await this.getComprehensiveProfile(userId);
+        const completionPercentage = calculateCompletion
+          ? calculateCompletion(fullProfile)
+          : 0;
+
+        if (completionPercentage !== fullProfile.profile_completion_percentage) {
+          await this.userRepository.updateById(userId, {
+            profile_completion_percentage: completionPercentage,
+          });
+        }
+
+        return {
+          ...fullProfile,
+          profile_completion_percentage: completionPercentage,
+        };
+      },
+      {
+        operationName: 'updateComprehensiveProfile',
+        context: { userId },
+      }
+    );
+  }
+
+  /**
+   * Get privacy settings for a user
+   *
+   * @param {number} userId - User ID
+   * @returns {Promise<Object|null>} Privacy settings or null
+   */
+  async getPrivacySettings(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId');
+    }
+
+    return this.privacyRepository.findOne({ user_id: userId });
+  }
+
+  /**
+   * Update privacy settings for a user
+   *
+   * @param {number} userId - User ID
+   * @param {Object} settings - Privacy settings to update
+   * @returns {Promise<Object>} Updated privacy settings
+   */
+  async updatePrivacySettings(userId, settings) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId');
+    }
+    if (!settings) {
+      throw new ValidationError('Settings are required', 'settings');
+    }
+
+    // Health and financial are ALWAYS private (immutable)
+    settings.health_visibility = 'private';
+    settings.financial_visibility = 'private';
+    settings.updated_at = new Date().toISOString();
+
+    const existing = await this.privacyRepository.findOne({ user_id: userId });
+
+    if (existing) {
+      await this.privacyRepository.update({ user_id: userId }, settings);
+    } else {
+      await this.privacyRepository.create({
+        user_id: userId,
+        ...settings,
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Privacy settings updated successfully.',
     };
   }
 }

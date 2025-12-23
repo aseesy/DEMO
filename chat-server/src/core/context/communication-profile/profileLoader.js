@@ -4,8 +4,15 @@
  * Loads user communication profiles from the database.
  * Implements lazy initialization - profiles are created on first access.
  *
+ * Updated: 2024-12-23 to use normalized tables via PostgresCommunicationRepository
+ *
  * Feature: 002-sender-profile-mediation
  */
+
+const { PostgresCommunicationRepository } = require('../../../repositories/postgres');
+
+// Singleton repository instance
+const communicationRepo = new PostgresCommunicationRepository();
 
 const DEFAULT_PROFILE = {
   communication_patterns: {
@@ -37,7 +44,7 @@ const DEFAULT_PROFILE = {
  * NAMING: Using `get*` for consistency with codebase data retrieval convention.
  *
  * @param {string} userId - User ID (username)
- * @param {Object} db - Database connection (dbPostgres)
+ * @param {Object} db - Database connection (dbPostgres) - kept for backward compatibility, but not used
  * @returns {Promise<Object>} - User's communication profile
  */
 async function getProfile(userId, db) {
@@ -47,63 +54,14 @@ async function getProfile(userId, db) {
   }
 
   try {
-    const result = await db.query(
-      `SELECT
-        user_id,
-        communication_patterns,
-        triggers,
-        successful_rewrites,
-        intervention_history,
-        profile_version,
-        last_profile_update
-      FROM user_context
-      WHERE user_id = $1`,
-      [userId.toLowerCase()]
-    );
+    // Use the new normalized tables via repository
+    const profile = await communicationRepo.getCommunicationProfile(userId);
 
-    if (result.rowCount === 0) {
-      // Lazy initialization: Return default profile (will be created on first update)
+    if (profile.is_new) {
       console.log(`📊 ProfileLoader: No profile for ${userId}, using defaults`);
-      return {
-        ...DEFAULT_PROFILE,
-        user_id: userId.toLowerCase(),
-        is_new: true,
-      };
     }
 
-    const row = result.rows[0];
-
-    // Parse JSONB fields (may already be objects or strings)
-    const parseJsonField = (field, defaultValue) => {
-      if (!field) return defaultValue;
-      if (typeof field === 'object') return field;
-      try {
-        return JSON.parse(field);
-      } catch (e) {
-        console.warn(`⚠️ ProfileLoader: Failed to parse JSON field`, e.message);
-        return defaultValue;
-      }
-    };
-
-    return {
-      user_id: row.user_id,
-      communication_patterns: parseJsonField(
-        row.communication_patterns,
-        DEFAULT_PROFILE.communication_patterns
-      ),
-      triggers: parseJsonField(row.triggers, DEFAULT_PROFILE.triggers),
-      successful_rewrites: parseJsonField(
-        row.successful_rewrites,
-        DEFAULT_PROFILE.successful_rewrites
-      ),
-      intervention_history: parseJsonField(
-        row.intervention_history,
-        DEFAULT_PROFILE.intervention_history
-      ),
-      profile_version: row.profile_version || 1,
-      last_profile_update: row.last_profile_update,
-      is_new: false,
-    };
+    return profile;
   } catch (err) {
     console.error(`❌ ProfileLoader: Error loading profile for ${userId}:`, err.message);
     // Return default profile on error (graceful degradation)
@@ -122,7 +80,7 @@ async function getProfile(userId, db) {
  * NAMING: Using `get*` for consistency with codebase data retrieval convention.
  *
  * @param {string[]} userIds - Array of user IDs
- * @param {Object} db - Database connection
+ * @param {Object} db - Database connection - kept for backward compatibility, but not used
  * @returns {Promise<Map<string, Object>>} - Map of userId -> profile
  */
 async function getProfiles(userIds, db) {
@@ -135,64 +93,17 @@ async function getProfiles(userIds, db) {
   const normalizedIds = userIds.map(id => id.toLowerCase());
 
   try {
-    // Batch load for efficiency
-    const placeholders = normalizedIds.map((_, i) => `$${i + 1}`).join(', ');
-    const result = await db.query(
-      `SELECT
-        user_id,
-        communication_patterns,
-        triggers,
-        successful_rewrites,
-        intervention_history,
-        profile_version,
-        last_profile_update
-      FROM user_context
-      WHERE user_id IN (${placeholders})`,
-      normalizedIds
-    );
+    // Load profiles individually using the repository
+    // TODO: Optimize with batch loading in PostgresCommunicationRepository
+    const promises = normalizedIds.map(async userId => {
+      const profile = await communicationRepo.getCommunicationProfile(userId);
+      return { userId, profile };
+    });
 
-    // Parse results
-    for (const row of result.rows) {
-      const parseJsonField = (field, defaultValue) => {
-        if (!field) return defaultValue;
-        if (typeof field === 'object') return field;
-        try {
-          return JSON.parse(field);
-        } catch (e) {
-          return defaultValue;
-        }
-      };
+    const results = await Promise.all(promises);
 
-      profiles.set(row.user_id, {
-        user_id: row.user_id,
-        communication_patterns: parseJsonField(
-          row.communication_patterns,
-          DEFAULT_PROFILE.communication_patterns
-        ),
-        triggers: parseJsonField(row.triggers, DEFAULT_PROFILE.triggers),
-        successful_rewrites: parseJsonField(
-          row.successful_rewrites,
-          DEFAULT_PROFILE.successful_rewrites
-        ),
-        intervention_history: parseJsonField(
-          row.intervention_history,
-          DEFAULT_PROFILE.intervention_history
-        ),
-        profile_version: row.profile_version || 1,
-        last_profile_update: row.last_profile_update,
-        is_new: false,
-      });
-    }
-
-    // Add default profiles for users not found
-    for (const userId of normalizedIds) {
-      if (!profiles.has(userId)) {
-        profiles.set(userId, {
-          ...DEFAULT_PROFILE,
-          user_id: userId,
-          is_new: true,
-        });
-      }
+    for (const { userId, profile } of results) {
+      profiles.set(userId, profile);
     }
 
     console.log(`📊 ProfileLoader: Loaded ${profiles.size} profiles`);

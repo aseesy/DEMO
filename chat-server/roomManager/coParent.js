@@ -80,13 +80,28 @@ async function createRoomAndMembers(roomId, roomName, inviterId, inviteeId, now)
  * Create a co-parent room with all necessary setup
  * Creates room, members, welcome message, and syncs to Neo4j
  *
+ * IDEMPOTENT: If a room already exists between these users, returns the existing room.
+ * This prevents duplicate rooms from being created by multiple code paths.
+ *
  * @param {number} inviterId - Inviter user ID
  * @param {number} inviteeId - Invitee user ID
  * @param {string} inviterName - Inviter display name
  * @param {string} inviteeName - Invitee display name
- * @returns {Promise<Object>} Created room information
+ * @returns {Promise<Object>} Created or existing room information
  */
 async function createCoParentRoom(inviterId, inviteeId, inviterName, inviteeName) {
+  // Check if room already exists between these users (prevents duplicates)
+  const existingRoom = await roomRepo.findRoomBetweenUsers(inviterId, inviteeId);
+  if (existingRoom) {
+    console.log(`📋 Room already exists between users ${inviterId} and ${inviteeId}: ${existingRoom.id}`);
+    return {
+      roomId: existingRoom.id,
+      roomName: existingRoom.name,
+      members: [inviterId, inviteeId],
+      alreadyExisted: true,
+    };
+  }
+
   const roomId = generateRoomId();
   const roomName = `${inviterName} & ${inviteeName}`;
   const now = new Date().toISOString();
@@ -102,7 +117,7 @@ async function createCoParentRoom(inviterId, inviteeId, inviterName, inviteeName
     // This ensures data consistency and proper error logging
     await syncCoParentRelationshipToNeo4j(inviterId, inviteeId, roomId, roomName);
 
-    return { roomId, roomName, members: [inviterId, inviteeId] };
+    return { roomId, roomName, members: [inviterId, inviteeId], alreadyExisted: false };
   } catch (error) {
     console.error('Error creating co-parent room:', error);
     throw error;

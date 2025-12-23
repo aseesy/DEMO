@@ -102,7 +102,7 @@ class TaskService extends BaseService {
         } else if (!existingIsCompleted && taskIsCompleted) {
           keepExisting = false; // Prefer completed (the new one)
         } else {
-          // Same status - prefer most recent
+          // Same status - prefer most recent (higher timestamp)
           keepExisting = existingDate >= taskDate;
         }
 
@@ -118,6 +118,16 @@ class TaskService extends BaseService {
         `[TaskService] Found duplicate tasks for user ${userId}:`,
         Array.from(duplicateTitles)
       );
+      // Log the actual duplicate task IDs for debugging
+      for (const title of duplicateTitles) {
+        const allTasksWithTitle = tasks.filter(t => (t.title || '').trim() === title);
+        if (allTasksWithTitle.length > 1) {
+          console.warn(
+            `[TaskService] Duplicate "${title}" tasks:`,
+            allTasksWithTitle.map(t => `ID ${t.id} (${t.status}, created: ${t.created_at})`)
+          );
+        }
+      }
     }
 
     tasks = Array.from(taskMap.values());

@@ -1,18 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../dbPostgres');
-const { authenticate } = require('../middleware/auth'); // Assuming auth middleware exists
+const { authenticate } = require('../middleware/auth');
+const { handleServiceError } = require('../middleware/errorHandlers');
+const { calculateProfileCompletion } = require('../src/services/profileService');
 
-// A helper function to get all profile-related columns from the users table schema
-// This avoids manually listing all 40+ columns
-const getProfileColumns = async () => {
-  const res = await db.query(`
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_name = 'users'
-          AND column_name NOT IN ('id', 'password_hash', 'google_id', 'created_at', 'last_login', 'oauth_provider');
-    `);
-  return res.rows.map(row => row.column_name);
+// Service will be injected via router.setServices
+let profileService;
+
+router.setServices = function (services) {
+  profileService = services.profileService;
 };
 
 /**
@@ -21,26 +17,10 @@ const getProfileColumns = async () => {
  */
 router.get('/me', authenticate, async (req, res) => {
   try {
-    const { userId } = req.user; // From auth middleware
+    const { userId } = req.user;
 
-    // Get user profile data
-    const profileColumns = await getProfileColumns();
-    const userQuery = await db.query(
-      `SELECT ${profileColumns.join(', ')} FROM users WHERE id = $1`,
-      [userId]
-    );
-
-    if (userQuery.rows.length === 0) {
-      return res.status(404).json({ error: 'User profile not found.' });
-    }
-    const profileData = userQuery.rows[0];
-
-    // Get privacy settings
-    const privacyQuery = await db.query('SELECT * FROM user_profile_privacy WHERE user_id = $1', [
-      userId,
-    ]);
-
-    const privacySettings = privacyQuery.rows.length > 0 ? privacyQuery.rows[0] : null;
+    const profileData = await profileService.getComprehensiveProfile(userId);
+    const privacySettings = await profileService.getPrivacySettings(userId);
 
     console.log('DEBUG: Returning profile data for user:', userId, profileData);
     console.log('DEBUG: Returning privacy settings for user:', userId, privacySettings);
@@ -51,8 +31,7 @@ router.get('/me', authenticate, async (req, res) => {
       isOwnProfile: true, // Always true for /me endpoint
     });
   } catch (error) {
-    console.error('Error getting user profile:', error);
-    res.status(500).json({ error: 'Internal server error while getting profile.' });
+    handleServiceError(error, res);
   }
 });
 
@@ -66,7 +45,6 @@ router.put('/me', authenticate, async (req, res) => {
     const updates = req.body;
 
     console.log('DEBUG PUT /api/profile/me - userId:', userId);
-    console.log('DEBUG PUT /api/profile/me - req.user:', req.user);
     console.log('DEBUG PUT /api/profile/me - updates keys:', Object.keys(updates));
 
     if (!userId) {
@@ -74,85 +52,19 @@ router.put('/me', authenticate, async (req, res) => {
       return res.status(401).json({ error: 'Invalid authentication token - no user ID.' });
     }
 
-    const allProfileColumns = await getProfileColumns();
-
-    // Fields managed by the backend - exclude from user updates
-    const backendManagedFields = [
-      'profile_last_updated',
-      'profile_completion_percentage',
-      'currentUsername',
-    ];
-
-    // Filter out any keys from the request that are not actual user columns
-    // Also exclude backend-managed fields to avoid duplicate column assignments
-    const validUpdateKeys = Object.keys(updates).filter(
-      key => allProfileColumns.includes(key) && !backendManagedFields.includes(key)
-    );
-
-    console.log('DEBUG PUT /api/profile/me - allProfileColumns:', allProfileColumns);
-    console.log('DEBUG PUT /api/profile/me - validUpdateKeys:', validUpdateKeys);
-
-    if (validUpdateKeys.length === 0) {
-      console.log(
-        'DEBUG PUT /api/profile/me - No valid fields! Request keys:',
-        Object.keys(updates)
-      );
-      return res.status(400).json({ error: 'No valid profile fields provided for update.' });
-    }
-
-    // Dynamically build the SET part of the SQL query
-    const setClauses = validUpdateKeys.map((key, index) => {
-      return `"${key}" = $${index + 2}`;
-    });
-
-    const updateValues = validUpdateKeys.map(key => updates[key]);
-
-    // Add profile_last_updated timestamp
-    setClauses.push(`"profile_last_updated" = $${validUpdateKeys.length + 2}`);
-    updateValues.push(new Date());
-
-    // Build RETURNING clause with quoted column names for safety
-    const returningColumns = allProfileColumns.map(col => `"${col}"`).join(', ');
-    const queryText = `UPDATE users SET ${setClauses.join(', ')} WHERE id = $1 RETURNING ${returningColumns}`;
-    const queryValues = [userId, ...updateValues];
-
-    console.log('DEBUG PUT /api/profile/me - Query:', queryText.substring(0, 200) + '...');
-    console.log('DEBUG PUT /api/profile/me - Query values count:', queryValues.length);
-
-    const { rows } = await db.query(queryText, queryValues);
-    const updatedProfile = rows[0];
-
-    // Recalculate and update completion percentage (simple version)
-    const filledCount = allProfileColumns.filter(
-      col => updatedProfile[col] != null && updatedProfile[col] !== ''
-    ).length;
-    const completionPercentage = Math.round((filledCount / allProfileColumns.length) * 100);
-
-    const finalProfileQuery = await db.query(
-      'UPDATE users SET profile_completion_percentage = $1 WHERE id = $2 RETURNING profile_completion_percentage',
-      [completionPercentage, userId]
+    const updatedProfile = await profileService.updateComprehensiveProfile(
+      userId,
+      updates,
+      calculateProfileCompletion
     );
 
     res.json({
       success: true,
       message: 'Profile updated successfully.',
-      completionPercentage: finalProfileQuery.rows[0].profile_completion_percentage,
+      completionPercentage: updatedProfile.profile_completion_percentage,
     });
   } catch (error) {
-    console.error('Error updating user profile:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      detail: error.detail,
-      hint: error.hint,
-      userId: req.user?.userId,
-      updateKeys: Object.keys(req.body || {}),
-    });
-    res.status(500).json({
-      error: 'Internal server error while updating profile.',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+    handleServiceError(error, res);
   }
 });
 
@@ -164,11 +76,9 @@ router.get('/privacy/me', authenticate, async (req, res) => {
   try {
     const { userId } = req.user;
 
-    const privacyQuery = await db.query('SELECT * FROM user_profile_privacy WHERE user_id = $1', [
-      userId,
-    ]);
+    const privacySettings = await profileService.getPrivacySettings(userId);
 
-    if (privacyQuery.rows.length === 0) {
+    if (!privacySettings) {
       // Return default privacy settings
       return res.json({
         user_id: userId,
@@ -181,10 +91,9 @@ router.get('/privacy/me', authenticate, async (req, res) => {
       });
     }
 
-    res.json(privacyQuery.rows[0]);
+    res.json(privacySettings);
   } catch (error) {
-    console.error('Error getting privacy settings:', error);
-    res.status(500).json({ error: 'Internal server error while getting privacy settings.' });
+    handleServiceError(error, res);
   }
 });
 
@@ -195,86 +104,12 @@ router.get('/privacy/me', authenticate, async (req, res) => {
 router.put('/privacy/me', authenticate, async (req, res) => {
   try {
     const { userId } = req.user;
-    const {
-      personal_visibility,
-      work_visibility,
-      health_visibility,
-      financial_visibility,
-      background_visibility,
-      field_overrides,
-    } = req.body;
+    const settings = req.body;
 
-    // Prevent changing health/financial visibility (always private)
-    if (health_visibility === 'shared' || financial_visibility === 'shared') {
-      return res.status(400).json({
-        error: 'Health and financial information must remain private for your safety.',
-      });
-    }
-
-    // Check if settings already exist
-    const existingQuery = await db.query('SELECT id FROM user_profile_privacy WHERE user_id = $1', [
-      userId,
-    ]);
-
-    const settingsData = {
-      personal_visibility: personal_visibility || 'shared',
-      work_visibility: work_visibility || 'private',
-      health_visibility: 'private', // Force private
-      financial_visibility: 'private', // Force private
-      background_visibility: background_visibility || 'shared',
-      field_overrides:
-        typeof field_overrides === 'string'
-          ? field_overrides
-          : JSON.stringify(field_overrides || {}),
-      updated_at: new Date(),
-    };
-
-    if (existingQuery.rows.length > 0) {
-      // Update existing settings
-      await db.query(
-        `UPDATE user_profile_privacy SET
-                    personal_visibility = $1,
-                    work_visibility = $2,
-                    health_visibility = $3,
-                    financial_visibility = $4,
-                    background_visibility = $5,
-                    field_overrides = $6,
-                    updated_at = $7
-                WHERE user_id = $8`,
-        [
-          settingsData.personal_visibility,
-          settingsData.work_visibility,
-          settingsData.health_visibility,
-          settingsData.financial_visibility,
-          settingsData.background_visibility,
-          settingsData.field_overrides,
-          settingsData.updated_at,
-          userId,
-        ]
-      );
-    } else {
-      // Insert new settings
-      await db.query(
-        `INSERT INTO user_profile_privacy
-                (user_id, personal_visibility, work_visibility, health_visibility, financial_visibility, background_visibility, field_overrides, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)`,
-        [
-          userId,
-          settingsData.personal_visibility,
-          settingsData.work_visibility,
-          settingsData.health_visibility,
-          settingsData.financial_visibility,
-          settingsData.background_visibility,
-          settingsData.field_overrides,
-          settingsData.updated_at,
-        ]
-      );
-    }
-
-    res.json({ success: true, message: 'Privacy settings updated successfully.' });
+    const result = await profileService.updatePrivacySettings(userId, settings);
+    res.json(result);
   } catch (error) {
-    console.error('Error updating privacy settings:', error);
-    res.status(500).json({ error: 'Internal server error while updating privacy settings.' });
+    handleServiceError(error, res);
   }
 });
 
@@ -287,34 +122,17 @@ router.get('/preview-coparent-view', authenticate, async (req, res) => {
     const { userId } = req.user;
 
     // Get user profile data
-    const profileColumns = await getProfileColumns();
-    const userQuery = await db.query(
-      `SELECT ${profileColumns.join(', ')} FROM users WHERE id = $1`,
-      [userId]
-    );
-
-    if (userQuery.rows.length === 0) {
-      return res.status(404).json({ error: 'User profile not found.' });
-    }
-
-    const profile = userQuery.rows[0];
+    const profile = await profileService.getComprehensiveProfile(userId);
 
     // Get privacy settings
-    const privacyQuery = await db.query('SELECT * FROM user_profile_privacy WHERE user_id = $1', [
-      userId,
-    ]);
-
-    const settings =
-      privacyQuery.rows.length > 0
-        ? privacyQuery.rows[0]
-        : {
-            personal_visibility: 'shared',
-            work_visibility: 'private',
-            health_visibility: 'private',
-            financial_visibility: 'private',
-            background_visibility: 'shared',
-            field_overrides: '{}',
-          };
+    const settings = await profileService.getPrivacySettings(userId) || {
+      personal_visibility: 'shared',
+      work_visibility: 'private',
+      health_visibility: 'private',
+      financial_visibility: 'private',
+      background_visibility: 'shared',
+      field_overrides: '{}',
+    };
 
     // Define section fields
     const SECTION_FIELDS = {
@@ -427,8 +245,7 @@ router.get('/preview-coparent-view', authenticate, async (req, res) => {
 
     res.json(filteredProfile);
   } catch (error) {
-    console.error('Error generating co-parent preview:', error);
-    res.status(500).json({ error: 'Internal server error while generating preview.' });
+    handleServiceError(error, res);
   }
 });
 

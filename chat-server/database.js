@@ -49,10 +49,10 @@ async function initDatabase() {
             console.warn('⚠️  Neo4j index initialization failed (non-blocking):', err.message);
           });
 
-          // Run initial sync validation
+          // Run initial sync validation with auto-fix enabled
           setTimeout(() => {
             const dbSyncValidator = require('./src/services/sync/dbSyncValidator');
-            dbSyncValidator.runFullValidation().catch(err => {
+            dbSyncValidator.runFullValidation(true).catch(err => {
               console.warn('⚠️  Database sync validation failed (non-blocking):', err.message);
             });
           }, 5000);
@@ -107,6 +107,10 @@ function loadServices() {
     proactiveCoach: require('./proactiveCoach'),
     feedbackLearner: require('./feedbackLearner'),
   };
+
+  // Add services from services layer
+  const { profileService } = require('./src/services');
+  services.profileService = profileService;
 
   // Add specific utility functions
   const { isValidEmail } = require('./src/infrastructure/validation/validators');

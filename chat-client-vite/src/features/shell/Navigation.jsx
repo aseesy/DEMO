@@ -446,7 +446,7 @@ function NavigationComponent({
               )}
 
               {/* Right side: Navigation Items + LiaiZen Branding with Dropdown Menu */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 ml-auto">
                 {navItems.map(item => {
                   const isActive = currentView === item.id;
                   return (

@@ -68,12 +68,13 @@ vi.mock('../tasks', () => ({
   }),
 }));
 
-vi.mock('../chat/model/useThreads.js', () => ({
-  useThreads: () => ({
+vi.mock('../chat/context/ChatContext.jsx', () => ({
+  useChatContext: () => ({
     threads: [],
     selectedThreadId: null,
     setSelectedThreadId: vi.fn(),
-    addToThread: vi.fn(),
+    getThreadMessages: vi.fn(() => []),
+    isConnected: true,
   }),
 }));
 

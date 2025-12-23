@@ -66,7 +66,8 @@ class PostgresGenericRepository extends IGenericRepository {
    * Update records matching conditions
    */
   async update(conditions, data) {
-    return safeUpdate(this.tableName, conditions, data);
+    // safeUpdate expects (table, data, conditions) - note the order!
+    return safeUpdate(this.tableName, data, conditions);
   }
 
   /**

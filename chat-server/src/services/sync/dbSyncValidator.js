@@ -199,11 +199,99 @@ async function syncRelationshipMetadata(roomId) {
 }
 
 /**
- * Run full database synchronization validation
+ * Fix missing relationships by creating them in Neo4j
+ * @param {Array} discrepancies - Array of relationship discrepancies from validation
+ * @returns {Promise<Object>} Fix results
+ */
+async function fixMissingRelationships(discrepancies) {
+  if (!neo4jClient.isAvailable()) {
+    return {
+      fixed: 0,
+      errors: 0,
+      message: 'Neo4j not configured',
+    };
+  }
+
+  let fixed = 0;
+  let errors = 0;
+
+  for (const discrepancy of discrepancies) {
+    if (discrepancy.type === 'missing_in_neo4j') {
+      try {
+        // Ensure user nodes exist before creating relationship
+        // Get user info from PostgreSQL
+        const usersResult = await dbPostgres.query(
+          'SELECT id, username, email, display_name FROM users WHERE id = $1 OR id = $2',
+          [discrepancy.userId1, discrepancy.userId2]
+        );
+        const users = usersResult.rows;
+
+        // Create user nodes if they don't exist
+        for (const user of users) {
+          try {
+            await neo4jClient.createUserNode(
+              user.id,
+              user.username,
+              user.email,
+              user.display_name
+            );
+          } catch (error) {
+            // User node might already exist, which is fine
+            if (!error.message.includes('already exists')) {
+              console.warn(`⚠️  Could not ensure user node exists for user ${user.id}:`, error.message);
+            }
+          }
+        }
+
+        // Get room name from PostgreSQL
+        const roomResult = await dbPostgres.query('SELECT name FROM rooms WHERE id = $1', [
+          discrepancy.roomId,
+        ]);
+        const roomName = roomResult.rows[0]?.name || null;
+
+        // Create the missing relationship in Neo4j
+        const result = await neo4jClient.createCoParentRelationship(
+          discrepancy.userId1,
+          discrepancy.userId2,
+          discrepancy.roomId,
+          roomName
+        );
+
+        if (result) {
+          fixed++;
+          console.log(
+            `✅ Fixed missing relationship: User ${discrepancy.userId1} <-> User ${discrepancy.userId2} (Room: ${discrepancy.roomId})`
+          );
+        } else {
+          errors++;
+          console.warn(
+            `⚠️  Failed to fix relationship: User ${discrepancy.userId1} <-> User ${discrepancy.userId2} (Room: ${discrepancy.roomId})`
+          );
+        }
+      } catch (error) {
+        errors++;
+        console.error(
+          `❌ Error fixing relationship for room ${discrepancy.roomId}:`,
+          error.message
+        );
+      }
+    }
+  }
+
+  return {
+    fixed,
+    errors,
+    total: discrepancies.length,
+  };
+}
+
+/**
+ * Run full database synchronization validation and optionally fix issues
  *
+ * @param {boolean} autoFix - Whether to automatically fix missing relationships
  * @returns {Promise<Object>} Complete validation results
  */
-async function runFullValidation() {
+async function runFullValidation(autoFix = false) {
   console.log('🔍 Starting database synchronization validation...');
 
   const [relationships, users] = await Promise.all([
@@ -211,10 +299,24 @@ async function runFullValidation() {
     validateUserNodes(),
   ]);
 
+  let fixResults = null;
+  if (autoFix && relationships.discrepancies?.length > 0) {
+    console.log(`🔧 Auto-fixing ${relationships.discrepancies.length} missing relationships...`);
+    fixResults = await fixMissingRelationships(relationships.discrepancies);
+    
+    // Re-validate after fixing
+    if (fixResults.fixed > 0) {
+      const revalidation = await validateCoParentRelationships();
+      relationships.discrepancies = revalidation.discrepancies;
+      relationships.valid = revalidation.valid;
+    }
+  }
+
   const results = {
     timestamp: new Date().toISOString(),
     relationships,
     users,
+    fixResults,
     overall: {
       valid: relationships.valid && users.valid,
       hasDiscrepancies: relationships.discrepancies?.length > 0 || users.missingUsers?.length > 0,
@@ -225,6 +327,9 @@ async function runFullValidation() {
     console.warn('⚠️  Database synchronization validation found discrepancies');
     console.warn(`   Relationships: ${relationships.discrepancies?.length || 0} issues`);
     console.warn(`   Users: ${users.missingUsers?.length || 0} issues`);
+    if (fixResults) {
+      console.log(`   Fixed: ${fixResults.fixed} relationships, Errors: ${fixResults.errors}`);
+    }
   } else {
     console.log('✅ Database synchronization validation passed');
   }
@@ -236,5 +341,6 @@ module.exports = {
   validateCoParentRelationships,
   validateUserNodes,
   syncRelationshipMetadata,
+  fixMissingRelationships,
   runFullValidation,
 };

@@ -37,12 +37,29 @@ async function welcomeMessageExists(roomId) {
 
 /**
  * Create a private room for a user
+ *
+ * IDEMPOTENT: If the user already has a private room, returns the existing room.
+ * This prevents duplicate rooms from being created.
+ *
  * @param {number} userId - User ID
  * @param {string} username - Username
  * @param {boolean} sendWelcome - Whether to send welcome message
- * @returns {Promise<Object>} Created room information
+ * @returns {Promise<Object>} Created or existing room information
  */
 async function createPrivateRoom(userId, username, sendWelcome = true) {
+  // Check if user already has a room (prevents duplicates)
+  const existingRoom = await roomRepo.getUserPrimaryRoom(userId);
+  if (existingRoom) {
+    console.log(`📋 User ${userId} already has a room: ${existingRoom.roomId}`);
+    return {
+      roomId: existingRoom.roomId,
+      roomName: existingRoom.roomName,
+      createdBy: userId,
+      isPrivate: true,
+      alreadyExisted: true,
+    };
+  }
+
   const roomId = generateRoomId();
   const roomName = `${username}'s Co-Parenting Room`;
   const now = new Date().toISOString();
@@ -65,7 +82,7 @@ async function createPrivateRoom(userId, username, sendWelcome = true) {
       await sendWelcomeMessage(roomId);
     }
 
-    return { roomId, roomName, createdBy: userId, isPrivate: true };
+    return { roomId, roomName, createdBy: userId, isPrivate: true, alreadyExisted: false };
   } catch (error) {
     console.error('Error creating private room:', error);
     throw error;

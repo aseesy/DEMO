@@ -104,7 +104,11 @@ export function useProfile(username) {
   // Load profile data
   React.useEffect(() => {
     const loadProfile = async () => {
-      if (!username) return;
+      if (!username) {
+        console.warn('[useProfile] No username provided, cannot load profile');
+        return;
+      }
+      console.log('[useProfile] Loading profile for username:', username);
       setIsLoadingProfile(true);
       try {
         const response = await apiGet('/api/profile/me');
