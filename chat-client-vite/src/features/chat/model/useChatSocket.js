@@ -182,22 +182,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
     }
   }, [currentView, isAuthenticated, username, isJoined]);
 
-  // Load threads when roomId is available and socket is connected
-  // Use ref to prevent duplicate loads when dependencies change rapidly
-  React.useEffect(() => {
-    if (roomId && socketRef.current?.connected && isJoined) {
-      // Only load if we haven't already loaded threads for this roomId
-      if (lastLoadedRoomIdRef.current !== roomId) {
-        lastLoadedRoomIdRef.current = roomId;
-        getThreads(roomId);
-      }
-    } else if (!roomId) {
-      // Reset ref when roomId is cleared (user lost room or disconnected)
-      lastLoadedRoomIdRef.current = null;
-    }
-  }, [roomId, isConnected, isJoined, getThreads]);
-
-  // Thread actions
+  // Thread actions - defined BEFORE useEffect that uses them to avoid temporal dead zone
   const createThread = React.useCallback((roomId, title, messageId) => {
     if (socketRef.current?.connected)
       socketRef.current.emit('create_thread', { roomId, title, messageId });
@@ -215,6 +200,21 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
     if (socketRef.current?.connected)
       socketRef.current.emit('add_to_thread', { messageId, threadId });
   }, []);
+
+  // Load threads when roomId is available and socket is connected
+  // Use ref to prevent duplicate loads when dependencies change rapidly
+  React.useEffect(() => {
+    if (roomId && socketRef.current?.connected && isJoined) {
+      // Only load if we haven't already loaded threads for this roomId
+      if (lastLoadedRoomIdRef.current !== roomId) {
+        lastLoadedRoomIdRef.current = roomId;
+        getThreads(roomId);
+      }
+    } else if (!roomId) {
+      // Reset ref when roomId is cleared (user lost room or disconnected)
+      lastLoadedRoomIdRef.current = null;
+    }
+  }, [roomId, isConnected, isJoined, getThreads]);
 
   // Pagination - loadOlderMessages provided by useMessagePagination hook
   // Timeout handling still managed here (could be extracted later)
