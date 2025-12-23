@@ -13,18 +13,23 @@ import { setUserProperties, setUserID } from '../../../utils/analyticsEnhancemen
 import { authStorage } from '../../../adapters/storage';
 
 /**
- * Calculate user properties for analytics
+ * Calculate user properties for analytics.
+ * Accepts a user object and extracts only the fields it needs.
  */
 export function calculateUserProperties(user, isNewUser = false) {
+  // Extract what we need at this boundary
+  const createdAt = user?.created_at;
+
   const properties = {
     user_type: isNewUser ? 'new_user' : 'returning_user',
     account_status: 'beta',
+    hasCoparent: false,
+    features_used: [],
   };
 
-  if (user.created_at) {
-    const signupDate = new Date(user.created_at);
-    const now = new Date();
-    const daysSinceSignup = Math.floor((now - signupDate) / (1000 * 60 * 60 * 24));
+  if (createdAt) {
+    const signupDate = new Date(createdAt);
+    const daysSinceSignup = Math.floor((Date.now() - signupDate) / (1000 * 60 * 60 * 24));
     properties.days_since_signup = daysSinceSignup;
 
     if (daysSinceSignup < 7) {
@@ -35,9 +40,6 @@ export function calculateUserProperties(user, isNewUser = false) {
       properties.user_type = 'active_user';
     }
   }
-
-  properties.hasCoparent = false;
-  properties.features_used = [];
 
   return properties;
 }

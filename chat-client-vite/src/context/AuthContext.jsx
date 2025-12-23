@@ -1,10 +1,13 @@
 import React from 'react';
 import { apiGet, apiPost, onAuthFailure } from '../apiClient.js';
-import { getErrorMessage, logError, isRetryableError } from '../utils/errorHandler.jsx';
+import { getErrorMessage, logError } from '../utils/errorHandler.jsx';
 import { setUserProperties, setUserID } from '../utils/analyticsEnhancements.js';
 
 // Storage adapter for abstracting localStorage
 import { storage, StorageKeys, authStorage } from '../adapters/storage';
+
+// Shared auth utilities - single source of truth
+import { calculateUserProperties } from '../features/auth/model/useSessionVerification.js';
 
 /**
  * AuthContext - Centralized authentication state management
@@ -19,36 +22,6 @@ import { storage, StorageKeys, authStorage } from '../adapters/storage';
  */
 
 const AuthContext = React.createContext(null);
-
-/**
- * Helper function to calculate user properties for analytics
- */
-function calculateUserProperties(user, isNewUser = false) {
-  const properties = {
-    user_type: isNewUser ? 'new_user' : 'returning_user',
-    account_status: 'beta',
-  };
-
-  if (user.created_at) {
-    const signupDate = new Date(user.created_at);
-    const now = new Date();
-    const daysSinceSignup = Math.floor((now - signupDate) / (1000 * 60 * 60 * 24));
-    properties.days_since_signup = daysSinceSignup;
-
-    if (daysSinceSignup < 7) {
-      properties.user_type = 'new_user';
-    } else if (daysSinceSignup < 30) {
-      properties.user_type = 'returning_user';
-    } else {
-      properties.user_type = 'active_user';
-    }
-  }
-
-  properties.hasCoparent = false;
-  properties.features_used = [];
-
-  return properties;
-}
 
 /**
  * Check if a JWT token is expired
@@ -145,31 +118,28 @@ export function AuthProvider({ children }) {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.authenticated && data.user) {
-          // Destructure at boundary - don't reach inside data.user multiple times
-          const { username: userName, email: userEmail } = data.user;
+        const { authenticated, user } = data;
 
-          setUsername(userName);
-          setEmail(userEmail);
+        if (authenticated && user) {
           setIsAuthenticated(true);
           setToken(storedToken);
-
-          // Keep storage in sync
-          authStorage.setUsername(userName);
           authStorage.setAuthenticated(true);
-          if (userEmail) {
-            storage.set(StorageKeys.USER_EMAIL, userEmail);
+
+          if (user.username) {
+            setUsername(user.username);
+            authStorage.setUsername(user.username);
+            setUserID(user.username);
+            setUserProperties(calculateUserProperties(user, false));
           }
 
-          // Set analytics
-          setUserID(userName);
-          const userProperties = calculateUserProperties(data.user, false);
-          setUserProperties(userProperties);
+          if (user.email) {
+            setEmail(user.email);
+            storage.set(StorageKeys.USER_EMAIL, user.email);
+          }
         } else {
           clearAuthState();
         }
       } else {
-        // Session invalid
         clearAuthState();
       }
     } catch (err) {
@@ -214,27 +184,27 @@ export function AuthProvider({ children }) {
         return { success: false, error: errorInfo };
       }
 
-      // Success - update state
+      // Success - extract user at boundary, then work with it directly
+      const { user, token } = data;
+
       setIsAuthenticated(true);
-
-      // Destructure at boundary
-      const user = data.user;
-      if (user?.username) {
-        const { username: userName } = user;
-        setUsername(userName);
-        authStorage.setUsername(userName);
-        setUserID(userName);
-        const userProperties = calculateUserProperties(user, false);
-        setUserProperties(userProperties);
-      }
       authStorage.setAuthenticated(true);
-      storage.set(StorageKeys.USER_EMAIL, cleanEmail);
-      setEmail(cleanEmail);
 
-      if (data.token) {
-        setToken(data.token);
-        authStorage.setToken(data.token);
+      if (user?.username) {
+        setUsername(user.username);
+        authStorage.setUsername(user.username);
+        setUserID(user.username);
+        setUserProperties(calculateUserProperties(user, false));
       }
+
+      setEmail(cleanEmail);
+      storage.set(StorageKeys.USER_EMAIL, cleanEmail);
+
+      if (token) {
+        setToken(token);
+        authStorage.setToken(token);
+      }
+
       if (user) {
         storage.set(StorageKeys.CHAT_USER, user);
       }
@@ -275,29 +245,29 @@ export function AuthProvider({ children }) {
         return { success: false, error: errorInfo };
       }
 
-      // Success - update state
-      setIsAuthenticated(true);
+      // Success - extract user at boundary, then work with it directly
+      const { user, token } = data;
 
-      // Destructure at boundary
-      const user = data.user;
+      setIsAuthenticated(true);
+      authStorage.setAuthenticated(true);
+
       if (user?.username) {
-        const { username: userName } = user;
-        setUsername(userName);
-        authStorage.setUsername(userName);
-        setUserID(userName);
-        const userProperties = calculateUserProperties(user, true);
-        setUserProperties(userProperties);
+        setUsername(user.username);
+        authStorage.setUsername(user.username);
+        setUserID(user.username);
+        setUserProperties(calculateUserProperties(user, true));
       }
+
       if (user) {
         storage.set(StorageKeys.CHAT_USER, user);
       }
-      authStorage.setAuthenticated(true);
-      storage.set(StorageKeys.USER_EMAIL, cleanEmail);
-      setEmail(cleanEmail);
 
-      if (data.token) {
-        setToken(data.token);
-        authStorage.setToken(data.token);
+      setEmail(cleanEmail);
+      storage.set(StorageKeys.USER_EMAIL, cleanEmail);
+
+      if (token) {
+        setToken(token);
+        authStorage.setToken(token);
       }
 
       return { success: true, user };
