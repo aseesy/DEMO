@@ -42,18 +42,20 @@ async function detectContactSuggestion(aiMediator, context) {
 
     if (detectionResult && detectionResult.detectedPeople && detectionResult.detectedPeople.length > 0) {
       // Get the first detected person (highest confidence)
+      // Note: detectContactMentions returns relationships in display format:
+      // "My Child", "My Co-Parent", "My Partner", "My Child's Teacher", "My Family", "My Friend", "Other"
       const detectedPerson = detectionResult.detectedPeople[0];
       const detectedName = detectedPerson.name;
-      const detectedRelationship = detectedPerson.relationship;
+      const detectedRelationship = detectedPerson.relationship; // Already in display format
 
       // Generate suggestion text
       const contactSuggestion = await aiMediator.generateContactSuggestion(detectedName, text);
 
       if (contactSuggestion) {
-        // Include relationship in the suggestion
+        // Include relationship in the suggestion (in display format, matches frontend dropdown options)
         return {
           ...contactSuggestion,
-          detectedRelationship, // Add relationship to suggestion
+          detectedRelationship, // Will be pre-filled in contact form
         };
       }
     }

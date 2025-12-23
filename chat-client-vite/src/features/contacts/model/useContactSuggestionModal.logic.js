@@ -44,12 +44,17 @@ export function detectContactSuggestion(messages, currentSuggestion, dismissedId
  * Creates contact data structure for storage
  *
  * @param {Object} suggestion - Contact suggestion object
+ * @param {string} suggestion.detectedName - The detected name
+ * @param {string} suggestion.detectedRelationship - The detected relationship (in display format, e.g., "My Child", "My Co-Parent", "My Partner", etc.)
+ * @param {string} suggestion.text - The suggestion text
  * @returns {Object} Contact data ready for storage
  */
 export function createContactData(suggestion) {
   return {
     name: suggestion.detectedName,
-    relationship: suggestion.detectedRelationship || null, // Include relationship if available
+    // Relationship is in display format (matches frontend dropdown options):
+    // "My Child", "My Co-Parent", "My Partner", "My Child's Teacher", "My Family", "My Friend", "Other"
+    relationship: suggestion.detectedRelationship || null,
     context: suggestion.text,
   };
 }

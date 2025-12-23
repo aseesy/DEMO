@@ -35,6 +35,8 @@ export function useContactTriggers({ openNewContactForm, loadContacts, isAuthent
   }, [openNewContactForm]);
 
   // Handle contact suggestion from chat (e.g., "Would you like to add Vira?")
+  // The relationship is in display format and will match one of the dropdown options:
+  // "My Child", "My Co-Parent", "My Partner", "My Child's Teacher", "My Family", "My Friend", "Other"
   React.useEffect(() => {
     const addContactData = getWithMigration('liaizenAddContact');
     if (!addContactData) return;
@@ -44,7 +46,8 @@ export function useContactTriggers({ openNewContactForm, loadContacts, isAuthent
       if (data.name) {
         openNewContactForm({
           contact_name: data.name,
-          relationship: data.relationship || '', // Include relationship if available
+          // Relationship is pre-filled from AI detection (all relationship types supported)
+          relationship: data.relationship || '',
           notes: data.context || '',
         });
       }
