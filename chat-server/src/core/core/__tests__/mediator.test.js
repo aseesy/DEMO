@@ -291,7 +291,7 @@ describe('AI Mediator', () => {
       };
 
       // Rate limit errors (429) should throw RetryableError
-      const { RetryableError } = require('../../../utils/errors');
+      const { RetryableError } = require('../../../infrastructure/errors/errors');
       await expect(
         mediator.analyzeMessage(uniqueMessage, mockRecentMessages, [], [], null, 'room-123')
       ).rejects.toThrow(RetryableError);
@@ -505,7 +505,7 @@ describe('AI Mediator', () => {
     });
 
     it('should limit recent messages to max', () => {
-      const { MESSAGE } = require('../../../utils/constants');
+      const { MESSAGE } = require('../../../infrastructure/config/constants');
       const maxMessages = MESSAGE.MAX_RECENT_MESSAGES;
 
       // Add more than max messages

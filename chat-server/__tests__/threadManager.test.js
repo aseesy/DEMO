@@ -19,7 +19,7 @@ afterAll(() => {
 // Mock dependencies before requiring threadManager
 jest.mock('../dbSafe');
 jest.mock('../openaiClient');
-jest.mock('../src/utils/neo4jClient', () => {
+jest.mock('../src/infrastructure/database/neo4jClient', () => {
   return {
     isAvailable: jest.fn(() => false),
     createOrUpdateThreadNode: jest.fn(),

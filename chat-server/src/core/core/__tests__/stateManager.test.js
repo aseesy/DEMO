@@ -7,7 +7,7 @@
  */
 
 const stateManager = require('../stateManager');
-const { ESCALATION, MESSAGE } = require('../../../utils/constants');
+const { ESCALATION, MESSAGE } = require('../../../infrastructure/config/constants');
 
 describe('State Manager', () => {
   // Mock conversation context

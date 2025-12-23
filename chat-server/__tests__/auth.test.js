@@ -54,7 +54,7 @@ jest.mock('../libs/notification-manager', () => ({
   createInvitationAcceptedNotification: jest.fn().mockResolvedValue(true),
 }));
 
-jest.mock('../src/utils/neo4jClient', () => ({
+jest.mock('../src/infrastructure/database/neo4jClient', () => ({
   createUserNode: jest.fn().mockResolvedValue(true),
   createCoParentRelationship: jest.fn().mockResolvedValue(true),
 }));

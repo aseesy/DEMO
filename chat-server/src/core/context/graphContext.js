@@ -14,7 +14,7 @@
  * - Relationship health indicators
  */
 
-const neo4jClient = require('../../utils/neo4jClient');
+const neo4jClient = require('../../infrastructure/database/neo4jClient');
 
 /**
  * Get comprehensive relationship context for AI mediation

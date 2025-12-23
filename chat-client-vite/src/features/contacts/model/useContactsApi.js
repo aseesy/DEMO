@@ -30,10 +30,31 @@ export function useContactsApi(username, isAuthenticated = true) {
         if (response.ok) {
           const data = await response.json();
           // Transform relationship fields from backend format to display format
-          const transformedContacts = (data.contacts || []).map(contact => ({
-            ...contact,
-            relationship: contact.relationship ? toDisplayRelationship(contact.relationship) : contact.relationship,
-          }));
+          const transformedContacts = (data.contacts || []).map(contact => {
+            const transformed = {
+              ...contact,
+              relationship: contact.relationship ? toDisplayRelationship(contact.relationship) : contact.relationship,
+            };
+            
+            // Debug logging for child contacts (helps diagnose missing contacts like Vira)
+            if (contact.contact_name && (
+              contact.contact_name.toLowerCase().includes('vira') ||
+              (contact.relationship && (
+                contact.relationship.toLowerCase().includes('child') ||
+                contact.relationship.toLowerCase() === 'my child'
+              ))
+            )) {
+              console.log('[Contact Debug]', {
+                name: contact.contact_name,
+                rawRelationship: contact.relationship,
+                transformedRelationship: transformed.relationship,
+                email: contact.contact_email || 'NULL',
+                id: contact.id,
+              });
+            }
+            
+            return transformed;
+          });
           setContacts(transformedContacts);
         } else if (response.status === 401) {
           setContacts([]);

@@ -10,8 +10,52 @@
 const { BaseService } = require('../BaseService');
 const { NotFoundError, ValidationError, AuthenticationError } = require('../errors');
 const { PostgresUserRepository, PostgresContactRepository } = require('../../repositories');
-const profileHelpers = require('../../utils/profileHelpers');
-const { ensureProfileColumnsExist } = require('../../utils/schema');
+const { ensureProfileColumnsExist } = require('../../infrastructure/database/schema');
+
+/**
+ * Extract profile data from a user object
+ * @param {Object} user - User record from database
+ * @returns {Object} Profile data
+ */
+function extractProfileData(user) {
+  return {
+    username: user.username,
+    email: user.email,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    phone: user.phone,
+    address: user.address,
+    timezone: user.timezone,
+    profilePictureUrl: user.profile_picture_url,
+    createdAt: user.created_at,
+    updatedAt: user.updated_at,
+  };
+}
+
+/**
+ * Format profile data for SQL update
+ * @param {Object} profileData - Profile data from client
+ * @returns {Object} Formatted data with snake_case keys
+ */
+function formatProfileForUpdate(profileData) {
+  const mapping = {
+    firstName: 'first_name',
+    lastName: 'last_name',
+    email: 'email',
+    phone: 'phone',
+    address: 'address',
+    timezone: 'timezone',
+    profilePictureUrl: 'profile_picture_url',
+  };
+
+  const result = {};
+  for (const [camelCase, snakeCase] of Object.entries(mapping)) {
+    if (profileData[camelCase] !== undefined) {
+      result[snakeCase] = profileData[camelCase];
+    }
+  }
+  return result;
+}
 
 class ProfileService extends BaseService {
   constructor() {
@@ -45,7 +89,7 @@ class ProfileService extends BaseService {
       throw new NotFoundError('User', username);
     }
 
-    const profile = profileHelpers.extractProfileData(user);
+    const profile = extractProfileData(user);
 
     return {
       success: true,
@@ -70,7 +114,7 @@ class ProfileService extends BaseService {
     // Ensure schema has all profile columns
     await ensureProfileColumnsExist();
 
-    const updateData = profileHelpers.formatProfileForUpdate(profileData);
+    const updateData = formatProfileForUpdate(profileData);
 
     await this.query(
       `UPDATE users SET ${Object.keys(updateData)

@@ -1,13 +1,13 @@
 const dbSafe = require('../../../dbSafe');
-const { defaultLogger } = require('../../utils/logger');
-const { OperationalError } = require('../../utils/errors');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
+const { OperationalError } = require('../../infrastructure/errors/errors');
 const {
   VALIDATION,
   DATABASE,
   ARRAY_LIMITS,
   CONFIDENCE,
   ESCALATION,
-} = require('../../utils/constants');
+} = require('../../infrastructure/config/constants');
 
 /**
  * Feedback learning system for adaptive improvement

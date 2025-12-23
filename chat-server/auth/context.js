@@ -36,7 +36,7 @@ async function setupUserContextAndRoom(userId, username, context) {
     return { context: userContextData, room: null };
   } catch (error) {
     console.error('Error in setupUserContextAndRoom:', error);
-    return { context: null, room: null };
+      return { context: null, room: null };
   }
 }
 

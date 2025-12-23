@@ -7,7 +7,7 @@
  */
 
 const openaiClient = require('../client');
-const { AI, VALIDATION } = require('../../../utils/constants');
+const { AI, VALIDATION } = require('../../../infrastructure/config/constants');
 
 /**
  * Detect names in a message using AI

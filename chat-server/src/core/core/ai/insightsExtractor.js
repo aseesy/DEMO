@@ -7,7 +7,7 @@
  */
 
 const openaiClient = require('../client');
-const { MESSAGE } = require('../../../utils/constants');
+const { MESSAGE } = require('../../../infrastructure/config/constants');
 
 /**
  * Extract relationship insights from conversation

@@ -7,7 +7,7 @@
  * @module src/services/auditService
  */
 
-const { PROFILE_SECTIONS, SENSITIVE_FIELDS } = require('../utils/profileConstants');
+const { PROFILE_SECTIONS, SENSITIVE_FIELDS } = require('../features/profile/constants/profileConstants');
 
 // ============================================================================
 // PROFILE AUDIT LOGGING

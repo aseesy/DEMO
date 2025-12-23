@@ -7,7 +7,7 @@
  * @module liaizen/core/contexts
  */
 
-const { MESSAGE } = require('../../../utils/constants');
+const { MESSAGE } = require('../../../infrastructure/config/constants');
 const { getParticipantProfiles } = require('./participantContext');
 const {
   buildRoleAwareContext,

@@ -7,8 +7,8 @@
  * @module src/services/profileService
  */
 
-const { PROFILE_SECTIONS, DEFAULT_PRIVACY_SETTINGS } = require('../utils/profileConstants');
-const { decryptSensitiveFields } = require('../utils/crypto');
+const { PROFILE_SECTIONS, DEFAULT_PRIVACY_SETTINGS } = require('../features/profile/constants/profileConstants');
+const { decryptSensitiveFields } = require('../infrastructure/security/crypto');
 
 // ============================================================================
 // PRIVACY FILTERING

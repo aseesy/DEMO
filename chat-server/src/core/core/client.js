@@ -10,7 +10,7 @@ const OpenAI = require('openai');
 // Singleton instance
 let openaiInstance = null;
 
-const { RATE_LIMIT, TIME } = require('../../utils/constants');
+const { RATE_LIMIT, TIME } = require('../../infrastructure/config/constants');
 
 // Rate limiting state
 const rateLimitState = {
@@ -33,7 +33,7 @@ function getClient() {
       return null;
     }
 
-    const { AI } = require('../../utils/constants');
+    const { AI } = require('../../infrastructure/config/constants');
     openaiInstance = new OpenAI({
       apiKey: apiKey,
       maxRetries: RATE_LIMIT.MAX_RETRIES,
