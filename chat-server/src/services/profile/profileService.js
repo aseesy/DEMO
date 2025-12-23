@@ -11,6 +11,7 @@ const { BaseService } = require('../BaseService');
 const { NotFoundError, ValidationError, AuthenticationError } = require('../errors');
 const { PostgresUserRepository, PostgresContactRepository } = require('../../repositories');
 const { ensureProfileColumnsExist } = require('../../infrastructure/database/schema');
+const { withRetry } = require('../../../utils/dbRetry');
 
 /**
  * Extract profile data from a user object
@@ -116,17 +117,25 @@ class ProfileService extends BaseService {
 
     const updateData = formatProfileForUpdate(profileData);
 
-    await this.query(
-      `UPDATE users SET ${Object.keys(updateData)
-        .map((k, i) => `${k} = $${i + 2}`)
-        .join(', ')} WHERE LOWER(username) = LOWER($1)`,
-      [username, ...Object.values(updateData)]
-    );
+    return withRetry(
+      async () => {
+        await this.query(
+          `UPDATE users SET ${Object.keys(updateData)
+            .map((k, i) => `${k} = $${i + 2}`)
+            .join(', ')} WHERE LOWER(username) = LOWER($1)`,
+          [username, ...Object.values(updateData)]
+        );
 
-    return {
-      success: true,
-      message: 'Profile updated',
-    };
+        return {
+          success: true,
+          message: 'Profile updated',
+        };
+      },
+      {
+        operationName: 'updateProfile',
+        context: { username },
+      }
+    );
   }
 
   /**

@@ -9,6 +9,7 @@
 
 const dbSafe = require('../dbSafe');
 const { ServiceError } = require('./userService');
+const { withRetry } = require('../utils/dbRetry');
 
 // ============================================================================
 // CONTACT CRUD OPERATIONS
@@ -86,41 +87,57 @@ async function verifyContactOwnership(contactId, userId) {
  * @returns {Promise<number>} New contact ID
  */
 async function createContact(userId, contactData) {
-  const now = new Date().toISOString();
+  // Validate required fields
+  if (!userId) {
+    throw new ServiceError('User ID is required', 400);
+  }
+  if (!contactData?.contact_name?.trim()) {
+    throw new ServiceError('Contact name is required', 400);
+  }
 
-  const contactId = await dbSafe.safeInsert('contacts', {
-    user_id: userId,
-    contact_name: contactData.contact_name.trim(),
-    contact_email: contactData.contact_email
-      ? contactData.contact_email.trim().toLowerCase()
-      : null,
-    relationship: contactData.relationship || null,
-    separation_date: contactData.separation_date || null,
-    separation_details: contactData.separation_details || null,
-    address: contactData.address || null,
-    difficult_aspects: contactData.difficult_aspects || null,
-    friction_situations: contactData.friction_situations || null,
-    legal_matters: contactData.legal_matters || null,
-    safety_concerns: contactData.safety_concerns || null,
-    substance_mental_health: contactData.substance_mental_health || null,
-    additional_thoughts: contactData.additional_thoughts || null,
-    other_parent: contactData.other_parent || null,
-    child_age: contactData.child_age || null,
-    child_birthdate: contactData.child_birthdate || null,
-    school: contactData.school || null,
-    phone: contactData.phone || null,
-    partner_duration: contactData.partner_duration || null,
-    has_children: contactData.has_children || null,
-    partner_living_together: contactData.partner_living_together || null,
-    partner_living_together_since: contactData.partner_living_together_since || null,
-    partner_relationship_notes: contactData.partner_relationship_notes || null,
-    custody_arrangement: contactData.custody_arrangement || null,
-    linked_contact_id: contactData.linked_contact_id || null,
-    created_at: now,
-    updated_at: now,
-  });
+  return withRetry(
+    async () => {
+      const now = new Date().toISOString();
 
-  return contactId;
+      const contactId = await dbSafe.safeInsert('contacts', {
+        user_id: userId,
+        contact_name: contactData.contact_name.trim(),
+        contact_email: contactData.contact_email
+          ? contactData.contact_email.trim().toLowerCase()
+          : null,
+        relationship: contactData.relationship || null,
+        separation_date: contactData.separation_date || null,
+        separation_details: contactData.separation_details || null,
+        address: contactData.address || null,
+        difficult_aspects: contactData.difficult_aspects || null,
+        friction_situations: contactData.friction_situations || null,
+        legal_matters: contactData.legal_matters || null,
+        safety_concerns: contactData.safety_concerns || null,
+        substance_mental_health: contactData.substance_mental_health || null,
+        additional_thoughts: contactData.additional_thoughts || null,
+        other_parent: contactData.other_parent || null,
+        child_age: contactData.child_age || null,
+        child_birthdate: contactData.child_birthdate || null,
+        school: contactData.school || null,
+        phone: contactData.phone || null,
+        partner_duration: contactData.partner_duration || null,
+        has_children: contactData.has_children || null,
+        partner_living_together: contactData.partner_living_together || null,
+        partner_living_together_since: contactData.partner_living_together_since || null,
+        partner_relationship_notes: contactData.partner_relationship_notes || null,
+        custody_arrangement: contactData.custody_arrangement || null,
+        linked_contact_id: contactData.linked_contact_id || null,
+        created_at: now,
+        updated_at: now,
+      });
+
+      return contactId;
+    },
+    {
+      operationName: 'createContact',
+      context: { userId, contactName: contactData.contact_name },
+    }
+  );
 }
 
 /**
@@ -131,51 +148,63 @@ async function createContact(userId, contactData) {
  * @returns {Promise<void>}
  */
 async function updateContact(contactId, updateData) {
-  const updates = {
-    updated_at: new Date().toISOString(),
-  };
-
-  // Only include provided fields
-  const allowedFields = [
-    'contact_name',
-    'contact_email',
-    'relationship',
-    'separation_date',
-    'separation_details',
-    'address',
-    'difficult_aspects',
-    'friction_situations',
-    'legal_matters',
-    'safety_concerns',
-    'substance_mental_health',
-    'additional_thoughts',
-    'other_parent',
-    'child_age',
-    'child_birthdate',
-    'school',
-    'phone',
-    'partner_duration',
-    'has_children',
-    'partner_living_together',
-    'partner_living_together_since',
-    'partner_relationship_notes',
-    'custody_arrangement',
-    'linked_contact_id',
-  ];
-
-  for (const field of allowedFields) {
-    if (updateData[field] !== undefined) {
-      if (field === 'contact_name') {
-        updates[field] = updateData[field].trim();
-      } else if (field === 'contact_email') {
-        updates[field] = updateData[field] ? updateData[field].trim().toLowerCase() : null;
-      } else {
-        updates[field] = updateData[field] || null;
-      }
-    }
+  if (!contactId) {
+    throw new ServiceError('Contact ID is required', 400);
   }
 
-  await dbSafe.safeUpdate('contacts', updates, { id: contactId });
+  return withRetry(
+    async () => {
+      const updates = {
+        updated_at: new Date().toISOString(),
+      };
+
+      // Only include provided fields
+      const allowedFields = [
+        'contact_name',
+        'contact_email',
+        'relationship',
+        'separation_date',
+        'separation_details',
+        'address',
+        'difficult_aspects',
+        'friction_situations',
+        'legal_matters',
+        'safety_concerns',
+        'substance_mental_health',
+        'additional_thoughts',
+        'other_parent',
+        'child_age',
+        'child_birthdate',
+        'school',
+        'phone',
+        'partner_duration',
+        'has_children',
+        'partner_living_together',
+        'partner_living_together_since',
+        'partner_relationship_notes',
+        'custody_arrangement',
+        'linked_contact_id',
+      ];
+
+      for (const field of allowedFields) {
+        if (updateData[field] !== undefined) {
+          if (field === 'contact_name') {
+            updates[field] = updateData[field].trim();
+          } else if (field === 'contact_email') {
+            updates[field] = updateData[field] ? updateData[field].trim().toLowerCase() : null;
+          } else {
+            updates[field] = updateData[field] || null;
+          }
+        }
+      }
+
+      await dbSafe.safeUpdate('contacts', updates, { id: contactId });
+    },
+    {
+      operationName: 'updateContact',
+      context: { contactId },
+    }
+  );
 }
 
 /**
@@ -185,7 +214,19 @@ async function updateContact(contactId, updateData) {
  * @returns {Promise<void>}
  */
 async function deleteContact(contactId) {
-  await dbSafe.safeDelete('contacts', { id: contactId });
+  if (!contactId) {
+    throw new ServiceError('Contact ID is required', 400);
+  }
+
+  return withRetry(
+    async () => {
+      await dbSafe.safeDelete('contacts', { id: contactId });
+    },
+    {
+      operationName: 'deleteContact',
+      context: { contactId },
+    }
+  );
 }
 
 // ============================================================================
