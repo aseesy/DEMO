@@ -8,7 +8,7 @@
  */
 
 const crypto = require('crypto');
-const { CACHE } = require('../../utils/constants');
+const { CACHE } = require('../../infrastructure/config/constants');
 
 // Cache storage
 const cache = new Map();

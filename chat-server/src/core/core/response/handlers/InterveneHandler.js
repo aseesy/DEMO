@@ -6,7 +6,7 @@
  * @module liaizen/core/response/handlers/InterveneHandler
  */
 
-const { MESSAGE } = require('../../../../utils/constants');
+const { MESSAGE } = require('../../../../infrastructure/config/constants');
 const { ActionHandler } = require('./ActionHandler');
 const { validateInterventionFields } = require('../parser');
 const { validateRewrites, validateCodeLayerResponse } = require('../validator');
@@ -89,4 +89,3 @@ class InterveneHandler extends ActionHandler {
 }
 
 module.exports = { InterveneHandler };
-

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal } from '../../../components/ui/Modal/Modal';
-import { usePairing } from '../../../hooks/usePairing';
+import { usePairing } from '../model/usePairing';
 
 /**
  * InviteTaskModal - Combined invite/accept modal for co-parent pairing

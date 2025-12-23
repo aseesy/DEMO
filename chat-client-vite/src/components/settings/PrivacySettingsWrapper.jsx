@@ -8,7 +8,7 @@
 import React from 'react';
 import PrivacySettings from '../profile/PrivacySettings.jsx';
 import { SettingsCard, SettingsIcons } from './SettingsCard.jsx';
-import { useProfile } from '../../hooks/useProfile.js';
+import { useProfile } from '../../features/profile';
 import { apiGet } from '../../apiClient.js';
 
 /**

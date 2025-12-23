@@ -6,19 +6,26 @@ const dbSafe = require('../dbSafe');
 async function createWelcomeAndOnboardingTasks(userId, username) {
   const now = new Date().toISOString();
 
-  // Welcome task
+  // Welcome task - check for existing task first to prevent duplicates
   try {
-    const welcomeTaskDescription = `LiaiZen is contextual and adapts to your unique situation over time as it learns from your interactions.
+    const existing = await dbSafe.safeSelect(
+      'tasks',
+      { user_id: userId, title: 'Welcome to LiaiZen' },
+      { limit: 1 }
+    );
+    if (existing.length === 0) {
+      const welcomeTaskDescription = `LiaiZen is contextual and adapts to your unique situation over time as it learns from your interactions.
 We hope you enjoy the platform, but feedback is golden. Let us know what you like and don't like.`;
 
-    await dbSafe.safeInsert('tasks', {
-      user_id: userId,
-      title: 'Welcome to LiaiZen',
-      description: welcomeTaskDescription,
-      status: 'open',
-      created_at: now,
-      updated_at: now,
-    });
+      await dbSafe.safeInsert('tasks', {
+        user_id: userId,
+        title: 'Welcome to LiaiZen',
+        description: welcomeTaskDescription,
+        status: 'open',
+        created_at: now,
+        updated_at: now,
+      });
+    }
   } catch (err) {
     console.error('Error creating welcome task:', err);
   }

@@ -67,7 +67,6 @@ export function PrivacyPage() {
               <li>First and last name</li>
               <li>Address</li>
               <li>Household members</li>
-              <li>Occupation</li>
               <li>Communication style and preferences</li>
               <li>Communication goals and triggers</li>
             </ul>

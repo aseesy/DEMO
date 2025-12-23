@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth.js';
+import { useAuth } from '../features/auth';
 import { parseOAuthError, clearOAuthState } from '../utils/oauthHelper.js';
 import { getErrorMessage, logError } from '../utils/errorHandler.jsx';
 

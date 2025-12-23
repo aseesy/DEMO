@@ -8,7 +8,7 @@
  * - Data Consistency: All operations are properly tracked, even if Neo4j is optional
  */
 const { PostgresRoomRepository } = require('../src/repositories/postgres/PostgresRoomRepository');
-const neo4jClient = require('../src/utils/neo4jClient');
+const neo4jClient = require('../src/infrastructure/database/neo4jClient');
 const { generateRoomId, sendWelcomeMessage } = require('./utils');
 
 // Repository instance - encapsulates all database access

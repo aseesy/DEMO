@@ -406,7 +406,7 @@ async function updateNeo4jMetadata(users, room, totalMessages) {
   console.log('🔗 Updating Neo4j relationship metadata...');
 
   try {
-    const neo4jClient = require('../src/utils/neo4jClient');
+    const neo4jClient = require('../src/infrastructure/database/neo4jClient');
 
     if (!neo4jClient.isAvailable()) {
       console.log('ℹ️  Neo4j not available - skipping graph update');

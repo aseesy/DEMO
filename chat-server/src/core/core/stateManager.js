@@ -7,7 +7,7 @@
  * @module src/liaizen/core/stateManager
  */
 
-const { ESCALATION, MESSAGE } = require('../../utils/constants');
+const { ESCALATION, MESSAGE } = require('../../infrastructure/config/constants');
 
 // Shared conversation context (imported from mediator.js)
 // This will be passed in as a parameter to avoid circular dependencies

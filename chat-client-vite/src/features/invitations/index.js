@@ -13,6 +13,9 @@ export { InviteCoParentPage } from './InviteCoParentPage.jsx';
 export { useAcceptInvitation } from './model/useAcceptInvitation.js';
 export { useInviteCoParent } from './model/useInviteCoParent.js';
 export { useInvitations } from './model/useInvitations.js';
+export { useInviteDetection } from './model/useInviteDetection.js';
+export { useInviteManagement } from './model/useInviteManagement.js';
+export { usePairing } from './model/usePairing.js';
 
 // Components (The UI Details)
 export { InviteTaskModal } from './components/InviteTaskModal.jsx';

@@ -145,15 +145,6 @@ async function formatContextForAI(username, profileData = null) {
   }
 
   // Profile fields - Enhanced for better contextual awareness
-  if (userProfile?.occupation) {
-    // Include work schedule if available for scheduling context
-    const workInfo = [userProfile.occupation];
-    if (userProfile.work_schedule) {
-      workInfo.push(`(${userProfile.work_schedule})`);
-    }
-    parts.push(`Occupation: ${workInfo.join(' ')}`);
-  }
-
   if (userProfile?.communication_style) {
     parts.push(`Communication style: "${userProfile.communication_style}"`);
   }

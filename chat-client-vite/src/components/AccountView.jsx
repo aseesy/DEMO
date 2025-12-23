@@ -1,5 +1,5 @@
 import React from 'react';
-import { useProfile } from '../hooks/useProfile.js';
+import { useProfile } from '../features/profile';
 
 /**
  * AccountView - Account settings and password management component

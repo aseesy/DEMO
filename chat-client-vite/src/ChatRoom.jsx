@@ -1,13 +1,12 @@
 import React from 'react';
 import './index.css';
-import { useAuth } from './hooks/useAuth.js';
+import { useAuth } from './features/auth';
 import { useDashboard } from './features/dashboard';
 import { useContacts } from './features/contacts';
-import { useNotifications } from './hooks/useNotifications.js';
-import { useInAppNotifications } from './hooks/useInAppNotifications.js';
-import { useToast } from './hooks/useToast.js';
-import { useInviteManagement } from './hooks/useInviteManagement.js';
-import { useModalControllerDefault } from './hooks/useModalController.js';
+import { useNotifications, useInAppNotifications } from './features/notifications';
+import { useToast } from './hooks/ui/useToast.js';
+import { useInviteManagement } from './features/invitations/model/useInviteManagement.js';
+import { useModalControllerDefault } from './hooks/ui/useModalController.js';
 import { ChatProvider, useChatContext } from './features/chat';
 import { ToastContainer } from './components/ui/Toast/Toast.jsx';
 import { ContactsPanel } from './features/contacts';
@@ -208,6 +207,7 @@ function ChatRoomContent({
     setShowManualInvite,
     hasCoParentConnected,
     setHasCoParentConnected,
+    isCheckingCoParent,
     hasPendingInvitation,
     hasAcceptedInvitation,
     handleLoadInvite,
@@ -336,6 +336,7 @@ function ChatRoomContent({
               <DashboardView
                 username={username}
                 hasCoParentConnected={hasCoParentConnected}
+                isCheckingCoParent={isCheckingCoParent}
                 contacts={contacts}
                 setCurrentView={setCurrentView}
                 taskState={dashboardProps.taskState}
@@ -378,7 +379,9 @@ function ChatRoomContent({
               />
             )}
 
-            {currentView === 'contacts' && <ContactsPanel username={username} />}
+            {currentView === 'contacts' && (
+              <ContactsPanel username={username} setCurrentView={setCurrentView} />
+            )}
 
             {currentView === 'profile' && (
               <div className="pb-20 md:pb-8">

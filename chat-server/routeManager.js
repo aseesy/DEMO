@@ -71,7 +71,6 @@ function setupRoutes(app, services) {
         user.first_name,
         user.last_name,
         user.address,
-        user.occupation,
         user.communication_style,
         user.communication_triggers,
         user.communication_goals,

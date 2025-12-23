@@ -17,7 +17,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dashboardDir = path.join(__dirname);
-const hooksDir = path.join(__dirname, '..', '..', 'hooks');
+const hooksDir = path.join(__dirname, '..', '..', 'hooks', 'ui');
 const tasksDir = path.join(__dirname, '..', 'tasks');
 const tasksModelDir = path.join(__dirname, '..', 'tasks', 'model');
 
@@ -41,7 +41,7 @@ describe('Dependency Direction Test - useDashboard', () => {
 
     // useDashboard should import useModalControllerDefault (downward - correct)
     expect(useDashboardContent).toContain(
-      "import { useModalControllerDefault } from '../../hooks/useModalController.js'"
+      "import { useModalControllerDefault } from '../../hooks/ui/useModalController.js'"
     );
   });
 

@@ -6,7 +6,7 @@
  * @module liaizen/core/response/validator
  */
 
-const { MESSAGE } = require('../../../utils/constants');
+const { MESSAGE } = require('../../../infrastructure/config/constants');
 const libs = require('../libraryLoader');
 
 /**

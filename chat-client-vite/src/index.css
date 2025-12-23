@@ -335,6 +335,10 @@ body {
   }
 }
 
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
 /* Mobile responsive adjustments */
 @media (max-width: 640px) {
   .toast-notification {

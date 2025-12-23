@@ -159,17 +159,10 @@ class RoomService extends BaseService {
       throw new ValidationError('User ID is required', 'userId');
     }
 
-    // Get or create user's room
-    let room = await this.roomManager.getUserRoom(userId);
+    // Get user's room (users should only have shared rooms with co-parents, not personal rooms)
+    const room = await this.roomManager.getUserRoom(userId);
     if (!room) {
-      console.log('RoomService: No room found, creating one for user:', userId);
-      try {
-        room = await this.roomManager.createPrivateRoom(userId, username);
-        console.log('RoomService: Created new room:', room.roomId);
-      } catch (roomError) {
-        console.error('RoomService: Failed to create room:', roomError);
-        throw new Error('Failed to create room. Please try again.');
-      }
+      throw new Error('No room found. Users must be connected to a co-parent to have a room.');
     }
 
     // Check for existing active invite

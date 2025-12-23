@@ -2,7 +2,7 @@
  * User Management Logic
  */
 const dbSafe = require('../dbSafe');
-const neo4jClient = require('../src/utils/neo4jClient');
+const neo4jClient = require('../src/infrastructure/database/neo4jClient');
 const { generateUsernameSuffix, createRegistrationError, RegistrationError } = require('./utils');
 const { setupUserContextAndRoom } = require('./context');
 const { createWelcomeAndOnboardingTasks } = require('./tasks');
@@ -18,11 +18,11 @@ async function getUser(username) {
     if (users.length === 0) return null;
 
     const user = users[0];
-    
+
     // Get user context
     const contextResult = await dbSafe.safeSelect('user_context', { user_id: String(user.id) }, { limit: 1 });
     const contextRows = dbSafe.parseResult(contextResult);
-    
+
     const defaultContext = {
       coParentName: '',
       children: [],

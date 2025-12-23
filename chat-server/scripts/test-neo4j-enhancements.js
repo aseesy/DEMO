@@ -4,9 +4,9 @@
  */
 
 require('dotenv').config();
-const neo4jClient = require('../src/utils/neo4jClient');
-const dbSyncValidator = require('../src/utils/dbSyncValidator');
-const relationshipSync = require('../src/utils/relationshipSync');
+const neo4jClient = require('../src/infrastructure/database/neo4jClient');
+const dbSyncValidator = require('../src/services/sync/dbSyncValidator');
+const relationshipSync = require('../src/services/sync/relationshipSync');
 
 async function testNeo4jEnhancements() {
   console.log('🧪 Testing Neo4j Enhancements\n');

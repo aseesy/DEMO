@@ -333,13 +333,6 @@ export default function PrivacySettings({
                 )}
 
                 {/* Work Info (if shared) */}
-                {previewData.occupation && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500 mb-2">Occupation</h4>
-                    <p className="text-gray-800">{previewData.occupation}</p>
-                  </div>
-                )}
-
                 {previewData.work_schedule && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-2">Work Schedule</h4>

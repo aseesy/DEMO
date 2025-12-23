@@ -1,12 +1,12 @@
 import React from 'react';
 import { Modal, Button } from '../ui';
 
-export function ProfileTaskModal({ editingTask, onClose, onNavigateToProfile }) {
-  if (!editingTask) return null;
+export function ProfileTaskModal({ editingTask, onClose, onNavigateToProfile, isOpen }) {
+  if (!editingTask || !isOpen) return null;
 
   return (
     <Modal
-      isOpen={!!editingTask}
+      isOpen={isOpen}
       onClose={onClose}
       title={editingTask.title}
       size="large"

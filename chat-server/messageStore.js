@@ -59,7 +59,7 @@ async function saveMessage(message) {
       if (coreData.room_id) {
         setImmediate(() => {
           try {
-            const relationshipSync = require('./src/utils/relationshipSync');
+            const relationshipSync = require('./src/services/sync/relationshipSync');
             relationshipSync.syncRoomMetadata(coreData.room_id).catch(err => {
               // Silently fail - sync is optional and will retry periodically
             });
@@ -73,7 +73,7 @@ async function saveMessage(message) {
       if (coreData.room_id && coreData.text && coreData.text.trim().length > 0) {
         setImmediate(() => {
           try {
-            const neo4jClient = require('./src/utils/neo4jClient');
+            const neo4jClient = require('./src/infrastructure/database/neo4jClient');
             if (neo4jClient && neo4jClient.isAvailable()) {
               neo4jClient
                 .createOrUpdateMessageNode(

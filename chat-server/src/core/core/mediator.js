@@ -26,8 +26,8 @@
 
 const openaiClient = require('./client');
 const userContext = require('../context/userContext');
-const { defaultLogger } = require('../../utils/logger');
-const { AI } = require('../../utils/constants');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
+const { AI } = require('../../infrastructure/config/constants');
 const stateManager = require('./stateManager');
 
 // Extracted modules

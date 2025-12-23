@@ -11,7 +11,7 @@
  */
 
 // ID generation - delegated to centralized crypto utilities
-const { generateRoomId, generateInviteCode } = require('../src/utils/crypto');
+const { generateRoomId, generateInviteCode } = require('../src/infrastructure/security/crypto');
 
 // Room lifecycle - delegated to roomLifecycle module
 const { sendWelcomeMessage } = require('./roomLifecycle');

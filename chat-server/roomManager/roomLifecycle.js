@@ -10,7 +10,7 @@
 
 const dbPostgres = require('../dbPostgres');
 const { SYSTEM_IDENTITY, WELCOME_MESSAGE } = require('../content/systemMessages');
-const { generateMessageId } = require('../src/utils/crypto');
+const { generateMessageId } = require('../src/infrastructure/security/crypto');
 
 /**
  * Send the welcome message to a newly created room

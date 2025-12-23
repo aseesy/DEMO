@@ -9,6 +9,11 @@
 
 const { ServiceError, getUserIdByUsername } = require('../services/userService');
 const contactsService = require('../services/contactsService');
+const { PostgresRoomRepository } = require('../src/repositories/postgres/PostgresRoomRepository');
+const { createCoParentRoom } = require('../roomManager/coParent');
+const dbPostgres = require('../dbPostgres');
+
+const roomRepo = new PostgresRoomRepository();
 
 // Injected helpers (set from server.js)
 let autoCompleteOnboardingTasks = null;
@@ -357,6 +362,104 @@ async function enrichContact(req, res) {
   }
 }
 
+/**
+ * POST /api/contacts/:contactId/invite-to-chat
+ *
+ * Invites a contact to chat by creating a private room between the current user and the contact.
+ * Only works for partner contacts with linked_user_id (registered users).
+ *
+ * @param {Object} req - Express request
+ * @param {Object} req.user - Authenticated user from JWT
+ * @param {Object} req.params - Route parameters
+ * @param {string} req.params.contactId - Contact ID
+ * @param {Object} res - Express response
+ */
+async function inviteContactToChat(req, res) {
+  try {
+    const userId = req.user.id;
+    const contactId = parseInt(req.params.contactId, 10);
+
+    if (!contactId || isNaN(contactId)) {
+      return res.status(400).json({ error: 'Invalid contact ID' });
+    }
+
+    // Get contact and verify ownership
+    const contact = await contactsService.getContactById(contactId);
+    if (!contact) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+
+    if (contact.user_id !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Verify contact has linked_user_id (is a registered user)
+    if (!contact.linked_user_id) {
+      return res.status(400).json({
+        error: 'This contact is not a registered LiaiZen user. They need to sign up first.',
+      });
+    }
+
+    // Verify contact is a partner
+    const relationship = contact.relationship?.toLowerCase() || '';
+    const isPartner =
+      relationship === 'my partner' ||
+      relationship === 'partner' ||
+      (relationship.includes('partner') && !relationship.includes('co-parent'));
+
+    if (!isPartner) {
+      return res.status(400).json({
+        error: 'This feature is only available for partner contacts',
+      });
+    }
+
+    const contactUserId = contact.linked_user_id;
+
+    // Check if room already exists between these users
+    const existingRoom = await roomRepo.findRoomBetweenUsers(userId, contactUserId);
+    if (existingRoom) {
+      return res.json({
+        roomId: existingRoom.id,
+        roomName: existingRoom.name,
+        alreadyExists: true,
+      });
+    }
+
+    // Get user display names for room creation
+    const [currentUser, contactUser] = await Promise.all([
+      dbPostgres.query('SELECT first_name, display_name, username FROM users WHERE id = $1', [
+        userId,
+      ]),
+      dbPostgres.query('SELECT first_name, display_name, username FROM users WHERE id = $1', [
+        contactUserId,
+      ]),
+    ]);
+
+    const currentUserName =
+      currentUser.rows[0]?.first_name ||
+      currentUser.rows[0]?.display_name ||
+      currentUser.rows[0]?.username ||
+      'You';
+    const contactUserName =
+      contactUser.rows[0]?.first_name ||
+      contactUser.rows[0]?.display_name ||
+      contactUser.rows[0]?.username ||
+      contact.contact_name ||
+      'Partner';
+
+    // Create co-parent room
+    const room = await createCoParentRoom(userId, contactUserId, currentUserName, contactUserName);
+
+    return res.json({
+      roomId: room.roomId,
+      roomName: room.roomName,
+      alreadyExists: false,
+    });
+  } catch (error) {
+    handleError(res, error, 'Error inviting contact to chat');
+  }
+}
+
 module.exports = {
   setHelpers,
   // CRUD
@@ -373,4 +476,6 @@ module.exports = {
   // AI features
   generateProfile,
   enrichContact,
+  // Chat invitation
+  inviteContactToChat,
 };

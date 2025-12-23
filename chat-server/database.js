@@ -42,7 +42,7 @@ async function initDatabase() {
     // Initialize Neo4j indexes and sync
     setTimeout(() => {
       try {
-        const neo4jClient = require('./src/utils/neo4jClient');
+        const neo4jClient = require('./src/infrastructure/database/neo4jClient');
         if (neo4jClient.isAvailable()) {
           console.log('🔄 Initializing Neo4j indexes...');
           neo4jClient.initializeIndexes().catch(err => {
@@ -51,7 +51,7 @@ async function initDatabase() {
 
           // Run initial sync validation
           setTimeout(() => {
-            const dbSyncValidator = require('./src/utils/dbSyncValidator');
+            const dbSyncValidator = require('./src/services/sync/dbSyncValidator');
             dbSyncValidator.runFullValidation().catch(err => {
               console.warn('⚠️  Database sync validation failed (non-blocking):', err.message);
             });
@@ -60,7 +60,7 @@ async function initDatabase() {
           // Start periodic relationship metadata sync job
           setTimeout(() => {
             try {
-              const relationshipSync = require('./src/utils/relationshipSync');
+              const relationshipSync = require('./src/services/sync/relationshipSync');
               relationshipSync.startSyncJob(60);
             } catch (err) {
               console.warn('⚠️  Failed to start relationship sync job:', err.message);
@@ -109,8 +109,8 @@ function loadServices() {
   };
 
   // Add specific utility functions
-  const { isValidEmail } = require('./src/utils/validators');
-  const { ensureProfileColumnsExist } = require('./src/utils/schema');
+  const { isValidEmail } = require('./src/infrastructure/validation/validators');
+  const { ensureProfileColumnsExist } = require('./src/infrastructure/database/schema');
 
   services.isValidEmail = isValidEmail;
   services.ensureProfileColumnsExist = ensureProfileColumnsExist;

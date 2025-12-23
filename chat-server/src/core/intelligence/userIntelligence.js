@@ -20,7 +20,7 @@ const neo4j = require('neo4j-driver');
 // Get Neo4j client
 let neo4jClient;
 try {
-  neo4jClient = require('../../utils/neo4jClient');
+  neo4jClient = require('../../infrastructure/database/neo4jClient');
 } catch (err) {
   console.warn('⚠️ UserIntelligence: Neo4j client not available');
   neo4jClient = null;

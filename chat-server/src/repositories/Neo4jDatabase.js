@@ -12,7 +12,7 @@ let neo4jDriver = null;
 function loadNeo4j() {
   if (!neo4jClient) {
     try {
-      neo4jClient = require('../utils/neo4jClient');
+      neo4jClient = require('../infrastructure/database/neo4jClient');
       neo4jDriver = require('neo4j-driver');
     } catch (err) {
       console.warn('⚠️ Neo4jDatabase: Neo4j not available:', err.message);

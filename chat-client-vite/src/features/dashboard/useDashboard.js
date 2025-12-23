@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTasks, createTaskCollection } from '../tasks';
-import { useModalControllerDefault } from '../../hooks/useModalController.js';
-import { useThreads } from '../../hooks/useThreads.js';
+import { useModalControllerDefault } from '../../hooks/ui/useModalController.js';
+import { useThreads } from '../chat/model/useThreads.js';
 
 /**
  * useDashboard - ViewModel for DashboardView

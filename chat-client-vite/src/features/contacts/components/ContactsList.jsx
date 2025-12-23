@@ -1,4 +1,5 @@
 import React from 'react';
+import { isPartnerRelationship } from '../../../utils/relationshipMapping.js';
 
 /**
  * ContactsList - Displays a searchable list of contacts
@@ -10,6 +11,7 @@ import React from 'react';
  * @param {string} props.searchTerm - Current search term
  * @param {Function} props.onSearchChange - Search term change handler
  * @param {Function} props.onContactClick - Contact selection handler
+ * @param {Function} props.onInviteToChat - Handler for inviting contact to chat
  * @param {boolean} props.isLoading - Loading state
  * @param {string} props.error - Error message
  */
@@ -18,39 +20,12 @@ export function ContactsList({
   searchTerm,
   onSearchChange,
   onContactClick,
+  onInviteToChat,
   isLoading,
   error,
 }) {
   return (
     <>
-      {/* Search Input */}
-      <div className="px-3 sm:px-4 py-2 flex-shrink-0">
-        <div className="relative">
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-            <svg
-              className="w-4 h-4 sm:w-5 sm:h-5 text-teal-medium"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => onSearchChange(e.target.value)}
-            placeholder="Search..."
-            className="w-full pl-10 sm:pl-11 pr-3 py-2.5 sm:py-1.5 border-2 border-teal-light rounded-lg focus:outline-none focus:border-teal-medium transition-colors bg-white text-teal-medium placeholder-gray-400 text-sm min-h-[40px] sm:min-h-[44px]"
-          />
-        </div>
-      </div>
-
       {/* Error Message */}
       {error && (
         <div className="mx-4 mt-2 mb-2 bg-red-50 border-2 border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs">
@@ -70,6 +45,7 @@ export function ContactsList({
               key={contact.id}
               contact={contact}
               onClick={() => onContactClick(contact)}
+              onInviteToChat={onInviteToChat ? () => onInviteToChat(contact) : null}
             />
           ))
         )}
@@ -81,7 +57,16 @@ export function ContactsList({
 /**
  * ContactCard - Individual contact item in the list
  */
-function ContactCard({ contact, onClick }) {
+function ContactCard({ contact, onClick, onInviteToChat }) {
+  const isPartner = isPartnerRelationship(contact.relationship);
+  const hasLinkedUser = !!contact.linked_user_id;
+  const showInviteButton = isPartner && hasLinkedUser && onInviteToChat;
+
+  const handleInviteClick = e => {
+    e.stopPropagation(); // Prevent card click
+    onInviteToChat(contact);
+  };
+
   return (
     <div
       onClick={onClick}
@@ -91,6 +76,23 @@ function ContactCard({ contact, onClick }) {
         <ContactAvatar name={contact.contact_name} />
         <ContactInfo contact={contact} />
       </div>
+      {showInviteButton && (
+        <button
+          onClick={handleInviteClick}
+          className="ml-2 px-3 py-1.5 bg-teal-medium text-white text-xs font-semibold rounded-lg hover:bg-teal-dark transition-colors flex items-center gap-1.5 flex-shrink-0 touch-manipulation"
+          title="Invite to chat on LiaiZen"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+          Chat
+        </button>
+      )}
     </div>
   );
 }

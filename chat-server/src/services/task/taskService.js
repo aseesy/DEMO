@@ -74,6 +74,25 @@ class TaskService extends BaseService {
       related_people: this._parseJsonField(task.related_people),
     }));
 
+    // Deduplicate tasks by title (keep the most recent one, or completed if one exists)
+    // This prevents duplicate "Welcome to LiaiZen" tasks from showing
+    const taskMap = new Map();
+    for (const task of tasks) {
+      const existing = taskMap.get(task.title);
+      if (!existing) {
+        taskMap.set(task.title, task);
+      } else {
+        // If we have a duplicate, prefer completed over open, or most recent if same status
+        const preferExisting =
+          existing.status === 'completed' ||
+          (existing.status === task.status && new Date(existing.created_at) > new Date(task.created_at));
+        if (!preferExisting) {
+          taskMap.set(task.title, task);
+        }
+      }
+    }
+    tasks = Array.from(taskMap.values());
+
     // Apply search filter if provided
     if (search && search.trim()) {
       const searchLower = search.toLowerCase().trim();

@@ -419,7 +419,7 @@ export function Navigation({
                         }
 
                         return firstName
-                          ? `Search conversation with ${firstName}`
+                          ? `Search Conversation With ${firstName}`
                           : 'Search messages...';
                       })()}
                       className="w-full pl-10 pr-8 py-1.5 border border-gray-200 rounded-full bg-white focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-sm text-gray-900 placeholder-gray-400 h-8"

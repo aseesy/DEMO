@@ -314,7 +314,6 @@ router.get('/preview-coparent-view', authenticate, async (req, res) => {
       ],
       work: [
         'employment_status',
-        'occupation',
         'employer',
         'work_schedule',
         'schedule_flexibility',

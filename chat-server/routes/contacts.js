@@ -67,4 +67,7 @@ router.post('/generate-profile', authenticate, contactsController.generateProfil
 // POST /api/contacts/:contactId/enrich - Enrich contact from messages
 router.post('/:contactId/enrich', authenticate, contactsController.enrichContact);
 
+// POST /api/contacts/:contactId/invite-to-chat - Invite contact to chat (create room)
+router.post('/:contactId/invite-to-chat', authenticate, contactsController.inviteContactToChat);
+
 module.exports = router;

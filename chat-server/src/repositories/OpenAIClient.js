@@ -6,7 +6,7 @@
  */
 
 const OpenAI = require('openai');
-const { RATE_LIMIT, AI } = require('../utils/constants');
+const { RATE_LIMIT, AI } = require('../infrastructure/config/constants');
 
 // Singleton instance
 let openaiInstance = null;

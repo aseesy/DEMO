@@ -11,9 +11,8 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth.js';
-import { useInviteDetection } from '../hooks/useInviteDetection.js';
-import { useAuthRedirect } from '../hooks/useAuthRedirect.js';
+import { useAuth, useAuthRedirect } from '../features/auth';
+import { useInviteDetection } from '../features/invitations';
 import { Button, Input } from './ui';
 import {
   AuthHeader,

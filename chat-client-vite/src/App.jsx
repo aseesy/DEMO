@@ -9,7 +9,7 @@ import { UIShowcase } from './components/UIShowcase.jsx'; // Design system showc
 import { PrivacyPage } from './components/PrivacyPage.jsx';
 import { TermsPage } from './components/TermsPage.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
-import { usePWA } from './hooks/usePWA.js';
+import { usePWA } from './hooks/pwa/usePWA.js';
 import { MediatorProvider } from './context/MediatorContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { InvitationProvider } from './context/InvitationContext.jsx';

@@ -4,7 +4,7 @@ const openaiClient = require('./openaiClient');
 // Neo4j client for semantic threading
 let neo4jClient = null;
 try {
-  neo4jClient = require('./src/utils/neo4jClient');
+  neo4jClient = require('./src/infrastructure/database/neo4jClient');
 } catch (err) {
   console.warn('⚠️  Neo4j client not available - semantic threading will use fallback');
 }

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import initialRelationships from './relationships.json'; // default map
-import { useAuth } from '../hooks/useAuth.js'; // to get current user
+import { useAuth } from '../features/auth';
 import { API_BASE_URL } from '../config.js';
 
 // ---------------------------------------------------------------------------

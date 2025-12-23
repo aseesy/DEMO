@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { apiGet, apiPost, apiPut } from '../../../apiClient.js';
-import { toBackendRelationship } from '../../../utils/relationshipMapping.js';
+import { toBackendRelationship, toDisplayRelationship } from '../../../utils/relationshipMapping.js';
 import { mapFormDataToContact } from './contactMapper.js';
 
 export function useContactsApi(username, isAuthenticated = true) {
@@ -29,7 +29,12 @@ export function useContactsApi(username, isAuthenticated = true) {
         const response = await apiGet(`/api/contacts?username=${encodeURIComponent(username)}`);
         if (response.ok) {
           const data = await response.json();
-          setContacts(data.contacts || []);
+          // Transform relationship fields from backend format to display format
+          const transformedContacts = (data.contacts || []).map(contact => ({
+            ...contact,
+            relationship: contact.relationship ? toDisplayRelationship(contact.relationship) : contact.relationship,
+          }));
+          setContacts(transformedContacts);
         } else if (response.status === 401) {
           setContacts([]);
         } else {
@@ -139,6 +144,26 @@ export function useContactsApi(username, isAuthenticated = true) {
     loadContacts(isAuthenticated);
   }, [loadContacts, isAuthenticated]);
 
+  const inviteContactToChat = React.useCallback(
+    async contactId => {
+      setError('');
+      try {
+        const response = await apiPost(`/api/contacts/${contactId}/invite-to-chat`, {});
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || `Failed to invite contact (Status: ${response.status})`);
+        }
+        const data = await response.json();
+        return data;
+      } catch (err) {
+        console.error('Error inviting contact to chat:', err);
+        setError(err.message || 'Failed to invite contact to chat. Please try again.');
+        throw err;
+      }
+    },
+    []
+  );
+
   return {
     // State
     contacts,
@@ -151,6 +176,7 @@ export function useContactsApi(username, isAuthenticated = true) {
     loadContacts,
     saveContact,
     deleteContact,
+    inviteContactToChat,
   };
 }
 

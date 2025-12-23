@@ -79,6 +79,9 @@ export function useContacts(username, isAuthenticated = true) {
     saveContact,
     deleteContact,
     editContact,
+
+    // Direct API operations
+    inviteContactToChat: api.inviteContactToChat,
   };
 }
 

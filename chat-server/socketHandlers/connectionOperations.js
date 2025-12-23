@@ -108,11 +108,10 @@ async function resolveOrCreateUserRoom(user, cleanUsername, dbPostgres, roomMana
     return existingRoom;
   }
 
-  // No room found - create a new private room (SIDE EFFECT)
-  const newRoom = await roomManager.createPrivateRoom(user.id, cleanUsername);
-  console.log(`[join] User ${cleanUsername} created new room: ${newRoom.roomId}`);
-
-  return { roomId: newRoom.roomId, roomName: newRoom.roomName };
+  // No room found - users should not have personal rooms
+  // They must be connected to a co-parent to have a room
+  console.log(`[join] User ${cleanUsername} has no room. Users must be connected to a co-parent.`);
+  return null;
 }
 
 /**

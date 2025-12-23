@@ -22,6 +22,7 @@ import { TaskCard, filterTasksForDashboard, getDefaultTaskFormData } from '../ta
  * @param {Object} props
  * @param {string} props.username - Current user's username
  * @param {boolean} props.hasCoParentConnected - Whether co-parent is connected
+ * @param {boolean} props.isCheckingCoParent - Whether we're still checking co-parent connection status
  * @param {Array} props.contacts - List of contacts
  * @param {Function} props.setCurrentView - View navigation handler
  * @param {Object} props.taskState - Task list state
@@ -32,6 +33,7 @@ import { TaskCard, filterTasksForDashboard, getDefaultTaskFormData } from '../ta
 export function DashboardView({
   username,
   hasCoParentConnected,
+  isCheckingCoParent = false,
   contacts,
   setCurrentView,
   taskState,
@@ -71,8 +73,10 @@ export function DashboardView({
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Co-parent connection prompt */}
-      {!hasCoParentConnected && <InvitePromptBanner onInvite={() => setShowInviteModal(true)} />}
+      {/* Co-parent connection prompt - only show after checking is complete */}
+      {!isCheckingCoParent && !hasCoParentConnected && (
+        <InvitePromptBanner onInvite={() => setShowInviteModal(true)} />
+      )}
 
       {/* Dashboard Grid: Updates and Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">

@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../../hooks/useAuth.js';
+import { useAuth } from '../../auth';
 import { useInvitations } from './useInvitations.js';
 import { useInvitationContext } from '../../../context/InvitationContext.jsx';
 import { apiPost } from '../../../apiClient.js';

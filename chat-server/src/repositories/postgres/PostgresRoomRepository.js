@@ -143,6 +143,28 @@ class PostgresRoomRepository extends PostgresGenericRepository {
     );
     return !!result;
   }
+
+  /**
+   * Find a room shared between two users
+   * @param {number} userId1 - First user ID
+   * @param {number} userId2 - Second user ID
+   * @returns {Promise<Object|null>} Room object with id and name, or null if no shared room
+   */
+  async findRoomBetweenUsers(userId1, userId2) {
+    const rows = await this.query(
+      `SELECT r.id, r.name
+       FROM rooms r
+       JOIN room_members rm1 ON r.id = rm1.room_id AND rm1.user_id = $1
+       JOIN room_members rm2 ON r.id = rm2.room_id AND rm2.user_id = $2
+       LIMIT 1`,
+      [userId1, userId2]
+    );
+    if (rows.length === 0) return null;
+    return {
+      id: rows[0].id,
+      name: rows[0].name,
+    };
+  }
 }
 
 module.exports = { PostgresRoomRepository };

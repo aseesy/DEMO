@@ -1,10 +1,11 @@
 import React from 'react';
-import { useGooglePlaces } from '../../../hooks/useGooglePlaces.js';
-import { useGooglePlacesSchool } from '../../../hooks/useGooglePlacesSchool.js';
-import { useActivities } from '../../../hooks/useActivities.js';
+import { useGooglePlaces } from '../../../hooks/integrations/useGooglePlaces.js';
+import { useGooglePlacesSchool } from '../../../hooks/integrations/useGooglePlacesSchool.js';
+import { useActivities } from '../model/useActivities.js';
 import { ActivityCard } from '../../../components/ActivityCard.jsx';
 import { AddActivityModal } from '../../../components/modals/AddActivityModal.jsx';
 import { Button } from '../../../components/ui';
+import { isPartnerRelationship } from '../../../utils/relationshipMapping.js';
 
 /**
  * ContactForm - Modal form for creating/editing contacts
@@ -22,6 +23,8 @@ import { Button } from '../../../components/ui';
  * @param {Function} props.onDelete - Delete handler
  * @param {Function} props.onClose - Close modal handler
  * @param {string} props.username - Current username
+ * @param {Function} props.onInviteToChat - Handler for inviting contact to chat
+ * @param {Function} props.setCurrentView - Function to navigate to different views
  */
 export function ContactForm({
   isOpen,
@@ -34,6 +37,8 @@ export function ContactForm({
   onDelete,
   onClose,
   username,
+  onInviteToChat,
+  setCurrentView,
 }) {
   // Refs for Google Places autocomplete
   const addressInputRef = React.useRef(null);
@@ -190,6 +195,39 @@ export function ContactForm({
                   Delete
                 </Button>
               )}
+              {contact &&
+                isPartnerRelationship(contact.relationship) &&
+                contact.linked_user_id &&
+                onInviteToChat && (
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await onInviteToChat(contact);
+                        if (setCurrentView) {
+                          setCurrentView('chat');
+                        }
+                        onClose();
+                      } catch (err) {
+                        // Error is already handled by onInviteToChat
+                        console.error('Failed to invite contact to chat:', err);
+                      }
+                    }}
+                    variant="secondary"
+                    size="small"
+                    className="text-xs sm:text-sm flex items-center gap-1.5"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      />
+                    </svg>
+                    Invite
+                  </Button>
+                )}
               <Button
                 type="submit"
                 disabled={isSaving || !formData.contact_name.trim() || !formData.relationship}

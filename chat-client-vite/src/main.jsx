@@ -7,8 +7,8 @@ import { initAnalytics } from './utils/analytics.js';
 import { setupGlobalErrorHandler } from './utils/errorHandler.jsx';
 import { trackPagePerformance } from './utils/analyticsEnhancements.js';
 import { runMigrations } from './utils/storageMigration.js';
-import { registerAllModalHooks } from './hooks/modalHooks.registration.js';
-import { getRegisteredModals } from './hooks/modalRegistry.js';
+import { registerAllModalHooks } from './hooks/ui/modalHooks.registration.js';
+import { getRegisteredModals } from './hooks/ui/modalRegistry.js';
 
 // ============================================================================
 // COMPOSITION ROOT - Application Bootstrap

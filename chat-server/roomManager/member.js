@@ -7,7 +7,7 @@
  * - Proper Error Handling: Neo4j sync is awaited and errors are logged
  */
 const { PostgresRoomRepository } = require('../src/repositories/postgres/PostgresRoomRepository');
-const neo4jClient = require('../src/utils/neo4jClient');
+const neo4jClient = require('../src/infrastructure/database/neo4jClient');
 
 // Repository instance - encapsulates all database access
 const roomRepo = new PostgresRoomRepository();

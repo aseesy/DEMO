@@ -81,6 +81,7 @@ export function GlobalModals({
           editingTask={editingTask}
           onClose={onCloseProfileTask}
           onNavigateToProfile={onNavigateToProfile}
+          isOpen={showProfileTaskModal}
         />
       )}
 

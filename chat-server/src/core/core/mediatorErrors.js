@@ -5,8 +5,8 @@
  * Separates error classification from business logic.
  */
 
-const { RetryableError } = require('../../utils/errors');
-const { defaultLogger } = require('../../utils/logger');
+const { RetryableError } = require('../../infrastructure/errors/errors');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
 
 /**
  * Error categories for AI mediation

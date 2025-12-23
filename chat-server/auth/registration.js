@@ -4,7 +4,7 @@
 const dbSafe = require('../dbSafe');
 const invitationManager = require('../libs/invitation-manager');
 const notificationManager = require('../libs/notification-manager');
-const neo4jClient = require('../src/utils/neo4jClient');
+const neo4jClient = require('../src/infrastructure/database/neo4jClient');
 const {
   hashPassword,
   createRegistrationError,
@@ -38,7 +38,7 @@ async function createUserWithEmail(
   if (!username) throw createRegistrationError(RegistrationError.USERNAME_FAILED);
 
   const hashedPassword = password ? await hashPassword(password) : null;
-  
+
   // Try to create user, retry once with new username if there's a race condition
   try {
     const user = await createUser(

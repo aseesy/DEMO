@@ -9,9 +9,10 @@
  */
 
 import React, { useRef, useCallback } from 'react';
-import { useProfile } from '../hooks/useProfile.js';
-import { useGooglePlaces } from '../hooks/useGooglePlaces.js';
-import { useImageUpload } from '../hooks/useImageUpload.js';
+import { createPortal } from 'react-dom';
+import { useProfile } from '../features/profile';
+import { useGooglePlaces } from '../hooks/integrations/useGooglePlaces.js';
+import { useImageUpload } from '../hooks/files/useImageUpload.js';
 import { Button } from './ui';
 import { PROFILE_TABS } from '../config/profileConfig.js';
 import {
@@ -87,7 +88,7 @@ export function ProfilePanel({ username }) {
 
   return (
     <div className="p-4 sm:p-6">
-      {showSuccessToast && <SuccessToast />}
+      {showSuccessToast && typeof document !== 'undefined' && createPortal(<SuccessToast />, document.body)}
       {error && <ErrorBanner error={error} />}
 
       <ProfileHeader
@@ -147,22 +148,29 @@ function LoadingState() {
 
 function SuccessToast() {
   return (
-    <div className="fixed top-4 right-4 left-4 sm:left-auto sm:w-80 bg-white border border-teal-medium rounded-lg shadow-lg p-3 z-50">
-      <div className="flex items-center gap-2">
-        <svg
-          className="w-5 h-5 text-teal-medium"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-        <span className="text-sm font-medium text-teal-dark">Profile saved!</span>
+    <div
+      className="fixed top-4 right-4 left-4 sm:left-auto sm:w-80 bg-white border-2 border-teal-medium rounded-lg shadow-xl p-4 animate-slide-in-right"
+      style={{ zIndex: 9999 }}
+      role="alert"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0 w-6 h-6 bg-teal-lightest rounded-full flex items-center justify-center">
+          <svg
+            className="w-4 h-4 text-teal-medium"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={3}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+        <span className="text-sm font-semibold text-teal-dark">Profile saved successfully!</span>
       </div>
     </div>
   );

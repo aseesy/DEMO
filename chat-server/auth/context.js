@@ -30,20 +30,13 @@ async function setupUserContextAndRoom(userId, username, context) {
       await dbSafe.safeUpdate('users', userUpdates, { id: userId });
     }
 
-    // Create private room for user
-    const room = await roomManager.createPrivateRoom(userId, username);
+    // Users should not have their own room - only shared rooms with co-parents
+    // Personal rooms are no longer created during registration
 
-    return { context: userContextData, room };
+    return { context: userContextData, room: null };
   } catch (error) {
     console.error('Error in setupUserContextAndRoom:', error);
-    // Still try to create room even if context fails
-    try {
-      const room = await roomManager.createPrivateRoom(userId, username);
-      return { context: null, room };
-    } catch (roomError) {
-      console.error('Error creating room:', roomError);
-      return { context: null, room: null };
-    }
+    return { context: null, room: null };
   }
 }
 
