@@ -59,12 +59,15 @@ export function useSessionVerification({ setUsername, setIsAuthenticated }) {
         if (response.ok) {
           const data = await response.json();
           if (data.authenticated && data.user) {
-            setUsername(data.user.username);
+            // Destructure at boundary - don't reach inside data.user multiple times
+            const { username: userName } = data.user;
+
+            setUsername(userName);
             setIsAuthenticated(true);
-            authStorage.setUsername(data.user.username);
+            authStorage.setUsername(userName);
             authStorage.setAuthenticated(true);
 
-            setUserID(data.user.username);
+            setUserID(userName);
             const userProperties = calculateUserProperties(data.user, false);
             setUserProperties(userProperties);
           } else {
