@@ -28,6 +28,10 @@ router.setHelpers = function (helpers) {
 // GET /api/contacts - Get all contacts for authenticated user
 router.get('/', authenticate, contactsController.getContacts);
 
+// GET /api/contacts/diagnose/:contactName - Diagnose why a contact might not be appearing
+// MUST come before /:contactId routes to avoid route conflicts
+router.get('/diagnose/:contactName', authenticate, contactsController.diagnoseContact);
+
 // POST /api/contacts - Create new contact for authenticated user
 router.post('/', authenticate, contactsController.createContact);
 

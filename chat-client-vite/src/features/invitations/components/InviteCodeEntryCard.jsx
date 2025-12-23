@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { SettingsCard, SettingsIcons } from './SettingsCard.jsx';
+import { SettingsCard, SettingsIcons } from '../../../components/ui/SettingsCard.jsx';
 
 /**
  * InviteCodeEntryCard component

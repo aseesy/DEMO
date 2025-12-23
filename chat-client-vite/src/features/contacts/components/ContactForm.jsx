@@ -3,7 +3,7 @@ import { useGooglePlaces } from '../../../hooks/integrations/useGooglePlaces.js'
 import { useGooglePlacesSchool } from '../../../hooks/integrations/useGooglePlacesSchool.js';
 import { useActivities } from '../model/useActivities.js';
 import { ActivityCard } from '../../../components/ActivityCard.jsx';
-import { AddActivityModal } from '../../../components/modals/AddActivityModal.jsx';
+import { AddActivityModal } from './AddActivityModal.jsx';
 import { Button } from '../../../components/ui';
 import { isPartnerRelationship } from '../../../utils/relationshipMapping.js';
 

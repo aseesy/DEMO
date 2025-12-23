@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from '../ui';
+import { Button } from '../../../components/ui';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 

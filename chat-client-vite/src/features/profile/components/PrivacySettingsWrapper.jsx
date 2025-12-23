@@ -6,10 +6,10 @@
  */
 
 import React from 'react';
-import PrivacySettings from '../profile/PrivacySettings.jsx';
-import { SettingsCard, SettingsIcons } from './SettingsCard.jsx';
-import { useProfile } from '../../features/profile';
-import { apiGet } from '../../apiClient.js';
+import PrivacySettings from './PrivacySettings.jsx';
+import { SettingsCard, SettingsIcons } from '../../../components/ui/SettingsCard.jsx';
+import { useProfile } from '../model/useProfile.js';
+import { apiGet } from '../../../apiClient.js';
 
 /**
  * PrivacySettingsWrapper component

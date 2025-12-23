@@ -60,12 +60,7 @@ export function NotificationIcon({ type, className = '' }) {
         stroke="currentColor"
         viewBox="0 0 24 24"
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d={config.path}
-        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={config.path} />
       </svg>
     </div>
   );

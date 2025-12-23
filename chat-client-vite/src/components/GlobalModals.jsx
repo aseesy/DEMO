@@ -1,7 +1,7 @@
 import React from 'react';
 import { TaskFormModal } from '../features/tasks';
-import { WelcomeModal } from './modals/WelcomeModal.jsx';
-import { ProfileTaskModal } from './modals/ProfileTaskModal.jsx';
+import { WelcomeModal } from '../features/dashboard/components/WelcomeModal.jsx';
+import { ProfileTaskModal } from '../features/tasks/components/ProfileTaskModal.jsx';
 import { ContactSuggestionModal } from '../features/contacts';
 import { InviteTaskModal } from '../features/invitations';
 

@@ -45,7 +45,7 @@ class TaskService extends BaseService {
       orderBy: 'created_at',
       orderDirection: 'DESC',
     };
-    
+
     // Build conditions for repository find method
     const conditions = { user_id: userId };
     if (status && status !== 'all') {
@@ -78,16 +78,33 @@ class TaskService extends BaseService {
     // This prevents duplicate "Welcome to LiaiZen" tasks from showing
     const taskMap = new Map();
     for (const task of tasks) {
-      const existing = taskMap.get(task.title);
+      const taskTitle = (task.title || '').trim();
+      if (!taskTitle) continue; // Skip tasks without titles
+
+      const existing = taskMap.get(taskTitle);
       if (!existing) {
-        taskMap.set(task.title, task);
+        taskMap.set(taskTitle, task);
       } else {
-        // If we have a duplicate, prefer completed over open, or most recent if same status
-        const preferExisting =
-          existing.status === 'completed' ||
-          (existing.status === task.status && new Date(existing.created_at) > new Date(task.created_at));
-        if (!preferExisting) {
-          taskMap.set(task.title, task);
+        // If we have a duplicate, prefer:
+        // 1. Completed over open
+        // 2. Most recent if same status
+        const existingIsCompleted = existing.status === 'completed';
+        const taskIsCompleted = task.status === 'completed';
+        const existingDate = new Date(existing.created_at || 0);
+        const taskDate = new Date(task.created_at || 0);
+
+        let keepExisting = false;
+        if (existingIsCompleted && !taskIsCompleted) {
+          keepExisting = true; // Prefer completed
+        } else if (!existingIsCompleted && taskIsCompleted) {
+          keepExisting = false; // Prefer completed (the new one)
+        } else {
+          // Same status - prefer most recent
+          keepExisting = existingDate >= taskDate;
+        }
+
+        if (!keepExisting) {
+          taskMap.set(taskTitle, task);
         }
       }
     }
@@ -188,9 +205,11 @@ class TaskService extends BaseService {
       updateFieldsObj.assigned_to = updateData.assigned_to || null;
     }
     if (updateData.related_people !== undefined) {
-      updateFieldsObj.related_people = updateData.related_people ? JSON.stringify(updateData.related_people) : null;
+      updateFieldsObj.related_people = updateData.related_people
+        ? JSON.stringify(updateData.related_people)
+        : null;
     }
-    
+
     // Always update updated_at
     updateFieldsObj.updated_at = new Date().toISOString();
 

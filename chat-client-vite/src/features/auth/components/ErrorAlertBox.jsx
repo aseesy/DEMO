@@ -7,7 +7,7 @@ import {
   getErrorAction,
   getErrorActionLabel,
   ErrorActionType,
-} from '../../config/authHelpers.js';
+} from '../../../config/authHelpers.js';
 
 /**
  * @param {Object} props
@@ -16,12 +16,7 @@ import {
  * @param {Function} props.onCreateAccount - Called when user clicks "Create account"
  * @param {Function} props.onGoogleSignIn - Called when user clicks "Sign in with Google"
  */
-export function ErrorAlertBox({
-  error,
-  onSignIn,
-  onCreateAccount,
-  onGoogleSignIn,
-}) {
+export function ErrorAlertBox({ error, onSignIn, onCreateAccount, onGoogleSignIn }) {
   if (!error) {
     return null;
   }

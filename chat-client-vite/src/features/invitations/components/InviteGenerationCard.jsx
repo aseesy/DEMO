@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { SettingsCard, SettingsIcons } from './SettingsCard.jsx';
+import { SettingsCard, SettingsIcons } from '../../../components/ui/SettingsCard.jsx';
 
 /**
  * InviteGenerationCard component
@@ -136,9 +136,7 @@ function GenerateButton({ isLoading, onClick }) {
  * Error message display
  */
 function ErrorMessage({ message }) {
-  return (
-    <div className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{message}</div>
-  );
+  return <div className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{message}</div>;
 }
 
 export default InviteGenerationCard;

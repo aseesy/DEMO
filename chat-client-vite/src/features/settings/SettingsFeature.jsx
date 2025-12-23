@@ -6,13 +6,11 @@
  */
 
 import React from 'react';
-import { PWAInstallButton } from '../components/PWAInstallButton.jsx';
-import {
-  NotificationSettingsCard,
-  InviteGenerationCard,
-  InviteCodeEntryCard,
-  PrivacySettingsWrapper,
-} from '../components/settings';
+import { PWAInstallButton } from '../../components/PWAInstallButton.jsx';
+import { NotificationSettingsCard } from '../notifications/components/NotificationSettingsCard.jsx';
+import { InviteGenerationCard } from '../invitations/components/InviteGenerationCard.jsx';
+import { InviteCodeEntryCard } from '../invitations/components/InviteCodeEntryCard.jsx';
+import { PrivacySettingsWrapper } from '../profile/components/PrivacySettingsWrapper.jsx';
 
 /**
  * SettingsView component

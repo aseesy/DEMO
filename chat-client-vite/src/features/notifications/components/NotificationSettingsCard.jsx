@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { SettingsCard, SettingsIcons } from './SettingsCard.jsx';
+import { SettingsCard, SettingsIcons } from '../../../components/ui/SettingsCard.jsx';
 
 /**
  * NotificationSettingsCard component
@@ -15,11 +15,7 @@ import { SettingsCard, SettingsIcons } from './SettingsCard.jsx';
  * @param {Object} props.notificationPrefs - User notification preferences
  * @param {Function} props.onPrefsChange - Callback to update preferences
  */
-export function NotificationSettingsCard({
-  notifications,
-  notificationPrefs,
-  onPrefsChange,
-}) {
+export function NotificationSettingsCard({ notifications, notificationPrefs, onPrefsChange }) {
   const handleTestNotification = () => {
     notifications.showNotification({
       username: 'Co-parent',
@@ -133,8 +129,8 @@ function NotificationsPrompt({ onRequestPermission }) {
       <div className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-lg">
         <p className="font-medium mb-1">Get notified of new messages</p>
         <p className="text-xs text-gray-600">
-          Enable notifications to receive alerts when your co-parent sends a message, even
-          when the app is closed.
+          Enable notifications to receive alerts when your co-parent sends a message, even when the
+          app is closed.
         </p>
       </div>
       <button

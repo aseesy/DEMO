@@ -5,9 +5,9 @@
  */
 
 import React from 'react';
-import { Button } from '../ui';
+import { Button } from '../../../components/ui';
 import { NotificationIcon } from './NotificationIcon.jsx';
-import { formatRelativeTime } from '../../utils/dateHelpers.js';
+import { formatRelativeTime } from '../../../utils/dateHelpers.js';
 
 /**
  * NotificationItem component
@@ -37,17 +37,17 @@ export function NotificationItem({
     }
   };
 
-  const handleAccept = (e) => {
+  const handleAccept = e => {
     e.stopPropagation();
     onAccept?.(notification);
   };
 
-  const handleDecline = (e) => {
+  const handleDecline = e => {
     e.stopPropagation();
     onDecline?.(notification);
   };
 
-  const handleDismiss = (e) => {
+  const handleDismiss = e => {
     e.stopPropagation();
     onDismiss?.(notification.id);
   };
@@ -66,16 +66,12 @@ export function NotificationItem({
         <NotificationIcon type={notification.type} />
 
         <div className="flex-1 min-w-0">
-          <p
-            className={`text-sm ${!notification.read ? 'font-semibold' : ''} text-gray-900`}
-          >
+          <p className={`text-sm ${!notification.read ? 'font-semibold' : ''} text-gray-900`}>
             {notification.title}
           </p>
 
           {notification.message && (
-            <p className="text-sm text-gray-600 mt-0.5 line-clamp-2">
-              {notification.message}
-            </p>
+            <p className="text-sm text-gray-600 mt-0.5 line-clamp-2">{notification.message}</p>
           )}
 
           <p className="text-xs text-gray-400 mt-1">
@@ -127,12 +123,7 @@ export function NotificationItem({
             className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors self-start"
             aria-label="Dismiss notification"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

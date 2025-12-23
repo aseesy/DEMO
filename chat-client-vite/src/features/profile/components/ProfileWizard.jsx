@@ -1,5 +1,5 @@
 import React from 'react';
-import { useProfile } from '../../features/profile';
+import { useProfile } from '../model/useProfile.js';
 import PersonalInfoForm from './PersonalInfoForm';
 import BackgroundForm from './BackgroundForm';
 import MotivationsForm from './MotivationsForm';

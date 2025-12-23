@@ -19,7 +19,7 @@ import {
   PersonalInfoSection,
   MotivationsSection,
   BackgroundSection,
-} from './profile';
+} from '../features/profile/components';
 
 export function ProfilePanel({ username }) {
   const {
@@ -37,9 +37,12 @@ export function ProfilePanel({ username }) {
   const addressInputRef = useRef(null);
 
   // Image upload handling
-  const handleImageSelected = useCallback((dataURL) => {
-    setProfileData(prev => ({ ...prev, profile_picture: dataURL }));
-  }, [setProfileData]);
+  const handleImageSelected = useCallback(
+    dataURL => {
+      setProfileData(prev => ({ ...prev, profile_picture: dataURL }));
+    },
+    [setProfileData]
+  );
 
   const { fileInputRef, openFilePicker, inputProps } = useImageUpload({
     onImageSelected: handleImageSelected,
@@ -78,7 +81,7 @@ export function ProfilePanel({ username }) {
     updateField(name, value);
   };
 
-  const handleValuesChange = (newValues) => {
+  const handleValuesChange = newValues => {
     updateField('motivation_values', newValues);
   };
 
@@ -88,7 +91,9 @@ export function ProfilePanel({ username }) {
 
   return (
     <div className="p-4 sm:p-6">
-      {showSuccessToast && typeof document !== 'undefined' && createPortal(<SuccessToast />, document.body)}
+      {showSuccessToast &&
+        typeof document !== 'undefined' &&
+        createPortal(<SuccessToast />, document.body)}
       {error && <ErrorBanner error={error} />}
 
       <ProfileHeader
@@ -100,11 +105,7 @@ export function ProfilePanel({ username }) {
 
       <input {...inputProps} />
 
-      <ProfileTabs
-        tabs={PROFILE_TABS}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
+      <ProfileTabs tabs={PROFILE_TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="space-y-4">
         {activeTab === 'personal' && (
@@ -126,10 +127,7 @@ export function ProfilePanel({ username }) {
         )}
 
         {activeTab === 'background' && (
-          <BackgroundSection
-            profileData={profileData}
-            onFieldChange={handleFieldChange}
-          />
+          <BackgroundSection profileData={profileData} onFieldChange={handleFieldChange} />
         )}
       </div>
     </div>
@@ -162,12 +160,7 @@ function SuccessToast() {
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={3}
-              d="M5 13l4 4L19 7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
         </div>
         <span className="text-sm font-semibold text-teal-dark">Profile saved successfully!</span>
@@ -185,9 +178,7 @@ function ErrorBanner({ error }) {
 }
 
 function ProfileHeader({ profileData, onAvatarClick, onSave, isSaving }) {
-  const initial = (profileData.first_name || profileData.username || '?')
-    .charAt(0)
-    .toUpperCase();
+  const initial = (profileData.first_name || profileData.username || '?').charAt(0).toUpperCase();
 
   return (
     <div className="flex items-center gap-4 mb-6">
@@ -205,12 +196,7 @@ function ProfileHeader({ profileData, onAvatarClick, onSave, isSaving }) {
           <span className="text-white text-xl font-medium">{initial}</span>
         )}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <svg
-            className="w-4 h-4 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { parseMultiSelectValues } from '../../config/profileConfig.js';
+import { parseMultiSelectValues } from '../../../config/profileConfig.js';
 
 /**
  * MultiSelectButtons component
@@ -16,16 +16,10 @@ import { parseMultiSelectValues } from '../../config/profileConfig.js';
  * @param {Function} props.onChange - Called with (value, isNowSelected)
  * @param {string} props.className - Additional CSS classes
  */
-export function MultiSelectButtons({
-  label,
-  options = [],
-  value = '',
-  onChange,
-  className = '',
-}) {
+export function MultiSelectButtons({ label, options = [], value = '', onChange, className = '' }) {
   const selectedValues = parseMultiSelectValues(value);
 
-  const handleToggle = (optionValue) => {
+  const handleToggle = optionValue => {
     const isCurrentlySelected = selectedValues.includes(optionValue);
     const newValues = isCurrentlySelected
       ? selectedValues.filter(v => v !== optionValue)
@@ -36,11 +30,7 @@ export function MultiSelectButtons({
 
   return (
     <div className={`space-y-3 ${className}`}>
-      {label && (
-        <label className="block text-sm font-medium text-teal-medium mb-2">
-          {label}
-        </label>
-      )}
+      {label && <label className="block text-sm font-medium text-teal-medium mb-2">{label}</label>}
       <div className="flex flex-wrap gap-2">
         {options.map(option => {
           const isSelected = selectedValues.includes(option.value);

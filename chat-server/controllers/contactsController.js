@@ -460,6 +460,114 @@ async function inviteContactToChat(req, res) {
   }
 }
 
+/**
+ * GET /api/contacts/diagnose/:contactName
+ *
+ * Diagnostic endpoint to check if a contact exists and why it might not be appearing.
+ * Useful for debugging missing contacts in production.
+ *
+ * @param {Object} req - Express request
+ * @param {Object} req.user - Authenticated user from JWT
+ * @param {Object} req.params - Route parameters
+ * @param {string} req.params.contactName - Contact name to diagnose
+ * @param {Object} res - Express response
+ */
+async function diagnoseContact(req, res) {
+  try {
+    const userId = req.user.id;
+    const contactName = req.params.contactName;
+
+    if (!contactName) {
+      return res.status(400).json({ error: 'Contact name is required' });
+    }
+
+    // Get all contacts for the user
+    const allContacts = await contactsService.getContactsByUserId(userId);
+
+    // Find matching contacts
+    const matchingContacts = allContacts.filter(
+      c => c.contact_name && c.contact_name.toLowerCase().includes(contactName.toLowerCase())
+    );
+
+    // Helper function to transform relationship (matches frontend logic)
+    const toDisplayRelationship = storedValue => {
+      if (!storedValue) return '';
+      const lowerValue = storedValue.toLowerCase();
+      const STORAGE_TO_DISPLAY = {
+        'co-parent': 'My Co-Parent',
+        'my child': 'My Child',
+        'my partner': 'My Partner',
+        'my family': 'My Family',
+        'my friend': 'My Friend',
+        other: 'Other',
+      };
+      const STORAGE_VARIATIONS = {
+        'co-parent': 'My Co-Parent',
+        coparent: 'My Co-Parent',
+        'my co-parent': 'My Co-Parent',
+        'my child': 'My Child',
+        child: 'My Child',
+        'my partner': 'My Partner',
+        partner: 'My Partner',
+        'my family': 'My Family',
+        family: 'My Family',
+        'my friend': 'My Friend',
+        friend: 'My Friend',
+        other: 'Other',
+      };
+      return STORAGE_TO_DISPLAY[lowerValue] || STORAGE_VARIATIONS[lowerValue] || storedValue;
+    };
+
+    // Format results
+    const results = {
+      contactName,
+      totalContacts: allContacts.length,
+      matchingContacts: matchingContacts.length,
+      contacts: matchingContacts.map(contact => ({
+        id: contact.id,
+        name: contact.contact_name,
+        email: contact.contact_email || null,
+        relationship: {
+          raw: contact.relationship || null,
+          transformed: contact.relationship ? toDisplayRelationship(contact.relationship) : null,
+        },
+        created_at: contact.created_at,
+        updated_at: contact.updated_at,
+        issues: [],
+      })),
+      allChildContacts: allContacts
+        .filter(c => {
+          const rel = (c.relationship || '').toLowerCase();
+          return rel === 'my child' || rel === 'child' || rel.includes('child');
+        })
+        .map(c => ({
+          name: c.contact_name,
+          relationship: c.relationship,
+          transformed: toDisplayRelationship(c.relationship),
+        })),
+    };
+
+    // Identify potential issues
+    matchingContacts.forEach((contact, index) => {
+      if (!contact.contact_name) {
+        results.contacts[index].issues.push('Missing contact_name');
+      }
+      if (contact.contact_email === null && contact.relationship === 'co-parent') {
+        results.contacts[index].issues.push(
+          'Co-parent with NULL email (might violate unique constraint)'
+        );
+      }
+      if (!contact.relationship) {
+        results.contacts[index].issues.push('Missing relationship value');
+      }
+    });
+
+    res.json(results);
+  } catch (error) {
+    handleError(res, error, 'Error diagnosing contact');
+  }
+}
+
 module.exports = {
   setHelpers,
   // CRUD
@@ -478,4 +586,6 @@ module.exports = {
   enrichContact,
   // Chat invitation
   inviteContactToChat,
+  // Diagnostics
+  diagnoseContact,
 };

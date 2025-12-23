@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Button } from '../ui';
+import { Modal, Button } from '../../../components/ui';
 
 export function WelcomeModal({ editingTask, onClose, onComplete }) {
   if (!editingTask) return null;

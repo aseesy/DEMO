@@ -21,7 +21,7 @@ import {
   GoogleSignInButton,
   ModeToggleFooter,
   InviteLinkFooter,
-} from './auth';
+} from '../features/auth/components';
 
 /**
  * LoginSignup component

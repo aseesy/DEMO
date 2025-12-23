@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { Button, Input } from '../../../../components/ui';
-import { GoogleSignInButton } from '../../../../components/auth';
+import { GoogleSignInButton } from '../../../auth/components';
 import { registry as errorHandlerRegistry } from '../../../../utils/errorHandlers/ErrorHandlerRegistry.js';
 
 /**

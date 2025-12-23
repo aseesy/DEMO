@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Button } from '../ui';
+import { Modal, Button } from '../../../components/ui';
 
 export function FlaggingModal({ flaggingMessage, flagReason, setFlagReason, onFlag, onClose }) {
   if (!flaggingMessage) return null;

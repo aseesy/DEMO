@@ -14,7 +14,9 @@ import { ProfilePanel } from './components/ProfilePanel.jsx';
 import { Navigation } from './components/Navigation.jsx';
 import { LandingPage } from './components/LandingPage.jsx';
 import { GlobalModals } from './components/GlobalModals.jsx';
-import { SettingsView, DashboardView, ChatView } from './views';
+import { SettingsView } from './features/settings';
+import { DashboardView } from './features/dashboard';
+import { ChatPage as ChatView } from './features/chat';
 
 // Adapters - abstract third-party dependencies
 import { useAppNavigation, NavigationPaths } from './adapters/navigation';

@@ -23,7 +23,7 @@ import {
   SUBSTANCE_HISTORY_OPTIONS,
   RECOVERY_OPTIONS,
   ADDITIONAL_CONTEXT_CONFIG,
-} from '../../config/profileConfig.js';
+} from '../../../config/profileConfig.js';
 
 /**
  * Personal Information Section
@@ -147,9 +147,9 @@ export function MotivationsSection({ profileData, onFieldChange, onValuesChange 
       />
 
       <FormInfoBox title="Why we ask">
-        Understanding your values and motivations helps LiaiZen provide more personalized
-        support. This information is <strong>completely private</strong> and never shared
-        with your co-parent.
+        Understanding your values and motivations helps LiaiZen provide more personalized support.
+        This information is <strong>completely private</strong> and never shared with your
+        co-parent.
       </FormInfoBox>
     </>
   );
@@ -159,8 +159,7 @@ export function MotivationsSection({ profileData, onFieldChange, onValuesChange 
  * Background Section
  */
 export function BackgroundSection({ profileData, onFieldChange }) {
-  const showRecoveryDuration =
-    profileData.health_in_recovery === 'yes';
+  const showRecoveryDuration = profileData.health_in_recovery === 'yes';
 
   const showRecoveryQuestion =
     profileData.health_substance_history === 'past' ||
