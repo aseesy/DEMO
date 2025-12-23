@@ -12,8 +12,9 @@
  */
 
 import React, { useEffect } from 'react';
-import { useNotificationData, useNotificationActions } from '../features/notifications';
-import { NotificationItem } from './notifications';
+import { useNotificationData } from '../model/useNotificationData.js';
+import { useNotificationActions } from '../model/useNotificationActions.js';
+import { NotificationItem } from './NotificationItem.jsx';
 
 export function NotificationsPanel({ isOpen, onClose, onInvitationAccepted }) {
   const {

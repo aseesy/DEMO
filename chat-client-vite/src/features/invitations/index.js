@@ -3,6 +3,9 @@
  *
  * Package-by-feature: Everything related to Invitations lives here.
  * Delete this folder to remove the Invitations feature entirely.
+ *
+ * Usage:
+ *   import { useInvitations, AcceptInvitationPage, InviteCoParentPage } from '@features/invitations';
  */
 
 // Pages (The View)

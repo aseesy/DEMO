@@ -3,6 +3,9 @@
  *
  * Package-by-feature: Everything related to Chat lives here.
  * Delete this folder to remove the Chat feature entirely.
+ *
+ * Usage:
+ *   import { ChatPage, useChatSocket, ChatHeader } from '@features/chat';
  */
 
 // Page (The View)
@@ -19,6 +22,9 @@ export { useSendMessage } from './model/useSendMessage.js';
 export { useMessageHandlers } from './model/useMessageHandlers.js';
 export { useNewMessageHandler } from './model/useNewMessageHandler.js';
 export { useScrollManager } from './model/useScrollManager.js';
+export { useThreads } from './model/useThreads.js';
+export { useMessageFlaggingModal } from './model/useMessageFlaggingModal.js';
+export { socketEventHandlers } from './model/socketEventHandlers.js';
 
 // Components (The UI Details)
 export { ThreadsSidebar } from './components/ThreadsSidebar.jsx';
@@ -29,3 +35,4 @@ export { MessagesContainer } from './components/MessagesContainer.jsx';
 export { ChatHeader } from './components/ChatHeader.jsx';
 export { MessageInput } from './components/MessageInput.jsx';
 export { CoachingSection } from './components/CoachingSection.jsx';
+export { default as MediationBanner } from './components/MediationBanner.jsx';

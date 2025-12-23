@@ -1,6 +1,7 @@
 // vite.config.js – split vendor libraries into a separate chunk for better caching
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 // List of large third‑party packages you want to separate
 const VENDOR_LIBS = [
@@ -13,6 +14,17 @@ const VENDOR_LIBS = [
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@features': path.resolve(__dirname, './src/features'),
+      '@components': path.resolve(__dirname, './src/components'),
+      '@hooks': path.resolve(__dirname, './src/hooks'),
+      '@context': path.resolve(__dirname, './src/context'),
+      '@config': path.resolve(__dirname, './src/config'),
+      '@utils': path.resolve(__dirname, './src/utils'),
+      '@adapters': path.resolve(__dirname, './src/adapters'),
+    },
+  },
   build: {
     // Optional: raise the warning limit if you just want to silence it
     // chunkSizeWarningLimit: 1000,
