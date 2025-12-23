@@ -28,10 +28,11 @@ export function setupSocketEventHandlers(socket, handlers) {
     setThreads,
     setThreadMessages,
     setIsLoadingOlder,
-    setSearchResults,
-    setSearchTotal,
-    setIsSearching,
-    setHighlightedMessageId,
+      // Search handlers - optional (use useSearchMessages hook instead)
+      setSearchResults,
+      setSearchTotal,
+      setIsSearching,
+      setHighlightedMessageId,
     setDraftCoaching,
     setUnreadCount,
     setRoomId,
@@ -201,7 +202,7 @@ export function setupSocketEventHandlers(socket, handlers) {
     console.error('Socket error:', message);
     setError(message);
     setIsLoadingOlder(false);
-    setIsSearching(false);
+    if (setIsSearching) setIsSearching(false);
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = null;
@@ -231,9 +232,12 @@ export function setupSocketEventHandlers(socket, handlers) {
   });
 
   socket.on('search_results', ({ messages: results, total }) => {
-    setIsSearching(false);
-    setSearchResults(results || []);
-    setSearchTotal(total || 0);
+    // Only handle if search handlers are provided (from useSearchMessages hook)
+    if (setIsSearching && setSearchResults && setSearchTotal) {
+      setIsSearching(false);
+      setSearchResults(results || []);
+      setSearchTotal(total || 0);
+    }
   });
 
   socket.on('jump_to_message_result', ({ messages: contextMsgs, targetMessageId }) => {

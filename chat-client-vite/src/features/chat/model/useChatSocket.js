@@ -57,11 +57,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   const [hasMoreMessages, setHasMoreMessages] = React.useState(true);
   const [isInitialLoad, setIsInitialLoad] = React.useState(true);
 
-  // Search state
-  const [searchResults, setSearchResults] = React.useState([]);
-  const [searchTotal, setSearchTotal] = React.useState(0);
-  const [isSearching, setIsSearching] = React.useState(false);
-  const [highlightedMessageId, setHighlightedMessageId] = React.useState(null);
+  // Search state - removed (use useSearchMessages hook instead)
 
   // Draft coaching
   const [draftCoaching, setDraftCoaching] = React.useState(null);
@@ -138,10 +134,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
       setThreads,
       setThreadMessages,
       setIsLoadingOlder,
-      setSearchResults,
-      setSearchTotal,
-      setIsSearching,
-      setHighlightedMessageId,
+      // Search handlers - removed (use useSearchMessages hook instead)
       setDraftCoaching,
       setUnreadCount,
       setRoomId, // Add setRoomId so socket handler can update it
@@ -226,24 +219,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
     });
   }, [messages, isLoadingOlder, hasMoreMessages]);
 
-  // Search
-  const searchMessages = React.useCallback(query => {
-    if (!socketRef.current?.connected) {
-      setError('Not connected to chat server.');
-      return;
-    }
-    if (!query || query.trim().length < 2) {
-      setSearchResults([]);
-      setSearchTotal(0);
-      return;
-    }
-    setIsSearching(true);
-    socketRef.current.emit('search_messages', { query: query.trim(), limit: 50, offset: 0 });
-  }, []);
-
-  const jumpToMessage = React.useCallback(messageId => {
-    if (socketRef.current?.connected) socketRef.current.emit('jump_to_message', { messageId });
-  }, []);
+  // Search - removed (use useSearchMessages hook instead)
 
   return {
     // Connection
@@ -285,13 +261,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
     isInitialLoad,
     loadOlderMessages,
 
-    // Search
-    searchResults,
-    searchTotal,
-    isSearching,
-    highlightedMessageId,
-    searchMessages,
-    jumpToMessage,
+    // Search - removed (use useSearchMessages hook instead)
 
     // Draft coaching
     draftCoaching,

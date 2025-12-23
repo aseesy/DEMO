@@ -1,5 +1,6 @@
 import React from 'react';
 import { useChatSocket } from '../model/useChatSocket.js';
+import { useSearchMessages } from '../model/useSearchMessages.js';
 
 /**
  * ChatContext - Provides socket connection and message state app-wide
@@ -38,12 +39,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     hasMoreMessages,
     isInitialLoad,
     loadOlderMessages,
-    searchResults,
-    searchTotal,
-    isSearching,
-    highlightedMessageId,
-    searchMessages: socketSearchMessages,
-    jumpToMessage,
+    // Search removed from useChatSocket - use useSearchMessages hook instead
     draftCoaching,
     setDraftCoaching,
     unreadCount,
@@ -58,9 +54,41 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   // Thread selection
   const [selectedThreadId, setSelectedThreadId] = React.useState(null);
 
-  // Search state
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [searchMode, setSearchMode] = React.useState(false);
+  // Search - use useSearchMessages hook instead of managing state here
+  const searchHook = useSearchMessages({
+    socketRef,
+    username,
+    setError,
+  });
+
+  // Set up socket event handlers for search (after socket is available)
+  React.useEffect(() => {
+    if (!socketRef.current) return;
+
+    const socket = socketRef.current;
+
+    // Handle search results
+    const handleSearchResults = ({ messages: results, total }) => {
+      searchHook.handleSearchResults({ messages: results, total });
+    };
+
+    // Handle jump to message result
+    const handleJumpToMessage = ({ messages: contextMsgs, targetMessageId }) => {
+      searchHook.handleJumpToMessageResult({
+        messages: contextMsgs,
+        targetMessageId,
+        setMessages,
+      });
+    };
+
+    socket.on('search_results', handleSearchResults);
+    socket.on('jump_to_message_result', handleJumpToMessage);
+
+    return () => {
+      socket.off('search_results', handleSearchResults);
+      socket.off('jump_to_message_result', handleJumpToMessage);
+    };
+  }, [socketRef, searchHook, setMessages]);
 
   // Refs for typing
   const typingTimeoutRef = React.useRef(null);
@@ -318,33 +346,11 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     [socketRef, setError]
   );
 
-  // Wrap socketSearchMessages to manage searchQuery state
-  const searchMessages = React.useCallback(
-    query => {
-      setSearchQuery(query);
-      socketSearchMessages(query);
-    },
-    [socketSearchMessages]
-  );
-
-  const toggleSearchMode = React.useCallback(() => {
-    setSearchMode(prev => {
-      if (prev) {
-        setSearchQuery('');
-        socketSearchMessages(''); // Clears results via socket hook
-      }
-      return !prev;
-    });
-  }, [socketSearchMessages]);
-
-  const exitSearchMode = React.useCallback(() => {
-    setSearchMode(false);
-    setSearchQuery('');
-    socketSearchMessages(''); // Clears results via socket hook
-    if (socketRef.current?.connected && username) {
-      socketRef.current.emit('join', { username });
-    }
-  }, [username, socketRef, socketSearchMessages]);
+  // Search functions - use from useSearchMessages hook
+  const searchMessages = searchHook.searchMessages;
+  const toggleSearchMode = searchHook.toggleSearchMode;
+  const exitSearchMode = searchHook.exitSearchMode;
+  const jumpToMessage = searchHook.jumpToMessage;
 
   const value = React.useMemo(
     () => ({
@@ -397,15 +403,15 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
 
       // Search
       searchMessages,
-      searchQuery,
-      searchResults,
-      searchTotal,
-      isSearching,
-      searchMode,
+      searchQuery: searchHook.searchQuery,
+      searchResults: searchHook.searchResults,
+      searchTotal: searchHook.searchTotal,
+      isSearching: searchHook.isSearching,
+      searchMode: searchHook.searchMode,
       toggleSearchMode,
       exitSearchMode,
       jumpToMessage,
-      highlightedMessageId,
+      highlightedMessageId: searchHook.highlightedMessageId,
 
       // UI state
       isInitialLoad,
@@ -441,15 +447,15 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       isLoadingOlder,
       hasMoreMessages,
       searchMessages,
-      searchQuery,
-      searchResults,
-      searchTotal,
-      isSearching,
-      searchMode,
+      searchQuery: searchHook.searchQuery,
+      searchResults: searchHook.searchResults,
+      searchTotal: searchHook.searchTotal,
+      isSearching: searchHook.isSearching,
+      searchMode: searchHook.searchMode,
       toggleSearchMode,
       exitSearchMode,
       jumpToMessage,
-      highlightedMessageId,
+      highlightedMessageId: searchHook.highlightedMessageId,
       isInitialLoad,
       unreadCount,
       hasMeanMessage,
