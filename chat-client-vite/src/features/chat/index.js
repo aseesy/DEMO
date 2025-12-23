@@ -24,7 +24,7 @@ export { useNewMessageHandler } from './model/useNewMessageHandler.js';
 export { useScrollManager } from './model/useScrollManager.js';
 export { useThreads } from './model/useThreads.js';
 export { useMessageFlaggingModal } from './model/useMessageFlaggingModal.js';
-export { socketEventHandlers } from './model/socketEventHandlers.js';
+export { setupSocketEventHandlers } from './model/socketEventHandlers.js';
 
 // Components (The UI Details)
 export { ThreadsSidebar } from './components/ThreadsSidebar.jsx';

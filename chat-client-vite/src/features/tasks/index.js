@@ -14,13 +14,7 @@ export { useTaskFormModal } from './model/useTaskFormModal.js';
 export { createTaskCollection } from './model/taskAbstraction.js';
 export { getDefaultTaskFormData } from './model/taskHelpers.js';
 export { filterTasksForDashboard, getTaskType } from './model/taskTypeDetection.js';
-export {
-  taskQueries,
-  taskMutations,
-  useCreateTask,
-  useUpdateTask,
-  useDeleteTask,
-} from './model/taskQueries.js';
+export { queryFetchTasks, commandUpdateTaskStatus, commandSaveTask } from './model/taskQueries.js';
 
 // Components (The UI Details)
 export { TaskCard } from './components/TaskCard.jsx';
