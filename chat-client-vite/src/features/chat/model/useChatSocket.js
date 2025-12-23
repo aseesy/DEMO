@@ -52,14 +52,13 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   // Message state management - extracted to useMessages hook
   const { messages, setMessages, pendingMessages, setPendingMessages, messageStatuses, setMessageStatuses } = useMessages();
 
+  // Create socketRef early so we can use it in useMessagePagination
+  const socketRef = React.useRef(null);
+  
   // Pagination state and operations - extracted to useMessagePagination hook
-  // Note: socketRef is created later, but we pass it when it's available
   const [isLoadingOlder, setIsLoadingOlder] = React.useState(false);
   const [hasMoreMessages, setHasMoreMessages] = React.useState(true);
   const [isInitialLoad, setIsInitialLoad] = React.useState(true);
-  
-  // Create socketRef early so we can use it in useMessagePagination
-  const socketRef = React.useRef(null);
   
   const { loadOlderMessages } = useMessagePagination({
     socketRef,
