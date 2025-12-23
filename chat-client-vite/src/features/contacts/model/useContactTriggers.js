@@ -44,6 +44,7 @@ export function useContactTriggers({ openNewContactForm, loadContacts, isAuthent
       if (data.name) {
         openNewContactForm({
           contact_name: data.name,
+          relationship: data.relationship || '', // Include relationship if available
           notes: data.context || '',
         });
       }

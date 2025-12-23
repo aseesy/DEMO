@@ -49,6 +49,7 @@ export function detectContactSuggestion(messages, currentSuggestion, dismissedId
 export function createContactData(suggestion) {
   return {
     name: suggestion.detectedName,
+    relationship: suggestion.detectedRelationship || null, // Include relationship if available
     context: suggestion.text,
   };
 }

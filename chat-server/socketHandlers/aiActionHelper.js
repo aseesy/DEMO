@@ -9,36 +9,56 @@
  * - Pure functions are documented as such
  */
 
+const contactIntelligence = require('../src/core/intelligence/contactIntelligence');
+
 // ============================================================================
 // PURE DETECTION FUNCTIONS (no side effects)
 // ============================================================================
 
 /**
- * Detect names in message text and generate contact suggestion
+ * Detect contact mentions in message text and generate contact suggestion with relationship
  * PURE FUNCTION: Only analyzes text, does not store or emit anything
+ *
+ * Uses detectContactMentions which detects both name AND relationship (unlike detectNamesInMessage)
  *
  * @param {Object} aiMediator - AI mediator service
  * @param {Object} context - Detection context
  * @param {string} context.text - Message text to analyze
  * @param {Array} context.existingContacts - User's existing contacts
  * @param {Array} context.participantUsernames - Room participant usernames
- * @returns {Promise<Object|null>} Contact suggestion or null
+ * @param {Array} context.recentMessages - Recent conversation messages for context
+ * @returns {Promise<Object|null>} Contact suggestion with relationship or null
  */
 async function detectContactSuggestion(aiMediator, context) {
-  const { text, existingContacts, participantUsernames } = context;
+  const { text, existingContacts, participantUsernames, recentMessages = [] } = context;
 
   try {
-    const detectedNames = await aiMediator.detectNamesInMessage(
+    // Use detectContactMentions which detects both name AND relationship
+    const detectionResult = await contactIntelligence.detectContactMentions(
       text,
       existingContacts,
-      participantUsernames
+      recentMessages
     );
-    if (detectedNames.length > 0) {
-      const contactSuggestion = await aiMediator.generateContactSuggestion(detectedNames[0], text);
-      return contactSuggestion || null;
+
+    if (detectionResult && detectionResult.detectedPeople && detectionResult.detectedPeople.length > 0) {
+      // Get the first detected person (highest confidence)
+      const detectedPerson = detectionResult.detectedPeople[0];
+      const detectedName = detectedPerson.name;
+      const detectedRelationship = detectedPerson.relationship;
+
+      // Generate suggestion text
+      const contactSuggestion = await aiMediator.generateContactSuggestion(detectedName, text);
+
+      if (contactSuggestion) {
+        // Include relationship in the suggestion
+        return {
+          ...contactSuggestion,
+          detectedRelationship, // Add relationship to suggestion
+        };
+      }
     }
   } catch (err) {
-    console.error('Error detecting names:', err);
+    console.error('Error detecting contact mentions:', err);
   }
   return null;
 }
@@ -67,6 +87,7 @@ async function detectAndStorePendingSuggestion(socket, aiMediator, context) {
     socket.data = socket.data || {};
     socket.data.pendingContactSuggestion = {
       detectedName: contactSuggestion.detectedName,
+      detectedRelationship: contactSuggestion.detectedRelationship, // Store relationship
       messageContext: contactSuggestion.messageContext,
       timestamp: Date.now(),
     };
@@ -209,6 +230,7 @@ async function processApprovedMessage(socket, io, services, context) {
       username: 'AI Assistant',
       text: contactSuggestion.suggestionText,
       detectedName: contactSuggestion.detectedName,
+      detectedRelationship: contactSuggestion.detectedRelationship, // Include relationship
       timestamp: new Date().toISOString(),
       roomId: user.roomId,
     });
