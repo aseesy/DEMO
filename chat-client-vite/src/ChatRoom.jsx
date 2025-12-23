@@ -14,7 +14,7 @@ import { ProfilePanel } from './features/profile/components/ProfilePanel.jsx';
 import { Navigation } from './features/shell/Navigation.jsx';
 import { LandingPage } from './features/landing/LandingPage.jsx';
 import { GlobalModals } from './features/shell/GlobalModals.jsx';
-import { SettingsView } from './features/settings';
+import { SettingsViewLegacy } from './features/settings';
 import { DashboardView } from './features/dashboard';
 import { ChatPage as ChatView } from './features/chat';
 
@@ -396,7 +396,7 @@ function ChatRoomContent({
             )}
 
             {currentView === 'settings' && (
-              <SettingsView
+              <SettingsViewLegacy
                 username={username}
                 notifications={notifications}
                 notificationPrefs={notificationPrefs}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '../../components/ui';
 
-export function Navigation({
+function NavigationComponent({
   currentView,
   setCurrentView,
   onLogout,
@@ -69,9 +69,7 @@ export function Navigation({
         </svg>
       ),
       action: () => {
-        console.log('[Navigation] contacts action - calling setCurrentView("contacts")');
         setCurrentView('contacts');
-        console.log('[Navigation] contacts action - calling setIsMenuOpen(false)');
         setIsMenuOpen(false);
       },
     },
@@ -89,7 +87,6 @@ export function Navigation({
         </svg>
       ),
       action: () => {
-        console.log('[Navigation] profile action - calling setCurrentView("profile")');
         setCurrentView('profile');
         setIsMenuOpen(false);
       },
@@ -182,13 +179,6 @@ export function Navigation({
 
       // Check if click is on an arch menu item button
       const isArchMenuItem = event.target.closest('button[role="menuitem"]');
-
-      console.log('[Navigation] Outside click handler:', {
-        clickedInside,
-        isNavButton,
-        isArchMenuItem,
-        target: event.target.tagName,
-      });
 
       // Only close menu if click is outside menu AND not on a nav button AND not on arch menu item
       if (!clickedInside && !isNavButton && !isArchMenuItem) {
@@ -331,8 +321,10 @@ export function Navigation({
     );
   };
 
-  // Debug: log when Navigation renders
-  console.log('[Navigation] Rendering, currentView:', currentView);
+  // Debug: log when Navigation renders (only in development)
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && window.DEBUG_NAV) {
+    console.log('[Navigation] Rendering, currentView:', currentView);
+  }
 
   // Use window width to determine mobile vs desktop since Tailwind responsive classes aren't working
   const [isMobile, setIsMobile] = React.useState(() => {
@@ -495,10 +487,6 @@ export function Navigation({
                   <button
                     type="button"
                     onClick={() => {
-                      console.log(
-                        '[Navigation] Desktop menu toggle clicked, current state:',
-                        isMenuOpen
-                      );
                       setIsMenuOpen(!isMenuOpen);
                     }}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2"
@@ -561,17 +549,9 @@ export function Navigation({
                             }}
                             type="button"
                             onClick={e => {
-                              console.log(
-                                '[Navigation] Desktop menu item clicked:',
-                                item.id,
-                                'setCurrentView:',
-                                typeof setCurrentView
-                              );
                               e.stopPropagation();
                               if (item.action) {
-                                console.log('[Navigation] Calling action for:', item.id);
                                 item.action();
-                                console.log('[Navigation] Action completed for:', item.id);
                               }
                             }}
                             className={`w-full px-4 py-3 text-left text-sm font-medium flex items-center gap-3 transition-all duration-150 cursor-pointer touch-manipulation select-none min-h-[44px] ${
@@ -628,7 +608,6 @@ export function Navigation({
             type="button"
             onClick={e => {
               e.stopPropagation();
-              console.log('[Navigation] Dashboard button clicked');
               setIsMenuOpen(false);
               setCurrentView('dashboard');
             }}
@@ -654,7 +633,6 @@ export function Navigation({
             type="button"
             onClick={e => {
               e.stopPropagation();
-              console.log('[Navigation] Mobile menu button clicked, isMenuOpen:', isMenuOpen);
               setIsMenuOpen(prev => !prev);
             }}
             className={`relative flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
@@ -674,7 +652,6 @@ export function Navigation({
             type="button"
             onClick={e => {
               e.stopPropagation();
-              console.log('[Navigation] Chat button clicked');
               setIsMenuOpen(false);
               setCurrentView('chat');
             }}
@@ -697,7 +674,6 @@ export function Navigation({
           {/* Rainbow/Arch Menu - positioned above in arch pattern */}
           {isMenuOpen &&
             (() => {
-              console.log('[Navigation] Rendering mobile arch menu');
               // Circular arch positioning for symmetric spacing
               const archItems = menuItems.filter(item => !item.isDivider);
               const totalItems = archItems.length;
@@ -812,3 +788,23 @@ export function Navigation({
     </>
   );
 }
+
+// Memoize Navigation to prevent unnecessary re-renders
+// Only re-render when props that affect the UI actually change
+export const Navigation = React.memo(NavigationComponent, (prevProps, nextProps) => {
+  // Re-render if these critical props change
+  if (
+    prevProps.currentView !== nextProps.currentView ||
+    prevProps.unreadCount !== nextProps.unreadCount ||
+    prevProps.notificationCount !== nextProps.notificationCount ||
+    prevProps.hasMeanMessage !== nextProps.hasMeanMessage ||
+    prevProps.searchQuery !== nextProps.searchQuery ||
+    prevProps.searchMode !== nextProps.searchMode ||
+    prevProps.messages.length !== nextProps.messages.length ||
+    prevProps.username !== nextProps.username
+  ) {
+    return false; // Props changed, allow re-render
+  }
+  // Props are the same, skip re-render
+  return true;
+});

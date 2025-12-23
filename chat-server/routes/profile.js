@@ -111,8 +111,13 @@ router.put('/me', authenticate, async (req, res) => {
     setClauses.push(`"profile_last_updated" = $${validUpdateKeys.length + 2}`);
     updateValues.push(new Date());
 
-    const queryText = `UPDATE users SET ${setClauses.join(', ')} WHERE id = $1 RETURNING ${allProfileColumns.join(', ')}`;
+    // Build RETURNING clause with quoted column names for safety
+    const returningColumns = allProfileColumns.map(col => `"${col}"`).join(', ');
+    const queryText = `UPDATE users SET ${setClauses.join(', ')} WHERE id = $1 RETURNING ${returningColumns}`;
     const queryValues = [userId, ...updateValues];
+
+    console.log('DEBUG PUT /api/profile/me - Query:', queryText.substring(0, 200) + '...');
+    console.log('DEBUG PUT /api/profile/me - Query values count:', queryValues.length);
 
     const { rows } = await db.query(queryText, queryValues);
     const updatedProfile = rows[0];
@@ -135,7 +140,19 @@ router.put('/me', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating user profile:', error);
-    res.status(500).json({ error: 'Internal server error while updating profile.' });
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint,
+      userId: req.user?.userId,
+      updateKeys: Object.keys(req.body || {}),
+    });
+    res.status(500).json({
+      error: 'Internal server error while updating profile.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
   }
 });
 

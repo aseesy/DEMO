@@ -107,7 +107,7 @@ export function ContactForm({
   const isCoParentRelationship =
     formData.relationship === 'My Co-Parent' || formData.relationship === "My Partner's Co-Parent";
 
-  const isPartnerRelationship = formData.relationship === 'My Partner';
+  const isPartnerForm = formData.relationship === 'My Partner';
 
   const showPhoneField =
     formData.relationship === "My Child's Teacher" || formData.relationship === 'Other';
@@ -161,9 +161,7 @@ export function ContactForm({
               )}
 
               {/* Partner-specific Fields */}
-              {isPartnerRelationship && (
-                <PartnerFields formData={formData} onChange={handleFormChange} />
-              )}
+              {isPartnerForm && <PartnerFields formData={formData} onChange={handleFormChange} />}
 
               {/* Co-Parent-specific Fields */}
               {isCoParentRelationship && (

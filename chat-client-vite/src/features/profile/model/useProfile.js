@@ -219,7 +219,11 @@ export function useProfile(username) {
 
   // Save profile
   const saveProfile = async () => {
-    if (!username) return;
+    if (!username) {
+      console.error('[useProfile] saveProfile called but username is missing');
+      return { success: false, error: 'Username is required' };
+    }
+    console.log('[useProfile] saveProfile called for username:', username);
     setIsSavingProfile(true);
     setError('');
     try {

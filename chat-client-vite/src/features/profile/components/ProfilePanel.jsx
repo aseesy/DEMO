@@ -65,10 +65,19 @@ export function ProfilePanel({ username }) {
 
   // Form handlers
   const handleSaveProfile = async () => {
-    const result = await saveProfile();
-    if (result?.success) {
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
+    console.log('[ProfilePanel] Save button clicked');
+    try {
+      const result = await saveProfile();
+      console.log('[ProfilePanel] Save result:', result);
+      if (result?.success) {
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
+      } else {
+        console.error('[ProfilePanel] Save failed:', result?.error);
+        // Error is already set by saveProfile hook, ErrorBanner will show it
+      }
+    } catch (err) {
+      console.error('[ProfilePanel] Error in handleSaveProfile:', err);
     }
   };
 

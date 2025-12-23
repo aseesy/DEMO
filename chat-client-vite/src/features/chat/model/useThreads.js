@@ -120,7 +120,10 @@ export function useThreads(username, isAuthenticated) {
       // Set a timeout in case 'joined' event doesn't fire
       // Note: This is a fallback - normally we wait for 'joined' event
       loadTimeoutRef.current = setTimeout(() => {
-        console.warn('[useThreads] Timeout waiting for join event, will retry when joined');
+        // Only log in development mode to reduce console noise
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[useThreads] Timeout waiting for join event, will retry when joined');
+        }
         // Don't request threads yet - wait for joined event
         // The joined event handler will request threads
       }, 5000);
