@@ -17,7 +17,7 @@ import { renderHook } from '@testing-library/react';
 import { useDashboard } from './useDashboard.js';
 
 // Mock dependencies
-vi.mock('../../hooks/useModalController.js', () => ({
+vi.mock('../../hooks/ui/useModalController.js', () => ({
   useModalControllerDefault: () => ({
     welcomeModal: { show: false, setShow: vi.fn() },
     profileTaskModal: { show: false, setShow: vi.fn() },
@@ -44,7 +44,7 @@ vi.mock('../../hooks/useModalController.js', () => ({
   }),
 }));
 
-vi.mock('../../hooks/useTasks.js', () => ({
+vi.mock('../tasks', () => ({
   useTasks: () => ({
     tasks: [],
     isLoadingTasks: false,
@@ -57,9 +57,18 @@ vi.mock('../../hooks/useTasks.js', () => ({
     updateTask: vi.fn(),
     deleteTask: vi.fn(),
   }),
+  createTaskCollection: () => ({
+    tasks: [],
+    searchTerm: '',
+    filter: 'all',
+    getTasks: () => [],
+    getAll: () => [],
+    setSearch: vi.fn(),
+    setFilter: vi.fn(),
+  }),
 }));
 
-vi.mock('../../hooks/useThreads.js', () => ({
+vi.mock('../chat/model/useThreads.js', () => ({
   useThreads: () => ({
     threads: [],
     selectedThreadId: null,

@@ -13,27 +13,27 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAuth } from './useAuth.js';
 
 // Mock the dependencies
-vi.mock('../apiClient.js', () => ({
+vi.mock('../../../apiClient.js', () => ({
   apiGet: vi.fn(),
   apiPost: vi.fn(),
 }));
 
-vi.mock('../utils/analyticsEnhancements.js', () => ({
+vi.mock('../../../utils/analyticsEnhancements.js', () => ({
   setUserProperties: vi.fn(),
   setUserID: vi.fn(),
 }));
 
-vi.mock('../utils/errorHandler.jsx', () => ({
+vi.mock('../../../utils/errorHandler.jsx', () => ({
   getErrorMessage: vi.fn((error, context) => ({
     userMessage: error?.message || 'An error occurred',
     code: error?.code || 'UNKNOWN',
   })),
   logError: vi.fn(),
-  retryWithBackoff: vi.fn((fn) => fn()),
+  retryWithBackoff: vi.fn(fn => fn()),
   isRetryableError: vi.fn(() => false),
 }));
 
-vi.mock('../utils/oauthHelper.js', () => ({
+vi.mock('../../../utils/oauthHelper.js', () => ({
   generateOAuthState: vi.fn(() => 'mock-state'),
   storeOAuthState: vi.fn(),
   validateOAuthState: vi.fn(() => true),
@@ -42,7 +42,7 @@ vi.mock('../utils/oauthHelper.js', () => ({
   parseOAuthError: vi.fn(),
 }));
 
-vi.mock('../utils/validators.js', () => ({
+vi.mock('../../../utils/validators.js', () => ({
   validateLoginCredentials: vi.fn((email, password) => {
     if (!email || !password) {
       return { valid: false, errors: { email: 'Email is required' } };
@@ -64,7 +64,7 @@ vi.mock('../utils/validators.js', () => ({
       cleanData: { email: email.trim(), password, username: username.trim() },
     };
   }),
-  validateRegistrationWithInvite: vi.fn((data) => {
+  validateRegistrationWithInvite: vi.fn(data => {
     if (!data.email || !data.password || !data.username) {
       return { valid: false, errors: { email: 'All fields are required' } };
     }
@@ -78,10 +78,10 @@ vi.mock('../utils/validators.js', () => ({
       },
     };
   }),
-  getFirstError: vi.fn((errors) => Object.values(errors)[0]),
+  getFirstError: vi.fn(errors => Object.values(errors)[0]),
 }));
 
-vi.mock('../adapters/storage', () => ({
+vi.mock('../../../adapters/storage', () => ({
   storage: {
     get: vi.fn(),
     set: vi.fn(),
@@ -109,8 +109,8 @@ vi.mock('../adapters/storage', () => ({
   },
 }));
 
-import { apiGet, apiPost } from '../apiClient.js';
-import { authStorage } from '../adapters/storage';
+import { apiGet, apiPost } from '../../../apiClient.js';
+import { authStorage } from '../../../adapters/storage';
 
 describe('useAuth Hook', () => {
   beforeEach(() => {
@@ -226,7 +226,7 @@ describe('useAuth Hook', () => {
       // Mock slow API response
       apiPost.mockImplementation(
         () =>
-          new Promise((resolve) =>
+          new Promise(resolve =>
             setTimeout(
               () =>
                 resolve({

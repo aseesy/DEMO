@@ -77,6 +77,8 @@ class TaskService extends BaseService {
     // Deduplicate tasks by title (keep the most recent one, or completed if one exists)
     // This prevents duplicate "Welcome to LiaiZen" tasks from showing
     const taskMap = new Map();
+    const duplicateTitles = new Set();
+
     for (const task of tasks) {
       const taskTitle = (task.title || '').trim();
       if (!taskTitle) continue; // Skip tasks without titles
@@ -85,6 +87,7 @@ class TaskService extends BaseService {
       if (!existing) {
         taskMap.set(taskTitle, task);
       } else {
+        duplicateTitles.add(taskTitle);
         // If we have a duplicate, prefer:
         // 1. Completed over open
         // 2. Most recent if same status
@@ -108,6 +111,15 @@ class TaskService extends BaseService {
         }
       }
     }
+
+    // Log duplicates for debugging
+    if (duplicateTitles.size > 0) {
+      console.warn(
+        `[TaskService] Found duplicate tasks for user ${userId}:`,
+        Array.from(duplicateTitles)
+      );
+    }
+
     tasks = Array.from(taskMap.values());
 
     // Apply search filter if provided
@@ -376,5 +388,7 @@ Respond in JSON format only with this structure:
 
 // Export singleton instance
 const taskService = new TaskService();
+
+module.exports = { taskService, TaskService };
 
 module.exports = { taskService, TaskService };

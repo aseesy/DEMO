@@ -10,7 +10,7 @@ import {
 } from './useNotificationPreferences.js';
 
 // Mock the storage adapter
-vi.mock('../adapters/storage', () => ({
+vi.mock('../../../adapters/storage', () => ({
   storage: {
     get: vi.fn(),
     set: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock('../adapters/storage', () => ({
   },
 }));
 
-import { storage, StorageKeys } from '../adapters/storage';
+import { storage, StorageKeys } from '../../../adapters/storage';
 
 describe('useNotificationPreferences', () => {
   beforeEach(() => {
@@ -90,10 +90,7 @@ describe('useNotificationPreferences', () => {
 
       renderHook(() => useNotificationPreferences());
 
-      expect(storage.set).toHaveBeenCalledWith(
-        StorageKeys.NOTIFICATION_PREFERENCES,
-        storedPrefs
-      );
+      expect(storage.set).toHaveBeenCalledWith(StorageKeys.NOTIFICATION_PREFERENCES, storedPrefs);
     });
   });
 

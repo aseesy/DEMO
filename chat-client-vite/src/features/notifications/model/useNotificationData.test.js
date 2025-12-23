@@ -9,11 +9,11 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useNotificationData } from './useNotificationData.js';
 
 // Mock the API client
-vi.mock('../apiClient.js', () => ({
+vi.mock('../../../apiClient.js', () => ({
   apiGet: vi.fn(),
 }));
 
-import { apiGet } from '../apiClient.js';
+import { apiGet } from '../../../apiClient.js';
 
 describe('useNotificationData', () => {
   beforeEach(() => {
@@ -269,9 +269,7 @@ describe('useNotificationData', () => {
 
   describe('updateNotification', () => {
     it('should update notification fields', async () => {
-      const mockNotifications = [
-        { id: '1', title: 'Test 1', read: false },
-      ];
+      const mockNotifications = [{ id: '1', title: 'Test 1', read: false }];
 
       apiGet.mockResolvedValue({
         ok: true,
@@ -292,9 +290,7 @@ describe('useNotificationData', () => {
     });
 
     it('should merge updates with existing fields', async () => {
-      const mockNotifications = [
-        { id: '1', title: 'Test 1', read: false, message: 'Original' },
-      ];
+      const mockNotifications = [{ id: '1', title: 'Test 1', read: false, message: 'Original' }];
 
       apiGet.mockResolvedValue({
         ok: true,
