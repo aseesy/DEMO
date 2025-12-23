@@ -1,6 +1,7 @@
 import React from 'react';
 import { io } from 'socket.io-client';
 import { useRoomId } from '../../../hooks/room/useRoomId.js';
+import { API_BASE_URL } from '../../../config.js';
 
 /**
  * getSocketUrl - Determines the correct socket URL based on environment
@@ -37,7 +38,7 @@ export function useThreads(username, isAuthenticated) {
   const [isLoadingThreads, setIsLoadingThreads] = React.useState(false);
   const [selectedThreadId, setSelectedThreadId] = React.useState(null);
   const [error, setError] = React.useState(null);
-  
+
   // Room ID management - extracted to useRoomId hook
   const { roomId, setRoomId } = useRoomId(username, isAuthenticated);
 
@@ -95,12 +96,12 @@ export function useThreads(username, isAuthenticated) {
         loadTimeoutRef.current = null;
       }
       setIsLoadingThreads(true);
-      
+
       // Update roomId from socket event if provided (authoritative source)
       if (data?.roomId && setRoomId) {
         setRoomId(data.roomId);
       }
-      
+
       // Request threads for the room
       // Use the roomId from the joined event if available, otherwise use state
       const targetRoomId = data?.roomId || roomId;

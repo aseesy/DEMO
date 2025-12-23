@@ -4,6 +4,7 @@ import { setupSocketEventHandlers } from './socketEventHandlers.js';
 import { useRoomId } from '../../../hooks/room/useRoomId.js';
 import { useMessages } from './useMessages.js';
 import { useMessagePagination } from './useMessagePagination.js';
+import { API_BASE_URL } from '../../../config.js';
 
 // Import SocketEvents for type-safe event names
 // Note: Full migration to SocketAdapter pending - current code uses raw socket.io
@@ -45,21 +46,28 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   // Threads
   const [threads, setThreads] = React.useState([]);
   const [threadMessages, setThreadMessages] = React.useState({});
-  
+
   // Room ID management - extracted to useRoomId hook
   const { roomId, setRoomId } = useRoomId(username, isAuthenticated);
 
   // Message state management - extracted to useMessages hook
-  const { messages, setMessages, pendingMessages, setPendingMessages, messageStatuses, setMessageStatuses } = useMessages();
+  const {
+    messages,
+    setMessages,
+    pendingMessages,
+    setPendingMessages,
+    messageStatuses,
+    setMessageStatuses,
+  } = useMessages();
 
   // Create socketRef early so we can use it in useMessagePagination
   const socketRef = React.useRef(null);
-  
+
   // Pagination state and operations - extracted to useMessagePagination hook
   const [isLoadingOlder, setIsLoadingOlder] = React.useState(false);
   const [hasMoreMessages, setHasMoreMessages] = React.useState(true);
   const [isInitialLoad, setIsInitialLoad] = React.useState(true);
-  
+
   const { loadOlderMessages } = useMessagePagination({
     socketRef,
     messages,
