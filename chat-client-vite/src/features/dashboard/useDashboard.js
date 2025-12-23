@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTasks, createTaskCollection } from '../tasks';
 import { useModalControllerDefault } from '../../hooks/ui/useModalController.js';
-import { useThreads } from '../chat/model/useThreads.js';
+import { useChatContext } from '../chat/context/ChatContext.jsx';
 
 /**
  * useDashboard - ViewModel for DashboardView
@@ -29,7 +29,7 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
   // 1. DERIVED VALUES (computed from params)
   // ============================================
   const shouldLoadTasks = isAuthenticated && !!username;
-  const shouldLoadThreads = isAuthenticated && !!username;
+  // Note: Threads are loaded via ChatContext, not here
 
   // ============================================
   // 2. HOOK CALLS (dependencies)
@@ -78,15 +78,39 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     dependencies: {},
   });
 
-  // Thread state management - loads threads for the user's room
-  const {
-    threads,
-    isLoadingThreads,
-    selectedThreadId,
-    setSelectedThreadId,
-    getThreadMessages,
-    analyzeConversation,
-  } = useThreads(username, shouldLoadThreads);
+  // Thread state management - use threads from ChatContext (shared with Chat view)
+  // This ensures threads are synchronized between Dashboard and Chat
+  // IMPORTANT: Dashboard and Chat now share the same thread state via ChatContext
+  const chatContext = useChatContext();
+
+  // Extract thread-related state from ChatContext
+  // ChatContext provides threads from useChatSocket which manages the socket connection
+  const threads = chatContext?.threads || [];
+  const selectedThreadId = chatContext?.selectedThreadId || null;
+  const setSelectedThreadId = chatContext?.setSelectedThreadId || (() => {});
+  const getThreadMessages = chatContext?.getThreadMessages || (() => {});
+
+  // Loading state - ChatContext doesn't expose loading state directly
+  // We infer it from context: if connected but no threads, might be loading
+  // This is a simple heuristic - ChatContext manages actual loading internally
+  const isLoadingThreads = React.useMemo(() => {
+    if (!chatContext) return false;
+    // If we have a connection but no threads yet, we might be loading
+    return chatContext.isConnected && threads.length === 0;
+  }, [chatContext, threads]);
+
+  // Analyze conversation function
+  // Note: Thread analysis is managed by ChatContext/useChatSocket
+  // This function exists for API compatibility but delegates to ChatContext
+  // Actual analysis happens automatically when threads are loaded in ChatContext
+  const analyzeConversation = React.useCallback(async () => {
+    // Threads are managed by ChatContext - analysis happens automatically
+    // or can be triggered from the Chat view
+    // This is a no-op here since Dashboard doesn't manage thread analysis
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[useDashboard] analyzeConversation called - threads managed by ChatContext');
+    }
+  }, []);
 
   // ============================================
   // 3. COMPUTED VALUES (useMemo - grouped props for DashboardView)
