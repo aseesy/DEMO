@@ -49,48 +49,29 @@ setTimeout(() => {
   trackPagePerformance();
 }, 1000);
 
-// Detect Safari early to prevent service worker issues
+// Detect Safari early to handle service worker differently
 const isSafari =
   /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
   /^((?!chrome|android).)*safari/i.test(navigator.vendor) ||
   (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome'));
 
-// Unregister any existing service workers (from legacy app)
-// This fixes Safari issues with service workers intercepting navigation
-// In Safari, completely skip service worker operations to prevent errors
-if ('serviceWorker' in navigator && !isSafari) {
-  navigator.serviceWorker
-    .getRegistrations()
-    .then(registrations => {
-      for (const registration of registrations) {
-        registration
-          .unregister()
-          .then(success => {
-            if (success) {
-              console.log('Service worker unregistered');
-            }
-          })
-          .catch(err => {
-            console.error('Error unregistering service worker:', err);
-          });
-      }
-    })
-    .catch(err => {
-      console.error('Error getting service worker registrations:', err);
-    });
-
-  // Also try to unregister by scope (with null check for Safari)
-  navigator.serviceWorker.ready
-    .then(registration => {
-      if (registration) {
-        return registration.unregister();
-      }
-    })
-    .catch(() => {
-      // Ignore if no service worker is registered or ready
-    });
+// Register service worker for PWA functionality (production only)
+// Safari has buggy service worker support, so we skip it there
+if ('serviceWorker' in navigator && !isSafari && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js', { scope: '/' })
+      .then(registration => {
+        console.log('[PWA] Service Worker registered successfully:', registration.scope);
+      })
+      .catch(error => {
+        console.error('[PWA] Service Worker registration failed:', error);
+      });
+  });
 } else if (isSafari) {
-  console.log('[main.jsx] Safari detected - skipping service worker operations to prevent errors');
+  console.log('[main.jsx] Safari detected - PWA install available via Share menu');
+} else if (import.meta.env.DEV) {
+  console.log('[main.jsx] Development mode - Service Worker disabled');
 }
 
 createRoot(document.getElementById('root')).render(
