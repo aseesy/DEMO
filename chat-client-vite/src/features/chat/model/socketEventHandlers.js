@@ -316,6 +316,18 @@ export function setupSocketEventHandlers(socket, handlers) {
         new CustomEvent('rewrite-sent', { detail: { message: messageWithTimestamp } })
       );
     }
+
+    // Clear analyzing state when own message is approved by backend
+    // This indicates the message passed AI analysis and was sent successfully
+    if (ownMessage && setDraftCoaching) {
+      setDraftCoaching(prev => {
+        // Only clear if we were in analyzing state (not if showing ObserverCard)
+        if (prev?.analyzing) {
+          return null;
+        }
+        return prev;
+      });
+    }
   });
 
   socket.on('user_typing', ({ username: typingName, isTyping }) => {
@@ -353,7 +365,9 @@ export function setupSocketEventHandlers(socket, handlers) {
     socket.disconnect();
   });
 
-  socket.on('draft_analysis', coaching => setDraftCoaching(coaching));
+  // Handle AI coaching/intervention events from backend (WebSocket-only analysis)
+  socket.on('draft_coaching', coaching => setDraftCoaching(coaching));
+  socket.on('draft_analysis', coaching => setDraftCoaching(coaching)); // Legacy alias
   socket.on('threads_updated', threadList => setThreads(threadList));
   socket.on('threads_list', threadList => setThreads(threadList));
   socket.on('thread_messages', ({ threadId, messages: msgs }) => {

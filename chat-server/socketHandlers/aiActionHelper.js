@@ -147,34 +147,23 @@ async function processIntervention(socket, io, services, context) {
       console.error('Error updating stats:', err);
     }
 
-    const baseTimestamp = Date.now();
-    const interventionId = `ai-intervention-${baseTimestamp}`;
-    const pendingOriginalId = `pending-original-${baseTimestamp}`;
-
-    socket.emit('new_message', {
-      id: pendingOriginalId,
-      type: 'pending_original',
-      username: message.username,
-      text: message.text,
-      timestamp: message.timestamp,
-      roomId: user.roomId,
-      interventionId,
-    });
-
-    socket.emit('new_message', {
-      id: interventionId,
-      type: 'ai_intervention',
-      personalMessage: intervention.validation,
-      tip1: intervention.insight,
-      refocusQuestions: intervention.refocusQuestions || [],
-      rewrite1: intervention.rewrite1,
-      rewrite2: intervention.rewrite2,
-      originalMessage: message,
-      pendingOriginalId,
-      escalation: intervention.escalation,
-      emotion: intervention.emotion,
-      timestamp: message.timestamp,
-      roomId: user.roomId,
+    // Emit draft_coaching event to show ObserverCard on frontend
+    // This is the single transport (WebSocket) for AI analysis results
+    socket.emit('draft_coaching', {
+      analyzing: false,
+      shouldSend: false,
+      riskLevel: intervention.escalation?.riskLevel || 'medium',
+      originalText: message.text,
+      observerData: {
+        axiomsFired: intervention.escalation?.reasons || [],
+        explanation: intervention.validation || '',
+        tip: intervention.insight || '',
+        refocusQuestions: intervention.refocusQuestions || [],
+        rewrite1: intervention.rewrite1 || '',
+        rewrite2: intervention.rewrite2 || '',
+        escalation: intervention.escalation,
+        emotion: intervention.emotion,
+      },
     });
   } else if (intervention.type === 'ai_comment') {
     await addToHistory(message, user.roomId);

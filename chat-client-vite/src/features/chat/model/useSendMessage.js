@@ -1,11 +1,11 @@
 /**
  * useSendMessage Hook
  *
- * Handles message sending with analysis and offline queue:
- * - Message analysis before sending
+ * Handles message sending via WebSocket:
+ * - Sends messages to backend for AI analysis (single transport protocol)
  * - Pending message tracking
  * - Offline queue management
- * - Draft coaching integration
+ * - Draft coaching integration (receives analysis results from backend)
  */
 
 import React from 'react';
@@ -15,7 +15,6 @@ import {
   saveOfflineQueue,
   MESSAGE_STATUS,
 } from '../../../utils/messageBuilder.js';
-import { DEFAULT_SENDER_PROFILE, DEFAULT_RECEIVER_PROFILE } from '../../../utils/profileBuilder.js';
 
 export function useSendMessage({
   socketRef,
@@ -34,7 +33,7 @@ export function useSendMessage({
   const [pendingMessages, setPendingMessages] = React.useState(new Map());
   const [messageStatuses, setMessageStatuses] = React.useState(new Map());
 
-  // Send message with analysis
+  // Send message via WebSocket (backend handles AI analysis)
   const sendMessage = React.useCallback(
     async e => {
       if (e?.preventDefault) e.preventDefault();
@@ -50,50 +49,22 @@ export function useSendMessage({
           stopTyping?.();
           return;
         }
-        console.log('[useSendMessage] Rewrite was edited, running analysis');
+        console.log('[useSendMessage] Rewrite was edited, will be analyzed by backend');
       }
 
-      // OBSERVER/MEDIATOR FRAMEWORK: Analyze message before sending
-      const { analyzeMessage, shouldSendMessage } = await import('../../../utils/messageAnalyzer.js');
+      // Show "Analyzing..." state while backend processes
+      setDraftCoaching?.({
+        analyzing: true,
+        riskLevel: 'low',
+        shouldSend: false,
+      });
 
-      try {
-        // 1. Show "Analyzing..." state
-        setDraftCoaching?.({
-          analyzing: true,
-          riskLevel: 'low',
-          shouldSend: false,
-        });
-
-        // 2. Analyze the message
-        const senderProfile = DEFAULT_SENDER_PROFILE;
-        const receiverProfile = DEFAULT_RECEIVER_PROFILE;
-        const analysis = await analyzeMessage(clean, senderProfile, receiverProfile);
-
-        // 3. Traffic Control
-        const decision = shouldSendMessage(analysis);
-
-        if (decision.shouldSend) {
-          // SCENARIO A: CLEAN - Send the message
-          sendCleanMessage(clean);
-        } else {
-          // SCENARIO B: CONFLICT DETECTED - Show Observer Card, don't send
-          setDraftCoaching?.({
-            analyzing: false,
-            riskLevel: analysis.escalation?.riskLevel || 'medium',
-            shouldSend: false,
-            observerData: decision.observerData,
-            originalText: clean,
-            analysis: analysis,
-          });
-          // Don't clear input - user can edit or use rewrite
-        }
-
-        stopTyping?.();
-      } catch (error) {
-        console.error('Error analyzing message:', error);
-        // On error, allow message through (fail open)
-        sendCleanMessage(clean);
-      }
+      // Send message via WebSocket - backend handles all AI analysis
+      // Backend will emit either:
+      // - 'new_message' if clean (clears analyzing state via message receipt)
+      // - 'draft_coaching' if intervention needed (shows ObserverCard)
+      sendCleanMessage(clean);
+      stopTyping?.();
     },
     [
       inputMessage,

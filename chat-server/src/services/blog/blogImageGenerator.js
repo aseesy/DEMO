@@ -334,23 +334,33 @@ function createHeaderImagePrompt(articleMeta) {
     visualMetaphor = 'Visual metaphor: abstract representation of communication and connection, showing peaceful interaction.';
   }
   
-  const basePrompt = `Create a professional, modern blog header image for a co-parenting communication article titled "${titleText}". 
+  const basePrompt = `Create a professional blog header image in CARTOON ILLUSTRATION style - matching the style of the family-exchange cartoon illustration on the landing page. The image is for a co-parenting communication article titled "${titleText}". 
 ${specificContext}
 ${visualMetaphor}
 
-The image must:
-- Be visually specific to the article's core concept (not generic)
-- Use calming, peaceful colors (soft teal #4DA8B0, white, soft grays)
-- Be abstract or metaphorical (no literal photos of people)
-- Represent the psychological or emotional concepts discussed in the article
-- Have a professional, trustworthy, modern aesthetic
-- Be suitable for a mental health and communication blog
-- Use clean, minimalist design principles
-- Be 16:9 aspect ratio, horizontal layout
+CRITICAL STYLE REQUIREMENTS (match the landing page cartoon illustration):
+- CARTOON ILLUSTRATION STYLE: Friendly, approachable cartoon illustration (like a children's book or modern app illustration)
+- Simple, rounded, friendly character design (if people are shown)
+- Soft, warm, inviting aesthetic - NOT corporate, NOT minimalist, NOT abstract
+- Similar to the family-exchange cartoon on the landing page: friendly cartoon parents and child
+- Use rounded shapes, friendly expressions, warm colors
+- Cartoon style with simple details, not photorealistic
+- Think: friendly cartoon illustration, like you'd see in a family app or children's book
 
-Style: Modern, minimalist, professional, calming, trustworthy, conceptually relevant
-Colors: Teal (#4DA8B0), white, soft grays, subtle gradients
-Mood: Peaceful, hopeful, supportive, professional, conceptually aligned with the article's theme`;
+The image must:
+- Be visually specific to the article's core concept: ${visualMetaphor}
+- Use the exact color palette: soft teal (#4DA8B0), white, very light teal (#E6F7F5), soft grays
+- Be a CARTOON ILLUSTRATION (not a photo, not abstract, not minimalist) - friendly cartoon style
+- Represent the psychological or emotional concepts through friendly cartoon illustrations
+- Have a peaceful, calm, supportive, friendly mood
+- Use warm, inviting cartoon illustration style with rounded, friendly shapes
+- Be 16:9 aspect ratio, horizontal layout
+- Match the CARTOON ILLUSTRATION aesthetic of the landing page family-exchange image
+
+Style: Cartoon illustration, friendly, approachable, warm, rounded shapes, family-friendly cartoon
+Colors: Teal (#4DA8B0), white (#FFFFFF), light teal (#E6F7F5), soft gray (#F3F4F6)
+Mood: Peaceful, calm, supportive, gentle, hopeful, friendly
+Visual approach: Friendly cartoon illustrations representing the article concept, similar to the cartoon family-exchange illustration on the landing page`;
 
   return basePrompt;
 }
