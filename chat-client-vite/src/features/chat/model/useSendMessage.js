@@ -41,12 +41,16 @@ export function useSendMessage({
       const clean = inputMessage.trim();
       if (!clean || !socketRef?.current) return;
 
-      // AI-GENERATED REWRITES: Skip analysis - already approved by AI
-      if (isPreApprovedRewrite) {
-        console.log('[useSendMessage] Skipping analysis for AI-generated rewrite');
-        sendCleanMessage(clean);
-        stopTyping?.();
-        return;
+      // AI-GENERATED REWRITES: Skip analysis only if not edited
+      if (isPreApprovedRewrite && originalRewrite) {
+        // Check if the message matches the original rewrite (not edited)
+        if (clean === originalRewrite.trim()) {
+          console.log('[useSendMessage] Skipping analysis for unedited AI rewrite');
+          sendCleanMessage(clean);
+          stopTyping?.();
+          return;
+        }
+        console.log('[useSendMessage] Rewrite was edited, running analysis');
       }
 
       // OBSERVER/MEDIATOR FRAMEWORK: Analyze message before sending

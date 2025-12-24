@@ -12,6 +12,14 @@ const https = require('https');
 const http = require('http');
 const { createWriteStream } = require('fs');
 
+// Try to load sharp for image optimization
+let sharp = null;
+try {
+  sharp = require('sharp');
+} catch (error) {
+  // sharp not installed - optimization will be skipped
+}
+
 // Image generation configuration
 const IMAGE_CONFIG = {
   // DALL-E 3 settings

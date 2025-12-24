@@ -4,6 +4,7 @@
  * Refactored to use options objects instead of many positional parameters.
  * See: Clean Code - "How Many Arguments?" (niladic > monadic > dyadic > triadic)
  */
+const stringSimilarity = require('string-similarity');
 const {
   getRecentMessages,
   getParticipantUsernames,
@@ -35,27 +36,31 @@ async function handleAiMediation(socket, io, services, context) {
   const { aiMediator, dbSafe, dbPostgres, communicationStats } = services;
   const { isPreApprovedRewrite, originalRewrite, bypassMediation } = data;
 
-  // 1. IF THIS IS A PRE-APPROVED REWRITE, SKIP AI ANALYSIS ENTIRELY
-  // AI-generated rewrites should never be re-analyzed by the AI filter
-  if (isPreApprovedRewrite) {
-    console.log('[aiHelper] Skipping AI analysis for pre-approved rewrite');
-    try {
-      const userResult = await dbSafe.safeSelect(
-        'users',
-        { username: user.username.toLowerCase() },
-        { limit: 1 }
-      );
-      if (userResult.length > 0) {
-        await communicationStats.updateCommunicationStats(userResult[0].id, user.roomId, false);
+  // 1. IF THIS IS A PRE-APPROVED REWRITE AND NOT EDITED, SKIP AI ANALYSIS
+  // Only bypass if the message closely matches the original rewrite (>= 95% similar)
+  if (isPreApprovedRewrite && originalRewrite) {
+    const similarity = stringSimilarity.compareTwoStrings(message.text, originalRewrite);
+    if (similarity >= 0.95) {
+      console.log('[aiHelper] Skipping AI analysis for unedited rewrite (similarity:', similarity, ')');
+      try {
+        const userResult = await dbSafe.safeSelect(
+          'users',
+          { username: user.username.toLowerCase() },
+          { limit: 1 }
+        );
+        if (userResult.length > 0) {
+          await communicationStats.updateCommunicationStats(userResult[0].id, user.roomId, false);
+        }
+      } catch (err) {
+        console.error('Error updating stats:', err);
       }
-    } catch (err) {
-      console.error('Error updating stats:', err);
-    }
 
-    message.isRevision = true;
-    await addToHistory(message, user.roomId);
-    io.to(user.roomId).emit('new_message', message);
-    return;
+      message.isRevision = true;
+      await addToHistory(message, user.roomId);
+      io.to(user.roomId).emit('new_message', message);
+      return;
+    }
+    console.log('[aiHelper] Rewrite was edited (similarity:', similarity, '), running AI analysis');
   }
 
   // 2. User chose "Send Original Anyway" - bypass mediation

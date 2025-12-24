@@ -38,8 +38,9 @@ export function getBlogImage(slug) {
   
   // Add cache-busting query parameter to force browser to reload optimized images
   // This ensures browsers load the new optimized version instead of cached old version
+  // Increment version when regenerating images: v=3 for new article-specific images
   const separator = imagePath.includes('?') ? '&' : '?';
-  return `${imagePath}${separator}v=2`;
+  return `${imagePath}${separator}v=3`;
 }
 
 /**
