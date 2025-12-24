@@ -259,6 +259,10 @@ export function setupSocketEventHandlers(socket, handlers) {
     }
 
     // Use pure functions to determine and apply message action
+    // NOTE: We capture removedMsgId inside the callback but clean up AFTER
+    // to avoid calling state setters inside another state setter's callback
+    let removedMsgId = null;
+
     setMessages(prev => {
       const action = determineMessageAction(prev, message, usernameRef.current);
 
@@ -270,25 +274,31 @@ export function setupSocketEventHandlers(socket, handlers) {
         text: message.text?.substring(0, 30),
       });
 
-      // Clean up pending message tracking when replacing optimistic message
+      // Capture ID for cleanup (will be processed after this callback)
       if (action.action === 'replace' && action.removeIndex >= 0) {
         const removedMsg = prev[action.removeIndex];
         if (removedMsg?.id) {
-          setPendingMessages(p => {
-            const next = new Map(p);
-            next.delete(removedMsg.id);
-            return next;
-          });
-          setMessageStatuses(p => {
-            const next = new Map(p);
-            next.delete(removedMsg.id);
-            return next;
-          });
+          removedMsgId = removedMsg.id;
         }
       }
 
       return applyMessageAction(prev, messageWithTimestamp, action);
     });
+
+    // Clean up pending message tracking after capturing the ID
+    // The setMessages callback runs synchronously, so removedMsgId is set by now
+    if (removedMsgId) {
+      setPendingMessages(p => {
+        const next = new Map(p);
+        next.delete(removedMsgId);
+        return next;
+      });
+      setMessageStatuses(p => {
+        const next = new Map(p);
+        next.delete(removedMsgId);
+        return next;
+      });
+    }
 
     // Trigger callback for new messages
     if (onNewMessageRef.current) onNewMessageRef.current(messageWithTimestamp);
