@@ -93,6 +93,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   // Refs for typing
   const typingTimeoutRef = React.useRef(null);
   const draftAnalysisTimeoutRef = React.useRef(null);
+  const lastAnalyzedTextRef = React.useRef(''); // Track last analyzed text to avoid redundant analysis
 
   // Compute hasMeanMessage for Navigation
   const hasMeanMessage = React.useMemo(() => {
@@ -218,85 +219,52 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     ]
   );
 
-  // Track what message was last analyzed to use cached results
-  const lastAnalyzedTextRef = React.useRef('');
-
-  // Send message with analysis - uses cached draft analysis when available
+  // Send message via WebSocket - backend handles all AI analysis
+  // This is the SINGLE transport protocol for message analysis (no HTTP API)
   const sendMessage = React.useCallback(
     async e => {
       if (e?.preventDefault) e.preventDefault();
       const clean = inputMessage.trim();
       if (!clean || !socketRef.current) return;
 
-      // FAST PATH 1: If we already have a draft coaching result for this exact message
-      // and it shows intervention needed, use it immediately (no new analysis)
+      // If we already have a draft coaching result for this exact message
+      // and it shows intervention needed, don't send
       if (draftCoaching && draftCoaching.observerData && draftCoaching.originalText === clean) {
-        // Already showing intervention - don't send, just keep showing it
         return;
       }
 
-      // FAST PATH 2: If we analyzed this message while typing and it was clean, send immediately
-      if (draftCoaching === null && lastAnalyzedTextRef.current === clean) {
-        // Message was already analyzed and passed - send immediately
-        emitOrQueueMessage(clean);
-        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        socketRef.current.emit('typing', { isTyping: false });
-        return;
-      }
-
-      // FAST PATH 3: Quick local check for obviously safe messages
-      const { shouldSendMessage } = await import('../../../utils/messageAnalyzer.js');
-      const quickCheck = shouldSendMessage({ action: 'QUICK_CHECK', messageText: clean });
-      if (quickCheck.shouldSend && quickCheck.reason === 'polite_request') {
-        // Polite request - send immediately without full analysis
-        emitOrQueueMessage(clean);
-        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        socketRef.current.emit('typing', { isTyping: false });
-        return;
-      }
-
-      // STANDARD PATH: Need full analysis
-      const { analyzeMessage } = await import('../../../utils/messageAnalyzer.js');
-
-      try {
-        setDraftCoaching({ analyzing: true, riskLevel: 'low', shouldSend: false });
-
-        const senderProfile = {
-          role: 'Parent',
-          position: 'unknown',
-          resources: 'unknown',
-          conflict_level: 'unknown',
-          abuse_history: 'None',
-        };
-        const receiverProfile = {
-          has_new_partner: false,
-          income_disparity: 'unknown',
-          distance: 'unknown',
-        };
-        const analysis = await analyzeMessage(clean, senderProfile, receiverProfile);
-        const decision = shouldSendMessage(analysis);
-
-        if (decision.shouldSend) {
+      // AI-GENERATED REWRITES: Skip analysis only if not edited
+      if (isPreApprovedRewrite && originalRewrite) {
+        if (clean === originalRewrite.trim()) {
+          console.log('[ChatContext] Skipping analysis for unedited AI rewrite');
           emitOrQueueMessage(clean);
-        } else {
-          setDraftCoaching({
-            analyzing: false,
-            riskLevel: analysis.escalation?.riskLevel || 'medium',
-            shouldSend: false,
-            observerData: decision.observerData,
-            originalText: clean,
-            analysis,
-          });
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          socketRef.current.emit('typing', { isTyping: false });
+          return;
         }
-
-        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        socketRef.current.emit('typing', { isTyping: false });
-      } catch (err) {
-        console.error('Error analyzing message:', err);
-        emitOrQueueMessage(clean); // Fail open - send anyway
       }
+
+      // Show "Analyzing..." state while backend processes
+      setDraftCoaching({ analyzing: true, riskLevel: 'low', shouldSend: false });
+
+      // Send message via WebSocket - backend handles all AI analysis
+      // Backend will emit either:
+      // - 'new_message' if clean (clears analyzing state)
+      // - 'draft_coaching' if intervention needed (shows ObserverCard)
+      emitOrQueueMessage(clean);
+
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      socketRef.current.emit('typing', { isTyping: false });
     },
-    [inputMessage, emitOrQueueMessage, socketRef, setDraftCoaching, draftCoaching]
+    [
+      inputMessage,
+      emitOrQueueMessage,
+      socketRef,
+      setDraftCoaching,
+      draftCoaching,
+      isPreApprovedRewrite,
+      originalRewrite,
+    ]
   );
 
   const handleInputChange = React.useCallback(
