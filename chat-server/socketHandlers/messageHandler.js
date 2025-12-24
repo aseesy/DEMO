@@ -30,10 +30,24 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
     }
     if (messageStore) {
       try {
-        await messageStore.saveMessage({ ...message, roomId });
+        const messageToSave = { ...message, roomId };
+        console.log('[addToHistory] Saving message:', {
+          id: messageToSave.id,
+          username: messageToSave.username,
+          text: messageToSave.text?.substring(0, 50),
+          type: messageToSave.type,
+          private: messageToSave.private,
+          flagged: messageToSave.flagged,
+          roomId: messageToSave.roomId,
+        });
+        await messageStore.saveMessage(messageToSave);
+        console.log('[addToHistory] Message saved successfully');
       } catch (err) {
-        console.error('Error saving message to database:', err);
+        console.error('❌ Error saving message to database:', err);
+        console.error('Message data:', JSON.stringify(message, null, 2));
       }
+    } else {
+      console.warn('[addToHistory] messageStore is not available');
     }
   }
 
@@ -47,8 +61,26 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
     }
     const { user } = userValidation;
 
+    // CRITICAL: Ensure user.roomId is set from activeUsers
+    // This ensures messages are saved to the same room that will be loaded on refresh
+    if (!user.roomId) {
+      console.error('[send_message] ERROR: user.roomId is missing!', {
+        socketId: socket.id,
+        username: user.username,
+        activeUserData: activeUsers.get(socket.id),
+      });
+      emitError(socket, 'Room not available. Please rejoin the chat.');
+      return;
+    }
+
+    console.log('[send_message] User sending message:', {
+      username: user.username,
+      roomId: user.roomId,
+      socketId: socket.id.substring(0, 20) + '...',
+    });
+
     // Step 2: Validate message text
-    const { text, isPreApprovedRewrite, originalRewrite, bypassMediation } = data;
+    const { text, isPreApprovedRewrite, originalRewrite, bypassMediation, optimisticId } = data;
     const textValidation = validateMessageText(text);
 
     if (!textValidation.valid) {
@@ -66,7 +98,13 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
       displayName = user.username;
     }
 
-    const message = createUserMessage(socket.id, user, textValidation.cleanText, displayName);
+    const message = createUserMessage(
+      socket.id,
+      user,
+      textValidation.cleanText,
+      displayName,
+      optimisticId
+    );
 
     // Step 4: Delegate to AI mediation handler
     try {

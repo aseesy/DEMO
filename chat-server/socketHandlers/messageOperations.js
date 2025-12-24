@@ -63,10 +63,11 @@ function validateActiveUser(activeUsers, socketId) {
  * @param {Object} user - User data
  * @param {string} cleanText - Sanitized message text
  * @param {string} displayName - User's display name
+ * @param {string} [optimisticId] - Client's optimistic message ID for matching
  * @returns {Object} Message object
  */
-function createUserMessage(socketId, user, cleanText, displayName) {
-  return {
+function createUserMessage(socketId, user, cleanText, displayName, optimisticId = null) {
+  const message = {
     id: `${Date.now()}-${socketId}`,
     type: 'user',
     username: user.username,
@@ -76,6 +77,13 @@ function createUserMessage(socketId, user, cleanText, displayName) {
     socketId,
     roomId: user.roomId,
   };
+
+  // Include optimisticId so client can match this server message with its optimistic version
+  if (optimisticId) {
+    message.optimisticId = optimisticId;
+  }
+
+  return message;
 }
 
 /**
