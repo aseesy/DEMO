@@ -50,10 +50,22 @@ function registerConnectionHandlers(socket, io, services, activeUsers, messageHi
     let roomId, roomName;
     try {
       const room = await resolveUserRoom(user, cleanUsername, dbPostgres, roomManager);
+      if (!room || !room.roomId) {
+        emitError(socket, 'No room available. You must be connected to a co-parent.');
+        return;
+      }
       roomId = room.roomId;
       roomName = room.roomName;
       user.room = { roomId, roomName };
+      user.roomId = roomId; // CRITICAL: Set roomId on user object for message handlers
+      console.log('[join] Resolved room:', {
+        roomId: roomId,
+        roomName: roomName,
+        username: cleanUsername,
+        userId: user.id,
+      });
     } catch (error) {
+      console.error('[join] Error resolving room:', error);
       emitError(socket, 'Failed to join chat room.', error, 'join:resolveRoom');
       return;
     }
@@ -80,8 +92,15 @@ function registerConnectionHandlers(socket, io, services, activeUsers, messageHi
     // Step 7: Get message history
     let historyResult;
     try {
+      console.log('[join] Loading message history for room:', roomId, 'user:', cleanUsername);
       historyResult = await getMessageHistory(roomId, dbPostgres);
+      console.log('[join] Sending message_history:', {
+        messageCount: historyResult.messages.length,
+        hasMore: historyResult.hasMore,
+        roomId: roomId,
+      });
     } catch (error) {
+      console.error('[join] Error loading message history:', error);
       emitError(socket, 'Failed to load message history.', error, 'join:getMessageHistory');
       return;
     }
@@ -164,3 +183,4 @@ function registerConnectionHandlers(socket, io, services, activeUsers, messageHi
 }
 
 module.exports = { registerConnectionHandlers };
+

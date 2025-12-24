@@ -43,6 +43,30 @@ export function useMessages({ socketRef } = {}) {
   // Message statuses (sent, pending, failed, queued, etc.)
   const [messageStatuses, setMessageStatuses] = React.useState(new Map());
 
+  // Wrapped setMessages with safeguard to prevent accidental clearing
+  const safeSetMessages = React.useCallback((updater) => {
+    setMessages(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      
+      // CRITICAL: Never allow messages to be cleared to empty array unless explicitly intended
+      // Log if we're about to clear messages unexpectedly
+      if (Array.isArray(next) && next.length === 0 && prev.length > 0) {
+        const hasRealMessages = prev.some(msg => msg.id && !msg.id.startsWith('pending_') && !msg.isOptimistic);
+        if (hasRealMessages) {
+          console.error('[useMessages] ⚠️ WARNING: Attempting to clear messages with real content!', {
+            prevCount: prev.length,
+            realMessagesCount: prev.filter(msg => msg.id && !msg.id.startsWith('pending_') && !msg.isOptimistic).length,
+            stack: new Error().stack,
+          });
+          // Don't clear - return previous state
+          return prev;
+        }
+      }
+      
+      return next;
+    });
+  }, []);
+
   return {
     // State
     messages,
@@ -50,7 +74,7 @@ export function useMessages({ socketRef } = {}) {
     messageStatuses,
 
     // Setters (for socket event handlers)
-    setMessages,
+    setMessages: safeSetMessages,
     setPendingMessages,
     setMessageStatuses,
   };

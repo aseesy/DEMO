@@ -15,9 +15,10 @@ export const PRIORITY_ORDER = {
 };
 
 /**
- * Task titles that trigger special modal actions instead of status toggle
+ * Task title patterns that trigger special modal actions instead of status toggle
+ * Uses lowercase for case-insensitive matching
  */
-export const INVITE_TASK_TITLES = ['Invite Your Co-Parent', 'Add Your Co-parent'];
+export const INVITE_TASK_PATTERNS = ['invite your co-parent', 'add your co-parent', 'add coparent'];
 
 /**
  * Sort tasks by priority (high first) then by creation date (oldest first)
@@ -68,6 +69,26 @@ export function sortTasksByPriorityNewestFirst(tasks) {
 }
 
 /**
+ * Normalize task title for case-insensitive comparison
+ * @param {string} title - Task title
+ * @returns {string} Lowercase trimmed title
+ */
+function normalizeTitle(title) {
+  return (title || '').toLowerCase().trim();
+}
+
+/**
+ * Check if title matches any pattern in the list (case-insensitive)
+ * @param {string} title - Task title
+ * @param {string[]} patterns - Patterns to match (lowercase)
+ * @returns {boolean}
+ */
+function matchesPattern(title, patterns) {
+  const normalized = normalizeTitle(title);
+  return patterns.some(pattern => normalized.includes(pattern));
+}
+
+/**
  * Get the action type for a task
  * Some tasks (like "Invite Your Co-Parent") should open a modal instead of toggling status
  * @param {Object} task - The task object
@@ -77,7 +98,7 @@ export function getTaskAction(task) {
   if (!task) return { type: 'toggle' };
 
   // Special handling for invite task - opens InviteTaskModal
-  if (INVITE_TASK_TITLES.includes(task.title) && task.status !== 'completed') {
+  if (matchesPattern(task.title, INVITE_TASK_PATTERNS) && task.status !== 'completed') {
     return { type: 'modal', modal: 'invite' };
   }
 
@@ -86,13 +107,13 @@ export function getTaskAction(task) {
 }
 
 /**
- * Check if a task is an invite task
+ * Check if a task is an invite task (case-insensitive pattern matching)
  * @param {Object} task - The task object
  * @returns {boolean}
  */
 export function isInviteTask(task) {
   if (!task) return false;
-  return INVITE_TASK_TITLES.includes(task.title);
+  return matchesPattern(task.title, INVITE_TASK_PATTERNS);
 }
 
 /**

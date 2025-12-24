@@ -75,8 +75,36 @@ function ChatRoomContent({
   } = useChatContext();
 
   // Landing page state
+  // CRITICAL: Initialize based on auth state from context (not just storage)
+  // This ensures PWA launches with stored auth don't show landing page
+  // The auth context loads state optimistically, so isAuthenticated may be true on first render
   const [showLanding, setShowLanding] = React.useState(() => {
-    return !storage.has(StorageKeys.AUTH_TOKEN) && !storage.has(StorageKeys.IS_AUTHENTICATED);
+    // If authenticated from context (optimistic load), never show landing
+    if (isAuthenticated) {
+      console.log('[ChatRoom] Initializing: isAuthenticated=true, hiding landing');
+      return false;
+    }
+    // If checking auth, don't show landing yet (wait for result)
+    if (isCheckingAuth) {
+      console.log('[ChatRoom] Initializing: isCheckingAuth=true, hiding landing (waiting for auth check)');
+      return false;
+    }
+    // CRITICAL: Check storage directly - if user has stored auth, don't show landing
+    // This handles the case where optimistic load hasn't completed yet
+    const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
+    if (hasStoredAuth) {
+      console.log('[ChatRoom] Initializing: stored auth exists, hiding landing');
+      return false;
+    }
+    // Only show landing if definitely no auth anywhere
+    const shouldShow = true;
+    console.log('[ChatRoom] Initializing showLanding:', {
+      isAuthenticated,
+      isCheckingAuth,
+      hasStoredAuth,
+      shouldShow,
+    });
+    return shouldShow;
   });
 
   // In-app notifications
@@ -108,25 +136,76 @@ function ChatRoomContent({
     storage.set(StorageKeys.NOTIFICATION_PREFERENCES, notificationPrefs);
   }, [notificationPrefs]);
 
-  // Auth effects
+  // Auth effects - hide landing page when authenticated
   React.useEffect(() => {
-    if (isAuthenticated) setShowLanding(false);
-  }, [isAuthenticated]);
-
-  React.useEffect(() => {
-    if (!isCheckingAuth && !isAuthenticated) {
-      const inviteCode = getQueryParam('invite');
-      if (inviteCode) {
-        navigate(NavigationPaths.withQuery(NavigationPaths.SIGN_IN, { invite: inviteCode }));
-        return;
-      }
-      if (!showLanding && window.location.pathname === '/') {
+    if (isAuthenticated) {
+      setShowLanding(false);
+    } else if (!isCheckingAuth) {
+      // Only show landing if we're not checking auth and not authenticated
+      // This prevents showing landing during the brief moment before auth check completes
+      const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
+      if (!hasStoredAuth && window.location.pathname === '/') {
         setShowLanding(true);
-        return;
       }
-      if (showLanding) return;
-      navigate(NavigationPaths.SIGN_IN);
     }
+  }, [isAuthenticated, isCheckingAuth]);
+
+  // Handle authentication-based routing
+  // CRITICAL: Wait for auth check to complete before redirecting
+  React.useEffect(() => {
+    // Don't redirect while checking auth - wait for verification to complete
+    if (isCheckingAuth) {
+      console.log('[ChatRoom] Auth check in progress, waiting...');
+      return;
+    }
+
+    // If authenticated, ensure we're not on sign-in page (redirect to home)
+    if (isAuthenticated) {
+      console.log('[ChatRoom] User is authenticated, ensuring correct route');
+      if (window.location.pathname === '/signin' || window.location.pathname === '/sign-in') {
+        console.log('[ChatRoom] Redirecting authenticated user from sign-in to home');
+        navigate('/');
+      }
+      // Ensure landing page is hidden
+      setShowLanding(false);
+      return;
+    }
+
+    // Not authenticated - but check if we have stored auth first
+    // This handles the case where server verification failed but token exists
+    const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
+    if (hasStoredAuth) {
+      console.log('[ChatRoom] Not authenticated but stored auth exists - waiting for verification');
+      // Don't redirect yet - might be a temporary network issue
+      // The verifySession will eventually clear auth if token is invalid
+      return;
+    }
+
+    // Definitely not authenticated and no stored auth - redirect to sign-in
+    console.log('[ChatRoom] User not authenticated, redirecting to sign-in');
+    
+    // But preserve invite codes and other query params
+    const inviteCode = getQueryParam('invite');
+    if (inviteCode) {
+      navigate(NavigationPaths.withQuery(NavigationPaths.SIGN_IN, { invite: inviteCode }));
+      return;
+    }
+
+    // Show landing page if on root and no auth
+    if (!showLanding && window.location.pathname === '/') {
+      console.log('[ChatRoom] Showing landing page (no auth, on root)');
+      setShowLanding(true);
+      return;
+    }
+
+    // Don't redirect if already showing landing or already on sign-in
+    if (showLanding || window.location.pathname === '/signin' || window.location.pathname === '/sign-in') {
+      return;
+    }
+
+    // Redirect to sign-in
+    console.log('[ChatRoom] Redirecting to sign-in');
+    navigate(NavigationPaths.SIGN_IN);
   }, [isCheckingAuth, isAuthenticated, showLanding, navigate, getQueryParam]);
 
   React.useEffect(() => {
@@ -156,6 +235,7 @@ function ChatRoomContent({
     setEditingTask,
     setTaskFormData,
     saveTask,
+    deleteTask,
     loadTasks,
     toggleTaskStatus,
     // Modal objects (for backward compatibility)
@@ -275,18 +355,38 @@ function ChatRoomContent({
     [toast, username, notifications]
   );
 
-  // Landing page
-  if (!isAuthenticated && showLanding) {
-    return <LandingPage onGetStarted={handleGetStarted} />;
-  }
-
-  // Loading states
+  // Show loading state while checking auth (prevents flash of landing page)
+  // CRITICAL: If we have stored auth, show loading instead of landing page
   if (isCheckingAuth) {
+    const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
+    console.log('[ChatRoom] Checking auth:', {
+      isCheckingAuth: true,
+      hasStoredAuth,
+      isAuthenticated,
+    });
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-gray-600 text-lg">Checking your session…</div>
       </div>
     );
+  }
+
+  // Landing page - only show if definitely not authenticated
+  // CRITICAL: Check both isAuthenticated AND storage to prevent showing landing when user has auth
+  const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
+  const shouldShowLanding = !isAuthenticated && 
+                            !hasStoredAuth && 
+                            showLanding;
+  
+  if (shouldShowLanding) {
+    console.log('[ChatRoom] Showing landing page:', {
+      isAuthenticated,
+      isCheckingAuth,
+      showLanding,
+      hasToken: storage.has(StorageKeys.AUTH_TOKEN),
+      hasIsAuth: storage.has(StorageKeys.IS_AUTHENTICATED),
+    });
+    return <LandingPage onGetStarted={handleGetStarted} />;
   }
 
   if (!isAuthenticated) {
@@ -454,6 +554,7 @@ function ChatRoomContent({
                 setEditingTask(null);
               }}
               onSaveTask={saveTask}
+              onDeleteTask={deleteTask}
               showWelcomeModal={welcomeModal?.show || false}
               onCloseWelcome={() => {
                 setShowWelcomeModal(false);

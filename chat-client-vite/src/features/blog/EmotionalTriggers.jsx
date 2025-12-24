@@ -1,7 +1,17 @@
 import React from 'react';
 import { BlogArticleLayout } from './BlogArticleLayout';
+import { getBlogImage } from './blogImageHelper';
 
 export function EmotionalTriggers() {
+  // Call helper inside component to ensure it's executed at runtime
+  const heroImage = getBlogImage('emotional-triggers');
+  
+  // Debug logging
+  React.useEffect(() => {
+    console.log('[EmotionalTriggers] Hero image path:', heroImage);
+    console.log('[EmotionalTriggers] Image map loaded:', heroImage !== null);
+  }, [heroImage]);
+
   const meta = {
     title: (
       <>
@@ -13,6 +23,8 @@ export function EmotionalTriggers() {
       'Understanding the psychology behind emotional triggers and why neutral texts can feel like attacks.',
     date: 'Dec 11, 2025',
     readTime: '6 min read',
+    heroImage: heroImage, // Use the variable instead of calling directly
+    heroImageAlt: 'Understanding emotional triggers in co-parenting communication',
   };
 
   const breadcrumbs = [

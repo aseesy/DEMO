@@ -26,7 +26,9 @@ export function useContactsApi(username, isAuthenticated = true) {
       }
       setIsLoadingContacts(true);
       try {
-        const response = await apiGet(`/api/contacts?username=${encodeURIComponent(username)}`);
+        // Backend uses authenticated user's ID from JWT token, not username query param
+        // The username param is ignored for security (prevents IDOR attacks)
+        const response = await apiGet('/api/contacts');
         if (response.ok) {
           const data = await response.json();
           // Transform relationship fields from backend format to display format
@@ -140,7 +142,7 @@ export function useContactsApi(username, isAuthenticated = true) {
 
       try {
         const response = await apiPut(
-          `/api/contacts/${contactId}?username=${encodeURIComponent(username)}`,
+          `/api/contacts/${contactId}`,
           { _method: 'DELETE' }
         );
         const data = await response.json();

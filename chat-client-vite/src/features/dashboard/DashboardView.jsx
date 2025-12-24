@@ -120,6 +120,7 @@ export function DashboardView({
           setCurrentView={setCurrentView}
           analyzeConversation={threadState.analyzeConversation}
           isLoadingThreads={threadState.isLoadingThreads}
+          getThreadMessages={threadState.getThreadMessages}
         />
       </div>
     </div>
@@ -400,6 +401,7 @@ function ThreadsSection({
   setCurrentView,
   analyzeConversation,
   isLoadingThreads,
+  getThreadMessages,
 }) {
   return (
     <div className="bg-white rounded-2xl border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow overflow-hidden mt-4 md:mt-6">
@@ -429,6 +431,10 @@ function ThreadsSection({
                 thread={thread}
                 onClick={() => {
                   setSelectedThreadId(thread.id);
+                  // Fetch thread messages before navigating
+                  if (getThreadMessages) {
+                    getThreadMessages(thread.id);
+                  }
                   setCurrentView('chat');
                 }}
               />

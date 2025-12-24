@@ -1,5 +1,6 @@
 import React from 'react';
 import { TaskIcon } from './TaskIcon.jsx';
+import { IOSInstallGuide } from '../../pwa/IOSInstallGuide.jsx';
 import {
   isCoparentTask,
   isProfileTask,
@@ -27,6 +28,7 @@ export function TaskCard({
   onToggleStatus,
 }) {
   const [isInstalling, setIsInstalling] = React.useState(false);
+  const [showIOSGuide, setShowIOSGuide] = React.useState(false);
 
   // Get PWA state from window (set by App.jsx via usePWA hook)
   const pwa = window.liaizenPWA || {};
@@ -41,13 +43,7 @@ export function TaskCard({
     if (!showInstallPrompt) {
       // Show platform-specific instructions
       if (isIOS) {
-        alert(
-          '📲 Install LiaiZen on iPhone:\n\n' +
-            '1. Tap the Share button (□↑) at the bottom of Safari\n' +
-            '2. Scroll down and tap "Add to Home Screen"\n' +
-            '3. Tap "Add" in the top right\n\n' +
-            'LiaiZen will appear on your home screen!'
-        );
+        setShowIOSGuide(true);
       } else {
         alert(
           '📲 Install LiaiZen:\n\n' +
@@ -180,12 +176,17 @@ export function TaskCard({
 
         {task.description && (
           <p
-            className={`text-xs text-gray-600 line-clamp-2 wrap-break-word leading-relaxed ${
+            className={`text-xs text-gray-600 line-clamp-2 break-words leading-relaxed ${
               isCompleted ? 'line-through text-gray-400' : ''
             }`}
           >
             {task.description}
           </p>
+        )}
+
+        {/* Due Date Display */}
+        {task.due_date && (
+          <DueDateBadge dueDate={task.due_date} isCompleted={isCompleted} />
         )}
 
         {/* PWA Install Button - shown for PWA install task when not completed */}
@@ -257,6 +258,9 @@ export function TaskCard({
         {/* Assigned and Related People */}
         <TaskAssignmentBadges task={task} contacts={contacts} />
       </div>
+
+      {/* iOS Install Guide Modal */}
+      <IOSInstallGuide isOpen={showIOSGuide} onClose={() => setShowIOSGuide(false)} />
     </div>
   );
 }
@@ -344,6 +348,63 @@ function PeopleIcon() {
         d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
       />
     </svg>
+  );
+}
+
+/**
+ * DueDateBadge - Shows task due date with visual indicator for overdue/upcoming
+ */
+function DueDateBadge({ dueDate, isCompleted }) {
+  const date = new Date(dueDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+
+  const isOverdue = !isCompleted && date < today;
+  const isToday = date.getTime() === today.getTime();
+  const isTomorrow = date.getTime() === today.getTime() + 86400000;
+
+  // Format date
+  let dateText;
+  if (isToday) {
+    dateText = 'Today';
+  } else if (isTomorrow) {
+    dateText = 'Tomorrow';
+  } else {
+    dateText = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
+  const baseClasses =
+    'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium mt-1.5';
+  const colorClasses = isCompleted
+    ? 'bg-gray-100 text-gray-400'
+    : isOverdue
+      ? 'bg-red-50 text-red-600 border border-red-200'
+      : isToday
+        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+        : 'bg-gray-50 text-gray-600 border border-gray-200';
+
+  return (
+    <span className={`${baseClasses} ${colorClasses}`}>
+      <svg
+        className="w-3 h-3"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+        />
+      </svg>
+      {isOverdue && !isCompleted ? 'Overdue: ' : ''}
+      {dateText}
+    </span>
   );
 }
 

@@ -14,6 +14,13 @@ const VENDOR_LIBS = [
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    },
+  },
   resolve: {
     alias: {
       '@features': path.resolve(__dirname, './src/features'),
@@ -26,18 +33,34 @@ export default defineConfig({
     },
   },
   build: {
-    // Optional: raise the warning limit if you just want to silence it
-    // chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1000, // Increase limit to 1MB (images are large)
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Split node_modules into separate chunks
           if (id.includes('node_modules')) {
             const parts = id.split('node_modules/')[1].split('/');
             const pkg = parts[0].startsWith('@') ? `${parts[0]}/${parts[1]}` : parts[0];
             if (VENDOR_LIBS.includes(pkg)) {
               return 'vendor';
             }
+            // Split other large dependencies
+            if (pkg.includes('socket.io') || pkg.includes('socketio')) {
+              return 'vendor-socket';
+            }
           }
+          // Split blog routes (they have large images)
+          if (id.includes('features/blog')) {
+            return 'blog';
+          }
+        },
+        // Optimize asset handling
+        assetFileNames: (assetInfo) => {
+          // Keep images in assets folder but optimize naming
+          if (assetInfo.name && /\.(png|jpe?g|svg|gif|webp)$/.test(assetInfo.name)) {
+            return 'assets/[name]-[hash][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
         },
       },
     },

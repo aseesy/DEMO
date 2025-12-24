@@ -27,6 +27,7 @@ export function GlobalModals({
   username,
   onCloseTaskForm,
   onSaveTask,
+  onDeleteTask,
 
   // Welcome Modal
   showWelcomeModal,
@@ -66,6 +67,7 @@ export function GlobalModals({
         username={username}
         onClose={onCloseTaskForm}
         onSave={onSaveTask}
+        onDelete={onDeleteTask}
       />
 
       {showWelcomeModal && (

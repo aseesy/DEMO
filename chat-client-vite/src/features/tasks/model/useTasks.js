@@ -6,7 +6,7 @@ import {
   wasTaskCompleted,
   getDefaultTaskFormData,
 } from './taskHelpers.js';
-import { queryFetchTasks, commandUpdateTaskStatus, commandSaveTask } from './taskQueries.js';
+import { queryFetchTasks, commandUpdateTaskStatus, commandSaveTask, commandDeleteTask } from './taskQueries.js';
 
 // Minimal tasks hook to mirror the existing dashboard task behavior.
 // This focuses on loading tasks, limiting to 5, toggling status,
@@ -107,6 +107,28 @@ export function useTasks(username, isAuthenticated = true) {
     }
   };
 
+  const deleteTask = async task => {
+    if (!task?.id || !username) return;
+
+    // Confirm deletion
+    const confirmed = window.confirm(`Delete "${task.title}"? This cannot be undone.`);
+    if (!confirmed) return;
+
+    const result = await commandDeleteTask({
+      taskId: task.id,
+      username,
+    });
+
+    if (result.success) {
+      setShowTaskForm(false);
+      setEditingTask(null);
+      setTaskFormData(getDefaultTaskFormData());
+      loadTasks();
+    } else {
+      alert(result.error || 'Failed to delete task');
+    }
+  };
+
   return {
     tasks,
     isLoadingTasks,
@@ -123,6 +145,7 @@ export function useTasks(username, isAuthenticated = true) {
     loadTasks,
     toggleTaskStatus,
     saveTask,
+    deleteTask,
     getTaskAction, // Feature 005: helper for special task actions
   };
 }

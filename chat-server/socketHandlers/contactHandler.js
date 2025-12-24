@@ -142,3 +142,4 @@ function registerContactHandlers(socket, io, services, activeUsers) {
 }
 
 module.exports = { registerContactHandlers };
+

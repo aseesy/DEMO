@@ -166,3 +166,4 @@ function registerNavigationHandlers(socket, io, services, activeUsers) {
 }
 
 module.exports = { registerNavigationHandlers };
+

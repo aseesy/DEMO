@@ -191,6 +191,7 @@ function setupRoutes(app, services) {
   const aiRoutes = require('./routes/ai');
   const connectionsRoutes = require('./routes/connections');
   const profileRoutes = require('./routes/profile');
+  const blogImagesRoutes = require('./routes/blogImages');
 
   tasksRoutes.setHelpers({ autoCompleteOnboardingTasks, backfillOnboardingTasks });
   pairingRoutes.setHelpers({ roomManager });
@@ -230,6 +231,7 @@ function setupRoutes(app, services) {
   app.use('/api/figma', figmaRoutes);
   app.use('/api', aiRoutes);
   app.use('/api', connectionsRoutes);
+  app.use('/api/blog/images', blogImagesRoutes);
 
   // ========================================
   // Admin & Import Routes (Inline)

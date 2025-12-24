@@ -125,6 +125,8 @@ export function WhyArgumentsRepeat() {
           src={gameTheoryMatrix}
           alt="Co-Parenting Game Theory Matrix showing the outcomes of cooperation vs domination"
           className="w-full rounded-xl shadow-lg"
+          loading="lazy"
+          decoding="async"
         />
         <p className="text-center text-sm text-gray-500 mt-3 italic">
           The Co-Parent's Dilemma: Why collaboration is logical but feels impossible

@@ -62,3 +62,4 @@ function registerCoachingHandlers(socket, io, services, activeUsers) {
 }
 
 module.exports = { registerCoachingHandlers };
+

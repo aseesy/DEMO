@@ -15,9 +15,10 @@ const dbSafe = require('../../../dbSafe');
  * @param {string} messageText - The message text to analyze
  * @param {Array} existingContacts - User's current contacts
  * @param {Array} recentMessages - Recent conversation context
+ * @param {Array} participantUsernames - Usernames of chat participants (to exclude from detection)
  * @returns {Promise<Object|null>} - Detected people to add or null
  */
-async function detectContactMentions(messageText, existingContacts = [], recentMessages = []) {
+async function detectContactMentions(messageText, existingContacts = [], recentMessages = [], participantUsernames = []) {
   if (!openaiClient.isConfigured() || !messageText || messageText.trim().length === 0) {
     return null;
   }
@@ -26,10 +27,18 @@ async function detectContactMentions(messageText, existingContacts = [], recentM
     const existingContactNames = existingContacts
       .map(c => c.contact_name?.toLowerCase())
       .filter(Boolean);
+    const participantNames = participantUsernames
+      .map(u => u.toLowerCase())
+      .filter(Boolean);
+    const allExcludedNames = [...existingContactNames, ...participantNames];
     const recentContext = recentMessages
       .slice(-5)
       .map(m => `${m.username}: ${m.text}`)
       .join('\n');
+
+    const excludedNamesString = allExcludedNames.length > 0
+      ? `\n\nIMPORTANT - DO NOT suggest these names (they are already contacts or chat participants): ${allExcludedNames.join(', ')}`
+      : '';
 
     const prompt = `You are analyzing a co-parenting message to detect mentions of people who should be added as contacts.
 
@@ -38,9 +47,9 @@ Message: "${messageText}"
 Recent conversation:
 ${recentContext || 'No recent context'}
 
-Existing contacts: ${existingContactNames.length > 0 ? existingContactNames.join(', ') : 'None'}
+Existing contacts: ${existingContactNames.length > 0 ? existingContactNames.join(', ') : 'None'}${excludedNamesString}
 
-Detect NEW people mentioned who are NOT in existing contacts. Look for:
+Detect NEW people mentioned who are NOT in existing contacts or chat participants. Look for:
 - Children (names, "my daughter", "our son", ages)
 - Co-parents ("my ex", "their father/mother")
 - Partners ("my partner", "my boyfriend/girlfriend")
@@ -95,6 +104,17 @@ If no new people detected, return empty detectedPeople array and shouldPrompt: f
       result.detectedPeople = result.detectedPeople.filter(
         p => p.confidence === 'high' || p.confidence === 'medium'
       );
+      
+      // Safety filter: Exclude any detected names that match participant usernames or existing contacts
+      result.detectedPeople = result.detectedPeople.filter(
+        p => {
+          const detectedNameLower = p.name?.toLowerCase();
+          return detectedNameLower && 
+                 !allExcludedNames.includes(detectedNameLower) &&
+                 !allExcludedNames.some(excluded => detectedNameLower.includes(excluded) || excluded.includes(detectedNameLower));
+        }
+      );
+      
       result.shouldPrompt = result.detectedPeople.length > 0;
     }
 

@@ -52,7 +52,7 @@ router.get('/', verifyAuth, async (req, res) => {
  * POST /api/tasks
  * Create a new task
  */
-router.post('/', async (req, res) => {
+router.post('/', verifyAuth, async (req, res) => {
   try {
     const { username, ...taskData } = req.body;
     const result = await taskService.createTask(username, taskData);
@@ -66,7 +66,7 @@ router.post('/', async (req, res) => {
  * PUT /api/tasks/:taskId
  * Update a task
  */
-router.put('/:taskId', async (req, res) => {
+router.put('/:taskId', verifyAuth, async (req, res) => {
   try {
     const { taskId } = req.params;
     const { username, ...updateData } = req.body;
@@ -81,7 +81,7 @@ router.put('/:taskId', async (req, res) => {
  * DELETE /api/tasks/:taskId
  * Delete a task
  */
-router.delete('/:taskId', async (req, res) => {
+router.delete('/:taskId', verifyAuth, async (req, res) => {
   try {
     const { taskId } = req.params;
     const username = req.query.username || req.body.username;
@@ -100,7 +100,7 @@ router.delete('/:taskId', async (req, res) => {
  * POST /api/tasks/generate
  * Generate task using AI
  */
-router.post('/generate', async (req, res) => {
+router.post('/generate', verifyAuth, async (req, res) => {
   try {
     const { taskDetails } = req.body;
     const result = await taskService.generateTask(taskDetails);

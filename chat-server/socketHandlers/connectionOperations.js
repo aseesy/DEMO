@@ -164,12 +164,19 @@ function disconnectDuplicateConnections(activeUsers, io, roomId, cleanUsername, 
  * @param {string} roomId - Room ID
  */
 function registerActiveUser(activeUsers, socketId, cleanUsername, roomId) {
-  activeUsers.set(socketId, {
+  const userData = {
     username: cleanUsername,
     roomId,
     joinedAt: new Date().toISOString(),
     socketId,
+  };
+  activeUsers.set(socketId, userData);
+  console.log('[registerActiveUser] Registered user:', {
+    socketId: socketId.substring(0, 20) + '...',
+    username: cleanUsername,
+    roomId: roomId,
   });
+  return userData;
 }
 
 /**
@@ -190,36 +197,67 @@ function registerActiveUser(activeUsers, socketId, cleanUsername, roomId) {
  * @returns {Promise<MessageHistoryResult>}
  */
 async function getMessageHistory(roomId, dbPostgres, limit = 500) {
+  console.log('[getMessageHistory] Loading messages for room:', roomId);
+  
   // Get total count
   const countResult = await dbPostgres.query(
     'SELECT COUNT(*) as total FROM messages WHERE room_id = $1',
     [roomId]
   );
   const totalMessages = parseInt(countResult.rows[0]?.total || 0, 10);
+  console.log('[getMessageHistory] Total messages in room:', totalMessages);
 
-  // Get messages
+  // Get messages - order by DESC to get most recent messages first
+  // Frontend will reverse for display, but we want newest messages on initial load
   const historyQuery = `
     SELECT m.*, u.display_name, u.first_name
     FROM messages m
     LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
     WHERE m.room_id = $1
-    ORDER BY m.timestamp ASC
+    ORDER BY m.timestamp DESC
     LIMIT ${limit}
   `;
   const result = await dbPostgres.query(historyQuery, [roomId]);
 
-  const messages = result.rows.map(msg => ({
-    id: msg.id,
-    type: msg.type,
-    username: msg.username,
-    displayName: msg.first_name || msg.display_name || msg.username,
-    text: msg.text,
-    timestamp: msg.timestamp,
-    threadId: msg.thread_id || null,
-    edited: msg.edited === 1 || msg.edited === '1',
-    reactions: JSON.parse(msg.reactions || '{}'),
-    user_flagged_by: JSON.parse(msg.user_flagged_by || '[]'),
-  }));
+  console.log('[getMessageHistory] Retrieved', result.rows.length, 'messages from database');
+
+  // Reverse to chronological order (oldest first) for frontend display
+  const messages = result.rows.reverse().map(msg => {
+    // Ensure all required fields are present
+    const message = {
+      id: msg.id,
+      type: msg.type || 'user_message',
+      username: msg.username,
+      displayName: msg.first_name || msg.display_name || msg.username,
+      text: msg.text,
+      timestamp: msg.timestamp || msg.created_at,
+      threadId: msg.thread_id || null,
+      edited: msg.edited === 1 || msg.edited === '1',
+      reactions: msg.reactions ? (typeof msg.reactions === 'string' ? JSON.parse(msg.reactions) : msg.reactions) : {},
+      user_flagged_by: msg.user_flagged_by ? (typeof msg.user_flagged_by === 'string' ? JSON.parse(msg.user_flagged_by) : msg.user_flagged_by) : [],
+    };
+    
+    // Log if message is missing critical fields
+    if (!message.id || !message.username || !message.text) {
+      console.warn('[getMessageHistory] Message missing critical fields:', {
+        id: message.id,
+        username: message.username,
+        hasText: !!message.text,
+        raw: msg,
+      });
+    }
+    
+    return message;
+  });
+
+  // Log sample of messages being returned
+  if (messages.length > 0) {
+    console.log('[getMessageHistory] Sample messages:', {
+      first: messages[0]?.text?.substring(0, 30),
+      last: messages[messages.length - 1]?.text?.substring(0, 30),
+      count: messages.length,
+    });
+  }
 
   return {
     messages,

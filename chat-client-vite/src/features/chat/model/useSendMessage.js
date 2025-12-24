@@ -41,6 +41,14 @@ export function useSendMessage({
       const clean = inputMessage.trim();
       if (!clean || !socketRef?.current) return;
 
+      // AI-GENERATED REWRITES: Skip analysis - already approved by AI
+      if (isPreApprovedRewrite) {
+        console.log('[useSendMessage] Skipping analysis for AI-generated rewrite');
+        sendCleanMessage(clean);
+        stopTyping?.();
+        return;
+      }
+
       // OBSERVER/MEDIATOR FRAMEWORK: Analyze message before sending
       const { analyzeMessage, shouldSendMessage } = await import('../../../utils/messageAnalyzer.js');
 

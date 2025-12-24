@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   PRIORITY_ORDER,
-  INVITE_TASK_TITLES,
+  INVITE_TASK_PATTERNS,
   sortTasksByPriorityAndDate,
   sortTasksByPriorityNewestFirst,
   getTaskAction,
@@ -41,13 +41,17 @@ describe('PRIORITY_ORDER', () => {
   });
 });
 
-describe('INVITE_TASK_TITLES', () => {
-  it('should include "Invite Your Co-Parent"', () => {
-    expect(INVITE_TASK_TITLES).toContain('Invite Your Co-Parent');
+describe('INVITE_TASK_PATTERNS', () => {
+  it('should include "invite your co-parent" pattern', () => {
+    expect(INVITE_TASK_PATTERNS).toContain('invite your co-parent');
   });
 
-  it('should include "Add Your Co-parent"', () => {
-    expect(INVITE_TASK_TITLES).toContain('Add Your Co-parent');
+  it('should include "add your co-parent" pattern', () => {
+    expect(INVITE_TASK_PATTERNS).toContain('add your co-parent');
+  });
+
+  it('should include "add coparent" pattern', () => {
+    expect(INVITE_TASK_PATTERNS).toContain('add coparent');
   });
 });
 

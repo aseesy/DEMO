@@ -9,6 +9,11 @@ async function saveMessage(message) {
   // Don't save private, flagged, or pending_original messages to database
   // pending_original messages are temporary UI-only messages that should never be persisted
   if (message.private || message.flagged || message.type === 'pending_original') {
+    console.log('[saveMessage] Skipping save - message is private/flagged/pending_original:', {
+      private: message.private,
+      flagged: message.flagged,
+      type: message.type,
+    });
     return;
   }
 

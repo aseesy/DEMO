@@ -7,7 +7,7 @@
 
 import { API_BASE_URL } from '../config.js';
 import { apiPost } from '../apiClient.js';
-import { getWithMigration } from './storageMigration.js';
+import { authStorage } from '../adapters/storage';
 import { logger } from './logger.js';
 
 /**
@@ -16,7 +16,7 @@ import { logger } from './logger.js';
  */
 export async function queryRoomMembers() {
   try {
-    const token = getWithMigration('authTokenBackup', 'auth_token_backup');
+    const token = authStorage.getToken();
     const apiUrl = `${API_BASE_URL.replace(/\/+$/, '')}/api/room/members/check`;
 
     const controller = new AbortController();
@@ -92,7 +92,7 @@ export function queryCoParentFromMessages(messages, username) {
  */
 export async function queryInvitationsStatus() {
   try {
-    const token = getWithMigration('authTokenBackup', 'auth_token_backup');
+    const token = authStorage.getToken();
     const response = await fetch(`${API_BASE_URL.replace(/\/+$/, '')}/api/invitations`, {
       method: 'GET',
       credentials: 'include',
@@ -159,7 +159,7 @@ export async function commandJoinRoom(inviteCode, username) {
  */
 export async function commandAcceptCoParentInvite(code) {
   try {
-    const token = getWithMigration('authTokenBackup', 'auth_token_backup');
+    const token = authStorage.getToken();
     const response = await fetch(`${API_BASE_URL.replace(/\/+$/, '')}/api/invitations/accept-code`, {
       method: 'POST',
       headers: {

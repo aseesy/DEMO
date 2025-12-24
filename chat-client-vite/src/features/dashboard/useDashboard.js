@@ -51,6 +51,7 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     setTaskFilter,
     toggleTaskStatus,
     saveTask,
+    deleteTask,
     loadTasks,
   } = useTasks(username, shouldLoadTasks);
 
@@ -187,6 +188,29 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
   // ============================================
   // 4. RETURN (organized by conceptual groups)
   // ============================================
+
+  // Raw task state for ChatRoom (GlobalModals) - exposed at top level for compatibility
+  const rawState = {
+    tasks,
+    isLoadingTasks,
+    showTaskForm,
+    editingTask,
+    taskFormData,
+    setShowTaskForm,
+    setEditingTask,
+    setTaskFormData,
+    setTaskSearch,
+    setTaskFilter,
+    toggleTaskStatus,
+    saveTask,
+    deleteTask,
+    loadTasks,
+    welcomeModal,
+    profileTaskModal,
+    inviteModal,
+    taskFormModal,
+  };
+
   return {
     // Grouped props for DashboardView (abstracted interface)
     taskState,
@@ -206,27 +230,11 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     setShowProfileTaskModal,
     setShowInviteModal,
 
-    // Raw task state for ChatRoom (GlobalModals) - marked as implementation detail
-    // TODO: Refactor ChatRoom to use abstracted interface
-    // These are exposed for backward compatibility only
-    _raw: {
-      tasks,
-      isLoadingTasks,
-      showTaskForm,
-      editingTask,
-      taskFormData,
-      setShowTaskForm,
-      setEditingTask,
-      setTaskFormData,
-      setTaskSearch,
-      setTaskFilter,
-      toggleTaskStatus,
-      saveTask,
-      loadTasks,
-      welcomeModal,
-      profileTaskModal,
-      inviteModal,
-      taskFormModal,
-    },
+    // Spread raw state for backward compatibility with ChatRoom
+    // ChatRoom destructures these directly from dashboardProps
+    ...rawState,
+
+    // Also expose as _raw for explicit access (deprecated pattern)
+    _raw: rawState,
   };
 }

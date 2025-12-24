@@ -5,7 +5,7 @@
  * Error handling is done by the caller.
  */
 
-import { apiGet, apiPost, apiPut } from '../../../apiClient.js';
+import { apiGet, apiPost, apiPut, apiDelete } from '../../../apiClient.js';
 import { logger } from '../../../utils/logger.js';
 import { sortTasksByPriorityAndDate } from './taskHelpers.js';
 
@@ -124,6 +124,33 @@ export async function commandSaveTask({ username, taskData, taskId }) {
     return { success: true, task: data, isNew: !isUpdate };
   } catch (err) {
     logger.error('[taskQueries] Error saving task', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Command: Delete a task
+ * @param {Object} params - Delete parameters
+ * @param {string|number} params.taskId - Task ID
+ * @param {string} params.username - Username
+ * @returns {Promise<{ success: boolean, error?: string }>}
+ */
+export async function commandDeleteTask({ taskId, username }) {
+  if (!taskId || !username) {
+    return { success: false, error: 'Missing required parameters' };
+  }
+
+  try {
+    const response = await apiDelete(`/api/tasks/${taskId}`, { username });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      return { success: false, error: errorData.error || 'Failed to delete task' };
+    }
+
+    return { success: true };
+  } catch (err) {
+    logger.error('[taskQueries] Error deleting task', err);
     return { success: false, error: err.message };
   }
 }

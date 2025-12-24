@@ -43,10 +43,59 @@ function isTokenExpired(token) {
  * AuthProvider component
  */
 export function AuthProvider({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  const [username, setUsername] = React.useState(null);
-  const [email, setEmail] = React.useState(null);
-  const [token, setToken] = React.useState(null);
+  // CRITICAL: Initialize auth state synchronously from storage
+  // This ensures PWA launches show authenticated state immediately
+  // This runs during component initialization, before first render
+  const initialAuthState = React.useMemo(() => {
+    const storedToken = authStorage.getToken();
+    const storedUsername = authStorage.getUsername();
+    const storedEmail = storage.getString(StorageKeys.USER_EMAIL);
+    const storedIsAuthenticated = authStorage.isAuthenticated();
+
+    console.log('[AuthContext] Initializing auth state from storage:', {
+      hasToken: !!storedToken,
+      hasUsername: !!storedUsername,
+      storedIsAuthenticated,
+    });
+
+    // Check if token is expired using the same logic as isTokenExpired
+    if (storedToken) {
+      try {
+        const payload = JSON.parse(atob(storedToken.split('.')[1]));
+        const exp = payload.exp * 1000;
+        const isExpired = Date.now() >= exp;
+        if (isExpired) {
+          console.log('[AuthContext] Token expired, clearing auth');
+          // Token expired
+          return { isAuthenticated: false, username: null, email: null, token: null };
+        }
+        console.log('[AuthContext] Token valid, expires:', new Date(exp).toLocaleString());
+      } catch (error) {
+        console.warn('[AuthContext] Invalid token format:', error);
+        // Invalid token
+        return { isAuthenticated: false, username: null, email: null, token: null };
+      }
+    }
+
+    // If we have valid stored auth, use it for initial state
+    const hasValidStoredAuth = storedIsAuthenticated && storedToken && storedUsername;
+    console.log('[AuthContext] Initial auth state:', {
+      isAuthenticated: hasValidStoredAuth,
+      username: hasValidStoredAuth ? storedUsername : null,
+    });
+    
+    return {
+      isAuthenticated: hasValidStoredAuth,
+      username: hasValidStoredAuth ? storedUsername : null,
+      email: hasValidStoredAuth ? storedEmail : null,
+      token: hasValidStoredAuth ? storedToken : null,
+    };
+  }, []); // Empty deps - only run once on mount
+
+  const [isAuthenticated, setIsAuthenticated] = React.useState(initialAuthState.isAuthenticated);
+  const [username, setUsername] = React.useState(initialAuthState.username);
+  const [email, setEmail] = React.useState(initialAuthState.email);
+  const [token, setToken] = React.useState(initialAuthState.token);
   const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
   const [isSigningUp, setIsSigningUp] = React.useState(false);
@@ -55,6 +104,7 @@ export function AuthProvider({ children }) {
 
   /**
    * Load auth state from storage
+   * This provides initial state while session verification is in progress
    */
   const loadAuthState = React.useCallback(() => {
     const storedToken = authStorage.getToken();
@@ -65,12 +115,29 @@ export function AuthProvider({ children }) {
     // Validate token if present
     if (storedToken && isTokenExpired(storedToken)) {
       // Token expired, clear everything
-      clearAuthState();
+      authStorage.clearAuth();
+      setIsAuthenticated(false);
+      setUsername(null);
+      setEmail(null);
+      setToken(null);
       return { isAuthenticated: false, username: null, email: null, token: null };
     }
 
+    // If we have a valid token and username, set initial state optimistically
+    // This allows the app to show authenticated UI while verification completes
+    // The verifySession will confirm or clear this state
+    const hasValidStoredAuth = storedIsAuthenticated && storedToken && storedUsername && !isTokenExpired(storedToken);
+    
+    if (hasValidStoredAuth) {
+      // Set initial state from storage (will be verified by verifySession)
+      setIsAuthenticated(true);
+      setUsername(storedUsername);
+      setEmail(storedEmail);
+      setToken(storedToken);
+    }
+
     return {
-      isAuthenticated: storedIsAuthenticated && storedToken && storedUsername,
+      isAuthenticated: hasValidStoredAuth,
       username: storedUsername,
       email: storedEmail,
       token: storedToken,
@@ -99,17 +166,21 @@ export function AuthProvider({ children }) {
       const storedToken = authStorage.getToken();
 
       if (!storedToken) {
+        console.log('[verifySession] No token found, clearing auth');
         setIsCheckingAuth(false);
+        clearAuthState();
         return;
       }
 
       // Check token expiration first
       if (isTokenExpired(storedToken)) {
+        console.log('[verifySession] Token expired, clearing auth');
         clearAuthState();
         setIsCheckingAuth(false);
         return;
       }
 
+      console.log('[verifySession] Verifying token with server...');
       const response = await apiGet('/api/auth/verify', {
         headers: {
           Authorization: `Bearer ${storedToken}`,
@@ -121,6 +192,7 @@ export function AuthProvider({ children }) {
         const { authenticated, user } = data;
 
         if (authenticated && user) {
+          console.log('[verifySession] ✅ Server confirmed authentication');
           setIsAuthenticated(true);
           setToken(storedToken);
           authStorage.setAuthenticated(true);
@@ -137,22 +209,29 @@ export function AuthProvider({ children }) {
             storage.set(StorageKeys.USER_EMAIL, user.email);
           }
         } else {
+          console.log('[verifySession] ❌ Server says not authenticated, clearing auth');
           clearAuthState();
         }
       } else {
+        console.log('[verifySession] ❌ Server verification failed, clearing auth');
         clearAuthState();
       }
     } catch (err) {
-      console.error('Error verifying session:', err);
-      // On error, try to restore from storage if available
+      console.error('[verifySession] ⚠️ Error verifying session:', err);
+      // CRITICAL: On network errors, keep optimistic auth state
+      // This prevents showing landing page when user has valid stored credentials
+      // but network is temporarily unavailable
       const storedState = loadAuthState();
-      if (storedState.isAuthenticated) {
-        // Use stored state but mark as potentially stale
+      if (storedState.isAuthenticated && storedState.token) {
+        console.log('[verifySession] ⚠️ Network error but stored auth exists - keeping optimistic state');
+        // Keep the optimistic state - don't clear auth on network errors
+        // The user should still be able to use the app if they have valid stored credentials
         setIsAuthenticated(storedState.isAuthenticated);
         setUsername(storedState.username);
         setEmail(storedState.email);
         setToken(storedState.token);
       } else {
+        console.log('[verifySession] ❌ No stored auth, clearing state');
         clearAuthState();
       }
     } finally {
@@ -295,11 +374,16 @@ export function AuthProvider({ children }) {
   }, [clearAuthState]);
 
   /**
-   * Verify session on mount
+   * Initialize auth state on mount
+   * Load from storage first (optimistic), then verify with server
+   * This ensures PWA launches show authenticated state immediately if user is logged in
    */
   React.useEffect(() => {
+    // Load initial state from storage (optimistic - shows logged in state immediately)
+    loadAuthState();
+    // Then verify with server (will confirm or clear if invalid)
     verifySession();
-  }, [verifySession]);
+  }, [loadAuthState, verifySession]);
 
   /**
    * Sync auth state across tabs

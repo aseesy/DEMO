@@ -2,6 +2,16 @@ import React from 'react';
 import { apiPost } from '../../../apiClient.js';
 import { Button, Input, Textarea, Select } from '../../../components/ui';
 
+// Onboarding task titles that should not be deletable
+const PROTECTED_TASK_TITLES = [
+  'Welcome to LiaiZen',
+  'Complete Your Profile',
+  'Add Your Co-parent',
+  'Add Your Children',
+  'Invite Your Co-Parent',
+  'Install LiaiZen on Your Phone',
+];
+
 export function TaskFormModal({
   showTaskForm,
   editingTask,
@@ -17,6 +27,7 @@ export function TaskFormModal({
   username,
   onClose,
   onSave,
+  onDelete,
 }) {
   if (!showTaskForm) return null;
 
@@ -343,6 +354,29 @@ export function TaskFormModal({
             <Button onClick={handleClose} variant="tertiary">
               Cancel
             </Button>
+            {/* Delete button - only for existing user-created tasks */}
+            {editingTask && onDelete && !PROTECTED_TASK_TITLES.includes(editingTask.title) && (
+              <Button
+                onClick={() => onDelete(editingTask)}
+                variant="ghost"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                aria-label="Delete task"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </Button>
+            )}
           </div>
         ) : null}
       </div>

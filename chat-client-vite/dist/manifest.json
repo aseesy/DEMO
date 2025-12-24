@@ -1,22 +1,37 @@
 {
-  "name": "Chat Client",
-  "short_name": "Chat",
-  "description": "A progressive web app for real‑time chat",
+  "name": "LiaiZen",
+  "short_name": "LiaiZen",
+  "description": "Co-parenting communication made peaceful",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4DA8B0",
+  "orientation": "portrait",
+  "background_color": "#275559",
+  "theme_color": "#275559",
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

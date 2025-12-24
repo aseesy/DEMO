@@ -56,6 +56,7 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
     originalRewrite,
     setOriginalRewrite,
     threads,
+    threadMessages,
     selectedThreadId,
     setSelectedThreadId,
     getThreadMessages,
@@ -76,6 +77,14 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
     highlightedMessageId,
     isInitialLoad,
   } = useChatContext();
+
+  // Determine which messages to display: thread messages if thread selected, otherwise all messages
+  const displayMessages = React.useMemo(() => {
+    if (selectedThreadId && threadMessages[selectedThreadId]) {
+      return threadMessages[selectedThreadId];
+    }
+    return messages;
+  }, [selectedThreadId, threadMessages, messages]);
 
   // Local state
   const [showThreadsPanel, setShowThreadsPanel] = React.useState(false);
@@ -321,7 +330,7 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
               }}
             >
               <MessagesContainer
-                messages={messages}
+                messages={displayMessages}
                 username={username}
                 messagesContainerRef={messagesContainerRef}
                 messagesEndRef={messagesEndRef}
@@ -337,6 +346,8 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
                 setFlaggingMessage={setFlaggingMessage}
                 addToThread={addToThread}
                 threads={threads}
+                selectedThreadId={selectedThreadId}
+                setSelectedThreadId={setSelectedThreadId}
                 draftCoaching={draftCoaching}
                 inputMessage={inputMessage}
                 setInputMessage={setInputMessage}

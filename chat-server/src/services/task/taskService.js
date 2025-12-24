@@ -400,5 +400,3 @@ Respond in JSON format only with this structure:
 const taskService = new TaskService();
 
 module.exports = { taskService, TaskService };
-
-module.exports = { taskService, TaskService };

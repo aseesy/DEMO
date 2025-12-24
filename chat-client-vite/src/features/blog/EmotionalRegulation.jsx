@@ -1,5 +1,6 @@
 import React from 'react';
 import { BlogArticleLayout } from './BlogArticleLayout';
+import { getBlogImage } from './blogImageHelper';
 
 export function EmotionalRegulation() {
   const meta = {
@@ -13,6 +14,8 @@ export function EmotionalRegulation() {
       'Why managing your own nervous system is the most powerful move you can make in a co-parenting dynamic.',
     date: 'Dec 12, 2025',
     readTime: '7 min read',
+    heroImage: getBlogImage('emotional-regulation'),
+    heroImageAlt: 'How emotional regulation changes co-parenting outcomes',
   };
 
   const breadcrumbs = [

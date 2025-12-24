@@ -130,6 +130,13 @@ export function BlogArticleLayout({ children, meta, breadcrumbs, keyTakeaways, c
               src={meta.heroImage}
               alt={meta.heroImageAlt || meta.title}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                console.error('[BlogArticleLayout] Image failed to load:', meta.heroImage);
+                console.error('[BlogArticleLayout] Error details:', e);
+              }}
+              onLoad={() => {
+                console.log('[BlogArticleLayout] Image loaded successfully:', meta.heroImage);
+              }}
             />
           </div>
         </div>
