@@ -6,7 +6,6 @@
  */
 
 const { sanitizeInput, MAX_MESSAGE_LENGTH } = require('../utils');
-const { getUserDisplayName } = require('./utils');
 
 /**
  * Validation result type
@@ -146,10 +145,14 @@ function parseReactions(reactionsJson) {
  * @param {Object} reactions - Current reactions object
  * @param {string} emoji - Emoji to toggle
  * @param {string} username - Username toggling the reaction
- * @returns {Object} Updated reactions object
+ * @returns {Object} Updated reactions object (new object, doesn't mutate original)
  */
 function toggleReaction(reactions, emoji, username) {
-  const updated = { ...reactions };
+  // Deep copy to avoid mutating original arrays
+  const updated = {};
+  for (const key of Object.keys(reactions)) {
+    updated[key] = [...reactions[key]];
+  }
 
   if (!updated[emoji]) {
     updated[emoji] = [];
