@@ -108,7 +108,14 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   // Scroll helpers
   const scrollToBottom = React.useCallback(
     (instant = false) => {
-      messagesEndRef.current?.scrollIntoView({ behavior: instant ? 'instant' : 'smooth' });
+      // Use scrollIntoView with block: 'end' to ensure message appears above input bar
+      // The padding-bottom on MessagesContainer ensures it's not covered
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({
+          behavior: instant ? 'instant' : 'smooth',
+          block: 'end',
+        });
+      }
     },
     [messagesEndRef]
   );
@@ -145,6 +152,10 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   // Helper to emit or queue a message - with optimistic updates for instant UI feedback
   const emitOrQueueMessage = React.useCallback(
     text => {
+      // Scroll to bottom after sending message to ensure it's visible above input bar
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
       const messageId = `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const now = new Date().toISOString();
 
@@ -203,6 +214,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       setMessages,
       setPendingMessages,
       setMessageStatuses,
+      scrollToBottom,
     ]
   );
 
@@ -465,9 +477,68 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }
 
+// Default context for when provider isn't ready (prevents crash during StrictMode/HMR)
+const defaultContext = {
+  socket: null,
+  isConnected: false,
+  isJoined: false,
+  error: '',
+  messages: [],
+  inputMessage: '',
+  setInputMessage: () => {},
+  sendMessage: () => {},
+  handleInputChange: () => {},
+  removeMessages: () => {},
+  flagMessage: () => {},
+  messagesEndRef: { current: null },
+  messagesContainerRef: { current: null },
+  pendingMessages: new Map(),
+  messageStatuses: new Map(),
+  draftCoaching: null,
+  setDraftCoaching: () => {},
+  isPreApprovedRewrite: false,
+  setIsPreApprovedRewrite: () => {},
+  originalRewrite: '',
+  setOriginalRewrite: () => {},
+  threads: [],
+  threadMessages: {},
+  selectedThreadId: null,
+  setSelectedThreadId: () => {},
+  createThread: () => {},
+  getThreads: () => {},
+  getThreadMessages: () => {},
+  addToThread: () => {},
+  typingUsers: new Set(),
+  loadOlderMessages: () => {},
+  isLoadingOlder: false,
+  hasMoreMessages: true,
+  searchMessages: () => {},
+  searchQuery: '',
+  searchResults: [],
+  searchTotal: 0,
+  isSearching: false,
+  searchMode: false,
+  toggleSearchMode: () => {},
+  exitSearchMode: () => {},
+  jumpToMessage: () => {},
+  highlightedMessageId: null,
+  isInitialLoad: true,
+  unreadCount: 0,
+  setUnreadCount: () => {},
+  hasMeanMessage: false,
+};
+
 export function useChatContext() {
   const context = React.useContext(ChatContext);
   if (!context) {
+    // In development, warn but don't crash - allows React StrictMode/HMR to work
+    if (import.meta.env.DEV) {
+      console.warn(
+        '[useChatContext] Context not available - using default. This may indicate a component is rendering outside ChatProvider.'
+      );
+      return defaultContext;
+    }
+    // In production, still throw to catch real bugs
     throw new Error('useChatContext must be used within a ChatProvider');
   }
   return context;
