@@ -13,6 +13,7 @@ const TASK_PATTERNS = {
   children: ['add your children', 'add children'],
   welcome: ['welcome'],
   invite: ['invite your co-parent'],
+  pwaInstall: ['install liaizen on your phone', 'install app'],
 };
 
 /**
@@ -81,6 +82,15 @@ export function isInviteTask(task) {
 }
 
 /**
+ * Check if task is a PWA install task
+ * @param {Object} task - Task object
+ * @returns {boolean}
+ */
+export function isPWAInstallTask(task) {
+  return matchesPattern(task?.title, TASK_PATTERNS.pwaInstall);
+}
+
+/**
  * Check if task is a "smart" task (special handling required)
  * @param {Object} task - Task object
  * @returns {boolean}
@@ -107,7 +117,7 @@ export function isInviteRelatedTask(task) {
 /**
  * Get task type as a string
  * @param {Object} task - Task object
- * @returns {string} Task type: 'welcome' | 'profile' | 'invite' | 'coparent' | 'children' | 'default'
+ * @returns {string} Task type: 'welcome' | 'profile' | 'invite' | 'coparent' | 'children' | 'pwaInstall' | 'default'
  */
 export function getTaskType(task) {
   if (isWelcomeTask(task)) return 'welcome';
@@ -115,6 +125,7 @@ export function getTaskType(task) {
   if (isInviteTask(task)) return 'invite';
   if (isCoparentTask(task)) return 'coparent';
   if (isChildrenTask(task)) return 'children';
+  if (isPWAInstallTask(task)) return 'pwaInstall';
   return 'default';
 }
 
