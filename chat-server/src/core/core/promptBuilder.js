@@ -81,47 +81,92 @@ ${conversationPatternsSection ? `\n${conversationPatternsSection}\n` : ''}
 ${interventionLearningSection ? `\n${interventionLearningSection}\n` : ''}
 ${roleAwarePromptSection ? `\n${roleAwarePromptSection}\n` : ''}
 
-IF YOU INTERVENE, provide TWO parts:
+IF YOU INTERVENE, provide THREE parts:
 
-1. validation: Show you truly understand their specific situation — attuned, contextual, deeply empathetic.
+1. validation: 1-2 sentences that normalize the reaction without taking sides.
 
-   CORE PRINCIPLE: You're not just acknowledging their emotion, you're showing you SEE the specific reality they're facing. Reference concrete details from their message, their context, their children, their situation. Make them feel truly understood.
+   PRINCIPLES (guide your response, don't copy phrases):
+   - Normalize: This is a natural response, not a flaw
+   - Externalize: Frame as brain/body reaction, not "you being crazy"
+   - Universalize: All humans respond this way, not just them
+   - Depersonalize: About the nervous system, not the other person being evil
+   - No "I" statements, no therapeutic language, no agreeing they're right
 
-   RULES:
-   - Name the SPECIFIC situation with concrete details from their message
-   - Reference their child's name, the actual event, the real circumstance
-   - Connect to their broader context (work stress, schedule constraints, past patterns) when relevant
-   - Show you understand WHY this particular moment matters to them
-   - Use their language/concerns — if they mention their child's health, reference that specifically
-   - Sound like someone who really knows their situation, not a generic validator
-   - Can acknowledge the unfairness or difficulty of their specific circumstance
-   - 1-2 sentences that pack emotional resonance and specific understanding
+   Make it specific to THEIR situation — varied, contextual, relevant to what they said.
 
-   ATTUNEMENT TECHNIQUES:
-   - Name the child: "Vira's been getting tummy aches after fast food, and now this again..."
-   - Reference the pattern: "This is the third time this week they've been late for pickup..."
-   - Acknowledge the setup: "You planned everything, got the kids ready, and then..."
-   - See the impact: "She's been looking forward to this all week, and now..."
-   - Understand the context: "With your work schedule being so rigid, these last-minute changes really throw things off..."
-   - Feel the unfairness: "You're trying to keep things consistent for them, and this makes it harder..."
+2. refocusQuestions: THREE brief, compassionate questions to shift from reactivity to responsiveness.
 
-   GOOD EXAMPLES (highly attuned):
-   - "Vira's been having stomach issues after fast food, and now McDonald's again? That's exactly what you've been trying to avoid."
-   - "You found out through Sam that plans changed instead of hearing it directly from your co-parent. That's the kind of thing that makes you feel out of the loop."
-   - "Third late pickup this week, and you had to rearrange your whole afternoon again. Your schedule doesn't have that kind of flexibility."
-   - "You set everything up for the weekend, got the kids excited, and then it just... changes. All that planning, all that anticipation, gone."
-   - "That message was really harsh — especially when you've been trying to keep things civil for the kids' sake."
-   - "You're working with a rigid schedule, trying to maintain consistency for them, and these last-minute changes make everything harder."
-   - "She's been looking forward to this all week, and now it's not happening. You have to be the one to tell her."
+   PURPOSE: When upset, the emotional brain is in overdrive. These questions gently engage the prefrontal cortex to create space between feeling and reaction. They replace certainty with curiosity — not to excuse harmful behavior, but to communicate in a way that's more likely to be heard.
 
-   BAD EXAMPLES (not attuned):
-   ❌ "I hear your frustration" (clinical, no specifics, uses "I")
-   ❌ "I understand how you feel" (therapist speak, no connection to their situation)
-   ❌ "That must be hard" (generic, could apply to anyone)
-   ❌ "Seeing the same fast food options repeatedly can be frustrating" (too formal, no child reference, no context)
-   ❌ "It sounds like you're upset about the schedule" (vague, doesn't name the specific issue)
+   ⚠️ CRITICAL: CUSTOMIZE each question to their SPECIFIC situation. Don't use generic templates — rewrite each question to reference what they actually said, the specific person, the actual circumstance.
 
-2. rewrite1 and rewrite2: These are REWRITTEN VERSIONS of the sender's original message.
+   PICK 3 QUESTIONS FROM DIFFERENT CATEGORIES AND CUSTOMIZE THEM:
+
+   🔍 AWARENESS (notice emotional state without judgment):
+   - "Is this more about being hurt or being scared?"
+   - "What are you feeling underneath the anger?"
+   Why: Naming emotions reduces their intensity (affect labeling).
+
+   🎯 INTENTION (clarify what they truly want):
+   - "What do you really need from them right now?"
+   - "What outcome would actually help here?"
+   - "Are you trying to be heard, or trying to hurt?"
+   Why: Shifts from blame/venting toward purposeful communication.
+
+   🌍 CONTEXT & CIRCUMSTANCE (what else might be true?):
+   - "What pressures might they be under that you don't see?"
+   - "Could this be about their situation — not about you?"
+   - "Is it possible they're doing the best they can right now?"
+   Why: Shifts from "They did this TO me" to "They did this IN THE MIDDLE OF their own struggle."
+
+   🧩 ASSUMPTION-CHALLENGING (am I mistaking my story for truth?):
+   - "What evidence do you actually have about their intent?"
+   - "Are you assuming malice where there might be stress or misunderstanding?"
+   - "If you gave them the benefit of the doubt, what's a kinder explanation?"
+   Why: Exposes the mind's tendency to fill gaps with negative narratives — invites curiosity instead.
+
+   ⏳ CONSEQUENCE (how will this play out long-term?):
+   - "Will this matter in a week? A month?"
+   - "Is being 'right' more important than preserving this relationship?"
+   - "What kind of co-parent do you want to be in this moment?"
+   Why: Connects present reactions to deeper values and long-term well-being.
+
+   🤝 SYSTEMIC & RELATIONAL (how do we both play a role?):
+   - "Have you contributed to this tension — even unintentionally?"
+   - "Are there patterns here that go beyond this one incident?"
+   - "What if this isn't about blame — but about unmet needs on both sides?"
+   Why: Moves from "me vs them" to "us vs the problem."
+
+   🗣️ MESSAGE-TESTING (filter before sending):
+   - "Will this bring you closer or push you apart?"
+   - "Would you feel respected if someone said this to you?"
+   Why: Creates a pause for editing emotional impulses into constructive language.
+
+   CUSTOMIZATION EXAMPLES:
+   - Generic: "What pressures might they be under?"
+   - Customized: "Could the late pickup be about work stress you don't see?"
+
+   - Generic: "What do you really need?"
+   - Customized: "Do you need them to apologize, or just acknowledge the impact?"
+
+   - Generic: "Is being right more important than the relationship?"
+   - Customized: "Is proving they forgot more important than planning the next birthday together?"
+
+   CRITICAL RULES:
+   - CUSTOMIZE each question to their specific message and situation
+   - Questions must probe what the user HASN'T already expressed
+   - Keep questions SHORT and GROUNDING
+   - Be COMPASSIONATE, not critical
+   - Pick from DIFFERENT categories to open multiple angles
+
+   BAD EXAMPLES:
+   ❌ Generic questions copied from templates
+   ❌ "How did that make you feel?" (if they already expressed feelings)
+   ❌ "Why are you upset?" (too clinical, pressuring)
+   ❌ Questions that add guilt or self-criticism
+   ❌ Three questions from the same category
+
+3. rewrite1 and rewrite2: These are REWRITTEN VERSIONS of the sender's original message.
 
    ⚠️ CRITICAL: The sender (${senderDisplayName}) wants to express the SAME THING differently.
 
@@ -176,6 +221,7 @@ Respond with JSON only:
   "emotion": {"currentEmotion": "neutral|frustrated|defensive", "stressLevel": 0-100},
   "intervention": {
     "validation": "Show deep understanding of their SPECIFIC situation — name the child, reference the concrete details, connect to their context. Make them feel truly seen and understood. Attuned, contextual, empathetic.",
+    "refocusQuestions": ["Question 1 from different category", "Question 2 from different category", "Question 3 from different category"],
     "rewrite1": "Acknowledge + child's experience + solution + collaborative question",
     "rewrite2": "Different approach, same pattern: acknowledge, experience, solution, question"
   }

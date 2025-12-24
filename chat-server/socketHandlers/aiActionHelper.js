@@ -37,10 +37,15 @@ async function detectContactSuggestion(aiMediator, context) {
     const detectionResult = await contactIntelligence.detectContactMentions(
       text,
       existingContacts,
-      recentMessages
+      recentMessages,
+      participantUsernames // Pass participant usernames to exclude them from detection
     );
 
-    if (detectionResult && detectionResult.detectedPeople && detectionResult.detectedPeople.length > 0) {
+    if (
+      detectionResult &&
+      detectionResult.detectedPeople &&
+      detectionResult.detectedPeople.length > 0
+    ) {
       // Get the first detected person (highest confidence)
       // Note: detectContactMentions returns relationships in display format:
       // "My Child", "My Co-Parent", "My Partner", "My Child's Teacher", "My Family", "My Friend", "Other"
@@ -161,6 +166,7 @@ async function processIntervention(socket, io, services, context) {
       type: 'ai_intervention',
       personalMessage: intervention.validation,
       tip1: intervention.insight,
+      refocusQuestions: intervention.refocusQuestions || [],
       rewrite1: intervention.rewrite1,
       rewrite2: intervention.rewrite2,
       originalMessage: message,
@@ -222,7 +228,23 @@ async function processApprovedMessage(socket, io, services, context) {
     console.error('Error updating stats:', err);
   }
 
-  await addToHistory(message, user.roomId);
+  // CRITICAL: Save message to database BEFORE emitting
+  // This ensures message persists even if client disconnects
+  try {
+    await addToHistory(message, user.roomId);
+    console.log('[processApprovedMessage] Message saved to database:', {
+      id: message.id,
+      username: message.username,
+      text: message.text?.substring(0, 50),
+      roomId: user.roomId,
+    });
+  } catch (saveError) {
+    console.error('[processApprovedMessage] ERROR saving message:', saveError);
+    // Still emit the message even if save fails (user should see it)
+    // But log the error so we can debug
+  }
+
+  // Emit to room AFTER saving (ensures persistence)
   io.to(user.roomId).emit('new_message', message);
 
   if (contactSuggestion) {

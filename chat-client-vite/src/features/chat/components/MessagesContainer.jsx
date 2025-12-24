@@ -20,6 +20,8 @@ export function MessagesContainer({
   setFlaggingMessage,
   addToThread,
   threads,
+  selectedThreadId,
+  setSelectedThreadId,
   draftCoaching,
   inputMessage,
   setInputMessage,
@@ -63,18 +65,73 @@ export function MessagesContainer({
     }
   };
 
+  // Find the selected thread to show its title
+  const selectedThread = selectedThreadId ? threads.find(t => t.id === selectedThreadId) : null;
+
   return (
     <div
       ref={messagesContainerRef}
-      className="px-2 sm:px-3 md:px-4 pt-2 pb-2 space-y-1 bg-linear-to-b from-white to-gray-50"
+      className="px-2 sm:px-3 md:px-4 pt-2 pb-24 space-y-1 bg-linear-to-b from-white to-gray-50"
       style={{
         fontFamily: "'Inter', sans-serif",
         opacity: isInitialLoad ? 0 : 1,
         transition: 'opacity 0.15s ease-out',
         WebkitOverflowScrolling: 'touch',
+        // Add extra padding at bottom to ensure messages are visible above input bar
+        paddingBottom: 'max(6rem, calc(env(safe-area-inset-bottom) + 6rem))',
       }}
       onScroll={handleScroll}
     >
+      {/* Thread Header - Show when viewing a thread */}
+      {selectedThread && (
+        <div className="sticky top-0 z-10 bg-white border-b-2 border-teal-light mb-2 -mx-2 sm:-mx-3 md:-mx-4 px-2 sm:px-3 md:px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-teal-medium"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+            <div>
+              <h3 className="font-semibold text-sm text-teal-dark">{selectedThread.title}</h3>
+              <p className="text-xs text-gray-500">
+                {selectedThread.message_count || 0} message
+                {selectedThread.message_count !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              // Clear thread selection to return to all messages
+              if (setSelectedThreadId) {
+                setSelectedThreadId(null);
+              }
+            }}
+            className="text-sm text-teal-medium hover:text-teal-dark font-medium px-3 py-1.5 rounded-lg hover:bg-teal-lightest transition-colors flex items-center gap-1"
+            title="View all messages"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span className="hidden sm:inline">All Messages</span>
+          </button>
+        </div>
+      )}
+
       {hasMoreMessages && (
         <div className="flex justify-center py-2">
           {isLoadingOlder ? (
@@ -216,10 +273,7 @@ export function MessagesContainer({
           <div className="flex justify-end mb-1">
             <div className="max-w-[85%] sm:max-w-[75%]">
               {/* Blocked message bubble */}
-              <div className="px-3 py-2 rounded-2xl bg-gray-100 border-2 border-orange-300 text-gray-600 relative">
-                <div className="absolute -top-2 left-3 px-2 py-0.5 bg-orange-100 border border-orange-300 rounded text-xs font-medium text-orange-700">
-                  Not sent
-                </div>
+              <div className="px-3 py-2 rounded-2xl bg-gray-100 border-2 border-orange-300 text-gray-600">
                 <p className="text-lg leading-relaxed whitespace-pre-wrap wrap-break-word">
                   {draftCoaching.originalText}
                 </p>
@@ -229,6 +283,9 @@ export function MessagesContainer({
                   hour: 'numeric',
                   minute: '2-digit',
                 })}
+                <span className="ml-1 text-orange-500" title="Not sent">
+                  ✕
+                </span>
               </div>
             </div>
           </div>

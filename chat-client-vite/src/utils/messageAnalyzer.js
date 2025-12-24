@@ -176,6 +176,7 @@ export function shouldSendMessage(analysis) {
         axiomsFired: analysis.escalation?.reasons || [],
         explanation: analysis.intervention?.personalMessage || '',
         tip: analysis.intervention?.tip1 || '',
+        refocusQuestions: analysis.intervention?.refocusQuestions || [],
         rewrite1: analysis.intervention?.rewrite1 || '',
         rewrite2: analysis.intervention?.rewrite2 || '',
         escalation: analysis.escalation,

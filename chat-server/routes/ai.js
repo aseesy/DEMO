@@ -132,7 +132,10 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
       return res.status(400).json({ error: 'Message text is required' });
     }
 
-    console.log('🔍 /api/mediate/analyze called:', { text: text.substring(0, 50), username: req.user?.username });
+    console.log('🔍 /api/mediate/analyze called:', {
+      text: text.substring(0, 50),
+      username: req.user?.username,
+    });
     const user = req.user;
 
     // Get recent messages for context
@@ -148,7 +151,7 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
     }
 
     const userId = users[0].id;
-    
+
     // Get user's room from database (JWT doesn't include roomId)
     let roomId = null;
     const roomMembersResult = await dbSafe.safeSelect(
@@ -212,14 +215,14 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
       console.error('❌ aiMediator is not initialized!');
       return res.status(500).json({ error: 'AI mediator not available' });
     }
-    
+
     console.log('🤖 Calling aiMediator.analyzeMessage with:', {
       messageLength: message.text.length,
       recentMessagesCount: recentMessages.length,
       participantCount: participantUsernames.length,
       hasRoomId: !!roomId,
     });
-    
+
     const analysis = await aiMediator.analyzeMessage(
       message,
       recentMessages,
@@ -232,7 +235,10 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
       null // roleContext (can be enhanced with senderProfile/receiverProfile)
     );
 
-    console.log('📊 Analysis result:', analysis ? { action: analysis.action, type: analysis.type } : 'null (no intervention)');
+    console.log(
+      '📊 Analysis result:',
+      analysis ? { action: analysis.action, type: analysis.type } : 'null (no intervention)'
+    );
 
     if (!analysis) {
       // No intervention needed (STAY_SILENT)
@@ -279,6 +285,7 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
       result.intervention = {
         personalMessage: analysis.validation || analysis.personalMessage || '',
         tip1: '', // Removed per user request - no longer showing "why this matters"
+        refocusQuestions: analysis.refocusQuestions || [],
         rewrite1: analysis.rewrite1 || '',
         rewrite2: analysis.rewrite2 || '',
         comment: null,
@@ -293,7 +300,10 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
       };
     }
 
-    console.log('📤 Sending response:', { action: result.action, hasIntervention: !!result.intervention });
+    console.log('📤 Sending response:', {
+      action: result.action,
+      hasIntervention: !!result.intervention,
+    });
     res.json(result);
   } catch (error) {
     console.error('❌ Error analyzing message:', error);

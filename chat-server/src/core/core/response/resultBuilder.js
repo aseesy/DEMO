@@ -18,6 +18,7 @@ function buildInterventionResult({ intervention, message, result, parsedMessage 
     action: 'INTERVENE',
     validation: intervention.validation,
     insight: intervention.insight || '', // Optional - removed from display per user request
+    refocusQuestions: intervention.refocusQuestions || [],
     rewrite1: intervention.rewrite1,
     rewrite2: intervention.rewrite2,
     originalMessage: message,

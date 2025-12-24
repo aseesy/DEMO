@@ -10,7 +10,8 @@ import React from 'react';
 export function ObserverCard({ observerData, originalText, onUseRewrite, onEditMyself }) {
   if (!observerData) return null;
 
-  const { axiomsFired, explanation, tip, rewrite1, rewrite2, escalation } = observerData;
+  const { axiomsFired, explanation, tip, refocusQuestions, rewrite1, rewrite2, escalation } =
+    observerData;
 
   return (
     <div className="mb-4 rounded-xl border-2 border-teal-light bg-white px-4 sm:px-6 py-4 shadow-lg mx-auto max-w-full">
@@ -20,6 +21,23 @@ export function ObserverCard({ observerData, originalText, onUseRewrite, onEditM
           <p className="text-base sm:text-lg text-gray-900 leading-relaxed font-serif italic wrap-break-word">
             {explanation}
           </p>
+        </div>
+      )}
+
+      {/* Refocus Section - Questions to help shift thinking */}
+      {refocusQuestions && refocusQuestions.length > 0 && (
+        <div className="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+          <h3 className="text-sm font-semibold text-amber-800 uppercase tracking-wide mb-3">
+            Refocus
+          </h3>
+          <ul className="space-y-2">
+            {refocusQuestions.map((question, index) => (
+              <li key={index} className="flex items-start gap-2 text-amber-900">
+                <span className="text-amber-600 mt-0.5">•</span>
+                <span className="text-sm leading-relaxed">{question}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
