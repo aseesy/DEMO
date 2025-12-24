@@ -32,17 +32,29 @@ export function TaskCard({
   const pwa = window.liaizenPWA || {};
   const { isInstallable, isInstalled, showInstallPrompt } = pwa;
 
+  // Detect iOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
   const handlePWAInstall = async e => {
     e.stopPropagation();
 
     if (!showInstallPrompt) {
-      // Fallback: show instructions
-      alert(
-        'To install LiaiZen:\n\n' +
-          'iOS: Tap Share → Add to Home Screen\n' +
-          'Android: Tap menu (⋮) → Install app\n' +
-          'Desktop: Look for install icon in address bar'
-      );
+      // Show platform-specific instructions
+      if (isIOS) {
+        alert(
+          '📲 Install LiaiZen on iPhone:\n\n' +
+            '1. Tap the Share button (□↑) at the bottom of Safari\n' +
+            '2. Scroll down and tap "Add to Home Screen"\n' +
+            '3. Tap "Add" in the top right\n\n' +
+            'LiaiZen will appear on your home screen!'
+        );
+      } else {
+        alert(
+          '📲 Install LiaiZen:\n\n' +
+            'Android: Tap menu (⋮) → "Install app" or "Add to Home Screen"\n' +
+            'Desktop: Look for install icon (⊕) in the address bar'
+        );
+      }
       return;
     }
 
@@ -61,8 +73,9 @@ export function TaskCard({
   };
 
   const handleTaskClick = () => {
-    // PWA install task: don't open modal, install button handles it
+    // PWA install task: trigger install/instructions directly
     if (isPWAInstallTask(task) && task.status !== 'completed') {
+      handlePWAInstall({ stopPropagation: () => {} });
       return;
     }
 
@@ -230,7 +243,11 @@ export function TaskCard({
                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                     />
                   </svg>
-                  {isInstallable ? 'Install App' : 'How to Install'}
+                  {isInstallable
+                    ? 'Install App'
+                    : isIOS
+                      ? 'Tap for Instructions'
+                      : 'How to Install'}
                 </>
               )}
             </button>
