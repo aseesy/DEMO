@@ -79,6 +79,16 @@ function ChatRoomContent({
   // This ensures PWA launches with stored auth don't show landing page
   // The auth context loads state optimistically, so isAuthenticated may be true on first render
   const [showLanding, setShowLanding] = React.useState(() => {
+    // PWA MODE: Skip landing page entirely - go straight to login
+    // Users who installed the app don't need to see marketing content
+    const isPWA = typeof window !== 'undefined' &&
+      (window.matchMedia('(display-mode: standalone)').matches ||
+       window.navigator.standalone === true); // iOS Safari standalone
+    if (isPWA) {
+      console.log('[ChatRoom] PWA mode detected, skipping landing page');
+      return false;
+    }
+
     // If authenticated from context (optimistic load), never show landing
     if (isAuthenticated) {
       console.log('[ChatRoom] Initializing: isAuthenticated=true, hiding landing');
@@ -144,7 +154,12 @@ function ChatRoomContent({
       // Only show landing if we're not checking auth and not authenticated
       // This prevents showing landing during the brief moment before auth check completes
       const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
-      if (!hasStoredAuth && window.location.pathname === '/') {
+
+      // PWA MODE: Never show landing page - go straight to login
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                    window.navigator.standalone === true;
+
+      if (!hasStoredAuth && !isPWA && window.location.pathname === '/') {
         setShowLanding(true);
       }
     }
@@ -191,8 +206,12 @@ function ChatRoomContent({
       return;
     }
 
-    // Show landing page if on root and no auth
-    if (!showLanding && window.location.pathname === '/') {
+    // PWA MODE: Skip landing page - go straight to sign-in
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                  window.navigator.standalone === true;
+
+    // Show landing page if on root and no auth (but not for PWA)
+    if (!showLanding && !isPWA && window.location.pathname === '/') {
       console.log('[ChatRoom] Showing landing page (no auth, on root)');
       setShowLanding(true);
       return;
@@ -200,6 +219,13 @@ function ChatRoomContent({
 
     // Don't redirect if already showing landing or already on sign-in
     if (showLanding || window.location.pathname === '/signin' || window.location.pathname === '/sign-in') {
+      return;
+    }
+
+    // PWA on root path without auth - redirect to sign-in
+    if (isPWA && window.location.pathname === '/') {
+      console.log('[ChatRoom] PWA mode: Redirecting to sign-in');
+      navigate(NavigationPaths.SIGN_IN);
       return;
     }
 
@@ -371,11 +397,15 @@ function ChatRoomContent({
     );
   }
 
-  // Landing page - only show if definitely not authenticated
+  // Landing page - only show if definitely not authenticated and not in PWA mode
   // CRITICAL: Check both isAuthenticated AND storage to prevent showing landing when user has auth
   const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
-  const shouldShowLanding = !isAuthenticated && 
-                            !hasStoredAuth && 
+  const isPWA = typeof window !== 'undefined' &&
+    (window.matchMedia('(display-mode: standalone)').matches ||
+     window.navigator.standalone === true);
+  const shouldShowLanding = !isAuthenticated &&
+                            !hasStoredAuth &&
+                            !isPWA &&  // PWA users skip landing
                             showLanding;
   
   if (shouldShowLanding) {
