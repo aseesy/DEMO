@@ -181,12 +181,9 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       setMessageStatuses(prev => new Map(prev).set(messageId, 'sending'));
 
       if (socketRef.current?.connected) {
-        console.log('[emitOrQueueMessage] Emitting send_message:', {
-          text: text.substring(0, 30),
-          optimisticId: messageId,
-          socketConnected: socketRef.current.connected,
-          socketId: socketRef.current.id,
-        });
+        console.log('[emitOrQueueMessage] Emitting send_message');
+        // DEBUG: Temporarily show alert to confirm emit is happening
+        // alert('DEBUG: Emitting message to server...');
         socketRef.current.emit('send_message', {
           text,
           isPreApprovedRewrite,
@@ -194,7 +191,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
           optimisticId: messageId, // Send ID so server can correlate
         });
       } else {
-        console.warn('[emitOrQueueMessage] Socket not connected, queuing message');
+        alert('DEBUG: Socket disconnected when trying to emit!');
         offlineQueueRef.current.push(optimisticMessage);
         try {
           localStorage.setItem('liaizen_offline_queue', JSON.stringify(offlineQueueRef.current));
@@ -232,12 +229,23 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     async e => {
       if (e?.preventDefault) e.preventDefault();
       const clean = inputMessage.trim();
-      console.log('[sendMessage] Called:', {
-        hasText: !!clean,
-        hasSocket: !!socketRef.current,
-        socketConnected: socketRef.current?.connected,
-      });
-      if (!clean || !socketRef.current) return;
+
+      // DEBUG: Visual feedback for phone testing
+      const debugInfo = `Text: ${!!clean}, Socket: ${!!socketRef.current}, Connected: ${socketRef.current?.connected}`;
+      console.log('[sendMessage] Called:', debugInfo);
+
+      if (!clean) {
+        console.log('[sendMessage] No text, returning');
+        return;
+      }
+      if (!socketRef.current) {
+        alert('DEBUG: No socket reference!');
+        return;
+      }
+      if (!socketRef.current.connected) {
+        alert('DEBUG: Socket not connected! ID: ' + (socketRef.current?.id || 'none'));
+        return;
+      }
 
       // If we already have a draft coaching result for this exact message
       // and it shows intervention needed, don't send
