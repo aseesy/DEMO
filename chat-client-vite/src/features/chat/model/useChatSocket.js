@@ -71,6 +71,9 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   const { loadOlderMessages } = useMessagePagination({
     socketRef,
     messages,
+    isLoadingOlder,
+    hasMoreMessages,
+    isInitialLoad,
     setIsLoadingOlder,
     setHasMoreMessages,
     setIsInitialLoad,

@@ -29,6 +29,9 @@ import React from 'react';
  * @param {Object} options
  * @param {React.RefObject} options.socketRef - Socket reference for emitting events
  * @param {Array} options.messages - Current messages array (to get beforeTimestamp)
+ * @param {boolean} options.isLoadingOlder - Loading state (optional, creates internal state if not provided)
+ * @param {boolean} options.hasMoreMessages - Has more messages state (optional, creates internal state if not provided)
+ * @param {boolean} options.isInitialLoad - Initial load state (optional, creates internal state if not provided)
  * @param {Function} options.setIsLoadingOlder - Set loading state (optional, creates internal state if not provided)
  * @param {Function} options.setHasMoreMessages - Set has more messages state (optional, creates internal state if not provided)
  * @param {Function} options.setIsInitialLoad - Set initial load state (optional, creates internal state if not provided)
@@ -37,19 +40,25 @@ import React from 'react';
 export function useMessagePagination({
   socketRef,
   messages = [],
+  isLoadingOlder: externalIsLoadingOlder,
+  hasMoreMessages: externalHasMoreMessages,
+  isInitialLoad: externalIsInitialLoad,
   setIsLoadingOlder: externalSetIsLoadingOlder,
   setHasMoreMessages: externalSetHasMoreMessages,
   setIsInitialLoad: externalSetIsInitialLoad,
 } = {}) {
-  // Internal state (used if external setters not provided)
+  // Internal state (used if external values/setters not provided)
   const [internalIsLoadingOlder, setInternalIsLoadingOlder] = React.useState(false);
   const [internalHasMoreMessages, setInternalHasMoreMessages] = React.useState(true);
   const [internalIsInitialLoad, setInternalIsInitialLoad] = React.useState(true);
 
-  // Use external setters if provided, otherwise use internal state
-  const isLoadingOlder = externalSetIsLoadingOlder ? undefined : internalIsLoadingOlder;
-  const hasMoreMessages = externalSetHasMoreMessages ? undefined : internalHasMoreMessages;
-  const isInitialLoad = externalSetIsInitialLoad ? undefined : internalIsInitialLoad;
+  // Use external values if provided, otherwise use internal state
+  const isLoadingOlder =
+    externalIsLoadingOlder !== undefined ? externalIsLoadingOlder : internalIsLoadingOlder;
+  const hasMoreMessages =
+    externalHasMoreMessages !== undefined ? externalHasMoreMessages : internalHasMoreMessages;
+  const isInitialLoad =
+    externalIsInitialLoad !== undefined ? externalIsInitialLoad : internalIsInitialLoad;
 
   const setIsLoadingOlder = externalSetIsLoadingOlder || setInternalIsLoadingOlder;
   const setHasMoreMessages = externalSetHasMoreMessages || setInternalHasMoreMessages;
@@ -88,4 +97,3 @@ export function useMessagePagination({
 }
 
 export default useMessagePagination;
-

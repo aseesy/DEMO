@@ -1,3 +1,4 @@
+/* global describe, beforeEach, it, expect, jest */
 /**
  * Tests for Blog Image Generator
  */
@@ -5,9 +6,6 @@
 const blogImageGenerator = require('../src/services/blog/blogImageGenerator');
 
 describe('Blog Image Generator', () => {
-  // Mock OpenAI client for testing
-  let mockOpenAIClient;
-
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
@@ -22,10 +20,10 @@ describe('Blog Image Generator', () => {
       };
 
       const prompt = blogImageGenerator.createHeaderImagePrompt(articleMeta);
-      
+
       expect(prompt).toContain('blog header image');
       expect(prompt).toContain('Test Article Title');
-      expect(prompt).toContain('16:9'); // Can be "16:9 aspect ratio" or "16:9 horizontal layout"
+      expect(prompt).toContain('16:9 horizontal layout');
       expect(prompt).toContain('teal');
     });
 
@@ -36,7 +34,7 @@ describe('Blog Image Generator', () => {
       };
 
       const prompt = blogImageGenerator.createSocialMediaPrompt(articleMeta, 'instagram');
-      
+
       expect(prompt).toContain('social media graphic');
       expect(prompt).toContain('1:1 square');
       expect(prompt).toContain('Test Article');
@@ -49,7 +47,7 @@ describe('Blog Image Generator', () => {
       };
 
       const prompt = blogImageGenerator.createSocialMediaPrompt(articleMeta, 'twitter');
-      
+
       expect(prompt).toContain('social media graphic');
       expect(prompt).toContain('16:9 wide');
       expect(prompt).toContain('Test Article');
@@ -59,14 +57,17 @@ describe('Blog Image Generator', () => {
       const articleMeta = {
         title: {
           props: {
-            children: ['The Co-Parent\'s Dilemma: ', { type: 'span', props: { children: 'Why Negotiation Feels Like War' } }],
+            children: [
+              "The Co-Parent's Dilemma: ",
+              { type: 'span', props: { children: 'Why Negotiation Feels Like War' } },
+            ],
           },
         },
         subtitle: 'Test subtitle',
       };
 
       const prompt = blogImageGenerator.createHeaderImagePrompt(articleMeta);
-      
+
       // Should extract text from React element
       expect(prompt).toBeTruthy();
       expect(typeof prompt).toBe('string');
@@ -89,10 +90,13 @@ describe('Blog Image Generator', () => {
       delete process.env.OPENAI_API_KEY;
 
       await expect(
-        blogImageGenerator.generateHeaderImage({
-          title: 'Test',
-          subtitle: 'Test',
-        }, 'dall-e-3')
+        blogImageGenerator.generateHeaderImage(
+          {
+            title: 'Test',
+            subtitle: 'Test',
+          },
+          'dall-e-3'
+        )
       ).rejects.toThrow('OPENAI_API_KEY not configured');
 
       // Restore
@@ -106,10 +110,13 @@ describe('Blog Image Generator', () => {
       delete process.env.FLUX_API_KEY;
 
       await expect(
-        blogImageGenerator.generateHeaderImage({
-          title: 'Test',
-          subtitle: 'Test',
-        }, 'flux')
+        blogImageGenerator.generateHeaderImage(
+          {
+            title: 'Test',
+            subtitle: 'Test',
+          },
+          'flux'
+        )
       ).rejects.toThrow('FLUX_API_KEY not configured');
 
       if (originalKey) {
@@ -118,4 +125,3 @@ describe('Blog Image Generator', () => {
     });
   });
 });
-
