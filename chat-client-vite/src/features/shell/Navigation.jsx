@@ -410,9 +410,7 @@ function NavigationComponent({
                           }
                         }
 
-                        return firstName
-                          ? `Search Conversation With ${firstName}`
-                          : 'Search messages...';
+                        return firstName ? `Conversation With ${firstName}` : 'messages...';
                       })()}
                       className="w-full pl-10 pr-8 py-1.5 border border-gray-200 rounded-full bg-white focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-sm text-gray-900 placeholder-gray-400 h-8"
                     />
@@ -602,7 +600,10 @@ function NavigationComponent({
         }}
         data-testid="mobile-nav"
       >
-        <div className="relative flex items-center justify-around h-14 px-2 py-1 z-10">
+        <div
+          className="relative flex items-center justify-around min-h-[3.5rem] px-2 z-10"
+          style={{ height: '3.5rem' }}
+        >
           {/* Dashboard button */}
           <button
             type="button"

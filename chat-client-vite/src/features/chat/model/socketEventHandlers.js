@@ -226,12 +226,35 @@ export function setupSocketEventHandlers(socket, handlers) {
 
     setHasMoreMessages(hasMore);
 
+    // Scroll to bottom after messages are loaded and rendered
+    // Use multiple delays to ensure DOM is fully updated
     requestAnimationFrame(() => {
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-      }
-      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
-      setTimeout(() => setIsInitialLoad(false), 50);
+      requestAnimationFrame(() => {
+        // First, try scrolling the container directly
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+        // Then, scroll the end ref into view
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({
+            behavior: 'instant',
+            block: 'end',
+          });
+        }
+        // Set isInitialLoad to false after scroll completes
+        setTimeout(() => {
+          setIsInitialLoad(false);
+          // One more scroll after a brief delay to ensure we're at the bottom
+          requestAnimationFrame(() => {
+            if (messagesEndRef.current) {
+              messagesEndRef.current.scrollIntoView({
+                behavior: 'instant',
+                block: 'end',
+              });
+            }
+          });
+        }, 100);
+      });
     });
   });
 

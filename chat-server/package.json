@@ -45,7 +45,8 @@
     "pg": "^8.16.3",
     "sharp": "^0.34.5",
     "socket.io": "^4.6.1",
-    "string-similarity": "^4.0.4"
+    "string-similarity": "^4.0.4",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "dependency-cruiser": "^17.3.2",

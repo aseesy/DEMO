@@ -50,8 +50,14 @@ export const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-modal p-4 pb-24 md:pb-4 overflow-y-auto"
-      style={{ zIndex: 'var(--z-modal)' }}
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-modal overflow-y-auto overflow-x-hidden"
+      style={{
+        zIndex: 'var(--z-modal)',
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+        paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+        paddingRight: 'max(1rem, env(safe-area-inset-right))',
+      }}
       onClick={closeOnOverlayClick ? onClose : undefined}
       role="dialog"
       aria-modal="true"
@@ -59,7 +65,13 @@ export const Modal = ({
       aria-describedby={subtitle ? 'modal-subtitle' : undefined}
     >
       <div
-        className={`bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full ${sizeClass} flex flex-col max-h-full my-auto ${className}`}
+        className={`bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full ${sizeClass} flex flex-col my-auto ${className}`}
+        style={{
+          maxHeight:
+            'calc(100dvh - max(2rem, env(safe-area-inset-top)) - max(2rem, env(safe-area-inset-bottom)))',
+          maxWidth:
+            'calc(100vw - max(2rem, env(safe-area-inset-left)) - max(2rem, env(safe-area-inset-right)))',
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header - Always visible */}

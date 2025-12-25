@@ -113,7 +113,7 @@ export function MessageSearch({
             type="text"
             value={localQuery}
             onChange={handleInputChange}
-            placeholder="Search messages..."
+            placeholder="messages..."
             className="flex-1 text-sm border-none outline-none bg-transparent placeholder-gray-400"
           />
 

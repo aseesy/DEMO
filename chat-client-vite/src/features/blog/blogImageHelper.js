@@ -1,6 +1,6 @@
 /**
  * Blog Image Helper
- * 
+ *
  * Automatically loads blog images from the generated mapping file.
  * This allows articles to automatically get their images without manual imports.
  */
@@ -32,15 +32,18 @@ export function getBlogImage(slug) {
   }
   const imagePath = blogImageMap[slug] || null;
   if (!imagePath) {
-    console.warn(`[blogImageHelper] No image found for slug: ${slug}. Available slugs:`, Object.keys(blogImageMap));
+    console.warn(
+      `[blogImageHelper] No image found for slug: ${slug}. Available slugs:`,
+      Object.keys(blogImageMap)
+    );
     return null;
   }
-  
+
   // Add cache-busting query parameter to force browser to reload optimized images
   // This ensures browsers load the new optimized version instead of cached old version
-  // Increment version when regenerating images: v=5 for cartoon-style illustrations
+  // Increment version when regenerating images: v=8 for concept-driven visual metaphors
   const separator = imagePath.includes('?') ? '&' : '?';
-  return `${imagePath}${separator}v=5`;
+  return `${imagePath}${separator}v=8`;
 }
 
 /**
@@ -51,11 +54,11 @@ export function getBlogImage(slug) {
  */
 export function getBlogImageFromPath(articlePath) {
   if (!articlePath) return null;
-  
+
   // Extract slug from path
   const pathParts = articlePath.split('/').filter(Boolean);
   const slug = pathParts[pathParts.length - 1];
-  
+
   return getBlogImage(slug);
 }
 
@@ -67,12 +70,19 @@ export function getBlogImageFromPath(articlePath) {
  */
 export function getBlogImageFromTitle(title) {
   if (!title) return null;
-  
+
   // Convert title to slug
-  const slug = typeof title === 'string' 
-    ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-    : String(title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  
+  const slug =
+    typeof title === 'string'
+      ? title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+      : String(title)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+
   return getBlogImage(slug);
 }
 
@@ -91,4 +101,3 @@ export function isImageMapLoaded() {
 export function getAvailableImageSlugs() {
   return Object.keys(blogImageMap);
 }
-

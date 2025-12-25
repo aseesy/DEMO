@@ -81,9 +81,10 @@ function ChatRoomContent({
   const [showLanding, setShowLanding] = React.useState(() => {
     // PWA MODE: Skip landing page entirely - go straight to login
     // Users who installed the app don't need to see marketing content
-    const isPWA = typeof window !== 'undefined' &&
+    const isPWA =
+      typeof window !== 'undefined' &&
       (window.matchMedia('(display-mode: standalone)').matches ||
-       window.navigator.standalone === true); // iOS Safari standalone
+        window.navigator.standalone === true); // iOS Safari standalone
     if (isPWA) {
       console.log('[ChatRoom] PWA mode detected, skipping landing page');
       return false;
@@ -96,12 +97,15 @@ function ChatRoomContent({
     }
     // If checking auth, don't show landing yet (wait for result)
     if (isCheckingAuth) {
-      console.log('[ChatRoom] Initializing: isCheckingAuth=true, hiding landing (waiting for auth check)');
+      console.log(
+        '[ChatRoom] Initializing: isCheckingAuth=true, hiding landing (waiting for auth check)'
+      );
       return false;
     }
     // CRITICAL: Check storage directly - if user has stored auth, don't show landing
     // This handles the case where optimistic load hasn't completed yet
-    const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
+    const hasStoredAuth =
+      storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
     if (hasStoredAuth) {
       console.log('[ChatRoom] Initializing: stored auth exists, hiding landing');
       return false;
@@ -153,11 +157,13 @@ function ChatRoomContent({
     } else if (!isCheckingAuth) {
       // Only show landing if we're not checking auth and not authenticated
       // This prevents showing landing during the brief moment before auth check completes
-      const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
+      const hasStoredAuth =
+        storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
 
       // PWA MODE: Never show landing page - go straight to login
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                    window.navigator.standalone === true;
+      const isPWA =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
 
       if (!hasStoredAuth && !isPWA && window.location.pathname === '/') {
         setShowLanding(true);
@@ -188,7 +194,8 @@ function ChatRoomContent({
 
     // Not authenticated - but check if we have stored auth first
     // This handles the case where server verification failed but token exists
-    const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
+    const hasStoredAuth =
+      storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
     if (hasStoredAuth) {
       console.log('[ChatRoom] Not authenticated but stored auth exists - waiting for verification');
       // Don't redirect yet - might be a temporary network issue
@@ -198,7 +205,7 @@ function ChatRoomContent({
 
     // Definitely not authenticated and no stored auth - redirect to sign-in
     console.log('[ChatRoom] User not authenticated, redirecting to sign-in');
-    
+
     // But preserve invite codes and other query params
     const inviteCode = getQueryParam('invite');
     if (inviteCode) {
@@ -207,8 +214,9 @@ function ChatRoomContent({
     }
 
     // PWA MODE: Skip landing page - go straight to sign-in
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                  window.navigator.standalone === true;
+    const isPWA =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
 
     // Show landing page if on root and no auth (but not for PWA)
     if (!showLanding && !isPWA && window.location.pathname === '/') {
@@ -218,7 +226,11 @@ function ChatRoomContent({
     }
 
     // Don't redirect if already showing landing or already on sign-in
-    if (showLanding || window.location.pathname === '/signin' || window.location.pathname === '/sign-in') {
+    if (
+      showLanding ||
+      window.location.pathname === '/signin' ||
+      window.location.pathname === '/sign-in'
+    ) {
       return;
     }
 
@@ -239,6 +251,22 @@ function ChatRoomContent({
       storage.set(StorageKeys.CURRENT_VIEW, currentView);
     }
   }, [isAuthenticated, currentView]);
+
+  // Redirect to sign-in if not authenticated (with timeout)
+  // This must be outside conditional blocks to follow Rules of Hooks
+  React.useEffect(() => {
+    if (!isAuthenticated && !isCheckingAuth) {
+      const timer = setTimeout(() => {
+        console.log('[ChatRoom] Not authenticated after timeout, redirecting to sign-in');
+        const currentPath = window.location.pathname;
+        // Only redirect if not already on signin page
+        if (currentPath !== '/signin' && currentPath !== '/sign-in' && currentPath !== '/siginin') {
+          navigate('/signin');
+        }
+      }, 2000); // 2 second timeout
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, isCheckingAuth, navigate]);
 
   // Dashboard hook - ViewModel that owns its state
   // The Dashboard manages its own dependencies internally
@@ -384,30 +412,61 @@ function ChatRoomContent({
   // Show loading state while checking auth (prevents flash of landing page)
   // CRITICAL: If we have stored auth, show loading instead of landing page
   if (isCheckingAuth) {
-    const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
+    const hasStoredAuth =
+      storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
     console.log('[ChatRoom] Checking auth:', {
       isCheckingAuth: true,
       hasStoredAuth,
       isAuthenticated,
     });
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="text-gray-600 text-lg">Checking your session…</div>
+      <div
+        className="min-h-screen bg-gray-50 flex items-center justify-center px-4"
+        style={{
+          width: '100%',
+          height: '100vh',
+          backgroundColor: '#f9fafb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          className="text-gray-600 text-lg"
+          style={{
+            color: '#4b5563',
+            fontSize: '18px',
+            fontWeight: '500',
+          }}
+        >
+          Checking your session…
+        </div>
       </div>
     );
   }
 
+  // Debug: Log render state
+  console.log('[ChatRoom] Rendering:', {
+    isAuthenticated,
+    isCheckingAuth,
+    showLanding,
+    currentView,
+  });
+
   // Landing page - only show if definitely not authenticated and not in PWA mode
   // CRITICAL: Check both isAuthenticated AND storage to prevent showing landing when user has auth
-  const hasStoredAuth = storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
-  const isPWA = typeof window !== 'undefined' &&
+  const hasStoredAuth =
+    storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
+  const isPWA =
+    typeof window !== 'undefined' &&
     (window.matchMedia('(display-mode: standalone)').matches ||
-     window.navigator.standalone === true);
-  const shouldShowLanding = !isAuthenticated &&
-                            !hasStoredAuth &&
-                            !isPWA &&  // PWA users skip landing
-                            showLanding;
-  
+      window.navigator.standalone === true);
+  const shouldShowLanding =
+    !isAuthenticated &&
+    !hasStoredAuth &&
+    !isPWA && // PWA users skip landing
+    showLanding;
+
   if (shouldShowLanding) {
     console.log('[ChatRoom] Showing landing page:', {
       isAuthenticated,
@@ -420,9 +479,36 @@ function ChatRoomContent({
   }
 
   if (!isAuthenticated) {
+    // If we're already on signin page, render LoginSignup directly
+    const currentPath = window.location.pathname;
+    if (currentPath === '/signin' || currentPath === '/sign-in' || currentPath === '/siginin') {
+      console.log('[ChatRoom] Already on signin page, rendering LoginSignup');
+      const { LoginSignup } = require('./features/auth/components/LoginSignup.jsx');
+      return <LoginSignup />;
+    }
+
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="text-gray-600 text-lg">Redirecting to sign in…</div>
+      <div
+        className="min-h-screen bg-gray-50 flex items-center justify-center px-4"
+        style={{
+          width: '100%',
+          height: '100vh',
+          backgroundColor: '#f9fafb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          className="text-gray-600 text-lg"
+          style={{
+            color: '#4b5563',
+            fontSize: '18px',
+            fontWeight: '500',
+          }}
+        >
+          Redirecting to sign in…
+        </div>
       </div>
     );
   }
@@ -457,12 +543,38 @@ function ChatRoomContent({
         }}
       />
 
-      <div className="h-dvh bg-white flex flex-col overflow-hidden overscroll-none relative z-0">
+      <div
+        className="bg-white flex flex-col overflow-hidden overscroll-none relative z-0"
+        style={{
+          height: '100%',
+          maxHeight: '100%',
+          width: '100%',
+          maxWidth: '100vw',
+          overflowX: 'hidden',
+          position: 'relative',
+        }}
+      >
         <div
-          className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 pb-14 md:pt-14 md:pb-0' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto' : 'pt-0 md:pt-14 pb-14 md:pb-6 overflow-y-auto px-3 sm:px-4 md:px-6'}`}
+          className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 md:pt-14' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto overflow-x-hidden' : 'pt-0 md:pt-14 pb-14 md:pb-6 overflow-y-auto overflow-x-hidden px-3 sm:px-4 md:px-6'}`}
+          style={{
+            width: '100%',
+            maxWidth: '100vw',
+            WebkitOverflowScrolling: 'touch',
+            // No padding-bottom for chat view - bottom nav is fixed and doesn't need space
+            paddingBottom:
+              currentView === 'chat'
+                ? 0
+                : typeof window !== 'undefined' && window.innerWidth < 768
+                  ? 'calc(3.5rem + env(safe-area-inset-bottom))'
+                  : 0,
+          }}
         >
           <div
-            className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : currentView === 'profile' ? 'w-full' : 'max-w-7xl mx-auto w-full'}`}
+            className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : currentView === 'profile' ? 'w-full max-w-full' : 'max-w-7xl mx-auto w-full'}`}
+            style={{
+              width: '100%',
+              maxWidth: '100%',
+            }}
           >
             {currentView === 'dashboard' && (
               <DashboardView

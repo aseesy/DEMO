@@ -2,6 +2,14 @@
  * Socket Thread Handlers
  */
 
+// Auto-threading service for embedding generation
+let autoThreading = null;
+try {
+  autoThreading = require('../services/autoThreading');
+} catch (err) {
+  console.warn('⚠️  Auto-threading service not available:', err.message);
+}
+
 function registerThreadHandlers(socket, io, services, activeUsers) {
   const { threadManager } = services;
 
@@ -15,6 +23,17 @@ function registerThreadHandlers(socket, io, services, activeUsers) {
       }
 
       const threadId = await threadManager.createThread(roomId, title, user.username, messageId);
+
+      // Generate embedding for thread title (for semantic matching)
+      if (autoThreading) {
+        setImmediate(() => {
+          autoThreading
+            .ensureThreadEmbedding(threadId, roomId, title)
+            .catch(err =>
+              console.error('[AutoThreading] Error creating thread embedding:', err.message)
+            );
+        });
+      }
 
       if (messageId) {
         await threadManager.addMessageToThread(messageId, threadId);

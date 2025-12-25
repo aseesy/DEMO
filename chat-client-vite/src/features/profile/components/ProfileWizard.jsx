@@ -205,8 +205,24 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-0 sm:p-4 pb-nav-mobile sm:pb-4">
-      <div className="bg-white sm:rounded-2xl w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] overflow-x-hidden"
+      style={{
+        paddingTop: 'max(0px, env(safe-area-inset-top))',
+        paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+        paddingLeft: 'max(0px, env(safe-area-inset-left))',
+        paddingRight: 'max(0px, env(safe-area-inset-right))',
+      }}
+    >
+      <div
+        className="bg-white sm:rounded-2xl w-full h-full sm:h-auto sm:max-w-2xl overflow-hidden flex flex-col shadow-2xl"
+        style={{
+          maxHeight:
+            'calc(100dvh - max(0px, env(safe-area-inset-top)) - max(0px, env(safe-area-inset-bottom)))',
+          maxWidth:
+            'calc(100vw - max(0px, env(safe-area-inset-left)) - max(0px, env(safe-area-inset-right)))',
+        }}
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center pt-safe">
           <div>

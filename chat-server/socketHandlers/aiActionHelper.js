@@ -202,7 +202,7 @@ async function processIntervention(socket, io, services, context) {
  */
 async function processApprovedMessage(socket, io, services, context) {
   const { user, message, contactSuggestion, addToHistory } = context;
-  const { communicationStats, dbSafe } = services;
+  const { communicationStats, dbSafe, dbPostgres } = services;
 
   try {
     const userResult = await dbSafe.safeSelect(
@@ -235,6 +235,36 @@ async function processApprovedMessage(socket, io, services, context) {
 
   // Emit to room AFTER saving (ensures persistence)
   io.to(user.roomId).emit('new_message', message);
+
+  // Send push notification to recipient (other user in room)
+  // Do this asynchronously so it doesn't block message delivery
+  setImmediate(async () => {
+    try {
+      // Get room members to find the recipient
+      const roomMembersResult = await dbPostgres.query(
+        `SELECT user_id, username FROM room_members rm
+         JOIN users u ON rm.user_id = u.id
+         WHERE rm.room_id = $1`,
+        [user.roomId]
+      );
+
+      if (roomMembersResult.rows.length > 0) {
+        // Find the recipient (other user in room, not the sender)
+        const recipient = roomMembersResult.rows.find(
+          member => member.username?.toLowerCase() !== user.username?.toLowerCase()
+        );
+
+        if (recipient && recipient.user_id) {
+          // Import push notification service
+          const pushNotificationService = require('../services/pushNotificationService');
+          await pushNotificationService.notifyNewMessage(recipient.user_id, message);
+        }
+      }
+    } catch (pushError) {
+      // Don't fail message delivery if push notification fails
+      console.error('[processApprovedMessage] Error sending push notification:', pushError);
+    }
+  });
 
   if (contactSuggestion) {
     socket.emit('new_message', {

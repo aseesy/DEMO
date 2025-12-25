@@ -96,7 +96,7 @@ export function ProfilePanel({ username }) {
   }
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6 w-full max-w-full overflow-x-hidden">
       {showSuccessToast &&
         typeof document !== 'undefined' &&
         createPortal(<SuccessToast />, document.body)}

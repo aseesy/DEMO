@@ -67,7 +67,7 @@ export function ChatHeader({
       }
     }
 
-    return firstName ? `Search Conversation With ${firstName}` : 'Search messages...';
+    return firstName ? `Conversation With ${firstName}` : 'messages...';
   };
 
   const shouldShowInvite =
@@ -78,9 +78,15 @@ export function ChatHeader({
     !hasAcceptedInvitation;
 
   return (
-    <div className="sticky top-0 md:hidden z-20 bg-white border-b border-gray-200 px-3 sm:px-4 py-2 flex items-center gap-2">
+    <div
+      className="sticky top-0 md:hidden z-20 bg-white border-b border-gray-200 px-3 sm:px-4 py-2 flex items-center gap-2"
+      style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}
+    >
       {/* Search Bar */}
-      <div className="flex-1 relative max-w-3xl mx-auto">
+      <div
+        className="flex-1 relative max-w-3xl mx-auto min-w-0"
+        style={{ width: '100%', maxWidth: '100%' }}
+      >
         <svg
           className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
           fill="none"

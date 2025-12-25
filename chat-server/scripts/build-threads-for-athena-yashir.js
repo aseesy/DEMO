@@ -20,16 +20,48 @@ async function buildThreads() {
 
     // Check current state using dbPostgres
     const dbPostgres = require('../dbPostgres');
-    const threadCount = await dbPostgres.query('SELECT COUNT(*) as count FROM threads WHERE room_id = $1', [ROOM_ID]);
-    const messageCount = await dbPostgres.query('SELECT COUNT(*) as count FROM messages WHERE room_id = $1', [ROOM_ID]);
-    
+    const threadCount = await dbPostgres.query(
+      'SELECT COUNT(*) as count FROM threads WHERE room_id = $1',
+      [ROOM_ID]
+    );
+    const messageCount = await dbPostgres.query(
+      'SELECT COUNT(*) as count FROM messages WHERE room_id = $1',
+      [ROOM_ID]
+    );
+
     console.log(`Current state:`);
     console.log(`  Threads: ${threadCount.rows[0].count}`);
     console.log(`  Messages: ${messageCount.rows[0].count}\n`);
 
     // Use the existing analyzeConversationHistory function
-    console.log('📊 Analyzing conversation history...\n');
-    const analysis = await threadManager.analyzeConversationHistory(ROOM_ID, 1094); // Analyze all messages
+    // Run multiple passes to cover more of the conversation history
+    console.log('📊 Analyzing conversation history (multiple passes)...\n');
+
+    let totalCreatedThreads = [];
+    let totalSuggestions = [];
+
+    // Run 5 passes to cover more messages
+    for (let pass = 1; pass <= 5; pass++) {
+      console.log(`\n--- Pass ${pass}/5 ---`);
+      const analysis = await threadManager.analyzeConversationHistory(ROOM_ID, 5000);
+
+      if (analysis.suggestions) {
+        totalSuggestions.push(...analysis.suggestions);
+      }
+      if (analysis.createdThreads && analysis.createdThreads.length > 0) {
+        totalCreatedThreads.push(...analysis.createdThreads);
+        console.log(`  Created ${analysis.createdThreads.length} threads in this pass`);
+      } else {
+        console.log(`  No new threads created in this pass`);
+      }
+
+      // Wait a bit between passes to avoid rate limiting
+      if (pass < 5) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+
+    const analysis = { suggestions: totalSuggestions, createdThreads: totalCreatedThreads };
 
     console.log(`\n✅ Analysis complete:`);
     console.log(`  Suggestions: ${analysis.suggestions?.length || 0}`);
@@ -43,7 +75,10 @@ async function buildThreads() {
     }
 
     // Get final thread count
-    const finalThreadCount = await dbPostgres.query('SELECT COUNT(*) as count FROM threads WHERE room_id = $1', [ROOM_ID]);
+    const finalThreadCount = await dbPostgres.query(
+      'SELECT COUNT(*) as count FROM threads WHERE room_id = $1',
+      [ROOM_ID]
+    );
     const threadsWithMessages = await dbPostgres.query(
       `SELECT t.id, t.title, t.message_count, COUNT(m.id) as actual_count
        FROM threads t
@@ -73,7 +108,6 @@ async function buildThreads() {
       [ROOM_ID]
     );
     console.log(`\n  Unthreaded messages: ${unthreaded.rows[0].count}`);
-
   } catch (error) {
     console.error('\n❌ Error:', error.message);
     console.error(error.stack);
@@ -81,4 +115,3 @@ async function buildThreads() {
 }
 
 buildThreads();
-

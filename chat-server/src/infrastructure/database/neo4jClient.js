@@ -149,7 +149,7 @@ async function createCoParentRelationship(userId1, userId2, roomId, roomName = n
       'SELECT id, username FROM users WHERE id = $1 OR id = $2',
       [userId1, userId2]
     );
-    
+
     const userMap = new Map();
     usersResult.rows.forEach(row => {
       userMap.set(row.id, row.username);
@@ -344,7 +344,7 @@ async function generateEmbedding(text) {
   }
 
   try {
-    const openaiClient = require('../core/core/client');
+    const openaiClient = require('../../core/core/client');
     const client = openaiClient.getClient();
 
     if (!client) {
@@ -400,30 +400,36 @@ async function createOrUpdateMessageNode(
       // Ensure Room node exists first
       MERGE (r:Room {roomId: $roomId})
       ON CREATE SET r.type = "co-parent", r.createdAt = datetime()
-      
+
+      WITH r
+
       // Create or update Message node
       MERGE (m:Message {messageId: $messageId})
+      ON CREATE SET m.createdAt = datetime()
       SET m.roomId = $roomId,
           m.text = $text,
           m.username = $username,
           m.timestamp = $timestamp,
           m.embedding = $embedding,
           m.updatedAt = datetime()
-      ON CREATE SET m.createdAt = datetime()
-      
+
       // Link message to Room
       WITH m, r
       MERGE (m)-[:IN_ROOM]->(r)
-      
+
       RETURN m
     `;
+
+    // Convert timestamp to ISO string if it's a Date object (from PostgreSQL)
+    const timestampStr =
+      timestamp instanceof Date ? timestamp.toISOString() : timestamp || new Date().toISOString();
 
     const params = {
       messageId,
       roomId,
       text: text || '',
-      username,
-      timestamp,
+      username: username || '',
+      timestamp: timestampStr,
       embedding: messageEmbedding || [],
     };
 
@@ -467,19 +473,21 @@ async function createOrUpdateThreadNode(threadId, roomId, title, embedding = nul
       // Ensure Room node exists first
       MERGE (r:Room {roomId: $roomId})
       ON CREATE SET r.type = "co-parent", r.createdAt = datetime()
-      
+
+      WITH r
+
       // Create or update Thread node
       MERGE (t:Thread {threadId: $threadId})
+      ON CREATE SET t.createdAt = datetime()
       SET t.roomId = $roomId,
           t.title = $title,
           t.embedding = $embedding,
           t.updatedAt = datetime()
-      ON CREATE SET t.createdAt = datetime()
-      
+
       // Link thread to Room
       WITH t, r
       MERGE (t)-[:IN_ROOM]->(r)
-      
+
       RETURN t
     `;
 
@@ -583,7 +591,7 @@ async function findSimilarMessages(queryEmbedding, roomId, limit = 10, minSimila
     const params = {
       queryEmbedding,
       roomId,
-      limit,
+      limit: neo4j.int(Math.floor(limit)),
       minSimilarity,
     };
 
@@ -646,7 +654,7 @@ async function findSimilarThreads(queryEmbedding, roomId, limit = 5, minSimilari
     const params = {
       queryEmbedding,
       roomId,
-      limit,
+      limit: neo4j.int(Math.floor(limit)),
       minSimilarity,
     };
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { apiPost } from '../../apiClient';
 
 /**
  * usePWA Hook - Manages PWA installation and Service Worker registration
@@ -30,7 +31,6 @@ export function usePWA() {
       setIsInstalled(true);
       console.log('[usePWA] App is installed (standalone mode)');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // registerServiceWorker is stable (useCallback with no deps) but accessed before declaration
 
   // Listen for install prompt event
@@ -231,6 +231,18 @@ export function usePWA() {
       if (existingSubscription) {
         console.log('[usePWA] Already subscribed to push notifications');
         setPushSubscription(existingSubscription);
+
+        // Ensure subscription is saved on server (in case it wasn't saved before)
+        try {
+          const subscriptionData = existingSubscription.toJSON();
+          await apiPost('/api/push/subscribe', {
+            subscription: subscriptionData,
+            userAgent: navigator.userAgent,
+          });
+        } catch (error) {
+          console.warn('[usePWA] Error syncing existing subscription:', error);
+        }
+
         return existingSubscription;
       }
 
@@ -244,6 +256,24 @@ export function usePWA() {
 
       console.log('[usePWA] Push subscription created:', subscription);
       setPushSubscription(subscription);
+
+      // Send subscription to server
+      try {
+        const subscriptionData = subscription.toJSON();
+        const response = await apiPost('/api/push/subscribe', {
+          subscription: subscriptionData,
+          userAgent: navigator.userAgent,
+        });
+
+        if (response.ok) {
+          console.log('[usePWA] Push subscription saved to server');
+        } else {
+          console.warn('[usePWA] Failed to save subscription to server:', response.status);
+        }
+      } catch (error) {
+        console.error('[usePWA] Error saving subscription to server:', error);
+        // Don't fail the subscription if server save fails - subscription is still valid
+      }
 
       return subscription;
     } catch (error) {
@@ -299,7 +329,7 @@ export function usePWA() {
 // Helper function to convert VAPID key
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
 
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);

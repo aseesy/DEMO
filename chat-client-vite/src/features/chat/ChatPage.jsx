@@ -234,7 +234,15 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
   } = inviteHandlers;
 
   return (
-    <div className="h-full flex flex-col relative overflow-hidden">
+    <div
+      className="flex flex-col relative overflow-hidden"
+      style={{
+        height: '100%',
+        maxHeight: '100%',
+        width: '100%',
+        maxWidth: '100vw',
+      }}
+    >
       <ChatHeader
         searchQuery={searchQuery}
         searchMode={searchMode}
@@ -256,7 +264,7 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
       />
 
       {/* Chat Content */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 min-w-0" style={{ width: '100%', maxWidth: '100%' }}>
         {/* Threads Sidebar */}
         {showThreadsPanel && (
           <ThreadsSidebar
@@ -269,7 +277,10 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
         )}
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col min-h-0">
+        <div
+          className="flex-1 flex flex-col min-h-0 min-w-0"
+          style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}
+        >
           {/* Manual Invite Acceptance UI */}
           {(showManualInvite || (pendingInviteCode && !hasCoParentConnected && inviteError)) && (
             <ManualInvitePanel
@@ -307,7 +318,19 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
             />
           )}
 
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div
+            className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden"
+            style={{
+              // On mobile, account for bottom nav height so content doesn't get cut off
+              paddingBottom:
+                typeof window !== 'undefined' && window.innerWidth < 768
+                  ? 'calc(3.5rem + env(safe-area-inset-bottom))'
+                  : 0,
+              width: '100%',
+              maxWidth: '100%',
+              overflowX: 'hidden',
+            }}
+          >
             {/* Search Panel */}
             {searchMode && (
               <MessageSearch
@@ -328,6 +351,12 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
               className="flex-1 overflow-y-auto min-h-0"
               style={{
                 WebkitOverflowScrolling: 'touch',
+                // Ensure it can scroll properly
+                overscrollBehavior: 'contain',
+                // Prevent horizontal overflow
+                overflowX: 'hidden',
+                width: '100%',
+                maxWidth: '100%',
               }}
               onScroll={e => {
                 // Load older messages when scrolled near top

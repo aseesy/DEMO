@@ -45,130 +45,156 @@ import { AiSafety } from './features/blog/AiSafety.jsx';
 import { AiVsImpulse } from './features/blog/AiVsImpulse.jsx';
 
 function App() {
+  console.log('[App] Component rendering...');
+
   // Initialize PWA - registers Service Worker and enables push notifications
   const pwa = usePWA();
 
   // Make PWA API available globally for components that need it
   React.useEffect(() => {
     window.liaizenPWA = pwa;
+    console.log('[App] PWA initialized');
   }, [pwa]);
+
+  React.useEffect(() => {
+    console.log('[App] App component mounted');
+    return () => {
+      console.log('[App] App component unmounting');
+    };
+  }, []);
 
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <InvitationProvider>
-          <MediatorProvider>
-            <BrowserRouter>
-              <Routes>
-                {/* Root route - shows landing or dashboard based on auth */}
-                <Route path="/" element={<ChatRoom />} />
-                {/* Sign in route - dedicated login/signup page */}
-                <Route path="/signin" element={<LoginSignup />} />
-                {/* Accept invitation route - for users accepting co-parent invitations */}
-                <Route path="/accept-invite" element={<AcceptInvitationPage />} />
-                {/* Invite co-parent route - shown after signup */}
-                <Route path="/invite-coparent" element={<InviteCoParentPage />} />
-                {/* Google OAuth callback route */}
-                <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
-                {/* Password reset routes */}
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                {/* UI Component Showcase - Design System Documentation */}
-                <Route path="/ui-showcase" element={<UIShowcase />} />
-                {/* Privacy Policy Page */}
-                <Route path="/privacy" element={<PrivacyPage />} />
-                {/* Terms of Service Page */}
-                <Route path="/terms" element={<TermsPage />} />
-                {/* Blog Routes */}
-                {/* Pillar 1: Communication */}
-                <Route
-                  path="/co-parenting-communication"
-                  element={<BlogPillarPage categoryId="communication" />}
-                />
-                <Route
-                  path="/break-co-parenting-argument-cycle-game-theory"
-                  element={<WhyArgumentsRepeat />}
-                />
-                <Route
-                  path="/co-parenting-communication/why-arguments-repeat"
-                  element={<WhyArgumentsRepeat />}
-                />{' '}
-                {/* Legacy URL redirect */}
-                <Route
-                  path="/co-parenting-communication/emotional-triggers"
-                  element={<EmotionalTriggers />}
-                />
-                <Route
-                  path="/co-parenting-communication/emotional-regulation"
-                  element={<EmotionalRegulation />}
-                />
-                <Route
-                  path="/co-parenting-communication/reaction-vs-response"
-                  element={<ReactionVsResponse />}
-                />
-                <Route
-                  path="/co-parenting-communication/pause-before-reacting"
-                  element={<PauseBeforeReacting />}
-                />
-                <Route
-                  path="/co-parenting-communication/defensiveness-strategies"
-                  element={<DefensivenessStrategies />}
-                />
-                {/* Pillar 2: High Conflict */}
-                <Route
-                  path="/high-conflict-co-parenting"
-                  element={<BlogPillarPage categoryId="high-conflict" />}
-                />
-                <Route
-                  path="/high-conflict/why-it-feels-impossible"
-                  element={<WhyItFeelsImpossible />}
-                />
-                <Route
-                  path="/high-conflict/de-escalation-techniques"
-                  element={<DeEscalationTechniques />}
-                />
-                <Route
-                  path="/high-conflict/gaslighting-guilt-blame"
-                  element={<GaslightingGuiltBlame />}
-                />
-                <Route
-                  path="/high-conflict/mental-health-protection"
-                  element={<MentalHealthProtection />}
-                />
-                <Route
-                  path="/high-conflict/every-conversation-fight"
-                  element={<EveryConversationFight />}
-                />
-                {/* Pillar 3: Child Centered */}
-                <Route
-                  path="/child-centered-co-parenting"
-                  element={<BlogPillarPage categoryId="child-centered" />}
-                />
-                <Route path="/child-impact/long-term-effects" element={<LongTermEffects />} />
-                <Route path="/child-impact/what-kids-need" element={<WhatKidsNeed />} />
-                <Route path="/child-impact/stability-stress" element={<StabilityStress />} />
-                <Route
-                  path="/child-impact/modeling-communication"
-                  element={<ModelingCommunication />}
-                />
-                {/* Pillar 4: AI Tools */}
-                <Route
-                  path="/liaizen-ai-co-parenting"
-                  element={<BlogPillarPage categoryId="liaizen-ai" />}
-                />
-                <Route path="/liaizen/how-ai-mediation-works" element={<AiGuidedMediation />} />
-                <Route path="/liaizen/escalation-prevention" element={<EscalationPrevention />} />
-                <Route path="/liaizen/calm-communication-ai" element={<CalmCommunication />} />
-                <Route path="/liaizen/ai-safety-for-parents" element={<AiSafety />} />
-                <Route path="/liaizen/ai-vs-impulse" element={<AiVsImpulse />} />
-                {/* Quizzes */}
-                <Route path="/quizzes" element={<QuizzesPage />} />
-                <Route path="/quizzes/co-parenting-stance" element={<CoParentingStanceQuiz />} />
-              </Routes>
-            </BrowserRouter>
-          </MediatorProvider>
-        </InvitationProvider>
-      </AuthProvider>
+      <div
+        style={{
+          minHeight: '100dvh',
+          height: '100%',
+          backgroundColor: '#ffffff',
+          width: '100%',
+          maxWidth: '100vw',
+          overflowX: 'hidden',
+        }}
+      >
+        <AuthProvider>
+          <InvitationProvider>
+            <MediatorProvider>
+              <BrowserRouter>
+                <Routes>
+                  {/* Root route - shows landing or dashboard based on auth */}
+                  <Route path="/" element={<ChatRoom />} />
+                  {/* Sign in route - dedicated login/signup page */}
+                  <Route path="/signin" element={<LoginSignup />} />
+                  {/* Accept invitation route - for users accepting co-parent invitations */}
+                  <Route path="/accept-invite" element={<AcceptInvitationPage />} />
+                  {/* Invite co-parent route - shown after signup */}
+                  <Route path="/invite-coparent" element={<InviteCoParentPage />} />
+                  {/* Google OAuth callback route */}
+                  <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
+                  {/* Password reset routes */}
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  {/* UI Component Showcase - Design System Documentation */}
+                  <Route path="/ui-showcase" element={<UIShowcase />} />
+                  {/* Privacy Policy Page */}
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  {/* Terms of Service Page */}
+                  <Route path="/terms" element={<TermsPage />} />
+                  {/* Catch-all route for typos - redirect to signin */}
+                  <Route path="/siginin" element={<LoginSignup />} />
+                  <Route path="/sign-in" element={<LoginSignup />} />
+                  {/* Catch-all for unknown routes */}
+                  <Route path="*" element={<ChatRoom />} />
+                  {/* Blog Routes */}
+                  {/* Pillar 1: Communication */}
+                  <Route
+                    path="/co-parenting-communication"
+                    element={<BlogPillarPage categoryId="communication" />}
+                  />
+                  <Route
+                    path="/break-co-parenting-argument-cycle-game-theory"
+                    element={<WhyArgumentsRepeat />}
+                  />
+                  <Route
+                    path="/co-parenting-communication/why-arguments-repeat"
+                    element={<WhyArgumentsRepeat />}
+                  />{' '}
+                  {/* Legacy URL redirect */}
+                  <Route
+                    path="/co-parenting-communication/emotional-triggers"
+                    element={<EmotionalTriggers />}
+                  />
+                  <Route
+                    path="/co-parenting-communication/emotional-regulation"
+                    element={<EmotionalRegulation />}
+                  />
+                  <Route
+                    path="/co-parenting-communication/reaction-vs-response"
+                    element={<ReactionVsResponse />}
+                  />
+                  <Route
+                    path="/co-parenting-communication/pause-before-reacting"
+                    element={<PauseBeforeReacting />}
+                  />
+                  <Route
+                    path="/co-parenting-communication/defensiveness-strategies"
+                    element={<DefensivenessStrategies />}
+                  />
+                  {/* Pillar 2: High Conflict */}
+                  <Route
+                    path="/high-conflict-co-parenting"
+                    element={<BlogPillarPage categoryId="high-conflict" />}
+                  />
+                  <Route
+                    path="/high-conflict/why-it-feels-impossible"
+                    element={<WhyItFeelsImpossible />}
+                  />
+                  <Route
+                    path="/high-conflict/de-escalation-techniques"
+                    element={<DeEscalationTechniques />}
+                  />
+                  <Route
+                    path="/high-conflict/gaslighting-guilt-blame"
+                    element={<GaslightingGuiltBlame />}
+                  />
+                  <Route
+                    path="/high-conflict/mental-health-protection"
+                    element={<MentalHealthProtection />}
+                  />
+                  <Route
+                    path="/high-conflict/every-conversation-fight"
+                    element={<EveryConversationFight />}
+                  />
+                  {/* Pillar 3: Child Centered */}
+                  <Route
+                    path="/child-centered-co-parenting"
+                    element={<BlogPillarPage categoryId="child-centered" />}
+                  />
+                  <Route path="/child-impact/long-term-effects" element={<LongTermEffects />} />
+                  <Route path="/child-impact/what-kids-need" element={<WhatKidsNeed />} />
+                  <Route path="/child-impact/stability-stress" element={<StabilityStress />} />
+                  <Route
+                    path="/child-impact/modeling-communication"
+                    element={<ModelingCommunication />}
+                  />
+                  {/* Pillar 4: AI Tools */}
+                  <Route
+                    path="/liaizen-ai-co-parenting"
+                    element={<BlogPillarPage categoryId="liaizen-ai" />}
+                  />
+                  <Route path="/liaizen/how-ai-mediation-works" element={<AiGuidedMediation />} />
+                  <Route path="/liaizen/escalation-prevention" element={<EscalationPrevention />} />
+                  <Route path="/liaizen/calm-communication-ai" element={<CalmCommunication />} />
+                  <Route path="/liaizen/ai-safety-for-parents" element={<AiSafety />} />
+                  <Route path="/liaizen/ai-vs-impulse" element={<AiVsImpulse />} />
+                  {/* Quizzes */}
+                  <Route path="/quizzes" element={<QuizzesPage />} />
+                  <Route path="/quizzes/co-parenting-stance" element={<CoParentingStanceQuiz />} />
+                </Routes>
+              </BrowserRouter>
+            </MediatorProvider>
+          </InvitationProvider>
+        </AuthProvider>
+      </div>
     </ErrorBoundary>
   );
 }

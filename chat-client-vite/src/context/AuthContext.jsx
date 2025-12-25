@@ -83,7 +83,7 @@ export function AuthProvider({ children }) {
       isAuthenticated: hasValidStoredAuth,
       username: hasValidStoredAuth ? storedUsername : null,
     });
-    
+
     return {
       isAuthenticated: hasValidStoredAuth,
       username: hasValidStoredAuth ? storedUsername : null,
@@ -126,8 +126,9 @@ export function AuthProvider({ children }) {
     // If we have a valid token and username, set initial state optimistically
     // This allows the app to show authenticated UI while verification completes
     // The verifySession will confirm or clear this state
-    const hasValidStoredAuth = storedIsAuthenticated && storedToken && storedUsername && !isTokenExpired(storedToken);
-    
+    const hasValidStoredAuth =
+      storedIsAuthenticated && storedToken && storedUsername && !isTokenExpired(storedToken);
+
     if (hasValidStoredAuth) {
       // Set initial state from storage (will be verified by verifySession)
       setIsAuthenticated(true);
@@ -181,11 +182,37 @@ export function AuthProvider({ children }) {
       }
 
       console.log('[verifySession] Verifying token with server...');
-      const response = await apiGet('/api/auth/verify', {
-        headers: {
-          Authorization: `Bearer ${storedToken}`,
-        },
-      });
+
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      let response;
+      try {
+        response = await apiGet('/api/auth/verify', {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+          },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          console.warn('[verifySession] ⚠️ Verification timeout - using optimistic auth state');
+          // On timeout, keep optimistic state if token exists
+          const storedState = loadAuthState();
+          if (storedState.isAuthenticated && storedState.token) {
+            setIsAuthenticated(storedState.isAuthenticated);
+            setUsername(storedState.username);
+            setEmail(storedState.email);
+            setToken(storedState.token);
+            setIsCheckingAuth(false);
+            return;
+          }
+        }
+        throw err; // Re-throw other errors
+      }
 
       if (response.ok) {
         const data = await response.json();
@@ -223,7 +250,9 @@ export function AuthProvider({ children }) {
       // but network is temporarily unavailable
       const storedState = loadAuthState();
       if (storedState.isAuthenticated && storedState.token) {
-        console.log('[verifySession] ⚠️ Network error but stored auth exists - keeping optimistic state');
+        console.log(
+          '[verifySession] ⚠️ Network error but stored auth exists - keeping optimistic state'
+        );
         // Keep the optimistic state - don't clear auth on network errors
         // The user should still be able to use the app if they have valid stored credentials
         setIsAuthenticated(storedState.isAuthenticated);

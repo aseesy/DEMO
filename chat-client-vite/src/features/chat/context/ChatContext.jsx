@@ -142,13 +142,20 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
 
   // Scroll to bottom when entering chat view (so user sees most recent messages)
   React.useEffect(() => {
-    if (currentView === 'chat' && messages.length > 0 && !isInitialLoad) {
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        scrollToBottom(true); // instant scroll, no animation
-      });
+    if (currentView === 'chat' && messages.length > 0) {
+      // Wait a bit for messages to render, then scroll
+      // If isInitialLoad is true, the message_history handler will handle scrolling
+      // If isInitialLoad is false, we need to scroll here
+      if (!isInitialLoad) {
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            scrollToBottom(true); // instant scroll, no animation
+          });
+        });
+      }
     }
-  }, [currentView, scrollToBottom]); // Don't include messages to avoid re-scrolling on every new message
+  }, [currentView, messages.length, isInitialLoad, scrollToBottom]); // Include messages.length to scroll when messages load
 
   // Helper to emit or queue a message - with optimistic updates for instant UI feedback
   const emitOrQueueMessage = React.useCallback(

@@ -72,7 +72,7 @@ export function DashboardView({
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Co-parent connection prompt - only show after checking is complete */}
       {!isCheckingCoParent && !hasCoParentConnected && (
         <InvitePromptBanner onInvite={() => setShowInviteModal(true)} />

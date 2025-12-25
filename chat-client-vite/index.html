@@ -127,9 +127,31 @@
       ]
     }
     </script>
+
+    <!-- PushAlert Unified Code -->
+    <script type="text/javascript">
+        (function(d, t) {
+            var g = d.createElement(t),
+            s = d.getElementsByTagName(t)[0];
+            g.src = "https://cdn.pushalert.co/unified_e9632c0df4b3fb760dfe00d181570b4b.js";
+            s.parentNode.insertBefore(g, s);
+        }(document, "script"));
+    </script>
+    <!-- End PushAlert Unified Code -->
   </head>
   <body>
     <div id="root"></div>
+    <!-- Clear service workers in development -->
+    <script>
+      if ('serviceWorker' in navigator && window.location.hostname === 'localhost') {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            console.log('[index.html] Unregistering service worker:', registration.scope);
+            registration.unregister();
+          }
+        });
+      }
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

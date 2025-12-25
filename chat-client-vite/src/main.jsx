@@ -74,8 +74,48 @@ if ('serviceWorker' in navigator && !isSafari && import.meta.env.PROD) {
   console.log('[main.jsx] Development mode - Service Worker disabled');
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+// Ensure root element exists
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  console.error('❌ Root element not found! Check index.html');
+  // Instead of throwing, try to create it
+  const body = document.body;
+  if (body) {
+    const newRoot = document.createElement('div');
+    newRoot.id = 'root';
+    body.appendChild(newRoot);
+    console.log('✅ Created root element');
+    createRoot(newRoot).render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    );
+  } else {
+    throw new Error('Root element #root not found in DOM and cannot create it');
+  }
+} else {
+  console.log('✅ Root element found, mounting React app...');
+
+  // Clear any existing content
+  rootElement.innerHTML = '';
+
+  try {
+    createRoot(rootElement).render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    );
+    console.log('✅ React app mounted successfully');
+  } catch (error) {
+    console.error('❌ Error mounting React app:', error);
+    // Show error message in the DOM
+    rootElement.innerHTML = `
+      <div style="padding: 20px; font-family: system-ui; color: #dc2626;">
+        <h1>Error Loading App</h1>
+        <p>${error.message}</p>
+        <p>Check the console for details.</p>
+      </div>
+    `;
+    throw error;
+  }
+}

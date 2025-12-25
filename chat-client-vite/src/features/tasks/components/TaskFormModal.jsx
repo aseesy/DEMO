@@ -91,8 +91,24 @@ export function TaskFormModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 pb-24 md:pb-4 overflow-y-auto">
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl flex flex-col max-h-full my-auto">
+    <div
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 overflow-y-auto overflow-x-hidden"
+      style={{
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+        paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+        paddingRight: 'max(1rem, env(safe-area-inset-right))',
+      }}
+    >
+      <div
+        className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xl flex flex-col my-auto"
+        style={{
+          maxHeight:
+            'calc(100dvh - max(2rem, env(safe-area-inset-top)) - max(2rem, env(safe-area-inset-bottom)))',
+          maxWidth:
+            'calc(100vw - max(2rem, env(safe-area-inset-left)) - max(2rem, env(safe-area-inset-right)))',
+        }}
+      >
         {/* Header - Always visible */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
           <h3 className="text-base sm:text-lg font-semibold">

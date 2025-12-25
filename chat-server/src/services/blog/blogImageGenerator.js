@@ -1,6 +1,6 @@
 /**
  * Blog Image Generator Service
- * 
+ *
  * Generates blog header images and social media graphics using DALL-E 3 or Flux API.
  * Supports automatic generation based on article metadata.
  */
@@ -106,7 +106,7 @@ async function generateWithFlux(prompt, size = 'header') {
   }
 
   const dimensions = IMAGE_CONFIG.FLUX.sizes[size] || IMAGE_CONFIG.FLUX.sizes.header;
-  
+
   console.log(`[blogImageGenerator] Generating ${size} image with Flux API...`);
   console.log(`[blogImageGenerator] Prompt: ${prompt.substring(0, 100)}...`);
 
@@ -114,12 +114,12 @@ async function generateWithFlux(prompt, size = 'header') {
     // Use Node.js built-in fetch (available in Node 18+)
     // For older versions, you may need to install node-fetch
     const fetch = globalThis.fetch || require('node-fetch');
-    
+
     const response = await fetch(`${IMAGE_CONFIG.FLUX.baseUrl}/image/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         prompt: prompt,
@@ -135,7 +135,7 @@ async function generateWithFlux(prompt, size = 'header') {
     }
 
     const data = await response.json();
-    
+
     // Flux API response format may vary - adjust based on actual API documentation
     // Common formats: { image_url: string } or { url: string } or base64 data
     return {
@@ -162,7 +162,7 @@ async function downloadAndSaveImage(imageUrl, filePath) {
       // DALL-E 3 returns Azure Blob Storage URLs with SAS tokens that must be preserved
       const url = new URL(imageUrl);
       const protocol = url.protocol === 'https:' ? https : http;
-      
+
       // Build request options - include all query parameters for Azure Blob Storage SAS tokens
       // CRITICAL: Must include url.search to preserve SAS token query parameters
       const options = {
@@ -171,13 +171,15 @@ async function downloadAndSaveImage(imageUrl, filePath) {
         method: 'GET',
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; LiaiZen/1.0)',
-          'Accept': 'image/*',
+          Accept: 'image/*',
         },
       };
 
-      console.log(`[blogImageGenerator] Downloading from: ${url.hostname}${url.pathname.substring(0, 50)}...`);
+      console.log(
+        `[blogImageGenerator] Downloading from: ${url.hostname}${url.pathname.substring(0, 50)}...`
+      );
 
-      const request = protocol.request(options, (response) => {
+      const request = protocol.request(options, response => {
         // Handle redirects (301, 302, etc.)
         if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
           console.log(`[blogImageGenerator] Following redirect to: ${response.headers.location}`);
@@ -190,7 +192,7 @@ async function downloadAndSaveImage(imageUrl, filePath) {
         if (response.statusCode !== 200) {
           // Collect error response body
           let errorBody = '';
-          response.on('data', (chunk) => {
+          response.on('data', chunk => {
             errorBody += chunk.toString();
           });
           response.on('end', () => {
@@ -198,7 +200,11 @@ async function downloadAndSaveImage(imageUrl, filePath) {
             if (errorBody) {
               console.error(`[blogImageGenerator] Error response: ${errorBody.substring(0, 500)}`);
             }
-            reject(new Error(`Failed to download image: ${response.statusCode}${errorBody ? ' - ' + errorBody.substring(0, 200) : ''}`));
+            reject(
+              new Error(
+                `Failed to download image: ${response.statusCode}${errorBody ? ' - ' + errorBody.substring(0, 200) : ''}`
+              )
+            );
           });
           return;
         }
@@ -209,7 +215,7 @@ async function downloadAndSaveImage(imageUrl, filePath) {
         fileStream.on('finish', async () => {
           fileStream.close();
           console.log(`[blogImageGenerator] ✅ Image downloaded to ${filePath}`);
-          
+
           // Optimize image if sharp is available
           if (sharp) {
             try {
@@ -217,7 +223,9 @@ async function downloadAndSaveImage(imageUrl, filePath) {
               console.log(`[blogImageGenerator] ✅ Image optimized`);
               resolve(optimizedPath);
             } catch (optimizeError) {
-              console.warn(`[blogImageGenerator] ⚠️  Image optimization failed: ${optimizeError.message}`);
+              console.warn(
+                `[blogImageGenerator] ⚠️  Image optimization failed: ${optimizeError.message}`
+              );
               console.warn(`[blogImageGenerator] ⚠️  Using original image`);
               resolve(filePath);
             }
@@ -226,14 +234,14 @@ async function downloadAndSaveImage(imageUrl, filePath) {
           }
         });
 
-        fileStream.on('error', (err) => {
+        fileStream.on('error', err => {
           console.error(`[blogImageGenerator] ❌ File stream error:`, err.message);
           fs.unlink(filePath).catch(() => {});
           reject(err);
         });
       });
 
-      request.on('error', (err) => {
+      request.on('error', err => {
         console.error(`[blogImageGenerator] ❌ Request error:`, err.message);
         reject(err);
       });
@@ -266,27 +274,29 @@ async function optimizeImage(filePath) {
     const stats = await fs.stat(filePath);
     const originalSize = stats.size;
     const ext = path.extname(filePath).toLowerCase();
-    
+
     if (ext === '.png') {
       // Compress PNG
       await sharp(filePath)
-        .png({ 
-          quality: 85, 
+        .png({
+          quality: 85,
           compressionLevel: 9,
           adaptiveFiltering: true,
         })
         .toFile(filePath + '.tmp');
-      
+
       // Replace original with optimized
       await fs.rename(filePath + '.tmp', filePath);
-      
+
       const newStats = await fs.stat(filePath);
       const newSize = newStats.size;
-      const savings = ((originalSize - newSize) / originalSize * 100).toFixed(1);
-      
-      console.log(`[blogImageGenerator] Optimized: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(newSize / 1024 / 1024).toFixed(2)}MB (${savings}% reduction)`);
+      const savings = (((originalSize - newSize) / originalSize) * 100).toFixed(1);
+
+      console.log(
+        `[blogImageGenerator] Optimized: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(newSize / 1024 / 1024).toFixed(2)}MB (${savings}% reduction)`
+      );
     }
-    
+
     return filePath;
   } catch (error) {
     console.error(`[blogImageGenerator] Optimization error:`, error.message);
@@ -301,66 +311,106 @@ async function optimizeImage(filePath) {
  */
 function createHeaderImagePrompt(articleMeta) {
   const { title, subtitle, category } = articleMeta;
-  
+
   // Extract text content from title (handle React elements)
-  const titleText = typeof title === 'string' ? title : 
-                   (title?.props?.children?.join ? title.props.children.join(' ') : 
-                   String(title));
-  
+  const titleText =
+    typeof title === 'string'
+      ? title
+      : title?.props?.children?.join
+        ? title.props.children.join(' ')
+        : String(title);
+
   // Build a more specific prompt using subtitle and excerpt for better relevance
   let specificContext = '';
   if (subtitle) {
     specificContext = `The article explores: "${subtitle}". `;
   }
-  
-  // Create more specific visual metaphors based on the title/subtitle
+
+  // Create article-specific visual metaphors based on actual article concepts
   let visualMetaphor = '';
   const titleLower = titleText.toLowerCase();
-  if (titleLower.includes('trigger') || titleLower.includes('hurtful') || titleLower.includes('emotional')) {
-    visualMetaphor = 'Visual metaphor: gentle waves or ripples representing emotional responses, soft gradients showing how neutral messages can create emotional reactions.';
-  } else if (titleLower.includes('regulation') || titleLower.includes('calm') || titleLower.includes('pause')) {
-    visualMetaphor = 'Visual metaphor: peaceful, balanced composition with smooth transitions, representing emotional regulation and inner calm.';
-  } else if (titleLower.includes('reaction') || titleLower.includes('response')) {
-    visualMetaphor = 'Visual metaphor: two paths diverging - one reactive (sharp, angular) and one responsive (smooth, considered), showing the choice between reactions.';
-  } else if (titleLower.includes('conflict') || titleLower.includes('argument') || titleLower.includes('cycle')) {
-    visualMetaphor = 'Visual metaphor: interconnected loops or cycles being gently broken, representing breaking communication patterns.';
-  } else if (titleLower.includes('defensive') || titleLower.includes('escalat')) {
-    visualMetaphor = 'Visual metaphor: barriers or walls softening into open pathways, representing de-escalation and understanding.';
-  } else if (titleLower.includes('child') || titleLower.includes('kid') || titleLower.includes('stability')) {
-    visualMetaphor = 'Visual metaphor: stable foundation with gentle, protective elements, representing security and stability for children.';
-  } else if (titleLower.includes('ai') || titleLower.includes('technology') || titleLower.includes('mediation')) {
-    visualMetaphor = 'Visual metaphor: modern, tech-forward design with human-centered elements, representing AI-assisted communication.';
-  } else {
-    visualMetaphor = 'Visual metaphor: abstract representation of communication and connection, showing peaceful interaction.';
+  const subtitleLower = (subtitle || '').toLowerCase();
+
+  // Emotional Triggers article - show threat filter concept
+  if (
+    titleLower.includes('trigger') ||
+    titleLower.includes('hurtful') ||
+    (titleLower.includes('emotional') && subtitleLower.includes('trigger'))
+  ) {
+    visualMetaphor = `CONCEPTUAL VISUAL: A friendly cartoon person holding a phone, looking at a simple message. The message is being filtered through a "threat filter" - shown as a gentle, semi-transparent filter or lens between the person and the message. Past conflict memories are represented as soft, faded shapes or clouds in the background. The person's body language shows a subtle stress response (slightly tense shoulders, concerned expression). The image shows the gap between a neutral message and how it's perceived through the threat filter. This visually represents: "neutral messages feeling like attacks due to threat filters shaped by past conflict."`;
   }
-  
-  const basePrompt = `Create a professional blog header image in CARTOON ILLUSTRATION style - matching the style of the family-exchange cartoon illustration on the landing page. The image is for a co-parenting communication article titled "${titleText}". 
-${specificContext}
+  // Emotional Regulation article
+  else if (
+    titleLower.includes('regulation') ||
+    (titleLower.includes('emotional') && subtitleLower.includes('regulation'))
+  ) {
+    visualMetaphor = `CONCEPTUAL VISUAL: A friendly cartoon person in a moment of pause, taking a deep breath. Their body shows transition from tension (slightly hunched, tense) to calm (relaxed shoulders, peaceful expression). Soft, calming elements surround them - gentle waves, peaceful colors transitioning. This visually represents: "choosing when and how to respond rather than having your stress response choose for you."`;
+  }
+  // Reaction vs Response article
+  else if (titleLower.includes('reaction') && titleLower.includes('response')) {
+    visualMetaphor = `CONCEPTUAL VISUAL: A friendly cartoon person at a crossroads moment. Two paths diverge: one path shows immediate reaction (sharp, angular shapes, tense body language, rushed movement). The other path shows considered response (smooth, rounded shapes, calm body language, thoughtful pause). The person is shown in the moment of choice, representing the pause between stimulus and response.`;
+  }
+  // Pause Before Reacting article
+  else if (
+    titleLower.includes('pause') &&
+    (titleLower.includes('react') || titleLower.includes('sending'))
+  ) {
+    visualMetaphor = `CONCEPTUAL VISUAL: A friendly cartoon person with their finger hovering over a "send" button on a phone. They're in a moment of pause - taking a breath, their body language showing the choice to wait. Soft, calming elements (gentle waves, peaceful colors) flow around them, representing the space created by pausing. This visually represents: "creating space between receiving a message and responding."`;
+  }
+  // Argument Cycle article
+  else if (
+    (titleLower.includes('argument') && titleLower.includes('repeat')) ||
+    titleLower.includes('cycle')
+  ) {
+    visualMetaphor = `CONCEPTUAL VISUAL: A friendly cartoon showing two people in a communication loop or cycle. The cycle is being gently broken - shown as a circular pattern with one section opening or softening. The people are shown moving from conflict (tense, facing away) toward understanding (calmer, more open). This visually represents: "breaking the cycle of repeating arguments."`;
+  }
+  // Defensiveness article
+  else if (titleLower.includes('defensive') || titleLower.includes('defensiveness')) {
+    visualMetaphor = `CONCEPTUAL VISUAL: A friendly cartoon person with defensive barriers or walls around them, but the barriers are softening and opening into pathways. The person's body language transitions from closed/protective to more open. This visually represents: "strategies for communicating without triggering defense mechanisms."`;
+  }
+  // De-escalation article
+  else if (titleLower.includes('de-escalat') || titleLower.includes('escalat')) {
+    visualMetaphor = `CONCEPTUAL VISUAL: A friendly cartoon showing communication that starts heated (sharp, angular shapes, tense colors) gradually cooling and softening (smooth transitions, calmer colors, peaceful shapes). Two people moving from conflict toward calm. This visually represents: "lowering the temperature of heated exchanges."`;
+  }
+  // AI/Technology articles
+  else if (
+    titleLower.includes('ai') ||
+    titleLower.includes('mediation') ||
+    subtitleLower.includes('ai')
+  ) {
+    visualMetaphor = `CONCEPTUAL VISUAL: A friendly cartoon showing human-centered technology - a person communicating with gentle, supportive tech elements around them (soft digital shapes, helpful tools). The tech feels warm and supportive, not cold or robotic. This visually represents: "AI-assisted communication that feels human and supportive."`;
+  }
+  // Child/Stability articles
+  else if (
+    titleLower.includes('child') ||
+    titleLower.includes('kid') ||
+    titleLower.includes('stability')
+  ) {
+    visualMetaphor = `CONCEPTUAL VISUAL: A friendly cartoon showing a stable foundation with protective, gentle elements. A child or family in a secure, peaceful environment. Soft, protective shapes surrounding them. This visually represents: "security and stability for children in co-parenting."`;
+  }
+  // Default - communication concept
+  else {
+    visualMetaphor = `CONCEPTUAL VISUAL: A friendly cartoon showing peaceful communication between two people. They're in a calm, supportive interaction - gentle gestures, open body language, peaceful setting. This visually represents: "effective, peaceful co-parenting communication."`;
+  }
+
+  const basePrompt = `Create a blog header image in the EXACT CARTOON style of the family-exchange illustration on the landing page. Article: "${titleText}". ${specificContext}
+
+CONCEPT (MOST IMPORTANT - visually represent this):
 ${visualMetaphor}
 
-CRITICAL STYLE REQUIREMENTS (match the landing page cartoon illustration):
-- CARTOON ILLUSTRATION STYLE: Friendly, approachable cartoon illustration (like a children's book or modern app illustration)
-- Simple, rounded, friendly character design (if people are shown)
-- Soft, warm, inviting aesthetic - NOT corporate, NOT minimalist, NOT abstract
-- Similar to the family-exchange cartoon on the landing page: friendly cartoon parents and child
-- Use rounded shapes, friendly expressions, warm colors
-- Cartoon style with simple details, not photorealistic
-- Think: friendly cartoon illustration, like you'd see in a family app or children's book
+STYLE (match landing page exactly):
+- Friendly cartoon: soft rounded characters, simple features, gentle expressions
+- Rounded shapes, soft outlines, subtle grainy texture, simple details
+- Colors: warm orange, bright yellow, soft teal/blue, browns, light grays, cream - diverse natural palette
+- Simple background: cream/off-white, soft shadows, clean composition
+- NOT photorealistic, NOT 3D, NOT abstract
 
-The image must:
-- Be visually specific to the article's core concept: ${visualMetaphor}
-- Use the exact color palette: soft teal (#4DA8B0), white, very light teal (#E6F7F5), soft grays
-- Be a CARTOON ILLUSTRATION (not a photo, not abstract, not minimalist) - friendly cartoon style
-- Represent the psychological or emotional concepts through friendly cartoon illustrations
-- Have a peaceful, calm, supportive, friendly mood
-- Use warm, inviting cartoon illustration style with rounded, friendly shapes
-- Be 16:9 aspect ratio, horizontal layout
-- Match the CARTOON ILLUSTRATION aesthetic of the landing page family-exchange image
-
-Style: Cartoon illustration, friendly, approachable, warm, rounded shapes, family-friendly cartoon
-Colors: Teal (#4DA8B0), white (#FFFFFF), light teal (#E6F7F5), soft gray (#F3F4F6)
-Mood: Peaceful, calm, supportive, gentle, hopeful, friendly
-Visual approach: Friendly cartoon illustrations representing the article concept, similar to the cartoon family-exchange illustration on the landing page`;
+REQUIREMENTS:
+- Visually represent the article's core concept above
+- Match landing page cartoon style exactly
+- 16:9 horizontal layout
+- NO TEXT OR WORDS
+- Peaceful, friendly mood`;
 
   return basePrompt;
 }
@@ -373,13 +423,16 @@ Visual approach: Friendly cartoon illustrations representing the article concept
  */
 function createSocialMediaPrompt(articleMeta, platform = 'twitter') {
   const { title, subtitle } = articleMeta;
-  
-  const titleText = typeof title === 'string' ? title : 
-                   (title?.props?.children?.join ? title.props.children.join(' ') : 
-                   String(title));
-  
+
+  const titleText =
+    typeof title === 'string'
+      ? title
+      : title?.props?.children?.join
+        ? title.props.children.join(' ')
+        : String(title);
+
   const aspectRatio = platform === 'instagram' ? '1:1 square' : '16:9 wide';
-  
+
   const basePrompt = `Create a professional social media graphic for a co-parenting communication blog post.
 The image should be:
 - Eye-catching and shareable
@@ -407,7 +460,7 @@ Mood: Peaceful, hopeful, supportive, shareable`;
  */
 async function generateHeaderImage(articleMeta, provider = 'dall-e-3', outputDir = null) {
   const prompt = createHeaderImagePrompt(articleMeta);
-  
+
   let result;
   if (provider === 'flux') {
     result = await generateWithFlux(prompt, 'header');
@@ -430,7 +483,9 @@ async function generateHeaderImage(articleMeta, provider = 'dall-e-3', outputDir
     } catch (downloadError) {
       console.error(`[blogImageGenerator] ⚠️  Failed to download image: ${downloadError.message}`);
       console.error(`[blogImageGenerator] ⚠️  Image URL is still available: ${result.url}`);
-      console.error(`[blogImageGenerator] ⚠️  Note: URLs expire after ~2 hours, download immediately`);
+      console.error(
+        `[blogImageGenerator] ⚠️  Note: URLs expire after ~2 hours, download immediately`
+      );
       // Don't fail the entire operation - return the URL even if download fails
     }
   }
@@ -458,7 +513,7 @@ async function generateSocialMediaGraphic(
 ) {
   const prompt = createSocialMediaPrompt(articleMeta, platform);
   const size = platform === 'instagram' ? 'socialSquare' : 'socialWide';
-  
+
   let result;
   if (provider === 'flux') {
     result = await generateWithFlux(prompt, size);
@@ -478,7 +533,9 @@ async function generateSocialMediaGraphic(
     } catch (downloadError) {
       console.error(`[blogImageGenerator] ⚠️  Failed to download image: ${downloadError.message}`);
       console.error(`[blogImageGenerator] ⚠️  Image URL is still available: ${result.url}`);
-      console.error(`[blogImageGenerator] ⚠️  Note: URLs expire after ~2 hours, download immediately`);
+      console.error(
+        `[blogImageGenerator] ⚠️  Note: URLs expire after ~2 hours, download immediately`
+      );
       // Don't fail the entire operation - return the URL even if download fails
     }
   }
@@ -500,7 +557,7 @@ async function generateSocialMediaGraphic(
  */
 async function generateAllImages(articleMeta, provider = 'dall-e-3', outputDir = null) {
   console.log(`[blogImageGenerator] Generating all images for article: ${articleMeta.title}`);
-  
+
   try {
     const [header, instagram, twitter] = await Promise.all([
       generateHeaderImage(articleMeta, provider, outputDir),
@@ -529,4 +586,3 @@ module.exports = {
   createHeaderImagePrompt,
   createSocialMediaPrompt,
 };
-

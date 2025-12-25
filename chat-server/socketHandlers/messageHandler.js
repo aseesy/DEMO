@@ -17,6 +17,14 @@ const {
   toggleReaction,
 } = require('./messageOperations');
 
+// Auto-threading service for semantic thread assignment
+let autoThreading = null;
+try {
+  autoThreading = require('../services/autoThreading');
+} catch (err) {
+  console.warn('⚠️  Auto-threading service not available:', err.message);
+}
+
 function registerMessageHandlers(socket, io, services, activeUsers, messageHistory) {
   const { messageStore, dbSafe, dbPostgres } = services;
 
@@ -42,6 +50,16 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
         });
         await messageStore.saveMessage(messageToSave);
         console.log('[addToHistory] Message saved successfully');
+
+        // Auto-threading: Process message in background (non-blocking)
+        // Only process regular user messages, not system/AI messages
+        if (autoThreading && message.type !== 'system' && message.type !== 'ai_intervention') {
+          setImmediate(() => {
+            autoThreading
+              .processMessageForThreading(messageToSave, { io })
+              .catch(err => console.error('[AutoThreading] Background error:', err.message));
+          });
+        }
       } catch (err) {
         console.error('❌ Error saving message to database:', err);
         console.error('Message data:', JSON.stringify(message, null, 2));

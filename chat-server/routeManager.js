@@ -205,7 +205,7 @@ function setupRoutes(app, services) {
     autoCompleteOnboardingTasks,
   });
   contactsRoutes.setHelpers({ autoCompleteOnboardingTasks, contactIntelligence });
-  
+
   // Inject services into profile routes
   if (services.profileService && profileRoutes.setServices) {
     profileRoutes.setServices({ profileService: services.profileService });
@@ -232,6 +232,7 @@ function setupRoutes(app, services) {
   app.use('/api', aiRoutes);
   app.use('/api', connectionsRoutes);
   app.use('/api/blog/images', blogImagesRoutes);
+  app.use('/api/push', require('./routes/pushNotifications'));
 
   // ========================================
   // Admin & Import Routes (Inline)
