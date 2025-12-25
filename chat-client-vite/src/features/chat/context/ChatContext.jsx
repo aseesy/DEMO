@@ -181,6 +181,12 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       setMessageStatuses(prev => new Map(prev).set(messageId, 'sending'));
 
       if (socketRef.current?.connected) {
+        console.log('[emitOrQueueMessage] Emitting send_message:', {
+          text: text.substring(0, 30),
+          optimisticId: messageId,
+          socketConnected: socketRef.current.connected,
+          socketId: socketRef.current.id,
+        });
         socketRef.current.emit('send_message', {
           text,
           isPreApprovedRewrite,
@@ -188,6 +194,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
           optimisticId: messageId, // Send ID so server can correlate
         });
       } else {
+        console.warn('[emitOrQueueMessage] Socket not connected, queuing message');
         offlineQueueRef.current.push(optimisticMessage);
         try {
           localStorage.setItem('liaizen_offline_queue', JSON.stringify(offlineQueueRef.current));
@@ -225,6 +232,11 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     async e => {
       if (e?.preventDefault) e.preventDefault();
       const clean = inputMessage.trim();
+      console.log('[sendMessage] Called:', {
+        hasText: !!clean,
+        hasSocket: !!socketRef.current,
+        socketConnected: socketRef.current?.connected,
+      });
       if (!clean || !socketRef.current) return;
 
       // If we already have a draft coaching result for this exact message
