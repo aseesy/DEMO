@@ -181,9 +181,6 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       setMessageStatuses(prev => new Map(prev).set(messageId, 'sending'));
 
       if (socketRef.current?.connected) {
-        console.log('[emitOrQueueMessage] Emitting send_message');
-        // DEBUG: Temporarily show alert to confirm emit is happening
-        // alert('DEBUG: Emitting message to server...');
         socketRef.current.emit('send_message', {
           text,
           isPreApprovedRewrite,
@@ -191,7 +188,6 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
           optimisticId: messageId, // Send ID so server can correlate
         });
       } else {
-        alert('DEBUG: Socket disconnected when trying to emit!');
         offlineQueueRef.current.push(optimisticMessage);
         try {
           localStorage.setItem('liaizen_offline_queue', JSON.stringify(offlineQueueRef.current));
@@ -229,23 +225,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     async e => {
       if (e?.preventDefault) e.preventDefault();
       const clean = inputMessage.trim();
-
-      // DEBUG: Visual feedback for phone testing
-      const debugInfo = `Text: ${!!clean}, Socket: ${!!socketRef.current}, Connected: ${socketRef.current?.connected}`;
-      console.log('[sendMessage] Called:', debugInfo);
-
-      if (!clean) {
-        console.log('[sendMessage] No text, returning');
-        return;
-      }
-      if (!socketRef.current) {
-        alert('DEBUG: No socket reference!');
-        return;
-      }
-      if (!socketRef.current.connected) {
-        alert('DEBUG: Socket not connected! ID: ' + (socketRef.current?.id || 'none'));
-        return;
-      }
+      if (!clean || !socketRef.current) return;
 
       // If we already have a draft coaching result for this exact message
       // and it shows intervention needed, don't send
