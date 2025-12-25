@@ -198,22 +198,29 @@ function registerActiveUser(activeUsers, socketId, cleanUsername, roomId) {
  */
 async function getMessageHistory(roomId, dbPostgres, limit = 500) {
   console.log('[getMessageHistory] Loading messages for room:', roomId);
-  
-  // Get total count
+
+  // Get total count of user messages (exclude system messages)
   const countResult = await dbPostgres.query(
-    'SELECT COUNT(*) as total FROM messages WHERE room_id = $1',
+    `SELECT COUNT(*) as total FROM messages
+     WHERE room_id = $1
+     AND (type IS NULL OR type != 'system')
+     AND text NOT LIKE '%joined the chat%'
+     AND text NOT LIKE '%left the chat%'`,
     [roomId]
   );
   const totalMessages = parseInt(countResult.rows[0]?.total || 0, 10);
-  console.log('[getMessageHistory] Total messages in room:', totalMessages);
+  console.log('[getMessageHistory] Total user messages in room:', totalMessages);
 
   // Get messages - order by DESC to get most recent messages first
-  // Frontend will reverse for display, but we want newest messages on initial load
+  // Exclude system messages (join/leave) BEFORE the limit so we get actual user messages
   const historyQuery = `
     SELECT m.*, u.display_name, u.first_name
     FROM messages m
     LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
     WHERE m.room_id = $1
+      AND (m.type IS NULL OR m.type != 'system')
+      AND m.text NOT LIKE '%joined the chat%'
+      AND m.text NOT LIKE '%left the chat%'
     ORDER BY m.timestamp DESC
     LIMIT ${limit}
   `;
@@ -233,10 +240,18 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500) {
       timestamp: msg.timestamp || msg.created_at,
       threadId: msg.thread_id || null,
       edited: msg.edited === 1 || msg.edited === '1',
-      reactions: msg.reactions ? (typeof msg.reactions === 'string' ? JSON.parse(msg.reactions) : msg.reactions) : {},
-      user_flagged_by: msg.user_flagged_by ? (typeof msg.user_flagged_by === 'string' ? JSON.parse(msg.user_flagged_by) : msg.user_flagged_by) : [],
+      reactions: msg.reactions
+        ? typeof msg.reactions === 'string'
+          ? JSON.parse(msg.reactions)
+          : msg.reactions
+        : {},
+      user_flagged_by: msg.user_flagged_by
+        ? typeof msg.user_flagged_by === 'string'
+          ? JSON.parse(msg.user_flagged_by)
+          : msg.user_flagged_by
+        : [],
     };
-    
+
     // Log if message is missing critical fields
     if (!message.id || !message.username || !message.text) {
       console.warn('[getMessageHistory] Message missing critical fields:', {
@@ -246,7 +261,7 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500) {
         raw: msg,
       });
     }
-    
+
     return message;
   });
 

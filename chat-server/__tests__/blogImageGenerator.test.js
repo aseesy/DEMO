@@ -25,7 +25,7 @@ describe('Blog Image Generator', () => {
       
       expect(prompt).toContain('blog header image');
       expect(prompt).toContain('Test Article Title');
-      expect(prompt).toContain('16:9 aspect ratio');
+      expect(prompt).toContain('16:9'); // Can be "16:9 aspect ratio" or "16:9 horizontal layout"
       expect(prompt).toContain('teal');
     });
 

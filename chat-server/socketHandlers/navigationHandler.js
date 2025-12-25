@@ -14,11 +14,16 @@ function registerNavigationHandlers(socket, io, services, activeUsers) {
     }
 
     try {
+      // Exclude system messages (join/leave) when loading older messages
       const query = `
         SELECT m.*, u.display_name, u.first_name
         FROM messages m
         LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
-        WHERE m.room_id = $1 AND m.timestamp < $2
+        WHERE m.room_id = $1
+          AND m.timestamp < $2
+          AND (m.type IS NULL OR m.type != 'system')
+          AND m.text NOT LIKE '%joined the chat%'
+          AND m.text NOT LIKE '%left the chat%'
         ORDER BY m.timestamp DESC
         LIMIT $3
       `;
@@ -166,4 +171,3 @@ function registerNavigationHandlers(socket, io, services, activeUsers) {
 }
 
 module.exports = { registerNavigationHandlers };
-
