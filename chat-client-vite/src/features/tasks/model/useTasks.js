@@ -6,7 +6,13 @@ import {
   wasTaskCompleted,
   getDefaultTaskFormData,
 } from './taskHelpers.js';
-import { queryFetchTasks, commandUpdateTaskStatus, commandSaveTask, commandDeleteTask } from './taskQueries.js';
+import { isPWAInstallTask } from './taskTypeDetection.js';
+import {
+  queryFetchTasks,
+  commandUpdateTaskStatus,
+  commandSaveTask,
+  commandDeleteTask,
+} from './taskQueries.js';
 
 // Minimal tasks hook to mirror the existing dashboard task behavior.
 // This focuses on loading tasks, limiting to 5, toggling status,
@@ -47,6 +53,69 @@ export function useTasks(username, isAuthenticated = true) {
       setTasks([]);
     }
   }, [loadTasks, isAuthenticated, username]);
+
+  // Auto-complete PWA install task when app is installed
+  // Track if we've already completed the task to avoid duplicate API calls
+  const pwaTaskCompletedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!username || !isAuthenticated || tasks.length === 0) return;
+
+    // Check if PWA is installed
+    const isPWAInstalled = () => {
+      // Check via liaizenPWA global (set by usePWA hook)
+      if (window.liaizenPWA?.isInstalled) return true;
+      // Check via display-mode media query
+      if (window.matchMedia?.('(display-mode: standalone)').matches) return true;
+      // Check iOS Safari standalone mode
+      if (window.navigator?.standalone === true) return true;
+      return false;
+    };
+
+    // Find uncompleted PWA install task
+    const pwaTask = tasks.find(task => isPWAInstallTask(task) && task.status !== 'completed');
+
+    // If no uncompleted task exists, nothing to do
+    if (!pwaTask) {
+      pwaTaskCompletedRef.current = false; // Reset for future tasks
+      return;
+    }
+
+    // Skip if already processing or not installed
+    if (pwaTaskCompletedRef.current || !isPWAInstalled()) return;
+
+    // Mark it as completed
+    const completePWATask = async () => {
+      pwaTaskCompletedRef.current = true; // Prevent duplicate calls
+
+      const result = await commandUpdateTaskStatus({
+        taskId: pwaTask.id,
+        username,
+        status: 'completed',
+      });
+
+      if (result.success) {
+        trackTaskCompleted('pwa_install');
+        loadTasks(); // Refresh to show updated status
+      } else {
+        pwaTaskCompletedRef.current = false; // Allow retry on failure
+      }
+    };
+
+    completePWATask();
+
+    // Also listen for real-time installation (user installs during session)
+    const handleAppInstalled = () => {
+      if (!pwaTaskCompletedRef.current && pwaTask) {
+        completePWATask();
+      }
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => {
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, [tasks, username, isAuthenticated, loadTasks]);
 
   const toggleTaskStatus = async task => {
     if (!task?.id || !username) return;
