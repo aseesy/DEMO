@@ -324,9 +324,16 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
 
             {/* Messages Container - Scrollable */}
             <div
+              ref={messagesContainerRef}
               className="flex-1 overflow-y-auto min-h-0"
               style={{
                 WebkitOverflowScrolling: 'touch',
+              }}
+              onScroll={e => {
+                // Load older messages when scrolled near top
+                if (e.target.scrollTop < 100 && hasMoreMessages && !isLoadingOlder) {
+                  loadOlderMessages();
+                }
               }}
             >
               <MessagesContainer
