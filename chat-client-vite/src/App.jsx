@@ -4,8 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ChatRoom from './ChatRoom.jsx';
 import { AcceptInvitationPage, InviteCoParentPage } from './features/invitations';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
-import { PWAUpdateBanner } from './features/pwa/components/PWAUpdateBanner.jsx';
-import { usePWA } from './hooks/pwa/usePWA.js';
+import { PWAUpdateBanner, usePWA } from './features/pwa';
 import { MediatorProvider } from './context/MediatorContext.jsx';
 import { AuthProvider, useAuthContext } from './context/AuthContext.jsx';
 import { InvitationProvider } from './context/InvitationContext.jsx';
@@ -69,6 +68,47 @@ function AppContent() {
     console.log('[App] PWA initialized');
   }, [pwa]);
 
+  // Listen for navigation messages from service worker (when notification is clicked)
+  // Single Responsibility: Handle service worker messages and update URL
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const handleMessage = event => {
+        if (event.data && event.data.type === 'NAVIGATE') {
+          console.log('[App] Service worker requested navigation to:', event.data.url);
+
+          // Update the URL (this will trigger ChatRoom's URL parameter check)
+          window.history.pushState({}, '', event.data.url);
+
+          // Parse the URL to extract view parameter
+          try {
+            const url = new URL(event.data.url, window.location.origin);
+            const viewParam = url.searchParams.get('view');
+
+            // Trigger a custom event for immediate navigation
+            if (viewParam) {
+              window.dispatchEvent(
+                new CustomEvent('navigate-to-view', { detail: { view: viewParam } })
+              );
+            } else {
+              // If no view param, just reload to ensure we're on the right page
+              window.location.href = event.data.url;
+            }
+          } catch (error) {
+            console.warn('[App] Error parsing navigation URL:', error);
+            // Fallback: direct navigation
+            window.location.href = event.data.url;
+          }
+        }
+      };
+
+      navigator.serviceWorker.addEventListener('message', handleMessage);
+
+      return () => {
+        navigator.serviceWorker.removeEventListener('message', handleMessage);
+      };
+    }
+  }, []);
+
   // Show update banner when update is available
   React.useEffect(() => {
     if (pwa.updateAvailable) {
@@ -76,19 +116,32 @@ function AppContent() {
     }
   }, [pwa.updateAvailable]);
 
-  // Auto-subscribe to push notifications when user logs in
+  // Auto-subscribe to push notifications when user logs in (only if permission already granted)
+  // NOTE: We cannot request permission automatically - it requires a user gesture
+  // If permission is already granted, we can subscribe automatically
   React.useEffect(() => {
     const PUSH_SUBSCRIPTION_DELAY = 2000; // 2 seconds - wait for service worker to register
 
     if (isAuthenticated && pwa.subscribeToPush && typeof window !== 'undefined') {
-      const timer = setTimeout(() => {
-        console.log('[App] User authenticated, attempting to subscribe to push notifications...');
-        pwa.subscribeToPush().catch(error => {
-          console.warn('[App] Could not subscribe to push notifications:', error);
-        });
-      }, PUSH_SUBSCRIPTION_DELAY);
+      // Only auto-subscribe if permission is already granted
+      // Don't request permission automatically (requires user gesture)
+      const currentPermission =
+        typeof Notification !== 'undefined' ? Notification.permission : 'denied';
 
-      return () => clearTimeout(timer);
+      if (currentPermission === 'granted') {
+        const timer = setTimeout(() => {
+          console.log('[App] Permission already granted, subscribing to push notifications...');
+          pwa.subscribeToPush().catch(error => {
+            console.warn('[App] Could not subscribe to push notifications:', error);
+          });
+        }, PUSH_SUBSCRIPTION_DELAY);
+
+        return () => clearTimeout(timer);
+      } else {
+        console.log(
+          '[App] Notification permission not granted yet. User must enable notifications manually.'
+        );
+      }
     }
   }, [isAuthenticated, pwa.subscribeToPush]);
 

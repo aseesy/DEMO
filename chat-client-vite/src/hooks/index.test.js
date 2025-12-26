@@ -22,7 +22,8 @@ describe('Hooks Infrastructure Exports', () => {
     });
 
     it('exports modalRegistry utilities', async () => {
-      const { registerModalHook, getRegisteredModals, clearRegistry } = await import('./ui/index.js');
+      const { registerModalHook, getRegisteredModals, clearRegistry } =
+        await import('./ui/index.js');
       expect(registerModalHook).toBeDefined();
       expect(getRegisteredModals).toBeDefined();
       expect(clearRegistry).toBeDefined();
@@ -84,9 +85,10 @@ describe('Hooks Infrastructure Exports', () => {
     });
   });
 
-  describe('PWA Hooks (hooks/pwa/)', () => {
+  describe('PWA Hooks (features/pwa/)', () => {
     it('exports usePWA', async () => {
-      const { usePWA } = await import('./pwa/index.js');
+      // usePWA moved to features/pwa/ for better organization
+      const { usePWA } = await import('../features/pwa/index.js');
       expect(usePWA).toBeDefined();
       expect(typeof usePWA).toBe('function');
     });

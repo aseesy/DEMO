@@ -8,6 +8,7 @@
  * - Invitation hooks → features/invitations/model/
  * - Contact hooks → features/contacts/model/
  * - Chat hooks → features/chat/model/
+ * - PWA hooks → features/pwa/
  *
  * @module hooks
  */
@@ -27,5 +28,5 @@ export * from './files/index.js';
 // Navigation
 export * from './navigation/index.js';
 
-// PWA
-export * from './pwa/index.js';
+// PWA (re-exported from features/pwa for backward compatibility)
+export * from '../features/pwa/index.js';

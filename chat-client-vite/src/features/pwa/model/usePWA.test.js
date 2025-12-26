@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // Mock dependencies BEFORE importing usePWA
-vi.mock('../../apiClient.js', () => ({
+vi.mock('../../../apiClient.js', () => ({
   apiPost: vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) }),
 }));
 
