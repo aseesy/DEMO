@@ -27,6 +27,14 @@ export function useNotifications({ username, enabled = true }) {
     }
 
     if (permission === 'granted') {
+      // Already granted - ensure PushAlert is also subscribed
+      if (typeof window.PushAlertCo !== 'undefined' && window.PushAlertCo.forceSubscribe) {
+        try {
+          window.PushAlertCo.forceSubscribe();
+        } catch (e) {
+          console.debug('[useNotifications] PushAlert already subscribed or not available');
+        }
+      }
       return true;
     }
 
@@ -34,6 +42,19 @@ export function useNotifications({ username, enabled = true }) {
       const result = await Notification.requestPermission();
       setPermission(result);
       setHasRequestedPermission(true);
+
+      // If permission granted, also subscribe via PushAlert
+      if (result === 'granted') {
+        if (typeof window.PushAlertCo !== 'undefined' && window.PushAlertCo.forceSubscribe) {
+          try {
+            window.PushAlertCo.forceSubscribe();
+            console.log('[useNotifications] PushAlert subscription triggered');
+          } catch (e) {
+            console.debug('[useNotifications] PushAlert subscribe error:', e);
+          }
+        }
+      }
+
       return result === 'granted';
     } catch (error) {
       console.error('Error requesting notification permission:', error);

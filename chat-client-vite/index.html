@@ -128,6 +128,14 @@
     }
     </script>
 
+    <!-- PushAlert Configuration - disable auto-popup, use custom UI -->
+    <script type="text/javascript">
+        var defined = defined || {};
+        defined.PushAlertCo = {
+            disableAutoSubscribePopup: true,  // Disable auto-popup
+            disableSubscribeWidget: true       // Disable floating widget
+        };
+    </script>
     <!-- PushAlert Unified Code -->
     <script type="text/javascript">
         (function(d, t) {
