@@ -204,7 +204,8 @@ async function sendNotificationToUser(userId, payload) {
  * Send push notification when a message is received
  * @param {number} recipientUserId - User ID who received the message
  * @param {object} message - Message object
- * @param {string} message.username - Sender username
+ * @param {string} message.displayName - Sender's first name (preferred)
+ * @param {string} message.username - Sender username (fallback)
  * @param {string} message.text - Message text
  * @returns {Promise<{sent: number, failed: number}>} Send statistics
  */
@@ -214,17 +215,20 @@ async function notifyNewMessage(recipientUserId, message) {
       ? (message.text || message.content || '').substring(0, 100) + '...'
       : message.text || message.content || 'You have a new message';
 
+  // Use displayName (first name) if available, fall back to username, then 'Co-parent'
+  const senderName = message.displayName || message.username || 'Co-parent';
+
   return sendNotificationToUser(recipientUserId, {
-    title: `New message from ${message.username || 'Co-parent'}`,
+    title: `New message from ${senderName}`,
     body: truncatedText,
     icon: '/icon-192.png',
     tag: `message-${message.id || Date.now()}`,
-    sender: message.username,
+    sender: senderName,
     timestamp: message.timestamp || new Date().toISOString(),
     url: '/?view=chat',
     data: {
       messageId: message.id,
-      username: message.username,
+      senderName: senderName,
     },
   });
 }
