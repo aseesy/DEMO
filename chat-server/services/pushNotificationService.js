@@ -15,10 +15,12 @@ const dbPostgres = require('../dbPostgres');
 
 // VAPID keys - should be in environment variables
 // These are the same keys used in the frontend (usePWA.js)
+// Generate new keys with: npx web-push generate-vapid-keys
 const VAPID_PUBLIC_KEY =
   process.env.VAPID_PUBLIC_KEY ||
-  'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'YOUR_PRIVATE_KEY_HERE'; // Should be set in production
+  'BNnD6XTZ6cpMVf3t6kq5Gjx2hJhx0FpR8BxPNxEwje3XuiVQNtIc6UnyFtGdWxQjiiPfRQ5QUkCxGPp5uG91gqs';
+const VAPID_PRIVATE_KEY =
+  process.env.VAPID_PRIVATE_KEY || 'WU_mvOkJF60sCnFnZw8d9QVsOjublI1F__80D5UHsRw'; // Should be set as environment variable in production
 
 // Set VAPID details
 webpush.setVapidDetails('mailto:support@coparentliaizen.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
@@ -151,7 +153,7 @@ async function sendNotificationToUser(userId, payload) {
       icon: payload.icon || '/icon-192.png',
       badge: '/icon-192.png',
       tag: payload.tag || 'liaizen-message',
-      requireInteraction: false,
+      requireInteraction: true, // Stay visible until user manually closes
       vibrate: [200, 100, 200],
       data: {
         url: payload.url || '/?view=chat',

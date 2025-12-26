@@ -252,6 +252,35 @@ function ChatRoomContent({
     }
   }, [isAuthenticated, currentView]);
 
+  // Listen for navigation events from service worker (when notification is clicked)
+  // Single Responsibility: Handle navigation events and update view state
+  React.useEffect(() => {
+    const handleNavigateToView = event => {
+      if (event.detail && event.detail.view && isAuthenticated) {
+        console.log('[ChatRoom] Navigating to view from notification:', event.detail.view);
+        setCurrentView(event.detail.view);
+      }
+    };
+
+    window.addEventListener('navigate-to-view', handleNavigateToView);
+
+    return () => {
+      window.removeEventListener('navigate-to-view', handleNavigateToView);
+    };
+  }, [isAuthenticated, setCurrentView]);
+
+  // Check URL for view parameter on mount (handles deep links from notifications)
+  // Single Responsibility: Read URL parameters and navigate to correct view
+  React.useEffect(() => {
+    if (isAuthenticated && !isCheckingAuth) {
+      const viewParam = getQueryParam('view');
+      if (viewParam && AVAILABLE_VIEWS.includes(viewParam) && viewParam !== currentView) {
+        console.log('[ChatRoom] Found view parameter in URL, navigating to:', viewParam);
+        setCurrentView(viewParam);
+      }
+    }
+  }, [isAuthenticated, isCheckingAuth, getQueryParam, currentView, setCurrentView]);
+
   // Redirect to sign-in if not authenticated (with timeout)
   // This must be outside conditional blocks to follow Rules of Hooks
   React.useEffect(() => {

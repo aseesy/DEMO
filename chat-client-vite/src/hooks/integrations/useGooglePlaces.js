@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 // Global state to track Google Maps script loading (singleton pattern)
 let googleMapsLoadingState = {
@@ -10,7 +10,7 @@ let googleMapsLoadingState = {
 };
 
 /**
- * Custom hook to load Google Places API and initialize autocomplete
+ * Custom hook to load Google Places API (New) and initialize PlaceAutocompleteElement
  * @param {Object} inputRef - React ref to the input element
  * @param {Function} onPlaceSelected - Callback when a place is selected
  * @returns {Object} - Loading state and error state
@@ -18,6 +18,7 @@ let googleMapsLoadingState = {
 export function useGooglePlaces(inputRef, onPlaceSelected) {
   const [isLoaded, setIsLoaded] = useState(googleMapsLoadingState.isLoaded);
   const [error, setError] = useState(googleMapsLoadingState.error);
+  const autocompleteElementRef = useRef(null);
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY;
@@ -51,14 +52,14 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
     }
 
     // Check if Google Maps is already loaded
-    if (window.google && window.google.maps && window.google.maps.places) {
+    if (window.google && window.google.maps && window.google.maps.importLibrary) {
       googleMapsLoadingState.isLoaded = true;
       setIsLoaded(true);
       return;
     }
 
     // Check if script is already being loaded or already exists
-    const scriptSrc = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    const scriptSrc = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&loading=async`;
 
     // Check if script with this src already exists in DOM
     const existingScript = Array.from(document.querySelectorAll('script')).find(
@@ -76,7 +77,7 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
         return () => googleMapsLoadingState.listeners.delete(listener);
       } else {
         // Script exists but we don't know its state, check if it's loaded
-        if (window.google && window.google.maps && window.google.maps.places) {
+        if (window.google && window.google.maps && window.google.maps.importLibrary) {
           googleMapsLoadingState.isLoaded = true;
           setIsLoaded(true);
         }
@@ -135,70 +136,164 @@ export function useGooglePlaces(inputRef, onPlaceSelected) {
       return;
     }
 
-    try {
-      // Initialize autocomplete
-      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-        types: ['address'],
-        componentRestrictions: { country: 'us' }, // Restrict to US addresses
-        fields: ['formatted_address', 'address_components', 'geometry'],
-      });
+    let autocompleteElement = null;
+    let selectListener = null;
 
-      // Listen for place selection
-      const listener = autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
+    const initializeAutocomplete = async () => {
+      try {
+        // Import Places library (New API)
+        const { PlaceAutocompleteElement } = await window.google.maps.importLibrary('places');
 
-        if (!place.formatted_address) {
-          return;
-        }
-
-        // Extract address components
-        const addressComponents = {
-          street: '',
-          city: '',
-          state: '',
-          zip: '',
-          country: '',
-          fullAddress: place.formatted_address,
-        };
-
-        place.address_components?.forEach(component => {
-          const types = component.types;
-
-          if (types.includes('street_number')) {
-            addressComponents.street = component.long_name + ' ';
-          }
-          if (types.includes('route')) {
-            addressComponents.street += component.long_name;
-          }
-          if (types.includes('locality')) {
-            addressComponents.city = component.long_name;
-          }
-          if (types.includes('administrative_area_level_1')) {
-            addressComponents.state = component.short_name;
-          }
-          if (types.includes('postal_code')) {
-            addressComponents.zip = component.long_name;
-          }
-          if (types.includes('country')) {
-            addressComponents.country = component.short_name;
-          }
+        // Create the web component with configuration
+        autocompleteElement = new PlaceAutocompleteElement({
+          includedRegionCodes: ['US'], // Restrict to US addresses
+          includedPrimaryTypes: ['street_address', 'premise', 'subpremise'],
         });
 
-        // Call the callback with the selected place
-        if (onPlaceSelected) {
-          onPlaceSelected(addressComponents);
-        }
-      });
+        // PlaceAutocompleteElement provides its own input, but we need to sync with our React input
+        // We'll hide the PlaceAutocompleteElement's input and sync values
+        const inputParent = inputRef.current.parentElement;
+        if (inputParent) {
+          // Append the autocomplete element to the parent
+          inputParent.style.position = 'relative';
+          autocompleteElement.style.position = 'absolute';
+          autocompleteElement.style.top = '0';
+          autocompleteElement.style.left = '0';
+          autocompleteElement.style.width = '100%';
+          autocompleteElement.style.height = '100%';
+          autocompleteElement.style.opacity = '0';
+          autocompleteElement.style.pointerEvents = 'auto';
+          autocompleteElement.style.zIndex = '10';
+          inputParent.appendChild(autocompleteElement);
 
-      // Cleanup listener on unmount
-      return () => {
-        if (listener) {
-          window.google.maps.event.removeListener(listener);
+          // Sync the PlaceAutocompleteElement's value with our React input
+          const syncInput = () => {
+            const gmpInput = autocompleteElement.querySelector('input');
+            if (gmpInput && inputRef.current) {
+              gmpInput.value = inputRef.current.value;
+            }
+          };
+
+          // Sync on input changes
+          inputRef.current.addEventListener('input', syncInput);
+          syncInput();
+
+          // Store sync function for cleanup
+          autocompleteElement._syncInput = syncInput;
+          autocompleteElement._inputListener = syncInput;
         }
-      };
-    } catch (err) {
-      setError('Failed to initialize autocomplete: ' + err.message);
-    }
+
+        // Listen for place selection using the new gmp-select event
+        selectListener = event => {
+          try {
+            // The place is available directly in event.place or via event.placePrediction.toPlace()
+            const placePromise = event.place
+              ? Promise.resolve(event.place)
+              : event.placePrediction?.toPlace
+                ? event.placePrediction.toPlace()
+                : Promise.resolve(null);
+
+            placePromise
+              .then(place => {
+                if (!place) {
+                  console.warn('[useGooglePlaces] No place data in event');
+                  return;
+                }
+
+                // Get formatted address - try different property names
+                const formattedAddress = place.formattedAddress || place.formatted_address || '';
+
+                if (!formattedAddress) {
+                  return;
+                }
+
+                // Extract address components
+                const addressComponents = {
+                  street: '',
+                  city: '',
+                  state: '',
+                  zip: '',
+                  country: '',
+                  fullAddress: formattedAddress,
+                };
+
+                // Handle address components - try both new and old API formats
+                const components = place.addressComponents || place.address_components || [];
+                components.forEach(component => {
+                  const types = component.types || [];
+                  const longText = component.longText || component.long_name || '';
+                  const shortText = component.shortText || component.short_name || '';
+
+                  if (types.includes('street_number')) {
+                    addressComponents.street = longText + ' ';
+                  }
+                  if (types.includes('route')) {
+                    addressComponents.street += longText;
+                  }
+                  if (types.includes('locality')) {
+                    addressComponents.city = longText;
+                  }
+                  if (types.includes('administrative_area_level_1')) {
+                    addressComponents.state = shortText;
+                  }
+                  if (types.includes('postal_code')) {
+                    addressComponents.zip = longText;
+                  }
+                  if (types.includes('country')) {
+                    addressComponents.country = shortText;
+                  }
+                });
+
+                // Update the React input value
+                if (inputRef.current) {
+                  inputRef.current.value = formattedAddress;
+                  // Trigger React onChange if needed
+                  const event = new Event('input', { bubbles: true });
+                  inputRef.current.dispatchEvent(event);
+                }
+
+                // Call the callback with the selected place
+                if (onPlaceSelected) {
+                  onPlaceSelected(addressComponents);
+                }
+              })
+              .catch(err => {
+                console.error('[useGooglePlaces] Error processing place selection:', err);
+              });
+          } catch (err) {
+            console.error('[useGooglePlaces] Error in event handler:', err);
+          }
+        };
+
+        autocompleteElement.addEventListener('gmp-select', selectListener);
+
+        // Store reference for cleanup
+        autocompleteElementRef.current = autocompleteElement;
+      } catch (err) {
+        console.error('[useGooglePlaces] Failed to initialize PlaceAutocompleteElement:', err);
+        setError('Failed to initialize autocomplete: ' + err.message);
+      }
+    };
+
+    initializeAutocomplete();
+
+    // Cleanup on unmount
+    return () => {
+      if (autocompleteElementRef.current) {
+        const element = autocompleteElementRef.current;
+        if (selectListener) {
+          element.removeEventListener('gmp-select', selectListener);
+        }
+        // Remove input sync listener
+        if (element._inputListener && inputRef.current) {
+          inputRef.current.removeEventListener('input', element._inputListener);
+        }
+        if (element.parentNode) {
+          element.parentNode.removeChild(element);
+        }
+        autocompleteElementRef.current = null;
+      }
+    };
   }, [isLoaded, inputRef, onPlaceSelected]);
 
   return { isLoaded, error };

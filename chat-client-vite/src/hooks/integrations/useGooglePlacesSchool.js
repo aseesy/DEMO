@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Custom hook to load Google Places API and initialize autocomplete for schools
+ * Custom hook to load Google Places API (New) and initialize PlaceAutocompleteElement for schools
  * @param {Object} inputRef - React ref to the input element
  * @param {Function} onPlaceSelected - Callback when a place is selected
  * @returns {Object} - Loading state and error state
@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 export function useGooglePlacesSchool(inputRef, onPlaceSelected) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(null);
+  const autocompleteElementRef = { current: null };
 
   // Load Google Maps script
   useEffect(() => {
@@ -25,7 +26,7 @@ export function useGooglePlacesSchool(inputRef, onPlaceSelected) {
 
     // Helper to check if loaded
     const isGoogleMapsLoaded = () => {
-      return !!(window.google && window.google.maps && window.google.maps.places);
+      return !!(window.google && window.google.maps && window.google.maps.importLibrary);
     };
 
     // Check if already loaded
@@ -64,7 +65,7 @@ export function useGooglePlacesSchool(inputRef, onPlaceSelected) {
 
     // Load the script if it doesn't exist
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&loading=async`;
     script.async = true;
     script.defer = true;
 
@@ -85,45 +86,147 @@ export function useGooglePlacesSchool(inputRef, onPlaceSelected) {
       return;
     }
 
-    try {
-      // Initialize autocomplete for schools/educational institutions
-      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-        types: ['establishment'],
-        componentRestrictions: { country: 'us' },
-        fields: ['name', 'formatted_address', 'place_id', 'types', 'geometry'],
-      });
+    let autocompleteElement = null;
+    let selectListener = null;
 
-      const listener = autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
+    const initializeAutocomplete = async () => {
+      try {
+        // Import Places library (New API)
+        const { PlaceAutocompleteElement } = await window.google.maps.importLibrary('places');
 
-        if (!place.name) {
-          return;
+        // Create the web component with configuration
+        autocompleteElement = new PlaceAutocompleteElement({
+          includedRegionCodes: ['US'],
+          includedPrimaryTypes: ['establishment'],
+        });
+
+        // PlaceAutocompleteElement provides its own input, but we need to sync with our React input
+        // We'll hide the PlaceAutocompleteElement's input and sync values
+        const inputParent = inputRef.current.parentElement;
+        if (inputParent) {
+          // Append the autocomplete element to the parent
+          inputParent.style.position = 'relative';
+          autocompleteElement.style.position = 'absolute';
+          autocompleteElement.style.top = '0';
+          autocompleteElement.style.left = '0';
+          autocompleteElement.style.width = '100%';
+          autocompleteElement.style.height = '100%';
+          autocompleteElement.style.opacity = '0';
+          autocompleteElement.style.pointerEvents = 'auto';
+          autocompleteElement.style.zIndex = '10';
+          inputParent.appendChild(autocompleteElement);
+
+          // Sync the PlaceAutocompleteElement's value with our React input
+          const syncInput = () => {
+            const gmpInput = autocompleteElement.querySelector('input');
+            if (gmpInput && inputRef.current) {
+              gmpInput.value = inputRef.current.value;
+            }
+          };
+
+          // Sync on input changes
+          inputRef.current.addEventListener('input', syncInput);
+          syncInput();
+
+          // Store sync function for cleanup
+          autocompleteElement._syncInput = syncInput;
+          autocompleteElement._inputListener = syncInput;
         }
 
-        // Return school info with coordinates for distance calculation
-        const schoolInfo = {
-          name: place.name,
-          address: place.formatted_address || '',
-          placeId: place.place_id || '',
-          types: place.types || [],
-          lat: place.geometry?.location?.lat() || null,
-          lng: place.geometry?.location?.lng() || null,
+        // Listen for place selection using the new gmp-select event
+        selectListener = event => {
+          try {
+            // The place is available directly in event.place or via event.placePrediction.toPlace()
+            const placePromise = event.place
+              ? Promise.resolve(event.place)
+              : event.placePrediction?.toPlace
+                ? event.placePrediction.toPlace()
+                : Promise.resolve(null);
+
+            placePromise
+              .then(place => {
+                if (!place) {
+                  console.warn('[useGooglePlacesSchool] No place data in event');
+                  return;
+                }
+
+                // Get display name - try different property names
+                const displayName = place.displayName || place.name || '';
+
+                if (!displayName) {
+                  return;
+                }
+
+                // Update the React input value
+                if (inputRef.current) {
+                  inputRef.current.value = displayName;
+                  // Trigger React onChange if needed
+                  const event = new Event('input', { bubbles: true });
+                  inputRef.current.dispatchEvent(event);
+                }
+
+                // Return school info with coordinates for distance calculation
+                const schoolInfo = {
+                  name: displayName,
+                  address: place.formattedAddress || place.formatted_address || '',
+                  placeId: place.id || place.place_id || '',
+                  types: place.types || [],
+                  lat: place.location?.lat
+                    ? typeof place.location.lat === 'function'
+                      ? place.location.lat()
+                      : place.location.lat
+                    : null,
+                  lng: place.location?.lng
+                    ? typeof place.location.lng === 'function'
+                      ? place.location.lng()
+                      : place.location.lng
+                    : null,
+                };
+
+                if (onPlaceSelected) {
+                  onPlaceSelected(schoolInfo);
+                }
+              })
+              .catch(err => {
+                console.error('[useGooglePlacesSchool] Error processing place selection:', err);
+              });
+          } catch (err) {
+            console.error('[useGooglePlacesSchool] Error in event handler:', err);
+          }
         };
 
-        if (onPlaceSelected) {
-          onPlaceSelected(schoolInfo);
-        }
-      });
+        autocompleteElement.addEventListener('gmp-select', selectListener);
 
-      return () => {
-        if (listener) {
-          window.google.maps.event.removeListener(listener);
+        // Store reference for cleanup
+        autocompleteElementRef.current = autocompleteElement;
+      } catch (err) {
+        console.error(
+          '[useGooglePlacesSchool] Failed to initialize PlaceAutocompleteElement:',
+          err
+        );
+        setError('Failed to initialize school autocomplete: ' + err.message);
+      }
+    };
+
+    initializeAutocomplete();
+
+    // Cleanup on unmount
+    return () => {
+      if (autocompleteElementRef.current) {
+        const element = autocompleteElementRef.current;
+        if (selectListener) {
+          element.removeEventListener('gmp-select', selectListener);
         }
-      };
-    } catch (err) {
-      console.error('Failed to initialize school autocomplete:', err);
-      setError('Failed to initialize school autocomplete: ' + err.message);
-    }
+        // Remove input sync listener
+        if (element._inputListener && inputRef.current) {
+          inputRef.current.removeEventListener('input', element._inputListener);
+        }
+        if (element.parentNode) {
+          element.parentNode.removeChild(element);
+        }
+        autocompleteElementRef.current = null;
+      }
+    };
   }, [isLoaded, inputRef, onPlaceSelected]);
 
   return { isLoaded, error };

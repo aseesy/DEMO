@@ -27,14 +27,7 @@ export function useNotifications({ username, enabled = true }) {
     }
 
     if (permission === 'granted') {
-      // Already granted - ensure PushAlert is also subscribed
-      if (typeof window.PushAlertCo !== 'undefined' && window.PushAlertCo.forceSubscribe) {
-        try {
-          window.PushAlertCo.forceSubscribe();
-        } catch (e) {
-          console.debug('[useNotifications] PushAlert already subscribed or not available');
-        }
-      }
+      // Permission already granted - push notifications handled by usePWA hook
       return true;
     }
 
@@ -43,17 +36,8 @@ export function useNotifications({ username, enabled = true }) {
       setPermission(result);
       setHasRequestedPermission(true);
 
-      // If permission granted, also subscribe via PushAlert
-      if (result === 'granted') {
-        if (typeof window.PushAlertCo !== 'undefined' && window.PushAlertCo.forceSubscribe) {
-          try {
-            window.PushAlertCo.forceSubscribe();
-            console.log('[useNotifications] PushAlert subscription triggered');
-          } catch (e) {
-            console.debug('[useNotifications] PushAlert subscribe error:', e);
-          }
-        }
-      }
+      // If permission granted, push notifications are handled by usePWA hook
+      // which automatically subscribes to Web Push API
 
       return result === 'granted';
     } catch (error) {
@@ -174,17 +158,8 @@ export function useNotifications({ username, enabled = true }) {
           // 4. Notification banner style is set to "None" in system settings
         };
 
-        // Don't auto-close if requireInteraction is true - let user dismiss manually
-        // Only auto-close after 30 seconds as a fallback
-        setTimeout(() => {
-          if (notification) {
-            try {
-              notification.close();
-            } catch (e) {
-              // Notification may already be closed
-            }
-          }
-        }, 30000);
+        // Notification stays visible until user manually closes it
+        // No auto-close timeout - user must dismiss manually
 
         // Play notification sound
         playNotificationSound();
@@ -197,8 +172,9 @@ export function useNotifications({ username, enabled = true }) {
             body: 'You have a new message',
             icon: '/flower-icon.svg',
             silent: false,
+            requireInteraction: true, // Stay visible until user closes
           });
-          setTimeout(() => fallbackNotification.close(), 5000);
+          // No auto-close - user must dismiss manually
           playNotificationSound();
         } catch (fallbackError) {
           console.error('[useNotifications] Fallback notification also failed:', fallbackError);
@@ -208,10 +184,12 @@ export function useNotifications({ username, enabled = true }) {
     [enabled, isSupported, permission, username]
   );
 
-  // Auto-subscribe to push notifications when PWA is ready
+  // Auto-subscribe to push notifications when permission is granted
+  // NOTE: This only runs if permission is already granted (not requesting permission)
   React.useEffect(() => {
     if (permission === 'granted' && window.liaizenPWA?.subscribeToPush) {
       console.log('[useNotifications] Permission granted, subscribing to push notifications...');
+      // Safe to call - permission already granted, no requestPermission() call needed
       window.liaizenPWA.subscribeToPush().catch(error => {
         console.warn('[useNotifications] Could not subscribe to push:', error);
       });
