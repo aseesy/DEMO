@@ -378,10 +378,13 @@ END $$;
 --   intervention_rewrites, intervention_statistics
 --
 
-RAISE NOTICE '';
-RAISE NOTICE '=============================================================================';
-RAISE NOTICE 'CLEANUP MIGRATION COMPLETE';
-RAISE NOTICE '=============================================================================';
-RAISE NOTICE 'Deprecated columns have been removed from users table.';
-RAISE NOTICE 'Profile data now lives in normalized tables.';
-RAISE NOTICE '';
+DO $$
+BEGIN
+  RAISE NOTICE '';
+  RAISE NOTICE '=============================================================================';
+  RAISE NOTICE 'CLEANUP MIGRATION COMPLETE';
+  RAISE NOTICE '=============================================================================';
+  RAISE NOTICE 'Deprecated columns have been removed from users table.';
+  RAISE NOTICE 'Profile data now lives in normalized tables.';
+  RAISE NOTICE '';
+END $$;
