@@ -4,9 +4,10 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ChatRoom from './ChatRoom.jsx';
 import { AcceptInvitationPage, InviteCoParentPage } from './features/invitations';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+import { PWAUpdateBanner } from './features/pwa/components/PWAUpdateBanner.jsx';
 import { usePWA } from './hooks/pwa/usePWA.js';
 import { MediatorProvider } from './context/MediatorContext.jsx';
-import { AuthProvider } from './context/AuthContext.jsx';
+import { AuthProvider, useAuthContext } from './context/AuthContext.jsx';
 import { InvitationProvider } from './context/InvitationContext.jsx';
 // Auth features
 import { LoginSignup } from './features/auth/components/LoginSignup.jsx';
@@ -44,17 +45,101 @@ import { CalmCommunication } from './features/blog/CalmCommunication.jsx';
 import { AiSafety } from './features/blog/AiSafety.jsx';
 import { AiVsImpulse } from './features/blog/AiVsImpulse.jsx';
 
-function App() {
-  console.log('[App] Component rendering...');
-
+/**
+ * AppContent Component
+ *
+ * Inner component that has access to AuthProvider context.
+ * Handles PWA initialization, push notification subscription, and update management.
+ *
+ * Responsibilities:
+ * - Initialize PWA and make it globally available
+ * - Auto-subscribe to push notifications when user logs in
+ * - Check for service worker updates periodically
+ * - Display update banner when updates are available
+ */
+function AppContent() {
   // Initialize PWA - registers Service Worker and enables push notifications
   const pwa = usePWA();
+  const { isAuthenticated } = useAuthContext();
+  const [showUpdateBanner, setShowUpdateBanner] = React.useState(false);
 
   // Make PWA API available globally for components that need it
   React.useEffect(() => {
     window.liaizenPWA = pwa;
     console.log('[App] PWA initialized');
   }, [pwa]);
+
+  // Show update banner when update is available
+  React.useEffect(() => {
+    if (pwa.updateAvailable) {
+      setShowUpdateBanner(true);
+    }
+  }, [pwa.updateAvailable]);
+
+  // Auto-subscribe to push notifications when user logs in
+  React.useEffect(() => {
+    const PUSH_SUBSCRIPTION_DELAY = 2000; // 2 seconds - wait for service worker to register
+
+    if (isAuthenticated && pwa.subscribeToPush && typeof window !== 'undefined') {
+      const timer = setTimeout(() => {
+        console.log('[App] User authenticated, attempting to subscribe to push notifications...');
+        pwa.subscribeToPush().catch(error => {
+          console.warn('[App] Could not subscribe to push notifications:', error);
+        });
+      }, PUSH_SUBSCRIPTION_DELAY);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, pwa.subscribeToPush]);
+
+  // Check for updates on mount and periodically
+  React.useEffect(() => {
+    const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+    // Check immediately
+    if (pwa.checkForUpdates) {
+      pwa.checkForUpdates();
+    }
+
+    // Check periodically
+    const interval = setInterval(() => {
+      if (pwa.checkForUpdates) {
+        pwa.checkForUpdates();
+      }
+    }, UPDATE_CHECK_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [pwa.checkForUpdates]);
+
+  return (
+    <>
+      {showUpdateBanner && (
+        <PWAUpdateBanner
+          onUpdate={() => {
+            if (pwa.applyUpdate) {
+              pwa.applyUpdate();
+            }
+          }}
+          onDismiss={() => {
+            setShowUpdateBanner(false);
+            // Auto-show again after 1 hour
+            setTimeout(
+              () => {
+                if (pwa.updateAvailable) {
+                  setShowUpdateBanner(true);
+                }
+              },
+              60 * 60 * 1000
+            );
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function App() {
+  console.log('[App] Component rendering...');
 
   React.useEffect(() => {
     console.log('[App] App component mounted');
@@ -76,6 +161,7 @@ function App() {
         }}
       >
         <AuthProvider>
+          <AppContent />
           <InvitationProvider>
             <MediatorProvider>
               <BrowserRouter>
