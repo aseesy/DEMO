@@ -182,12 +182,20 @@ async function sendNotificationToUser(userId, payload) {
         console.error('[PushNotification] Failed to send to subscription:', {
           endpoint: subscription.endpoint.substring(0, 50) + '...',
           error: error.message,
+          statusCode: error.statusCode,
+          body: error.body,
+          headers: error.headers,
         });
 
         // If subscription is invalid (410 Gone or 404 Not Found), deactivate it
         if (error.statusCode === 410 || error.statusCode === 404) {
           console.log('[PushNotification] Deactivating invalid subscription');
           await deleteSubscription(subscription.endpoint);
+        }
+
+        // 403 Forbidden often means VAPID key mismatch or domain issue
+        if (error.statusCode === 403) {
+          console.error('[PushNotification] 403 Forbidden - possible VAPID or domain mismatch');
         }
       }
     }
