@@ -121,6 +121,9 @@ export function DashboardView({
           analyzeConversation={threadState.analyzeConversation}
           isLoadingThreads={threadState.isLoadingThreads}
           getThreadMessages={threadState.getThreadMessages}
+          selectedThreadId={threadState.selectedThreadId}
+          threadMessages={threadState.threadMessages}
+          isLoadingThreadMessages={threadState.isLoadingThreadMessages}
         />
       </div>
     </div>
@@ -402,21 +405,41 @@ function ThreadsSection({
   analyzeConversation,
   isLoadingThreads,
   getThreadMessages,
+  selectedThreadId,
+  threadMessages,
+  isLoadingThreadMessages,
 }) {
+  const [expandedThreadId, setExpandedThreadId] = React.useState(null);
+
+  const handleThreadClick = threadId => {
+    if (expandedThreadId === threadId) {
+      // Collapse if already expanded
+      setExpandedThreadId(null);
+      setSelectedThreadId(null);
+    } else {
+      // Expand and load messages
+      setExpandedThreadId(threadId);
+      setSelectedThreadId(threadId);
+      if (getThreadMessages) {
+        getThreadMessages(threadId);
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow overflow-hidden mt-4 md:mt-6">
       <div className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-semibold text-teal-dark mb-1">Threads</h2>
-            <p className="text-sm text-gray-600">Organized conversation topics</p>
+            <h2 className="text-2xl font-semibold text-teal-dark mb-1">Conversations</h2>
+            <p className="text-sm text-gray-600">Recent discussion threads</p>
           </div>
           {threads.length > 0 && (
             <button
               onClick={() => setCurrentView('chat')}
               className="text-sm text-teal-medium hover:text-teal-dark font-semibold px-4 py-2 rounded-lg hover:bg-teal-lightest transition-colors"
             >
-              View All ({threads.length})
+              Go to Chat
             </button>
           )}
         </div>
@@ -425,19 +448,25 @@ function ThreadsSection({
           <EmptyThreadsState onAnalyze={analyzeConversation} isLoading={isLoadingThreads} />
         ) : (
           <div className="space-y-2">
-            {threads.slice(0, 3).map(thread => (
-              <ThreadCard
-                key={thread.id}
-                thread={thread}
-                onClick={() => {
-                  setSelectedThreadId(thread.id);
-                  // Fetch thread messages before navigating
-                  if (getThreadMessages) {
-                    getThreadMessages(thread.id);
-                  }
-                  setCurrentView('chat');
-                }}
-              />
+            {threads.slice(0, 5).map(thread => (
+              <div key={thread.id}>
+                <ThreadCard
+                  thread={thread}
+                  isExpanded={expandedThreadId === thread.id}
+                  onClick={() => handleThreadClick(thread.id)}
+                />
+                {/* Inline thread messages */}
+                {expandedThreadId === thread.id && (
+                  <ThreadMessagesInline
+                    messages={threadMessages[thread.id] || []}
+                    isLoading={isLoadingThreadMessages}
+                    onClose={() => {
+                      setExpandedThreadId(null);
+                      setSelectedThreadId(null);
+                    }}
+                  />
+                )}
+              </div>
             ))}
           </div>
         )}
@@ -507,16 +536,26 @@ function EmptyThreadsState({ onAnalyze, isLoading }) {
 /**
  * Thread card component
  */
-function ThreadCard({ thread, onClick }) {
+function ThreadCard({ thread, onClick, isExpanded }) {
   return (
     <div
       onClick={onClick}
-      className="p-4 border-2 border-teal-light rounded-xl hover:border-teal-medium hover:bg-teal-lightest transition-all cursor-pointer shadow-sm hover:shadow-md"
+      className={`p-4 border-2 rounded-xl transition-all cursor-pointer shadow-sm hover:shadow-md ${
+        isExpanded
+          ? 'border-teal-medium bg-teal-lightest'
+          : 'border-teal-light hover:border-teal-medium hover:bg-teal-lightest'
+      }`}
     >
       <div className="flex items-start gap-4">
-        <div className="w-10 h-10 bg-white border-2 border-teal-light rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+        <div
+          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+            isExpanded
+              ? 'bg-teal-medium text-white'
+              : 'bg-white border-2 border-teal-light text-teal-medium'
+          }`}
+        >
           <svg
-            className="w-5 h-5 text-teal-medium"
+            className="w-5 h-5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -532,11 +571,22 @@ function ThreadCard({ thread, onClick }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3 mb-1">
             <h3 className="text-base font-semibold text-teal-dark truncate">{thread.title}</h3>
-            {thread.message_count > 0 && (
-              <span className="text-xs text-gray-500 font-medium shrink-0 bg-gray-100 px-2 py-1 rounded-lg">
-                {thread.message_count} {thread.message_count === 1 ? 'msg' : 'msgs'}
-              </span>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {thread.message_count > 0 && (
+                <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded-lg">
+                  {thread.message_count} {thread.message_count === 1 ? 'msg' : 'msgs'}
+                </span>
+              )}
+              <svg
+                className={`w-4 h-4 text-teal-medium transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
           {thread.last_message_at && (
             <p className="text-xs text-gray-500">
@@ -544,6 +594,73 @@ function ThreadCard({ thread, onClick }) {
             </p>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Inline thread messages display
+ */
+function ThreadMessagesInline({ messages, isLoading, onClose }) {
+  if (isLoading) {
+    return (
+      <div className="mt-2 p-4 bg-gray-50 rounded-xl border border-gray-200">
+        <div className="flex items-center justify-center py-4">
+          <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-teal-light border-t-teal-medium" />
+          <span className="ml-2 text-sm text-gray-600">Loading messages...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!messages || messages.length === 0) {
+    return (
+      <div className="mt-2 p-4 bg-gray-50 rounded-xl border border-gray-200">
+        <p className="text-sm text-gray-500 text-center">No messages in this conversation yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+      <div className="max-h-64 overflow-y-auto p-3 space-y-2">
+        {messages.slice(-10).map((msg, idx) => (
+          <div key={msg.id || idx} className="flex gap-2">
+            <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+              <span className="text-xs font-semibold text-teal-700">
+                {(msg.username || 'U').charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs font-semibold text-teal-dark">
+                  {msg.username || 'User'}
+                </span>
+                <span className="text-xs text-gray-400">
+                  {msg.timestamp
+                    ? new Date(msg.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : ''}
+                </span>
+              </div>
+              <p className="text-sm text-gray-700 break-words">{msg.text}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="p-2 border-t border-gray-200 bg-white flex justify-end">
+        <button
+          onClick={e => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="text-xs text-gray-500 hover:text-teal-dark px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          Close
+        </button>
       </div>
     </div>
   );

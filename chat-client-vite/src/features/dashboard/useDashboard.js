@@ -87,6 +87,8 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
   // Extract thread-related state from ChatContext
   // ChatContext provides threads from useChatSocket which manages the socket connection
   const threads = chatContext?.threads || [];
+  const threadMessages = chatContext?.threadMessages || {};
+  const isLoadingThreadMessages = chatContext?.isLoadingThreadMessages || false;
   const selectedThreadId = chatContext?.selectedThreadId || null;
   const setSelectedThreadId = chatContext?.setSelectedThreadId || (() => {});
   const getThreadMessages = chatContext?.getThreadMessages || (() => {});
@@ -174,6 +176,8 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
       setSelectedThreadId,
       getThreadMessages,
       analyzeConversation,
+      threadMessages,
+      isLoadingThreadMessages,
     }),
     [
       threads,
@@ -182,6 +186,8 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
       setSelectedThreadId,
       getThreadMessages,
       analyzeConversation,
+      threadMessages,
+      isLoadingThreadMessages,
     ]
   );
 

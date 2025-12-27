@@ -33,6 +33,7 @@ export function setupSocketEventHandlers(socket, handlers) {
     setTypingUsers,
     setThreads,
     setThreadMessages,
+    setIsLoadingThreadMessages,
     setIsLoadingOlder,
     // Search handlers - optional (use useSearchMessages hook instead)
     setSearchResults,
@@ -395,6 +396,7 @@ export function setupSocketEventHandlers(socket, handlers) {
   socket.on('threads_list', threadList => setThreads(threadList));
   socket.on('thread_messages', ({ threadId, messages: msgs }) => {
     setThreadMessages(prev => ({ ...prev, [threadId]: msgs }));
+    if (setIsLoadingThreadMessages) setIsLoadingThreadMessages(false);
   });
 
   socket.on('older_messages', ({ messages: olderMsgs, hasMore }) => {

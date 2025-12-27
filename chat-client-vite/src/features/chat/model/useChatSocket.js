@@ -46,6 +46,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   // Threads
   const [threads, setThreads] = React.useState([]);
   const [threadMessages, setThreadMessages] = React.useState({});
+  const [isLoadingThreadMessages, setIsLoadingThreadMessages] = React.useState(false);
 
   // Room ID management - extracted to useRoomId hook
   const { roomId, setRoomId } = useRoomId(username, isAuthenticated);
@@ -154,6 +155,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
       setTypingUsers,
       setThreads,
       setThreadMessages,
+      setIsLoadingThreadMessages,
       setIsLoadingOlder,
       // Search handlers - removed (use useSearchMessages hook instead)
       setDraftCoaching,
@@ -196,7 +198,10 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   }, []);
 
   const getThreadMessages = React.useCallback(threadId => {
-    if (socketRef.current?.connected) socketRef.current.emit('get_thread_messages', { threadId });
+    if (socketRef.current?.connected) {
+      setIsLoadingThreadMessages(true);
+      socketRef.current.emit('get_thread_messages', { threadId });
+    }
   }, []);
 
   const addToThread = React.useCallback((messageId, threadId) => {
@@ -267,6 +272,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
     threads,
     threadMessages,
     setThreadMessages,
+    isLoadingThreadMessages,
     createThread,
     getThreads,
     getThreadMessages,

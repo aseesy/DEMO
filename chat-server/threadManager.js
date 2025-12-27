@@ -51,15 +51,19 @@ async function createThread(roomId, title, createdBy, initialMessageId = null) {
 }
 
 /**
- * Get all threads for a room
+ * Get threads for a room (limited to most recent)
+ * @param {string} roomId - Room ID
+ * @param {boolean} includeArchived - Include archived threads
+ * @param {number} limit - Maximum number of threads to return (default 10)
  */
-async function getThreadsForRoom(roomId, includeArchived = false) {
+async function getThreadsForRoom(roomId, includeArchived = false, limit = 10) {
   try {
     const whereClause = includeArchived ? { room_id: roomId } : { room_id: roomId, is_archived: 0 };
 
     const result = await dbSafe.safeSelect('threads', whereClause, {
       orderBy: 'updated_at',
       orderDirection: 'DESC',
+      limit: limit,
     });
 
     return dbSafe.parseResult(result);
@@ -383,36 +387,49 @@ async function analyzeConversationHistory(roomId, limit = 100) {
       .map(m => `${m.username}: ${m.text}`)
       .join('\n\n');
 
-    const prompt = `Analyze this co-parenting conversation history and identify recurring or ongoing topics that could be organized into threads.
+    const prompt = `Analyze this co-parenting conversation and identify distinct conversations (back-and-forth exchanges about specific subjects).
+
+A "conversation" is a focused exchange between two people about ONE specific matter - NOT just a keyword.
+
+Examples of good conversation titles:
+- "Planning Thanksgiving Schedule" (specific event being discussed)
+- "Emma's Doctor Appointment Friday" (specific appointment discussion)
+- "Soccer Practice Carpool Arrangement" (specific logistical discussion)
+- "Homework Help for Math Test" (specific child need being addressed)
+
+Examples of BAD titles (too vague/keyword-based):
+- "School" (too broad)
+- "Pickup" (just a keyword)
+- "Medical" (category, not a conversation)
 
 Conversation history (most recent messages):
 ${conversationText}
 
 ${
   existingThreads.length > 0
-    ? `Existing threads (avoid duplicates):\n${existingThreads
+    ? `Existing conversations (avoid duplicates):\n${existingThreads
         .map(t => `- ${t.title} (${t.message_count} messages)`)
         .join('\n')}`
-    : 'No existing threads'
+    : 'No existing conversations'
 }
 
-Identify 3-5 distinct recurring topics or ongoing conversations. For each topic:
-- Provide a clear, descriptive title (2-5 words)
-- Estimate how many messages relate to this topic
-- Note if it's an ongoing/recurring conversation
+Identify 3-5 distinct CONVERSATIONS (not keywords). For each:
+- Title should describe the SPECIFIC subject being discussed (3-7 words)
+- Must be a back-and-forth exchange (at least 2 participants)
+- Should be actionable or about a specific event/need
 
 Respond in JSON array format:
 [
   {
-    "title": "Topic title",
+    "title": "Specific conversation title",
     "messageCount": estimated_count,
     "isRecurring": true/false,
-    "reasoning": "Why this is a distinct topic",
+    "reasoning": "What makes this a distinct conversation",
     "confidence": 0-100
   }
 ]
 
-Only include topics with confidence >= 60 and at least 3 related messages.`;
+Only include conversations with confidence >= 60 and at least 3 related messages.`;
 
     const completion = await openaiClient.createChatCompletion({
       model: 'gpt-3.5-turbo',
