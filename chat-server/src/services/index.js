@@ -40,6 +40,12 @@ const { taskService } = require('./task');
 // Pairing services (Phase 2.6) ✅
 const { pairingService } = require('./pairing');
 
+// Mediation services (Phase 2.7) ✅
+const { mediationService } = require('./mediation/mediationService');
+
+// Session services (Phase 2.8) ✅
+const { userSessionService } = require('./session/userSessionService');
+
 // Connection services (Phase 4.2)
 // const { connectionTokenService } = require('./connection/connectionTokenService');
 // const { pendingConnectionService } = require('./connection/pendingConnectionService');
@@ -72,6 +78,12 @@ module.exports = {
 
   // Pairing services ✅
   pairingService,
+
+  // Mediation services ✅
+  mediationService,
+
+  // Session services ✅
+  userSessionService,
   // messageSearchService,
   // messageValidator,
   // profileService,

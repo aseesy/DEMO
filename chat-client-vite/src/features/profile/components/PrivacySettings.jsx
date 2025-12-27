@@ -131,14 +131,14 @@ export default function PrivacySettings({
       </div>
 
       {/* Privacy Legend */}
-      <div className="flex gap-4 text-sm">
+      <div className="flex flex-wrap gap-3 sm:gap-4 text-sm">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-green-500" />
-          <span className="text-gray-600">Shared with co-parent</span>
+          <span className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
+          <span className="text-gray-600">Shared</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-gray-400" />
-          <span className="text-gray-600">Private (AI only)</span>
+          <span className="w-3 h-3 rounded-full bg-gray-400 flex-shrink-0" />
+          <span className="text-gray-600">Private</span>
         </div>
       </div>
 
@@ -150,35 +150,38 @@ export default function PrivacySettings({
           return (
             <div
               key={section.id}
-              className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+              className={`p-3 sm:p-4 rounded-lg border transition-colors ${
                 isShared ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <div
-                  className={`p-2 rounded-lg ${
+                  className={`p-2 rounded-lg flex-shrink-0 ${
                     isShared ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'
                   }`}
                 >
                   <SectionIcon type={section.icon} />
                 </div>
-                <div>
-                  <span className="font-medium text-gray-800">{section.title}</span>
-                  <p className="text-sm text-gray-500">{section.description}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-gray-800 text-sm sm:text-base">
+                      {section.title}
+                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span
+                        className={`text-xs sm:text-sm font-medium ${isShared ? 'text-green-600' : 'text-gray-500'}`}
+                      >
+                        {isShared ? 'Shared' : 'Private'}
+                      </span>
+                      <Toggle
+                        enabled={isShared}
+                        onChange={() => handleToggle(section.key, settings[section.key])}
+                        disabled={isSaving}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{section.description}</p>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span
-                  className={`text-sm font-medium ${isShared ? 'text-green-600' : 'text-gray-500'}`}
-                >
-                  {isShared ? 'Shared' : 'Private'}
-                </span>
-                <Toggle
-                  enabled={isShared}
-                  onChange={() => handleToggle(section.key, settings[section.key])}
-                  disabled={isSaving}
-                />
               </div>
             </div>
           );
@@ -234,10 +237,10 @@ export default function PrivacySettings({
       </div>
 
       {/* Info Box */}
-      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
-        <div className="flex gap-3">
+      <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-blue-800">
+        <div className="flex gap-2 sm:gap-3">
           <svg
-            className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5"
+            className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0 mt-0.5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -249,22 +252,12 @@ export default function PrivacySettings({
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <div>
+          <div className="min-w-0">
             <p className="font-medium">How privacy works</p>
-            <ul className="mt-2 space-y-1 text-blue-700">
-              <li>
-                • <strong>Shared</strong> info is visible to your co-parent when they view your
-                profile
-              </li>
-              <li>
-                • <strong>Private</strong> info is only used by LiaiZen's AI to help you communicate
-                better
-              </li>
-              <li>
-                • <strong>Health & Financial</strong> data is always encrypted and{' '}
-                <strong>never shared</strong> with your co-parent
-              </li>
-              <li>• You can change these settings anytime</li>
+            <ul className="mt-1.5 sm:mt-2 space-y-1 text-blue-700">
+              <li>• <strong>Shared</strong> = visible to co-parent</li>
+              <li>• <strong>Private</strong> = AI only</li>
+              <li>• Health & financial data is <strong>never shared</strong></li>
             </ul>
           </div>
         </div>

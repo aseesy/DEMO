@@ -4,31 +4,22 @@
  * Manages escalation, emotional, and policy state for conversations.
  * Handles state initialization, updates, and decay.
  *
+ * REFACTORED: No longer uses global state. Context is passed as parameter.
+ *
  * @module src/liaizen/core/stateManager
  */
 
 const { ESCALATION, MESSAGE } = require('../../infrastructure/config/constants');
 
-// Shared conversation context (imported from mediator.js)
-// This will be passed in as a parameter to avoid circular dependencies
-let conversationContext = null;
-
-/**
- * Initialize state manager with conversation context
- * @param {Object} context - Conversation context object from mediator
- */
-function initialize(context) {
-  conversationContext = context;
-}
-
 /**
  * Initialize escalation state for a room
+ * @param {Object} conversationContext - Conversation context object (must have escalationState Map)
  * @param {string} roomId - Room identifier
  * @returns {Object} Escalation state object
  */
-function initializeEscalationState(roomId) {
+function initializeEscalationState(conversationContext, roomId) {
   if (!conversationContext) {
-    throw new Error('StateManager not initialized. Call initialize() first.');
+    throw new Error('conversationContext is required');
   }
 
   // Ensure escalationState Map exists
@@ -53,12 +44,13 @@ function initializeEscalationState(roomId) {
 
 /**
  * Initialize emotional state for a room
+ * @param {Object} conversationContext - Conversation context object (must have emotionalState Map)
  * @param {string} roomId - Room identifier
  * @returns {Object} Emotional state object
  */
-function initializeEmotionalState(roomId) {
+function initializeEmotionalState(conversationContext, roomId) {
   if (!conversationContext) {
-    throw new Error('StateManager not initialized. Call initialize() first.');
+    throw new Error('conversationContext is required');
   }
 
   // Ensure emotionalState Map exists
@@ -79,12 +71,13 @@ function initializeEmotionalState(roomId) {
 
 /**
  * Initialize policy state for a room
+ * @param {Object} conversationContext - Conversation context object (must have policyState Map)
  * @param {string} roomId - Room identifier
  * @returns {Object} Policy state object
  */
-function initializePolicyState(roomId) {
+function initializePolicyState(conversationContext, roomId) {
   if (!conversationContext) {
-    throw new Error('StateManager not initialized. Call initialize() first.');
+    throw new Error('conversationContext is required');
   }
 
   // Ensure policyState Map exists
@@ -105,12 +98,13 @@ function initializePolicyState(roomId) {
 
 /**
  * Update escalation score based on detected patterns
+ * @param {Object} conversationContext - Conversation context object
  * @param {string} roomId - Room identifier
  * @param {Object} patterns - Detected conflict patterns
  * @returns {Object} Updated escalation state
  */
-function updateEscalationScore(roomId, patterns) {
-  const state = initializeEscalationState(roomId);
+function updateEscalationScore(conversationContext, roomId, patterns) {
+  const state = initializeEscalationState(conversationContext, roomId);
 
   // Update pattern counts
   if (patterns.accusatory) {
@@ -147,12 +141,13 @@ function updateEscalationScore(roomId, patterns) {
 
 /**
  * Update emotional state for a participant
+ * @param {Object} conversationContext - Conversation context object
  * @param {string} roomId - Room identifier
  * @param {string} username - Participant username
  * @param {Object} emotionData - Emotion data from AI analysis
  */
-function updateEmotionalState(roomId, username, emotionData) {
-  const emotionalState = initializeEmotionalState(roomId);
+function updateEmotionalState(conversationContext, roomId, username, emotionData) {
+  const emotionalState = initializeEmotionalState(conversationContext, roomId);
 
   if (!emotionalState.participants[username]) {
     emotionalState.participants[username] = {
@@ -219,11 +214,12 @@ function updateEmotionalState(roomId, username, emotionData) {
 
 /**
  * Update policy state after intervention
+ * @param {Object} conversationContext - Conversation context object
  * @param {string} roomId - Room identifier
  * @param {Object} intervention - Intervention data
  */
-function updatePolicyState(roomId, intervention) {
-  const policyState = initializePolicyState(roomId);
+function updatePolicyState(conversationContext, roomId, intervention) {
+  const policyState = initializePolicyState(conversationContext, roomId);
 
   policyState.interventionHistory.push({
     timestamp: Date.now(),
@@ -243,11 +239,12 @@ function updatePolicyState(roomId, intervention) {
 
 /**
  * Record intervention feedback and adjust threshold
+ * @param {Object} conversationContext - Conversation context object
  * @param {string} roomId - Room identifier
  * @param {boolean} helpful - Whether intervention was helpful
  */
-function recordInterventionFeedback(roomId, helpful) {
-  const policyState = initializePolicyState(roomId);
+function recordInterventionFeedback(conversationContext, roomId, helpful) {
+  const policyState = initializePolicyState(conversationContext, roomId);
 
   if (policyState.interventionHistory.length > 0) {
     const lastIntervention =
@@ -271,7 +268,6 @@ function recordInterventionFeedback(roomId, helpful) {
 }
 
 module.exports = {
-  initialize,
   initializeEscalationState,
   initializeEmotionalState,
   initializePolicyState,

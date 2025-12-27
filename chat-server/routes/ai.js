@@ -3,20 +3,28 @@
  *
  * Handles AI-powered features including task generation and message mediation.
  * Extracted from server.js for better maintainability.
+ *
+ * ARCHITECTURE: Route handlers should only:
+ * 1. Validate input
+ * 2. Call service/use case
+ * 3. Return result
+ *
+ * Business logic belongs in services, not route handlers.
  */
 
 const express = require('express');
 const router = express.Router();
 
-const dbSafe = require('../dbSafe');
-const db = require('../dbPostgres');
 const { verifyAuth } = require('../middleware/auth');
+const { handleServiceError } = require('../middleware/errorHandlers');
 
 // Service references - set from server.js
 let aiMediator;
+let mediationService;
 
 router.setHelpers = function (helpers) {
   aiMediator = helpers.aiMediator;
+  mediationService = helpers.mediationService;
 };
 
 // ========================================
@@ -123,192 +131,58 @@ Respond in JSON format only with this structure:
 /**
  * POST /api/mediate/analyze
  * Analyze message using Observer/Mediator framework
+ *
+ * Route Handler Responsibilities:
+ * 1. Validate input (text is required)
+ * 2. Call service (mediationService.analyzeMessage)
+ * 3. Return result (or handle errors)
+ *
+ * All business logic (database queries, data formatting, etc.) is in MediationService.
  */
 router.post('/mediate/analyze', verifyAuth, async (req, res) => {
   try {
     const { text, senderProfile = {}, receiverProfile = {} } = req.body;
 
+    // 1. Validate input
     if (!text || !text.trim()) {
       return res.status(400).json({ error: 'Message text is required' });
     }
 
+    if (!mediationService) {
+      console.error('❌ mediationService is not initialized!');
+      return res.status(500).json({ error: 'Mediation service not available' });
+    }
+
+    const user = req.user;
     console.log('🔍 /api/mediate/analyze called:', {
       text: text.substring(0, 50),
-      username: req.user?.username,
+      username: user?.username,
     });
-    const user = req.user;
 
-    // Get recent messages for context
-    const userResult = await dbSafe.safeSelect(
-      'users',
-      { username: user.username.toLowerCase() },
-      { limit: 1 }
-    );
-    const users = dbSafe.parseResult(userResult);
-
-    if (users.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const userId = users[0].id;
-
-    // Get user's room from database (JWT doesn't include roomId)
-    let roomId = null;
-    const roomMembersResult = await dbSafe.safeSelect(
-      'room_members',
-      { user_id: userId },
-      { limit: 1 }
-    );
-    const roomMembers = dbSafe.parseResult(roomMembersResult);
-    if (roomMembers && roomMembers.length > 0) {
-      roomId = roomMembers[0].room_id;
-      console.log('✅ Found roomId:', roomId);
-    } else {
-      console.log('⚠️  No room found for user:', userId);
-    }
-
-    // Get recent messages
-    let recentMessages = [];
-    if (roomId) {
-      const messagesQuery = `
-        SELECT * FROM messages
-        WHERE room_id = $1
-        ORDER BY timestamp DESC
-        LIMIT 15
-      `;
-      const messagesResult = await db.query(messagesQuery, [roomId]);
-      recentMessages = messagesResult.rows.length > 0 ? messagesResult.rows.reverse() : [];
-    }
-
-    // Get participant usernames
-    const participantUsernames = roomId
-      ? await dbSafe
-          .safeSelect('room_members', { room_id: roomId })
-          .then(result => dbSafe.parseResult(result).map(m => m.username))
-      : [user.username];
-
-    // Get contacts for context
-    const contactsResult = await dbSafe.safeSelect('contacts', { user_id: userId });
-    const contactsData = dbSafe.parseResult(contactsResult);
-
-    // Format as objects for mediator (used by language analyzer for child detection)
-    const existingContacts = contactsData.map(c => ({
-      name: c.contact_name,
-      relationship: c.relationship || 'contact',
-    }));
-
-    // Format contact context string for AI prompt
-    const contactContextForAI =
-      contactsData.length > 0
-        ? contactsData.map(c => `${c.contact_name} (${c.relationship || 'contact'})`).join(', ')
-        : null;
-
-    // Create message object for analysis
-    const message = {
-      text: text.trim(),
+    // 2. Call service (all business logic is in the service)
+    const result = await mediationService.analyzeMessage({
+      text,
       username: user.username,
-      timestamp: new Date().toISOString(),
-    };
-
-    // Analyze using the Observer/Mediator framework
-    if (!aiMediator) {
-      console.error('❌ aiMediator is not initialized!');
-      return res.status(500).json({ error: 'AI mediator not available' });
-    }
-
-    console.log('🤖 Calling aiMediator.analyzeMessage with:', {
-      messageLength: message.text.length,
-      recentMessagesCount: recentMessages.length,
-      participantCount: participantUsernames.length,
-      hasRoomId: !!roomId,
+      senderProfile,
+      receiverProfile,
     });
-
-    const analysis = await aiMediator.analyzeMessage(
-      message,
-      recentMessages,
-      participantUsernames,
-      existingContacts,
-      contactContextForAI,
-      roomId,
-      null, // taskContextForAI
-      null, // flaggedMessagesContext
-      null // roleContext (can be enhanced with senderProfile/receiverProfile)
-    );
-
-    console.log(
-      '📊 Analysis result:',
-      analysis ? { action: analysis.action, type: analysis.type } : 'null (no intervention)'
-    );
-
-    if (!analysis) {
-      // No intervention needed (STAY_SILENT)
-      return res.json({
-        action: 'STAY_SILENT',
-        escalation: { riskLevel: 'low', confidence: 0, reasons: [] },
-        emotion: {
-          currentEmotion: 'neutral',
-          stressLevel: 0,
-          stressTrajectory: 'stable',
-          emotionalMomentum: 0,
-          triggers: [],
-          conversationEmotion: 'neutral',
-        },
-        intervention: null,
-        originalText: text.trim(),
-      });
-    }
-
-    // Map the mediator's return format to the expected API format
-    const result = {
-      action: analysis.action || 'STAY_SILENT',
-      escalation: analysis.escalation || {
-        riskLevel: 'low',
-        confidence: 0,
-        reasons: [],
-      },
-      emotion: analysis.emotion || {
-        currentEmotion: 'neutral',
-        stressLevel: 0,
-        stressTrajectory: 'stable',
-        emotionalMomentum: 0,
-        triggers: [],
-        conversationEmotion: 'neutral',
-      },
-      intervention: null,
-      originalText: text.trim(),
-    };
-
-    // Map intervention data based on type
-    // Note: AI mediator returns 'validation' (removed 'insight' per user request)
-    // We map to 'personalMessage' for backwards compatibility with client
-    if (analysis.type === 'ai_intervention' && analysis.action === 'INTERVENE') {
-      result.intervention = {
-        personalMessage: analysis.validation || analysis.personalMessage || '',
-        tip1: '', // Removed per user request - no longer showing "why this matters"
-        refocusQuestions: analysis.refocusQuestions || [],
-        rewrite1: analysis.rewrite1 || '',
-        rewrite2: analysis.rewrite2 || '',
-        comment: null,
-      };
-    } else if (analysis.type === 'ai_comment' && analysis.action === 'COMMENT') {
-      result.intervention = {
-        personalMessage: null,
-        tip1: null,
-        rewrite1: null,
-        rewrite2: null,
-        comment: analysis.text || '',
-      };
-    }
 
     console.log('📤 Sending response:', {
       action: result.action,
       hasIntervention: !!result.intervention,
     });
+
+    // 3. Return result
     res.json(result);
   } catch (error) {
     console.error('❌ Error analyzing message:', error);
     console.error('Error stack:', error.stack);
-    res.status(500).json({ error: error.message });
+
+    // Use service error handler for proper error formatting
+    return handleServiceError(error, res, {
+      defaultMessage: 'Failed to analyze message',
+      logError: true,
+    });
   }
 });
 

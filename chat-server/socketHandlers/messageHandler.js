@@ -25,17 +25,14 @@ try {
   console.warn('⚠️  Auto-threading service not available:', err.message);
 }
 
-function registerMessageHandlers(socket, io, services, activeUsers, messageHistory) {
-  const { messageStore, dbSafe, dbPostgres } = services;
+function registerMessageHandlers(socket, io, services) {
+  const { messageStore, dbSafe, dbPostgres, userSessionService } = services;
 
   /**
    * Helper to add to message history
+   * Uses messageStore for persistence - no in-memory cache needed
    */
   async function addToHistory(message, roomId) {
-    messageHistory.push(message);
-    if (messageHistory.length > 100) {
-      messageHistory.shift();
-    }
     if (messageStore) {
       try {
         const messageToSave = { ...message, roomId };
@@ -72,20 +69,20 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
   // send_message handler
   socket.on('send_message', async data => {
     // Step 1: Validate user is active
-    const userValidation = validateActiveUser(activeUsers, socket.id);
+    const userValidation = validateActiveUser(userSessionService, socket.id);
     if (!userValidation.valid) {
       emitError(socket, userValidation.error);
       return;
     }
     const { user } = userValidation;
 
-    // CRITICAL: Ensure user.roomId is set from activeUsers
+    // CRITICAL: Ensure user.roomId is set from userSessionService
     // This ensures messages are saved to the same room that will be loaded on refresh
     if (!user.roomId) {
       console.error('[send_message] ERROR: user.roomId is missing!', {
         socketId: socket.id,
         username: user.username,
-        activeUserData: activeUsers.get(socket.id),
+        activeUserData: userSessionService.getUserBySocketId(socket.id),
       });
       emitError(socket, 'Room not available. Please rejoin the chat.');
       return;
@@ -131,7 +128,6 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
         user,
         message,
         data,
-        activeUsers,
         addToHistory,
       });
     } catch (error) {
@@ -142,7 +138,7 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
   // edit_message handler
   socket.on('edit_message', async ({ messageId, text }) => {
     // Step 1: Validate user is active
-    const userValidation = validateActiveUser(activeUsers, socket.id);
+    const userValidation = validateActiveUser(userSessionService, socket.id);
     if (!userValidation.valid) {
       emitError(socket, 'You must join before editing messages.');
       return;
@@ -207,7 +203,7 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
   // delete_message handler
   socket.on('delete_message', async ({ messageId }) => {
     // Step 1: Validate user is active
-    const userValidation = validateActiveUser(activeUsers, socket.id);
+    const userValidation = validateActiveUser(userSessionService, socket.id);
     if (!userValidation.valid) {
       emitError(socket, 'You must join before deleting messages.');
       return;
@@ -253,7 +249,7 @@ function registerMessageHandlers(socket, io, services, activeUsers, messageHisto
   // add_reaction handler
   socket.on('add_reaction', async ({ messageId, emoji }) => {
     // Step 1: Validate user and emoji
-    const userValidation = validateActiveUser(activeUsers, socket.id);
+    const userValidation = validateActiveUser(userSessionService, socket.id);
     if (!userValidation.valid || !emoji) return;
     const { user } = userValidation;
 

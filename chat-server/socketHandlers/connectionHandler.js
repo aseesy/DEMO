@@ -19,8 +19,8 @@ const {
   getRoomUsers,
 } = require('./connectionOperations');
 
-function registerConnectionHandlers(socket, io, services, activeUsers, messageHistory) {
-  const { auth, roomManager, dbSafe, dbPostgres } = services;
+function registerConnectionHandlers(socket, io, services) {
+  const { auth, roomManager, dbSafe, dbPostgres, userSessionService } = services;
 
   // join handler
   socket.on('join', async ({ username }) => {
@@ -71,11 +71,11 @@ function registerConnectionHandlers(socket, io, services, activeUsers, messageHi
     }
 
     // Step 4: Handle duplicate connections (no error possible, just cleanup)
-    disconnectDuplicateConnections(activeUsers, io, roomId, cleanUsername, socket.id);
+    disconnectDuplicateConnections(userSessionService, io, roomId, cleanUsername, socket.id);
 
     // Step 5: Join room and register
     socket.join(roomId);
-    registerActiveUser(activeUsers, socket.id, cleanUsername, roomId);
+    registerActiveUser(userSessionService, socket.id, cleanUsername, roomId);
 
     // Step 6: Ensure contacts for room members
     let members = [];
@@ -125,7 +125,7 @@ function registerConnectionHandlers(socket, io, services, activeUsers, messageHi
     }
 
     // Step 9: Broadcast join event
-    const roomUsers = getRoomUsers(activeUsers, roomId);
+    const roomUsers = getRoomUsers(userSessionService, roomId);
 
     io.to(roomId).emit('user_joined', {
       message: systemMessage,
@@ -152,11 +152,11 @@ function registerConnectionHandlers(socket, io, services, activeUsers, messageHi
 
   // disconnect handler
   socket.on('disconnect', async () => {
-    const user = activeUsers.get(socket.id);
+    const user = userSessionService.getUserBySocketId(socket.id);
     if (!user) return;
 
     const { roomId, username } = user;
-    activeUsers.delete(socket.id);
+    userSessionService.disconnectUser(socket.id);
 
     const systemMessage = createSystemMessage(socket.id, `${username} left the chat`, roomId);
 
@@ -177,7 +177,7 @@ function registerConnectionHandlers(socket, io, services, activeUsers, messageHi
       // Silently ignore - user is disconnecting anyway
     }
 
-    const roomUsers = getRoomUsers(activeUsers, roomId);
+    const roomUsers = getRoomUsers(userSessionService, roomId);
     io.to(roomId).emit('user_left', { message: systemMessage, users: roomUsers });
   });
 }

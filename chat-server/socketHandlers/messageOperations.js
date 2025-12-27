@@ -39,12 +39,12 @@ function validateMessageText(text) {
 
 /**
  * Validate that user is active
- * @param {Map} activeUsers - Active users map
+ * @param {Object} userSessionService - User session service
  * @param {string} socketId - Socket ID
  * @returns {{ valid: boolean, user?: Object, error?: string }}
  */
-function validateActiveUser(activeUsers, socketId) {
-  const user = activeUsers.get(socketId);
+function validateActiveUser(userSessionService, socketId) {
+  const user = userSessionService.getUserBySocketId(socketId);
 
   if (!user) {
     return {

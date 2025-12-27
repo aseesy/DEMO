@@ -10,13 +10,13 @@ try {
   console.warn('⚠️  Auto-threading service not available:', err.message);
 }
 
-function registerThreadHandlers(socket, io, services, activeUsers) {
-  const { threadManager } = services;
+function registerThreadHandlers(socket, io, services) {
+  const { threadManager, userSessionService } = services;
 
   // create_thread handler
   socket.on('create_thread', async ({ roomId, title, messageId }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before creating threads.' });
         return;
@@ -52,7 +52,7 @@ function registerThreadHandlers(socket, io, services, activeUsers) {
   // get_threads handler
   socket.on('get_threads', async ({ roomId }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before getting threads.' });
         return;
@@ -69,7 +69,7 @@ function registerThreadHandlers(socket, io, services, activeUsers) {
   // get_thread_messages handler
   socket.on('get_thread_messages', async ({ threadId }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before getting thread messages.' });
         return;
@@ -86,7 +86,7 @@ function registerThreadHandlers(socket, io, services, activeUsers) {
   // add_to_thread handler
   socket.on('add_to_thread', async ({ messageId, threadId }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before adding to thread.' });
         return;
@@ -110,7 +110,7 @@ function registerThreadHandlers(socket, io, services, activeUsers) {
   // remove_from_thread handler
   socket.on('remove_from_thread', async ({ messageId }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before removing from thread.' });
         return;
@@ -134,7 +134,7 @@ function registerThreadHandlers(socket, io, services, activeUsers) {
   // analyze_conversation_history handler
   socket.on('analyze_conversation_history', async ({ roomId, limit }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before analyzing conversation history.' });
         return;

@@ -2,13 +2,13 @@
  * Socket Feedback and Intervention Handlers
  */
 
-function registerFeedbackHandlers(socket, io, services, activeUsers) {
-  const { aiMediator, feedbackLearner, dbSafe } = services;
+function registerFeedbackHandlers(socket, io, services) {
+  const { aiMediator, feedbackLearner, dbSafe, userSessionService } = services;
 
   // intervention_feedback handler
   socket.on('intervention_feedback', async ({ interventionId, helpful, reason }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before providing feedback.' });
         return;
@@ -32,7 +32,7 @@ function registerFeedbackHandlers(socket, io, services, activeUsers) {
   // accept_rewrite handler
   socket.on('accept_rewrite', async ({ original, rewrite, tip }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user) return;
 
       await aiMediator.recordAcceptedRewrite(user.username, { original, rewrite, tip });
@@ -45,7 +45,7 @@ function registerFeedbackHandlers(socket, io, services, activeUsers) {
   // override_intervention handler
   socket.on('override_intervention', async ({ messageId, overrideAction }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before overriding.' });
         return;

@@ -33,22 +33,9 @@ describe('AI Mediator', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Initialize state manager with mock context
-    const mockContext = {
-      escalationState: new Map(),
-      emotionalState: new Map(),
-      policyState: new Map(),
-      messageAnalysisCache: new Map(), // Fresh cache for each test
-      cacheMaxAge: 300000,
-      cacheMaxSize: 100,
-    };
-    stateManager.initialize(mockContext);
-
-    // Clear mediator's internal cache by getting context and clearing it
-    const context = mediator.getContext();
-    if (context.messageAnalysisCache) {
-      context.messageAnalysisCache.clear();
-    }
+    // Note: mediator now uses instance-based state, so each test gets a fresh instance
+    // The singleton instance is used for backward compatibility
+    // No need to initialize stateManager anymore - context is passed as parameter
   });
 
   describe('analyzeMessage', () => {
@@ -117,14 +104,7 @@ describe('AI Mediator', () => {
 
       // Mock cache hit
       const cachedResult = { type: 'cached', action: 'STAY_SILENT' };
-      const mockContext = stateManager.initialize({
-        escalationState: new Map(),
-        emotionalState: new Map(),
-        policyState: new Map(),
-        messageAnalysisCache: new Map(),
-        cacheMaxAge: 300000,
-        cacheMaxSize: 100,
-      });
+      // Note: Cache is now internal to mediator instance, not stateManager
 
       // This test would need access to internal cache, so we'll test the behavior
       // by ensuring OpenAI is not called when cache exists

@@ -198,7 +198,10 @@ function setupRoutes(app, services) {
   roomsRoutes.setHelpers({ auth, roomManager, autoCompleteOnboardingTasks });
   adminRoutes.setHelpers({ roomManager });
   figmaRoutes.setHelpers({ figmaService, ...services }); // Figma needs multiple components
-  aiRoutes.setHelpers({ aiMediator });
+  // Load mediation service and inject dependencies
+  const { mediationService } = require('./src/services');
+  mediationService.setAiMediator(aiMediator);
+  aiRoutes.setHelpers({ aiMediator, mediationService });
   connectionsRoutes.setHelpers({ auth, autoCompleteOnboardingTasks });
   userRoutes.setHelpers({
     JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key',

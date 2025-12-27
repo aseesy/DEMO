@@ -57,10 +57,10 @@ export function SettingsView({
   };
 
   return (
-    <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden">
-      <div className="p-4 sm:p-6 space-y-4">
+    <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg">
+      <div className="p-3 sm:p-4 md:p-6 space-y-4">
         <div>
-          <h2 className="text-3xl font-semibold text-teal-dark mb-2">Settings</h2>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-teal-dark mb-2">Settings</h2>
         </div>
 
         {/* PWA Install Section */}

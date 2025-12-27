@@ -2,13 +2,13 @@
  * Socket Coaching Handlers
  */
 
-function registerCoachingHandlers(socket, io, services, activeUsers) {
-  const { proactiveCoach, dbSafe, dbPostgres } = services;
+function registerCoachingHandlers(socket, io, services) {
+  const { proactiveCoach, dbSafe, dbPostgres, userSessionService } = services;
 
   // analyze_draft handler
   socket.on('analyze_draft', async ({ draftText }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before analyzing drafts.' });
         return;

@@ -227,7 +227,7 @@ async function notifyNewMessage(recipientUserId, message) {
   const senderName = message.displayName || message.username || 'Co-parent';
 
   return sendNotificationToUser(recipientUserId, {
-    title: `New message from ${senderName}`,
+    title: `New Message from ${senderName}`,
     body: truncatedText,
     icon: '/icon-192.png',
     tag: `message-${message.id || Date.now()}`,

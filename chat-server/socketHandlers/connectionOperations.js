@@ -135,48 +135,38 @@ async function resolveUserRoom(user, cleanUsername, dbPostgres, roomManager) {
  * @param {string} cleanUsername - Username to check
  * @param {string} currentSocketId - Current socket ID to exclude
  */
-function disconnectDuplicateConnections(activeUsers, io, roomId, cleanUsername, currentSocketId) {
-  for (const [socketId, userData] of activeUsers.entries()) {
-    if (
-      userData.roomId === roomId &&
-      userData.username.toLowerCase() === cleanUsername.toLowerCase() &&
-      socketId !== currentSocketId
-    ) {
-      const oldSocket = io.sockets.sockets.get(socketId);
-      if (oldSocket) {
-        oldSocket.emit('replaced_by_new_connection', {
-          message: 'Disconnected by another login.',
-        });
-        oldSocket.disconnect(true);
-      }
-      activeUsers.delete(socketId);
+function disconnectDuplicateConnections(userSessionService, io, roomId, cleanUsername, currentSocketId) {
+  // Use service to disconnect duplicates
+  const disconnectedSocketIds = userSessionService.disconnectDuplicates(
+    currentSocketId,
+    cleanUsername,
+    roomId
+  );
+
+  // Disconnect the sockets
+  for (const socketId of disconnectedSocketIds) {
+    const oldSocket = io.sockets.sockets.get(socketId);
+    if (oldSocket) {
+      oldSocket.emit('replaced_by_new_connection', {
+        message: 'Disconnected by another login.',
+      });
+      oldSocket.disconnect(true);
     }
   }
 }
 
 /**
  * Register user in active users map
- * SIDE EFFECT: Mutates activeUsers Map
+ * Uses UserSessionService for proper encapsulation
  *
- * @param {Map} activeUsers - Active users map (will be mutated)
+ * @param {Object} userSessionService - User session service
  * @param {string} socketId - Socket ID
  * @param {string} cleanUsername - Username
  * @param {string} roomId - Room ID
+ * @returns {Object} User data object
  */
-function registerActiveUser(activeUsers, socketId, cleanUsername, roomId) {
-  const userData = {
-    username: cleanUsername,
-    roomId,
-    joinedAt: new Date().toISOString(),
-    socketId,
-  };
-  activeUsers.set(socketId, userData);
-  console.log('[registerActiveUser] Registered user:', {
-    socketId: socketId.substring(0, 20) + '...',
-    username: cleanUsername,
-    roomId: roomId,
-  });
-  return userData;
+function registerActiveUser(userSessionService, socketId, cleanUsername, roomId) {
+  return userSessionService.registerUser(socketId, cleanUsername, roomId);
 }
 
 /**
@@ -322,10 +312,9 @@ async function saveSystemMessage(systemMessage, dbSafe) {
  * @param {string} roomId - Room ID
  * @returns {Array} List of users with username and joinedAt
  */
-function getRoomUsers(activeUsers, roomId) {
-  return Array.from(activeUsers.values())
-    .filter(u => u.roomId === roomId)
-    .map(u => ({ username: u.username, joinedAt: u.joinedAt }));
+function getRoomUsers(userSessionService, roomId) {
+  const users = userSessionService.getUsersInRoom(roomId);
+  return users.map(u => ({ username: u.username, joinedAt: u.joinedAt }));
 }
 
 module.exports = {

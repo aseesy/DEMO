@@ -2,13 +2,13 @@
  * Socket Contact Handlers
  */
 
-function registerContactHandlers(socket, io, services, activeUsers) {
-  const { dbSafe, aiMediator } = services;
+function registerContactHandlers(socket, io, services) {
+  const { dbSafe, aiMediator, userSessionService } = services;
 
   // contact_suggestion_response handler
   socket.on('contact_suggestion_response', async ({ response, detectedName, relationship }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user || !socket.data || !socket.data.pendingContactSuggestion) return;
 
       const pending = socket.data.pendingContactSuggestion;
@@ -60,7 +60,7 @@ function registerContactHandlers(socket, io, services, activeUsers) {
   // contact_relationship handler
   socket.on('contact_relationship', async ({ detectedName, relationship }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user || !socket.data || !socket.data.pendingContactSuggestion) return;
 
       const userResult = await dbSafe.safeSelect(
@@ -97,7 +97,7 @@ function registerContactHandlers(socket, io, services, activeUsers) {
   // flag_message handler
   socket.on('flag_message', async ({ messageId, reason }) => {
     try {
-      const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
       if (!user) return;
 
       const messageResult = await services.dbPostgres.query(

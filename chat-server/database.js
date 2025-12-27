@@ -109,8 +109,9 @@ function loadServices() {
   };
 
   // Add services from services layer
-  const { profileService } = require('./src/services');
+  const { profileService, userSessionService } = require('./src/services');
   services.profileService = profileService;
+  services.userSessionService = userSessionService;
 
   // Add specific utility functions
   const { isValidEmail } = require('./src/infrastructure/validation/validators');

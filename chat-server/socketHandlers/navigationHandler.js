@@ -2,12 +2,12 @@
  * Socket Navigation and Search Handlers
  */
 
-function registerNavigationHandlers(socket, io, services, activeUsers) {
-  const { dbPostgres } = services;
+function registerNavigationHandlers(socket, io, services) {
+  const { dbPostgres, userSessionService } = services;
 
   // load_older_messages handler
   socket.on('load_older_messages', async ({ beforeTimestamp, limit = 50 }) => {
-    const user = activeUsers.get(socket.id);
+    const user = userSessionService.getUserBySocketId(socket.id);
     if (!user) {
       socket.emit('error', { message: 'You must join before loading messages.' });
       return;
@@ -61,7 +61,7 @@ function registerNavigationHandlers(socket, io, services, activeUsers) {
 
   // search_messages handler
   socket.on('search_messages', async ({ query, limit = 50, offset = 0 }) => {
-    const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
     if (!user) {
       socket.emit('error', { message: 'You must join before searching.' });
       return;
@@ -119,7 +119,7 @@ function registerNavigationHandlers(socket, io, services, activeUsers) {
 
   // jump_to_message handler
   socket.on('jump_to_message', async ({ messageId }) => {
-    const user = activeUsers.get(socket.id);
+      const user = userSessionService.getUserBySocketId(socket.id);
     if (!user) return;
 
     try {
