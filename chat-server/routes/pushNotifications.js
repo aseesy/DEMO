@@ -69,4 +69,43 @@ router.get('/vapid-key', (req, res) => {
   res.json({ publicKey: pushNotificationService.VAPID_PUBLIC_KEY });
 });
 
+/**
+ * POST /api/push/test
+ * Send a test push notification to the authenticated user
+ * Used for debugging push notification delivery
+ */
+router.post('/test', verifyAuth, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    console.log('[PushNotifications] Sending test notification to user:', userId);
+
+    const result = await pushNotificationService.sendNotificationToUser(userId, {
+      title: 'LiaiZen Test',
+      body: 'This is a test notification. If you see this, push notifications are working!',
+      tag: 'test-notification',
+      url: '/?view=dashboard',
+    });
+
+    console.log('[PushNotifications] Test notification result:', result);
+
+    res.json({
+      success: true,
+      sent: result.sent,
+      failed: result.failed,
+      message:
+        result.sent > 0
+          ? 'Test notification sent successfully!'
+          : 'No active subscriptions found or all failed',
+    });
+  } catch (error) {
+    console.error('[PushNotifications] Error sending test notification:', error);
+    res.status(500).json({ error: 'Failed to send test notification' });
+  }
+});
+
 module.exports = router;
