@@ -226,7 +226,7 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center pt-safe">
           <div>
-            <h2 className="text-xl font-semibold text-[#275559]">Complete Your Profile</h2>
+            <h2 className="text-xl font-semibold text-teal-medium">Complete Your Profile</h2>
             <p className="text-sm text-gray-500 mt-0.5">Help LiaiZen understand you better</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -274,7 +274,7 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
                   </div>
                   <span
                     className={`text-xs font-medium hidden sm:block ${
-                      index === currentStep ? 'text-[#275559]' : 'text-gray-500'
+                      index === currentStep ? 'text-teal-medium' : 'text-gray-500'
                     }`}
                   >
                     {step.title}
@@ -299,7 +299,7 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
                 style={{ width: `${profileCompletion}%` }}
               />
             </div>
-            <span className="text-sm font-medium text-[#275559] w-12 text-right">
+            <span className="text-sm font-medium text-teal-medium w-12 text-right">
               {profileCompletion}%
             </span>
           </div>
@@ -309,7 +309,7 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
         <div className="flex-1 overflow-y-auto p-6">
           {/* Step Header */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-[#275559]">
+            <h3 className="text-lg font-semibold text-teal-medium">
               Step {currentStep + 1}: {STEPS[currentStep].title}
             </h3>
             <p className="text-sm text-gray-500 mt-1">{STEPS[currentStep].description}</p>
@@ -351,7 +351,7 @@ export default function ProfileWizard({ username, onComplete, onClose, initialSt
             <button
               onClick={handleNext}
               disabled={isSavingProfile}
-              className="px-6 py-2.5 bg-[#275559] text-white rounded-lg font-medium hover:bg-[#1e4346] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-2.5 bg-teal-medium text-white rounded-lg font-medium hover:bg-teal-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSavingProfile ? (
                 <>

@@ -287,8 +287,9 @@ function ChatRoomContent({
 
   // Redirect to sign-in if not authenticated (with timeout)
   // This must be outside conditional blocks to follow Rules of Hooks
+  // CRITICAL: Don't redirect if showLanding is true - visitor is on landing/waitlist page
   React.useEffect(() => {
-    if (!isAuthenticated && !isCheckingAuth) {
+    if (!isAuthenticated && !isCheckingAuth && !showLanding) {
       const timer = setTimeout(() => {
         console.log('[ChatRoom] Not authenticated after timeout, redirecting to sign-in');
         const currentPath = window.location.pathname;
@@ -299,7 +300,7 @@ function ChatRoomContent({
       }, 2000); // 2 second timeout
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, isCheckingAuth, navigate]);
+  }, [isAuthenticated, isCheckingAuth, showLanding, navigate]);
 
   // Dashboard hook - ViewModel that owns its state
   // The Dashboard manages its own dependencies internally

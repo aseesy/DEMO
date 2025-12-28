@@ -289,7 +289,7 @@ export default function BackgroundForm({ profileData, updateField }) {
       </div>
 
       {/* Info Box */}
-      <div className="bg-[#4DA8B0]/10 border border-[#4DA8B0]/20 rounded-lg p-4 text-sm text-[#275559]">
+      <div className="bg-[#4DA8B0]/10 border border-[#4DA8B0]/20 rounded-lg p-4 text-sm text-teal-medium">
         <div className="flex gap-3">
           <svg
             className="w-5 h-5 text-[#4DA8B0] flex-shrink-0 mt-0.5"

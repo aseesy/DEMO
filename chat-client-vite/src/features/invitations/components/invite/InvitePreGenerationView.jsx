@@ -90,9 +90,9 @@ export function InvitePreGenerationView({
       {/* Header */}
       <div className="text-center mb-8">
         <div className="w-16 h-16 bg-[#E8F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
-          <AddUserIcon className="w-8 h-8 text-[#275559]" />
+          <AddUserIcon className="w-8 h-8 text-teal-medium" />
         </div>
-        <h1 className="text-2xl font-bold text-[#275559] mb-2">Invite Your Co-Parent</h1>
+        <h1 className="text-2xl font-bold text-teal-medium mb-2">Invite Your Co-Parent</h1>
         <p className="text-gray-600">
           Connect with your co-parent to start communicating on LiaiZen.
         </p>
@@ -125,7 +125,7 @@ export function InvitePreGenerationView({
       <button
         onClick={handleSubmit}
         disabled={isButtonDisabled}
-        className="w-full py-3 px-4 bg-[#275559] text-white font-medium rounded-lg hover:bg-[#1e4245] transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full py-3 px-4 bg-teal-medium text-white font-medium rounded-lg hover:bg-teal-dark transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isLoading ? (
           <>
@@ -145,7 +145,7 @@ export function InvitePreGenerationView({
       {/* Skip link */}
       <button
         onClick={onSkip}
-        className="w-full mt-4 py-2 text-[#275559] hover:text-[#4DA8B0] font-medium transition-colors"
+        className="w-full mt-4 py-2 text-teal-medium hover:text-[#4DA8B0] font-medium transition-colors"
       >
         Skip for now
       </button>

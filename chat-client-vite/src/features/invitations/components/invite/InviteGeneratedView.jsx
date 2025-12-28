@@ -41,7 +41,7 @@ export function InviteGeneratedView({
         <div className="w-16 h-16 bg-[#E8F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckIcon className="w-8 h-8 text-[#46BD92]" />
         </div>
-        <h1 className="text-2xl font-bold text-[#275559] mb-2">
+        <h1 className="text-2xl font-bold text-teal-medium mb-2">
           {inviteData.inviteType === 'email' ? 'Invite Sent!' : 'Invite Ready!'}
         </h1>
         <p className="text-gray-600">
@@ -78,7 +78,7 @@ export function InviteGeneratedView({
 
         <button
           onClick={onCopyMessage}
-          className="w-full py-3 px-4 bg-[#275559] text-white font-medium rounded-lg hover:bg-[#1e4245] transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 bg-teal-medium text-white font-medium rounded-lg hover:bg-teal-dark transition-all duration-200 flex items-center justify-center gap-2"
         >
           {copiedMessage ? (
             <>
@@ -102,7 +102,7 @@ export function InviteGeneratedView({
 
         <button
           onClick={onContinue}
-          className="w-full py-3 px-4 border-2 border-[#275559] text-[#275559] font-medium rounded-lg hover:bg-[#E8F5F5] transition-all duration-200"
+          className="w-full py-3 px-4 border-2 border-teal-medium text-teal-medium font-medium rounded-lg hover:bg-[#E8F5F5] transition-all duration-200"
         >
           Continue to App
         </button>
@@ -123,11 +123,13 @@ function PairingCodeDisplay({ code, inviteType, copied, onCopy }) {
       <label className="block text-sm font-medium text-gray-700 mb-1">Pairing Code</label>
       <div className="flex items-center gap-2">
         <div className="flex-1 bg-[#E8F5F5] border-2 border-[#4DA8B0] rounded-lg p-3 text-center">
-          <span className="text-2xl font-mono font-bold text-[#275559] tracking-wider">{code}</span>
+          <span className="text-2xl font-mono font-bold text-teal-medium tracking-wider">
+            {code}
+          </span>
         </div>
         <button
           onClick={onCopy}
-          className="p-3 bg-[#275559] text-white rounded-lg hover:bg-[#1e4245] transition-colors"
+          className="p-3 bg-teal-medium text-white rounded-lg hover:bg-teal-dark transition-colors"
           title="Copy code"
         >
           {copied ? <CheckIcon className="w-5 h-5" /> : <CopyIcon className="w-5 h-5" />}
@@ -158,7 +160,7 @@ function InviteLinkDisplay({ url, copied, onCopy }) {
         />
         <button
           onClick={onCopy}
-          className="p-3 bg-[#275559] text-white rounded-lg hover:bg-[#1e4245] transition-colors"
+          className="p-3 bg-teal-medium text-white rounded-lg hover:bg-teal-dark transition-colors"
           title="Copy link"
         >
           {copied ? <CheckIcon className="w-5 h-5" /> : <CopyIcon className="w-5 h-5" />}

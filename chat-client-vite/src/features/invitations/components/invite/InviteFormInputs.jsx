@@ -14,7 +14,7 @@ export function EmailInput({ value, onChange }) {
       <input
         type="email"
         placeholder="Enter their email address"
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#275559] focus:border-transparent outline-none transition-all"
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-medium focus:border-transparent outline-none transition-all"
         value={value}
         onChange={e => onChange(e.target.value)}
       />
@@ -34,7 +34,7 @@ export function CodeInput({ value, onChange, codeValidation, onKeyDown }) {
       <input
         type="text"
         placeholder="LZ-XXXXXX"
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#275559] focus:border-transparent outline-none transition-all font-mono text-lg text-center tracking-wider"
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-medium focus:border-transparent outline-none transition-all font-mono text-lg text-center tracking-wider"
         value={value}
         onChange={e => onChange(e.target.value)}
         onKeyDown={onKeyDown}

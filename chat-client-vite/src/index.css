@@ -3,7 +3,7 @@
 @theme {
   /* Teal Color Palette */
   --color-teal-darkest: #1f4447;
-  --color-teal-dark: #275559;
+  --color-teal-dark: #00908b;
   --color-teal-medium: #00908b;
   --color-teal-light: #c5e8e4;
   --color-teal-lightest: #e6f7f5;
@@ -389,7 +389,7 @@ textarea {
 .toast-sender {
   font-weight: 600;
   font-size: 0.875rem;
-  color: #275559;
+  color: var(--color-teal-medium);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;

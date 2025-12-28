@@ -28,9 +28,9 @@ export default defineConfig({
       manifest: {
         name: 'LiaiZen',
         short_name: 'LiaiZen',
-        description: 'Co-parenting communication made peaceful',
-        theme_color: '#275559',
-        background_color: '#275559',
+        description: 'Collaborative Co-parenting',
+        theme_color: '#00908B',
+        background_color: '#00908B',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',

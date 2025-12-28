@@ -185,7 +185,7 @@ export default function PrivacySettings({
         <button
           onClick={handlePreview}
           disabled={isLoadingPreview}
-          className="w-full px-4 py-3 border-2 border-[#4DA8B0] text-[#275559] rounded-lg font-medium hover:bg-[#4DA8B0]/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full px-4 py-3 border-2 border-[#4DA8B0] text-teal-medium rounded-lg font-medium hover:bg-[#4DA8B0]/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {isLoadingPreview ? (
             <>
@@ -267,7 +267,7 @@ export default function PrivacySettings({
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-semibold text-[#275559]">Co-Parent View</h3>
+                <h3 className="text-lg font-semibold text-teal-medium">Co-Parent View</h3>
                 <p className="text-sm text-gray-500">This is what your co-parent sees</p>
               </div>
               <button
@@ -384,7 +384,7 @@ export default function PrivacySettings({
             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
               <button
                 onClick={() => setShowPreviewModal(false)}
-                className="w-full px-4 py-2.5 bg-[#275559] text-white rounded-lg font-medium hover:bg-[#1e4346] transition-colors"
+                className="w-full px-4 py-2.5 bg-teal-medium text-white rounded-lg font-medium hover:bg-teal-dark transition-colors"
               >
                 Close Preview
               </button>

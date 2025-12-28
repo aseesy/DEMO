@@ -405,7 +405,7 @@ export function CoParentingStanceQuiz() {
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
               <img src="/assets/Logo.svg" alt="LiaiZen" className="h-8 w-8" />
-              <span className="text-xl font-semibold text-[#275559]">
+              <span className="text-xl font-semibold text-teal-medium">
                 Li
                 <span className="bg-gradient-to-r from-[#4DA8B0] to-[#46BD92] bg-clip-text text-transparent">
                   ai
@@ -550,7 +550,7 @@ export function CoParentingStanceQuiz() {
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img src="/assets/Logo.svg" alt="LiaiZen" className="h-8 w-8" />
-            <span className="text-xl font-semibold text-[#275559]">
+            <span className="text-xl font-semibold text-teal-medium">
               Li
               <span className="bg-gradient-to-r from-[#4DA8B0] to-[#46BD92] bg-clip-text text-transparent">
                 ai

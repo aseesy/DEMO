@@ -196,7 +196,7 @@ function BrandColors() {
     },
     {
       name: 'Dark',
-      hex: '#275559',
+      hex: '#00908B',
       bg: 'bg-teal-dark',
       border: 'border-teal-darkest',
       use: 'Text, headings on light',

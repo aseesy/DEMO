@@ -272,7 +272,7 @@ export default function PersonalInfoForm({ profileData, updateField }) {
 
       {/* Schedule Section */}
       <div className="pt-4 border-t border-gray-100">
-        <h4 className="text-sm font-semibold text-[#275559] mb-4">Your Schedule</h4>
+        <h4 className="text-sm font-semibold text-teal-medium mb-4">Your Schedule</h4>
 
         <div className="space-y-4">
           <FormField
@@ -321,7 +321,7 @@ export default function PersonalInfoForm({ profileData, updateField }) {
                   <div
                     className={`font-medium text-sm ${
                       profileData.schedule_flexibility === option.value
-                        ? 'text-[#275559]'
+                        ? 'text-teal-medium'
                         : 'text-gray-700'
                     }`}
                   >

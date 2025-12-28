@@ -35,7 +35,7 @@ function ColorSystemCard() {
         />
         <ColorSwatch
           name="Dark"
-          hex="#275559"
+          hex="#00908B"
           rgb="rgb(39, 85, 89)"
           bgClass="bg-teal-dark"
           desc="Dark teal – for headings on light backgrounds"

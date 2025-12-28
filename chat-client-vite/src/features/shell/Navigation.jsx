@@ -454,8 +454,8 @@ function NavigationComponent({
                       onClick={() => setCurrentView(item.id)}
                       className={`relative px-4 py-2 text-sm font-medium flex items-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4DA8B0] focus:ring-offset-2 rounded-lg ${
                         isActive
-                          ? 'text-[#275559] bg-[#f0f9f9]'
-                          : 'text-gray-500 hover:text-[#275559] hover:bg-gray-50'
+                          ? 'text-teal-medium bg-[#f0f9f9]'
+                          : 'text-gray-500 hover:text-teal-medium hover:bg-gray-50'
                       }`}
                       aria-current={isActive ? 'page' : undefined}
                     >
@@ -492,7 +492,7 @@ function NavigationComponent({
                     aria-expanded={isMenuOpen}
                   >
                     <img src="/assets/Logo.svg" alt="LiaiZen" className="w-6 h-6 object-contain" />
-                    <span className="text-sm font-semibold text-[#275559]">
+                    <span className="text-sm font-semibold text-teal-medium">
                       Li
                       <span className="bg-gradient-to-r from-[#4DA8B0] to-[#46BD92] bg-clip-text text-transparent">
                         ai

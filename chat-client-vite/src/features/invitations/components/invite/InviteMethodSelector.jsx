@@ -51,7 +51,7 @@ export function InviteMethodSelector({ selectedMethod, onMethodChange }) {
               onClick={() => onMethodChange(method)}
               className={`p-3 rounded-lg border-2 transition-all text-center ${
                 isSelected
-                  ? 'border-[#275559] bg-[#E8F5F5] text-[#275559]'
+                  ? 'border-teal-medium bg-[#E8F5F5] text-teal-medium'
                   : 'border-gray-200 hover:border-gray-300 text-gray-600'
               }`}
             >
