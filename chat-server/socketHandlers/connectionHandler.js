@@ -144,7 +144,7 @@ function registerConnectionHandlers(socket, io, services) {
 
   // typing handler
   socket.on('typing', ({ isTyping }) => {
-    const user = activeUsers.get(socket.id);
+    const user = userSessionService.getUserBySocketId(socket.id);
     if (user?.roomId) {
       socket.to(user.roomId).emit('user_typing', { username: user.username, isTyping });
     }
@@ -183,4 +183,3 @@ function registerConnectionHandlers(socket, io, services) {
 }
 
 module.exports = { registerConnectionHandlers };
-

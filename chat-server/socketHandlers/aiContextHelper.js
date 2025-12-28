@@ -13,7 +13,7 @@ async function getRecentMessages(dbPostgres, roomId) {
   return result.rows.length > 0 ? result.rows.reverse() : [];
 }
 
-async function getParticipantUsernames(dbSafe, roomId, activeUsers) {
+async function getParticipantUsernames(dbSafe, roomId, userSessionService) {
   try {
     const roomMembers = await dbSafe.safeSelect('room_members', { room_id: roomId });
     const userIds = roomMembers.map(rm => rm.user_id);
@@ -22,11 +22,14 @@ async function getParticipantUsernames(dbSafe, roomId, activeUsers) {
       return memberUsers.map(u => u.username);
     }
   } catch {
-    // Ignore errors, fallback to activeUsers
+    // Ignore errors, fallback to userSessionService
   }
-  return Array.from(activeUsers.values())
-    .filter(u => u.roomId === roomId)
-    .map(u => u.username);
+  // Fallback to active users in the room from userSessionService
+  if (userSessionService) {
+    const activeUsers = userSessionService.getUsersInRoom(roomId);
+    return activeUsers.map(u => u.username);
+  }
+  return [];
 }
 
 async function getContactContext(services, user, participantUsernames) {

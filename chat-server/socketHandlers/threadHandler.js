@@ -94,10 +94,9 @@ function registerThreadHandlers(socket, io, services) {
 
       await threadManager.addMessageToThread(messageId, threadId);
 
-      const userObj = activeUsers.get(socket.id);
-      if (userObj) {
-        const threads = await threadManager.getThreadsForRoom(userObj.roomId);
-        io.to(userObj.roomId).emit('threads_updated', threads);
+      if (user && user.roomId) {
+        const threads = await threadManager.getThreadsForRoom(user.roomId);
+        io.to(user.roomId).emit('threads_updated', threads);
       }
 
       socket.emit('message_added_to_thread', { messageId, threadId });
@@ -118,10 +117,9 @@ function registerThreadHandlers(socket, io, services) {
 
       await threadManager.removeMessageFromThread(messageId);
 
-      const userObj = activeUsers.get(socket.id);
-      if (userObj) {
-        const threads = await threadManager.getThreadsForRoom(userObj.roomId);
-        io.to(userObj.roomId).emit('threads_updated', threads);
+      if (user && user.roomId) {
+        const threads = await threadManager.getThreadsForRoom(user.roomId);
+        io.to(user.roomId).emit('threads_updated', threads);
       }
 
       socket.emit('message_removed_from_thread', { messageId });
