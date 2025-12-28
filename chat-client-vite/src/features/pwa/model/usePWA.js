@@ -203,8 +203,12 @@ export function usePWA() {
   // Subscribe to push notifications
   // NOTE: Notification.requestPermission() can ONLY be called from a user gesture (click, tap)
   const subscribeToPush = React.useCallback(async () => {
+    // Allow subscription in dev mode for testing (but warn)
     if (import.meta.env.DEV) {
-      return null;
+      console.warn(
+        '[usePWA] ⚠️ Dev mode: Push subscriptions may not work correctly. Use production build for full testing.'
+      );
+      // Continue anyway - allows testing in dev
     }
 
     try {
@@ -237,12 +241,18 @@ export function usePWA() {
         // Sync to server
         try {
           const subscriptionData = existingSubscription.toJSON();
-          await apiPost('/api/push/subscribe', {
+          console.log('[usePWA] Existing subscription found, syncing to server...', {
+            endpoint: subscriptionData.endpoint?.substring(0, 50) + '...',
+            hasKeys: !!(subscriptionData.keys?.p256dh && subscriptionData.keys?.auth),
+          });
+          const result = await apiPost('/api/push/subscribe', {
             subscription: subscriptionData,
             userAgent: navigator.userAgent,
           });
-        } catch {
-          // Silently ignore sync errors - subscription still works
+          console.log('[usePWA] ✅ Existing subscription synced to server:', result);
+        } catch (error) {
+          console.error('[usePWA] ❌ Error syncing existing subscription to server:', error);
+          // Don't fail - subscription still works locally, but server won't be able to send push
         }
 
         return existingSubscription;
@@ -264,12 +274,18 @@ export function usePWA() {
       // Send subscription to server
       try {
         const subscriptionData = subscription.toJSON();
-        await apiPost('/api/push/subscribe', {
+        console.log('[usePWA] Subscribing to push notifications, sending to server...', {
+          endpoint: subscriptionData.endpoint?.substring(0, 50) + '...',
+          hasKeys: !!(subscriptionData.keys?.p256dh && subscriptionData.keys?.auth),
+        });
+        const result = await apiPost('/api/push/subscribe', {
           subscription: subscriptionData,
           userAgent: navigator.userAgent,
         });
-      } catch {
-        // Silently ignore save errors - subscription still works locally
+        console.log('[usePWA] ✅ Push subscription saved to server:', result);
+      } catch (error) {
+        console.error('[usePWA] ❌ Error saving subscription to server:', error);
+        // Don't fail - subscription still works locally, but server won't be able to send push
       }
 
       return subscription;

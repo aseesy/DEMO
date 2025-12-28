@@ -70,6 +70,40 @@ router.get('/vapid-key', (req, res) => {
 });
 
 /**
+ * GET /api/push/status
+ * Get push notification subscription status for the authenticated user
+ * Used for debugging subscription issues
+ */
+router.get('/status', verifyAuth, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const subscriptions = await pushNotificationService.getUserSubscriptions(userId);
+
+    res.json({
+      success: true,
+      userId,
+      subscriptionCount: subscriptions.length,
+      subscriptions: subscriptions.map(sub => ({
+        endpoint: sub.endpoint.substring(0, 50) + '...',
+        hasKeys: !!(sub.keys && sub.keys.p256dh && sub.keys.auth),
+      })),
+      message:
+        subscriptions.length > 0
+          ? `You have ${subscriptions.length} active subscription(s)`
+          : 'No active subscriptions found. Please subscribe to push notifications in PWA settings.',
+    });
+  } catch (error) {
+    console.error('[PushNotifications] Error getting subscription status:', error);
+    res.status(500).json({ error: 'Failed to get subscription status' });
+  }
+});
+
+/**
  * POST /api/push/test
  * Send a test push notification to the authenticated user
  * Used for debugging push notification delivery

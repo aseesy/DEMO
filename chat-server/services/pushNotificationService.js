@@ -56,9 +56,11 @@ async function saveSubscription(userId, subscription, userAgent = null) {
          RETURNING *`,
         [userId, keys.p256dh, keys.auth, userAgent, endpoint]
       );
-      console.log('[PushNotification] Updated existing subscription:', {
+      console.log('[PushNotification] ✅ Updated existing subscription:', {
         userId,
+        subscriptionId: result.rows[0]?.id,
         endpoint: endpoint.substring(0, 50) + '...',
+        isActive: result.rows[0]?.is_active,
       });
       return result.rows[0];
     } else {
@@ -69,9 +71,11 @@ async function saveSubscription(userId, subscription, userAgent = null) {
          RETURNING *`,
         [userId, endpoint, keys.p256dh, keys.auth, userAgent]
       );
-      console.log('[PushNotification] Created new subscription:', {
+      console.log('[PushNotification] ✅ Created new subscription:', {
         userId,
+        subscriptionId: result.rows[0]?.id,
         endpoint: endpoint.substring(0, 50) + '...',
+        isActive: result.rows[0]?.is_active,
       });
       return result.rows[0];
     }
@@ -110,10 +114,23 @@ async function deleteSubscription(endpoint) {
 async function getUserSubscriptions(userId) {
   try {
     const result = await dbPostgres.query(
-      `SELECT endpoint, p256dh, auth FROM push_subscriptions 
-       WHERE user_id = $1 AND is_active = TRUE`,
+      `SELECT endpoint, p256dh, auth, created_at, last_used_at, is_active 
+       FROM push_subscriptions 
+       WHERE user_id = $1 AND is_active = TRUE
+       ORDER BY last_used_at DESC NULLS LAST, created_at DESC`,
       [userId]
     );
+
+    console.log('[PushNotification] getUserSubscriptions:', {
+      userId,
+      count: result.rows.length,
+      subscriptions: result.rows.map(row => ({
+        endpoint: row.endpoint.substring(0, 50) + '...',
+        hasKeys: !!(row.p256dh && row.auth),
+        lastUsed: row.last_used_at,
+        createdAt: row.created_at,
+      })),
+    });
 
     return result.rows.map(row => ({
       endpoint: row.endpoint,
@@ -142,8 +159,18 @@ async function sendNotificationToUser(userId, payload) {
   try {
     const subscriptions = await getUserSubscriptions(userId);
 
+    console.log('[PushNotification] sendNotificationToUser called:', {
+      userId,
+      subscriptionCount: subscriptions.length,
+      payloadTitle: payload.title,
+      payloadBody: payload.body?.substring(0, 50),
+    });
+
     if (subscriptions.length === 0) {
-      console.log('[PushNotification] No active subscriptions for user:', userId);
+      console.log('[PushNotification] ⚠️ No active subscriptions for user:', userId);
+      console.log(
+        '[PushNotification] User may need to subscribe to push notifications in PWA settings'
+      );
       return { sent: 0, failed: 0 };
     }
 
@@ -200,7 +227,21 @@ async function sendNotificationToUser(userId, payload) {
       }
     }
 
-    console.log('[PushNotification] Sent notifications:', { userId, sent, failed });
+    console.log('[PushNotification] ✅ Sent notifications:', {
+      userId,
+      sent,
+      failed,
+      totalSubscriptions: subscriptions.length,
+      successRate:
+        subscriptions.length > 0 ? `${((sent / subscriptions.length) * 100).toFixed(1)}%` : 'N/A',
+    });
+
+    if (sent === 0 && failed > 0) {
+      console.error(
+        '[PushNotification] ❌ All notifications failed! Check VAPID keys and subscription validity.'
+      );
+    }
+
     return { sent, failed };
   } catch (error) {
     console.error('[PushNotification] Error sending notification:', error);
@@ -230,12 +271,15 @@ async function notifyNewMessage(recipientUserId, message) {
     recipientUserId,
     senderName,
     messageId: message.id,
+    messageUsername: message.username,
+    messageDisplayName: message.displayName,
     messageText: truncatedText.substring(0, 50),
+    hasText: !!message.text,
     timestamp: new Date().toISOString(),
   });
 
   const result = await sendNotificationToUser(recipientUserId, {
-    title: `New Message from ${senderName}`,
+    title: `New message from ${senderName}`,
     body: truncatedText,
     icon: '/icon-192.png',
     tag: `message-${message.id || Date.now()}`,

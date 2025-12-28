@@ -190,9 +190,20 @@ export function useNotifications({ username, enabled = true }) {
     if (permission === 'granted' && window.liaizenPWA?.subscribeToPush) {
       console.log('[useNotifications] Permission granted, subscribing to push notifications...');
       // Safe to call - permission already granted, no requestPermission() call needed
-      window.liaizenPWA.subscribeToPush().catch(error => {
-        console.warn('[useNotifications] Could not subscribe to push:', error);
-      });
+      window.liaizenPWA
+        .subscribeToPush()
+        .then(subscription => {
+          if (subscription) {
+            console.log('[useNotifications] ✅ Successfully subscribed to push notifications');
+          } else {
+            console.warn(
+              '[useNotifications] ⚠️ subscribeToPush returned null - subscription may have failed'
+            );
+          }
+        })
+        .catch(error => {
+          console.error('[useNotifications] ❌ Could not subscribe to push:', error);
+        });
     }
   }, [permission]);
 

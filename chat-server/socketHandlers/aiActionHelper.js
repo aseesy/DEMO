@@ -136,6 +136,15 @@ async function processIntervention(socket, io, services, context) {
   if (intervention.type === 'ai_intervention') {
     await updateUserStats(services, user, user.roomId, true);
 
+    // RACE CONDITION GUARD: Check if socket is still connected before emitting
+    if (!socket.connected) {
+      console.warn('[processIntervention] Socket disconnected, skipping emit', {
+        username: user.username,
+        messageId: message.id,
+      });
+      return;
+    }
+
     // Emit draft_coaching event to show ObserverCard on frontend
     // This is the single transport (WebSocket) for AI analysis results
     socket.emit('draft_coaching', {
@@ -244,14 +253,31 @@ async function processApprovedMessage(socket, io, services, context) {
         if (recipient && recipient.user_id) {
           // Import push notification service
           const pushNotificationService = require('../services/pushNotificationService');
-          console.log(
-            '[processApprovedMessage] Sending push notification to user:',
-            recipient.user_id
-          );
+          console.log('[processApprovedMessage] Sending push notification:', {
+            recipientUserId: recipient.user_id,
+            recipientUsername: recipient.username,
+            messageId: message.id,
+            messageUsername: message.username,
+            messageDisplayName: message.displayName,
+            messageText: message.text?.substring(0, 50),
+            hasText: !!message.text,
+          });
           const result = await pushNotificationService.notifyNewMessage(recipient.user_id, message);
-          console.log('[processApprovedMessage] Push notification result:', result);
+          console.log('[processApprovedMessage] Push notification result:', {
+            recipientUserId: recipient.user_id,
+            sent: result.sent,
+            failed: result.failed,
+            totalSubscriptions: result.sent + result.failed,
+          });
         } else {
-          console.log('[processApprovedMessage] No recipient found for push notification');
+          console.log('[processApprovedMessage] No recipient found for push notification:', {
+            roomMembersCount: roomMembersResult.rows.length,
+            senderUsername: user.username,
+            roomMembers: roomMembersResult.rows.map(r => ({
+              username: r.username,
+              userId: r.user_id,
+            })),
+          });
         }
       } else {
         console.log('[processApprovedMessage] No room members found, skipping push notification');
@@ -262,7 +288,8 @@ async function processApprovedMessage(socket, io, services, context) {
     }
   });
 
-  if (contactSuggestion) {
+  // Contact suggestion is only for the sender, so check connection before emit
+  if (contactSuggestion && socket.connected) {
     socket.emit('new_message', {
       id: `contact-suggestion-${Date.now()}`,
       type: 'contact_suggestion',
@@ -274,6 +301,60 @@ async function processApprovedMessage(socket, io, services, context) {
       roomId: user.roomId,
     });
   }
+
+  // Extract information from message and update contacts automatically
+  // Do this asynchronously so it doesn't block message delivery
+  setImmediate(async () => {
+    try {
+      const informationExtraction = require('../src/core/intelligence/informationExtractionService');
+      const { dbPostgres } = services;
+      const { gatherAnalysisContext } = require('./aiHelperUtils');
+
+      // Get user's ID
+      const userResult = await dbPostgres.query(`SELECT id FROM users WHERE username = $1`, [
+        user.username,
+      ]);
+
+      if (userResult.rows.length === 0) {
+        return;
+      }
+
+      const userId = userResult.rows[0].id;
+
+      // Gather context (includes existing contacts and recent messages)
+      const analysisContext = await gatherAnalysisContext(services, user, user.roomId);
+
+      // Process extraction
+      const updatedContacts = await informationExtraction.processMessageExtraction(
+        message.text,
+        userId,
+        analysisContext.contactContext.existingContacts || [],
+        analysisContext.recentMessages || []
+      );
+
+      if (updatedContacts.length > 0) {
+        console.log('[processApprovedMessage] ✅ Updated contacts with extracted information:', {
+          count: updatedContacts.length,
+          contacts: updatedContacts.map(c => c.contact_name),
+        });
+
+        // Optionally notify the user that contacts were updated
+        if (socket.connected) {
+          socket.emit('new_message', {
+            id: `info-extracted-${Date.now()}`,
+            type: 'system',
+            username: 'AI Assistant',
+            text: `✅ Updated ${updatedContacts.length} contact${updatedContacts.length > 1 ? 's' : ''} with information from your message.`,
+            timestamp: new Date().toISOString(),
+            roomId: user.roomId,
+          });
+        }
+      }
+    } catch (extractionError) {
+      // Don't fail message delivery if extraction fails
+      console.error('[processApprovedMessage] Error extracting information:', extractionError);
+    }
+  });
 }
 
 /**
@@ -296,16 +377,22 @@ async function handleAiFailure(socket, io, context) {
   const { user, message, error, addToHistory } = context;
 
   console.error('❌ AI Mediator failure:', error.message);
-  socket.emit('new_message', {
-    id: `ai-error-${Date.now()}`,
-    type: 'ai_error',
-    username: 'LiaiZen',
-    text: 'I had trouble analyzing your message, but it was sent successfully.',
-    timestamp: new Date().toISOString(),
-    roomId: user.roomId,
-    isPrivate: true,
-  });
 
+  // RACE CONDITION GUARD: Only emit private error to socket if still connected
+  if (socket.connected) {
+    socket.emit('new_message', {
+      id: `ai-error-${Date.now()}`,
+      type: 'ai_error',
+      username: 'LiaiZen',
+      text: 'I had trouble analyzing your message, but it was sent successfully.',
+      timestamp: new Date().toISOString(),
+      roomId: user.roomId,
+      isPrivate: true,
+    });
+  }
+
+  // Still persist and broadcast message even if sender disconnected
+  // (io.to broadcasts to room, not to specific socket)
   await addToHistory(message, user.roomId);
   io.to(user.roomId).emit('new_message', message);
 }

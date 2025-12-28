@@ -27,6 +27,12 @@ registerAllModalHooks();
 // This ensures Safari service worker errors are caught early
 import './utils/errorMonitor.js';
 
+// Initialize Sentry for error tracking (optional - only if DSN is configured)
+import { initSentry } from './services/errorHandling/sentry-config.js';
+if (import.meta.env.VITE_SENTRY_DSN) {
+  initSentry(import.meta.env.VITE_SENTRY_DSN);
+}
+
 // Inject Google Tag immediately (before React loads)
 // This runs synchronously to ensure tag is present before any other scripts
 try {

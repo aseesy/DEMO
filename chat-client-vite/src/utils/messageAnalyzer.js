@@ -6,10 +6,35 @@
  * - If action === "STAY_SILENT" → PASS (send message)
  * - If action === "INTERVENE" → Show Observer Card (block message)
  * - If action === "COMMENT" → Show comment (optional)
+ *
+ * Error Handling Strategy:
+ *
+ * Current: Fail-open (allow message through on error) with user notification
+ * Rationale: Ensure message deliverability even if analysis fails
+ *
+ * Implementation:
+ * - Errors are classified (critical, network, validation, system)
+ * - Retryable errors are retried up to 3 times with exponential backoff
+ * - Critical/validation errors fail-closed (block message)
+ * - Network/system errors fail-open with user warning
+ * - All fail-open events are logged for monitoring
+ *
+ * See: .cursor/feedback/IMPROVEMENT_STRATEGY.md
  */
 
 import { apiPost } from '../apiClient.js';
 import { API_BASE_URL } from '../config.js';
+import {
+  determineStrategy,
+  HandlingStrategy,
+} from '../services/errorHandling/ErrorHandlingStrategy.js';
+import { ErrorNotificationService } from '../services/errorHandling/ErrorNotificationService.js';
+import { logErrorToService } from '../services/errorHandling/ErrorLoggingService.js';
+import {
+  POLITE_REQUEST_PATTERNS,
+  POSITIVE_PATTERNS,
+  SIMPLE_RESPONSES,
+} from '../config/patterns/index.js';
 
 /**
  * Analyze a message using the Observer/Mediator framework
@@ -20,86 +45,132 @@ import { API_BASE_URL } from '../config.js';
  * @returns {Promise<Object>} Analysis result with action, escalation, emotion, intervention
  */
 export async function analyzeMessage(messageText, senderProfile = {}, receiverProfile = {}) {
-  try {
-    console.log('🔍 Frontend: Calling /api/mediate/analyze with:', {
-      text: messageText.substring(0, 50),
-    });
-    // Call the backend mediation endpoint
-    // The backend uses the same Observer/Mediator framework from constitution.md
-    const response = await apiPost('/api/mediate/analyze', {
-      text: messageText,
-      senderProfile,
-      receiverProfile,
-    });
+  let retryCount = 0;
+  const maxRetries = 3;
 
-    console.log('📥 Frontend: Received response status:', response.status);
+  while (retryCount < maxRetries) {
+    try {
+      console.log('🔍 Frontend: Calling /api/mediate/analyze with:', {
+        text: messageText.substring(0, 50),
+        retryAttempt: retryCount,
+      });
 
-    // Check if the request was successful
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Mediation API error:', response.status, errorText);
-      console.error('Full response:', { status: response.status, statusText: response.statusText });
-      throw new Error(`API error: ${response.status} - ${errorText}`);
+      // Call the backend mediation endpoint
+      // The backend uses the same Observer/Mediator framework from constitution.md
+      const response = await apiPost('/api/mediate/analyze', {
+        text: messageText,
+        senderProfile,
+        receiverProfile,
+      });
+
+      console.log('📥 Frontend: Received response status:', response.status);
+
+      // Check if the request was successful
+      if (!response.ok) {
+        const errorText = await response.text();
+        const error = new Error(`API error: ${response.status} - ${errorText}`);
+        error.status = response.status;
+        throw error;
+      }
+
+      // Parse the JSON response
+      const data = await response.json();
+      console.log('📊 Frontend: Analysis result:', {
+        action: data.action,
+        hasIntervention: !!data.intervention,
+      });
+      return data;
+    } catch (error) {
+      // Determine handling strategy based on error classification
+      const strategy = determineStrategy(error, retryCount);
+
+      // Retry logic
+      if (strategy.strategy === HandlingStrategy.RETRY) {
+        console.log(
+          `🔄 Retrying analysis (attempt ${retryCount + 1}/${maxRetries}) after ${strategy.retryAfter}ms`
+        );
+        await new Promise(resolve => setTimeout(resolve, strategy.retryAfter));
+        retryCount++;
+        continue;
+      }
+
+      // Fail-closed: block message
+      if (strategy.strategy === HandlingStrategy.FAIL_CLOSED) {
+        console.error('❌ Message blocked due to error:', {
+          error: error.message,
+          category: strategy.message,
+          timestamp: new Date().toISOString(),
+          messagePreview: messageText.substring(0, 50),
+        });
+
+        if (strategy.notifyUser) {
+          ErrorNotificationService.showError(strategy.message);
+        }
+
+        if (strategy.logError) {
+          // Send to logging service (Sentry, etc.)
+          logErrorToService(error, {
+            location: 'messageAnalyzer',
+            messagePreview: messageText.substring(0, 50),
+            retryAttempts: retryCount,
+            failOpen: false,
+            category: 'fail_closed',
+          });
+        }
+
+        throw new Error(strategy.message);
+      }
+
+      // Fail-open: allow message with warning
+      if (strategy.strategy === HandlingStrategy.FAIL_OPEN) {
+        console.error('⚠️ Fail-open error:', {
+          error: error.message,
+          timestamp: new Date().toISOString(),
+          messagePreview: messageText.substring(0, 50),
+          retryAttempts: retryCount,
+        });
+
+        if (strategy.notifyUser) {
+          ErrorNotificationService.showWarning(strategy.message);
+        }
+
+        if (strategy.logError) {
+          // Send to logging service (Sentry, etc.) and track metrics
+          logErrorToService(error, {
+            location: 'messageAnalyzer',
+            messagePreview: messageText.substring(0, 50),
+            retryAttempts: retryCount,
+            failOpen: true,
+            category: 'fail_open',
+          });
+        }
+
+        // Return safe default
+        return {
+          action: 'STAY_SILENT',
+          escalation: { riskLevel: 'low', confidence: 0, reasons: [] },
+          emotion: {
+            currentEmotion: 'neutral',
+            stressLevel: 0,
+            stressTrajectory: 'stable',
+            emotionalMomentum: 0,
+            triggers: [],
+            conversationEmotion: 'neutral',
+          },
+          intervention: null,
+          error: error.message,
+          failOpen: true, // Flag for tracking
+        };
+      }
     }
-
-    // Parse the JSON response
-    const data = await response.json();
-    console.log('📊 Frontend: Analysis result:', {
-      action: data.action,
-      hasIntervention: !!data.intervention,
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Error analyzing message:', error);
-    console.error('Error details:', { message: error.message, stack: error.stack });
-    // On error, default to PASS (allow message through)
-    console.warn('⚠️ Allowing message through due to analysis error (fail open)');
-    return {
-      action: 'STAY_SILENT',
-      escalation: { riskLevel: 'low', confidence: 0, reasons: [] },
-      emotion: {
-        currentEmotion: 'neutral',
-        stressLevel: 0,
-        stressTrajectory: 'stable',
-        emotionalMomentum: 0,
-        triggers: [],
-        conversationEmotion: 'neutral',
-      },
-      intervention: null,
-      error: error.message,
-    };
   }
+
+  // Should not reach here, but handle edge case
+  throw new Error('Analysis failed after maximum retries');
 }
 
-// Local pre-filter patterns for fast client-side checks (mirrors server preFilters.js)
-const POLITE_REQUEST_PATTERNS = [
-  /\b(I was wondering if|would it be okay if|would you mind if|could I|can I|may I)\b/i,
-  /\b(I know it'?s your|I know its your|I know you have)\b.*\b(but|and)\b/i,
-  /\b(would it be possible|is it possible|is it okay if)\b/i,
-  /\b(do you think|would you be open to|would you consider)\b/i,
-  /\b(I'?d like to|I would like to)\b.*\b(if that'?s okay|if that works|if you don'?t mind)\b/i,
-  /\b(can we|could we|shall we)\b.*\b(talk about|discuss|arrange|schedule|plan)\b/i,
-  /\b(just wanted to ask|just checking if|quick question)\b/i,
-  /\b(let me know if|let me know what you think)\b/i,
-];
-
-const POSITIVE_PATTERNS = [
-  /\b(thank|thanks)\s+(you|so much|for)\b/i,
-  /\b(sounds good|perfect|great|awesome)\b/i,
-  /\b(appreciate|grateful)\b/i,
-];
-
-const SIMPLE_RESPONSES = [
-  'ok',
-  'okay',
-  'sure',
-  'yes',
-  'no',
-  'got it',
-  'sounds good',
-  'thanks',
-  'thank you',
-];
+// Patterns are now imported from config/patterns
+// This ensures single source of truth and easier maintenance
 
 /**
  * Quick local check for obviously safe messages - no API call needed
