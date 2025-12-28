@@ -93,11 +93,12 @@ describe('messageOperations', () => {
 
   describe('validateActiveUser', () => {
     it('should return valid result when user exists', () => {
-      const activeUsers = new Map();
       const user = { username: 'testuser', roomId: 'room1' };
-      activeUsers.set('socket123', user);
+      const userSessionService = {
+        getUserBySocketId: jest.fn().mockReturnValue(user),
+      };
 
-      const result = validateActiveUser(activeUsers, 'socket123');
+      const result = validateActiveUser(userSessionService, 'socket123');
       expect(result).toEqual({
         valid: true,
         user,
@@ -114,10 +115,12 @@ describe('messageOperations', () => {
       });
     });
 
-    it('should return error for empty activeUsers map', () => {
-      const activeUsers = new Map();
+    it('should return error when userSessionService returns null', () => {
+      const userSessionService = {
+        getUserBySocketId: jest.fn().mockReturnValue(null),
+      };
 
-      const result = validateActiveUser(activeUsers, 'socket123');
+      const result = validateActiveUser(userSessionService, 'socket123');
       expect(result).toEqual({
         valid: false,
         error: 'You must join before sending messages.',
