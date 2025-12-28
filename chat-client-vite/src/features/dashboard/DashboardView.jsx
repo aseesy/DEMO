@@ -11,6 +11,34 @@ import { CommunicationStatsWidget } from './components/CommunicationStatsWidget.
 import { TaskCard, filterTasksForDashboard, getDefaultTaskFormData } from '../tasks';
 
 /**
+ * Thread category configuration with colors and icons
+ */
+const THREAD_CATEGORIES = {
+  schedule: { label: 'Schedule', color: 'bg-blue-100 text-blue-700', icon: '📅' },
+  medical: { label: 'Medical', color: 'bg-red-100 text-red-700', icon: '🏥' },
+  education: { label: 'Education', color: 'bg-purple-100 text-purple-700', icon: '📚' },
+  finances: { label: 'Finances', color: 'bg-green-100 text-green-700', icon: '💰' },
+  activities: { label: 'Activities', color: 'bg-orange-100 text-orange-700', icon: '⚽' },
+  travel: { label: 'Travel', color: 'bg-cyan-100 text-cyan-700', icon: '✈️' },
+  safety: { label: 'Safety', color: 'bg-yellow-100 text-yellow-800', icon: '🛡️' },
+  logistics: { label: 'Logistics', color: 'bg-gray-100 text-gray-700', icon: '📦' },
+  'co-parenting': { label: 'Co-Parenting', color: 'bg-teal-100 text-teal-700', icon: '🤝' },
+};
+
+/**
+ * Category badge component for threads
+ */
+function CategoryBadge({ category }) {
+  const config = THREAD_CATEGORIES[category] || THREAD_CATEGORIES.logistics;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+      <span>{config.icon}</span>
+      <span>{config.label}</span>
+    </span>
+  );
+}
+
+/**
  * DashboardView component
  *
  * Props have been grouped into logical objects:
@@ -588,11 +616,15 @@ function ThreadCard({ thread, onClick, isExpanded }) {
               </svg>
             </div>
           </div>
-          {thread.last_message_at && (
-            <p className="text-xs text-gray-500">
-              {new Date(thread.last_message_at).toLocaleDateString()}
-            </p>
-          )}
+          {/* Category badge and date */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {thread.category && <CategoryBadge category={thread.category} />}
+            {thread.last_message_at && (
+              <span className="text-xs text-gray-500">
+                {new Date(thread.last_message_at).toLocaleDateString()}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>
