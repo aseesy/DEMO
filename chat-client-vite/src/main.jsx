@@ -28,9 +28,22 @@ registerAllModalHooks();
 import './utils/errorMonitor.js';
 
 // Initialize Sentry for error tracking (optional - only if DSN is configured)
-import { initSentry } from './services/errorHandling/sentry-config.js';
-if (import.meta.env.VITE_SENTRY_DSN) {
-  initSentry(import.meta.env.VITE_SENTRY_DSN);
+// Wrap in try-catch to prevent errors if Sentry module fails to load
+try {
+  if (import.meta.env.VITE_SENTRY_DSN && typeof window !== 'undefined') {
+    // Dynamic import to prevent build errors if @sentry/react is not available
+    import('./services/errorHandling/sentry-config.js')
+      .then(module => {
+        if (module && module.initSentry) {
+          module.initSentry(import.meta.env.VITE_SENTRY_DSN);
+        }
+      })
+      .catch(() => {
+        // Silently ignore - Sentry is optional
+      });
+  }
+} catch (error) {
+  // Silently ignore - Sentry is optional
 }
 
 // Inject Google Tag immediately (before React loads)
