@@ -210,16 +210,23 @@ async function getRecentMessages(limit = 50) {
 
 /**
  * Get messages for a specific room - PostgreSQL
+ * Returns messages in chronological order (oldest first for display)
+ * Uses subquery to get the MOST RECENT messages, then orders them chronologically
  */
 async function getMessagesByRoom(roomId, limit = 500) {
   try {
     const limitInt = parseInt(limit) || 500;
 
+    // FIXED: Get most recent messages first, then order chronologically
+    // This prevents returning ancient messages from 2020-2021
     const query = `
-      SELECT * FROM messages
-      WHERE room_id = $1
+      SELECT * FROM (
+        SELECT * FROM messages
+        WHERE room_id = $1
+        ORDER BY timestamp DESC
+        LIMIT $2
+      ) AS recent_messages
       ORDER BY timestamp ASC
-      LIMIT $2
     `;
 
     const result = await dbPostgres.query(query, [roomId, limitInt]);

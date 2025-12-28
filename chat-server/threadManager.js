@@ -714,10 +714,21 @@ async function analyzeConversationHistory(roomId, limit = 100) {
 
     // Get recent messages for the room (excluding system messages)
     const messages = await messageStore.getMessagesByRoom(roomId, limit);
-    // Filter out system messages, private messages, flagged messages, and messages without text
-    const filteredMessages = messages.filter(
-      m => m.text && m.type !== 'system' && !m.private && !m.flagged && m.username // Ensure username exists
-    );
+
+    // Only analyze messages from the last 30 days to avoid old historical data
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Filter out system messages, private messages, flagged messages, messages without text,
+    // and messages older than 30 days
+    const filteredMessages = messages.filter(m => {
+      if (!m.text || m.type === 'system' || m.private || m.flagged || !m.username) {
+        return false;
+      }
+      // Filter out old messages
+      const msgDate = new Date(m.timestamp);
+      return msgDate >= thirtyDaysAgo;
+    });
 
     if (filteredMessages.length < 5) {
       // Not enough messages to analyze
