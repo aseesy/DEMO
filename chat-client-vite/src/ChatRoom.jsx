@@ -260,9 +260,23 @@ function ChatRoomContent({
   // Single Responsibility: Handle navigation events and update view state
   React.useEffect(() => {
     const handleNavigateToView = event => {
-      if (event.detail && event.detail.view && isAuthenticated) {
-        console.log('[ChatRoom] Navigating to view from notification:', event.detail.view);
-        setCurrentView(event.detail.view);
+      if (event.detail && event.detail.view) {
+        const targetView = event.detail.view;
+        console.log('[ChatRoom] Received navigate-to-view event:', targetView, {
+          isAuthenticated,
+          currentView,
+          isValidView: AVAILABLE_VIEWS.includes(targetView),
+        });
+
+        // Only navigate if authenticated and view is valid
+        if (isAuthenticated && AVAILABLE_VIEWS.includes(targetView)) {
+          console.log('[ChatRoom] Navigating to view from notification:', targetView);
+          setCurrentView(targetView);
+        } else if (!isAuthenticated) {
+          console.warn('[ChatRoom] Cannot navigate - user not authenticated');
+        } else if (!AVAILABLE_VIEWS.includes(targetView)) {
+          console.warn('[ChatRoom] Invalid view:', targetView);
+        }
       }
     };
 
@@ -271,7 +285,7 @@ function ChatRoomContent({
     return () => {
       window.removeEventListener('navigate-to-view', handleNavigateToView);
     };
-  }, [isAuthenticated, setCurrentView]);
+  }, [isAuthenticated, setCurrentView, currentView]);
 
   // Check URL for view parameter on mount (handles deep links from notifications)
   // Single Responsibility: Read URL parameters and navigate to correct view
@@ -776,14 +790,22 @@ function ChatRoomContent({
 
 // Wrap with ChatProvider - auth state lifted here so ChatProvider has access
 function ChatRoom() {
-  const { username, isAuthenticated, isCheckingAuth } = useAuth();
+  const { username, email, isAuthenticated, isCheckingAuth } = useAuth();
   const [currentView, setCurrentView] = React.useState(() => {
     const stored = storage.getString(StorageKeys.CURRENT_VIEW);
     return stored && AVAILABLE_VIEWS.includes(stored) ? stored : 'dashboard';
   });
 
+  // Use email for socket connections (backend expects email format)
+  // Fall back to username only if it looks like an email
+  const socketUsername = email || (username?.includes('@') ? username : null);
+
   return (
-    <ChatProvider username={username} isAuthenticated={isAuthenticated} currentView={currentView}>
+    <ChatProvider
+      username={socketUsername}
+      isAuthenticated={isAuthenticated}
+      currentView={currentView}
+    >
       <ChatRoomContent
         usernameFromParent={username}
         isAuthenticatedFromParent={isAuthenticated}
