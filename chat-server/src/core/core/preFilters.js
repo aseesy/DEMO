@@ -61,6 +61,8 @@ const ALLOWED_POLITE = [
   'no',
   'got it',
   'sounds good',
+  'test',
+  'test message',
 ];
 
 // Polite request patterns - custody exchanges, scheduling, questions
@@ -162,6 +164,12 @@ function runPreFilters(messageText) {
   // Check polite response
   if (isPoliteResponse(text)) {
     return { shouldSkipAI: true, reason: 'polite_response' };
+  }
+
+  // Check if message is a simple test message (e.g., "test", "test message", "testing")
+  // This allows test messages to bypass mediation for debugging
+  if (/^test(ing)?(\s+message)?\s*$/.test(text)) {
+    return { shouldSkipAI: true, reason: 'test_message' };
   }
 
   // Check third-party statement

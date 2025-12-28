@@ -21,6 +21,7 @@ import { ChatPage as ChatView } from './features/chat';
 // Adapters - abstract third-party dependencies
 import { useAppNavigation, NavigationPaths } from './adapters/navigation';
 import { storage, StorageKeys } from './adapters/storage';
+import { usePWABadge } from './utils/usePWABadge.js';
 
 // Lazy-load AccountView for code-splitting
 const AccountView = React.lazy(() => import('./features/profile/components/AccountView.jsx'));
@@ -125,6 +126,9 @@ function ChatRoomContent({
   const { unreadCount: notificationCount, refresh: refreshNotifications } = useInAppNotifications({
     enabled: isAuthenticated && !showLanding && !isCheckingAuth,
   });
+
+  // Update PWA badge with unread message count
+  usePWABadge(unreadCount);
 
   // View navigation with analytics
   const setCurrentView = React.useCallback(
@@ -667,27 +671,29 @@ function ChatRoomContent({
             )}
 
             {currentView === 'settings' && (
-              <SettingsViewLegacy
-                username={username}
-                notifications={notifications}
-                notificationPrefs={notificationPrefs}
-                setNotificationPrefs={setNotificationPrefs}
-                hasCoParentConnected={hasCoParentConnected}
-                inviteLink={inviteLink}
-                inviteCode={inviteCode}
-                inviteError={inviteError}
-                isLoadingInvite={isLoadingInvite}
-                inviteCopied={inviteCopied}
-                setInviteCopied={setInviteCopied}
-                setInviteLink={setInviteLink}
-                setInviteCode={setInviteCode}
-                manualInviteCode={manualInviteCode}
-                setManualInviteCode={setManualInviteCode}
-                isAcceptingInvite={isAcceptingInvite}
-                onLoadInvite={handleLoadInvite}
-                onCopyInvite={handleCopyInvite}
-                onManualAcceptInvite={handleManualAcceptInvite}
-              />
+              <div className="pb-20 md:pb-8">
+                <SettingsViewLegacy
+                  username={username}
+                  notifications={notifications}
+                  notificationPrefs={notificationPrefs}
+                  setNotificationPrefs={setNotificationPrefs}
+                  hasCoParentConnected={hasCoParentConnected}
+                  inviteLink={inviteLink}
+                  inviteCode={inviteCode}
+                  inviteError={inviteError}
+                  isLoadingInvite={isLoadingInvite}
+                  inviteCopied={inviteCopied}
+                  setInviteCopied={setInviteCopied}
+                  setInviteLink={setInviteLink}
+                  setInviteCode={setInviteCode}
+                  manualInviteCode={manualInviteCode}
+                  setManualInviteCode={setManualInviteCode}
+                  isAcceptingInvite={isAcceptingInvite}
+                  onLoadInvite={handleLoadInvite}
+                  onCopyInvite={handleCopyInvite}
+                  onManualAcceptInvite={handleManualAcceptInvite}
+                />
+              </div>
             )}
 
             {currentView === 'account' && (

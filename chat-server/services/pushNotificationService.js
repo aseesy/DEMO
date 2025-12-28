@@ -226,7 +226,15 @@ async function notifyNewMessage(recipientUserId, message) {
   // Use displayName (first name) if available, fall back to username, then 'Co-parent'
   const senderName = message.displayName || message.username || 'Co-parent';
 
-  return sendNotificationToUser(recipientUserId, {
+  console.log('[PushNotification] notifyNewMessage called:', {
+    recipientUserId,
+    senderName,
+    messageId: message.id,
+    messageText: truncatedText.substring(0, 50),
+    timestamp: new Date().toISOString(),
+  });
+
+  const result = await sendNotificationToUser(recipientUserId, {
     title: `New Message from ${senderName}`,
     body: truncatedText,
     icon: '/icon-192.png',
@@ -239,6 +247,15 @@ async function notifyNewMessage(recipientUserId, message) {
       senderName: senderName,
     },
   });
+
+  console.log('[PushNotification] notifyNewMessage result:', {
+    recipientUserId,
+    sent: result.sent,
+    failed: result.failed,
+    totalSubscriptions: result.sent + result.failed,
+  });
+
+  return result;
 }
 
 module.exports = {

@@ -14,7 +14,7 @@ export function ObserverCard({ observerData, originalText, onUseRewrite, onEditM
     observerData;
 
   return (
-    <div className="mb-4 rounded-xl border-2 border-teal-light bg-white px-4 sm:px-6 py-4 shadow-lg mx-auto max-w-full">
+    <div className="mb-4 rounded-xl border-2 border-teal-light bg-white px-4 sm:px-6 py-4 shadow-lg mx-auto max-w-full relative z-10">
       {/* Validation - Primary message: AI directly talking to user, understanding and helping */}
       {explanation && (
         <div className="mb-6">
@@ -54,12 +54,20 @@ export function ObserverCard({ observerData, originalText, onUseRewrite, onEditM
             {rewrite1 && (
               <button
                 type="button"
-                onClick={() =>
-                  onUseRewrite(rewrite1.replace(/^SENDER ALTERNATIVE #\d+:\s*/i, '').trim())
-                }
-                className="w-full text-left p-4 bg-teal-lightest border-2 border-teal-light rounded-lg hover:border-teal-medium hover:bg-white hover:shadow-md transition-all duration-200 text-sm text-gray-900 min-h-[44px] wrap-break-word group"
+                onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const cleanedRewrite = rewrite1
+                    .replace(/^SENDER ALTERNATIVE #\d+:\s*/i, '')
+                    .trim();
+                  if (onUseRewrite && cleanedRewrite) {
+                    onUseRewrite(cleanedRewrite);
+                  }
+                }}
+                className="w-full text-left p-4 bg-teal-lightest border-2 border-teal-light rounded-lg hover:border-teal-medium hover:bg-white hover:shadow-md transition-all duration-200 text-sm text-gray-900 min-h-[44px] wrap-break-word group cursor-pointer relative z-10"
+                style={{ pointerEvents: 'auto' }}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 pointer-events-none">
                   <span className="text-teal-dark font-semibold shrink-0 text-xs uppercase tracking-wide">
                     Option 1
                   </span>
@@ -73,12 +81,20 @@ export function ObserverCard({ observerData, originalText, onUseRewrite, onEditM
             {rewrite2 && (
               <button
                 type="button"
-                onClick={() =>
-                  onUseRewrite(rewrite2.replace(/^SENDER ALTERNATIVE #\d+:\s*/i, '').trim())
-                }
-                className="w-full text-left p-4 bg-teal-lightest border-2 border-teal-light rounded-lg hover:border-teal-medium hover:bg-white hover:shadow-md transition-all duration-200 text-sm text-gray-900 min-h-[44px] wrap-break-word group"
+                onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const cleanedRewrite = rewrite2
+                    .replace(/^SENDER ALTERNATIVE #\d+:\s*/i, '')
+                    .trim();
+                  if (onUseRewrite && cleanedRewrite) {
+                    onUseRewrite(cleanedRewrite);
+                  }
+                }}
+                className="w-full text-left p-4 bg-teal-lightest border-2 border-teal-light rounded-lg hover:border-teal-medium hover:bg-white hover:shadow-md transition-all duration-200 text-sm text-gray-900 min-h-[44px] wrap-break-word group cursor-pointer relative z-10"
+                style={{ pointerEvents: 'auto' }}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 pointer-events-none">
                   <span className="text-teal-dark font-semibold shrink-0 text-xs uppercase tracking-wide">
                     Option 2
                   </span>
@@ -97,8 +113,15 @@ export function ObserverCard({ observerData, originalText, onUseRewrite, onEditM
         <div className="mt-6 pt-4 border-t border-gray-200">
           <button
             type="button"
-            onClick={onEditMyself}
-            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors min-h-[44px] flex items-center justify-center"
+            onClick={e => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onEditMyself) {
+                onEditMyself();
+              }
+            }}
+            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors min-h-[44px] flex items-center justify-center cursor-pointer relative z-10"
+            style={{ pointerEvents: 'auto' }}
           >
             Edit
           </button>

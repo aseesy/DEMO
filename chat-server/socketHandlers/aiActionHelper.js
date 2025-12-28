@@ -131,21 +131,10 @@ async function handleNameDetection(socket, aiMediator, context) {
  */
 async function processIntervention(socket, io, services, context) {
   const { user, message, intervention, addToHistory } = context;
-  const { communicationStats, dbSafe } = services;
+  const { updateUserStats } = require('./aiHelperUtils');
 
   if (intervention.type === 'ai_intervention') {
-    try {
-      const userResult = await dbSafe.safeSelect(
-        'users',
-        { username: user.username.toLowerCase() },
-        { limit: 1 }
-      );
-      if (userResult.length > 0) {
-        await communicationStats.updateCommunicationStats(userResult[0].id, user.roomId, true);
-      }
-    } catch (err) {
-      console.error('Error updating stats:', err);
-    }
+    await updateUserStats(services, user, user.roomId, true);
 
     // Emit draft_coaching event to show ObserverCard on frontend
     // This is the single transport (WebSocket) for AI analysis results
@@ -202,20 +191,10 @@ async function processIntervention(socket, io, services, context) {
  */
 async function processApprovedMessage(socket, io, services, context) {
   const { user, message, contactSuggestion, addToHistory } = context;
-  const { communicationStats, dbSafe, dbPostgres } = services;
+  const { dbPostgres } = services;
+  const { updateUserStats } = require('./aiHelperUtils');
 
-  try {
-    const userResult = await dbSafe.safeSelect(
-      'users',
-      { username: user.username.toLowerCase() },
-      { limit: 1 }
-    );
-    if (userResult.length > 0) {
-      await communicationStats.updateCommunicationStats(userResult[0].id, user.roomId, false);
-    }
-  } catch (err) {
-    console.error('Error updating stats:', err);
-  }
+  await updateUserStats(services, user, user.roomId, false);
 
   // CRITICAL: Save message to database BEFORE emitting
   // This ensures message persists even if client disconnects
@@ -254,11 +233,28 @@ async function processApprovedMessage(socket, io, services, context) {
           member => member.username?.toLowerCase() !== user.username?.toLowerCase()
         );
 
+        console.log('[processApprovedMessage] Push notification check:', {
+          roomMembersCount: roomMembersResult.rows.length,
+          senderUsername: user.username,
+          roomMembers: roomMembersResult.rows.map(r => r.username),
+          recipientFound: !!recipient,
+          recipientUserId: recipient?.user_id,
+        });
+
         if (recipient && recipient.user_id) {
           // Import push notification service
           const pushNotificationService = require('../services/pushNotificationService');
-          await pushNotificationService.notifyNewMessage(recipient.user_id, message);
+          console.log(
+            '[processApprovedMessage] Sending push notification to user:',
+            recipient.user_id
+          );
+          const result = await pushNotificationService.notifyNewMessage(recipient.user_id, message);
+          console.log('[processApprovedMessage] Push notification result:', result);
+        } else {
+          console.log('[processApprovedMessage] No recipient found for push notification');
         }
+      } else {
+        console.log('[processApprovedMessage] No room members found, skipping push notification');
       }
     } catch (pushError) {
       // Don't fail message delivery if push notification fails

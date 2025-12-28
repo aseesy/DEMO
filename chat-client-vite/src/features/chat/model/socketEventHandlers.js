@@ -327,10 +327,23 @@ export function setupSocketEventHandlers(socket, handlers) {
     // Trigger callback for new messages
     if (onNewMessageRef.current) onNewMessageRef.current(messageWithTimestamp);
 
-    // Update unread count for messages from others when not in chat view
-    if (currentViewRef.current !== 'chat' || document.hidden) {
-      if (!ownMessage) {
-        setUnreadCount(prev => prev + 1);
+    // Update unread count for messages from others
+    // Increment if: not in chat view OR app is hidden (backgrounded)
+    // This ensures badge shows even when app is open but in background
+    if (!ownMessage) {
+      if (currentViewRef.current !== 'chat' || document.hidden) {
+        setUnreadCount(prev => {
+          const newCount = prev + 1;
+          console.log('[UnreadCount] Incremented:', {
+            previous: prev,
+            new: newCount,
+            currentView: currentViewRef.current,
+            documentHidden: document.hidden,
+            messageId: message.id,
+            sender: message.username,
+          });
+          return newCount;
+        });
       }
     }
 
@@ -341,16 +354,12 @@ export function setupSocketEventHandlers(socket, handlers) {
       );
     }
 
-    // Clear analyzing state when own message is approved by backend
+    // Clear draftCoaching when own message is approved by backend
     // This indicates the message passed AI analysis and was sent successfully
+    // Clear both analyzing state AND blocked message (ObserverCard)
     if (ownMessage && setDraftCoaching) {
-      setDraftCoaching(prev => {
-        // Only clear if we were in analyzing state (not if showing ObserverCard)
-        if (prev?.analyzing) {
-          return null;
-        }
-        return prev;
-      });
+      // Clear draftCoaching completely - removes both analyzing state and blocked message
+      setDraftCoaching(null);
     }
   });
 

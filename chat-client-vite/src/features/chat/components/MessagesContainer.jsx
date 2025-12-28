@@ -65,6 +65,29 @@ export function MessagesContainer({
     }
   };
 
+  // Scroll to bottom when a message is blocked/intervened
+  React.useEffect(() => {
+    if (
+      draftCoaching &&
+      draftCoaching.observerData &&
+      !draftCoaching.shouldSend &&
+      !draftCoaching.analyzing &&
+      messagesEndRef.current
+    ) {
+      // Use setTimeout to ensure DOM has updated with the blocked message and ObserverCard
+      const timeoutId = setTimeout(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'end',
+          });
+        }
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [draftCoaching, messagesEndRef]);
+
   // Find the selected thread to show its title
   const selectedThread = selectedThreadId ? threads.find(t => t.id === selectedThreadId) : null;
 
@@ -354,7 +377,7 @@ export function MessagesContainer({
 
       {/* Observer Card - Inline in messages when intervention occurs */}
       {draftCoaching && draftCoaching.observerData && !draftCoaching.shouldSend && (
-        <div className="mb-1">
+        <div className="mb-1 relative z-10" style={{ pointerEvents: 'auto' }}>
           <ObserverCard
             observerData={draftCoaching.observerData}
             originalText={draftCoaching.originalText || inputMessage}

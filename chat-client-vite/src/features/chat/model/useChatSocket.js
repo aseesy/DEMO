@@ -4,33 +4,19 @@ import { setupSocketEventHandlers } from './socketEventHandlers.js';
 import { useRoomId } from '../../../hooks/room/useRoomId.js';
 import { useMessages } from './useMessages.js';
 import { useMessagePagination } from './useMessagePagination.js';
-import { API_BASE_URL } from '../../../config.js';
+
+// Central configuration - Single Source of Truth
+import { SOCKET_URL } from '../../../config.js';
 
 // Import SocketEvents for type-safe event names
 // Note: Full migration to SocketAdapter pending - current code uses raw socket.io
 import { SocketEvents, getSocketUrl as getAdapterSocketUrl } from '../../../adapters/socket';
 
 /**
- * getSocketUrl - Determines the correct socket URL based on environment
+ * getSocketUrl - Returns socket URL from central config
  */
 function getSocketUrl() {
-  let socketUrl = window.SOCKET_URL;
-  if (!socketUrl) {
-    socketUrl = API_BASE_URL.replace(/\/+$/, '').replace(/\/api$/, '');
-    if (socketUrl === '/api' || socketUrl === '') {
-      const origin =
-        typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001';
-      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        socketUrl = `http://${window.location.hostname || 'localhost'}:3001`;
-      } else {
-        socketUrl = origin;
-      }
-    }
-    if (!socketUrl || socketUrl === 'http://localhost:3001') {
-      socketUrl = `http://${typeof window !== 'undefined' ? window.location.hostname || 'localhost' : 'localhost'}:3001`;
-    }
-  }
-  return socketUrl;
+  return window.SOCKET_URL || SOCKET_URL;
 }
 
 /**
@@ -113,6 +99,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   // Reset unread count when viewing chat
   React.useEffect(() => {
     if (currentView === 'chat') {
+      console.log('[UnreadCount] Resetting to 0 (viewing chat)');
       setUnreadCount(0);
     }
   }, [currentView]);
