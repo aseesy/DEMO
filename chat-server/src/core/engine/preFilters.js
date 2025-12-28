@@ -5,7 +5,17 @@
  * Reduces API costs by identifying safe messages early.
  *
  * @module liaizen/core/preFilters
+ * 
+ * Patterns are now imported from centralized config:
+ * @see src/config/patterns/
  */
+
+const {
+  ALLOWED_GREETINGS,
+  ALLOWED_POLITE,
+  POLITE_REQUEST_PATTERNS,
+  POSITIVE_PATTERNS,
+} = require('../../config/patterns');
 
 // ============================================================================
 // CONFLICT PATTERN DETECTION
@@ -47,52 +57,8 @@ function detectConflictPatterns(messageText) {
 // MESSAGE PRE-FILTERS
 // ============================================================================
 
-// Common greetings that never need mediation
-const ALLOWED_GREETINGS = ['hi', 'hello', 'hey', 'hi there', 'hello there', 'hey there'];
-
-// Polite responses that never need mediation
-const ALLOWED_POLITE = [
-  'thanks',
-  'thank you',
-  'ok',
-  'okay',
-  'sure',
-  'yes',
-  'no',
-  'got it',
-  'sounds good',
-  'test',
-  'test message',
-];
-
-// Polite request patterns - custody exchanges, scheduling, questions
-const POLITE_REQUEST_PATTERNS = [
-  /\b(I was wondering if|would it be okay if|would you mind if|could I|can I|may I)\b/i,
-  /\b(I know it'?s your|I know its your|I know you have)\b.*\b(but|and)\b/i,
-  /\b(would it be possible|is it possible|is it okay if)\b/i,
-  /\b(do you think|would you be open to|would you consider)\b/i,
-  /\b(I'?d like to|I would like to)\b.*\b(if that'?s okay|if that works|if you don'?t mind)\b/i,
-  /\b(can we|could we|shall we)\b.*\b(talk about|discuss|arrange|schedule|plan)\b/i,
-  /\b(just wanted to ask|just checking if|quick question)\b/i,
-  /\b(let me know if|let me know what you think)\b/i,
-];
-
-// Positive sentiment patterns (never mediate friendly messages)
-const POSITIVE_PATTERNS = [
-  /\b(you'?re|you are)\s+(my\s+)?(friend|best|great|awesome|amazing|wonderful|the best|so kind|so helpful|so great|incredible|fantastic)\b/i,
-  /\b(love|appreciate|thankful|grateful)\s+(you|that|this)\b/i,
-  /\b(thank|thanks)\s+(you|so much|for)\b/i,
-  /\b(good job|well done|nice work|great work|great job)\b/i,
-  /\bI\s+(love|appreciate|value|admire|respect)\s+(you|this|that|our)\b/i,
-  /\b(you'?re|you are)\s+(doing\s+)?(great|well|good|amazing|awesome)\b/i,
-  /\b(miss|missed)\s+you\b/i,
-  /\b(proud of|happy for)\s+you\b/i,
-  /\byou('?re| are)\s+a\s+(great|good|wonderful|amazing)\s+(parent|dad|mom|father|mother|person)\b/i,
-  /\b(I\s+)?love\s+(how|when|that)\s+you\b/i,
-  /\b(I\s+)?love\s+(it|this)\s+when\s+you\b/i,
-  /\byou\s+(make|made)\s+me\s+(happy|smile|laugh|feel\s+(good|better|loved|special))\b/i,
-  /\b(you'?re|you are)\s+(so\s+)?(sweet|kind|thoughtful|caring|supportive|helpful)\b/i,
-];
+// Patterns are now imported from centralized config (src/config/patterns/)
+// This ensures single source of truth and easier maintenance
 
 /**
  * Check if message is a simple greeting

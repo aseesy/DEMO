@@ -39,7 +39,7 @@ function validateRewrites(intervention, originalText, languageAnalysis) {
 
   // Apply fallbacks for failed rewrites
   try {
-    const fallbackModule = require('../../analysis/rewrite-validator/fallbacks');
+    const fallbackModule = require('../../analysis/rewriteValidator/fallbacks');
     const fallbacks = fallbackModule.getFallbackRewrites(originalText, languageAnalysis);
 
     const fixed = { ...intervention };

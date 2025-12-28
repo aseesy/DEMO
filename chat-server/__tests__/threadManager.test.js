@@ -18,6 +18,7 @@ afterAll(() => {
 
 // Mock dependencies before requiring threadManager
 jest.mock('../dbSafe');
+jest.mock('../dbPostgres');
 jest.mock('../openaiClient');
 jest.mock('../src/infrastructure/database/neo4jClient', () => {
   return {
@@ -30,6 +31,7 @@ jest.mock('../src/infrastructure/database/neo4jClient', () => {
 
 const threadManager = require('../threadManager');
 const dbSafe = require('../dbSafe');
+const dbPostgres = require('../dbPostgres');
 const openaiClient = require('../openaiClient');
 
 describe('ThreadManager', () => {
@@ -40,6 +42,8 @@ describe('ThreadManager', () => {
     dbSafe.safeSelect = jest.fn();
     dbSafe.safeUpdate = jest.fn();
     dbSafe.parseResult = jest.fn((result) => result);
+    // Reset dbPostgres mock
+    dbPostgres.query = jest.fn();
   });
 
   describe('createThread', () => {
@@ -80,9 +84,10 @@ describe('ThreadManager', () => {
       jest.spyOn(String.prototype, 'substr').mockReturnValue('abc123');
 
       dbSafe.safeInsert.mockResolvedValue({});
-      dbSafe.safeUpdate.mockResolvedValue({});
-      dbSafe.safeSelect.mockResolvedValue([]);
-      dbSafe.parseResult.mockReturnValue([]);
+      // Mock for addMessageToThread's atomic sequence + increment
+      dbPostgres.query.mockResolvedValue({
+        rows: [{ message_count: 1, last_message_at: new Date().toISOString(), thread_sequence: 1 }],
+      });
 
       await threadManager.createThread(roomId, title, createdBy, initialMessageId);
 
@@ -90,8 +95,8 @@ describe('ThreadManager', () => {
         message_count: 1,
         last_message_at: expect.any(String),
       }));
-      // Verify addMessageToThread was called (it updates messages and threads)
-      expect(dbSafe.safeUpdate).toHaveBeenCalled();
+      // Verify addMessageToThread was called via dbPostgres.query (atomic CTE)
+      expect(dbPostgres.query).toHaveBeenCalled();
     });
 
     it('should handle database errors gracefully', async () => {
@@ -158,126 +163,109 @@ describe('ThreadManager', () => {
   });
 
   describe('addMessageToThread', () => {
-    it('should add message to thread and update message_count', async () => {
+    it('should add message to thread with atomic sequence assignment', async () => {
       const messageId = 'msg_123';
       const threadId = 'thread_123';
+      const now = new Date().toISOString();
 
-      const mockThread = {
-        id: threadId,
-        message_count: 5,
-      };
-      const mockMessage = {
-        id: messageId,
-        timestamp: new Date().toISOString(),
-      };
-
-      dbSafe.safeUpdate.mockResolvedValue({});
-      dbSafe.safeSelect
-        .mockResolvedValueOnce([mockThread]) // For thread lookup
-        .mockResolvedValueOnce([mockMessage]); // For message lookup
-      dbSafe.parseResult
-        .mockReturnValueOnce([mockThread])
-        .mockReturnValueOnce([mockMessage]);
+      // Mock dbPostgres.query for atomic sequence + increment (single CTE query)
+      dbPostgres.query.mockResolvedValue({
+        rows: [{ message_count: 6, last_message_at: now, thread_sequence: 5 }],
+      });
 
       const result = await threadManager.addMessageToThread(messageId, threadId);
 
-      expect(dbSafe.safeUpdate).toHaveBeenCalledWith(
-        'messages',
-        { thread_id: threadId },
-        { id: messageId }
+      // Should use atomic CTE for sequence assignment + increment
+      expect(dbPostgres.query).toHaveBeenCalledWith(
+        expect.stringContaining('next_sequence = next_sequence + 1'),
+        expect.arrayContaining([threadId, messageId])
       );
-      expect(dbSafe.safeUpdate).toHaveBeenCalledWith(
-        'threads',
-        expect.objectContaining({
-          message_count: 6, // 5 + 1
-        }),
-        { id: threadId }
-      );
-      expect(result).toBe(true);
+
+      // Returns object with success, messageCount, lastMessageAt, AND sequenceNumber
+      expect(result).toEqual({
+        success: true,
+        messageCount: 6,
+        lastMessageAt: now,
+        sequenceNumber: 5,
+      });
     });
 
-    it('should return false on error', async () => {
+    it('should return failure object on error', async () => {
       const messageId = 'msg_123';
       const threadId = 'thread_123';
 
-      // Mock the first safeUpdate to fail
-      dbSafe.safeUpdate.mockRejectedValueOnce(new Error('Database error'));
+      // Mock query to fail
+      dbPostgres.query.mockRejectedValueOnce(new Error('Database error'));
 
       const result = await threadManager.addMessageToThread(messageId, threadId);
 
-      expect(result).toBe(false);
+      // Returns failure object with null sequenceNumber
+      expect(result).toEqual({
+        success: false,
+        messageCount: 0,
+        lastMessageAt: null,
+        sequenceNumber: null,
+      });
     });
   });
 
   describe('removeMessageFromThread', () => {
-    it('should remove message from thread and decrement message_count', async () => {
+    it('should remove message from thread using atomic decrement', async () => {
       const messageId = 'msg_123';
       const threadId = 'thread_123';
 
-      const mockMessage = {
-        id: messageId,
-        thread_id: threadId,
-      };
-      const mockThread = {
-        id: threadId,
-        message_count: 5,
-      };
+      // Mock getting the thread_id before nulling it
+      dbPostgres.query
+        .mockResolvedValueOnce({ rows: [{ thread_id: threadId }] }) // Get current thread_id
+        .mockResolvedValueOnce({ rows: [{ message_count: 4 }] }); // Atomic decrement result
 
       dbSafe.safeUpdate.mockResolvedValue({});
-      dbSafe.safeSelect
-        .mockResolvedValueOnce([mockMessage]) // For message lookup
-        .mockResolvedValueOnce([mockThread]); // For thread lookup
-      dbSafe.parseResult
-        .mockReturnValueOnce([mockMessage])
-        .mockReturnValueOnce([mockThread]);
 
       const result = await threadManager.removeMessageFromThread(messageId);
 
+      // Should update message to remove from thread
       expect(dbSafe.safeUpdate).toHaveBeenCalledWith(
         'messages',
         { thread_id: null },
         { id: messageId }
       );
-      expect(dbSafe.safeUpdate).toHaveBeenCalledWith(
-        'threads',
-        expect.objectContaining({
-          message_count: 4, // 5 - 1, but Math.max(0, ...) ensures >= 0
-        }),
-        { id: threadId }
+
+      // Should use atomic decrement with GREATEST to prevent going below 0
+      expect(dbPostgres.query).toHaveBeenCalledWith(
+        expect.stringContaining('GREATEST(0, message_count - 1)'),
+        expect.arrayContaining([threadId])
       );
-      expect(result).toBe(true);
+
+      // New implementation returns object
+      expect(result).toEqual({
+        success: true,
+        threadId: threadId,
+        messageCount: 4,
+      });
     });
 
-    it('should not decrement below zero', async () => {
+    it('should handle message not in any thread', async () => {
       const messageId = 'msg_123';
-      const threadId = 'thread_123';
 
-      const mockMessage = {
-        id: messageId,
-        thread_id: threadId,
-      };
-      const mockThread = {
-        id: threadId,
-        message_count: 0, // Already at zero
-      };
-
+      // Mock getting the thread_id - message has no thread
+      dbPostgres.query.mockResolvedValueOnce({ rows: [{ thread_id: null }] });
       dbSafe.safeUpdate.mockResolvedValue({});
-      dbSafe.safeSelect
-        .mockResolvedValueOnce([mockMessage])
-        .mockResolvedValueOnce([mockThread]);
-      dbSafe.parseResult
-        .mockReturnValueOnce([mockMessage])
-        .mockReturnValueOnce([mockThread]);
 
-      await threadManager.removeMessageFromThread(messageId);
+      const result = await threadManager.removeMessageFromThread(messageId);
 
+      // Should still update message (idempotent)
       expect(dbSafe.safeUpdate).toHaveBeenCalledWith(
-        'threads',
-        expect.objectContaining({
-          message_count: 0, // Math.max(0, 0 - 1) = 0
-        }),
-        { id: threadId }
+        'messages',
+        { thread_id: null },
+        { id: messageId }
       );
+
+      // Should return success with null threadId
+      expect(result).toEqual({
+        success: true,
+        threadId: null,
+        messageCount: 0,
+      });
     });
   });
 

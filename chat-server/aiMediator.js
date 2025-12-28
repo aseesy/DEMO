@@ -5,7 +5,7 @@
  *   const aiMediator = require('./aiMediator');
  *
  * After the core restructuring, the actual mediator code
- * is located at: src/core/core/mediator.js
+ * is located at: src/core/engine/mediator.js
  *
  * This shim re-exports the mediator from the core namespace location.
  */

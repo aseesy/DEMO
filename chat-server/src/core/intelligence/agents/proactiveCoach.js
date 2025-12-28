@@ -1,4 +1,4 @@
-const openaiClient = require('../core/client');
+const openaiClient = require('../../engine/client');
 
 /**
  * Analyze a draft message before sending and provide proactive coaching

@@ -180,9 +180,9 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
   }, [currentView, isAuthenticated, username, isJoined]);
 
   // Thread actions - defined BEFORE useEffect that uses them to avoid temporal dead zone
-  const createThread = React.useCallback((roomId, title, messageId) => {
+  const createThread = React.useCallback((roomId, title, messageId, category = 'logistics') => {
     if (socketRef.current?.connected)
-      socketRef.current.emit('create_thread', { roomId, title, messageId });
+      socketRef.current.emit('create_thread', { roomId, title, messageId, category });
   }, []);
 
   const getThreads = React.useCallback(roomId => {

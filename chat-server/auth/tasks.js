@@ -14,8 +14,7 @@ async function createWelcomeAndOnboardingTasks(userId, username) {
       { limit: 1 }
     );
     if (existing.length === 0) {
-      const welcomeTaskDescription = `LiaiZen is contextual and adapts to your unique situation over time as it learns from your interactions.
-We hope you enjoy the platform, but feedback is golden. Let us know what you like and don't like.`;
+      const welcomeTaskDescription = `To get the best experience from this app, you can download the app to your phone. If you run into any issues, please submit them by going to settings.`;
 
       await dbSafe.safeInsert('tasks', {
         user_id: userId,
@@ -43,11 +42,6 @@ We hope you enjoy the platform, but feedback is golden. Let us know what you lik
     {
       title: 'Add Your Children',
       description: 'Add your children as contacts so LiaiZen can help coordinate.',
-    },
-    {
-      title: 'Install LiaiZen on Your Phone',
-      description:
-        'Access LiaiZen anytime from your home screen. On iOS: tap Share > Add to Home Screen. On Android: tap the menu > Install app.',
     },
   ];
 

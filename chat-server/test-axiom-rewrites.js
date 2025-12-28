@@ -8,7 +8,7 @@
  */
 
 require('dotenv').config();
-const mediator = require('./src/core/core/mediator');
+const mediator = require('./src/core/engine/mediator');
 
 async function testAxiomAwareRewrites() {
   console.log('🧪 Testing Axiom-Aware Rewrite Generation\n');

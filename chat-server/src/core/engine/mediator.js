@@ -28,7 +28,7 @@
  */
 
 const openaiClient = require('./client');
-const userContext = require('../context/userContext');
+const userContext = require('../profiles/userContext');
 const { defaultLogger } = require('../../infrastructure/logging/logger');
 const { AI } = require('../../infrastructure/config/constants');
 const stateManager = require('./stateManager');

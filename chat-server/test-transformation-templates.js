@@ -12,7 +12,7 @@
  */
 
 require('dotenv').config();
-const mediator = require('./src/core/core/mediator');
+const mediator = require('./src/core/engine/mediator');
 
 async function testTransformationTemplates() {
   console.log('🧪 Testing Transformation Templates\n');
@@ -167,3 +167,4 @@ async function testTransformationTemplates() {
 
 // Run tests
 testTransformationTemplates().catch(console.error);
+

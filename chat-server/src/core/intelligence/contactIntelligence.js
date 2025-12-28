@@ -1,4 +1,4 @@
-const openaiClient = require('../core/client');
+const openaiClient = require('../engine/client');
 const dbSafe = require('../../../dbSafe');
 
 /**

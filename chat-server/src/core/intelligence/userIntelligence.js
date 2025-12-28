@@ -29,7 +29,7 @@ try {
 // Get values profile for extraction
 let valuesProfile;
 try {
-  valuesProfile = require('../context/valuesProfile');
+  valuesProfile = require('../profiles/valuesProfile');
 } catch (err) {
   console.warn('⚠️ UserIntelligence: Values profile not available');
   valuesProfile = null;

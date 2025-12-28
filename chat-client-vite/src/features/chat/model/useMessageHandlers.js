@@ -105,9 +105,9 @@ export function useMessageHandlers({
 
   // Wrap createThread to track analytics
   const createThread = React.useCallback(
-    (roomId, title, messageIds) => {
+    (roomId, title, messageIds, category = 'logistics') => {
       trackThreadCreated();
-      return originalCreateThread(roomId, title, messageIds);
+      return originalCreateThread(roomId, title, messageIds, category);
     },
     [originalCreateThread]
   );

@@ -1,4 +1,4 @@
-const dbSafe = require('../../../dbSafe');
+const dbSafe = require('../../../../dbSafe');
 
 /**
  * Communication Stats Manager

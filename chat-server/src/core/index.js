@@ -6,28 +6,28 @@
  */
 
 module.exports = {
-  // Core
-  mediator: require('./core/mediator'),
-  client: require('./core/client'),
+  // Core Engine
+  mediator: require('./engine/mediator'),
+  client: require('./engine/client'),
 
-  // Agents
-  proactiveCoach: require('./agents/proactiveCoach'),
-  feedbackLearner: require('./agents/feedbackLearner'),
+  // Agents (within intelligence/)
+  proactiveCoach: require('./intelligence/agents/proactiveCoach'),
+  feedbackLearner: require('./intelligence/agents/feedbackLearner'),
 
   // Policies
   safety: require('./policies/safety'),
 
-  // Context
-  communicationProfile: require('./context/communication-profile'),
-  userContext: require('./context/userContext'),
+  // Profiles (user-level context data)
+  communicationProfile: require('./profiles/communicationProfile'),
+  userContext: require('./profiles/userContext'),
 
   // Analysis
-  languageAnalyzer: require('./analysis/language-analyzer'),
-  rewriteValidator: require('./analysis/rewrite-validator'),
+  languageAnalyzer: require('./analysis/languageAnalyzer'),
+  rewriteValidator: require('./analysis/rewriteValidator'),
 
   // Intelligence
   contactIntelligence: require('./intelligence/contactIntelligence'),
 
-  // Metrics
-  communicationStats: require('./metrics/communicationStats'),
+  // Metrics (within engine/)
+  communicationStats: require('./engine/metrics/communicationStats'),
 };

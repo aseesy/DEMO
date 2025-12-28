@@ -2,6 +2,21 @@ import React from 'react';
 import { ObserverCard } from '../../dashboard/components/ObserverCard.jsx';
 
 /**
+ * Thread category colors and labels
+ */
+const THREAD_CATEGORIES = {
+  schedule: { label: 'Schedule', color: 'bg-blue-100 text-blue-700', icon: '📅' },
+  medical: { label: 'Medical', color: 'bg-red-100 text-red-700', icon: '🏥' },
+  education: { label: 'Education', color: 'bg-purple-100 text-purple-700', icon: '📚' },
+  finances: { label: 'Finances', color: 'bg-green-100 text-green-700', icon: '💰' },
+  activities: { label: 'Activities', color: 'bg-orange-100 text-orange-700', icon: '⚽' },
+  travel: { label: 'Travel', color: 'bg-cyan-100 text-cyan-700', icon: '✈️' },
+  safety: { label: 'Safety', color: 'bg-yellow-100 text-yellow-800', icon: '🛡️' },
+  logistics: { label: 'Logistics', color: 'bg-gray-100 text-gray-700', icon: '📦' },
+  'co-parenting': { label: 'Co-Parenting', color: 'bg-teal-100 text-teal-700', icon: '🤝' },
+};
+
+/**
  * MessagesContainer - Renders the scrollable message list with date grouping
  */
 export function MessagesContainer({
@@ -140,7 +155,15 @@ export function MessagesContainer({
               />
             </svg>
             <div>
-              <h3 className="font-semibold text-sm text-teal-dark">{selectedThread.title}</h3>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h3 className="font-semibold text-sm text-teal-dark">{selectedThread.title}</h3>
+                {selectedThread.category && THREAD_CATEGORIES[selectedThread.category] && (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${THREAD_CATEGORIES[selectedThread.category].color}`}>
+                    <span>{THREAD_CATEGORIES[selectedThread.category].icon}</span>
+                    <span>{THREAD_CATEGORIES[selectedThread.category].label}</span>
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-gray-500">
                 {selectedThread.message_count || 0} message
                 {selectedThread.message_count !== 1 ? 's' : ''}

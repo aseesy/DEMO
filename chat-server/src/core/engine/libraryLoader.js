@@ -56,31 +56,31 @@ function loadCodeLayerIntegration() {
 
 const libraries = {
   // Language analysis (Feature 005)
-  languageAnalyzer: safeLoad('../analysis/language-analyzer', 'Language analyzer'),
+  languageAnalyzer: safeLoad('../analysis/languageAnalyzer', 'Language analyzer'),
 
   // Communication profile for sender/receiver distinction
-  communicationProfile: safeLoad('../context/communication-profile', 'Communication profile'),
+  communicationProfile: safeLoad('../profiles/communicationProfile', 'Communication profile'),
 
   // Voice signature extraction (Phase 1: Contextual Awareness)
   voiceSignature: safeLoad(
-    '../context/communication-profile/voiceSignature',
+    '../profiles/communicationProfile/voiceSignature',
     'Voice signature extraction'
   ),
 
   // Conversation pattern analysis (Phase 1: Contextual Awareness)
   conversationPatterns: safeLoad(
-    '../context/communication-profile/conversationPatterns',
+    '../profiles/communicationProfile/conversationPatterns',
     'Conversation pattern analysis'
   ),
 
   // Intervention learning (Phase 2: Enhanced Context)
   interventionLearning: safeLoad(
-    '../context/communication-profile/interventionLearning',
+    '../profiles/communicationProfile/interventionLearning',
     'Intervention learning system'
   ),
 
   // Rewrite Validator (Feature 006)
-  rewriteValidator: safeLoad('../analysis/rewrite-validator', 'Rewrite validator'),
+  rewriteValidator: safeLoad('../analysis/rewriteValidator', 'Rewrite validator'),
 
   // Code Layer Integration (Feature 004 - Hybrid Mediation Engine)
   codeLayerIntegration: loadCodeLayerIntegration(),
@@ -89,13 +89,13 @@ const libraries = {
   profileHelpers: safeLoad('../../utils/profileHelpers', 'Profile helpers'),
 
   // Co-Parent Context (Situational context for AI coaching)
-  coparentContext: safeLoad('../context/coparentContext', 'Co-parent context'),
+  coparentContext: safeLoad('../profiles/coparentContext', 'Co-parent context'),
 
   // Graph Context (Neo4j relationship insights)
-  graphContext: safeLoad('../context/graphContext', 'Graph context (Neo4j integration)'),
+  graphContext: safeLoad('../profiles/graphContext', 'Graph context (Neo4j integration)'),
 
   // Values Profile (Learn user values from conversations)
-  valuesProfile: safeLoad('../context/valuesProfile', 'Values profile', async module => {
+  valuesProfile: safeLoad('../profiles/valuesProfile', 'Values profile', async module => {
     await module.initializeTable();
     console.log('✅ Library Loader: Values profile table initialized');
   }),

@@ -1,6 +1,103 @@
 const dbSafe = require('./dbSafe');
 const openaiClient = require('./openaiClient');
 
+// =============================================================================
+// THREAD CATEGORIES - All threads must belong to one of these
+// =============================================================================
+const THREAD_CATEGORIES = [
+  'schedule',      // Pickup, dropoff, custody arrangements
+  'medical',       // Doctor appointments, health issues, medications
+  'education',     // School, homework, grades, teachers
+  'finances',      // Child support, shared expenses, reimbursements
+  'activities',    // Sports, hobbies, extracurriculars
+  'travel',        // Vacations, trips, travel arrangements
+  'safety',        // Emergency contacts, safety concerns
+  'logistics',     // General coordination, supplies, belongings (default)
+  'co-parenting',  // Relationship discussions, parenting decisions
+];
+
+/**
+ * Validate that a category is valid
+ * @param {string} category - Category to validate
+ * @returns {string} - Valid category (defaults to 'logistics' if invalid)
+ */
+function validateCategory(category) {
+  if (!category || !THREAD_CATEGORIES.includes(category.toLowerCase())) {
+    return 'logistics'; // Default category
+  }
+  return category.toLowerCase();
+}
+
+// =============================================================================
+// STOP WORDS - Filter these out before keyword matching
+// These are common words that don't carry distinctive meaning
+// =============================================================================
+const STOP_WORDS = new Set([
+  // Articles
+  'a', 'an', 'the',
+  // Prepositions
+  'at', 'by', 'for', 'from', 'in', 'into', 'of', 'off', 'on', 'onto', 'out',
+  'over', 'to', 'up', 'with', 'without',
+  // Conjunctions
+  'and', 'but', 'or', 'nor', 'so', 'yet',
+  // Pronouns
+  'i', 'me', 'my', 'we', 'us', 'our', 'you', 'your', 'he', 'him', 'his',
+  'she', 'her', 'it', 'its', 'they', 'them', 'their', 'this', 'that',
+  'these', 'those', 'who', 'whom', 'which', 'what',
+  // Common verbs (non-distinctive)
+  'is', 'are', 'was', 'were', 'be', 'been', 'being', 'am',
+  'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing',
+  'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can',
+  'get', 'got', 'getting', 'go', 'going', 'went', 'gone',
+  'make', 'made', 'making', 'take', 'took', 'taken', 'taking',
+  'come', 'came', 'coming', 'give', 'gave', 'given', 'giving',
+  'say', 'said', 'saying', 'see', 'saw', 'seen', 'seeing',
+  'know', 'knew', 'known', 'knowing', 'think', 'thought', 'thinking',
+  'want', 'wanted', 'wanting', 'need', 'needed', 'needing',
+  'let', 'put', 'keep', 'kept', 'keeping',
+  // Adverbs
+  'also', 'just', 'only', 'even', 'still', 'already', 'always', 'never',
+  'now', 'then', 'here', 'there', 'when', 'where', 'why', 'how',
+  'very', 'really', 'quite', 'too', 'more', 'most', 'less', 'least',
+  // Other common words
+  'about', 'after', 'again', 'all', 'any', 'back', 'because', 'before',
+  'between', 'both', 'each', 'first', 'last', 'like', 'new', 'next',
+  'not', 'other', 'own', 'same', 'some', 'such', 'than', 'through',
+  'under', 'well', 'while',
+  // Co-parenting common but non-distinctive words
+  'okay', 'sure', 'yes', 'yeah', 'no', 'thanks', 'thank', 'please',
+  'sorry', 'fine', 'good', 'great', 'right', 'wrong',
+]);
+
+/**
+ * Check if a word is a distinctive keyword (not a stop word)
+ * @param {string} word - Word to check
+ * @returns {boolean} - True if distinctive
+ */
+function isDistinctiveKeyword(word) {
+  if (!word || word.length < 3) return false;
+  const lower = word.toLowerCase();
+  if (STOP_WORDS.has(lower)) return false;
+  // Filter out numbers-only
+  if (/^\d+$/.test(word)) return false;
+  return true;
+}
+
+/**
+ * Extract distinctive keywords from text
+ * @param {string} text - Text to extract from
+ * @param {number} minLength - Minimum word length (default 3)
+ * @returns {string[]} - Array of distinctive keywords
+ */
+function extractDistinctiveKeywords(text, minLength = 3) {
+  if (!text) return [];
+  return text
+    .toLowerCase()
+    .split(/\s+/)
+    .map(w => w.replace(/[^a-z0-9]/g, '')) // Remove punctuation
+    .filter(w => w.length >= minLength && isDistinctiveKeyword(w));
+}
+
 // Neo4j client for semantic threading
 let neo4jClient = null;
 try {
@@ -10,22 +107,36 @@ try {
 }
 
 /**
- * Create a new thread
+ * Create a new top-level thread
+ * For sub-threads, use createSubThread() instead
+ * @param {string} roomId - Room ID
+ * @param {string} title - Thread title
+ * @param {string} createdBy - Username who created
+ * @param {string|null} initialMessageId - Optional initial message to add
+ * @param {string} category - Thread category (defaults to 'logistics')
  */
-async function createThread(roomId, title, createdBy, initialMessageId = null) {
+async function createThread(roomId, title, createdBy, initialMessageId = null, category = 'logistics') {
   try {
     const threadId = `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date().toISOString();
+    const validCategory = validateCategory(category);
 
     await dbSafe.safeInsert('threads', {
       id: threadId,
       room_id: roomId,
       title: title,
       created_by: createdBy,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
       message_count: initialMessageId ? 1 : 0,
-      last_message_at: initialMessageId ? new Date().toISOString() : null,
+      last_message_at: initialMessageId ? now : null,
       is_archived: 0,
+      category: validCategory,
+      // Top-level thread: no parent, root is self, depth is 0
+      parent_thread_id: null,
+      root_thread_id: threadId, // Self-reference for top-level
+      parent_message_id: null,
+      depth: 0,
     });
 
     // Create thread node in Neo4j for semantic search
@@ -47,6 +158,184 @@ async function createThread(roomId, title, createdBy, initialMessageId = null) {
   } catch (error) {
     console.error('Error creating thread:', error);
     throw error;
+  }
+}
+
+/**
+ * Create a sub-thread (spawned from a message in an existing thread)
+ * @param {string} roomId - Room ID
+ * @param {string} title - Thread title
+ * @param {string} createdBy - Username who created
+ * @param {string} parentThreadId - Parent thread ID
+ * @param {string} parentMessageId - Message that spawned this sub-thread
+ * @param {string} category - Thread category (defaults to parent's category)
+ * @returns {Promise<string>} New thread ID
+ */
+async function createSubThread(roomId, title, createdBy, parentThreadId, parentMessageId, category = null) {
+  try {
+    const db = require('./dbPostgres');
+    const threadId = `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date().toISOString();
+
+    // Get parent thread to determine root, depth, and default category
+    const parentResult = await db.query(
+      'SELECT root_thread_id, depth, category FROM threads WHERE id = $1',
+      [parentThreadId]
+    );
+
+    if (!parentResult.rows[0]) {
+      throw new Error(`Parent thread not found: ${parentThreadId}`);
+    }
+
+    const parentThread = parentResult.rows[0];
+    // Root is always the top-level ancestor (parent's root, or parent itself if parent is top-level)
+    const rootThreadId = parentThread.root_thread_id || parentThreadId;
+    const depth = (parentThread.depth || 0) + 1;
+    // Inherit category from parent if not specified
+    const validCategory = category ? validateCategory(category) : (parentThread.category || 'logistics');
+
+    await dbSafe.safeInsert('threads', {
+      id: threadId,
+      room_id: roomId,
+      title: title,
+      created_by: createdBy,
+      created_at: now,
+      updated_at: now,
+      message_count: 0,
+      last_message_at: null,
+      is_archived: 0,
+      category: validCategory,
+      parent_thread_id: parentThreadId,
+      root_thread_id: rootThreadId,
+      parent_message_id: parentMessageId,
+      depth: depth,
+    });
+
+    // Create thread node in Neo4j with hierarchy info
+    if (neo4jClient && neo4jClient.isAvailable()) {
+      try {
+        await neo4jClient.createOrUpdateThreadNode(threadId, roomId, title);
+        // Link to parent thread in Neo4j
+        await neo4jClient.linkThreadToParent(threadId, parentThreadId);
+      } catch (err) {
+        console.warn('⚠️  Failed to create Neo4j sub-thread node (non-fatal):', err.message);
+      }
+    }
+
+    console.log(`[threadManager] Created sub-thread: ${threadId} (parent: ${parentThreadId}, root: ${rootThreadId}, depth: ${depth})`);
+    return threadId;
+  } catch (error) {
+    console.error('Error creating sub-thread:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all ancestor threads (parent chain up to root)
+ * @param {string} threadId - Thread ID to get ancestors for
+ * @returns {Promise<Array>} Array of ancestor threads, from immediate parent to root
+ */
+async function getThreadAncestors(threadId) {
+  try {
+    const db = require('./dbPostgres');
+
+    // Use recursive CTE to get all ancestors
+    const result = await db.query(`
+      WITH RECURSIVE ancestors AS (
+        -- Start with the parent of the given thread
+        SELECT t.*, 1 as level
+        FROM threads t
+        WHERE t.id = (SELECT parent_thread_id FROM threads WHERE id = $1)
+
+        UNION ALL
+
+        -- Recursively get each parent's parent
+        SELECT t.*, a.level + 1
+        FROM threads t
+        INNER JOIN ancestors a ON t.id = a.parent_thread_id
+      )
+      SELECT * FROM ancestors
+      ORDER BY level ASC
+    `, [threadId]);
+
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting thread ancestors:', error);
+    return [];
+  }
+}
+
+/**
+ * Get direct child threads (sub-threads)
+ * @param {string} threadId - Parent thread ID
+ * @returns {Promise<Array>} Array of direct child threads
+ */
+async function getSubThreads(threadId) {
+  try {
+    const result = await dbSafe.safeSelect('threads', { parent_thread_id: threadId, is_archived: 0 }, {
+      orderBy: 'updated_at',
+      orderDirection: 'DESC',
+    });
+
+    return dbSafe.parseResult(result);
+  } catch (error) {
+    console.error('Error getting sub-threads:', error);
+    return [];
+  }
+}
+
+/**
+ * Get complete thread hierarchy (all descendants)
+ * @param {string} threadId - Root thread ID to get hierarchy for
+ * @returns {Promise<Array>} Flat array of all threads in hierarchy with depth info
+ */
+async function getThreadHierarchy(threadId) {
+  try {
+    const db = require('./dbPostgres');
+
+    // Use recursive CTE to get all descendants
+    const result = await db.query(`
+      WITH RECURSIVE descendants AS (
+        -- Start with the given thread
+        SELECT t.*, 0 as relative_depth
+        FROM threads t
+        WHERE t.id = $1
+
+        UNION ALL
+
+        -- Recursively get all children
+        SELECT t.*, d.relative_depth + 1
+        FROM threads t
+        INNER JOIN descendants d ON t.parent_thread_id = d.id
+        WHERE t.is_archived = 0
+      )
+      SELECT * FROM descendants
+      ORDER BY relative_depth ASC, updated_at DESC
+    `, [threadId]);
+
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting thread hierarchy:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all threads in a room that share the same root (entire conversation tree)
+ * @param {string} rootThreadId - Root thread ID
+ * @returns {Promise<Array>} All threads in the hierarchy
+ */
+async function getThreadsByRoot(rootThreadId) {
+  try {
+    const result = await dbSafe.safeSelect('threads', { root_thread_id: rootThreadId, is_archived: 0 }, {
+      orderBy: 'depth',
+      orderDirection: 'ASC',
+    });
+
+    return dbSafe.parseResult(result);
+  } catch (error) {
+    console.error('Error getting threads by root:', error);
+    return [];
   }
 }
 
@@ -75,18 +364,20 @@ async function getThreadsForRoom(roomId, includeArchived = false, limit = 10) {
 
 /**
  * Get messages for a specific thread
+ * Orders by sequence number (temporal integrity) with timestamp fallback
  */
 async function getThreadMessages(threadId, limit = 50) {
   try {
     const db = require('./dbPostgres');
     // Get messages for this thread, excluding system messages, private, and flagged
+    // Order by sequence number (handles out-of-order delivery), fallback to timestamp
     const query = `
       SELECT * FROM messages
       WHERE thread_id = $1
         AND (private = 0 OR private IS NULL)
         AND (flagged = 0 OR flagged IS NULL)
         AND type != 'system'
-      ORDER BY timestamp ASC
+      ORDER BY COALESCE(thread_sequence, 0) ASC, timestamp ASC
       LIMIT $2
     `;
 
@@ -100,6 +391,7 @@ async function getThreadMessages(threadId, limit = 50) {
       timestamp: msg.timestamp,
       threadId: msg.thread_id,
       roomId: msg.room_id,
+      sequenceNumber: msg.thread_sequence, // Include sequence for client-side ordering
     }));
   } catch (error) {
     console.error('Error getting thread messages:', error);
@@ -109,11 +401,36 @@ async function getThreadMessages(threadId, limit = 50) {
 
 /**
  * Add message to thread
+ * Uses atomic database operations - never calculate in application layer
+ * - Assigns sequence number atomically for temporal integrity
+ * - Increments message_count atomically
+ * Returns the new message count and sequence number for delta updates
  */
 async function addMessageToThread(messageId, threadId) {
   try {
-    // Update message
-    await dbSafe.safeUpdate('messages', { thread_id: threadId }, { id: messageId });
+    const db = require('./dbPostgres');
+    const now = new Date().toISOString();
+
+    // ATOMIC SEQUENCE ASSIGNMENT + INCREMENT in single transaction
+    // This ensures no race conditions for sequence numbers
+    const result = await db.query(
+      `WITH sequence_assign AS (
+         UPDATE threads
+         SET next_sequence = next_sequence + 1,
+             message_count = message_count + 1,
+             last_message_at = $1,
+             updated_at = $1
+         WHERE id = $2
+         RETURNING next_sequence - 1 as assigned_sequence, message_count, last_message_at
+       )
+       UPDATE messages
+       SET thread_id = $2,
+           thread_sequence = (SELECT assigned_sequence FROM sequence_assign)
+       WHERE id = $3
+       RETURNING thread_sequence, (SELECT message_count FROM sequence_assign) as message_count,
+                 (SELECT last_message_at FROM sequence_assign) as last_message_at`,
+      [now, threadId, messageId]
+    );
 
     // Link message to thread in Neo4j for semantic search
     if (neo4jClient && neo4jClient.isAvailable()) {
@@ -124,67 +441,58 @@ async function addMessageToThread(messageId, threadId) {
       }
     }
 
-    // Update thread stats
-    const threadResult = await dbSafe.safeSelect('threads', { id: threadId }, { limit: 1 });
-    const threads = dbSafe.parseResult(threadResult);
+    const row = result.rows[0] || {};
+    const messageCount = row.message_count || 0;
+    const lastMessageAt = row.last_message_at || now;
+    const sequenceNumber = row.thread_sequence || 0;
 
-    if (threads.length > 0) {
-      const messageResult = await dbSafe.safeSelect('messages', { id: messageId }, { limit: 1 });
-      const messages = dbSafe.parseResult(messageResult);
-      const message = messages[0];
-
-      await dbSafe.safeUpdate(
-        'threads',
-        {
-          message_count: (threads[0].message_count || 0) + 1,
-          last_message_at: message?.timestamp || new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        { id: threadId }
-      );
-    }
-
-    // PostgreSQL auto-commits, no manual save needed
-    return true;
+    return { success: true, messageCount, lastMessageAt, sequenceNumber };
   } catch (error) {
     console.error('Error adding message to thread:', error);
-    return false;
+    return { success: false, messageCount: 0, lastMessageAt: null, sequenceNumber: null };
   }
 }
 
 /**
  * Remove message from thread (move back to main conversation)
+ * Uses atomic database decrement - never calculate in application layer
+ * Returns the threadId and new count for delta updates
  */
 async function removeMessageFromThread(messageId) {
   try {
+    const db = require('./dbPostgres');
+
+    // First get the thread_id before we null it
+    const msgResult = await db.query(
+      'SELECT thread_id FROM messages WHERE id = $1',
+      [messageId]
+    );
+    const threadId = msgResult.rows[0]?.thread_id;
+
+    // Update message to remove from thread
     await dbSafe.safeUpdate('messages', { thread_id: null }, { id: messageId });
 
-    // Update thread stats
-    const messageResult = await dbSafe.safeSelect('messages', { id: messageId }, { limit: 1 });
-    const messages = dbSafe.parseResult(messageResult);
-    const threadId = messages[0]?.thread_id;
-
-    if (threadId) {
-      const threadResult = await dbSafe.safeSelect('threads', { id: threadId }, { limit: 1 });
-      const threads = dbSafe.parseResult(threadResult);
-
-      if (threads.length > 0) {
-        await dbSafe.safeUpdate(
-          'threads',
-          {
-            message_count: Math.max(0, (threads[0].message_count || 1) - 1),
-            updated_at: new Date().toISOString(),
-          },
-          { id: threadId }
-        );
-      }
+    if (!threadId) {
+      return { success: true, threadId: null, messageCount: 0 };
     }
 
-    // PostgreSQL auto-commits, no manual save needed
-    return true;
+    // ATOMIC DECREMENT in database layer - never read-modify-write in app layer
+    const now = new Date().toISOString();
+    const result = await db.query(
+      `UPDATE threads
+       SET message_count = GREATEST(0, message_count - 1),
+           updated_at = $1
+       WHERE id = $2
+       RETURNING message_count`,
+      [now, threadId]
+    );
+
+    const messageCount = result.rows[0]?.message_count || 0;
+
+    return { success: true, threadId, messageCount };
   } catch (error) {
     console.error('Error removing message from thread:', error);
-    return false;
+    return { success: false, threadId: null, messageCount: 0 };
   }
 }
 
@@ -207,6 +515,55 @@ async function updateThreadTitle(threadId, newTitle) {
   } catch (error) {
     console.error('Error updating thread title:', error);
     return false;
+  }
+}
+
+/**
+ * Update thread category
+ * @param {string} threadId - Thread ID
+ * @param {string} newCategory - New category (must be valid)
+ * @returns {Promise<boolean>} Success status
+ */
+async function updateThreadCategory(threadId, newCategory) {
+  try {
+    const validCategory = validateCategory(newCategory);
+
+    await dbSafe.safeUpdate(
+      'threads',
+      {
+        category: validCategory,
+        updated_at: new Date().toISOString(),
+      },
+      { id: threadId }
+    );
+
+    return true;
+  } catch (error) {
+    console.error('Error updating thread category:', error);
+    return false;
+  }
+}
+
+/**
+ * Get threads by category for a room
+ * @param {string} roomId - Room ID
+ * @param {string} category - Category to filter by
+ * @param {number} limit - Maximum number of threads
+ * @returns {Promise<Array>} Threads in category
+ */
+async function getThreadsByCategory(roomId, category, limit = 10) {
+  try {
+    const validCategory = validateCategory(category);
+    const result = await dbSafe.safeSelect(
+      'threads',
+      { room_id: roomId, category: validCategory, is_archived: 0 },
+      { orderBy: 'updated_at', orderDirection: 'DESC', limit }
+    );
+
+    return dbSafe.parseResult(result);
+  } catch (error) {
+    console.error('Error getting threads by category:', error);
+    return [];
   }
 }
 
@@ -402,19 +759,31 @@ Examples of BAD titles (too vague/keyword-based):
 - "Pickup" (just a keyword)
 - "Medical" (category, not a conversation)
 
+CATEGORIES - Each conversation MUST be assigned to exactly one:
+- schedule: Pickup, dropoff, custody, visitation times
+- medical: Doctor appointments, health, medications, therapy
+- education: School, homework, grades, teachers, tutoring
+- finances: Money, expenses, support, reimbursements
+- activities: Sports, hobbies, lessons, camps, extracurriculars
+- travel: Vacations, trips, flights, visits
+- safety: Emergency contacts, concerns, protection
+- logistics: General coordination, supplies, belongings
+- co-parenting: Parenting decisions, boundaries, communication
+
 Conversation history (most recent messages):
 ${conversationText}
 
 ${
   existingThreads.length > 0
     ? `Existing conversations (avoid duplicates):\n${existingThreads
-        .map(t => `- ${t.title} (${t.message_count} messages)`)
+        .map(t => `- ${t.title} [${t.category || 'logistics'}] (${t.message_count} messages)`)
         .join('\n')}`
     : 'No existing conversations'
 }
 
 Identify 3-5 distinct CONVERSATIONS (not keywords). For each:
 - Title should describe the SPECIFIC subject being discussed (3-7 words)
+- Category MUST be one of: schedule, medical, education, finances, activities, travel, safety, logistics, co-parenting
 - Must be a back-and-forth exchange (at least 2 participants)
 - Should be actionable or about a specific event/need
 
@@ -422,6 +791,7 @@ Respond in JSON array format:
 [
   {
     "title": "Specific conversation title",
+    "category": "one of the 9 categories above",
     "messageCount": estimated_count,
     "isRecurring": true/false,
     "reasoning": "What makes this a distinct conversation",
@@ -522,25 +892,41 @@ Only include conversations with confidence >= 60 and at least 3 related messages
 
         // Fallback to keyword matching if Neo4j not available or failed
         if (matchingMessages.length < 3) {
-          const topicKeywords = suggestion.title
-            .toLowerCase()
-            .split(/\s+/)
-            .filter(k => k.length > 2);
-          const reasoningKeywords = (suggestion.reasoning || '')
-            .toLowerCase()
-            .split(/\s+/)
-            .filter(k => k.length > 3);
+          // Extract DISTINCTIVE keywords only (filter out stop words)
+          const topicKeywords = extractDistinctiveKeywords(suggestion.title, 3);
+          const reasoningKeywords = extractDistinctiveKeywords(suggestion.reasoning || '', 4);
 
+          // Combine and deduplicate
           const allKeywords = [...new Set([...topicKeywords, ...reasoningKeywords])];
+
+          console.log(`[threadManager] Keyword matching for "${suggestion.title}":`, {
+            topicKeywords,
+            reasoningKeywords: reasoningKeywords.slice(0, 5), // Log first 5
+            totalDistinctive: allKeywords.length,
+          });
+
+          // Skip if no distinctive keywords found
+          if (allKeywords.length === 0) {
+            console.log(`[threadManager] No distinctive keywords for "${suggestion.title}", skipping`);
+            continue;
+          }
 
           matchingMessages = filteredMessages.filter(msg => {
             if (!msg.id || msg.threadId) {
               return false;
             }
-            const msgText = (msg.text || '').toLowerCase();
-            const matchCount = allKeywords.filter(keyword => msgText.includes(keyword)).length;
+            // Extract distinctive keywords from message
+            const msgKeywords = extractDistinctiveKeywords(msg.text || '', 3);
+
+            // Count how many topic keywords appear in message
+            const matchedTopicKeywords = topicKeywords.filter(k => msgKeywords.includes(k));
+            const matchedAllKeywords = allKeywords.filter(k => msgKeywords.includes(k));
+
+            // STRICT MATCHING: Require at least 2 distinctive topic keywords
+            // OR 1 topic keyword + 2 from reasoning
             return (
-              matchCount >= 2 || (matchCount >= 1 && topicKeywords.some(k => msgText.includes(k)))
+              matchedTopicKeywords.length >= 2 ||
+              (matchedTopicKeywords.length >= 1 && matchedAllKeywords.length >= 3)
             );
           });
         }
@@ -550,11 +936,12 @@ Only include conversations with confidence >= 60 and at least 3 related messages
         );
 
         if (matchingMessages.length >= 3) {
-          // Create thread
+          // Create thread with category
+          const threadCategory = validateCategory(suggestion.category);
           console.log(
-            `[threadManager] Creating thread "${suggestion.title}" with ${matchingMessages.length} messages`
+            `[threadManager] Creating thread "${suggestion.title}" [${threadCategory}] with ${matchingMessages.length} messages`
           );
-          const threadId = await createThread(roomId, suggestion.title, 'system');
+          const threadId = await createThread(roomId, suggestion.title, 'system', null, threadCategory);
 
           // Add matching messages to the thread (limit to avoid too many, prioritize recent)
           const messagesToAdd = matchingMessages
@@ -622,8 +1009,8 @@ async function generateEmbeddingForText(text) {
   }
 
   try {
-    // Use the OpenAI client from core/core/client
-    const openaiClient = require('./src/core/core/client');
+    // Use the OpenAI client from core/engine/client
+    const openaiClient = require('./src/core/engine/client');
     const client = openaiClient.getClient();
 
     if (!client) {
@@ -647,14 +1034,27 @@ async function generateEmbeddingForText(text) {
 }
 
 module.exports = {
+  // Constants
+  THREAD_CATEGORIES,
+  // Top-level thread operations
   createThread,
   getThreadsForRoom,
   getThreadMessages,
   addMessageToThread,
   removeMessageFromThread,
   updateThreadTitle,
+  updateThreadCategory,
+  getThreadsByCategory,
   archiveThread,
   suggestThreadForMessage,
   getThread,
   analyzeConversationHistory,
+  // Hierarchical thread operations
+  createSubThread,
+  getThreadAncestors,
+  getSubThreads,
+  getThreadHierarchy,
+  getThreadsByRoot,
+  // Utilities
+  validateCategory,
 };

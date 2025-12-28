@@ -344,7 +344,7 @@ async function generateEmbedding(text) {
   }
 
   try {
-    const openaiClient = require('../../core/core/client');
+    const openaiClient = require('../../core/engine/client');
     const client = openaiClient.getClient();
 
     if (!client) {

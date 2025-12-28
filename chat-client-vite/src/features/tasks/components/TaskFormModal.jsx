@@ -9,7 +9,6 @@ const PROTECTED_TASK_TITLES = [
   'Add Your Co-parent',
   'Add Your Children',
   'Invite Your Co-Parent',
-  'Install LiaiZen on Your Phone',
 ];
 
 export function TaskFormModal({

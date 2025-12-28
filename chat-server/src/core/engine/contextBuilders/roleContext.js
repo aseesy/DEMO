@@ -58,7 +58,7 @@ function formatRoleAwarePromptSection(roleAwareContext) {
   }
 
   try {
-    const mediationContext = require('../../context/communication-profile/mediationContext');
+    const mediationContext = require('../../profiles/communicationProfile/mediationContext');
     return mediationContext.formatFullContext(roleAwareContext);
   } catch (err) {
     console.warn('⚠️ Role Context: Failed to format:', err.message);

@@ -19,7 +19,7 @@ export function WelcomeModal({ editingTask, onClose, onComplete }) {
       <div className="prose prose-slate max-w-none">
         <p className="text-base text-gray-900 whitespace-pre-wrap leading-relaxed mb-4">
           {editingTask.description ||
-            "Welcome to LiaiZen! We're here to help make co-parenting easier."}
+            "To get the best experience from this app, you can download the app to your phone. If you run into any issues, please submit them by going to settings."}
         </p>
       </div>
     </Modal>
