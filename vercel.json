@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd chat-client-vite && npm install && npm run build",
+  "buildCommand": "cd chat-client-vite && npm install && npx vite build",
   "outputDirectory": "chat-client-vite/dist",
   "installCommand": "cd chat-client-vite && npm install",
   "framework": null,
