@@ -49,15 +49,29 @@ setTimeout(() => {
   trackPagePerformance();
 }, 1000);
 
-// Detect Safari early to handle service worker differently
+// Detect Safari and iOS
 const isSafari =
   /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
   /^((?!chrome|android).)*safari/i.test(navigator.vendor) ||
   (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome'));
 
+const isIOS =
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// Check if app is installed as PWA (standalone mode)
+const isStandalone =
+  window.matchMedia('(display-mode: standalone)').matches ||
+  window.navigator.standalone ||
+  document.referrer.includes('android-app://');
+
 // Register service worker for PWA functionality (production only)
-// Safari has buggy service worker support, so we skip it there
-if ('serviceWorker' in navigator && !isSafari && import.meta.env.PROD) {
+// iOS Safari DOES support service workers for PWAs installed to home screen (iOS 11.3+)
+// Only skip service worker for regular Safari (not installed as PWA)
+const shouldRegisterServiceWorker =
+  'serviceWorker' in navigator && import.meta.env.PROD && (!isSafari || (isIOS && isStandalone));
+
+if (shouldRegisterServiceWorker) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js', { scope: '/' })
@@ -68,8 +82,8 @@ if ('serviceWorker' in navigator && !isSafari && import.meta.env.PROD) {
         console.error('[PWA] Service Worker registration failed:', error);
       });
   });
-} else if (isSafari) {
-  console.log('[main.jsx] Safari detected - PWA install available via Share menu');
+} else if (isSafari && !isStandalone) {
+  console.log('[main.jsx] Safari detected (not installed as PWA) - Service Worker disabled');
 } else if (import.meta.env.DEV) {
   console.log('[main.jsx] Development mode - Service Worker disabled');
 }

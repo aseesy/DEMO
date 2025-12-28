@@ -75,14 +75,26 @@ export function usePWA() {
       return null;
     }
 
-    // Detect Safari - service worker is disabled there
+    // Detect Safari and iOS
     const isSafari =
       /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
       /^((?!chrome|android).)*safari/i.test(navigator.vendor) ||
       (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome'));
 
-    if (isSafari) {
-      console.log('[usePWA] Safari detected - service worker disabled');
+    const isIOS =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    // Check if app is installed as PWA (standalone mode)
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone ||
+      document.referrer.includes('android-app://');
+
+    // iOS Safari DOES support service workers for PWAs installed to home screen (iOS 11.3+)
+    // Only skip service worker for regular Safari (not installed as PWA)
+    if (isSafari && !(isIOS && isStandalone)) {
+      console.log('[usePWA] Safari detected (not installed as PWA) - service worker disabled');
       return null;
     }
 

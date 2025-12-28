@@ -155,14 +155,29 @@ self.addEventListener('push', event => {
   }
 
   // Build notification options
+  // iOS requires specific format - icon and badge must be absolute URLs
+  const iconUrl = data.icon
+    ? data.icon.startsWith('http')
+      ? data.icon
+      : new URL(data.icon, self.location.origin).href
+    : new URL('/icon-192.png', self.location.origin).href;
+
+  const badgeUrl = data.badge
+    ? data.badge.startsWith('http')
+      ? data.badge
+      : new URL(data.badge, self.location.origin).href
+    : new URL('/icon-192.png', self.location.origin).href;
+
   const options = {
     body: data.body || 'You have a new message',
-    icon: data.icon || '/icon-192.png',
-    badge: data.badge || '/icon-192.png',
+    icon: iconUrl,
+    badge: badgeUrl,
     tag: data.tag || 'liaizen-message',
     requireInteraction: true, // Keep visible until user dismisses
-    vibrate: [200, 100, 200],
+    vibrate: [200, 100, 200], // iOS ignores vibrate but it's safe to include
     data: data.data || { url: '/?view=chat' },
+    // iOS-specific: ensure notification is persistent
+    silent: false,
   };
 
   // Show the notification
