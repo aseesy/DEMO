@@ -1044,6 +1044,113 @@ async function generateEmbeddingForText(text) {
   }
 }
 
+// =============================================================================
+// AUTO-ASSIGN MESSAGE TO THREAD (Fast, local - no AI call)
+// =============================================================================
+
+/**
+ * Category keywords for fast local matching
+ */
+const CATEGORY_KEYWORDS = {
+  schedule: ['pickup', 'dropoff', 'drop-off', 'pick-up', 'custody', 'visitation', 'weekend', 'weekday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'morning', 'evening', 'afternoon', 'time', 'schedule', 'arrangement', 'switch', 'exchange'],
+  medical: ['doctor', 'hospital', 'medicine', 'medication', 'prescription', 'appointment', 'sick', 'fever', 'health', 'dentist', 'therapy', 'therapist', 'vaccine', 'checkup', 'illness', 'symptoms', 'allergy'],
+  education: ['school', 'homework', 'teacher', 'grade', 'class', 'test', 'exam', 'tutor', 'tutoring', 'college', 'education', 'learning', 'assignment', 'project', 'report', 'conference'],
+  finances: ['money', 'payment', 'expense', 'cost', 'bill', 'support', 'reimburse', 'financial', 'budget', 'pay', 'paid', 'owe', 'debt', 'invoice', 'receipt', 'spend', 'spent'],
+  activities: ['soccer', 'basketball', 'baseball', 'football', 'practice', 'game', 'sport', 'activity', 'hobby', 'lesson', 'camp', 'club', 'dance', 'music', 'piano', 'swim', 'swimming', 'gymnastics', 'martial', 'arts', 'recital', 'tournament'],
+  travel: ['travel', 'trip', 'vacation', 'flight', 'passport', 'visit', 'holiday', 'plane', 'airport', 'hotel', 'drive', 'road', 'destination', 'traveling'],
+  safety: ['emergency', 'safety', 'concern', 'danger', 'worry', 'secure', 'protect', 'urgent', 'warning', 'alert', 'accident', 'injury', 'hurt'],
+  logistics: ['clothes', 'clothing', 'shoes', 'backpack', 'supplies', 'stuff', 'things', 'items', 'belongings', 'forgot', 'left', 'bring', 'pack', 'packed'],
+  'co-parenting': ['parenting', 'decision', 'agree', 'discuss', 'relationship', 'communication', 'boundary', 'boundaries', 'conflict', 'disagreement', 'cooperate', 'rules', 'discipline'],
+};
+
+/**
+ * Auto-assign a message to the best matching existing thread
+ * Uses fast keyword matching (no AI call) for real-time assignment
+ *
+ * @param {Object} message - Message object with id, text, roomId
+ * @returns {Promise<Object|null>} - { threadId, threadTitle, category, score } or null
+ */
+async function autoAssignMessageToThread(message) {
+  if (!message || !message.text || !message.roomId) {
+    return null;
+  }
+
+  try {
+    // Get existing active threads for this room
+    const existingThreads = await getThreadsForRoom(message.roomId, false);
+
+    if (existingThreads.length === 0) {
+      return null;
+    }
+
+    // Extract keywords from the message
+    const messageKeywords = extractDistinctiveKeywords(message.text, 3);
+
+    if (messageKeywords.length === 0) {
+      return null;
+    }
+
+    // Score each thread based on keyword overlap
+    const scoredThreads = existingThreads.map(thread => {
+      // Extract keywords from thread title
+      const titleKeywords = extractDistinctiveKeywords(thread.title, 3);
+
+      // Get category-specific keywords
+      const categoryKeywords = CATEGORY_KEYWORDS[thread.category] || [];
+
+      // Calculate score
+      let score = 0;
+
+      // 1. Direct keyword match with thread title (highest weight)
+      const titleMatches = messageKeywords.filter(k => titleKeywords.includes(k));
+      score += titleMatches.length * 3;
+
+      // 2. Category keyword match (medium weight)
+      const categoryMatches = messageKeywords.filter(k => categoryKeywords.includes(k));
+      score += categoryMatches.length * 2;
+
+      // 3. Bonus for category keywords appearing in thread title
+      const titleCategoryOverlap = titleKeywords.filter(k => categoryKeywords.includes(k));
+      if (titleCategoryOverlap.length > 0 && categoryMatches.length > 0) {
+        score += 2; // Bonus for strong category alignment
+      }
+
+      return {
+        threadId: thread.id,
+        threadTitle: thread.title,
+        category: thread.category,
+        score,
+        titleMatches,
+        categoryMatches,
+      };
+    });
+
+    // Find the best matching thread
+    const bestMatch = scoredThreads
+      .filter(t => t.score >= 3) // Minimum score threshold
+      .sort((a, b) => b.score - a.score)[0];
+
+    if (bestMatch) {
+      console.log(`[threadManager] Auto-assigning message to thread "${bestMatch.threadTitle}" (score: ${bestMatch.score})`);
+
+      // Actually assign the message to the thread
+      await addMessageToThread(message.id, bestMatch.threadId);
+
+      return {
+        threadId: bestMatch.threadId,
+        threadTitle: bestMatch.threadTitle,
+        category: bestMatch.category,
+        score: bestMatch.score,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('[threadManager] Error auto-assigning message to thread:', error);
+    return null;
+  }
+}
+
 module.exports = {
   // Constants
   THREAD_CATEGORIES,
@@ -1060,6 +1167,7 @@ module.exports = {
   suggestThreadForMessage,
   getThread,
   analyzeConversationHistory,
+  autoAssignMessageToThread,
   // Hierarchical thread operations
   createSubThread,
   getThreadAncestors,

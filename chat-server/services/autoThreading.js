@@ -68,9 +68,9 @@ async function processMessageForThreading(message, options = {}) {
 
   try {
     // Check if Neo4j is available
-    if (!neo4jClient.isAvailable()) {
-      console.log('[AutoThreading] Neo4j not available, skipping');
-      return null;
+    const useNeo4j = neo4jClient.isAvailable();
+    if (!useNeo4j) {
+      console.log('[AutoThreading] Neo4j not available, using keyword matching fallback');
     }
 
     // Check if message should be processed
@@ -85,89 +85,115 @@ async function processMessageForThreading(message, options = {}) {
 
     console.log(`[AutoThreading] Processing message ${message.id?.substring(0, 20)}...`);
 
-    // Step 1: Generate embedding and store in Neo4j
-    const messageNode = await neo4jClient.createOrUpdateMessageNode(
-      message.id,
-      message.roomId,
-      message.text,
-      message.username,
-      message.timestamp
-    );
+    // If Neo4j is available, try semantic matching first
+    if (useNeo4j) {
+      // Step 1: Generate embedding and store in Neo4j
+      const messageNode = await neo4jClient.createOrUpdateMessageNode(
+        message.id,
+        message.roomId,
+        message.text,
+        message.username,
+        message.timestamp
+      );
 
-    if (!messageNode || !messageNode.embedding || messageNode.embedding.length === 0) {
-      console.log('[AutoThreading] Failed to generate embedding');
-      return null;
+      if (messageNode && messageNode.embedding && messageNode.embedding.length > 0) {
+        // Step 2: Find similar threads
+        const similarThreads = await neo4jClient.findSimilarThreads(
+          messageNode.embedding,
+          message.roomId,
+          CONFIG.MAX_THREADS_TO_CHECK,
+          CONFIG.SUGGEST_THRESHOLD
+        );
+
+        if (similarThreads && similarThreads.length > 0) {
+          // Step 3: Check if top match exceeds auto-assign threshold
+          const topMatch = similarThreads[0];
+          console.log(
+            `[AutoThreading] Top match: "${topMatch.title}" (similarity: ${(topMatch.similarity * 100).toFixed(1)}%)`
+          );
+
+          if (topMatch.similarity >= CONFIG.AUTO_ASSIGN_THRESHOLD) {
+            // Auto-assign to thread
+            await threadManager.addMessageToThread(message.id, topMatch.threadId);
+
+            console.log(`[AutoThreading] ✅ Auto-assigned to thread "${topMatch.title}"`);
+
+            // Notify clients
+            if (io) {
+              io.to(message.roomId).emit('message_auto_threaded', {
+                messageId: message.id,
+                threadId: topMatch.threadId,
+                threadTitle: topMatch.title,
+                similarity: topMatch.similarity,
+                autoAssigned: true,
+              });
+            }
+
+            return {
+              processed: true,
+              assigned: true,
+              threadId: topMatch.threadId,
+              threadTitle: topMatch.title,
+              similarity: topMatch.similarity,
+            };
+          } else if (topMatch.similarity >= CONFIG.SUGGEST_THRESHOLD) {
+            // Suggest thread but don't auto-assign
+            console.log(
+              `[AutoThreading] 💡 Suggesting thread "${topMatch.title}" (below auto-assign threshold)`
+            );
+
+            if (io) {
+              io.to(message.roomId).emit('thread_suggestion', {
+                messageId: message.id,
+                suggestions: similarThreads.slice(0, 3).map(t => ({
+                  threadId: t.threadId,
+                  title: t.title,
+                  similarity: t.similarity,
+                })),
+              });
+            }
+
+            return {
+              processed: true,
+              assigned: false,
+              reason: 'suggested_only',
+              suggestions: similarThreads.slice(0, 3),
+            };
+          }
+        }
+      }
     }
 
-    // Step 2: Find similar threads
-    const similarThreads = await neo4jClient.findSimilarThreads(
-      messageNode.embedding,
-      message.roomId,
-      CONFIG.MAX_THREADS_TO_CHECK,
-      CONFIG.SUGGEST_THRESHOLD
-    );
+    // Fallback to fast keyword-based matching (works without Neo4j)
+    console.log('[AutoThreading] Using keyword matching fallback');
+    const keywordResult = await threadManager.autoAssignMessageToThread(message);
 
-    if (!similarThreads || similarThreads.length === 0) {
-      console.log('[AutoThreading] No similar threads found');
-      return { processed: true, assigned: false, reason: 'no_similar_threads' };
-    }
-
-    // Step 3: Check if top match exceeds auto-assign threshold
-    const topMatch = similarThreads[0];
-    console.log(
-      `[AutoThreading] Top match: "${topMatch.title}" (similarity: ${(topMatch.similarity * 100).toFixed(1)}%)`
-    );
-
-    if (topMatch.similarity >= CONFIG.AUTO_ASSIGN_THRESHOLD) {
-      // Auto-assign to thread
-      await threadManager.addMessageToThread(message.id, topMatch.threadId);
-
-      console.log(`[AutoThreading] ✅ Auto-assigned to thread "${topMatch.title}"`);
+    if (keywordResult) {
+      console.log(`[AutoThreading] ✅ Keyword match: assigned to "${keywordResult.threadTitle}" (score: ${keywordResult.score})`);
 
       // Notify clients
       if (io) {
         io.to(message.roomId).emit('message_auto_threaded', {
           messageId: message.id,
-          threadId: topMatch.threadId,
-          threadTitle: topMatch.title,
-          similarity: topMatch.similarity,
+          threadId: keywordResult.threadId,
+          threadTitle: keywordResult.threadTitle,
+          category: keywordResult.category,
           autoAssigned: true,
+          method: 'keyword',
         });
       }
 
       return {
         processed: true,
         assigned: true,
-        threadId: topMatch.threadId,
-        threadTitle: topMatch.title,
-        similarity: topMatch.similarity,
-      };
-    } else if (topMatch.similarity >= CONFIG.SUGGEST_THRESHOLD) {
-      // Suggest thread but don't auto-assign
-      console.log(
-        `[AutoThreading] 💡 Suggesting thread "${topMatch.title}" (below auto-assign threshold)`
-      );
-
-      if (io) {
-        io.to(message.roomId).emit('thread_suggestion', {
-          messageId: message.id,
-          suggestions: similarThreads.slice(0, 3).map(t => ({
-            threadId: t.threadId,
-            title: t.title,
-            similarity: t.similarity,
-          })),
-        });
-      }
-
-      return {
-        processed: true,
-        assigned: false,
-        reason: 'suggested_only',
-        suggestions: similarThreads.slice(0, 3),
+        threadId: keywordResult.threadId,
+        threadTitle: keywordResult.threadTitle,
+        category: keywordResult.category,
+        method: 'keyword',
       };
     }
 
-    return { processed: true, assigned: false, reason: 'low_similarity' };
+    return { processed: true, assigned: false, reason: 'no_matching_threads' };
   } catch (error) {
     console.error('[AutoThreading] Error processing message:', error.message);
     // Don't throw - auto-threading is non-critical
