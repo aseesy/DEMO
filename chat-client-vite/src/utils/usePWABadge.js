@@ -8,6 +8,11 @@ import { useEffect } from 'react';
  */
 export function usePWABadge(unreadCount) {
   useEffect(() => {
+    // Only run in browser (not during SSR/build)
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return;
+    }
+
     // Check if Badge API is supported
     if ('setAppBadge' in navigator) {
       try {
