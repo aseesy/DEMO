@@ -49,7 +49,17 @@ export function AuthProvider({ children }) {
   const initialAuthState = React.useMemo(() => {
     const storedToken = authStorage.getToken();
     const storedUsername = authStorage.getUsername();
-    const storedEmail = storage.getString(StorageKeys.USER_EMAIL);
+    // Try to get email from storage, with fallback to stored user object
+    let storedEmail = storage.getString(StorageKeys.USER_EMAIL);
+    if (!storedEmail) {
+      // Fallback: try to get email from stored user object (for users who logged in before email storage was added)
+      const storedUser = storage.get(StorageKeys.CHAT_USER);
+      if (storedUser?.email) {
+        storedEmail = storedUser.email;
+        // Migrate: store the email for future loads
+        storage.set(StorageKeys.USER_EMAIL, storedEmail);
+      }
+    }
     const storedIsAuthenticated = authStorage.isAuthenticated();
 
     console.log('[AuthContext] Initializing auth state from storage:', {
@@ -109,7 +119,16 @@ export function AuthProvider({ children }) {
   const loadAuthState = React.useCallback(() => {
     const storedToken = authStorage.getToken();
     const storedUsername = authStorage.getUsername();
-    const storedEmail = storage.getString(StorageKeys.USER_EMAIL);
+    // Try to get email from storage, with fallback to stored user object
+    let storedEmail = storage.getString(StorageKeys.USER_EMAIL);
+    if (!storedEmail) {
+      // Fallback: try to get email from stored user object
+      const storedUser = storage.get(StorageKeys.CHAT_USER);
+      if (storedUser?.email) {
+        storedEmail = storedUser.email;
+        storage.set(StorageKeys.USER_EMAIL, storedEmail);
+      }
+    }
     const storedIsAuthenticated = authStorage.isAuthenticated();
 
     // Validate token if present
