@@ -106,9 +106,11 @@ describe('messageOperations', () => {
     });
 
     it('should return error when user not found', () => {
-      const activeUsers = new Map();
+      const userSessionService = {
+        getUserBySocketId: jest.fn().mockReturnValue(null),
+      };
 
-      const result = validateActiveUser(activeUsers, 'unknown-socket');
+      const result = validateActiveUser(userSessionService, 'unknown-socket');
       expect(result).toEqual({
         valid: false,
         error: 'You must join before sending messages.',
