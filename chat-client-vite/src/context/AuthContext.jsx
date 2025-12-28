@@ -224,10 +224,12 @@ export function AuthProvider({ children }) {
           setToken(storedToken);
           authStorage.setAuthenticated(true);
 
-          if (user.username) {
-            setUsername(user.username);
-            authStorage.setUsername(user.username);
-            setUserID(user.username);
+          // Backend returns email, not username - use email as the identifier
+          const userIdentifier = user.email || user.username;
+          if (userIdentifier) {
+            setUsername(userIdentifier);
+            authStorage.setUsername(userIdentifier);
+            setUserID(userIdentifier);
             setUserProperties(calculateUserProperties(user, false));
           }
 
@@ -298,10 +300,12 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true);
       authStorage.setAuthenticated(true);
 
-      if (user?.username) {
-        setUsername(user.username);
-        authStorage.setUsername(user.username);
-        setUserID(user.username);
+      // Backend returns email, not username - use email as the identifier
+      const userIdentifier = user?.email || user?.username;
+      if (userIdentifier) {
+        setUsername(userIdentifier);
+        authStorage.setUsername(userIdentifier);
+        setUserID(userIdentifier);
         setUserProperties(calculateUserProperties(user, false));
       }
 
@@ -359,10 +363,12 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true);
       authStorage.setAuthenticated(true);
 
-      if (user?.username) {
-        setUsername(user.username);
-        authStorage.setUsername(user.username);
-        setUserID(user.username);
+      // Backend returns email, not username - use email as the identifier
+      const userIdentifier = user?.email || user?.username;
+      if (userIdentifier) {
+        setUsername(userIdentifier);
+        authStorage.setUsername(userIdentifier);
+        setUserID(userIdentifier);
         setUserProperties(calculateUserProperties(user, true));
       }
 
