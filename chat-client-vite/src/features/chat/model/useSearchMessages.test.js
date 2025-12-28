@@ -356,7 +356,7 @@ describe('useSearchMessages', () => {
         result.current.exitSearchMode();
       });
 
-      expect(mockSocketRef.current.emit).toHaveBeenCalledWith('join', { username: 'testuser' });
+      expect(mockSocketRef.current.emit).toHaveBeenCalledWith('join', { email: 'testuser' });
     });
   });
 

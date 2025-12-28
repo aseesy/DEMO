@@ -78,7 +78,7 @@ export function useSearchMessages({ socketRef, username, setError }) {
     setSearchTotal(0);
     // Re-join to reload current messages
     if (socketRef?.current?.connected && username) {
-      socketRef.current.emit('join', { username });
+      socketRef.current.emit('join', { email: username });
     }
   }, [socketRef, username]);
 

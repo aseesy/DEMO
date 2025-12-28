@@ -175,7 +175,7 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
       socketRef.current?.connected &&
       !isJoined
     ) {
-      socketRef.current.emit('join', { username });
+      socketRef.current.emit('join', { email: username });
     }
   }, [currentView, isAuthenticated, username, isJoined]);
 
