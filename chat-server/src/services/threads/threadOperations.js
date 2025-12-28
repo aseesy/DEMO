@@ -129,13 +129,16 @@ async function getThreadMessages(threadId, limit = 50) {
     const db = require('../../../dbPostgres');
     // Get messages for this thread, excluding system messages, private, and flagged
     // Order by sequence number (handles out-of-order delivery), fallback to timestamp
+    // Join with users table to get first_name for display
     const query = `
-      SELECT * FROM messages
-      WHERE thread_id = $1
-        AND (private = 0 OR private IS NULL)
-        AND (flagged = 0 OR flagged IS NULL)
-        AND type != 'system'
-      ORDER BY COALESCE(thread_sequence, 0) ASC, timestamp ASC
+      SELECT m.*, u.first_name, u.display_name
+      FROM messages m
+      LEFT JOIN users u ON m.user_email = u.email
+      WHERE m.thread_id = $1
+        AND (m.private = 0 OR m.private IS NULL)
+        AND (m.flagged = 0 OR m.flagged IS NULL)
+        AND m.type != 'system'
+      ORDER BY COALESCE(m.thread_sequence, 0) ASC, m.timestamp ASC
       LIMIT $2
     `;
 
@@ -145,6 +148,9 @@ async function getThreadMessages(threadId, limit = 50) {
       id: msg.id,
       type: msg.type,
       username: msg.username,
+      userEmail: msg.user_email,
+      firstName: msg.first_name,
+      displayName: msg.display_name,
       text: msg.text,
       timestamp: msg.timestamp,
       threadId: msg.thread_id,

@@ -9,29 +9,22 @@ import React from 'react';
 import { UpdatesPanel } from '../updates/UpdatesPanel.jsx';
 import { CommunicationStatsWidget } from './components/CommunicationStatsWidget.jsx';
 import { TaskCard, filterTasksForDashboard, getDefaultTaskFormData } from '../tasks';
-
-/**
- * Thread category configuration with colors and icons
- */
-const THREAD_CATEGORIES = {
-  schedule: { label: 'Schedule', color: 'bg-blue-100 text-blue-700', icon: '📅' },
-  medical: { label: 'Medical', color: 'bg-red-100 text-red-700', icon: '🏥' },
-  education: { label: 'Education', color: 'bg-purple-100 text-purple-700', icon: '📚' },
-  finances: { label: 'Finances', color: 'bg-green-100 text-green-700', icon: '💰' },
-  activities: { label: 'Activities', color: 'bg-orange-100 text-orange-700', icon: '⚽' },
-  travel: { label: 'Travel', color: 'bg-cyan-100 text-cyan-700', icon: '✈️' },
-  safety: { label: 'Safety', color: 'bg-yellow-100 text-yellow-800', icon: '🛡️' },
-  logistics: { label: 'Logistics', color: 'bg-gray-100 text-gray-700', icon: '📦' },
-  'co-parenting': { label: 'Co-Parenting', color: 'bg-teal-100 text-teal-700', icon: '🤝' },
-};
+import {
+  THREAD_CATEGORIES,
+  getCategoryConfig,
+  groupThreadsByCategory,
+  getCategoriesWithThreads,
+} from '../../config/threadCategories.js';
 
 /**
  * Category badge component for threads
  */
 function CategoryBadge({ category }) {
-  const config = THREAD_CATEGORIES[category] || THREAD_CATEGORIES.logistics;
+  const config = getCategoryConfig(category);
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}
+    >
       <span>{config.icon}</span>
       <span>{config.label}</span>
     </span>
@@ -424,7 +417,7 @@ function TaskList({
 }
 
 /**
- * Threads section component
+ * Threads section component - Groups threads by category
  */
 function ThreadsSection({
   threads,
@@ -438,14 +431,13 @@ function ThreadsSection({
   isLoadingThreadMessages,
 }) {
   const [expandedThreadId, setExpandedThreadId] = React.useState(null);
+  const [collapsedCategories, setCollapsedCategories] = React.useState({});
 
   const handleThreadClick = threadId => {
     if (expandedThreadId === threadId) {
-      // Collapse if already expanded
       setExpandedThreadId(null);
       setSelectedThreadId(null);
     } else {
-      // Expand and load messages
       setExpandedThreadId(threadId);
       setSelectedThreadId(threadId);
       if (getThreadMessages) {
@@ -454,13 +446,27 @@ function ThreadsSection({
     }
   };
 
+  const toggleCategoryCollapse = category => {
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category],
+    }));
+  };
+
+  // Group threads by category
+  const groupedThreads = React.useMemo(() => groupThreadsByCategory(threads), [threads]);
+  const categoriesWithThreads = React.useMemo(
+    () => getCategoriesWithThreads(groupedThreads),
+    [groupedThreads]
+  );
+
   return (
     <div className="bg-white rounded-2xl border-2 border-teal-light shadow-sm hover:shadow-md transition-shadow overflow-hidden mt-4 md:mt-6">
       <div className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-semibold text-teal-dark mb-1">Conversations</h2>
-            <p className="text-sm text-gray-600">Recent discussion threads</p>
+            <p className="text-sm text-gray-600">Organized by topic</p>
           </div>
           {threads.length > 0 && (
             <button
@@ -475,30 +481,101 @@ function ThreadsSection({
         {threads.length === 0 ? (
           <EmptyThreadsState onAnalyze={analyzeConversation} isLoading={isLoadingThreads} />
         ) : (
-          <div className="space-y-2">
-            {threads.slice(0, 5).map(thread => (
-              <div key={thread.id}>
-                <ThreadCard
-                  thread={thread}
-                  isExpanded={expandedThreadId === thread.id}
-                  onClick={() => handleThreadClick(thread.id)}
-                />
-                {/* Inline thread messages */}
-                {expandedThreadId === thread.id && (
-                  <ThreadMessagesInline
-                    messages={threadMessages[thread.id] || []}
-                    isLoading={isLoadingThreadMessages}
-                    onClose={() => {
-                      setExpandedThreadId(null);
-                      setSelectedThreadId(null);
-                    }}
-                  />
-                )}
-              </div>
+          <div className="space-y-4">
+            {categoriesWithThreads.map(({ category, config, threads: categoryThreads }) => (
+              <CategoryGroup
+                key={category}
+                category={category}
+                config={config}
+                threads={categoryThreads}
+                isCollapsed={collapsedCategories[category]}
+                onToggleCollapse={() => toggleCategoryCollapse(category)}
+                expandedThreadId={expandedThreadId}
+                onThreadClick={handleThreadClick}
+                threadMessages={threadMessages}
+                isLoadingThreadMessages={isLoadingThreadMessages}
+                setExpandedThreadId={setExpandedThreadId}
+                setSelectedThreadId={setSelectedThreadId}
+              />
             ))}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Category group component - Collapsible group of threads under a category
+ */
+function CategoryGroup({
+  category,
+  config,
+  threads,
+  isCollapsed,
+  onToggleCollapse,
+  expandedThreadId,
+  onThreadClick,
+  threadMessages,
+  isLoadingThreadMessages,
+  setExpandedThreadId,
+  setSelectedThreadId,
+}) {
+  return (
+    <div className={`rounded-xl border-2 ${config.borderColor} overflow-hidden`}>
+      {/* Category Header */}
+      <button
+        onClick={onToggleCollapse}
+        className={`w-full flex items-center justify-between p-3 ${config.color} transition-colors hover:opacity-90`}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{config.icon}</span>
+          <span className="font-semibold">{config.label}</span>
+          <span className="text-xs opacity-75 bg-white/30 px-2 py-0.5 rounded-full">
+            {threads.length} {threads.length === 1 ? 'thread' : 'threads'}
+          </span>
+        </div>
+        <svg
+          className={`w-5 h-5 transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Thread List */}
+      {!isCollapsed && (
+        <div className="p-2 space-y-2 bg-white">
+          {threads.slice(0, 3).map(thread => (
+            <div key={thread.id}>
+              <ThreadCard
+                thread={thread}
+                isExpanded={expandedThreadId === thread.id}
+                onClick={() => onThreadClick(thread.id)}
+                compact
+              />
+              {expandedThreadId === thread.id && (
+                <ThreadMessagesInline
+                  messages={threadMessages[thread.id] || []}
+                  isLoading={isLoadingThreadMessages}
+                  onClose={() => {
+                    setExpandedThreadId(null);
+                    setSelectedThreadId(null);
+                  }}
+                />
+              )}
+            </div>
+          ))}
+          {threads.length > 3 && (
+            <p className="text-xs text-gray-500 text-center py-1">
+              +{threads.length - 3} more threads in this category
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -563,45 +640,56 @@ function EmptyThreadsState({ onAnalyze, isLoading }) {
 
 /**
  * Thread card component
+ * @param {object} props
+ * @param {object} props.thread - Thread data
+ * @param {function} props.onClick - Click handler
+ * @param {boolean} props.isExpanded - Whether thread messages are expanded
+ * @param {boolean} props.compact - Whether to show compact version (no category badge)
  */
-function ThreadCard({ thread, onClick, isExpanded }) {
+function ThreadCard({ thread, onClick, isExpanded, compact = false }) {
   return (
     <div
       onClick={onClick}
-      className={`p-4 border-2 rounded-xl transition-all cursor-pointer shadow-sm hover:shadow-md ${
+      className={`${compact ? 'p-3' : 'p-4'} border-2 rounded-xl transition-all cursor-pointer shadow-sm hover:shadow-md ${
         isExpanded
           ? 'border-teal-medium bg-teal-lightest'
           : 'border-teal-light hover:border-teal-medium hover:bg-teal-lightest'
       }`}
     >
-      <div className="flex items-start gap-4">
-        <div
-          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-            isExpanded
-              ? 'bg-teal-medium text-white'
-              : 'bg-white border-2 border-teal-light text-teal-medium'
-          }`}
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
+      <div className="flex items-start gap-3">
+        {!compact && (
+          <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+              isExpanded
+                ? 'bg-teal-medium text-white'
+                : 'bg-white border-2 border-teal-light text-teal-medium'
+            }`}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-        </div>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3 mb-1">
-            <h3 className="text-base font-semibold text-teal-dark truncate">{thread.title}</h3>
+            <h3
+              className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-teal-dark truncate`}
+            >
+              {thread.title}
+            </h3>
             <div className="flex items-center gap-2 shrink-0">
               {thread.message_count > 0 && (
-                <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded-lg">
+                <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-lg">
                   {thread.message_count} {thread.message_count === 1 ? 'msg' : 'msgs'}
                 </span>
               )}
@@ -616,9 +704,9 @@ function ThreadCard({ thread, onClick, isExpanded }) {
               </svg>
             </div>
           </div>
-          {/* Category badge and date */}
+          {/* Category badge (only in non-compact) and date */}
           <div className="flex items-center gap-2 flex-wrap">
-            {thread.category && <CategoryBadge category={thread.category} />}
+            {!compact && thread.category && <CategoryBadge category={thread.category} />}
             {thread.last_message_at && (
               <span className="text-xs text-gray-500">
                 {new Date(thread.last_message_at).toLocaleDateString()}
@@ -654,34 +742,47 @@ function ThreadMessagesInline({ messages, isLoading, onClose }) {
     );
   }
 
+  // Helper to get display name from message
+  const getDisplayName = msg => {
+    // Priority: firstName > displayName > username (extract from email)
+    if (msg.firstName) return msg.firstName;
+    if (msg.displayName) return msg.displayName;
+    // Extract name from email (before @) or use username
+    const emailOrUsername = msg.userEmail || msg.username || '';
+    const nameFromEmail = emailOrUsername.split('@')[0];
+    // Capitalize first letter
+    return nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1).toLowerCase();
+  };
+
   return (
     <div className="mt-2 bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
       <div className="max-h-64 overflow-y-auto p-3 space-y-2">
-        {messages.slice(-10).map((msg, idx) => (
-          <div key={msg.id || idx} className="flex gap-2">
-            <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-              <span className="text-xs font-semibold text-teal-700">
-                {(msg.username || 'U').charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-baseline gap-2">
-                <span className="text-xs font-semibold text-teal-dark">
-                  {msg.username || 'User'}
-                </span>
-                <span className="text-xs text-gray-400">
-                  {msg.timestamp
-                    ? new Date(msg.timestamp).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : ''}
+        {messages.slice(-10).map((msg, idx) => {
+          const displayName = getDisplayName(msg);
+          return (
+            <div key={msg.id || idx} className="flex gap-2">
+              <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                <span className="text-xs font-semibold text-teal-700">
+                  {displayName.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <p className="text-sm text-gray-700 break-words">{msg.text}</p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-semibold text-teal-dark">{displayName}</span>
+                  <span className="text-xs text-gray-400">
+                    {msg.timestamp
+                      ? new Date(msg.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : ''}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-700 break-words">{msg.text}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div className="p-2 border-t border-gray-200 bg-white flex justify-end">
         <button
