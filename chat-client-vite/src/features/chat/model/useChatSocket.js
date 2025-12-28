@@ -10,13 +10,18 @@ import { SOCKET_URL } from '../../../config.js';
 
 // Import SocketEvents for type-safe event names
 // Note: Full migration to SocketAdapter pending - current code uses raw socket.io
-import { SocketEvents, getSocketUrl as getAdapterSocketUrl } from '../../../adapters/socket';
+import { SocketEvents } from '../../../adapters/socket';
 
 /**
  * getSocketUrl - Returns socket URL from central config
+ * Uses SOCKET_URL from config.js as the single source of truth
  */
 function getSocketUrl() {
-  return window.SOCKET_URL || SOCKET_URL;
+  // Allow runtime override via window (for testing/debugging)
+  if (typeof window !== 'undefined' && window.SOCKET_URL) {
+    return window.SOCKET_URL;
+  }
+  return SOCKET_URL;
 }
 
 /**

@@ -1,40 +1,110 @@
-// Shared frontend configuration for the LiaiZen Vite app
-// Central place to control the backend API base URL.
-// Build timestamp: 2025-11-27T07:47:00Z - force rebuild for API URL fix
+/**
+ * Central Frontend Configuration - Single Source of Truth
+ *
+ * All configuration values should be imported from this file.
+ * Never hardcode ports, URLs, or other config values elsewhere.
+ *
+ * HOW TO CHANGE PORTS:
+ * 1. Backend port: Update chat-server/.env -> PORT=3000
+ * 2. Frontend API URL: Update chat-client-vite/.env -> VITE_API_URL=http://localhost:3000
+ *
+ * The fallback ports below are ONLY used if VITE_API_URL is not set in .env
+ */
 
-// Production Railway API URL
+// =============================================================================
+// FALLBACK PORT CONFIGURATION - Only used if VITE_API_URL is not set
+// These should match the backend's DEFAULT_BACKEND_PORT in chat-server/config.js
+// =============================================================================
+const DEV_BACKEND_PORT = 3000;
+const DEV_FRONTEND_PORT = 5173;
+
+// =============================================================================
+// PRODUCTION URLs
+// =============================================================================
 const PRODUCTION_API_URL = 'https://demo-production-6dcd.up.railway.app';
+const PRODUCTION_DOMAINS = ['coparentliaizen.com', 'vercel.app'];
 
-// Determine API URL:
-// 1. Use VITE_API_URL if explicitly set (recommended - set in .env.local for dev, Vercel env vars for production)
-// 2. Fall back to production Railway URL for production domains
-// 3. Fall back to localhost:3001 for development
+// =============================================================================
+// ENVIRONMENT DETECTION
+// =============================================================================
+const isProduction = () => {
+  if (typeof window === 'undefined') return true;
+  const origin = window.location.origin;
+  return PRODUCTION_DOMAINS.some(domain => origin.includes(domain));
+};
+
+const isDevelopment = () => {
+  if (typeof window === 'undefined') return false;
+  const origin = window.location.origin;
+  return origin.includes('localhost') || origin.includes('127.0.0.1');
+};
+
+// =============================================================================
+// API URL RESOLUTION
+// =============================================================================
 function getApiBaseUrl() {
-  // Explicit configuration takes precedence - this should be set in all environments
+  // 1. Explicit env var takes precedence
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
 
-  // Fallback logic based on the current domain
-  if (typeof window !== 'undefined') {
-    const origin = window.location.origin;
-
-    // Development - use same hostname as frontend but port 3001
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      const hostname = window.location.hostname || 'localhost';
-      const url = `http://${hostname}:3001`;
-      console.log(`[config] Development environment detected. Origin: ${origin}, API URL: ${url}`);
-      return url;
-    }
-
-    // Production domains - use Railway API
-    if (origin.includes('coparentliaizen.com') || origin.includes('vercel.app')) {
-      return PRODUCTION_API_URL;
-    }
+  // 2. Development - use configured port
+  if (isDevelopment()) {
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    return `http://${hostname}:${DEV_BACKEND_PORT}`;
   }
 
-  // Server-side rendering fallback - use production for safety
+  // 3. Production fallback
   return PRODUCTION_API_URL;
 }
 
-export const API_BASE_URL = getApiBaseUrl();
+// =============================================================================
+// SOCKET URL RESOLUTION
+// =============================================================================
+function getSocketUrl() {
+  // Socket URL is same as API URL (backend serves both)
+  return getApiBaseUrl();
+}
+
+// =============================================================================
+// EXPORTS
+// =============================================================================
+// Compute URLs - ensure they're available at build time
+// During build, window is undefined, so we use production fallback
+const apiBaseUrl = getApiBaseUrl();
+const socketUrl = getSocketUrl();
+
+// Explicit named exports for static analysis
+export const API_BASE_URL = apiBaseUrl;
+export const SOCKET_URL = socketUrl;
+
+// Also export as getters for runtime access (if needed)
+export function getSocketUrlValue() {
+  return socketUrl;
+}
+
+export function getApiBaseUrlValue() {
+  return apiBaseUrl;
+}
+
+// Export for use in other files that need the raw values
+export const config = {
+  // Ports
+  DEV_BACKEND_PORT,
+  DEV_FRONTEND_PORT,
+
+  // URLs
+  API_BASE_URL,
+  SOCKET_URL,
+  PRODUCTION_API_URL,
+
+  // Environment
+  isProduction,
+  isDevelopment,
+
+  // Helpers
+  getApiBaseUrl,
+  getSocketUrl,
+};
+
+export default config;
