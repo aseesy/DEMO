@@ -6,30 +6,21 @@
  */
 
 import { API_BASE_URL } from '../config.js';
-import { apiPost } from '../apiClient.js';
-import { authStorage } from '../adapters/storage';
+import { apiGet, apiPost } from '../apiClient.js';
 import { logger } from './logger.js';
 
 /**
  * Query: Check if room has multiple members (co-parent connected)
+ * Uses apiGet for proper auth header and 401 handling
  * @returns {Promise<Object>} { hasMultipleMembers: boolean, error?: string }
  */
 export async function queryRoomMembers() {
   try {
-    const token = authStorage.getToken();
-    const apiUrl = `${API_BASE_URL.replace(/\/+$/, '')}/api/room/members/check`;
-
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      credentials: 'include',
+    const response = await apiGet('/api/room/members/check', {
       signal: controller.signal,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
     });
 
     clearTimeout(timeoutId);
@@ -46,6 +37,7 @@ export async function queryRoomMembers() {
       return { success: false, notFound: true };
     }
 
+    // 401 errors will trigger auth failure event via apiGet
     return { success: false, error: `HTTP ${response.status}` };
   } catch (err) {
     const isNetworkError =
@@ -88,19 +80,12 @@ export function queryCoParentFromMessages(messages, username) {
 
 /**
  * Query: Fetch user's invitations status
+ * Uses apiGet to ensure proper auth header and 401 handling
  * @returns {Promise<Object>} { sent: Array, received: Array }
  */
 export async function queryInvitationsStatus() {
   try {
-    const token = authStorage.getToken();
-    const response = await fetch(`${API_BASE_URL.replace(/\/+$/, '')}/api/invitations`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    });
+    const response = await apiGet('/api/invitations');
 
     if (response.ok) {
       const data = await response.json();
@@ -111,6 +96,7 @@ export async function queryInvitationsStatus() {
       };
     }
 
+    // 401 errors will trigger auth failure event via apiGet
     return { success: false, error: `HTTP ${response.status}` };
   } catch (err) {
     logger.error('[queryInvitationsStatus] Error checking invitations', err);
@@ -154,21 +140,14 @@ export async function commandJoinRoom(inviteCode, username) {
 
 /**
  * Command: Accept co-parent invitation by code
+ * Uses apiPost for proper auth header and 401 handling
  * @param {string} code - The LZ-XXXXXX code
  * @returns {Promise<Object>} Accept result
  */
 export async function commandAcceptCoParentInvite(code) {
   try {
-    const token = authStorage.getToken();
-    const response = await fetch(`${API_BASE_URL.replace(/\/+$/, '')}/api/invitations/accept-code`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      credentials: 'include',
-      body: JSON.stringify({ code: code.toUpperCase() }),
+    const response = await apiPost('/api/invitations/accept-code', {
+      code: code.toUpperCase(),
     });
 
     const data = await response.json();
