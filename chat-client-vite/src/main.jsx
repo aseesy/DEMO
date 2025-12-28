@@ -27,24 +27,11 @@ registerAllModalHooks();
 // This ensures Safari service worker errors are caught early
 import './utils/errorMonitor.js';
 
-// Initialize Sentry for error tracking (optional - only if DSN is configured)
-// Wrap in try-catch to prevent errors if Sentry module fails to load
-try {
-  if (import.meta.env.VITE_SENTRY_DSN && typeof window !== 'undefined') {
-    // Dynamic import to prevent build errors if @sentry/react is not available
-    import('./services/errorHandling/sentry-config.js')
-      .then(module => {
-        if (module && module.initSentry) {
-          module.initSentry(import.meta.env.VITE_SENTRY_DSN);
-        }
-      })
-      .catch(() => {
-        // Silently ignore - Sentry is optional
-      });
-  }
-} catch (error) {
-  // Silently ignore - Sentry is optional
-}
+// Sentry removed - ErrorLoggingService handles error tracking via console logging
+// If you need production error tracking, consider:
+// 1. Server-side error logging endpoint
+// 2. Custom error tracking service
+// 3. Re-add Sentry as a regular dependency (not optional)
 
 // Inject Google Tag immediately (before React loads)
 // This runs synchronously to ensure tag is present before any other scripts
