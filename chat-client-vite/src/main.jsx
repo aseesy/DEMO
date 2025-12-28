@@ -73,32 +73,23 @@ const shouldRegisterServiceWorker =
 
 if (shouldRegisterServiceWorker) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js', { scope: '/' })
-      .then(registration => {
-        console.log('[PWA] Service Worker registered successfully:', registration.scope);
-      })
-      .catch(error => {
-        console.error('[PWA] Service Worker registration failed:', error);
+    if (!navigator.serviceWorker.controller) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+        // Silently ignore registration errors - vite-plugin-pwa handles this
       });
+    }
   });
-} else if (isSafari && !isStandalone) {
-  console.log('[main.jsx] Safari detected (not installed as PWA) - Service Worker disabled');
-} else if (import.meta.env.DEV) {
-  console.log('[main.jsx] Development mode - Service Worker disabled');
 }
 
 // Ensure root element exists
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  console.error('❌ Root element not found! Check index.html');
-  // Instead of throwing, try to create it
+  // Try to create it if missing
   const body = document.body;
   if (body) {
     const newRoot = document.createElement('div');
     newRoot.id = 'root';
     body.appendChild(newRoot);
-    console.log('✅ Created root element');
     createRoot(newRoot).render(
       <StrictMode>
         <App />
@@ -108,8 +99,6 @@ if (!rootElement) {
     throw new Error('Root element #root not found in DOM and cannot create it');
   }
 } else {
-  console.log('✅ Root element found, mounting React app...');
-
   // Clear any existing content
   rootElement.innerHTML = '';
 
@@ -119,9 +108,7 @@ if (!rootElement) {
         <App />
       </StrictMode>
     );
-    console.log('✅ React app mounted successfully');
   } catch (error) {
-    console.error('❌ Error mounting React app:', error);
     // Show error message in the DOM
     rootElement.innerHTML = `
       <div style="padding: 20px; font-family: system-ui; color: #dc2626;">

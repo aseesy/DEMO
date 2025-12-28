@@ -8,7 +8,9 @@
 ## ✅ Completed
 
 ### 1. Repository Interfaces Created
+
 All abstractions are in place:
+
 - `IGenericRepository` - Base CRUD operations
 - `IUserRepository` - User-specific operations
 - `IRoomRepository` - Room-specific operations
@@ -18,7 +20,9 @@ All abstractions are in place:
 **Location**: `chat-server/src/repositories/interfaces/`
 
 ### 2. PostgreSQL Implementations Created
+
 All concrete implementations are ready:
+
 - `PostgresGenericRepository` - Generic CRUD with PostgreSQL
 - `PostgresUserRepository` - User operations with PostgreSQL
 - `PostgresRoomRepository` - Room operations with PostgreSQL
@@ -28,12 +32,14 @@ All concrete implementations are ready:
 **Location**: `chat-server/src/repositories/postgres/`
 
 ### 3. BaseService Refactored
+
 - ✅ No longer directly imports `dbPostgres`
 - ✅ Depends on `IGenericRepository` interface
 - ✅ Accepts repository via constructor (dependency injection ready)
 - ✅ Maintains backward compatibility (can still use tableName)
 
 ### 4. Services Refactored
+
 The following services now use repositories:
 
 - ✅ **ProfileService** - Uses `PostgresUserRepository` and `PostgresContactRepository`
@@ -50,6 +56,7 @@ The following services now use repositories:
 Some services still pass `db` to external libraries. These are **legitimate dependencies** that require separate library refactoring:
 
 #### PairingService (8 instances)
+
 ```javascript
 const db = require('../../../dbPostgres');
 // Passed to pairingManager methods:
@@ -66,6 +73,7 @@ const db = require('../../../dbPostgres');
 **Status**: These require refactoring `pairingManager` and `invitationFactory` libraries to accept repositories instead of `db`. This is a separate, larger refactoring effort.
 
 #### InvitationService (8 instances)
+
 ```javascript
 const db = require('../../../dbPostgres');
 // Passed to invitationManager and roomManager
@@ -74,6 +82,7 @@ const db = require('../../../dbPostgres');
 **Status**: Similar to pairingService - requires library refactoring.
 
 #### RoomService (1 instance)
+
 ```javascript
 const db = require('../../../dbPostgres');
 // Passed to pairingManager.getActivePairing(..., db)
@@ -117,22 +126,25 @@ const db = require('../../../dbPostgres');
 ## 🎯 Verification Results
 
 ### Before Implementation
+
 ```bash
 $ grep -r "require.*dbPostgres" chat-server/src/services
 # Found: 18 direct dependencies
 ```
 
 ### After Implementation
+
 ```bash
 $ grep -r "require.*dbPostgres" chat-server/src/services
 # Found: 3 module-level requires (optimized from 17+)
 # - pairingService.js: 1 (cached as this.db)
-# - invitationService.js: 1 (cached as this.db)  
+# - invitationService.js: 1 (cached as this.db)
 # - roomService.js: 1 (cached as this.db)
 # All are for external library calls only
 ```
 
 ### SQL Queries in Services
+
 **Before**: 70+ SQL queries in service business logic  
 **After**: SQL queries moved to repository layer (services use repository methods)
 
@@ -172,6 +184,7 @@ $ grep -r "require.*dbPostgres" chat-server/src/services
 ## 📚 Usage Examples
 
 ### Creating a Repository
+
 ```javascript
 const { PostgresUserRepository } = require('./repositories');
 
@@ -180,6 +193,7 @@ const user = await userRepo.findByUsername('john');
 ```
 
 ### Using in a Service
+
 ```javascript
 const { BaseService } = require('./BaseService');
 const { PostgresUserRepository } = require('./repositories');
@@ -189,7 +203,7 @@ class MyService extends BaseService {
     super(null, new PostgresUserRepository());
     this.userRepository = this.repository;
   }
-  
+
   async getUser(username) {
     return this.userRepository.findByUsername(username);
   }
@@ -197,9 +211,10 @@ class MyService extends BaseService {
 ```
 
 ### Testing with Mock Repository
+
 ```javascript
 const mockRepo = {
-  findByUsername: jest.fn().mockResolvedValue({ id: 1, username: 'test' })
+  findByUsername: jest.fn().mockResolvedValue({ id: 1, username: 'test' }),
 };
 
 const service = new MyService();
@@ -210,4 +225,3 @@ service.setRepository(mockRepo);
 ---
 
 **Conclusion**: Core DIP compliance achieved. Remaining direct database dependencies are for external libraries that would require separate refactoring efforts.
-

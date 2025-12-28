@@ -57,8 +57,8 @@ export function SettingsView({
   };
 
   return (
-    <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg">
-      <div className="p-3 sm:p-4 md:p-6 space-y-4">
+    <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden w-full max-w-full">
+      <div className="p-3 sm:p-4 md:p-6 space-y-4 w-full max-w-full">
         <div>
           <h2 className="text-2xl sm:text-3xl font-semibold text-teal-dark mb-2">Settings</h2>
         </div>
@@ -68,7 +68,7 @@ export function SettingsView({
           <PWAInstallButton />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 w-full">
           {/* Notifications Settings */}
           <NotificationSettingsCard
             notifications={notifications}

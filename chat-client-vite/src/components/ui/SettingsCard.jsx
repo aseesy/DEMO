@@ -43,18 +43,24 @@ export function SettingsCard({
 
   return (
     <div
-      className={`border-2 ${styles.card} rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow ${className}`}
+      className={`border-2 ${styles.card} rounded-2xl p-4 sm:p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow overflow-hidden w-full ${className}`}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         <div
-          className={`w-12 h-12 rounded-xl ${styles.iconBg} flex items-center justify-center shrink-0 shadow-md`}
+          className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${styles.iconBg} flex items-center justify-center shrink-0 shadow-md`}
         >
           {icon}
         </div>
-        <div className="flex-1">
-          <h3 className={`text-xl font-semibold ${styles.title} mb-2`}>{title}</h3>
+        <div className="flex-1 min-w-0">
+          <h3 className={`text-lg sm:text-xl font-semibold ${styles.title} mb-1 sm:mb-2`}>
+            {title}
+          </h3>
           {description && (
-            <p className={`text-base ${styles.description} mb-4 leading-relaxed`}>{description}</p>
+            <p
+              className={`text-sm sm:text-base ${styles.description} mb-3 sm:mb-4 leading-relaxed`}
+            >
+              {description}
+            </p>
           )}
           {children}
         </div>

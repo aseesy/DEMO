@@ -121,15 +121,7 @@ export default function PrivacySettings({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h3 className="text-lg font-semibold text-[#275559]">Privacy Settings</h3>
-        <p className="text-sm text-gray-500 mt-1">
-          Control what information your co-parent can see about you
-        </p>
-      </div>
-
+    <div className="space-y-4 sm:space-y-6">
       {/* Privacy Legend */}
       <div className="flex flex-wrap gap-3 sm:gap-4 text-sm">
         <div className="flex items-center gap-2">
@@ -255,9 +247,15 @@ export default function PrivacySettings({
           <div className="min-w-0">
             <p className="font-medium">How privacy works</p>
             <ul className="mt-1.5 sm:mt-2 space-y-1 text-blue-700">
-              <li>• <strong>Shared</strong> = visible to co-parent</li>
-              <li>• <strong>Private</strong> = AI only</li>
-              <li>• Health & financial data is <strong>never shared</strong></li>
+              <li>
+                • <strong>Shared</strong> = visible to co-parent
+              </li>
+              <li>
+                • <strong>Private</strong> = AI only
+              </li>
+              <li>
+                • Health & financial data is <strong>never shared</strong>
+              </li>
             </ul>
           </div>
         </div>

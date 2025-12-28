@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { TaskIcon } from './TaskIcon.jsx';
 import { IOSInstallGuide } from '../../pwa/IOSInstallGuide.jsx';
 import {
@@ -30,27 +31,43 @@ export function TaskCard({
   const [isInstalling, setIsInstalling] = React.useState(false);
   const [showIOSGuide, setShowIOSGuide] = React.useState(false);
 
+  // Guard to prevent modal from reopening immediately after closing
+  const justClosedRef = React.useRef(false);
+
   // Get PWA state from window (set by App.jsx via usePWA hook)
   const pwa = window.liaizenPWA || {};
   const { isInstallable, isInstalled, showInstallPrompt } = pwa;
 
-  // Detect iOS
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const handleCloseGuide = React.useCallback(() => {
+    justClosedRef.current = true;
+    setShowIOSGuide(false);
+    // Reset the guard after a longer delay to ensure click events have finished
+    setTimeout(() => {
+      justClosedRef.current = false;
+    }, 500);
+  }, []);
+
+  const handleOpenSettings = React.useCallback(() => {
+    if (onNavigate) {
+      onNavigate('settings');
+    }
+    handleCloseGuide();
+  }, [onNavigate, handleCloseGuide]);
 
   const handlePWAInstall = async e => {
     e.stopPropagation();
 
-    if (!showInstallPrompt) {
-      // Show platform-specific instructions
-      if (isIOS) {
-        setShowIOSGuide(true);
-      } else {
-        alert(
-          '📲 Install LiaiZen:\n\n' +
-            'Android: Tap menu (⋮) → "Install app" or "Add to Home Screen"\n' +
-            'Desktop: Look for install icon (⊕) in the address bar'
-        );
-      }
+    // Don't reopen if just closed
+    if (justClosedRef.current) {
+      return;
+    }
+
+    // Check if native install prompt is available (Chrome/Edge on supported platforms)
+    // Use isInstallable instead of showInstallPrompt - the function exists but won't work on Safari
+    if (!isInstallable || !showInstallPrompt) {
+      // Show iOS guide for all non-Chrome browsers (Safari, Firefox, etc.)
+      // The guide shows how to use Share > Add to Home Screen
+      setShowIOSGuide(true);
       return;
     }
 
@@ -69,6 +86,11 @@ export function TaskCard({
   };
 
   const handleTaskClick = () => {
+    // Don't process clicks if modal is open or was just closed
+    if (showIOSGuide || justClosedRef.current) {
+      return;
+    }
+
     // PWA install task: trigger install/instructions directly
     if (isPWAInstallTask(task) && task.status !== 'completed') {
       handlePWAInstall({ stopPropagation: () => {} });
@@ -191,8 +213,16 @@ export function TaskCard({
         <TaskAssignmentBadges task={task} contacts={contacts} />
       </div>
 
-      {/* iOS Install Guide Modal */}
-      <IOSInstallGuide isOpen={showIOSGuide} onClose={() => setShowIOSGuide(false)} />
+      {/* Install Guide Modal - rendered via Portal to avoid click bubbling issues */}
+      {showIOSGuide &&
+        ReactDOM.createPortal(
+          <IOSInstallGuide
+            isOpen={showIOSGuide}
+            onClose={handleCloseGuide}
+            onOpenSettings={onNavigate ? handleOpenSettings : undefined}
+          />,
+          document.body
+        )}
     </div>
   );
 }

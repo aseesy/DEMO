@@ -11,24 +11,29 @@
 ## Implementation Strategy
 
 ### Phase 1: Create Repository Interfaces
+
 - Define abstractions for main entities
 - Focus on entities used by services: User, Room, Task, Contact, PairingSession, Invitation
 
 ### Phase 2: Implement PostgreSQL Repositories
+
 - Move SQL queries from services to repositories
 - Implement interface methods
 
 ### Phase 3: Refactor BaseService
+
 - Accept repository in constructor
 - Remove direct database dependency
 - Maintain backward compatibility during transition
 
 ### Phase 4: Update Services
+
 - Inject repositories via constructor
 - Replace direct SQL with repository methods
 - One service at a time
 
 ### Phase 5: Dependency Injection
+
 - Wire up repositories at application startup
 - Remove all direct `require('dbPostgres')` from services
 
@@ -71,4 +76,3 @@ src/repositories/
 2. **Gradual migration** - One service at a time
 3. **Backward compatible** - Old code continues to work
 4. **Test-driven** - Ensure existing tests still pass
-

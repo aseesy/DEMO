@@ -8,10 +8,12 @@
 ## Principle Definition
 
 **Dependency Inversion Principle (DIP)**:
+
 - High-level modules should not depend on low-level modules. Both should depend on abstractions.
 - Abstractions should not depend on details. Details should depend on abstractions.
 
 **In Practice**:
+
 - Business logic (high-level policy) should depend on interfaces/abstractions
 - Database, framework, UI code (low-level details) should implement those interfaces
 - Changing database from PostgreSQL → MongoDB should NOT require changing business logic
@@ -26,6 +28,7 @@
 **Check**: Do high-level modules import low-level implementations directly?
 
 **Violation Examples**:
+
 ```javascript
 // ❌ BAD: Service (high-level) depends on PostgreSQL (low-level)
 const db = require('../../dbPostgres');
@@ -37,6 +40,7 @@ class UserService {
 ```
 
 **Compliant Example**:
+
 ```javascript
 // ✅ GOOD: Service depends on abstraction
 class UserService {
@@ -54,6 +58,7 @@ class UserService {
 **Check**: Does business logic import framework-specific code?
 
 **Look For**:
+
 - `require('express')` in services/domain logic
 - `require('react')` in business logic
 - `require('./routes')` in services
@@ -65,6 +70,7 @@ class UserService {
 **Check**: Can you swap databases without changing business logic?
 
 **Test Cases**:
+
 - PostgreSQL → MongoDB
 - SQLite → PostgreSQL
 - Database → In-memory (for testing)
@@ -76,6 +82,7 @@ class UserService {
 **Check**: Can you swap UI frameworks without changing business logic?
 
 **Test Cases**:
+
 - React → Vue
 - Web → Mobile
 - UI → CLI/API
@@ -85,6 +92,7 @@ class UserService {
 **Check**: Are low-level details injected or hardcoded?
 
 **Violation**:
+
 ```javascript
 // ❌ BAD: Hardcoded implementation
 class PaymentService {
@@ -95,6 +103,7 @@ class PaymentService {
 ```
 
 **Compliant**:
+
 ```javascript
 // ✅ GOOD: Injected abstraction
 class PaymentService {
@@ -129,7 +138,8 @@ class BaseService {
 }
 ```
 
-**Problem**: 
+**Problem**:
+
 - All services depend on PostgreSQL-specific `query()` method
 - Cannot swap to MongoDB, SQLite, or in-memory database
 - Business logic is coupled to SQL syntax
@@ -146,14 +156,15 @@ class BaseService {
 // In any service extending BaseService
 async getActivePairing(userId) {
   return this.query(
-    `SELECT * FROM pairing_sessions 
+    `SELECT * FROM pairing_sessions
      WHERE parent_a_id = $1 AND status = $2`,
     [userId, 'active']
   );
 }
 ```
 
-**Problem**: 
+**Problem**:
+
 - SQL syntax is database-specific
 - PostgreSQL `$1, $2` syntax doesn't work in MongoDB
 - Business logic knows database structure
@@ -167,12 +178,19 @@ async getActivePairing(userId) {
 **Missing**: Database access abstraction layer
 
 **What Should Exist**:
+
 ```javascript
 // Repository Interface (abstraction)
 class IUserRepository {
-  async findById(id) { throw new Error('Not implemented'); }
-  async findByEmail(email) { throw new Error('Not implemented'); }
-  async save(user) { throw new Error('Not implemented'); }
+  async findById(id) {
+    throw new Error('Not implemented');
+  }
+  async findByEmail(email) {
+    throw new Error('Not implemented');
+  }
+  async save(user) {
+    throw new Error('Not implemented');
+  }
 }
 
 // PostgreSQL Implementation
@@ -243,6 +261,7 @@ madge --image deps.svg chat-server/routes
 ```
 
 **Check**:
+
 - Do arrows point FROM services TO routes? ✅ Good
 - Do arrows point FROM services TO dbPostgres? ❌ Bad (should point to abstraction)
 
@@ -253,6 +272,7 @@ madge --image deps.svg chat-server/routes
 **Test**: Can you test services WITHOUT database?
 
 **Current State**:
+
 ```javascript
 // ❌ FAILS: Cannot test without PostgreSQL
 const service = new UserService();
@@ -261,6 +281,7 @@ await service.getUser(1);
 ```
 
 **Compliant State**:
+
 ```javascript
 // ✅ PASSES: Can test with mock repository
 const mockRepo = { findById: jest.fn() };
@@ -276,6 +297,7 @@ expect(mockRepo.findById).toHaveBeenCalledWith(1);
 **Test**: Try swapping database implementation
 
 **Instructions**:
+
 1. Create in-memory repository implementation
 2. Swap database in service constructor
 3. Run same tests
@@ -283,6 +305,7 @@ expect(mockRepo.findById).toHaveBeenCalledWith(1);
 5. **If code changes needed → DIP violation**
 
 **Example**:
+
 ```javascript
 // Test with in-memory database
 const inMemoryRepo = new InMemoryUserRepository();
@@ -299,6 +322,7 @@ await service.getUser(1); // Should work identically
 **Test**: Can business logic run outside framework?
 
 **Instructions**:
+
 1. Create Node.js script (no Express/React)
 2. Import service classes
 3. Call business methods
@@ -336,14 +360,16 @@ const FORBIDDEN_IMPORTS = [
 function checkFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   const violations = [];
-  
+
   FORBIDDEN_IMPORTS.forEach(forbidden => {
-    if (content.includes(`require('${forbidden}')`) || 
-        content.includes(`require("${forbidden}")`)) {
+    if (
+      content.includes(`require('${forbidden}')`) ||
+      content.includes(`require("${forbidden}")`)
+    ) {
       violations.push(forbidden);
     }
   });
-  
+
   if (violations.length > 0) {
     console.log(`❌ ${filePath}:`, violations);
   }
@@ -422,7 +448,7 @@ class UserService extends BaseService {
   constructor(userRepository) {
     super(userRepository);
   }
-  
+
   async getUser(id) {
     return this.repository.findById(id); // Works with any implementation
   }
@@ -491,4 +517,3 @@ grep -r "require.*routes" chat-server/src/services
 - ❌ Bad: No repository abstraction layer
 
 **Recommendation**: Implement Repository Pattern to achieve full DIP compliance.
-

@@ -3,8 +3,9 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
-const fs = require('fs');
+
+// Central configuration - Single Source of Truth
+const { SERVER_PORT, SERVER_HOST, NODE_ENV, IS_PRODUCTION, SOCKET_CONFIG } = require('./config');
 
 // Import refactored modules
 const { healthCheckHandler, setupGracefulShutdown, setupGlobalErrorHandlers } = require('./utils');
@@ -25,10 +26,6 @@ const { setupSockets } = require('./sockets');
 const app = express();
 const server = http.createServer(app);
 
-// Server constants
-const PORT = process.env.PORT || 3001;
-const HOST = '0.0.0.0';
-
 // Global variables for status
 let dbConnected = false;
 let dbError = null;
@@ -46,18 +43,18 @@ const services = loadServices();
 app.get('/health', (req, res) => healthCheckHandler(req, res, dbConnected, dbError));
 
 // Start server EARLY - before database initialization
-server.listen(PORT, HOST, error => {
+server.listen(SERVER_PORT, SERVER_HOST, error => {
   if (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
   }
-  console.log(`✅ Server listening on ${HOST}:${PORT}`);
-  console.log(`🏥 Health check ready at: http://${HOST}:${PORT}/health`);
+  console.log(`✅ Server listening on ${SERVER_HOST}:${SERVER_PORT}`);
+  console.log(`🏥 Health check ready at: http://${SERVER_HOST}:${SERVER_PORT}/health`);
 });
 
 // Setup Middleware
 app.use((req, res, next) => {
-  if (process.env.NODE_ENV !== 'production') {
+  if (!IS_PRODUCTION) {
     console.log(
       `[${new Date().toISOString()}] ${req.method} ${req.url} - Origin: ${req.headers.origin}`
     );
@@ -71,7 +68,7 @@ setupRateLimiting(app);
 // Register API and Static Routes
 setupRoutes(app, services);
 
-// Setup Socket.io
+// Setup Socket.io with config from central config
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
@@ -106,10 +103,7 @@ const io = new Server(server, {
       'Access-Control-Request-Headers',
     ],
   },
-  pingTimeout: 60000,
-  pingInterval: 25000,
-  maxHttpBufferSize: 1e6,
-  transports: ['websocket', 'polling'],
+  ...SOCKET_CONFIG,
   allowEIO3: true,
 });
 
@@ -124,7 +118,7 @@ setupGlobalErrorHandlers();
 setupGracefulShutdown(server);
 
 // Final log
-console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`📊 Environment: ${NODE_ENV}`);
 console.log(`🔒 CORS enabled for: ${allowedOrigins.join(', ')}`);
 
 // Export app for testing if needed

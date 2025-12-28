@@ -65,15 +65,15 @@ function InviteDisplay({ inviteLink, inviteCode, inviteCopied, onCopyLink, onCop
         <div>
           <label className="block text-xs font-medium text-emerald-800 mb-1">Invite Code</label>
           <div className="flex items-center gap-2">
-            <div className="flex-1 bg-white border-2 border-emerald-200 rounded-lg p-3 text-center">
-              <span className="text-xl font-mono font-bold text-emerald-800 tracking-wider">
+            <div className="flex-1 min-w-0 bg-white border-2 border-emerald-200 rounded-lg p-2 sm:p-3 text-center">
+              <span className="text-lg sm:text-xl font-mono font-bold text-emerald-800 tracking-wider break-all">
                 {inviteCode}
               </span>
             </div>
             <button
               type="button"
               onClick={onCopyCode}
-              className="p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              className="p-2 sm:p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               {inviteCopied ? '✓' : 'Copy'}
             </button>
@@ -82,22 +82,22 @@ function InviteDisplay({ inviteLink, inviteCode, inviteCopied, onCopyLink, onCop
       )}
       <div>
         <label className="block text-xs font-medium text-emerald-800 mb-1">Invite Link</label>
-        <div className="p-3 bg-white rounded-lg border-2 border-emerald-200 break-all text-emerald-800 font-mono text-xs">
+        <div className="p-2 sm:p-3 bg-white rounded-lg border-2 border-emerald-200 break-all text-emerald-800 font-mono text-[10px] sm:text-xs overflow-hidden">
           {inviteLink}
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <button
           type="button"
           onClick={onCopyLink}
-          className="flex-1 px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-all"
+          className="flex-1 px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-all min-h-[44px]"
         >
           {inviteCopied ? 'Copied!' : 'Copy Link'}
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-3 rounded-lg border-2 border-emerald-300 text-emerald-700 font-semibold hover:bg-emerald-100 transition-colors"
+          className="px-4 py-3 rounded-lg border-2 border-emerald-300 text-emerald-700 font-semibold hover:bg-emerald-100 transition-colors min-h-[44px]"
         >
           Close
         </button>

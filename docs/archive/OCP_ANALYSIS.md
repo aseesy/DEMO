@@ -14,9 +14,11 @@ The codebase has **significant OCP violations**. Most type-based logic uses swit
 ## 🔴 Critical OCP Violations
 
 ### 1. Response Processing - Action Types
+
 **File**: `chat-server/src/liaizen/core/response/index.js` (Lines 58-132)
 
 **Violation**: Hardcoded if/else chain for action types
+
 ```javascript
 if (action === 'STAY_SILENT') { ... }
 if (action === 'COMMENT') { ... }
@@ -25,11 +27,13 @@ if (action === 'INTERVENE') { ... }
 ```
 
 **Problem**: Adding a new action type (e.g., `WARN`, `SUGGEST`) requires:
+
 - Modifying `processResponse()` function
 - Adding new if/else branch
 - Potentially modifying result builders
 
 **OCP-Compliant Solution**: Strategy pattern with action handlers
+
 ```javascript
 // Action handler interface
 class ActionHandler {
@@ -58,9 +62,11 @@ function processResponse(result) {
 ---
 
 ### 2. Pairing Route - Invitation Types
+
 **File**: `chat-server/routes/pairing.js` (Lines 102-136)
 
 **Violation**: Switch statement for invitation types
+
 ```javascript
 switch (type) {
   case 'email':
@@ -76,15 +82,19 @@ switch (type) {
 ```
 
 **Problem**: Adding a new invitation type (e.g., `qr_code`, `sms`) requires:
+
 - Modifying the route handler
 - Adding new case statement
 - Potentially modifying pairing manager
 
 **OCP-Compliant Solution**: Factory pattern with registration
+
 ```javascript
 // Invitation creator interface
 class InvitationCreator {
-  async create(params, db) { throw new Error('Not implemented'); }
+  async create(params, db) {
+    throw new Error('Not implemented');
+  }
 }
 
 // Factory with registration
@@ -92,11 +102,11 @@ class InvitationFactory {
   constructor() {
     this.creators = new Map();
   }
-  
+
   register(type, creator) {
     this.creators.set(type, creator);
   }
-  
+
   create(type, params, db) {
     const creator = this.creators.get(type);
     if (!creator) throw new Error(`Unknown invitation type: ${type}`);
@@ -117,9 +127,11 @@ factory.register('qr_code', new QRCodeInvitationCreator());
 ---
 
 ### 3. Expiration Calculation - Invite Types
+
 **File**: `chat-server/libs/pairing-manager/pairingCreator.js` (Lines 90-102)
 
 **Violation**: Switch statement for expiration calculation
+
 ```javascript
 switch (inviteType) {
   case INVITE_TYPE.EMAIL:
@@ -137,6 +149,7 @@ switch (inviteType) {
 **Problem**: Adding new invite type requires modifying this function.
 
 **OCP-Compliant Solution**: Configuration-driven with type-specific configs
+
 ```javascript
 // Type-specific configuration
 const INVITE_TYPE_CONFIG = {
@@ -148,7 +161,7 @@ const INVITE_TYPE_CONFIG = {
 function calculateExpiration(inviteType) {
   const config = INVITE_TYPE_CONFIG[inviteType];
   if (!config) throw new Error(`Invalid invite type: ${inviteType}`);
-  
+
   const now = new Date();
   if (config.expirationDays) {
     now.setDate(now.getDate() + config.expirationDays);
@@ -162,9 +175,11 @@ function calculateExpiration(inviteType) {
 ---
 
 ### 4. Error Message Handling
+
 **File**: `chat-client-vite/src/components/AcceptInvitationPage.jsx` (Lines 392-455)
 
 **Violation**: Hardcoded error message object
+
 ```javascript
 const errorMessages = {
   INVALID_TOKEN: { title: '...', message: '...', suggestion: '...' },
@@ -177,10 +192,13 @@ const errorMessages = {
 **Problem**: Adding new error codes requires modifying this component.
 
 **OCP-Compliant Solution**: Error handler registry
+
 ```javascript
 // Error handler interface
 class ErrorHandler {
-  getMessage(code, context) { throw new Error('Not implemented'); }
+  getMessage(code, context) {
+    throw new Error('Not implemented');
+  }
 }
 
 // Registry
@@ -197,9 +215,11 @@ const errorInfo = handler.getMessage(code, context);
 ---
 
 ### 5. Update Type Icons
+
 **File**: `chat-client-vite/src/components/UpdatesPanel.jsx` (Lines 41-74)
 
 **Violation**: Switch statement for update type icons
+
 ```javascript
 switch (type) {
   case 'expense':
@@ -214,6 +234,7 @@ switch (type) {
 **Problem**: Adding new update types requires modifying this component.
 
 **OCP-Compliant Solution**: Icon registry pattern
+
 ```javascript
 // Icon registry
 const updateIcons = {
@@ -232,11 +253,13 @@ return <IconComponent />;
 ## 🟡 Partial OCP Compliance
 
 ### 1. BaseService Pattern
+
 **File**: `chat-server/src/services/BaseService.js`
 
 **Status**: ✅ Good foundation, but services don't use interfaces
 
 **Current**: Services extend `BaseService` for common CRUD operations
+
 ```javascript
 class RoomService extends BaseService { ... }
 class InvitationService extends BaseService { ... }
@@ -245,6 +268,7 @@ class InvitationService extends BaseService { ... }
 **Issue**: No interface/contract enforcement. Services can have different method signatures.
 
 **Improvement**: Define service interfaces
+
 ```javascript
 // Service interface
 class IService {
@@ -260,11 +284,13 @@ class BaseService extends IService { ... }
 ---
 
 ### 2. Library Loader
+
 **File**: `chat-server/src/liaizen/core/libraryLoader.js`
 
 **Status**: ⚠️ Registry pattern, but hardcoded
 
 **Current**: Hardcoded library object
+
 ```javascript
 const libraries = {
   languageAnalyzer: safeLoad(...),
@@ -276,17 +302,18 @@ const libraries = {
 **Issue**: Adding new libraries requires modifying this file.
 
 **Improvement**: Dynamic plugin loading
+
 ```javascript
 // Plugin registry
 class LibraryRegistry {
   constructor() {
     this.libraries = new Map();
   }
-  
+
   register(name, loader) {
     this.libraries.set(name, loader);
   }
-  
+
   load(name) {
     const loader = this.libraries.get(name);
     return loader ? loader() : null;
@@ -304,11 +331,13 @@ const pluginDir = path.join(__dirname, '../plugins');
 ## ✅ OCP-Compliant Patterns Found
 
 ### 1. Python Router Agent (Partial)
+
 **File**: `sdd-agentic-framework/src/sdd/agents/architecture/router.py`
 
 **Status**: ✅ Uses enums and models, but still has if/else logic
 
 **Good**: Uses `ExecutionStrategy` enum and `RoutingDecision` model
+
 ```python
 class ExecutionStrategy(str, Enum):
     SEQUENTIAL = "sequential"
@@ -322,15 +351,15 @@ class ExecutionStrategy(str, Enum):
 
 ## 📊 Summary Statistics
 
-| Category | Count | Status |
-|----------|-------|--------|
-| **Switch Statements** | 13 | ❌ Violations |
-| **If/Else Type Chains** | 8+ | ❌ Violations |
-| **Hardcoded Type Maps** | 5+ | ❌ Violations |
-| **Strategy Patterns** | 0 | ❌ Missing |
-| **Factory Patterns** | 0 | ❌ Missing |
-| **Plugin Architectures** | 0 | ❌ Missing |
-| **Interface/Abstract Classes** | 1 (BaseService) | ⚠️ Partial |
+| Category                       | Count           | Status        |
+| ------------------------------ | --------------- | ------------- |
+| **Switch Statements**          | 13              | ❌ Violations |
+| **If/Else Type Chains**        | 8+              | ❌ Violations |
+| **Hardcoded Type Maps**        | 5+              | ❌ Violations |
+| **Strategy Patterns**          | 0               | ❌ Missing    |
+| **Factory Patterns**           | 0               | ❌ Missing    |
+| **Plugin Architectures**       | 0               | ❌ Missing    |
+| **Interface/Abstract Classes** | 1 (BaseService) | ⚠️ Partial    |
 
 ---
 
@@ -377,6 +406,7 @@ class ExecutionStrategy(str, Enum):
 ## 🔍 Example: Before vs After
 
 ### Before (OCP Violation)
+
 ```javascript
 // Adding new action type requires modifying this function
 function processResponse(result) {
@@ -388,6 +418,7 @@ function processResponse(result) {
 ```
 
 ### After (OCP Compliant)
+
 ```javascript
 // Adding new action type: just register, no modification needed
 class WarnHandler extends ActionHandler {
@@ -404,9 +435,10 @@ actionRegistry.register('WARN', new WarnHandler());
 
 ## 📝 Conclusion
 
-The codebase **does not follow the Open-Closed Principle**. Most extensibility points require modifying existing code rather than extending through new classes/plugins. 
+The codebase **does not follow the Open-Closed Principle**. Most extensibility points require modifying existing code rather than extending through new classes/plugins.
 
 **Key Issues**:
+
 - No plugin architecture
 - No strategy pattern usage
 - No factory pattern usage
@@ -416,4 +448,3 @@ The codebase **does not follow the Open-Closed Principle**. Most extensibility p
 **Impact**: Adding new features (action types, invitation types, error codes, etc.) requires modifying multiple existing files, increasing risk of breaking existing functionality.
 
 **Recommendation**: Prioritize refactoring critical extensibility points (response processing, pairing system) to use strategy/factory patterns and plugin architecture.
-

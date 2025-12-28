@@ -65,7 +65,6 @@ function AppContent() {
   // Make PWA API available globally for components that need it
   React.useEffect(() => {
     window.liaizenPWA = pwa;
-    console.log('[App] PWA initialized');
   }, [pwa]);
 
   // Listen for navigation messages from service worker (when notification is clicked)
@@ -74,8 +73,6 @@ function AppContent() {
     if ('serviceWorker' in navigator) {
       const handleMessage = event => {
         if (event.data && event.data.type === 'NAVIGATE') {
-          console.log('[App] Service worker requested navigation to:', event.data.url);
-
           // Update the URL (this will trigger ChatRoom's URL parameter check)
           window.history.pushState({}, '', event.data.url);
 
@@ -93,8 +90,7 @@ function AppContent() {
               // If no view param, just reload to ensure we're on the right page
               window.location.href = event.data.url;
             }
-          } catch (error) {
-            console.warn('[App] Error parsing navigation URL:', error);
+          } catch {
             // Fallback: direct navigation
             window.location.href = event.data.url;
           }
@@ -130,17 +126,12 @@ function AppContent() {
 
       if (currentPermission === 'granted') {
         const timer = setTimeout(() => {
-          console.log('[App] Permission already granted, subscribing to push notifications...');
-          pwa.subscribeToPush().catch(error => {
-            console.warn('[App] Could not subscribe to push notifications:', error);
+          pwa.subscribeToPush().catch(() => {
+            // Silently ignore subscription errors
           });
         }, PUSH_SUBSCRIPTION_DELAY);
 
         return () => clearTimeout(timer);
-      } else {
-        console.log(
-          '[App] Notification permission not granted yet. User must enable notifications manually.'
-        );
       }
     }
   }, [isAuthenticated, pwa.subscribeToPush]);
@@ -192,13 +183,8 @@ function AppContent() {
 }
 
 function App() {
-  console.log('[App] Component rendering...');
-
   React.useEffect(() => {
-    console.log('[App] App component mounted');
-    return () => {
-      console.log('[App] App component unmounting');
-    };
+    // Component lifecycle tracking removed for production
   }, []);
 
   return (

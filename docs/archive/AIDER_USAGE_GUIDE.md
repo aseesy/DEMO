@@ -104,9 +104,9 @@ Create `.aider.conf.yml` in your project root:
 model: anthropic/claude-3-7-sonnet-20250219
 auto-commits: true
 auto-lint: true
-test-cmd: "cd chat-server && npm test"
+test-cmd: 'cd chat-server && npm test'
 lint-cmd:
-  javascript: "cd chat-server && npm run lint:fix"
+  javascript: 'cd chat-server && npm run lint:fix'
 git: true
 ```
 
@@ -298,4 +298,3 @@ $ aider chat-server/routes/dashboard.js
 - Aider documentation: https://aider.chat
 - GitHub: https://github.com/paul-gauthier/aider
 - Community: https://aider.chat/docs
-

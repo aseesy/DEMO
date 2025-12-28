@@ -176,6 +176,7 @@ function setupRoutes(app, services) {
   // Initialize Route Module Helpers
   // ========================================
   const authRoutes = require('./routes/auth');
+  const loginRoutes = require('./routes/auth/login');
   const waitlistRoutes = require('./routes/waitlist');
   const notificationsRoutes = require('./routes/notifications');
   const tasksRoutes = require('./routes/tasks');
@@ -199,10 +200,15 @@ function setupRoutes(app, services) {
   adminRoutes.setHelpers({ roomManager });
   figmaRoutes.setHelpers({ figmaService, ...services }); // Figma needs multiple components
   // Load mediation service and inject dependencies
-  const { mediationService } = require('./src/services');
+  const { mediationService, authService } = require('./src/services');
   mediationService.setAiMediator(aiMediator);
   aiRoutes.setHelpers({ aiMediator, mediationService });
   connectionsRoutes.setHelpers({ auth, autoCompleteOnboardingTasks });
+
+  // Inject authService into login route
+  if (loginRoutes.setService) {
+    loginRoutes.setService(authService);
+  }
   userRoutes.setHelpers({
     JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key',
     autoCompleteOnboardingTasks,

@@ -34,9 +34,16 @@ jest.mock('../../socketHandlers/aiActionHelper', () => ({
   handleAiFailure: jest.fn(),
 }));
 
+jest.mock('../../socketHandlers/aiHelperUtils', () => ({
+  updateUserStats: jest.fn().mockResolvedValue(undefined),
+  sendMessageDirectly: jest.fn().mockResolvedValue(undefined),
+  gatherAnalysisContext: jest.fn(),
+}));
+
 const stringSimilarity = require('string-similarity');
 const aiContextHelper = require('../../socketHandlers/aiContextHelper');
 const aiActionHelper = require('../../socketHandlers/aiActionHelper');
+const aiHelperUtils = require('../../socketHandlers/aiHelperUtils');
 
 describe('aiHelper - handleAiMediation', () => {
   let mockSocket;
@@ -118,17 +125,26 @@ describe('aiHelper - handleAiMediation', () => {
       mockContext.message.text = originalRewrite;
 
       stringSimilarity.compareTwoStrings.mockReturnValue(0.96);
-      mockServices.dbSafe.safeSelect.mockResolvedValue([{ id: 1 }]);
 
       await handleAiMediation(mockSocket, mockIo, mockServices, mockContext);
 
       // Should not call AI analysis
       expect(mockServices.aiMediator.analyzeMessage).not.toHaveBeenCalled();
 
-      // Should mark as revision and emit
-      expect(mockContext.message.isRevision).toBe(true);
-      expect(mockAddToHistory).toHaveBeenCalledWith(mockContext.message, 'room-123');
-      expect(mockIo.to).toHaveBeenCalledWith('room-123');
+      // Should update stats and send message directly
+      expect(aiHelperUtils.updateUserStats).toHaveBeenCalledWith(
+        mockServices,
+        mockContext.user,
+        'room-123',
+        false
+      );
+      expect(aiHelperUtils.sendMessageDirectly).toHaveBeenCalledWith(
+        mockContext.message,
+        'room-123',
+        mockIo,
+        mockAddToHistory,
+        { isRevision: true }
+      );
     });
 
     it('should run AI analysis for edited rewrite (< 95% similarity)', async () => {
@@ -141,17 +157,22 @@ describe('aiHelper - handleAiMediation', () => {
       mockContext.message.text = editedText;
 
       stringSimilarity.compareTwoStrings.mockReturnValue(0.8);
-      mockServices.dbSafe.safeSelect.mockResolvedValue([{ id: 1 }]);
 
       // Mock AI analysis to return null (no intervention)
-      aiContextHelper.getRecentMessages.mockResolvedValue([]);
-      aiContextHelper.getParticipantUsernames.mockResolvedValue(['testuser', 'otheruser']);
-      aiContextHelper.getContactContext.mockResolvedValue({
-        existingContacts: [],
-        aiContext: null,
+      aiHelperUtils.gatherAnalysisContext.mockResolvedValue({
+        recentMessages: [],
+        participantUsernames: ['testuser', 'otheruser'],
+        contactContext: {
+          existingContacts: [],
+          aiContext: null,
+        },
+        taskContext: null,
+        flaggedContext: null,
+        roleContext: {
+          senderId: 'testuser',
+          receiverId: 'otheruser',
+        },
       });
-      aiContextHelper.getTaskContext.mockResolvedValue(null);
-      aiContextHelper.getFlaggedContext.mockResolvedValue(null);
       mockServices.aiMediator.analyzeMessage.mockResolvedValue(null);
       aiActionHelper.handleNameDetection.mockResolvedValue(null);
       aiActionHelper.processApprovedMessage.mockResolvedValue(undefined);
@@ -171,17 +192,26 @@ describe('aiHelper - handleAiMediation', () => {
       mockContext.data = {
         bypassMediation: true,
       };
-      mockServices.dbSafe.safeSelect.mockResolvedValue([{ id: 1 }]);
 
       await handleAiMediation(mockSocket, mockIo, mockServices, mockContext);
 
       // Should not call AI analysis
       expect(mockServices.aiMediator.analyzeMessage).not.toHaveBeenCalled();
 
-      // Should mark as bypassed and emit
-      expect(mockContext.message.bypassedMediation).toBe(true);
-      expect(mockAddToHistory).toHaveBeenCalledWith(mockContext.message, 'room-123');
-      expect(mockIo.to).toHaveBeenCalledWith('room-123');
+      // Should update stats and send message directly
+      expect(aiHelperUtils.updateUserStats).toHaveBeenCalledWith(
+        mockServices,
+        mockContext.user,
+        'room-123',
+        false
+      );
+      expect(aiHelperUtils.sendMessageDirectly).toHaveBeenCalledWith(
+        mockContext.message,
+        'room-123',
+        mockIo,
+        mockAddToHistory,
+        { bypassedMediation: true }
+      );
     });
   });
 
@@ -200,11 +230,17 @@ describe('aiHelper - handleAiMediation', () => {
       const taskContext = 'Task 1, Task 2';
       const flaggedContext = 'User has flagged messages before';
 
-      aiContextHelper.getRecentMessages.mockResolvedValue(recentMessages);
-      aiContextHelper.getParticipantUsernames.mockResolvedValue(participantUsernames);
-      aiContextHelper.getContactContext.mockResolvedValue(contactContext);
-      aiContextHelper.getTaskContext.mockResolvedValue(taskContext);
-      aiContextHelper.getFlaggedContext.mockResolvedValue(flaggedContext);
+      aiHelperUtils.gatherAnalysisContext.mockResolvedValue({
+        recentMessages,
+        participantUsernames,
+        contactContext,
+        taskContext,
+        flaggedContext,
+        roleContext: {
+          senderId: 'testuser',
+          receiverId: 'otheruser',
+        },
+      });
       mockServices.aiMediator.analyzeMessage.mockResolvedValue(null);
       aiActionHelper.handleNameDetection.mockResolvedValue(null);
       aiActionHelper.processApprovedMessage.mockResolvedValue(undefined);
@@ -216,6 +252,11 @@ describe('aiHelper - handleAiMediation', () => {
 
       // Verify AI mediator was called with correct parameters
       expect(mockServices.aiMediator.updateContext).toHaveBeenCalledWith(mockContext.message);
+      expect(aiHelperUtils.gatherAnalysisContext).toHaveBeenCalledWith(
+        mockServices,
+        mockContext.user,
+        'room-123'
+      );
       expect(mockServices.aiMediator.analyzeMessage).toHaveBeenCalledWith(
         mockContext.message,
         recentMessages,
@@ -237,16 +278,23 @@ describe('aiHelper - handleAiMediation', () => {
         shouldIntervene: true,
         rewrittenText: 'Rewritten message',
         reason: 'Escalation detected',
+        type: 'ai_intervention',
       };
 
-      aiContextHelper.getRecentMessages.mockResolvedValue([]);
-      aiContextHelper.getParticipantUsernames.mockResolvedValue(['testuser', 'otheruser']);
-      aiContextHelper.getContactContext.mockResolvedValue({
-        existingContacts: [],
-        aiContext: null,
+      aiHelperUtils.gatherAnalysisContext.mockResolvedValue({
+        recentMessages: [],
+        participantUsernames: ['testuser', 'otheruser'],
+        contactContext: {
+          existingContacts: [],
+          aiContext: null,
+        },
+        taskContext: null,
+        flaggedContext: null,
+        roleContext: {
+          senderId: 'testuser',
+          receiverId: 'otheruser',
+        },
       });
-      aiContextHelper.getTaskContext.mockResolvedValue(null);
-      aiContextHelper.getFlaggedContext.mockResolvedValue(null);
       mockServices.aiMediator.analyzeMessage.mockResolvedValue(intervention);
       aiActionHelper.processIntervention.mockResolvedValue(undefined);
 
@@ -278,14 +326,20 @@ describe('aiHelper - handleAiMediation', () => {
         messageContext: 'Mentioned in message',
       };
 
-      aiContextHelper.getRecentMessages.mockResolvedValue([]);
-      aiContextHelper.getParticipantUsernames.mockResolvedValue(['testuser', 'otheruser']);
-      aiContextHelper.getContactContext.mockResolvedValue({
-        existingContacts: [],
-        aiContext: null,
+      aiHelperUtils.gatherAnalysisContext.mockResolvedValue({
+        recentMessages: [],
+        participantUsernames: ['testuser', 'otheruser'],
+        contactContext: {
+          existingContacts: [],
+          aiContext: null,
+        },
+        taskContext: null,
+        flaggedContext: null,
+        roleContext: {
+          senderId: 'testuser',
+          receiverId: 'otheruser',
+        },
       });
-      aiContextHelper.getTaskContext.mockResolvedValue(null);
-      aiContextHelper.getFlaggedContext.mockResolvedValue(null);
       mockServices.aiMediator.analyzeMessage.mockResolvedValue(null);
       aiActionHelper.handleNameDetection.mockResolvedValue(contactSuggestion);
       aiActionHelper.processApprovedMessage.mockResolvedValue(undefined);
@@ -313,14 +367,20 @@ describe('aiHelper - handleAiMediation', () => {
     it('should handle AI analysis errors gracefully', async () => {
       const aiError = new Error('AI service unavailable');
 
-      aiContextHelper.getRecentMessages.mockResolvedValue([]);
-      aiContextHelper.getParticipantUsernames.mockResolvedValue(['testuser', 'otheruser']);
-      aiContextHelper.getContactContext.mockResolvedValue({
-        existingContacts: [],
-        aiContext: null,
+      aiHelperUtils.gatherAnalysisContext.mockResolvedValue({
+        recentMessages: [],
+        participantUsernames: ['testuser', 'otheruser'],
+        contactContext: {
+          existingContacts: [],
+          aiContext: null,
+        },
+        taskContext: null,
+        flaggedContext: null,
+        roleContext: {
+          senderId: 'testuser',
+          receiverId: 'otheruser',
+        },
       });
-      aiContextHelper.getTaskContext.mockResolvedValue(null);
-      aiContextHelper.getFlaggedContext.mockResolvedValue(null);
       mockServices.aiMediator.analyzeMessage.mockRejectedValue(aiError);
       aiActionHelper.handleAiFailure.mockResolvedValue(undefined);
 
@@ -343,14 +403,20 @@ describe('aiHelper - handleAiMediation', () => {
     it('should correctly filter other participants for role context', async () => {
       const participantUsernames = ['testuser', 'otheruser', 'thirduser'];
 
-      aiContextHelper.getRecentMessages.mockResolvedValue([]);
-      aiContextHelper.getParticipantUsernames.mockResolvedValue(participantUsernames);
-      aiContextHelper.getContactContext.mockResolvedValue({
-        existingContacts: [],
-        aiContext: null,
+      aiHelperUtils.gatherAnalysisContext.mockResolvedValue({
+        recentMessages: [],
+        participantUsernames,
+        contactContext: {
+          existingContacts: [],
+          aiContext: null,
+        },
+        taskContext: null,
+        flaggedContext: null,
+        roleContext: {
+          senderId: 'testuser',
+          receiverId: 'otheruser',
+        },
       });
-      aiContextHelper.getTaskContext.mockResolvedValue(null);
-      aiContextHelper.getFlaggedContext.mockResolvedValue(null);
       mockServices.aiMediator.analyzeMessage.mockResolvedValue(null);
       aiActionHelper.handleNameDetection.mockResolvedValue(null);
       aiActionHelper.processApprovedMessage.mockResolvedValue(undefined);
@@ -361,6 +427,11 @@ describe('aiHelper - handleAiMediation', () => {
       await new Promise(resolve => setImmediate(resolve));
 
       // Should use first other participant as receiver
+      expect(aiHelperUtils.gatherAnalysisContext).toHaveBeenCalledWith(
+        mockServices,
+        mockContext.user,
+        'room-123'
+      );
       expect(mockServices.aiMediator.analyzeMessage).toHaveBeenCalledWith(
         mockContext.message,
         [],
@@ -380,14 +451,20 @@ describe('aiHelper - handleAiMediation', () => {
     it('should handle single participant (no receiver)', async () => {
       const participantUsernames = ['testuser'];
 
-      aiContextHelper.getRecentMessages.mockResolvedValue([]);
-      aiContextHelper.getParticipantUsernames.mockResolvedValue(participantUsernames);
-      aiContextHelper.getContactContext.mockResolvedValue({
-        existingContacts: [],
-        aiContext: null,
+      aiHelperUtils.gatherAnalysisContext.mockResolvedValue({
+        recentMessages: [],
+        participantUsernames,
+        contactContext: {
+          existingContacts: [],
+          aiContext: null,
+        },
+        taskContext: null,
+        flaggedContext: null,
+        roleContext: {
+          senderId: 'testuser',
+          receiverId: null,
+        },
       });
-      aiContextHelper.getTaskContext.mockResolvedValue(null);
-      aiContextHelper.getFlaggedContext.mockResolvedValue(null);
       mockServices.aiMediator.analyzeMessage.mockResolvedValue(null);
       aiActionHelper.handleNameDetection.mockResolvedValue(null);
       aiActionHelper.processApprovedMessage.mockResolvedValue(undefined);
@@ -398,6 +475,11 @@ describe('aiHelper - handleAiMediation', () => {
       await new Promise(resolve => setImmediate(resolve));
 
       // Should have null receiver when no other participants
+      expect(aiHelperUtils.gatherAnalysisContext).toHaveBeenCalledWith(
+        mockServices,
+        mockContext.user,
+        'room-123'
+      );
       expect(mockServices.aiMediator.analyzeMessage).toHaveBeenCalledWith(
         mockContext.message,
         [],

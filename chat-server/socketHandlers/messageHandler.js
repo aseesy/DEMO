@@ -256,12 +256,14 @@ function registerMessageHandlers(socket, io, services) {
     // Step 2: Get current reactions
     let currentReactions;
     try {
-      const result = await dbPostgres.query(
-        'SELECT reactions FROM messages WHERE id = $1 AND room_id = $2 LIMIT 1',
-        [messageId, user.roomId]
+      const result = await dbSafe.safeSelect(
+        'messages',
+        { id: messageId, room_id: user.roomId },
+        { limit: 1, fields: ['reactions'] }
       );
-      if (result.rows.length === 0) return;
-      currentReactions = parseReactions(result.rows[0].reactions);
+      const messages = dbSafe.parseResult(result);
+      if (messages.length === 0) return;
+      currentReactions = parseReactions(messages[0].reactions);
     } catch (error) {
       console.error('Error getting reactions:', error);
       return;

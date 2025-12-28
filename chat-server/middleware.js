@@ -8,12 +8,21 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 
+// Central configuration - Single Source of Truth
+const {
+  SERVER_PORT,
+  FRONTEND_URLS,
+  PRODUCTION_DOMAINS,
+  IS_PRODUCTION,
+  RATE_LIMIT,
+} = require('./config');
+
 /**
  * Configure global middleware
  */
 function setupGlobalMiddleware(app) {
   // Trust proxy for rate limiting (important for Railway/load balancers)
-  if (process.env.NODE_ENV === 'production') {
+  if (IS_PRODUCTION) {
     app.set('trust proxy', 1);
   }
 
@@ -59,13 +68,13 @@ function setupGlobalMiddleware(app) {
       return res.status(400).json({
         error:
           'Request payload too large or invalid JSON. Please reduce the size of your text fields.',
-        details: process.env.NODE_ENV === 'development' ? err.message : undefined,
+        details: !IS_PRODUCTION ? err.message : undefined,
       });
     }
     if (err.type === 'entity.too.large') {
       return res.status(413).json({
         error: 'Request payload too large. Please reduce the size of your text fields.',
-        details: process.env.NODE_ENV === 'development' ? err.message : undefined,
+        details: !IS_PRODUCTION ? err.message : undefined,
       });
     }
     next(err);
@@ -110,15 +119,11 @@ function isOriginAllowed(origin, allowedList) {
  * Configure CORS
  */
 function setupCors(app) {
-  const allowedOrigins = (
-    process.env.FRONTEND_URL ||
-    'http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173'
-  )
-    .split(',')
-    .map(origin => origin.trim());
+  // Use FRONTEND_URLS from central config
+  const allowedOrigins = [...FRONTEND_URLS];
 
-  const serverPort = process.env.PORT || 3001;
-  const serverOrigin = `http://localhost:${serverPort}`;
+  // Add server origin if not already included
+  const serverOrigin = `http://localhost:${SERVER_PORT}`;
   if (!allowedOrigins.includes(serverOrigin)) {
     allowedOrigins.push(serverOrigin);
   }
@@ -167,15 +172,15 @@ function setupCors(app) {
  */
 function setupRateLimiting(app) {
   const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: process.env.NODE_ENV === 'production' ? 500 : 1000,
+    windowMs: RATE_LIMIT.windowMs,
+    max: RATE_LIMIT.maxRequests,
     skip: req => req.path.startsWith('/api/auth/'),
     validate: { trustProxy: false },
   });
 
   const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 50,
+    windowMs: RATE_LIMIT.windowMs,
+    max: RATE_LIMIT.authMaxRequests,
     message: 'Too many login attempts. Please try again in 15 minutes.',
     standardHeaders: true,
     legacyHeaders: false,
@@ -208,7 +213,7 @@ function setupErrorHandling(app) {
 
     res.status(err.status || 500).json({
       error: 'Server Error',
-      message: process.env.NODE_ENV === 'development' ? err.message : 'An internal error occurred',
+      message: !IS_PRODUCTION ? err.message : 'An internal error occurred',
     });
   });
 }

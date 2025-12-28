@@ -5,6 +5,7 @@ import {
   isInviteTask,
   isCoparentTask,
   isChildrenTask,
+  isPWAInstallTask,
 } from '../model/taskTypeDetection.js';
 
 /**
@@ -12,6 +13,26 @@ import {
  * Single responsibility: Display the correct icon for a task
  */
 export function TaskIcon({ task, className = 'w-full h-full text-white' }) {
+  // PWA Install task - phone with download arrow
+  if (isPWAInstallTask(task)) {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 6v6m0 0l-2-2m2 2l2-2"
+        />
+      </svg>
+    );
+  }
+
   if (isWelcomeTask(task)) {
     return (
       <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">

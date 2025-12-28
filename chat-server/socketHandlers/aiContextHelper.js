@@ -14,21 +14,33 @@ async function getRecentMessages(dbPostgres, roomId) {
 }
 
 async function getParticipantUsernames(dbSafe, roomId, userSessionService) {
+  // Try database first (most reliable)
   try {
     const roomMembers = await dbSafe.safeSelect('room_members', { room_id: roomId });
     const userIds = roomMembers.map(rm => rm.user_id);
     if (userIds.length > 0) {
       const memberUsers = await dbSafe.safeSelect('users', { id: userIds });
-      return memberUsers.map(u => u.username);
+      if (memberUsers.length > 0) {
+        return memberUsers.map(u => u.username);
+      }
     }
-  } catch {
-    // Ignore errors, fallback to userSessionService
+  } catch (dbError) {
+    console.warn(
+      '[getParticipantUsernames] Database query failed, falling back to session service:',
+      dbError.message
+    );
   }
+
   // Fallback to active users in the room from userSessionService
   if (userSessionService) {
-    const activeUsers = userSessionService.getUsersInRoom(roomId);
-    return activeUsers.map(u => u.username);
+    try {
+      const activeUsers = userSessionService.getUsersInRoom(roomId);
+      return activeUsers.map(u => u.username);
+    } catch (sessionError) {
+      console.warn('[getParticipantUsernames] Session service failed:', sessionError.message);
+    }
   }
+
   return [];
 }
 

@@ -15,7 +15,7 @@ grep -r "require.*dbPostgres" chat-server/src/services
 
 # Expected: Only 3 results (module-level requires for external libraries)
 # - pairingService.js
-# - invitationService.js  
+# - invitationService.js
 # - roomService.js
 ```
 
@@ -46,6 +46,7 @@ grep -r "Repository" chat-server/src/services
 **File**: `chat-server/src/services/BaseService.js`
 
 **Check**:
+
 - ❌ Should NOT have: `const db = require('../../dbPostgres')`
 - ✅ Should have: `const { IGenericRepository } = require('../repositories/interfaces/IGenericRepository')`
 
@@ -58,12 +59,14 @@ grep -r "Repository" chat-server/src/services
 **Files**: All files in `chat-server/src/services/`
 
 **Check**:
+
 - Services should NOT import `dbPostgres` for their own queries
 - Services should import repository classes from `../../repositories`
 
 **Result**: ✅ **PASS** - Services use repositories for their own queries
 
 **Note**: Some services still have `require('dbPostgres')` but:
+
 - Only at module level (not in methods)
 - Only for passing to external libraries
 - Cached as instance property (`this.db`)
@@ -96,6 +99,7 @@ grep -r "SELECT\|INSERT\|UPDATE\|DELETE" chat-server/src/repositories/postgres/
 **Files**: `chat-server/src/repositories/postgres/*.js`
 
 **Check**:
+
 - `PostgresUserRepository extends IUserRepository` ✅
 - `PostgresRoomRepository extends IRoomRepository` ✅
 - `PostgresTaskRepository extends ITaskRepository` ✅
@@ -110,6 +114,7 @@ grep -r "SELECT\|INSERT\|UPDATE\|DELETE" chat-server/src/repositories/postgres/
 **Test**: Can services be tested without database?
 
 **Example Test**:
+
 ```javascript
 const { ProfileService } = require('./services/profile/profileService');
 
@@ -136,6 +141,7 @@ expect(mockUserRepo.findByUsername).toHaveBeenCalledWith('test');
 **Test**: Can you swap PostgreSQL → MongoDB by changing only repository implementations?
 
 **Steps**:
+
 1. Create `MongoUserRepository extends IUserRepository`
 2. Change service constructor: `new MongoUserRepository()` instead of `new PostgresUserRepository()`
 3. Service code should remain unchanged
@@ -188,4 +194,3 @@ expect(mockUserRepo.findByUsername).toHaveBeenCalledWith('test');
 - ✅ Repository Layer: 100% compliant
 
 **Conclusion**: Core DIP compliance achieved. Remaining dependencies are for external libraries that would require separate refactoring efforts. Services themselves are fully DIP-compliant.
-

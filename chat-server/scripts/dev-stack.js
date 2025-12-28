@@ -10,13 +10,19 @@
  * Usage: npm run dev:stack
  */
 
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
+// Central configuration - Single Source of Truth
+const { SERVER_PORT } = require('../config');
+
 const ROOT_DIR = path.join(__dirname, '../..');
 const SERVER_DIR = path.join(ROOT_DIR, 'chat-server');
 const CLIENT_DIR = path.join(ROOT_DIR, 'chat-client-vite');
+const FRONTEND_PORT = 5173;
 
 console.log('🚀 Starting LiaiZen Development Stack\n');
 
@@ -31,12 +37,12 @@ function checkPort(port) {
 }
 
 async function startServices() {
-  // Check ports
-  const backendRunning = await checkPort(3001);
-  const frontendRunning = await checkPort(5173);
+  // Check ports using config values
+  const backendRunning = await checkPort(SERVER_PORT);
+  const frontendRunning = await checkPort(FRONTEND_PORT);
 
   if (backendRunning) {
-    console.log('⚠️  Backend already running on port 3001');
+    console.log(`⚠️  Backend already running on port ${SERVER_PORT}`);
   } else {
     console.log('📡 Starting backend server...');
     const backend = spawn('node', ['server.js'], {
@@ -51,7 +57,7 @@ async function startServices() {
   }
 
   if (frontendRunning) {
-    console.log('⚠️  Frontend already running on port 5173');
+    console.log(`⚠️  Frontend already running on port ${FRONTEND_PORT}`);
   } else {
     console.log('🎨 Starting frontend dev server...');
 
@@ -81,8 +87,8 @@ async function startServices() {
   }
 
   console.log('\n✅ Development stack starting...');
-  console.log('📍 Backend:  http://localhost:3001');
-  console.log('📍 Frontend: http://localhost:5173');
+  console.log(`📍 Backend:  http://localhost:${SERVER_PORT}`);
+  console.log(`📍 Frontend: http://localhost:${FRONTEND_PORT}`);
   console.log('\n💡 Press Ctrl+C to stop all services');
 }
 

@@ -46,6 +46,9 @@ const { mediationService } = require('./mediation/mediationService');
 // Session services (Phase 2.8) ✅
 const { userSessionService } = require('./session/userSessionService');
 
+// Auth services (Phase 2.9) ✅
+const { authService } = require('./auth/authService');
+
 // Connection services (Phase 4.2)
 // const { connectionTokenService } = require('./connection/connectionTokenService');
 // const { pendingConnectionService } = require('./connection/pendingConnectionService');
@@ -84,6 +87,9 @@ module.exports = {
 
   // Session services ✅
   userSessionService,
+
+  // Auth services ✅
+  authService,
   // messageSearchService,
   // messageValidator,
   // profileService,

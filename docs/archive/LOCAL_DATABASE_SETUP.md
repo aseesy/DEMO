@@ -20,6 +20,7 @@ docker exec -it postgres-liaizen psql -U postgres -d liaizen_dev -c "SELECT vers
 ```
 
 Then set in `.env` file (create if it doesn't exist):
+
 ```
 DATABASE_URL=postgresql://postgres:devpass@localhost:5432/liaizen_dev
 ```
@@ -29,15 +30,17 @@ DATABASE_URL=postgresql://postgres:devpass@localhost:5432/liaizen_dev
 If you have PostgreSQL installed locally:
 
 1. **Start PostgreSQL service:**
+
    ```bash
    # macOS (Homebrew)
    brew services start postgresql@15
-   
+
    # Linux (systemd)
    sudo systemctl start postgresql
    ```
 
 2. **Create database:**
+
    ```bash
    createdb liaizen_dev
    # Or using psql:
@@ -45,11 +48,13 @@ If you have PostgreSQL installed locally:
    ```
 
 3. **Set DATABASE_URL in .env:**
+
    ```
    DATABASE_URL=postgresql://postgres:your_password@localhost:5432/liaizen_dev
    ```
-   
+
    Or if no password (trust authentication):
+
    ```
    DATABASE_URL=postgresql://postgres@localhost:5432/liaizen_dev
    ```
@@ -59,6 +64,7 @@ If you have PostgreSQL installed locally:
 If you have a PostgreSQL database already running:
 
 1. Get your connection string:
+
    ```
    postgresql://username:password@host:port/database
    ```
@@ -80,6 +86,7 @@ node test-postgres-connection.js
 ```
 
 Or start the server and check logs:
+
 ```bash
 npm start
 # Look for: ✅ PostgreSQL connection test passed
@@ -92,28 +99,32 @@ npm start
 ### Issue: Connection refused (ECONNREFUSED)
 
 **Causes:**
+
 - PostgreSQL is not running
 - Wrong port (default is 5432)
 - Firewall blocking connection
 
 **Solutions:**
+
 1. **Check if PostgreSQL is running:**
+
    ```bash
    # macOS/Linux
    pg_isready -h localhost -p 5432
-   
+
    # Or check process
    ps aux | grep postgres
    ```
 
 2. **Start PostgreSQL:**
+
    ```bash
    # macOS (Homebrew)
    brew services start postgresql@15
-   
+
    # Docker
    docker start postgres-liaizen
-   
+
    # Linux
    sudo systemctl start postgresql
    ```
@@ -129,17 +140,21 @@ npm start
 ### Issue: Authentication failed
 
 **Causes:**
+
 - Wrong password
 - Wrong username
 - Database doesn't exist
 
 **Solutions:**
+
 1. **Verify credentials in DATABASE_URL:**
+
    ```
    postgresql://username:password@localhost:5432/database
    ```
 
 2. **Test connection manually:**
+
    ```bash
    psql -h localhost -U postgres -d liaizen_dev
    ```
@@ -152,6 +167,7 @@ npm start
 ### Issue: Database does not exist
 
 **Solution:**
+
 ```bash
 createdb liaizen_dev
 # Or
@@ -169,6 +185,7 @@ chat-server/.env
 ```
 
 Example `.env` file:
+
 ```env
 DATABASE_URL=postgresql://postgres:devpass@localhost:5432/liaizen_dev
 NODE_ENV=development
@@ -185,6 +202,7 @@ JWT_SECRET=your-secret-key-here
 After connecting:
 
 1. **Run migrations:**
+
    ```bash
    cd chat-server
    npm run migrate
@@ -193,6 +211,7 @@ After connecting:
    ```
 
 2. **Verify tables exist:**
+
    ```bash
    psql $DATABASE_URL -c "\dt"
    ```
@@ -207,6 +226,7 @@ After connecting:
 ## Quick Reference
 
 ### Default PostgreSQL Connection Info (Local)
+
 - **Host:** localhost
 - **Port:** 5432
 - **Username:** postgres (default)
@@ -214,6 +234,7 @@ After connecting:
 - **Password:** (set when installing PostgreSQL, or use Docker with password above)
 
 ### Docker Quick Commands
+
 ```bash
 # Start
 docker start postgres-liaizen
@@ -230,4 +251,3 @@ docker logs postgres-liaizen
 # Connect to database
 docker exec -it postgres-liaizen psql -U postgres -d liaizen_dev
 ```
-

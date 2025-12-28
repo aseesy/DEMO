@@ -1,6 +1,7 @@
 // vite.config.js – split vendor libraries into a separate chunk for better caching
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 // List of large third‑party packages you want to separate
@@ -13,12 +14,133 @@ const VENDOR_LIBS = [
 ];
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: [
+        'favicon-32.png',
+        'favicon-16.png',
+        'apple-touch-icon.png',
+        'icon-192.png',
+        'icon-512.png',
+      ],
+      manifest: {
+        name: 'LiaiZen',
+        short_name: 'LiaiZen',
+        description: 'Co-parenting communication made peaceful',
+        theme_color: '#275559',
+        background_color: '#275559',
+        display: 'standalone',
+        orientation: 'portrait',
+        scope: '/',
+        start_url: '/',
+        icons: [
+          {
+            src: '/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Exclude large files from precaching (they'll be cached at runtime)
+        globIgnores: ['**/game_theory_matrix-*.png', '**/why_arguments_repeat_vector-*.png'],
+        // Increase max file size for precaching (default is 2MB)
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
+        // Import custom push notification handlers
+        importScripts: ['/sw-custom.js'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-static-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*\.railway\.app\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 5, // 5 minutes
+              },
+              networkTimeoutSeconds: 10,
+            },
+          },
+        ],
+        // Clean up old caches on activation
+        cleanupOutdatedCaches: true,
+        // Skip waiting and claim clients immediately
+        skipWaiting: true,
+        clientsClaim: true,
+      },
+      // Use generateSW strategy - vite-plugin-pwa will generate the service worker
+      // and we'll add our custom push handlers via workbox's additionalManifestEntries
+      strategies: 'generateSW',
+      // Disable automatic registration - we'll handle it manually for iOS Safari
+      injectRegister: false,
+    }),
+  ],
   server: {
     headers: {
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
+      Pragma: 'no-cache',
+      Expires: '0',
     },
   },
   resolve: {
@@ -55,7 +177,7 @@ export default defineConfig({
           }
         },
         // Optimize asset handling
-        assetFileNames: (assetInfo) => {
+        assetFileNames: assetInfo => {
           // Keep images in assets folder but optimize naming
           if (assetInfo.name && /\.(png|jpe?g|svg|gif|webp)$/.test(assetInfo.name)) {
             return 'assets/[name]-[hash][extname]';

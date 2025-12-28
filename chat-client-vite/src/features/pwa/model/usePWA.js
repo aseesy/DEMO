@@ -26,33 +26,93 @@ export function usePWA() {
   const [updateAvailable, setUpdateAvailable] = React.useState(false);
   const [waitingWorker, setWaitingWorker] = React.useState(null);
 
+  // Define helper functions before they're used
+  // Set up periodic update checks
+  const setupUpdateChecks = React.useCallback(registration => {
+    if (registration && typeof registration.update === 'function') {
+      const updateInterval = setInterval(() => {
+        try {
+          if (registration && typeof registration.update === 'function') {
+            registration.update().catch(() => {
+              // Silently ignore InvalidStateError - service worker may not be ready
+            });
+          } else {
+            clearInterval(updateInterval);
+          }
+        } catch {
+          // Silently ignore errors during update check
+        }
+      }, 60000); // Check every minute
+    }
+  }, []);
+
+  // Set up update listener
+  const setupUpdateListener = React.useCallback(registration => {
+    try {
+      registration.addEventListener('updatefound', () => {
+        try {
+          let newWorker = null;
+          try {
+            newWorker = registration.installing || registration.waiting;
+          } catch {
+            return;
+          }
+
+          if (!newWorker) {
+            return;
+          }
+
+          try {
+            newWorker.addEventListener('statechange', () => {
+              try {
+                if (
+                  newWorker &&
+                  newWorker.state === 'installed' &&
+                  navigator.serviceWorker.controller
+                ) {
+                  setUpdateAvailable(true);
+                  setWaitingWorker(newWorker);
+                } else if (newWorker && newWorker.state === 'activated') {
+                  window.location.reload();
+                }
+              } catch {
+                // Silently ignore errors in statechange handler
+              }
+            });
+          } catch {
+            // Silently ignore errors adding statechange listener
+          }
+        } catch {
+          // Silently ignore errors in updatefound handler
+        }
+      });
+    } catch {
+      // Silently ignore errors adding updatefound listener
+    }
+  }, []);
+
   // Get existing Service Worker registration on mount
   // NOTE: Registration happens in main.jsx - we just get the existing one
   React.useEffect(() => {
     if ('serviceWorker' in navigator) {
       getServiceWorkerRegistration();
-    } else {
-      console.warn('[usePWA] Service Worker not supported in this browser');
     }
 
     // Detect if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
-      console.log('[usePWA] App is installed (standalone mode)');
     }
   }, []);
 
   // Listen for install prompt event
   React.useEffect(() => {
     const handleBeforeInstallPrompt = e => {
-      console.log('[usePWA] Install prompt available');
       e.preventDefault(); // Prevent automatic prompt
       setInstallPromptEvent(e);
       setIsInstallable(true);
     };
 
     const handleAppInstalled = () => {
-      console.log('[usePWA] App installed successfully');
       setIsInstalled(true);
       setIsInstallable(false);
       setInstallPromptEvent(null);
@@ -71,7 +131,6 @@ export function usePWA() {
   const getServiceWorkerRegistration = React.useCallback(async () => {
     // Skip in development mode
     if (import.meta.env.DEV) {
-      console.log('[usePWA] Skipping Service Worker in development mode');
       return null;
     }
 
@@ -94,7 +153,6 @@ export function usePWA() {
     // iOS Safari DOES support service workers for PWAs installed to home screen (iOS 11.3+)
     // Only skip service worker for regular Safari (not installed as PWA)
     if (isSafari && !(isIOS && isStandalone)) {
-      console.log('[usePWA] Safari detected (not installed as PWA) - service worker disabled');
       return null;
     }
 
@@ -103,11 +161,9 @@ export function usePWA() {
       const registration = await navigator.serviceWorker.ready;
 
       if (!registration) {
-        console.warn('[usePWA] No service worker registration found');
         return null;
       }
 
-      console.log('[usePWA] Got existing Service Worker registration');
       setSwRegistration(registration);
 
       // Set up periodic update checks
@@ -117,99 +173,20 @@ export function usePWA() {
       setupUpdateListener(registration);
 
       return registration;
-    } catch (error) {
-      console.error('[usePWA] Error getting service worker registration:', error);
+    } catch {
       return null;
     }
-  }, []);
-
-  // Set up periodic update checks
-  const setupUpdateChecks = registration => {
-    if (registration && typeof registration.update === 'function') {
-      const updateInterval = setInterval(() => {
-        try {
-          if (registration && typeof registration.update === 'function') {
-            registration.update().catch(error => {
-              if (error.name !== 'InvalidStateError') {
-                console.debug('[usePWA] Service Worker update check failed:', error);
-              }
-            });
-          } else {
-            clearInterval(updateInterval);
-          }
-        } catch (error) {
-          if (error.name !== 'InvalidStateError') {
-            console.debug('[usePWA] Service Worker update check failed:', error);
-          }
-        }
-      }, 60000); // Check every minute
-    }
-  };
-
-  // Set up update listener
-  const setupUpdateListener = registration => {
-    try {
-      registration.addEventListener('updatefound', () => {
-        try {
-          let newWorker = null;
-          try {
-            newWorker = registration.installing || registration.waiting;
-          } catch (error) {
-            console.debug('[usePWA] Error accessing registration.installing/waiting:', error);
-            return;
-          }
-
-          if (!newWorker) {
-            console.warn('[usePWA] No new worker found in registration');
-            return;
-          }
-
-          console.log('[usePWA] New Service Worker found, installing...');
-
-          try {
-            newWorker.addEventListener('statechange', () => {
-              try {
-                if (
-                  newWorker &&
-                  newWorker.state === 'installed' &&
-                  navigator.serviceWorker.controller
-                ) {
-                  console.log('[usePWA] ✅ New Service Worker installed, update available');
-                  setUpdateAvailable(true);
-                  setWaitingWorker(newWorker);
-                } else if (newWorker && newWorker.state === 'activated') {
-                  console.log('[usePWA] ✅ New Service Worker activated');
-                  window.location.reload();
-                }
-              } catch (error) {
-                console.debug('[usePWA] Error in statechange handler:', error);
-              }
-            });
-          } catch (error) {
-            console.debug('[usePWA] Error adding statechange listener:', error);
-          }
-        } catch (error) {
-          console.debug('[usePWA] Error in updatefound handler:', error);
-        }
-      });
-    } catch (error) {
-      console.debug('[usePWA] Error adding updatefound listener:', error);
-    }
-  };
+  }, [setupUpdateChecks, setupUpdateListener]);
 
   // Show install prompt
   const showInstallPrompt = React.useCallback(async () => {
     if (!installPromptEvent) {
-      console.warn('[usePWA] Install prompt not available');
       return false;
     }
 
     try {
-      console.log('[usePWA] Showing install prompt');
       installPromptEvent.prompt();
-
       const { outcome } = await installPromptEvent.userChoice;
-      console.log('[usePWA] Install prompt outcome:', outcome);
 
       if (outcome === 'accepted') {
         setIsInstallable(false);
@@ -218,8 +195,7 @@ export function usePWA() {
       }
 
       return false;
-    } catch (error) {
-      console.error('[usePWA] Install prompt error:', error);
+    } catch {
       return false;
     }
   }, [installPromptEvent]);
@@ -228,17 +204,13 @@ export function usePWA() {
   // NOTE: Notification.requestPermission() can ONLY be called from a user gesture (click, tap)
   const subscribeToPush = React.useCallback(async () => {
     if (import.meta.env.DEV) {
-      console.log('[usePWA] Skipping push subscription in development mode');
       return null;
     }
 
     try {
-      console.log('[usePWA] Subscribing to push notifications...');
-
       const registration = await navigator.serviceWorker.ready;
 
       if (!registration) {
-        console.warn('[usePWA] Service Worker not ready');
         return null;
       }
 
@@ -248,77 +220,60 @@ export function usePWA() {
       if (permission === 'default') {
         try {
           permission = await Notification.requestPermission();
-        } catch (error) {
-          console.warn('[usePWA] Cannot request permission without user gesture:', error);
+        } catch {
           return null;
         }
       }
 
       if (permission !== 'granted') {
-        console.warn('[usePWA] Notification permission not granted:', permission);
         return null;
       }
 
       // Check if already subscribed
       const existingSubscription = await registration.pushManager.getSubscription();
       if (existingSubscription) {
-        console.log('[usePWA] Already subscribed to push notifications');
         setPushSubscription(existingSubscription);
 
         // Sync to server
         try {
           const subscriptionData = existingSubscription.toJSON();
-          const response = await apiPost('/api/push/subscribe', {
+          await apiPost('/api/push/subscribe', {
             subscription: subscriptionData,
             userAgent: navigator.userAgent,
           });
-          if (response.ok) {
-            const result = await response.json();
-            console.log('[usePWA] ✅ Existing subscription synced to server:', result);
-          }
-        } catch (error) {
-          console.warn('[usePWA] ⚠️ Error syncing existing subscription:', error);
+        } catch {
+          // Silently ignore sync errors - subscription still works
         }
 
         return existingSubscription;
       }
 
       // Subscribe to push notifications
+      // Get VAPID public key from environment variable
+      const vapidPublicKey =
+        import.meta.env.VITE_VAPID_PUBLIC_KEY ||
+        'BNnD6XTZ6cpMVf3t6kq5Gjx2hJhx0FpR8BxPNxEwje3XuiVQNtIc6UnyFtGdWxQjiiPfRQ5QUkCxGPp5uG91gqs';
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(
-          'BNnD6XTZ6cpMVf3t6kq5Gjx2hJhx0FpR8BxPNxEwje3XuiVQNtIc6UnyFtGdWxQjiiPfRQ5QUkCxGPp5uG91gqs'
-        ),
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
-      console.log('[usePWA] Push subscription created:', subscription);
       setPushSubscription(subscription);
 
       // Send subscription to server
       try {
         const subscriptionData = subscription.toJSON();
-        const response = await apiPost('/api/push/subscribe', {
+        await apiPost('/api/push/subscribe', {
           subscription: subscriptionData,
           userAgent: navigator.userAgent,
         });
-
-        if (response.ok) {
-          const result = await response.json();
-          console.log('[usePWA] ✅ Push subscription saved to server:', result);
-        } else {
-          const errorText = await response.text();
-          console.error('[usePWA] ❌ Failed to save subscription to server:', {
-            status: response.status,
-            error: errorText,
-          });
-        }
-      } catch (error) {
-        console.error('[usePWA] ❌ Error saving subscription to server:', error.message);
+      } catch {
+        // Silently ignore save errors - subscription still works locally
       }
 
       return subscription;
-    } catch (error) {
-      console.warn('[usePWA] Push subscription failed:', error.name);
+    } catch {
       return null;
     }
   }, []);
@@ -326,18 +281,14 @@ export function usePWA() {
   // Unsubscribe from push notifications
   const unsubscribeFromPush = React.useCallback(async () => {
     if (!pushSubscription) {
-      console.warn('[usePWA] No active push subscription');
       return false;
     }
 
     try {
-      console.log('[usePWA] Unsubscribing from push notifications...');
       await pushSubscription.unsubscribe();
       setPushSubscription(null);
-      console.log('[usePWA] Push subscription removed');
       return true;
-    } catch (error) {
-      console.error('[usePWA] Unsubscribe failed:', error);
+    } catch {
       return false;
     }
   }, [pushSubscription]);
@@ -345,12 +296,9 @@ export function usePWA() {
   // Send message to Service Worker
   const sendMessageToSW = React.useCallback(
     message => {
-      if (!swRegistration || !swRegistration.active) {
-        console.warn('[usePWA] Service Worker not active');
-        return;
+      if (swRegistration?.active) {
+        swRegistration.active.postMessage(message);
       }
-
-      swRegistration.active.postMessage(message);
     },
     [swRegistration]
   );
@@ -358,7 +306,6 @@ export function usePWA() {
   // Apply update - skip waiting and reload
   const applyUpdate = React.useCallback(() => {
     if (waitingWorker) {
-      console.log('[usePWA] Applying update...');
       waitingWorker.postMessage({ type: 'SKIP_WAITING' });
       setUpdateAvailable(false);
       setWaitingWorker(null);
@@ -371,9 +318,8 @@ export function usePWA() {
     if (swRegistration) {
       try {
         await swRegistration.update();
-        console.log('[usePWA] Update check completed');
-      } catch (error) {
-        console.warn('[usePWA] Error checking for updates:', error);
+      } catch {
+        // Silently ignore update check errors
       }
     }
   }, [swRegistration]);
@@ -382,7 +328,6 @@ export function usePWA() {
   React.useEffect(() => {
     if ('serviceWorker' in navigator) {
       const handleControllerChange = () => {
-        console.log('[usePWA] Service Worker controller changed, reloading...');
         window.location.reload();
       };
 
