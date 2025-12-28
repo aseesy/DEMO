@@ -13,38 +13,59 @@ const pairingManager = require('../libs/pairing-manager');
  * @typedef {Object} ValidationResult
  * @property {boolean} valid
  * @property {string} [error]
- * @property {string} [cleanUsername]
+ * @property {string} [cleanEmail]
  */
 
 /**
- * Validate and sanitize username
- * @param {string} username - Raw username input
+ * Validate and sanitize email
+ * @param {string} email - Raw email input
  * @returns {ValidationResult}
  */
-function validateUserInput(username) {
-  const cleanUsername = sanitizeInput(username);
-
-  if (!validateUsername(cleanUsername)) {
+function validateUserInput(email) {
+  if (!email || typeof email !== 'string') {
     return {
       valid: false,
-      error: 'Invalid username. Must be 2-20 characters.',
+      error: 'Email is required.',
     };
   }
 
-  return { valid: true, cleanUsername };
+  const cleanEmail = email.trim().toLowerCase();
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    return {
+      valid: false,
+      error: 'Invalid email format.',
+    };
+  }
+
+  return { valid: true, cleanEmail };
 }
 
 /**
- * Get user by username
+ * Get user by email
  *
  * NAMING: Using `get*` for consistency with codebase data retrieval convention.
  *
- * @param {string} cleanUsername - Sanitized username
+ * @param {string} cleanEmail - Sanitized email
  * @param {Object} auth - Auth service
  * @returns {Promise<Object|null>} User object or null
  */
+async function getUserByEmail(cleanEmail, auth) {
+  return auth.getUser(cleanEmail);
+}
+
+// Deprecated: Keep for backward compatibility during migration
 async function getUserByUsername(cleanUsername, auth) {
-  return auth.getUser(cleanUsername);
+  // Try to get user by email first (if it's an email)
+  if (cleanUsername.includes('@')) {
+    return auth.getUser(cleanUsername);
+  }
+  // Fallback: try to find user by old username field (for migration period)
+  // This will be removed after migration is complete
+  console.warn('[getUserByUsername] Deprecated: Use getUserByEmail with email instead');
+  return null;
 }
 
 /**
@@ -65,13 +86,13 @@ async function getUserByUsername(cleanUsername, auth) {
  * @param {Object} roomManager - Room manager service
  * @returns {Promise<RoomResolution|null>} Room info or null if no room exists
  */
-async function getExistingUserRoom(user, cleanUsername, dbPostgres, roomManager) {
+async function getExistingUserRoom(user, cleanEmail, dbPostgres, roomManager) {
   // First check if user has an active pairing with shared_room_id
   const activePairing = await pairingManager.getActivePairing(user.id, dbPostgres);
 
   if (activePairing && activePairing.shared_room_id) {
     const roomId = activePairing.shared_room_id;
-    console.log(`[join] User ${cleanUsername} has active pairing, using shared room: ${roomId}`);
+    console.log(`[join] User ${cleanEmail} has active pairing, using shared room: ${roomId}`);
 
     const roomResult = await dbPostgres.query('SELECT name FROM rooms WHERE id = $1', [roomId]);
     const roomName = roomResult.rows[0]?.name || 'Co-Parenting Room';
@@ -83,7 +104,7 @@ async function getExistingUserRoom(user, cleanUsername, dbPostgres, roomManager)
   const existingRoom = await roomManager.getUserRoom(user.id);
 
   if (existingRoom) {
-    console.log(`[join] User ${cleanUsername} has existing room: ${existingRoom.roomId}`);
+    console.log(`[join] User ${cleanEmail} has existing room: ${existingRoom.roomId}`);
     return { roomId: existingRoom.roomId, roomName: existingRoom.roomName };
   }
 
@@ -100,9 +121,9 @@ async function getExistingUserRoom(user, cleanUsername, dbPostgres, roomManager)
  * @param {Object} roomManager - Room manager service
  * @returns {Promise<RoomResolution>}
  */
-async function resolveOrCreateUserRoom(user, cleanUsername, dbPostgres, roomManager) {
+async function resolveOrCreateUserRoom(user, cleanEmail, dbPostgres, roomManager) {
   // Try to get existing room first (pure lookup)
-  const existingRoom = await getExistingUserRoom(user, cleanUsername, dbPostgres, roomManager);
+  const existingRoom = await getExistingUserRoom(user, cleanEmail, dbPostgres, roomManager);
 
   if (existingRoom) {
     return existingRoom;
@@ -110,15 +131,15 @@ async function resolveOrCreateUserRoom(user, cleanUsername, dbPostgres, roomMana
 
   // No room found - users should not have personal rooms
   // They must be connected to a co-parent to have a room
-  console.log(`[join] User ${cleanUsername} has no room. Users must be connected to a co-parent.`);
+  console.log(`[join] User ${cleanEmail} has no room. Users must be connected to a co-parent.`);
   return null;
 }
 
 /**
  * @deprecated Use getExistingUserRoom() for pure lookup or resolveOrCreateUserRoom() for creation
  */
-async function resolveUserRoom(user, cleanUsername, dbPostgres, roomManager) {
-  return resolveOrCreateUserRoom(user, cleanUsername, dbPostgres, roomManager);
+async function resolveUserRoom(user, cleanEmail, dbPostgres, roomManager) {
+  return resolveOrCreateUserRoom(user, cleanEmail, dbPostgres, roomManager);
 }
 
 /**
@@ -135,11 +156,17 @@ async function resolveUserRoom(user, cleanUsername, dbPostgres, roomManager) {
  * @param {string} cleanUsername - Username to check
  * @param {string} currentSocketId - Current socket ID to exclude
  */
-function disconnectDuplicateConnections(userSessionService, io, roomId, cleanUsername, currentSocketId) {
+function disconnectDuplicateConnections(
+  userSessionService,
+  io,
+  roomId,
+  cleanEmail,
+  currentSocketId
+) {
   // Use service to disconnect duplicates
   const disconnectedSocketIds = userSessionService.disconnectDuplicates(
     currentSocketId,
-    cleanUsername,
+    cleanEmail,
     roomId
   );
 
@@ -165,8 +192,8 @@ function disconnectDuplicateConnections(userSessionService, io, roomId, cleanUse
  * @param {string} roomId - Room ID
  * @returns {Object} User data object
  */
-function registerActiveUser(userSessionService, socketId, cleanUsername, roomId) {
-  return userSessionService.registerUser(socketId, cleanUsername, roomId);
+function registerActiveUser(userSessionService, socketId, cleanEmail, roomId) {
+  return userSessionService.registerUser(socketId, cleanEmail, roomId);
 }
 
 /**
@@ -203,10 +230,11 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500) {
 
   // Get messages - order by DESC to get most recent messages first
   // Exclude system messages (join/leave) BEFORE the limit so we get actual user messages
+  // Use user_email instead of username for joining
   const historyQuery = `
-    SELECT m.*, u.display_name, u.first_name
+    SELECT m.*, u.display_name, u.first_name, u.last_name, u.email
     FROM messages m
-    LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
+    LEFT JOIN users u ON LOWER(m.user_email) = LOWER(u.email)
     WHERE m.room_id = $1
       AND (m.type IS NULL OR m.type != 'system')
       AND m.text NOT LIKE '%joined the chat%'
@@ -220,12 +248,19 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500) {
 
   // Reverse to chronological order (oldest first) for frontend display
   const messages = result.rows.reverse().map(msg => {
+    // Build display name from first_name + last_name, fallback to email
+    const displayName =
+      msg.first_name && msg.last_name
+        ? `${msg.first_name} ${msg.last_name}`
+        : msg.first_name || msg.display_name || msg.user_email || msg.email || 'User';
+
     // Ensure all required fields are present
     const message = {
       id: msg.id,
       type: msg.type || 'user_message',
-      username: msg.username,
-      displayName: msg.first_name || msg.display_name || msg.username,
+      username: msg.user_email || msg.email || msg.username, // Support both for backward compatibility
+      user_email: msg.user_email || msg.email || msg.username,
+      displayName: displayName,
       text: msg.text,
       timestamp: msg.timestamp || msg.created_at,
       threadId: msg.thread_id || null,
@@ -243,10 +278,10 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500) {
     };
 
     // Log if message is missing critical fields
-    if (!message.id || !message.username || !message.text) {
+    if (!message.id || !message.user_email || !message.text) {
       console.warn('[getMessageHistory] Message missing critical fields:', {
         id: message.id,
-        username: message.username,
+        user_email: message.user_email,
         hasText: !!message.text,
         raw: msg,
       });
@@ -277,11 +312,12 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500) {
  * @param {string} roomId - Room ID
  * @returns {Object} System message
  */
-function createSystemMessage(socketId, text, roomId) {
+function createSystemMessage(socketId, text, roomId, userEmail = 'system@liaizen.app') {
   return {
     id: `${Date.now()}-${socketId}`,
     type: 'system',
-    username: 'System',
+    user_email: userEmail,
+    username: 'System', // Backward compatibility
     text,
     timestamp: new Date().toISOString(),
     roomId,
@@ -299,7 +335,7 @@ async function saveSystemMessage(systemMessage, dbSafe) {
   await dbSafe.safeInsert('messages', {
     id: systemMessage.id,
     type: systemMessage.type,
-    username: systemMessage.username,
+    user_email: systemMessage.user_email || 'system@liaizen.app', // System messages use special email
     text: systemMessage.text,
     timestamp: systemMessage.timestamp,
     room_id: systemMessage.roomId,
@@ -314,14 +350,19 @@ async function saveSystemMessage(systemMessage, dbSafe) {
  */
 function getRoomUsers(userSessionService, roomId) {
   const users = userSessionService.getUsersInRoom(roomId);
-  return users.map(u => ({ username: u.username, joinedAt: u.joinedAt }));
+  return users.map(u => ({
+    email: u.email || u.username,
+    username: u.email || u.username,
+    joinedAt: u.joinedAt,
+  }));
 }
 
 module.exports = {
   validateUserInput,
-  getUserByUsername,
-  // Deprecated alias - use getUserByUsername instead
-  lookupUser: getUserByUsername,
+  getUserByEmail,
+  getUserByUsername, // Deprecated - use getUserByEmail instead
+  // Deprecated alias - use getUserByEmail instead
+  lookupUser: getUserByEmail,
 
   // Room resolution - pure lookup
   getExistingUserRoom,

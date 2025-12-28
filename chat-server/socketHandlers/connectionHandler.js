@@ -9,7 +9,8 @@
 const { emitError } = require('./utils');
 const {
   validateUserInput,
-  getUserByUsername,
+  getUserByEmail,
+  getUserByUsername, // Deprecated - for backward compatibility
   resolveUserRoom,
   disconnectDuplicateConnections,
   registerActiveUser,
@@ -18,26 +19,34 @@ const {
   saveSystemMessage,
   getRoomUsers,
 } = require('./connectionOperations');
+const { maybeAnalyzeRoomOnJoin } = require('./threadHandler');
 
 function registerConnectionHandlers(socket, io, services) {
   const { auth, roomManager, dbSafe, dbPostgres, userSessionService } = services;
 
-  // join handler
-  socket.on('join', async ({ username }) => {
+  // join handler - now accepts email instead of username
+  socket.on('join', async ({ email, username }) => {
+    // Support both email and username for backward compatibility during migration
+    const userIdentifier = email || username;
+    if (!userIdentifier) {
+      emitError(socket, 'Email is required.');
+      return;
+    }
+
     // Step 1: Validate input
-    const validation = validateUserInput(username);
+    const validation = validateUserInput(userIdentifier);
     if (!validation.valid) {
       emitError(socket, validation.error);
       return;
     }
-    const { cleanUsername } = validation;
+    const { cleanEmail } = validation;
 
-    // Step 2: Get user by username
+    // Step 2: Get user by email
     let user;
     try {
-      user = await getUserByUsername(cleanUsername, auth);
+      user = await getUserByEmail(cleanEmail, auth);
     } catch (error) {
-      emitError(socket, 'Failed to verify user.', error, 'join:getUserByUsername');
+      emitError(socket, 'Failed to verify user.', error, 'join:getUserByEmail');
       return;
     }
 
@@ -49,7 +58,7 @@ function registerConnectionHandlers(socket, io, services) {
     // Step 3: Resolve room
     let roomId, roomName;
     try {
-      const room = await resolveUserRoom(user, cleanUsername, dbPostgres, roomManager);
+      const room = await resolveUserRoom(user, cleanEmail, dbPostgres, roomManager);
       if (!room || !room.roomId) {
         emitError(socket, 'No room available. You must be connected to a co-parent.');
         return;
@@ -61,7 +70,7 @@ function registerConnectionHandlers(socket, io, services) {
       console.log('[join] Resolved room:', {
         roomId: roomId,
         roomName: roomName,
-        username: cleanUsername,
+        email: cleanEmail,
         userId: user.id,
       });
     } catch (error) {
@@ -71,11 +80,11 @@ function registerConnectionHandlers(socket, io, services) {
     }
 
     // Step 4: Handle duplicate connections (no error possible, just cleanup)
-    disconnectDuplicateConnections(userSessionService, io, roomId, cleanUsername, socket.id);
+    disconnectDuplicateConnections(userSessionService, io, roomId, cleanEmail, socket.id);
 
     // Step 5: Join room and register
     socket.join(roomId);
-    registerActiveUser(userSessionService, socket.id, cleanUsername, roomId);
+    registerActiveUser(userSessionService, socket.id, cleanEmail, roomId);
 
     // Step 6: Ensure contacts for room members
     let members = [];
@@ -92,7 +101,7 @@ function registerConnectionHandlers(socket, io, services) {
     // Step 7: Get message history
     let historyResult;
     try {
-      console.log('[join] Loading message history for room:', roomId, 'user:', cleanUsername);
+      console.log('[join] Loading message history for room:', roomId, 'user:', cleanEmail);
       historyResult = await getMessageHistory(roomId, dbPostgres);
       console.log('[join] Sending message_history:', {
         messageCount: historyResult.messages.length,
@@ -111,10 +120,12 @@ function registerConnectionHandlers(socket, io, services) {
     });
 
     // Step 8: Create and save system message
+    const displayName = user.displayName || user.firstName || cleanEmail;
     const systemMessage = createSystemMessage(
       socket.id,
-      `${cleanUsername} joined the chat`,
-      roomId
+      `${displayName} joined the chat`,
+      roomId,
+      cleanEmail
     );
 
     try {
@@ -134,19 +145,29 @@ function registerConnectionHandlers(socket, io, services) {
     });
 
     socket.emit('join_success', {
-      username: cleanUsername,
+      email: cleanEmail,
+      username: cleanEmail, // Backward compatibility
       roomId,
-      roomName: roomName || user.room?.roomName || `${cleanUsername}'s Room`,
+      roomName: roomName || user.room?.roomName || `${displayName}'s Room`,
       users: roomUsers,
       roomMembers: members,
     });
+
+    // Server-side thread analysis trigger
+    // Checks if room needs analysis and triggers it automatically (non-blocking)
+    if (services.threadManager) {
+      maybeAnalyzeRoomOnJoin(io, roomId, services.threadManager);
+    }
   });
 
   // typing handler
   socket.on('typing', ({ isTyping }) => {
     const user = userSessionService.getUserBySocketId(socket.id);
     if (user?.roomId) {
-      socket.to(user.roomId).emit('user_typing', { username: user.username, isTyping });
+      const userEmail = user.email || user.username;
+      socket
+        .to(user.roomId)
+        .emit('user_typing', { email: userEmail, username: userEmail, isTyping });
     }
   });
 
@@ -155,19 +176,26 @@ function registerConnectionHandlers(socket, io, services) {
     const user = userSessionService.getUserBySocketId(socket.id);
     if (!user) return;
 
-    const { roomId, username } = user;
+    const { roomId } = user;
+    const userEmail = user.email || user.username;
     userSessionService.disconnectUser(socket.id);
 
-    const systemMessage = createSystemMessage(socket.id, `${username} left the chat`, roomId);
+    const displayName = user.displayName || user.firstName || userEmail;
+    const systemMessage = createSystemMessage(
+      socket.id,
+      `${displayName} left the chat`,
+      roomId,
+      userEmail
+    );
 
     // Save disconnect message (non-fatal if fails)
     try {
       await dbPostgres.query(
-        `INSERT INTO messages (id, type, username, text, timestamp, room_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+        `INSERT INTO messages (id, type, user_email, text, timestamp, room_id) VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           systemMessage.id,
           systemMessage.type,
-          systemMessage.username,
+          systemMessage.user_email || 'system@liaizen.app',
           systemMessage.text,
           systemMessage.timestamp,
           roomId,
