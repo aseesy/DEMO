@@ -75,17 +75,9 @@ const apiBaseUrl = getApiBaseUrl();
 const socketUrl = getSocketUrl();
 
 // Explicit named exports for static analysis
+// These must be const exports (not computed) for Vite's static analysis
 export const API_BASE_URL = apiBaseUrl;
 export const SOCKET_URL = socketUrl;
-
-// Also export as getters for runtime access (if needed)
-export function getSocketUrlValue() {
-  return socketUrl;
-}
-
-export function getApiBaseUrlValue() {
-  return apiBaseUrl;
-}
 
 // Export for use in other files that need the raw values
 export const config = {
