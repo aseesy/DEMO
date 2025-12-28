@@ -10,6 +10,7 @@
  * because a shared co-parent room will be created during acceptance.
  */
 const dbSafe = require('../dbSafe');
+const dbPostgres = require('../dbPostgres');
 const roomManager = require('../roomManager');
 const pairingManager = require('../libs/pairing-manager');
 const invitationManager = require('../libs/invitation-manager');
@@ -105,9 +106,17 @@ async function registerFromShortCode(params, db) {
   }
 
   try {
+    // Get first_name for contact name (prefer first_name over displayName/username)
+    const newUserResult = await dbPostgres.query(
+      'SELECT first_name, display_name FROM users WHERE id = $1 LIMIT 1',
+      [user.id]
+    );
+    const newUser = newUserResult.rows[0];
+    const contactName = newUser?.first_name || displayName || user.username;
+
     await dbSafe.safeInsert('contacts', {
       user_id: acceptResult.inviterId,
-      contact_name: displayName || user.username,
+      contact_name: contactName,
       contact_email: user.email,
       relationship: 'co-parent',
       linked_user_id: user.id,

@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const dbModule = require('./dbPostgres');
+const dbPostgres = require('./dbPostgres');
 const dbSafe = require('./dbSafe');
 const roomManager = require('./roomManager');
 const auth = require('./auth');
@@ -244,28 +245,36 @@ async function acceptPendingConnection(token, userId) {
 
     // Create co-parent contacts for both users
     try {
-      // Get inviter user info
-      const inviterResult = await dbSafe.safeSelect(
-        'users',
-        { id: connection.inviterId },
-        { limit: 1 }
+      // Get inviter user info (include first_name for contact name)
+      const inviterResult = await dbPostgres.query(
+        'SELECT id, email, username, first_name, last_name, display_name FROM users WHERE id = $1 LIMIT 1',
+        [connection.inviterId]
       );
-      const inviterUsers = dbSafe.parseResult(inviterResult);
+      const inviterUsers = inviterResult.rows;
 
-      // Get invitee user info
-      const inviteeResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
-      const inviteeUsers = dbSafe.parseResult(inviteeResult);
+      // Get invitee user info (include first_name for contact name)
+      const inviteeResult = await dbPostgres.query(
+        'SELECT id, email, username, first_name, last_name, display_name FROM users WHERE id = $1 LIMIT 1',
+        [userId]
+      );
+      const inviteeUsers = inviteeResult.rows;
 
       if (inviterUsers.length > 0 && inviteeUsers.length > 0) {
         const inviter = inviterUsers[0];
         const invitee = inviteeUsers[0];
+
+        // Get display name: first_name preferred, fallback to display_name, then email
+        const inviteeDisplayName =
+          invitee.first_name || invitee.display_name || invitee.email?.split('@')[0] || 'Unknown';
+        const inviterDisplayName =
+          inviter.first_name || inviter.display_name || inviter.email?.split('@')[0] || 'Unknown';
 
         // Check if contact already exists for inviter (by name or email)
         const inviterContactCheck = await dbSafe.safeSelect(
           'contacts',
           {
             user_id: connection.inviterId,
-            contact_name: invitee.username,
+            contact_name: inviteeDisplayName,
           },
           { limit: 1 }
         );
@@ -278,7 +287,7 @@ async function acceptPendingConnection(token, userId) {
           // Create contact for inviter (invitee is their co-parent)
           await dbSafe.safeInsert('contacts', {
             user_id: connection.inviterId,
-            contact_name: invitee.username,
+            contact_name: inviteeDisplayName,
             contact_email: invitee.email || connection.inviteeEmail || null,
             relationship: 'co-parent',
             linked_user_id: userId, // Link to actual user for AI context
@@ -296,7 +305,7 @@ async function acceptPendingConnection(token, userId) {
             updated_at: now,
           });
           console.log(
-            `✅ Created co-parent contact for ${inviter.username}: ${invitee.username} (linked_user_id: ${userId})`
+            `✅ Created co-parent contact for ${inviterDisplayName}: ${inviteeDisplayName} (linked_user_id: ${userId})`
           );
         }
 
@@ -305,7 +314,7 @@ async function acceptPendingConnection(token, userId) {
           'contacts',
           {
             user_id: userId,
-            contact_name: inviter.username,
+            contact_name: inviterDisplayName,
           },
           { limit: 1 }
         );
@@ -318,7 +327,7 @@ async function acceptPendingConnection(token, userId) {
           // Create contact for invitee (inviter is their co-parent)
           await dbSafe.safeInsert('contacts', {
             user_id: userId,
-            contact_name: inviter.username,
+            contact_name: inviterDisplayName,
             contact_email: inviter.email || null,
             relationship: 'co-parent',
             linked_user_id: connection.inviterId, // Link to actual user for AI context
@@ -336,7 +345,7 @@ async function acceptPendingConnection(token, userId) {
             updated_at: now,
           });
           console.log(
-            `✅ Created co-parent contact for ${invitee.username}: ${inviter.username} (linked_user_id: ${connection.inviterId})`
+            `✅ Created co-parent contact for ${inviteeDisplayName}: ${inviterDisplayName} (linked_user_id: ${connection.inviterId})`
           );
         }
 

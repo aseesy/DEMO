@@ -31,6 +31,35 @@ async function initDatabase() {
 
   // Run background tasks if connected
   if (dbConnected) {
+    // Validate schema on startup (non-blocking)
+    setTimeout(async () => {
+      try {
+        const schemaValidator = require('./src/infrastructure/database/schemaValidator');
+        const validation = await schemaValidator.validateCoreSchema();
+
+        if (validation.valid) {
+          console.log(`✅ Schema validation passed (${validation.tableCount} tables)`);
+          if (validation.warnings.length > 0) {
+            validation.warnings.forEach(warning => console.log(`   ℹ️  ${warning}`));
+          }
+        } else {
+          console.warn('⚠️  Schema validation found issues:');
+          validation.errors.forEach(error => console.warn(`   - ${error}`));
+          console.warn('   💡 Run migrations to fix schema issues');
+        }
+
+        // Show migration status
+        const migrationStatus = await schemaValidator.getMigrationStatus();
+        if (migrationStatus.total > 0) {
+          console.log(
+            `📋 Migration status: ${migrationStatus.executed} executed, ${migrationStatus.failed} failed`
+          );
+        }
+      } catch (err) {
+        console.warn('⚠️  Schema validation failed (non-blocking):', err.message);
+      }
+    }, 1000);
+
     // Run PostgreSQL migration in background
     setTimeout(() => {
       const { runMigration } = require('./run-migration');

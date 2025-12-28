@@ -34,18 +34,14 @@ async function createUserWithEmail(
     throw createRegistrationError(RegistrationError.EMAIL_EXISTS);
   }
 
-  let username = await generateUniqueUsername(emailLower);
-  if (!username) throw createRegistrationError(RegistrationError.USERNAME_FAILED);
-
   const hashedPassword = password ? await hashPassword(password) : null;
 
-  // Try to create user, retry once with new username if there's a race condition
+  // Create user with email (no username needed)
   try {
     const user = await createUser(
-      username,
+      emailLower,
       hashedPassword,
       context,
-      emailLower,
       googleId,
       oauthProvider,
       nameData
@@ -53,21 +49,9 @@ async function createUserWithEmail(
     console.log(`Created user: ${user.id} (${emailLower})`);
     return user;
   } catch (err) {
-    // If username conflict (race condition), retry once with a new username
-    if (err.code === 'USERNAME_CONFLICT') {
-      username = await generateUniqueUsername(emailLower);
-      if (!username) throw createRegistrationError(RegistrationError.USERNAME_FAILED);
-      const user = await createUser(
-        username,
-        hashedPassword,
-        context,
-        emailLower,
-        googleId,
-        oauthProvider,
-        nameData
-      );
-      console.log(`Created user: ${user.id} (${emailLower})`);
-      return user;
+    // If email conflict (race condition), throw error
+    if (err.code === 'EMAIL_EXISTS' || err.message?.includes('email')) {
+      throw createRegistrationError(RegistrationError.EMAIL_EXISTS);
     }
     throw err;
   }
@@ -80,30 +64,16 @@ async function createUserWithEmail(
 async function createUserWithEmailNoRoom(email, password, displayName = null, context = {}) {
   const emailLower = email.trim().toLowerCase();
 
-  // Generate unique username
-  const baseName = emailLower
-    .split('@')[0]
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .toLowerCase();
-  let username = baseName.substring(0, 15);
-  let attempts = 0;
-
-  while (attempts < 10) {
-    const check = await dbSafe.safeSelect('users', { username }, { limit: 1 });
-    if (dbSafe.parseResult(check).length === 0) break;
-    username = `${baseName.substring(0, 10)}${generateUsernameSuffix()}`;
-    attempts++;
-  }
-
-  if (attempts >= 10) {
-    throw createRegistrationError(RegistrationError.USERNAME_FAILED);
+  // Check if email already exists
+  const existing = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
+  if (dbSafe.parseResult(existing).length > 0) {
+    throw createRegistrationError(RegistrationError.EMAIL_EXISTS);
   }
 
   const hashedPassword = password ? await hashPassword(password) : null;
   const now = new Date().toISOString();
 
   const userData = {
-    username: username.toLowerCase(),
     password_hash: hashedPassword,
     email: emailLower,
     display_name: displayName || null,
@@ -116,17 +86,16 @@ async function createUserWithEmailNoRoom(email, password, displayName = null, co
     userId = await dbSafe.safeInsert('users', userData);
   } catch (err) {
     if (err.code === '23505') {
-      if (err.constraint?.includes('username')) throw new Error('Username already exists');
       if (err.constraint?.includes('email'))
         throw createRegistrationError(RegistrationError.EMAIL_EXISTS);
     }
     throw err;
   }
 
-  // Create user context (but NOT a room)
+  // Create user context (but NOT a room) - using email instead of username
   try {
     const userContextData = {
-      user_id: userId,
+      user_email: emailLower,
       co_parent: context.coParentName || null,
       children: context.children ? JSON.stringify(context.children) : null,
       contacts: context.contacts ? JSON.stringify(context.contacts) : null,
@@ -149,14 +118,17 @@ async function createUserWithEmailNoRoom(email, password, displayName = null, co
     console.warn('Could not create user context:', err.message);
   }
 
-  // Create Neo4j node
-  neo4jClient.createUserNode(userId, username, emailLower, displayName).catch(() => {});
+  // Create Neo4j node (using email instead of username)
+  neo4jClient
+    .createUserNode(userId, emailLower, emailLower, displayName || emailLower)
+    .catch(() => {});
 
   return {
     id: userId,
-    username: username.toLowerCase(),
     email: emailLower,
-    displayName: displayName || username,
+    displayName: displayName || emailLower,
+    firstName: userData.first_name,
+    lastName: null,
     room: null, // No room created
   };
 }
@@ -318,9 +290,17 @@ async function registerFromInvitation(params, db) {
       linked_user_id: invitation.inviter_id,
       created_at: now,
     });
+    // Get first_name for contact name (prefer first_name over displayName/username)
+    const newUserResult = await client.query(
+      'SELECT first_name, display_name FROM users WHERE id = $1 LIMIT 1',
+      [userId]
+    );
+    const newUser = newUserResult.rows[0];
+    const contactName = newUser?.first_name || displayName || username;
+
     await dbSafe.safeInsertTx(client, 'contacts', {
       user_id: invitation.inviter_id,
-      contact_name: displayName || username,
+      contact_name: contactName,
       contact_email: emailLower,
       relationship: 'co-parent',
       linked_user_id: userId,

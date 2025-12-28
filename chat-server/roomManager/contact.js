@@ -5,11 +5,17 @@
  * - Single Responsibility: Each function has one clear purpose
  * - Repository Pattern: Database details hidden behind repository interface
  * - Fail Fast: Optimized to reduce N^2 complexity where possible
+ *
+ * Child Contact Sharing:
+ * When one co-parent adds a child contact, it is automatically shared with
+ * their co-parent in any connected room. This ensures both parents have
+ * access to important child information.
  */
 const {
   PostgresContactRepository,
 } = require('../src/repositories/postgres/PostgresContactRepository');
 const { PostgresRoomRepository } = require('../src/repositories/postgres/PostgresRoomRepository');
+const dbSafe = require('../dbSafe');
 
 // Repository instances - encapsulate all database access
 const contactRepo = new PostgresContactRepository();
@@ -24,11 +30,12 @@ const roomRepo = new PostgresRoomRepository();
 async function getRoomMembers(roomId) {
   const members = await roomRepo.getMembersWithDetails(roomId);
   // Map to format expected by contact creation logic
+  // Note: displayName from repository already prioritizes first_name
   return members.map(member => ({
     user_id: member.userId,
     username: member.username,
     display_name: member.displayName,
-    first_name: member.displayName, // Use displayName as first_name fallback
+    first_name: member.displayName, // displayName already uses first_name || display_name || username
     email: member.email,
   }));
 }
@@ -136,4 +143,225 @@ async function ensureContactsForRoomMembers(roomId) {
   }
 }
 
-module.exports = { ensureContactsForRoomMembers };
+// ============================================================================
+// CHILD CONTACT SHARING
+// ============================================================================
+
+/**
+ * Relationship types that should be shared between co-parents
+ */
+const SHAREABLE_RELATIONSHIPS = [
+  'child',
+  'my child',
+  'our child',
+  'son',
+  'daughter',
+  'stepchild',
+  'step child',
+];
+
+/**
+ * Check if a relationship type should be shared with co-parents
+ * @param {string} relationship - The relationship type
+ * @returns {boolean} True if shareable
+ */
+function isShareableRelationship(relationship) {
+  if (!relationship) return false;
+  const normalized = relationship.toLowerCase().trim();
+  return SHAREABLE_RELATIONSHIPS.some(r => normalized === r || normalized.includes(r));
+}
+
+/**
+ * Get all rooms where a user is a member (co-parent rooms)
+ * @param {number} userId - User ID
+ * @returns {Promise<Array>} Array of room objects
+ */
+async function getRoomsForUser(userId) {
+  try {
+    const result = await dbSafe.query(
+      `SELECT r.id, r.name
+       FROM rooms r
+       JOIN room_members rm ON r.id = rm.room_id
+       WHERE rm.user_id = $1`,
+      [userId]
+    );
+    return result.rows || [];
+  } catch (error) {
+    console.error('[Contact] Error getting rooms for user:', error);
+    return [];
+  }
+}
+
+/**
+ * Share a child contact with all co-parents in the user's rooms
+ *
+ * When a parent adds a child contact, this function ensures the contact
+ * is also created for their co-parent(s) in any shared rooms.
+ *
+ * @param {number} userId - User who created the contact
+ * @param {Object} childContact - The child contact data
+ * @returns {Promise<Array>} Array of created contact IDs for co-parents
+ */
+async function shareChildContactWithCoParents(userId, childContact) {
+  // Validate this is a shareable relationship
+  if (!isShareableRelationship(childContact.relationship)) {
+    return [];
+  }
+
+  const sharedContactIds = [];
+
+  try {
+    // Get all rooms the user is in
+    const rooms = await getRoomsForUser(userId);
+
+    for (const room of rooms) {
+      // Get all members of this room
+      const members = await getRoomMembers(room.id);
+
+      // Share with each co-parent (other members in the room)
+      for (const member of members) {
+        if (member.user_id === userId) continue; // Skip self
+
+        // Check if this co-parent already has this child contact
+        // Use contact_name + relationship to identify duplicates
+        const existingContacts = await contactRepo.findByUserId(member.user_id);
+        const alreadyExists = existingContacts.some(
+          c =>
+            c.contact_name?.toLowerCase() === childContact.contact_name?.toLowerCase() &&
+            isShareableRelationship(c.relationship)
+        );
+
+        if (alreadyExists) {
+          console.log('[Contact] Child contact already exists for co-parent', {
+            coParentId: member.user_id,
+            childName: childContact.contact_name,
+          });
+          continue;
+        }
+
+        // Create the shared child contact for co-parent
+        const sharedContactData = {
+          user_id: member.user_id,
+          contact_name: childContact.contact_name,
+          contact_email: childContact.contact_email || null,
+          relationship: childContact.relationship,
+          phone: childContact.phone || null,
+          child_age: childContact.child_age || null,
+          child_birthdate: childContact.child_birthdate || null,
+          school: childContact.school || null,
+          custody_arrangement: childContact.custody_arrangement || null,
+          shared_from_user_id: userId,
+          shared_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        try {
+          const contactId = await dbSafe.safeInsert('contacts', sharedContactData);
+          sharedContactIds.push(contactId);
+
+          console.log('[Contact] ✅ Shared child contact with co-parent', {
+            sharedContactId: contactId,
+            fromUserId: userId,
+            toUserId: member.user_id,
+            childName: childContact.contact_name,
+            roomId: room.id,
+          });
+        } catch (insertError) {
+          // Handle duplicate key error gracefully
+          if (insertError.code === '23505') {
+            console.log('[Contact] Contact already exists (duplicate key), skipping');
+          } else {
+            console.error('[Contact] Error sharing contact:', insertError);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[Contact] Error sharing child contact with co-parents:', error);
+  }
+
+  return sharedContactIds;
+}
+
+/**
+ * Sync existing child contacts when a new room is created
+ *
+ * When co-parents are paired (room created), this function ensures
+ * any existing child contacts are shared between them.
+ *
+ * @param {string} roomId - The newly created room ID
+ */
+async function syncChildContactsForRoom(roomId) {
+  try {
+    const members = await getRoomMembers(roomId);
+    if (members.length < 2) return;
+
+    console.log('[Contact] Syncing child contacts for room', {
+      roomId,
+      memberCount: members.length,
+    });
+
+    // For each member, share their child contacts with other members
+    for (const member of members) {
+      const contacts = await contactRepo.findByUserId(member.user_id);
+      const childContacts = contacts.filter(c => isShareableRelationship(c.relationship));
+
+      for (const childContact of childContacts) {
+        // Share with other room members
+        for (const otherMember of members) {
+          if (otherMember.user_id === member.user_id) continue;
+
+          // Check if already shared
+          const otherContacts = await contactRepo.findByUserId(otherMember.user_id);
+          const alreadyExists = otherContacts.some(
+            c =>
+              c.contact_name?.toLowerCase() === childContact.contact_name?.toLowerCase() &&
+              isShareableRelationship(c.relationship)
+          );
+
+          if (alreadyExists) continue;
+
+          // Create shared contact
+          const sharedContactData = {
+            user_id: otherMember.user_id,
+            contact_name: childContact.contact_name,
+            contact_email: childContact.contact_email || null,
+            relationship: childContact.relationship,
+            phone: childContact.phone || null,
+            child_age: childContact.child_age || null,
+            child_birthdate: childContact.child_birthdate || null,
+            school: childContact.school || null,
+            custody_arrangement: childContact.custody_arrangement || null,
+            shared_from_user_id: member.user_id,
+            shared_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          try {
+            await dbSafe.safeInsert('contacts', sharedContactData);
+            console.log('[Contact] ✅ Synced child contact on room creation', {
+              childName: childContact.contact_name,
+              fromUser: member.user_id,
+              toUser: otherMember.user_id,
+            });
+          } catch (insertError) {
+            if (insertError.code !== '23505') {
+              console.error('[Contact] Error syncing child contact:', insertError);
+            }
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[Contact] Error syncing child contacts for room:', error);
+  }
+}
+
+module.exports = {
+  ensureContactsForRoomMembers,
+  shareChildContactWithCoParents,
+  syncChildContactsForRoom,
+  isShareableRelationship,
+};

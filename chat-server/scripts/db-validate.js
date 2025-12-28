@@ -20,6 +20,7 @@ const EXPECTED_SCHEMA = {
   user_context: ['user_id', 'co_parent', 'children', 'contacts', 'updated_at'],
   invitations: ['id', 'inviter_id', 'invitee_email', 'code', 'status', 'created_at'],
   notifications: ['id', 'user_id', 'type', 'message', 'read', 'created_at'],
+  migrations: ['id', 'filename', 'executed_at', 'execution_time_ms', 'success', 'error_message'],
 };
 
 async function validateSchema() {

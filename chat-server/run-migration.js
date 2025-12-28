@@ -3,6 +3,107 @@ const dbPostgres = require('./dbPostgres');
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Get list of executed migrations from database
+ */
+async function getExecutedMigrations() {
+  try {
+    // Check if migrations table exists
+    const tableCheck = await dbPostgres.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'migrations'
+      )
+    `);
+
+    if (!tableCheck.rows[0].exists) {
+      return [];
+    }
+
+    const result = await dbPostgres.query(
+      'SELECT filename FROM migrations WHERE success = true ORDER BY executed_at'
+    );
+    return result.rows.map(row => row.filename);
+  } catch (error) {
+    // If migrations table doesn't exist, return empty array
+    // It will be created by the first migration
+    return [];
+  }
+}
+
+/**
+ * Record migration execution in database
+ */
+async function recordMigration(filename, executionTimeMs, success = true, errorMessage = null) {
+  try {
+    // Ensure migrations table exists
+    await dbPostgres.query(`
+      CREATE TABLE IF NOT EXISTS migrations (
+        id SERIAL PRIMARY KEY,
+        filename TEXT UNIQUE NOT NULL,
+        executed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        execution_time_ms INTEGER,
+        success BOOLEAN DEFAULT true,
+        error_message TEXT
+      )
+    `);
+
+    await dbPostgres.query(
+      `INSERT INTO migrations (filename, execution_time_ms, success, error_message)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (filename) 
+       DO UPDATE SET 
+         execution_time_ms = EXCLUDED.execution_time_ms,
+         success = EXCLUDED.success,
+         error_message = EXCLUDED.error_message,
+         executed_at = CURRENT_TIMESTAMP`,
+      [filename, executionTimeMs, success, errorMessage]
+    );
+  } catch (error) {
+    console.warn(`⚠️  Failed to record migration ${filename}:`, error.message);
+    // Don't throw - migration execution is more important than tracking
+  }
+}
+
+/**
+ * Execute a single migration file in its own transaction
+ */
+async function executeMigration(migrationFile, migrationsDir) {
+  const filePath = path.join(migrationsDir, migrationFile);
+  const startTime = Date.now();
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Migration file not found: ${filePath}`);
+  }
+
+  const sql = fs.readFileSync(filePath, 'utf8');
+
+  // Execute in a transaction
+  const client = await dbPostgres.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(sql);
+    await client.query('COMMIT');
+
+    const executionTime = Date.now() - startTime;
+    await recordMigration(migrationFile, executionTime, true, null);
+    console.log(`  ✅ ${migrationFile} (${executionTime}ms)`);
+    return { success: true, filename: migrationFile, executionTime };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    const executionTime = Date.now() - startTime;
+    await recordMigration(migrationFile, executionTime, false, error.message);
+    console.error(`  ❌ ${migrationFile} failed: ${error.message}`);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Run all pending migrations
+ */
 async function runMigration() {
   if (!process.env.DATABASE_URL) {
     console.error('❌ DATABASE_URL not set - PostgreSQL is required');
@@ -16,7 +117,7 @@ async function runMigration() {
 
   while (retries > 0) {
     try {
-      console.log(`🔄 Running PostgreSQL migration (attempt ${4 - retries}/3)...`);
+      console.log(`🔄 Running PostgreSQL migrations (attempt ${4 - retries}/3)...`);
 
       // Check if dbPostgres is properly initialized
       if (!dbPostgres || typeof dbPostgres.query !== 'function') {
@@ -35,99 +136,68 @@ async function runMigration() {
         migrationFiles = fs
           .readdirSync(migrationsDir)
           .filter(f => f.endsWith('.sql'))
-          .sort(); // Sorts alphabetically: 001_, 002_, etc.
-        console.log(`📄 Found ${migrationFiles.length} migration files`);
+          .sort(); // Sorts alphabetically: 000_, 001_, etc.
       }
 
-      // Fallback to legacy paths if no migrations folder
       if (migrationFiles.length === 0) {
-        const possiblePaths = [
-          path.join(__dirname, '../chat-client-vite/scripts/migrate_user_context.sql'),
-          path.join(__dirname, './scripts/migrate_user_context.sql'),
-          path.join(__dirname, 'migrate_user_context.sql'),
-        ];
-        for (const migrationPath of possiblePaths) {
-          if (fs.existsSync(migrationPath)) {
-            migrationFiles = [migrationPath];
-            console.log(`📄 Using legacy migration file: ${migrationPath}`);
-            break;
-          }
+        console.log('⚠️  No migration files found');
+        return;
+      }
+
+      console.log(`📄 Found ${migrationFiles.length} migration files`);
+
+      // Get list of already executed migrations
+      const executedMigrations = await getExecutedMigrations();
+      console.log(`📋 ${executedMigrations.length} migrations already executed`);
+
+      // Filter to only pending migrations
+      const pendingMigrations = migrationFiles.filter(file => !executedMigrations.includes(file));
+
+      if (pendingMigrations.length === 0) {
+        console.log('✅ All migrations are up to date');
+        return;
+      }
+
+      console.log(`🔄 Running ${pendingMigrations.length} pending migration(s)...\n`);
+
+      // Execute each migration in its own transaction
+      const results = [];
+      for (const migrationFile of pendingMigrations) {
+        try {
+          const result = await executeMigration(migrationFile, migrationsDir);
+          results.push(result);
+        } catch (error) {
+          // Log error but continue with other migrations
+          console.error(`  ❌ Migration ${migrationFile} failed:`, error.message);
+          results.push({
+            success: false,
+            filename: migrationFile,
+            error: error.message,
+          });
+          // Decide whether to continue or stop
+          // For now, continue with other migrations
         }
       }
 
-      let sql = null;
-      let foundPath = null;
+      // Summary
+      const successful = results.filter(r => r.success).length;
+      const failed = results.filter(r => !r.success).length;
 
-      // Combine all migration files
-      if (migrationFiles.length > 0) {
-        const sqlParts = [];
-        for (const file of migrationFiles) {
-          const filePath = file.includes('/') ? file : path.join(migrationsDir, file);
-          if (fs.existsSync(filePath)) {
-            console.log(`  📄 Loading: ${path.basename(filePath)}`);
-            sqlParts.push(`-- Migration: ${path.basename(filePath)}`);
-            sqlParts.push(fs.readFileSync(filePath, 'utf8'));
-          }
-        }
-        sql = sqlParts.join('\n\n');
-        foundPath = migrationsDir;
+      console.log('\n📊 Migration Summary:');
+      console.log(`   ✅ Successful: ${successful}`);
+      if (failed > 0) {
+        console.log(`   ❌ Failed: ${failed}`);
       }
 
-      if (!sql) {
-        console.log('⚠️  Migration SQL file not found, creating tables inline...');
-        // Fallback: create essential tables inline if SQL file not found
-        sql = `
-        CREATE TABLE IF NOT EXISTS users (
-          id SERIAL PRIMARY KEY,
-          username TEXT UNIQUE NOT NULL,
-          email TEXT UNIQUE,
-          password_hash TEXT,
-          google_id TEXT UNIQUE,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      if (failed > 0) {
+        console.log('\n⚠️  Some migrations failed. Check logs above for details.');
+        console.log(
+          '⚠️  Server will continue to start, but database may be in inconsistent state.'
         );
-
-        CREATE TABLE IF NOT EXISTS user_context (
-          user_id TEXT PRIMARY KEY,
-          co_parent TEXT,
-          children JSONB DEFAULT '[]'::jsonb,
-          contacts JSONB DEFAULT '[]'::jsonb,
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS rooms (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          created_by INTEGER NOT NULL,
-          is_private INTEGER DEFAULT 1,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS communication_stats (
-          id SERIAL PRIMARY KEY,
-          user_id INTEGER NOT NULL,
-          room_id TEXT NOT NULL,
-          current_streak INTEGER DEFAULT 0,
-          best_streak INTEGER DEFAULT 0,
-          total_positive_messages INTEGER DEFAULT 0,
-          total_messages INTEGER DEFAULT 0,
-          total_interventions INTEGER DEFAULT 0,
-          last_message_date TIMESTAMP WITH TIME ZONE,
-          last_intervention_date TIMESTAMP WITH TIME ZONE,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-          UNIQUE(user_id, room_id)
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_comm_stats_user ON communication_stats(user_id);
-        CREATE INDEX IF NOT EXISTS idx_comm_stats_room ON communication_stats(room_id);
-      `;
+      } else {
+        console.log('\n✅ All migrations completed successfully');
       }
 
-      // Execute the migration
-      const result = await dbPostgres.query(sql);
-      console.log('✅ Migration query executed successfully');
-
-      console.log('✅ PostgreSQL migration completed successfully');
       return; // Success - exit
     } catch (error) {
       retries--;
@@ -157,7 +227,7 @@ module.exports = { runMigration };
 if (require.main === module) {
   runMigration()
     .then(() => {
-      console.log('Migration script completed');
+      console.log('\n✅ Migration script completed');
       process.exit(0); // Explicitly exit with success
     })
     .catch(err => {

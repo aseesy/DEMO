@@ -492,13 +492,7 @@ function NavigationComponent({
                     aria-expanded={isMenuOpen}
                   >
                     <img src="/assets/Logo.svg" alt="LiaiZen" className="w-6 h-6 object-contain" />
-                    <span className="text-sm font-semibold text-teal-medium">
-                      Li
-                      <span className="bg-gradient-to-r from-[#4DA8B0] to-[#46BD92] bg-clip-text text-transparent">
-                        ai
-                      </span>
-                      Zen
-                    </span>
+                    <img src="/assets/wordmark.svg" alt="LiaiZen" className="h-5 w-auto" />
                     <svg
                       className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`}
                       fill="none"
