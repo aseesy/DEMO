@@ -27,7 +27,8 @@ function safeLoad(modulePath, name, initFn = null) {
     console.log(`✅ Library Loader: ${name} loaded`);
     return module;
   } catch (err) {
-    console.warn(`⚠️ Library Loader: ${name} not available`);
+    // Optional modules are expected to be missing - use info level instead of warn
+    console.log(`ℹ️ Library Loader: ${name} not available (optional feature)`);
     return null;
   }
 }
