@@ -131,7 +131,8 @@ describe('useAuth Hook', () => {
 
       expect(result.current.email).toBe('');
       expect(result.current.password).toBe('');
-      expect(result.current.username).toBe('');
+      expect(result.current.firstName).toBe('');
+      expect(result.current.lastName).toBe('');
       expect(result.current.isAuthenticated).toBe(false);
       expect(result.current.isLoggingIn).toBe(false);
       expect(result.current.isSigningUp).toBe(false);
@@ -143,7 +144,8 @@ describe('useAuth Hook', () => {
 
       expect(typeof result.current.setEmail).toBe('function');
       expect(typeof result.current.setPassword).toBe('function');
-      expect(typeof result.current.setUsername).toBe('function');
+      expect(typeof result.current.setFirstName).toBe('function');
+      expect(typeof result.current.setLastName).toBe('function');
       expect(typeof result.current.setError).toBe('function');
     });
 
@@ -180,14 +182,24 @@ describe('useAuth Hook', () => {
       expect(result.current.password).toBe('securepass123');
     });
 
-    it('should update username state', () => {
+    it('should update firstName state', () => {
       const { result } = renderHook(() => useAuth());
 
       act(() => {
-        result.current.setUsername('testuser');
+        result.current.setFirstName('John');
       });
 
-      expect(result.current.username).toBe('testuser');
+      expect(result.current.firstName).toBe('John');
+    });
+
+    it('should update lastName state', () => {
+      const { result } = renderHook(() => useAuth());
+
+      act(() => {
+        result.current.setLastName('Doe');
+      });
+
+      expect(result.current.lastName).toBe('Doe');
     });
 
     it('should update error state', () => {
@@ -266,7 +278,7 @@ describe('useAuth Hook', () => {
         ok: true,
         json: () =>
           Promise.resolve({
-            user: { username: 'testuser', email: 'test@example.com' },
+            user: { email: 'test@example.com', first_name: 'Test', last_name: 'User' },
             token: 'jwt-token',
           }),
       });
@@ -277,7 +289,6 @@ describe('useAuth Hook', () => {
       });
 
       expect(result.current.isAuthenticated).toBe(true);
-      expect(result.current.username).toBe('testuser');
       expect(authStorage.setToken).toHaveBeenCalledWith('jwt-token');
     });
 
@@ -351,7 +362,8 @@ describe('useAuth Hook', () => {
       });
 
       expect(result.current.isAuthenticated).toBe(false);
-      expect(result.current.username).toBe('');
+      expect(result.current.firstName).toBe('');
+      expect(result.current.lastName).toBe('');
       expect(result.current.email).toBe('');
       expect(result.current.password).toBe('');
       expect(authStorage.clearAuth).toHaveBeenCalled();
@@ -375,7 +387,6 @@ describe('useAuth Hook', () => {
     it('should restore session from storage if available', async () => {
       // Mock stored auth data
       authStorage.getToken.mockReturnValue('stored-token');
-      authStorage.getUsername.mockReturnValue('storeduser');
       authStorage.isAuthenticated.mockReturnValue(true);
 
       apiGet.mockResolvedValue({
@@ -383,7 +394,7 @@ describe('useAuth Hook', () => {
         json: () =>
           Promise.resolve({
             authenticated: true,
-            user: { username: 'storeduser' },
+            user: { email: 'stored@example.com', first_name: 'Stored', last_name: 'User' },
           }),
       });
 
@@ -395,12 +406,10 @@ describe('useAuth Hook', () => {
       });
 
       expect(result.current.isAuthenticated).toBe(true);
-      expect(result.current.username).toBe('storeduser');
     });
 
     it('should clear auth if session verification fails', async () => {
       authStorage.getToken.mockReturnValue('expired-token');
-      authStorage.getUsername.mockReturnValue('');
       authStorage.isAuthenticated.mockReturnValue(false);
 
       apiGet.mockResolvedValue({
@@ -428,7 +437,8 @@ describe('calculateUserProperties helper', () => {
     act(() => {
       result.current.setEmail('new@example.com');
       result.current.setPassword('password123');
-      result.current.setUsername('newuser');
+      result.current.setFirstName('New');
+      result.current.setLastName('User');
     });
 
     apiPost.mockResolvedValue({

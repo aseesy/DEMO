@@ -265,20 +265,22 @@ describe('validateLoginCredentials', () => {
 describe('validateSignupCredentials', () => {
   describe('valid signup', () => {
     it('should return valid for correct credentials', () => {
-      const result = validateSignupCredentials('user@example.com', 'password1234', 'John');
+      const result = validateSignupCredentials('user@example.com', 'password1234', 'John', 'Doe');
 
       expect(result.valid).toBe(true);
       expect(result.errors).toEqual({});
       expect(result.cleanData.email).toBe('user@example.com');
       expect(result.cleanData.password).toBe('password1234');
-      expect(result.cleanData.username).toBe('John');
+      expect(result.cleanData.firstName).toBe('John');
+      expect(result.cleanData.lastName).toBe('Doe');
     });
 
-    it('should allow empty username (optional)', () => {
+    it('should require firstName and lastName', () => {
       const result = validateSignupCredentials('user@example.com', 'password1234');
 
-      expect(result.valid).toBe(true);
-      expect(result.cleanData.username).toBe('');
+      expect(result.valid).toBe(false);
+      expect(result.errors.firstName).toBeDefined();
+      expect(result.errors.lastName).toBeDefined();
     });
   });
 
@@ -291,17 +293,24 @@ describe('validateSignupCredentials', () => {
     });
 
     it('should return error for invalid email format', () => {
-      const result = validateSignupCredentials('notanemail', 'password1234', 'John');
+      const result = validateSignupCredentials('notanemail', 'password1234', 'John', 'Doe');
 
       expect(result.valid).toBe(false);
       expect(result.errors.email).toContain('valid email');
     });
 
     it('should return error for short password', () => {
-      const result = validateSignupCredentials('user@example.com', 'short', 'John');
+      const result = validateSignupCredentials('user@example.com', 'short', 'John', 'Doe');
 
       expect(result.valid).toBe(false);
       expect(result.errors.password).toBeDefined();
+    });
+
+    it('should return error for missing email', () => {
+      const result = validateSignupCredentials('', 'password1234', 'John', 'Doe');
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.email).toContain('required');
     });
   });
 });
@@ -310,7 +319,8 @@ describe('validateRegistrationWithInvite', () => {
   const validData = {
     email: 'user@example.com',
     password: 'password1234',
-    username: 'John Doe',
+    firstName: 'John',
+    lastName: 'Doe',
     coParentEmail: 'coparent@example.com',
   };
 
@@ -322,6 +332,8 @@ describe('validateRegistrationWithInvite', () => {
       expect(result.errors).toEqual({});
       expect(result.cleanData.email).toBe('user@example.com');
       expect(result.cleanData.coParentEmail).toBe('coparent@example.com');
+      expect(result.cleanData.firstName).toBe('John');
+      expect(result.cleanData.lastName).toBe('Doe');
     });
 
     it('should normalize emails to lowercase', () => {
@@ -338,14 +350,24 @@ describe('validateRegistrationWithInvite', () => {
   });
 
   describe('missing required fields', () => {
-    it('should return error for missing username', () => {
+    it('should return error for missing firstName', () => {
       const result = validateRegistrationWithInvite({
         ...validData,
-        username: '',
+        firstName: '',
       });
 
       expect(result.valid).toBe(false);
-      expect(result.errors.username).toContain('required');
+      expect(result.errors.firstName).toContain('required');
+    });
+
+    it('should return error for missing lastName', () => {
+      const result = validateRegistrationWithInvite({
+        ...validData,
+        lastName: '',
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.lastName).toContain('required');
     });
 
     it('should return error for missing email', () => {
@@ -430,14 +452,16 @@ describe('validateRegistrationWithInvite', () => {
       const result = validateRegistrationWithInvite({
         email: '',
         password: 'short',
-        username: '',
+        firstName: '',
+        lastName: '',
         coParentEmail: 'notanemail',
       });
 
       expect(result.valid).toBe(false);
       expect(result.errors.email).toBeDefined();
       expect(result.errors.password).toBeDefined();
-      expect(result.errors.username).toBeDefined();
+      expect(result.errors.firstName).toBeDefined();
+      expect(result.errors.lastName).toBeDefined();
       expect(result.errors.coParentEmail).toBeDefined();
     });
   });

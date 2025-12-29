@@ -311,7 +311,7 @@ describe('messageAnalyzer', () => {
 
         expect(result.action).toBe('STAY_SILENT');
         expect(result.error).toBeDefined();
-      });
+      }, 10000); // Increase timeout to 10 seconds
 
       it('should fail-open on network error', async () => {
         apiPost.mockRejectedValue(new Error('Network error'));

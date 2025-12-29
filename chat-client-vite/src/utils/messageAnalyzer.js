@@ -165,8 +165,29 @@ export async function analyzeMessage(messageText, senderProfile = {}, receiverPr
     }
   }
 
-  // Should not reach here, but handle edge case
-  throw new Error('Analysis failed after maximum retries');
+  // If we exhausted all retries, fail-open (allow message)
+  // This handles the case where all retries failed but we should still allow the message
+  console.error('⚠️ All retries exhausted, failing open:', {
+    retryAttempts: retryCount,
+    timestamp: new Date().toISOString(),
+    messagePreview: messageText.substring(0, 50),
+  });
+
+  return {
+    action: 'STAY_SILENT',
+    escalation: { riskLevel: 'low', confidence: 0, reasons: [] },
+    emotion: {
+      currentEmotion: 'neutral',
+      stressLevel: 0,
+      stressTrajectory: 'stable',
+      emotionalMomentum: 0,
+      triggers: [],
+      conversationEmotion: 'neutral',
+    },
+    intervention: null,
+    error: 'Analysis unavailable after retries',
+    failOpen: true,
+  };
 }
 
 // Patterns are now imported from config/patterns
