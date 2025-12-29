@@ -1,9 +1,5 @@
-# Railway Configuration for Monorepo
-# This file is in the project root
-# Sets root directory to chat-server for build and deployment
-
-[service]
-rootDirectory = "chat-server"
+# Railway Configuration
+# Deploy from chat-server directory directly
 
 [build]
 builder = "nixpacks"
