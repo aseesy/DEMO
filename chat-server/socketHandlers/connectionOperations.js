@@ -6,7 +6,18 @@
  */
 
 const { sanitizeInput, validateUsername } = require('../utils');
-const { buildUserObject } = require('./utils');
+const utils = require('./utils');
+const { buildUserObject } = utils;
+
+// Safety check for buildUserObject
+if (typeof buildUserObject !== 'function') {
+  console.error('[connectionOperations] ERROR: buildUserObject is not a function!', {
+    type: typeof buildUserObject,
+    utilsKeys: Object.keys(utils),
+    buildUserObject: buildUserObject,
+  });
+  throw new Error('buildUserObject is not available - check utils.js exports');
+}
 const pairingManager = require('../libs/pairing-manager');
 
 /**
