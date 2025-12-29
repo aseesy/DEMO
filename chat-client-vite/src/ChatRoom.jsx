@@ -1,6 +1,6 @@
 import React from 'react';
 import './index.css';
-import { useAuth } from './features/auth';
+import { useAuthContext } from './context/AuthContext.jsx';
 import { useDashboard } from './features/dashboard';
 import { useContacts } from './features/contacts';
 import { useNotifications, useInAppNotifications } from './features/notifications';
@@ -60,8 +60,8 @@ function ChatRoomContent({
   const isCheckingAuth = isCheckingAuthFromParent;
   const currentView = currentViewFromParent;
 
-  // Get logout handler from useAuth (it's safe to call for just the handler)
-  const { handleLogout } = useAuth();
+  // Get logout handler from AuthContext (shared state with parent)
+  const { logout: handleLogout } = useAuthContext();
 
   // Shared chat state from context
   const {
@@ -790,7 +790,7 @@ function ChatRoomContent({
 
 // Wrap with ChatProvider - auth state lifted here so ChatProvider has access
 function ChatRoom() {
-  const { username, email, isAuthenticated, isCheckingAuth, verifySession } = useAuth();
+  const { username, email, isAuthenticated, isCheckingAuth, verifySession } = useAuthContext();
   const [currentView, setCurrentView] = React.useState(() => {
     const stored = storage.getString(StorageKeys.CURRENT_VIEW);
     return stored && AVAILABLE_VIEWS.includes(stored) ? stored : 'dashboard';
