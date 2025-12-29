@@ -287,6 +287,13 @@ class ProfileService extends BaseService {
 
     return withRetry(
       async () => {
+        // Validate user exists BEFORE attempting any updates
+        // This prevents wasted database operations and provides clear error messages
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+          throw new NotFoundError('User', userId);
+        }
+
         // Separate user table fields from profile table fields
         const userTableFields = [
           'first_name',
@@ -321,9 +328,7 @@ class ProfileService extends BaseService {
 
         // Calculate and update completion percentage
         const fullProfile = await this.getComprehensiveProfile(userId);
-        const completionPercentage = calculateCompletion
-          ? calculateCompletion(fullProfile)
-          : 0;
+        const completionPercentage = calculateCompletion ? calculateCompletion(fullProfile) : 0;
 
         if (completionPercentage !== fullProfile.profile_completion_percentage) {
           await this.userRepository.updateById(userId, {
