@@ -28,9 +28,20 @@ export function useAuth() {
 
   // CRITICAL: Use AuthContext for auth state instead of local state
   // This ensures synchronization with ChatRoom and prevents auth state mismatches
-  const authContext = useAuthContext();
-  const isAuthenticated = authContext?.isAuthenticated ?? false;
-  const isCheckingAuth = authContext?.isCheckingAuth ?? false;
+  // Gracefully handle case where AuthContext is not available (e.g., in tests)
+  let authContext = null;
+  try {
+    authContext = useAuthContext();
+  } catch (err) {
+    // AuthContext not available (e.g., in tests) - use local state as fallback
+    console.warn('[useAuth] AuthContext not available, using local state');
+  }
+
+  // Use AuthContext state if available, otherwise use local state
+  const [localIsAuthenticated, setLocalIsAuthenticated] = React.useState(false);
+  const [localIsCheckingAuth, setLocalIsCheckingAuth] = React.useState(false);
+  const isAuthenticated = authContext?.isAuthenticated ?? localIsAuthenticated;
+  const isCheckingAuth = authContext?.isCheckingAuth ?? localIsCheckingAuth;
   const [error, setError] = React.useState('');
 
   // Compose Google auth
@@ -65,6 +76,10 @@ export function useAuth() {
         try {
           const result = await authContext.login(email, password);
           if (result.success) {
+            // Update local state if AuthContext is not managing it
+            if (!authContext) {
+              setLocalIsAuthenticated(true);
+            }
             return { success: true, user: result.user };
           } else {
             const errorMsg = result.error?.userMessage || result.error || 'Login failed';
@@ -78,8 +93,12 @@ export function useAuth() {
         }
       }
 
-      // Fallback to useEmailAuth's handleLogin
-      return emailAuthResult.handleLogin(e, spamFields);
+      // Fallback to useEmailAuth's handleLogin (updates local state)
+      const result = await emailAuthResult.handleLogin(e, spamFields);
+      if (result.success && !authContext) {
+        setLocalIsAuthenticated(true);
+      }
+      return result;
     },
     [email, password, authContext, setError, emailAuthResult]
   );
