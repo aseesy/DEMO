@@ -268,9 +268,11 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
   // Get messages with JOIN to users table (normalized)
   // Receiver info will be added in JavaScript using room members
   // Order by timestamp DESC, then by id DESC for stable sorting (handles duplicate timestamps)
+  // CRITICAL: Always select m.user_email explicitly to ensure it's available even if JOIN fails
   const historyQuery = `
-    SELECT m.*, 
-           u.id as user_id, u.first_name, u.last_name, u.email
+    SELECT m.id, m.type, m.user_email, m.text, m.timestamp, m.room_id, m.thread_id, 
+           m.edited, m.edited_at, m.reactions, m.user_flagged_by, m.created_at,
+           u.id as user_id, u.first_name, u.last_name, u.email as user_email_from_join
     FROM messages m
     LEFT JOIN users u ON m.user_email IS NOT NULL AND LOWER(m.user_email) = LOWER(u.email)
     WHERE m.room_id = $1
@@ -312,60 +314,56 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
   const messages = sortedRows.map(msg => {
     // Build sender object from message data
     // Handle case where user_email might be NULL or user not found in JOIN
+    // CRITICAL: Always use m.user_email from messages table (not from JOIN) as it's the source of truth
+    // The JOIN may return NULL for user_id/email if user doesn't exist, but m.user_email should always be available
     const senderData = {
-      id: msg.user_id || null,
-      email: msg.user_email || msg.email || null,
-      first_name: msg.first_name || null,
-      last_name: msg.last_name || null,
+      id: msg.user_id || null, // From JOIN - will be NULL if user doesn't exist
+      email: msg.user_email || null, // From messages table - CRITICAL: this is the source of truth
+      first_name: msg.first_name || null, // From JOIN - will be NULL if user doesn't exist
+      last_name: msg.last_name || null, // From JOIN - will be NULL if user doesn't exist
     };
 
-    // Runtime safety check with fallback
-    let sender;
-    if (typeof buildUserObject !== 'function') {
-      console.error('[getMessageHistory] buildUserObject is not a function at runtime!', {
-        type: typeof buildUserObject,
-        value: buildUserObject,
-        utilsModule: require('./utils'),
+    // Log if user_email is missing (shouldn't happen for valid messages)
+    if (!senderData.email) {
+      console.warn('[getMessageHistory] Message missing user_email', {
+        messageId: msg.id,
+        roomId,
+        hasUserEmail: !!msg.user_email,
+        hasEmail: !!msg.email,
       });
-      // Fallback: define inline to prevent crash
-      const fallbackBuildUserObject = (userData, includeEmail = true) => {
-        if (!userData || !userData.id) {
-          // If no user_id but we have email, create minimal sender object
-          if (userData && userData.email) {
-            return {
-              uuid: null,
-              first_name: userData.first_name || null,
-              last_name: userData.last_name || null,
-              email: includeEmail ? userData.email : null,
-            };
-          }
-          return null;
-        }
-        return {
-          uuid: userData.id,
-          first_name: userData.first_name || null,
-          last_name: userData.last_name || null,
-          email: includeEmail ? userData.email || null : null,
-        };
-      };
-      sender = fallbackBuildUserObject(senderData);
-    } else {
-      sender = buildUserObject(senderData);
-      
-      // If buildUserObject returned null but we have user_email, create minimal sender
-      // This handles cases where user record doesn't exist but message does
-      if (!sender && senderData.email) {
-        console.warn('[getMessageHistory] User lookup failed, creating minimal sender from user_email', {
+    }
+
+    // Build sender object - buildUserObject handles null id + email case
+    let sender = buildUserObject(senderData);
+
+    // CRITICAL FIX: If buildUserObject returned null but we have user_email from messages table,
+    // create minimal sender object to ensure message is displayed
+    // This handles cases where user record doesn't exist (like athenasees@gmail.com) but message does
+    if (!sender && senderData.email) {
+      console.warn(
+        '[getMessageHistory] User lookup failed, creating minimal sender from user_email',
+        {
           user_email: senderData.email,
           user_id: senderData.id,
-        });
-        sender = {
-          uuid: null, // No user_id available
-          first_name: senderData.first_name || null,
-          last_name: senderData.last_name || null,
-          email: senderData.email,
-        };
-      }
+          roomId,
+        }
+      );
+      sender = {
+        uuid: null, // No user_id available
+        first_name: senderData.first_name || null,
+        last_name: senderData.last_name || null,
+        email: senderData.email, // CRITICAL: Always include email so message can be displayed
+      };
+    }
+
+    // If sender is still null and we have no email, log warning but don't crash
+    if (!sender) {
+      console.warn('[getMessageHistory] Message has no sender object and no email', {
+        messageId: msg.id,
+        user_email: msg.user_email,
+        user_id: msg.user_id,
+        roomId,
+      });
     }
 
     // Build receiver object - find the other user in the room
@@ -473,13 +471,31 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
     return message;
   });
 
-  // Log sample of messages being returned
+  // Log sample of messages being returned, including sender info for debugging
   if (messages.length > 0) {
+    const messagesWithNullSender = messages.filter(m => !m.sender);
+    const messagesWithNullSenderEmail = messages.filter(m => !m.sender?.email && !m.user_email);
+
     console.log('[getMessageHistory] Sample messages:', {
       first: messages[0]?.text?.substring(0, 30),
       last: messages[messages.length - 1]?.text?.substring(0, 30),
       count: messages.length,
+      firstSenderEmail: messages[0]?.sender?.email || messages[0]?.user_email || 'MISSING',
+      messagesWithNullSender: messagesWithNullSender.length,
+      messagesWithNullSenderEmail: messagesWithNullSenderEmail.length,
     });
+
+    if (messagesWithNullSender.length > 0) {
+      console.warn('[getMessageHistory] Messages with null sender:', {
+        count: messagesWithNullSender.length,
+        sample: messagesWithNullSender.slice(0, 3).map(m => ({
+          id: m.id,
+          user_email: m.user_email,
+          hasSender: !!m.sender,
+          senderEmail: m.sender?.email,
+        })),
+      });
+    }
   }
 
   return {
