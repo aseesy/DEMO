@@ -38,6 +38,15 @@ import {
  * @param {Object} props.inviteHandlers - Grouped invite handlers
  */
 export function ChatPage({ username, isAuthenticated, inviteState, inviteHandlers }) {
+  // DEBUG: Log username prop to diagnose ownership issue
+  React.useEffect(() => {
+    console.log('[ChatPage] username prop:', username, {
+      type: typeof username,
+      isEmail: username?.includes('@'),
+      length: username?.length,
+    });
+  }, [username]);
+
   // Get all chat state from context (socket persists across view changes)
   const {
     messages,
