@@ -220,8 +220,24 @@ export function MessagesContainer({
           {group.messages.map((msg, msgIndex) => {
             // Use new sender structure (sender.email) with fallback to legacy fields
             const messageEmail = msg.sender?.email || msg.user_email || msg.email || msg.username;
+
+            // Get current user email from multiple sources for robustness
+            // 1. username prop (primary - passed from ChatRoom)
+            // 2. localStorage (fallback - in case prop is missing)
+            // 3. sender.email from socket join (if available in context)
+            const currentUserEmail =
+              username ||
+              (typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null) ||
+              (typeof localStorage !== 'undefined' ? localStorage.getItem('username') : null);
+
+            // Normalize both emails for comparison (trim, lowercase)
+            const normalizedMessageEmail = messageEmail?.trim()?.toLowerCase() || '';
+            const normalizedCurrentEmail = currentUserEmail?.trim()?.toLowerCase() || '';
+
             const isOwn =
-              messageEmail && username && messageEmail.toLowerCase() === username.toLowerCase();
+              normalizedMessageEmail &&
+              normalizedCurrentEmail &&
+              normalizedMessageEmail === normalizedCurrentEmail;
 
             // DEBUG: Log first few messages to diagnose ownership issue
             if (msgIndex < 3) {
@@ -229,13 +245,16 @@ export function MessagesContainer({
                 messageId: msg.id,
                 messageText: msg.text?.substring(0, 30),
                 messageEmail,
+                normalizedMessageEmail,
                 username,
+                currentUserEmail,
+                normalizedCurrentEmail,
                 senderObject: msg.sender,
                 user_email: msg.user_email,
                 email: msg.email,
                 username_field: msg.username,
                 isOwn,
-                comparison: messageEmail?.toLowerCase() === username?.toLowerCase(),
+                comparison: normalizedMessageEmail === normalizedCurrentEmail,
               });
             }
 
