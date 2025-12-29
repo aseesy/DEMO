@@ -3,3 +3,9 @@
 
 [phases.setup]
 nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm ci --legacy-peer-deps"]
+
+[start]
+cmd = "node server.js"
