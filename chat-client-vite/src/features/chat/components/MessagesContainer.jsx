@@ -143,15 +143,18 @@ export function MessagesContainer({
             <div>
               <div className="flex items-center gap-2 mb-0.5">
                 <h3 className="font-semibold text-sm text-teal-dark">{selectedThread.title}</h3>
-                {selectedThread.category && (() => {
-                  const config = getCategoryConfig(selectedThread.category);
-                  return (
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
-                      <span>{config.icon}</span>
-                      <span>{config.label}</span>
-                    </span>
-                  );
-                })()}
+                {selectedThread.category &&
+                  (() => {
+                    const config = getCategoryConfig(selectedThread.category);
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}
+                      >
+                        <span>{config.icon}</span>
+                        <span>{config.label}</span>
+                      </span>
+                    );
+                  })()}
               </div>
               <p className="text-xs text-gray-500">
                 {selectedThread.message_count || 0} message
@@ -217,7 +220,25 @@ export function MessagesContainer({
           {group.messages.map((msg, msgIndex) => {
             // Use new sender structure (sender.email) with fallback to legacy fields
             const messageEmail = msg.sender?.email || msg.user_email || msg.email || msg.username;
-            const isOwn = messageEmail && username && messageEmail.toLowerCase() === username.toLowerCase();
+            const isOwn =
+              messageEmail && username && messageEmail.toLowerCase() === username.toLowerCase();
+
+            // DEBUG: Log first few messages to diagnose ownership issue
+            if (msgIndex < 3) {
+              console.log('[MessagesContainer] Message ownership check:', {
+                messageId: msg.id,
+                messageText: msg.text?.substring(0, 30),
+                messageEmail,
+                username,
+                senderObject: msg.sender,
+                user_email: msg.user_email,
+                email: msg.email,
+                username_field: msg.username,
+                isOwn,
+                comparison: messageEmail?.toLowerCase() === username?.toLowerCase(),
+              });
+            }
+
             const isAI = msg.isAI || msg.sender?.email === 'LiaiZen' || msg.username === 'LiaiZen';
             const isHighlighted = highlightedMessageId === msg.id;
             const isSending = msg.isOptimistic || msg.status === 'sending';
