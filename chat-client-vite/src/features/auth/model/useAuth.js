@@ -160,10 +160,12 @@ export function useAuth() {
 
       // Fallback to useEmailAuth's handleLogin (updates local state)
       const result = await emailAuthResult.handleLogin(e, spamFields);
-      if (result.success && !authContext) {
+      // Safety check: ensure result is defined before accessing properties
+      if (result && result.success && !authContext) {
         setLocalIsAuthenticated(true);
       }
-      return result;
+      // Return result or a default error object if undefined
+      return result || { success: false, error: 'Login failed' };
     },
     [email, password, authContext, setError, emailAuthResult]
   );
