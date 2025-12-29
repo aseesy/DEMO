@@ -131,9 +131,26 @@ export function AuthProvider({ children }) {
     }
     const storedIsAuthenticated = authStorage.isAuthenticated();
 
+    // CRITICAL: If there's no token, clear all auth state immediately
+    // This prevents stale isAuthenticated flags from causing redirect loops
+    if (!storedToken) {
+      if (storedIsAuthenticated) {
+        console.log(
+          '[loadAuthState] No token but isAuthenticated flag exists - clearing stale auth'
+        );
+        authStorage.clearAuth();
+      }
+      setIsAuthenticated(false);
+      setUsername(null);
+      setEmail(null);
+      setToken(null);
+      return { isAuthenticated: false, username: null, email: null, token: null };
+    }
+
     // Validate token if present
-    if (storedToken && isTokenExpired(storedToken)) {
+    if (isTokenExpired(storedToken)) {
       // Token expired, clear everything
+      console.log('[loadAuthState] Token expired, clearing auth');
       authStorage.clearAuth();
       setIsAuthenticated(false);
       setUsername(null);
@@ -145,8 +162,7 @@ export function AuthProvider({ children }) {
     // If we have a valid token and username, set initial state optimistically
     // This allows the app to show authenticated UI while verification completes
     // The verifySession will confirm or clear this state
-    const hasValidStoredAuth =
-      storedIsAuthenticated && storedToken && storedUsername && !isTokenExpired(storedToken);
+    const hasValidStoredAuth = storedToken && storedUsername && !isTokenExpired(storedToken);
 
     if (hasValidStoredAuth) {
       // Set initial state from storage (will be verified by verifySession)
@@ -154,13 +170,23 @@ export function AuthProvider({ children }) {
       setUsername(storedUsername);
       setEmail(storedEmail);
       setToken(storedToken);
+    } else {
+      // Invalid state - clear it
+      if (storedIsAuthenticated) {
+        console.log('[loadAuthState] Invalid auth state (missing token/username), clearing');
+        authStorage.clearAuth();
+      }
+      setIsAuthenticated(false);
+      setUsername(null);
+      setEmail(null);
+      setToken(null);
     }
 
     return {
       isAuthenticated: hasValidStoredAuth,
-      username: storedUsername,
-      email: storedEmail,
-      token: storedToken,
+      username: hasValidStoredAuth ? storedUsername : null,
+      email: hasValidStoredAuth ? storedEmail : null,
+      token: hasValidStoredAuth ? storedToken : null,
     };
   }, []);
 
