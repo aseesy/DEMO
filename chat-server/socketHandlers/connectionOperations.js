@@ -344,7 +344,26 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
           throw new Error('buildUserObject is not available - check utils.js exports');
         }
         receiver = buildUserObject(receiverData);
+      } else {
+        // Log warning if we have 2+ members but couldn't find the other one
+        console.warn('[getMessageHistory] Could not find receiver in room members', {
+          roomId,
+          senderEmail: senderData.email,
+          roomMemberEmails: roomMembers.map(m => m.email),
+          roomMemberCount: roomMembers.length,
+        });
       }
+    } else if (roomMembers.length < 2) {
+      // Log warning if room has fewer than 2 members (user talking to themselves)
+      console.warn(
+        '[getMessageHistory] Room has fewer than 2 members - user may appear to talk to themselves',
+        {
+          roomId,
+          senderEmail: senderData.email,
+          roomMemberCount: roomMembers.length,
+          roomMemberEmails: roomMembers.map(m => m.email),
+        }
+      );
     }
 
     // Ensure all required fields are present
