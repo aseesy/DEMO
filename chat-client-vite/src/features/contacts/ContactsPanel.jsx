@@ -2,9 +2,7 @@ import React from 'react';
 import { useContacts } from './model/useContacts.js';
 import { Button } from '../../components/ui';
 import { disambiguateContacts, filterContactsBySearch } from './model/contactHelpers.js';
-import { ContactsList } from './components/ContactsList.jsx';
-import { ContactForm } from './components/ContactForm.jsx';
-import { ContactDetailView } from './components/ContactDetailView.jsx';
+import { ContactsList, ContactForm, ContactDetailView } from './components/index.js';
 
 /**
  * ContactsPanel - Contacts management container
