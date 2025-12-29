@@ -338,21 +338,32 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
 
     // CRITICAL FIX: If buildUserObject returned null but we have user_email from messages table,
     // create minimal sender object to ensure message is displayed
-    // This handles cases where user record doesn't exist (like athenasees@gmail.com) but message does
+    // This handles cases where:
+    // 1. User record doesn't exist but message does
+    // 2. JOIN failed due to email mismatch (whitespace, case, etc.) but user_email exists in messages
+    // 3. User exists but email format doesn't match exactly (e.g., case differences)
     if (!sender && senderData.email) {
       console.warn(
         '[getMessageHistory] User lookup failed, creating minimal sender from user_email',
         {
           user_email: senderData.email,
           user_id: senderData.id,
+          user_email_from_join: msg.user_email_from_join,
           roomId,
+          messageId: msg.id,
+          // Log if JOIN found a user but email doesn't match
+          joinFoundUser: !!msg.user_id,
+          emailMismatch:
+            msg.user_id &&
+            msg.user_email_from_join &&
+            msg.user_email_from_join.toLowerCase() !== senderData.email.toLowerCase(),
         }
       );
       sender = {
-        uuid: null, // No user_id available
+        uuid: senderData.id || null, // Use user_id from JOIN if available, even if email doesn't match exactly
         first_name: senderData.first_name || null,
         last_name: senderData.last_name || null,
-        email: senderData.email, // CRITICAL: Always include email so message can be displayed
+        email: senderData.email, // CRITICAL: Always use email from messages table as source of truth
       };
     }
 
