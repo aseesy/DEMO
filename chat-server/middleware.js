@@ -101,6 +101,7 @@ function isOriginAllowed(origin, allowedList) {
 
   if (origin.includes('.vercel.app') || origin.includes('vercel.app')) return true;
   if (origin.includes('coparentliaizen.com')) return true;
+  if (origin.includes('.railway.app') || origin.includes('railway.app')) return true;
 
   if (allowedList.includes(origin) || allowedList.includes('*')) return true;
 

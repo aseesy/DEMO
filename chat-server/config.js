@@ -31,7 +31,12 @@ const FRONTEND_URLS = (
   .filter(Boolean);
 
 // Production URLs
-const PRODUCTION_DOMAINS = ['coparentliaizen.com', 'www.coparentliaizen.com', 'vercel.app'];
+const PRODUCTION_DOMAINS = [
+  'coparentliaizen.com',
+  'www.coparentliaizen.com',
+  'vercel.app',
+  'railway.app',
+];
 
 // Environment
 const NODE_ENV = process.env.NODE_ENV || 'development';
