@@ -26,9 +26,11 @@ function registerConnectionHandlers(socket, io, services) {
 
   // join handler - now accepts email instead of username
   socket.on('join', async ({ email, username }) => {
+    console.log('[join] Received join event:', { email, username, socketId: socket.id });
     // Support both email and username for backward compatibility during migration
     const userIdentifier = email || username;
     if (!userIdentifier) {
+      console.log('[join] No email or username provided');
       emitError(socket, 'Email is required.');
       return;
     }
@@ -51,6 +53,7 @@ function registerConnectionHandlers(socket, io, services) {
     }
 
     if (!user) {
+      console.log('[join] User not found for email:', cleanEmail);
       emitError(socket, 'User not found.');
       return;
     }
