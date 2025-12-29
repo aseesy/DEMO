@@ -6,18 +6,41 @@
  */
 
 const { sanitizeInput, validateUsername } = require('../utils');
-// Use destructuring like messageOperations.js does (it works there)
-const { buildUserObject, getReceiverForMessage } = require('./utils');
+// Import utils module directly to avoid destructuring issues
+const socketUtils = require('./utils');
+
+// Get functions from utils - handle both destructuring and direct access
+const buildUserObject =
+  socketUtils.buildUserObject ||
+  (() => {
+    // Fallback: define inline if not available
+    console.error('[connectionOperations] CRITICAL: buildUserObject not in exports!', {
+      exports: Object.keys(socketUtils),
+      socketUtils: socketUtils,
+    });
+    // Define inline as fallback
+    return function buildUserObject(userData, includeEmail = true) {
+      if (!userData || !userData.id) {
+        return null;
+      }
+      return {
+        uuid: userData.id,
+        first_name: userData.first_name || null,
+        last_name: userData.last_name || null,
+        email: includeEmail ? userData.email || null : null,
+      };
+    };
+  })();
+
+const getReceiverForMessage = socketUtils.getReceiverForMessage;
 
 // Safety check for buildUserObject (warn but don't crash on startup)
 if (typeof buildUserObject !== 'function') {
   console.error('[connectionOperations] WARNING: buildUserObject is not a function!', {
     type: typeof buildUserObject,
     buildUserObject: buildUserObject,
-    utilsModule: require('./utils'),
+    utilsModule: socketUtils,
   });
-  // Don't throw - let it fail at runtime with a clearer error
-  // This allows server to start even if there's a module loading issue
 }
 const pairingManager = require('../libs/pairing-manager');
 
