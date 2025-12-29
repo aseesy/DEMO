@@ -790,7 +790,7 @@ function ChatRoomContent({
 
 // Wrap with ChatProvider - auth state lifted here so ChatProvider has access
 function ChatRoom() {
-  const { username, email, isAuthenticated, isCheckingAuth } = useAuth();
+  const { username, email, isAuthenticated, isCheckingAuth, verifySession } = useAuth();
   const [currentView, setCurrentView] = React.useState(() => {
     const stored = storage.getString(StorageKeys.CURRENT_VIEW);
     return stored && AVAILABLE_VIEWS.includes(stored) ? stored : 'dashboard';
@@ -799,6 +799,25 @@ function ChatRoom() {
   // Use email for socket connections (backend expects email format)
   // Fall back to username only if it looks like an email
   const socketUsername = email || (username?.includes('@') ? username : null);
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('[ChatRoom] Auth state:', {
+      username,
+      email,
+      socketUsername,
+      isAuthenticated,
+      isCheckingAuth,
+    });
+  }, [username, email, socketUsername, isAuthenticated, isCheckingAuth]);
+
+  // If authenticated but no email, trigger re-verification to fetch it
+  React.useEffect(() => {
+    if (isAuthenticated && !email && !isCheckingAuth && verifySession) {
+      console.log('[ChatRoom] Authenticated but no email, triggering re-verification');
+      verifySession();
+    }
+  }, [isAuthenticated, email, isCheckingAuth, verifySession]);
 
   return (
     <ChatProvider
