@@ -6,42 +6,8 @@
  */
 
 const { sanitizeInput, validateUsername } = require('../utils');
-// Import utils module directly to avoid destructuring issues
-const socketUtils = require('./utils');
-
-// Get functions from utils - handle both destructuring and direct access
-const buildUserObject =
-  socketUtils.buildUserObject ||
-  (() => {
-    // Fallback: define inline if not available
-    console.error('[connectionOperations] CRITICAL: buildUserObject not in exports!', {
-      exports: Object.keys(socketUtils),
-      socketUtils: socketUtils,
-    });
-    // Define inline as fallback
-    return function buildUserObject(userData, includeEmail = true) {
-      if (!userData || !userData.id) {
-        return null;
-      }
-      return {
-        uuid: userData.id,
-        first_name: userData.first_name || null,
-        last_name: userData.last_name || null,
-        email: includeEmail ? userData.email || null : null,
-      };
-    };
-  })();
-
-const getReceiverForMessage = socketUtils.getReceiverForMessage;
-
-// Safety check for buildUserObject (warn but don't crash on startup)
-if (typeof buildUserObject !== 'function') {
-  console.error('[connectionOperations] WARNING: buildUserObject is not a function!', {
-    type: typeof buildUserObject,
-    buildUserObject: buildUserObject,
-    utilsModule: socketUtils,
-  });
-}
+// Use destructuring like messageOperations.js (it works there)
+const { buildUserObject, getReceiverForMessage } = require('./utils');
 const pairingManager = require('../libs/pairing-manager');
 
 /**
@@ -337,10 +303,6 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
       first_name: msg.first_name || null,
       last_name: msg.last_name || null,
     };
-    // Runtime check for buildUserObject
-    if (typeof buildUserObject !== 'function') {
-      throw new Error('buildUserObject is not available - check utils.js exports');
-    }
     const sender = buildUserObject(senderData);
 
     // Build receiver object - find the other user in the room
@@ -359,10 +321,6 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
           first_name: otherMember.first_name || null,
           last_name: otherMember.last_name || null,
         };
-        // Runtime check for buildUserObject
-        if (typeof buildUserObject !== 'function') {
-          throw new Error('buildUserObject is not available - check utils.js exports');
-        }
         receiver = buildUserObject(receiverData);
       } else {
         // Log warning if we have 2+ members but couldn't find the other one
