@@ -285,9 +285,10 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
   // Receiver info will be added in JavaScript using room members
   // Order by timestamp DESC, then by id DESC for stable sorting (handles duplicate timestamps)
   // CRITICAL: Always select m.user_email explicitly to ensure it's available even if JOIN fails
+  // NOTE: messages table uses 'timestamp' not 'created_at'
   const historyQuery = `
     SELECT m.id, m.type, m.user_email, m.text, m.timestamp, m.room_id, m.thread_id, 
-           m.edited, m.edited_at, m.reactions, m.user_flagged_by, m.created_at,
+           m.edited, m.edited_at, m.reactions, m.user_flagged_by,
            u.id as user_id, u.first_name, u.last_name, u.email as user_email_from_join
     FROM messages m
     LEFT JOIN users u ON m.user_email IS NOT NULL AND LOWER(m.user_email) = LOWER(u.email)
