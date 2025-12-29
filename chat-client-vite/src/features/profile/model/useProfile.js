@@ -1,5 +1,6 @@
 import React from 'react';
 import { apiGet, apiPost, apiPut } from '../../../apiClient.js';
+import { logUserTransform } from '../../../utils/dataTransformDebug.js';
 
 /**
  * Extended useProfile hook - Feature 010: Comprehensive User Profile System
@@ -114,8 +115,8 @@ export function useProfile(username) {
         const response = await apiGet('/api/profile/me');
         if (response.ok) {
           const data = await response.json();
-          console.log('DEBUG: Received profile data from API:', data);
-          setProfileData({
+
+          const profileData = {
             // Core fields
             username: data.username || username,
             email: data.email || '',
@@ -187,7 +188,12 @@ export function useProfile(username) {
             // Metadata
             profile_completion_percentage: data.profile_completion_percentage || 0,
             profile_last_updated: data.profile_last_updated || null,
-          });
+          };
+
+          // Debug logging for user/profile data transformation
+          logUserTransform(data, profileData);
+
+          setProfileData(profileData);
 
           // Set privacy settings if available
           if (data.privacySettings) {

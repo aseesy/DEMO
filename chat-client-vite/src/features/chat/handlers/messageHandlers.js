@@ -149,6 +149,12 @@ export function setupMessageHandlers(socket, handlers) {
       timestamp: message.timestamp || new Date().toISOString(),
     };
 
+    // Debug logging for conversation/message data transformation
+    // Enable via VITE_DEBUG_DATA_TRANSFORM=true or in development
+    import('../../../utils/dataTransformDebug.js').then(({ logConversationTransform }) => {
+      logConversationTransform(message, messageWithTimestamp);
+    });
+
     const ownMessage = isOwnMessage(message, usernameRef.current);
 
     // Update message status for own messages

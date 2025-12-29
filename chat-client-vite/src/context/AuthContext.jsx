@@ -8,6 +8,7 @@ import { storage, StorageKeys, authStorage } from '../adapters/storage';
 
 // Shared auth utilities - single source of truth
 import { calculateUserProperties } from '../features/auth/model/useSessionVerification.js';
+import { logUserTransform } from '../utils/dataTransformDebug.js';
 
 /**
  * AuthContext - Centralized authentication state management
@@ -265,6 +266,14 @@ export function AuthProvider({ children }) {
 
         if (authenticated && user) {
           console.log('[verifySession] ✅ Server confirmed authentication');
+
+          // Debug logging for user data transformation
+          const transformedUser = {
+            ...user,
+            identifier: user.email || user.username,
+          };
+          logUserTransform(user, transformedUser);
+
           setIsAuthenticated(true);
           setToken(storedToken);
           authStorage.setAuthenticated(true);

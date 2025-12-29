@@ -9,8 +9,12 @@
 
 import React from 'react';
 import { apiGet, apiPost, apiPut } from '../../../apiClient.js';
-import { toBackendRelationship, toDisplayRelationship } from '../../../utils/relationshipMapping.js';
+import {
+  toBackendRelationship,
+  toDisplayRelationship,
+} from '../../../utils/relationshipMapping.js';
 import { mapFormDataToContact } from './contactMapper.js';
+import { logContactTransform } from '../../../utils/dataTransformDebug.js';
 
 export function useContactsApi(username, isAuthenticated = true) {
   const [contacts, setContacts] = React.useState([]);
@@ -35,26 +39,17 @@ export function useContactsApi(username, isAuthenticated = true) {
           const transformedContacts = (data.contacts || []).map(contact => {
             const transformed = {
               ...contact,
-              relationship: contact.relationship ? toDisplayRelationship(contact.relationship) : contact.relationship,
+              relationship: contact.relationship
+                ? toDisplayRelationship(contact.relationship)
+                : contact.relationship,
             };
-            
-            // Debug logging for child contacts (helps diagnose missing contacts like Vira)
-            if (contact.contact_name && (
-              contact.contact_name.toLowerCase().includes('vira') ||
-              (contact.relationship && (
-                contact.relationship.toLowerCase().includes('child') ||
-                contact.relationship.toLowerCase() === 'my child'
-              ))
-            )) {
-              console.log('[Contact Debug]', {
-                name: contact.contact_name,
-                rawRelationship: contact.relationship,
-                transformedRelationship: transformed.relationship,
-                email: contact.contact_email || 'NULL',
-                id: contact.id,
-              });
+
+            // Debug logging for relationship transformations
+            // Enable via VITE_DEBUG_DATA_TRANSFORM=true or in development
+            if (contact.relationship) {
+              logContactTransform(contact, transformed);
             }
-            
+
             return transformed;
           });
           setContacts(transformedContacts);
@@ -141,10 +136,7 @@ export function useContactsApi(username, isAuthenticated = true) {
       if (!window.confirm('Are you sure you want to delete this contact?')) return false;
 
       try {
-        const response = await apiPut(
-          `/api/contacts/${contactId}`,
-          { _method: 'DELETE' }
-        );
+        const response = await apiPut(`/api/contacts/${contactId}`, { _method: 'DELETE' });
         const data = await response.json();
         if (response.ok) {
           await loadContacts();
@@ -167,25 +159,22 @@ export function useContactsApi(username, isAuthenticated = true) {
     loadContacts(isAuthenticated);
   }, [loadContacts, isAuthenticated]);
 
-  const inviteContactToChat = React.useCallback(
-    async contactId => {
-      setError('');
-      try {
-        const response = await apiPost(`/api/contacts/${contactId}/invite-to-chat`, {});
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          throw new Error(errorData.error || `Failed to invite contact (Status: ${response.status})`);
-        }
-        const data = await response.json();
-        return data;
-      } catch (err) {
-        console.error('Error inviting contact to chat:', err);
-        setError(err.message || 'Failed to invite contact to chat. Please try again.');
-        throw err;
+  const inviteContactToChat = React.useCallback(async contactId => {
+    setError('');
+    try {
+      const response = await apiPost(`/api/contacts/${contactId}/invite-to-chat`, {});
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `Failed to invite contact (Status: ${response.status})`);
       }
-    },
-    []
-  );
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.error('Error inviting contact to chat:', err);
+      setError(err.message || 'Failed to invite contact to chat. Please try again.');
+      throw err;
+    }
+  }, []);
 
   return {
     // State
