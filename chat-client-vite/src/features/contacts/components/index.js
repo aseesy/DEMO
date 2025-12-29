@@ -5,3 +5,4 @@
 
 export { ContactsList } from './ContactsList.jsx';
 export { ContactForm } from './ContactForm.jsx';
+export { ContactDetailView } from './ContactDetailView.jsx';
