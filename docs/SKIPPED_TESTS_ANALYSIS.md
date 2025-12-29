@@ -7,7 +7,7 @@
 
 | Category              | Count | Priority | Status                |
 | --------------------- | ----- | -------- | --------------------- |
-| PWA Auth Flow         | 4     | **HIGH** | Needs fixing          |
+| PWA Auth Flow         | 4     | **HIGH** | ✅ **FIXED**          |
 | Circular Dependencies | 2     | Low      | Intentionally skipped |
 | Dashboard Abstraction | 2     | Medium   | Needs investigation   |
 
@@ -62,8 +62,11 @@ These tests verify critical PWA behavior:
 
 ### Action Items:
 
-- [ ] Investigate specific mocking failures
-- [ ] Simplify test setup using integration test patterns
+- [x] Investigate specific mocking failures
+- [x] Simplify test setup using integration test patterns
+- [x] Fix mock hoisting issues with vi.hoisted()
+- [x] Add missing component mocks
+- [x] Fix test assertions
 - [ ] Re-enable one test at a time to isolate issues
 - [ ] Add proper async handling and timeouts
 
