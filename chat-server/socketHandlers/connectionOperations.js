@@ -6,29 +6,8 @@
  */
 
 const { sanitizeInput, validateUsername } = require('../utils');
-// Use destructuring like messageOperations.js (it works there)
-const utilsModule = require('./utils');
-const { buildUserObject, getReceiverForMessage } = utilsModule;
-
-// CRITICAL: Verify imports work - log if they don't (production debugging)
-if (typeof buildUserObject !== 'function') {
-  console.error('[connectionOperations] CRITICAL: buildUserObject import failed!', {
-    buildUserObjectType: typeof buildUserObject,
-    buildUserObjectValue: buildUserObject,
-    utilsModuleKeys: Object.keys(utilsModule),
-    utilsModule: utilsModule,
-    utilsModuleBuildUserObject: utilsModule.buildUserObject,
-    utilsModuleBuildUserObjectType: typeof utilsModule.buildUserObject,
-  });
-  // Don't throw - let it fail at runtime with clearer error
-}
-
-if (typeof getReceiverForMessage !== 'function') {
-  console.error('[connectionOperations] CRITICAL: getReceiverForMessage import failed!', {
-    getReceiverForMessageType: typeof getReceiverForMessage,
-    utilsModuleKeys: Object.keys(utilsModule),
-  });
-}
+// Use EXACT same pattern as messageOperations.js (which works in production)
+const { buildUserObject, getReceiverForMessage } = require('./utils');
 
 const pairingManager = require('../libs/pairing-manager');
 
