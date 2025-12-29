@@ -3,17 +3,19 @@
   "version": "1.0.0",
   "description": "LiaiZen - Collaborative Parenting Platform",
   "scripts": {
-    "restart": "./restart-servers.sh",
-    "restart:backend": "./restart-servers.sh backend",
-    "restart:frontend": "./restart-servers.sh frontend",
-    "start": "./start-dev.sh",
-    "stop": "./stop-dev.sh",
-    "dev": "./start-dev.sh",
+    "restart": "./scripts/restart-servers.sh",
+    "restart:backend": "./scripts/restart-servers.sh backend",
+    "restart:frontend": "./scripts/restart-servers.sh frontend",
+    "start": "./scripts/start-dev.sh",
+    "stop": "./scripts/stop-dev.sh",
+    "dev": "./scripts/start-dev.sh",
     "dev:stack": "node chat-server/scripts/dev-stack.js",
     "lint:fix": "node chat-server/scripts/lint-fix.js",
     "prepare": "husky install",
     "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,json,md}\"",
+    "secrets:scan": "secretlint \"**/*\"",
+    "secrets:scan:staged": "git diff --cached --name-only | xargs secretlint",
     "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "cd chat-server && npm test -- --passWithNoTests || true",
     "test:frontend": "cd chat-client-vite && npm test -- --run --passWithNoTests || true",
@@ -30,11 +32,13 @@
   "packageManager": "npm@10.0.0",
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@secretlint/secretlint-rule-preset-recommend": "^11.2.5",
     "eslint": "^9.39.2",
     "eslint-plugin-react": "^7.37.5",
     "globals": "^16.5.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.7.4"
+    "prettier": "^3.7.4",
+    "secretlint": "^11.2.5"
   }
 }

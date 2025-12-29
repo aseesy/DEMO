@@ -12,14 +12,17 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "db:validate": "node scripts/db-validate.js",
+    "db:backup": "node scripts/backup-database.js",
+    "db:monitor": "node scripts/monitor-database.js",
     "reset:data": "node scripts/reset-data.js",
     "prompts:lint": "node scripts/prompts-lint.js",
     "ai:test": "node scripts/ai-test.js",
     "validate:naming": "node scripts/validate-naming-conventions.js",
+    "validate:boundaries": "node ../scripts/check-boundaries.js",
     "scan:duplication": "jscpd src --min-lines 10 --min-tokens 50 --format json --output reports/duplication.json",
     "scan:dependencies": "madge --circular --extensions js src",
     "scan:dependency-graph": "madge --image reports/dependency-graph.svg src",
-    "scan:all": "npm run scan:duplication && npm run scan:dependencies"
+    "scan:all": "npm run scan:duplication && npm run scan:dependencies && npm run validate:boundaries"
   },
   "keywords": [
     "chat",

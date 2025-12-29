@@ -50,16 +50,12 @@ self.addEventListener('push', event => {
 
 // Handle notification clicks - deep link to chat when user taps notification
 self.addEventListener('notificationclick', event => {
-  console.log('[SW] Notification clicked:', event.notification.data);
-  
   // Close the notification
   event.notification.close();
 
   // Get the URL from notification data, default to chat view
   const urlToOpen = event.notification.data?.url || '/?view=chat';
   const fullUrl = new URL(urlToOpen, self.location.origin).href;
-  
-  console.log('[SW] Navigating to:', fullUrl);
 
   event.waitUntil(
     clients
@@ -68,13 +64,11 @@ self.addEventListener('notificationclick', event => {
         includeUncontrolled: true,
       })
       .then(clientList => {
-        console.log('[SW] Found', clientList.length, 'client(s)');
-        
         // Check if app is already open in a window
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
             // App is open - focus it and navigate
-            console.log('[SW] App is open, focusing and sending NAVIGATE message');
+
             return client.focus().then(() => {
               return client.postMessage({
                 type: 'NAVIGATE',
@@ -85,7 +79,7 @@ self.addEventListener('notificationclick', event => {
         }
 
         // App is not open - open it with the deep link
-        console.log('[SW] App is not open, opening window with:', fullUrl);
+
         return clients.openWindow(fullUrl);
       })
       .catch(error => {

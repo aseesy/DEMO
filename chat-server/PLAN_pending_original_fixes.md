@@ -1,8 +1,39 @@
 # Plan: Fix pending_original Message Handling Issues
 
+## ⚠️ STATUS: OUTDATED - Code Has Been Refactored
+
+**Last Updated**: 2025-01-28
+
 ## Overview
 
-Fix critical issues in `pending_original` message handling in `server.js` to prevent race conditions, ensure proper cleanup, and reduce complexity.
+This plan document is **OUTDATED**. The codebase has been refactored and no longer uses `pending_original` messages. The system now uses `draft_coaching` events instead.
+
+### Current Implementation
+
+- **Backend**: Emits `draft_coaching` events via `socket.emit('draft_coaching', ...)` in `aiActionHelper.js`
+- **Frontend**: Handles `draft_coaching` events in `draftCoachingHandlers.js` to show ObserverCard
+- **Legacy Support**: Frontend still has code to handle `pending_original` messages for backward compatibility
+- **Database Protection**: `messageStore.js` already includes check to prevent saving `pending_original` messages (line 11)
+
+### What Changed
+
+The original plan referenced `server.js` lines 1660-1688, but:
+
+- `server.js` is now only 126 lines (refactored to use modular architecture)
+- `pending_original` messages are no longer created or emitted
+- The system uses `draft_coaching` WebSocket events instead
+
+### Remaining Work
+
+1. ✅ **messageStore.js protection** - Already implemented (line 11)
+2. ✅ **Outdated comment fixed** - Updated `aiActionHelper.js` comment to reflect current implementation
+3. ⚠️ **Frontend cleanup** - Consider removing legacy `pending_original` handling code if no longer needed
+
+---
+
+## Original Plan (Historical Reference)
+
+The following was the original plan before refactoring:
 
 ## Issues to Fix
 

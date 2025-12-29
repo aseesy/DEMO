@@ -80,9 +80,14 @@ const shouldRegisterServiceWorker =
 if (shouldRegisterServiceWorker) {
   window.addEventListener('load', () => {
     if (!navigator.serviceWorker.controller) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
-        // Silently ignore registration errors - vite-plugin-pwa handles this
-      });
+      navigator.serviceWorker
+        .register('/sw.js', { scope: '/' })
+        .then(registration => {
+          console.log('Service Worker registered with scope:', registration.scope);
+        })
+        .catch(error => {
+          console.error('Service Worker registration failed:', error);
+        });
     }
   });
 }

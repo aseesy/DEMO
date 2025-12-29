@@ -8,6 +8,55 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Live**: https://coparentliaizen.com
 
+## Security: Secret Protection
+
+**CRITICAL**: Never expose secrets in code, configs, logs, or outputs.
+
+### Rules
+
+1. **Never hardcode** API keys, passwords, tokens, or connection strings
+2. **Never commit** `.env` files or real credentials to git
+3. **Never include** real secrets in examples, comments, or error messages
+4. **Never log** secrets to console, files, or external services
+5. **Always use** environment variables: `process.env.SECRET_NAME`
+6. **Always use** placeholders in examples: `your-api-key-here`, `<REDACTED>`
+
+### Protected File Types
+
+These files may contain secrets - handle with care:
+
+- `.env`, `.env.*` (except `.env.example`)
+- `.claude/settings.local.json`
+- `.mcp*.json`
+- Any file with `secret`, `key`, `token`, `password`, `credential` in name
+
+### Secret Patterns to Detect
+
+```
+sk-ant-api...     # Anthropic API keys
+sk-...            # OpenAI API keys
+postgresql://...  # Database URLs with passwords
+Bearer eyJ...     # JWT tokens
+ghp_...           # GitHub tokens
+PGPASSWORD=...    # Database passwords
+```
+
+### If You Encounter a Secret
+
+1. **Stop** - Do not proceed with the current action
+2. **Alert** - Warn the user immediately
+3. **Remove** - Help remove the secret from code/config
+4. **Rotate** - Remind user to rotate the exposed credential
+
+### Pre-commit Protection
+
+Secretlint runs automatically on commit. Run manually:
+
+```bash
+npm run secrets:scan        # Scan entire project
+npm run secrets:scan:staged # Scan staged files only
+```
+
 ## Architecture
 
 ### Core Domain
@@ -284,18 +333,18 @@ await query('SELECT * FROM users WHERE id = $1', [userId]);
 
 **Other Operations**:
 
-| Pattern      | Use Case              | Example                          |
-| ------------ | --------------------- | -------------------------------- |
-| `get*`       | Retrieve data         | `getUserById`, `getActiveRoom`   |
-| `create*`    | Create new entity     | `createUser`, `createInvitation` |
-| `update*`    | Modify existing       | `updateProfile`, `updateTask`    |
-| `delete*`    | Remove entity         | `deleteContact`, `deleteMessage` |
-| `is*`/`has*` | Boolean checks        | `isAuthenticated`, `hasAccess`   |
-| `validate*`  | Validation            | `validateEmail`, `validateToken` |
-| `parse*`     | Transform data        | `parseResult`, `parseReactions`  |
-| `build*`     | Construct objects     | `buildContext`, `buildPrompt`    |
-| `handle*`    | Event handlers        | `handleSubmit`, `handleError`    |
-| `on*`        | Callbacks             | `onSuccess`, `onClose`           |
+| Pattern      | Use Case          | Example                          |
+| ------------ | ----------------- | -------------------------------- |
+| `get*`       | Retrieve data     | `getUserById`, `getActiveRoom`   |
+| `create*`    | Create new entity | `createUser`, `createInvitation` |
+| `update*`    | Modify existing   | `updateProfile`, `updateTask`    |
+| `delete*`    | Remove entity     | `deleteContact`, `deleteMessage` |
+| `is*`/`has*` | Boolean checks    | `isAuthenticated`, `hasAccess`   |
+| `validate*`  | Validation        | `validateEmail`, `validateToken` |
+| `parse*`     | Transform data    | `parseResult`, `parseReactions`  |
+| `build*`     | Construct objects | `buildContext`, `buildPrompt`    |
+| `handle*`    | Event handlers    | `handleSubmit`, `handleError`    |
+| `on*`        | Callbacks         | `onSuccess`, `onClose`           |
 
 **Error Messages** - Use "getting" not "fetching":
 

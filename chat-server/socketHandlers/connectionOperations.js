@@ -259,6 +259,7 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
   // Get room members first to identify receiver
   // This ensures we can find the "other" user even if sender lookup fails
   let roomMembers = [];
+  let roomMembersQuerySucceeded = false;
   try {
     const membersQuery = `
       SELECT rm.user_id, u.email, u.first_name, u.last_name
@@ -268,6 +269,7 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
     `;
     const membersResult = await dbPostgres.query(membersQuery, [roomId]);
     roomMembers = membersResult.rows;
+    roomMembersQuerySucceeded = true;
     console.log('[getMessageHistory] Room members:', {
       roomId,
       count: roomMembers.length,
@@ -276,6 +278,7 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
   } catch (membersError) {
     console.error('[getMessageHistory] Error getting room members:', membersError);
     // Continue without receiver info - messages will still load
+    // roomMembersQuerySucceeded remains false
   }
 
   // Get messages with JOIN to users table (normalized)
@@ -356,6 +359,12 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
     // 2. JOIN failed due to email mismatch (whitespace, case, etc.) but user_email exists in messages
     // 3. User exists but email format doesn't match exactly (e.g., case differences)
     if (!sender && senderData.email) {
+      // Only use id from JOIN if email matches exactly (prevents UUID/email mismatches)
+      const canUseId =
+        msg.user_id &&
+        msg.user_email_from_join &&
+        msg.user_email_from_join.toLowerCase() === senderData.email.toLowerCase();
+
       console.warn(
         '[getMessageHistory] User lookup failed, creating minimal sender from user_email',
         {
@@ -364,16 +373,16 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
           user_email_from_join: msg.user_email_from_join,
           roomId,
           messageId: msg.id,
-          // Log if JOIN found a user but email doesn't match
           joinFoundUser: !!msg.user_id,
           emailMismatch:
             msg.user_id &&
             msg.user_email_from_join &&
             msg.user_email_from_join.toLowerCase() !== senderData.email.toLowerCase(),
+          canUseId, // Log whether we can safely use the id
         }
       );
       sender = {
-        uuid: senderData.id || null, // Use user_id from JOIN if available, even if email doesn't match exactly
+        uuid: canUseId ? senderData.id : null, // Only use id if email matches exactly
         first_name: senderData.first_name || null,
         last_name: senderData.last_name || null,
         email: senderData.email, // CRITICAL: Always use email from messages table as source of truth
@@ -391,8 +400,9 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
     }
 
     // Build receiver object - find the other user in the room
+    // Only try if room members query succeeded and we have enough members
     let receiver = null;
-    if (roomMembers.length >= 2 && senderData.email) {
+    if (roomMembersQuerySucceeded && roomMembers.length >= 2 && senderData.email) {
       // Find the other participant (not the sender)
       const senderEmailLower = senderData.email.toLowerCase();
       const otherMember = roomMembers.find(
@@ -407,29 +417,9 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
           last_name: otherMember.last_name || null,
         };
 
-        // Runtime safety check with fallback
-        if (typeof buildUserObject !== 'function') {
-          console.error(
-            '[getMessageHistory] buildUserObject is not a function when building receiver!',
-            {
-              type: typeof buildUserObject,
-              value: buildUserObject,
-            }
-          );
-          // Fallback: define inline to prevent crash
-          const fallbackBuildUserObject = (userData, includeEmail = true) => {
-            if (!userData || !userData.id) return null;
-            return {
-              uuid: userData.id,
-              first_name: userData.first_name || null,
-              last_name: userData.last_name || null,
-              email: includeEmail ? userData.email || null : null,
-            };
-          };
-          receiver = fallbackBuildUserObject(receiverData);
-        } else {
-          receiver = buildUserObject(receiverData);
-        }
+        // buildUserObject is imported at the top - if it's not a function, that's a critical error
+        // Let it fail fast rather than silently using incorrect fallback logic
+        receiver = buildUserObject(receiverData);
       } else {
         // Log warning if we have 2+ members but couldn't find the other one
         console.warn('[getMessageHistory] Could not find receiver in room members', {

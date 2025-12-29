@@ -116,9 +116,8 @@ async function handleNameDetection(socket, aiMediator, context) {
  *
  * SIDE EFFECTS (explicit):
  *   1. Updates communication stats via communicationStats.updateCommunicationStats()
- *   2. Emits 'pending_original' message to socket
- *   3. Emits 'ai_intervention' message to socket (or broadcasts ai_comment to room)
- *   4. Persists messages via addToHistory() for ai_comment type
+ *   2. Emits 'draft_coaching' event to socket (shows ObserverCard on frontend)
+ *   3. For ai_comment type: broadcasts ai_comment message to room and persists via addToHistory()
  *
  * @param {Object} socket - Socket.io connection
  * @param {Object} io - Socket.io server
@@ -240,12 +239,10 @@ async function processApprovedMessage(socket, io, services, context) {
       if (roomMembersResult.rows.length > 0) {
         // Find the recipient (other user in room, not the sender)
         const userEmail = user.email || user.username; // Fallback for backward compatibility
-        const recipient = roomMembersResult.rows.find(
-          member => {
-            const memberEmail = member.email || member.username;
-            return memberEmail?.toLowerCase() !== userEmail?.toLowerCase();
-          }
-        );
+        const recipient = roomMembersResult.rows.find(member => {
+          const memberEmail = member.email || member.username;
+          return memberEmail?.toLowerCase() !== userEmail?.toLowerCase();
+        });
 
         console.log('[processApprovedMessage] Push notification check:', {
           roomMembersCount: roomMembersResult.rows.length,

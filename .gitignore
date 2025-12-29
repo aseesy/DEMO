@@ -1,9 +1,32 @@
-# Add to existing .gitignore if it exists, or create new
-# This ensures we don't commit generated files
-
-# Naming convention validator output (if we add logging)
-*.naming-validation.log
+# Dependencies
 node_modules
-screenshots/*.webm
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Claude Code settings (may contain approved command patterns)
+.claude/settings.local.json
+
+# MCP Configuration (contains sensitive tokens)
+.mcp-config.json
+.mcp.json
+cline_mcp_settings.json
+
+# Vercel
 .vercel
-.aider*
+
+# Screenshots
+screenshots/*.webm
+
+# Naming convention validator output
+*.naming-validation.log
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store

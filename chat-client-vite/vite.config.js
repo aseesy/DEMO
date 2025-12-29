@@ -112,14 +112,13 @@ export default defineConfig({
           },
           {
             urlPattern: /^https:\/\/.*\.railway\.app\/.*/i,
-            handler: 'NetworkFirst',
+            handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'api-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 5, // 5 minutes
+                maxAgeSeconds: 60 * 60 * 24, // Cache for a day
               },
-              networkTimeoutSeconds: 10,
             },
           },
         ],

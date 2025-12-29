@@ -7,20 +7,28 @@
  * @module pairing-manager/config/invitationConfig
  */
 
-const { INVITE_TYPE } = require('../pairingCreator');
+/**
+ * Invitation type constants (duplicated here to avoid circular dependency)
+ * Must stay in sync with INVITE_TYPE in pairingCreator.js
+ */
+const INVITE_TYPES = {
+  EMAIL: 'email',
+  LINK: 'link',
+  CODE: 'code',
+};
 
 /**
  * Configuration mapping invitation types to expiration settings
  * Adding new types only requires adding entries here, no code modification needed
  */
 const INVITATION_CONFIG = {
-  [INVITE_TYPE.EMAIL]: {
+  [INVITE_TYPES.EMAIL]: {
     expirationDays: 7,
   },
-  [INVITE_TYPE.LINK]: {
+  [INVITE_TYPES.LINK]: {
     expirationDays: 7,
   },
-  [INVITE_TYPE.CODE]: {
+  [INVITE_TYPES.CODE]: {
     expirationMinutes: 15,
   },
 };
@@ -34,7 +42,9 @@ const INVITATION_CONFIG = {
 function calculateExpiration(inviteType) {
   const config = INVITATION_CONFIG[inviteType];
   if (!config) {
-    throw new Error(`Invalid invite type: ${inviteType}. Valid types: ${Object.keys(INVITATION_CONFIG).join(', ')}`);
+    throw new Error(
+      `Invalid invite type: ${inviteType}. Valid types: ${Object.keys(INVITATION_CONFIG).join(', ')}`
+    );
   }
 
   const now = new Date();
@@ -75,4 +85,3 @@ module.exports = {
   getConfig,
   getConfiguredTypes,
 };
-
