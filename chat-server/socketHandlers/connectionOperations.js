@@ -239,22 +239,35 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
   const totalMessages = parseInt(countResult.rows[0]?.total || 0, 10);
   console.log('[getMessageHistory] Total user messages in room:', totalMessages);
 
+  // Get room members first to identify receiver
+  // This ensures we can find the "other" user even if sender lookup fails
+  let roomMembers = [];
+  try {
+    const membersQuery = `
+      SELECT rm.user_id, u.email, u.first_name, u.last_name
+      FROM room_members rm
+      JOIN users u ON rm.user_id = u.id
+      WHERE rm.room_id = $1
+    `;
+    const membersResult = await dbPostgres.query(membersQuery, [roomId]);
+    roomMembers = membersResult.rows;
+    console.log('[getMessageHistory] Room members:', {
+      roomId,
+      count: roomMembers.length,
+      emails: roomMembers.map(m => m.email),
+    });
+  } catch (membersError) {
+    console.error('[getMessageHistory] Error getting room members:', membersError);
+    // Continue without receiver info - messages will still load
+  }
+
   // Get messages with JOIN to users table (normalized)
-  // Also get receiver info by joining with room_members and users
-  // Handle NULL user_email by checking IS NOT NULL before JOIN
-  // Handle NULL sender user_id in receiver JOIN condition
+  // Receiver info will be added in JavaScript using room members
   const historyQuery = `
     SELECT m.*, 
-           u.id as user_id, u.first_name, u.last_name, u.email,
-           rm_receiver.user_id as receiver_user_id,
-           u_receiver.first_name as receiver_first_name,
-           u_receiver.last_name as receiver_last_name,
-           u_receiver.email as receiver_email
+           u.id as user_id, u.first_name, u.last_name, u.email
     FROM messages m
     LEFT JOIN users u ON m.user_email IS NOT NULL AND LOWER(m.user_email) = LOWER(u.email)
-    LEFT JOIN room_members rm_receiver ON rm_receiver.room_id = m.room_id 
-      AND (u.id IS NULL OR rm_receiver.user_id != u.id)
-    LEFT JOIN users u_receiver ON rm_receiver.user_id = u_receiver.id
     WHERE m.room_id = $1
       AND (m.type IS NULL OR m.type != 'system')
       AND m.text NOT LIKE '%joined the chat%'
@@ -291,16 +304,24 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
     };
     const sender = buildUserObject(senderData);
 
-    // Build receiver object if available
+    // Build receiver object - find the other user in the room
     let receiver = null;
-    if (msg.receiver_user_id) {
-      const receiverData = {
-        id: msg.receiver_user_id,
-        email: msg.receiver_email || null,
-        first_name: msg.receiver_first_name || null,
-        last_name: msg.receiver_last_name || null,
-      };
-      receiver = buildUserObject(receiverData);
+    if (roomMembers.length >= 2 && senderData.email) {
+      // Find the other participant (not the sender)
+      const senderEmailLower = senderData.email.toLowerCase();
+      const otherMember = roomMembers.find(
+        member => member.email && member.email.toLowerCase() !== senderEmailLower
+      );
+
+      if (otherMember) {
+        const receiverData = {
+          id: otherMember.user_id,
+          email: otherMember.email,
+          first_name: otherMember.first_name || null,
+          last_name: otherMember.last_name || null,
+        };
+        receiver = buildUserObject(receiverData);
+      }
     }
 
     // Ensure all required fields are present
