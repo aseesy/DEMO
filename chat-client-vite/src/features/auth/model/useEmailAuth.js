@@ -74,7 +74,7 @@ export function useEmailAuth({
       if (result.validationError) {
         setError(result.error);
         setIsLoggingIn(false);
-        return;
+        return { success: false, error: result.error, validationError: true };
       }
 
       if (!result.success) {

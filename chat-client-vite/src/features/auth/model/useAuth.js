@@ -11,10 +11,11 @@
  */
 
 import React from 'react';
-import { apiPost } from '../../../apiClient.js';
+import { apiPost, apiGet } from '../../../apiClient.js';
 import { setUserProperties, setUserID } from '../../../utils/analyticsEnhancements.js';
 import { authStorage } from '../../../adapters/storage';
 import { useAuthContext } from '../../../context/AuthContext.jsx';
+import { calculateUserProperties } from './useSessionVerification.js';
 
 import { useGoogleAuth } from './useGoogleAuth.js';
 import { useEmailAuth } from './useEmailAuth.js';
@@ -43,6 +44,62 @@ export function useAuth() {
   const isAuthenticated = authContext?.isAuthenticated ?? localIsAuthenticated;
   const isCheckingAuth = authContext?.isCheckingAuth ?? localIsCheckingAuth;
   const [error, setError] = React.useState('');
+
+  // Session verification when AuthContext is not available (e.g., in tests)
+  React.useEffect(() => {
+    if (authContext) {
+      // AuthContext handles session verification
+      return;
+    }
+
+    const verifySession = async () => {
+      setLocalIsCheckingAuth(true);
+      try {
+        const token = authStorage.getToken();
+        if (!token) {
+          setLocalIsCheckingAuth(false);
+          return;
+        }
+
+        const response = await apiGet('/api/auth/verify', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.authenticated && data.user) {
+            setLocalIsAuthenticated(true);
+            authStorage.setAuthenticated(true);
+            if (data.user?.email) {
+              setUserID(data.user.email);
+              setUserProperties(calculateUserProperties(data.user, false));
+            }
+          } else {
+            authStorage.clearAuth();
+            setLocalIsAuthenticated(false);
+          }
+        } else {
+          authStorage.clearAuth();
+          setLocalIsAuthenticated(false);
+        }
+      } catch (err) {
+        console.error('Error verifying session:', err);
+        const storedAuth = authStorage.isAuthenticated();
+        setLocalIsAuthenticated(storedAuth);
+      } finally {
+        setLocalIsCheckingAuth(false);
+      }
+    };
+
+    const storedToken = authStorage.getToken();
+    if (storedToken) {
+      verifySession();
+    } else {
+      setLocalIsCheckingAuth(false);
+    }
+  }, [authContext]);
 
   // Wrapper for setIsAuthenticated that updates both AuthContext (if available) and local state
   const setIsAuthenticatedWrapper = React.useCallback(
