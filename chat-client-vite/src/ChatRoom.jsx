@@ -443,7 +443,7 @@ function ChatRoomContent({
     message => {
       // Use displayName (first name) if available, fallback to username (email)
       const senderName = message.displayName || message.username || 'Co-parent';
-      
+
       toast.show({
         sender: senderName,
         message: message.text || message.content || '',
@@ -646,7 +646,7 @@ function ChatRoomContent({
 
             {currentView === 'chat' && (
               <ChatView
-                username={username}
+                username={email || username}
                 isAuthenticated={isAuthenticated}
                 inviteState={{
                   inviteLink,
@@ -678,7 +678,7 @@ function ChatRoomContent({
             )}
 
             {currentView === 'contacts' && (
-              <ContactsPanel username={username} email={userEmail} setCurrentView={setCurrentView} />
+              <ContactsPanel username={username} email={email} setCurrentView={setCurrentView} />
             )}
 
             {currentView === 'profile' && (
@@ -796,7 +796,13 @@ function ChatRoomContent({
 
 // Wrap with ChatProvider - auth state lifted here so ChatProvider has access
 function ChatRoom() {
-  const { username, email: userEmail, isAuthenticated, isCheckingAuth, verifySession } = useAuthContext();
+  const {
+    username,
+    email: userEmail,
+    isAuthenticated,
+    isCheckingAuth,
+    verifySession,
+  } = useAuthContext();
   const [currentView, setCurrentView] = React.useState(() => {
     const stored = storage.getString(StorageKeys.CURRENT_VIEW);
     return stored && AVAILABLE_VIEWS.includes(stored) ? stored : 'dashboard';
