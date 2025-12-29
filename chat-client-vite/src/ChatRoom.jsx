@@ -201,10 +201,14 @@ function ChatRoomContent({
         hasRedirectedRef.current = true;
         lastPathRef.current = '/';
         navigate('/', { replace: true }); // Use replace to avoid history loop
+        return; // Don't reset ref here - let next effect cycle handle it
       }
       // Ensure landing page is hidden
       setShowLanding(false);
-      hasRedirectedRef.current = false; // Reset after authenticated redirect
+      // Only reset if we're not on sign-in (already redirected or not needed)
+      if (currentPath !== '/signin' && currentPath !== '/sign-in') {
+        hasRedirectedRef.current = false;
+      }
       return;
     }
 
@@ -660,6 +664,7 @@ function ChatRoomContent({
                 email={email}
                 hasCoParentConnected={hasCoParentConnected}
                 isCheckingCoParent={isCheckingCoParent}
+                isCheckingAuth={isCheckingAuth}
                 contacts={contacts}
                 setCurrentView={setCurrentView}
                 taskState={dashboardProps.taskState}

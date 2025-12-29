@@ -56,6 +56,7 @@ export function DashboardView({
   email,
   hasCoParentConnected,
   isCheckingCoParent = false,
+  isCheckingAuth = false,
   contacts,
   setCurrentView,
   taskState,
@@ -108,6 +109,7 @@ export function DashboardView({
           email={email}
           setCurrentView={setCurrentView}
           onContactClick={() => setCurrentView('contacts')}
+          isCheckingAuth={isCheckingAuth}
         />
 
         {/* Tasks Section */}
@@ -133,7 +135,11 @@ export function DashboardView({
 
         {/* Communication Stats Widget */}
         <div className="mt-3">
-          <CommunicationStatsWidget username={username} email={email} />
+          <CommunicationStatsWidget
+            username={username}
+            email={email}
+            isCheckingAuth={isCheckingAuth}
+          />
         </div>
 
         {/* Threads Section */}

@@ -2,7 +2,13 @@ import React from 'react';
 import { getUpdateIcon as getUpdateIconComponent } from './UpdateIconRegistry.jsx';
 import { apiGet } from '../../apiClient.js';
 
-export function UpdatesPanel({ username, email, onContactClick, setCurrentView }) {
+export function UpdatesPanel({
+  username,
+  email,
+  onContactClick,
+  setCurrentView,
+  isCheckingAuth = false,
+}) {
   const [updates, setUpdates] = React.useState([]);
   const [isLoadingUpdates, setIsLoadingUpdates] = React.useState(false);
 
@@ -36,17 +42,24 @@ export function UpdatesPanel({ username, email, onContactClick, setCurrentView }
   }, [userEmail]);
 
   React.useEffect(() => {
+    // CRITICAL: Don't make API calls while auth is being verified
+    // This prevents 401 errors from racing with verifySession
+    if (isCheckingAuth) {
+      console.log('[UpdatesPanel] Waiting for auth verification...');
+      return;
+    }
+
     loadUpdates();
 
     // Refresh updates every 60 seconds, only when page is visible
     const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && !isCheckingAuth) {
         loadUpdates();
       }
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [loadUpdates]);
+  }, [loadUpdates, isCheckingAuth]);
 
   // Icon based on update type - using registry (Strategy Pattern - OCP compliant)
   const getUpdateIcon = type => {

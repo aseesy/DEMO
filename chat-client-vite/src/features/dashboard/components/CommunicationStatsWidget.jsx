@@ -1,7 +1,7 @@
 import React from 'react';
 import { apiGet } from '../../../apiClient.js';
 
-export function CommunicationStatsWidget({ username, email }) {
+export function CommunicationStatsWidget({ username, email, isCheckingAuth = false }) {
   const [stats, setStats] = React.useState(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -53,12 +53,24 @@ export function CommunicationStatsWidget({ username, email }) {
   }, [userEmail, email, username]);
 
   React.useEffect(() => {
+    // CRITICAL: Don't make API calls while auth is being verified
+    // This prevents 401 errors from racing with verifySession
+    if (isCheckingAuth) {
+      console.log('[CommunicationStatsWidget] Waiting for auth verification...');
+      return;
+    }
+
     loadStats();
 
     // Refresh stats every 30 seconds when user sends messages
-    const interval = setInterval(loadStats, 30000);
+    const interval = setInterval(() => {
+      // Only refresh if not checking auth
+      if (!isCheckingAuth) {
+        loadStats();
+      }
+    }, 30000);
     return () => clearInterval(interval);
-  }, [loadStats]);
+  }, [loadStats, isCheckingAuth]);
 
   if (isLoading) {
     return (

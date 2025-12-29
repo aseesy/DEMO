@@ -480,14 +480,41 @@ export function AuthProvider({ children }) {
   /**
    * Listen for auth failures from API calls (401 errors)
    * When the token is invalid/expired, clear auth state to trigger re-login
+   *
+   * CRITICAL: Don't clear auth if verifySession is in progress - this prevents race conditions
+   * where a 401 happens during initial verification but the token is actually valid.
    */
   React.useEffect(() => {
     return onAuthFailure(detail => {
-      console.log('Auth failure detected on endpoint:', detail.endpoint);
+      console.log('[onAuthFailure] Auth failure detected on endpoint:', detail.endpoint, {
+        isCheckingAuth,
+        isAuthenticated,
+        hasToken: !!token,
+      });
+
+      // CRITICAL: Don't clear auth if we're currently verifying the session
+      // This prevents race conditions where:
+      // 1. verifySession starts (isCheckingAuth = true)
+      // 2. Another API call happens before verification completes
+      // 3. That call gets 401 (maybe token is being refreshed server-side)
+      // 4. onAuthFailure tries to clear auth while verifySession is still running
+      // 5. verifySession completes successfully, but auth was already cleared
+      if (isCheckingAuth) {
+        console.log('[onAuthFailure] Ignoring 401 - session verification in progress');
+        return;
+      }
+
+      // Also ignore 401s on auth endpoints (they're expected during login/signup)
+      if (detail.endpoint?.includes('/api/auth/')) {
+        console.log('[onAuthFailure] Ignoring 401 - auth endpoint');
+        return;
+      }
+
+      console.log('[onAuthFailure] Clearing auth state due to 401 error');
       // Clear invalid auth state - this will trigger redirect to login
       clearAuthState();
     });
-  }, [clearAuthState]);
+  }, [clearAuthState, isCheckingAuth, isAuthenticated, token]);
 
   const value = {
     // State
