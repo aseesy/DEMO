@@ -99,8 +99,19 @@ export async function queryInvitationsStatus() {
     // 401 errors will trigger auth failure event via apiGet
     return { success: false, error: `HTTP ${response.status}` };
   } catch (err) {
-    logger.error('[queryInvitationsStatus] Error checking invitations', err);
-    return { success: false, error: err.message };
+    // Handle various error types
+    const errorMessage =
+      err?.message ||
+      (typeof err === 'string' ? err : null) ||
+      err?.error?.message ||
+      err?.error ||
+      'Failed to load invitations';
+
+    logger.error(
+      '[queryInvitationsStatus] Error checking invitations',
+      err instanceof Error ? err : new Error(errorMessage)
+    );
+    return { success: false, error: errorMessage };
   }
 }
 
