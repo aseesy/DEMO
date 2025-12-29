@@ -6,15 +6,18 @@
  */
 
 const { sanitizeInput, validateUsername } = require('../utils');
-const utils = require('./utils');
-const { buildUserObject } = utils;
+const socketUtils = require('./utils');
+
+// Get buildUserObject from utils - use full module import to avoid destructuring issues
+const buildUserObject = socketUtils.buildUserObject;
 
 // Safety check for buildUserObject
 if (typeof buildUserObject !== 'function') {
   console.error('[connectionOperations] ERROR: buildUserObject is not a function!', {
     type: typeof buildUserObject,
-    utilsKeys: Object.keys(utils),
+    utilsKeys: Object.keys(socketUtils),
     buildUserObject: buildUserObject,
+    utilsModule: socketUtils,
   });
   throw new Error('buildUserObject is not available - check utils.js exports');
 }
