@@ -42,13 +42,24 @@ if (!DATABASE_URL) {
       console.log('✅ PostgreSQL connection test passed');
       connectionReady = true;
     } catch (err) {
+      // In test environment, don't retry - just log and fail silently
+      // Tests should mock the database, not actually connect
+      if (process.env.NODE_ENV === 'test') {
+        console.log('ℹ️ PostgreSQL connection test skipped in test environment');
+        connectionReady = false;
+        return;
+      }
       console.warn('⚠️ PostgreSQL connection test failed, retrying...', err.message);
       connectionReady = false;
       setTimeout(testConnection, 5000); // Retry after 5 seconds
     }
   };
 
-  testConnection();
+  // Only test connection if not in test environment
+  // Tests should mock the database instead of connecting
+  if (process.env.NODE_ENV !== 'test') {
+    testConnection();
+  }
 
   db = pool;
 }
