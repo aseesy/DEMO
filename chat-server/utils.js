@@ -123,29 +123,31 @@ function validateUsername(username) {
  * Health check route handler
  */
 function healthCheckHandler(req, res, dbConnected, dbError) {
-  if (!process.env.DATABASE_URL) {
-    return res.status(503).json({
-      status: 'error',
-      error: 'DATABASE_URL not configured',
-      message: 'Add DATABASE_URL environment variable in Railway dashboard',
-      timestamp: new Date().toISOString(),
-    });
-  }
+  // CRITICAL: Always return 200 for Railway health checks
+  // Railway will kill the service if health check returns non-200
+  // Database connection status is informational, not a failure condition
 
-  if (dbError) {
-    return res.status(503).json({
-      status: 'error',
-      error: 'Database connection failed',
-      message: dbError,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  res.status(200).json({
+  const response = {
     status: 'ok',
-    database: dbConnected ? 'connected' : 'connecting',
+    server: 'running',
     timestamp: new Date().toISOString(),
-  });
+  };
+
+  // Add database status as informational (not blocking)
+  if (!process.env.DATABASE_URL) {
+    response.database = 'not_configured';
+    response.warning = 'DATABASE_URL not set - add PostgreSQL service in Railway';
+  } else if (dbError) {
+    response.database = 'error';
+    response.databaseError = dbError;
+    response.warning = 'Database connection failed - retrying in background';
+  } else {
+    response.database = dbConnected ? 'connected' : 'connecting';
+  }
+
+  // Always return 200 - server is up and responding
+  // Database connection is handled asynchronously and won't block server startup
+  res.status(200).json(response);
 }
 
 /**
