@@ -7,6 +7,11 @@ import { STORAGE_KEYS } from './utils/storageKeys.js';
 
 // Auth failure event for global handling
 const AUTH_FAILURE_EVENT = 'liaizen:auth-failure';
+// Rate limit event for global handling
+const RATE_LIMIT_EVENT = 'liaizen:rate-limit';
+
+// Rate limit state - prevent excessive retries
+let rateLimitUntil = 0;
 
 /**
  * Dispatch auth failure event for global handling
@@ -23,6 +28,31 @@ function dispatchAuthFailure(endpoint) {
 }
 
 /**
+ * Dispatch rate limit event for global handling
+ * Components can listen to this to prevent retries
+ */
+function dispatchRateLimit(endpoint, retryAfter) {
+  if (typeof window !== 'undefined') {
+    // Set rate limit cooldown period
+    const cooldownMs = retryAfter ? retryAfter * 1000 : 60000; // Default 60s if no retry-after
+    rateLimitUntil = Date.now() + cooldownMs;
+
+    window.dispatchEvent(
+      new CustomEvent(RATE_LIMIT_EVENT, {
+        detail: { endpoint, retryAfter, timestamp: Date.now(), cooldownUntil: rateLimitUntil },
+      })
+    );
+  }
+}
+
+/**
+ * Check if we're currently rate limited
+ */
+function isRateLimited() {
+  return Date.now() < rateLimitUntil;
+}
+
+/**
  * Subscribe to auth failure events
  * @param {Function} callback - Called when auth fails
  * @returns {Function} Unsubscribe function
@@ -32,6 +62,25 @@ export function onAuthFailure(callback) {
   const handler = e => callback(e.detail);
   window.addEventListener(AUTH_FAILURE_EVENT, handler);
   return () => window.removeEventListener(AUTH_FAILURE_EVENT, handler);
+}
+
+/**
+ * Subscribe to rate limit events
+ * @param {Function} callback - Called when rate limited
+ * @returns {Function} Unsubscribe function
+ */
+export function onRateLimit(callback) {
+  if (typeof window === 'undefined') return () => {};
+  const handler = e => callback(e.detail);
+  window.addEventListener(RATE_LIMIT_EVENT, handler);
+  return () => window.removeEventListener(RATE_LIMIT_EVENT, handler);
+}
+
+/**
+ * Check if currently rate limited (for components to check before making requests)
+ */
+export function checkRateLimit() {
+  return isRateLimited();
 }
 
 /**
@@ -84,6 +133,15 @@ export async function apiGet(path, options = {}) {
       // Dispatch auth failure for 401 errors (except for auth endpoints)
       if (response.status === 401 && !endpoint.includes('/api/auth/')) {
         dispatchAuthFailure(endpoint);
+      }
+      // Handle 429 rate limit errors - prevent excessive retries
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        const retryAfterSeconds = retryAfter ? parseInt(retryAfter, 10) : null;
+        dispatchRateLimit(endpoint, retryAfterSeconds);
+        console.warn(
+          `[apiClient] Rate limited on ${endpoint}. Retry after: ${retryAfterSeconds || 60}s`
+        );
       }
     }
 

@@ -456,9 +456,30 @@ export function calculateRetryDelay(attempt) {
 export async function retryWithBackoff(fn, options = {}) {
   const { maxRetries = 3, onRetry = null, shouldRetry = isRetryableError } = options;
 
+  // Import checkRateLimit dynamically to avoid circular dependency
+  let checkRateLimit;
+  try {
+    const apiClient = await import('../apiClient.js');
+    checkRateLimit = apiClient.checkRateLimit;
+  } catch {
+    // Fallback if import fails
+    checkRateLimit = () => false;
+  }
+
   let lastError;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // CRITICAL: Don't retry if we're currently rate limited
+    if (attempt > 0 && checkRateLimit && checkRateLimit()) {
+      console.warn('[retryWithBackoff] Rate limited - stopping retries');
+      if (lastError) throw lastError;
+      // If we have a response, return it
+      if (lastError && typeof lastError.status !== 'undefined') {
+        return lastError;
+      }
+      throw new Error('Rate limited - please wait before retrying');
+    }
+
     try {
       const result = await fn();
 
@@ -476,6 +497,12 @@ export async function retryWithBackoff(fn, options = {}) {
           .catch(() => ({ error: result.statusText }));
         const error = { ...errorData, status: result.status };
 
+        // CRITICAL: Don't retry 429 errors - they're handled by rate limit event
+        if (result.status === 429) {
+          console.warn('[retryWithBackoff] 429 rate limit - not retrying');
+          return result;
+        }
+
         if (attempt < maxRetries && shouldRetry(error, result.status)) {
           const delay = calculateRetryDelay(attempt);
           if (onRetry) onRetry(attempt + 1, delay, error);
@@ -491,6 +518,12 @@ export async function retryWithBackoff(fn, options = {}) {
       return result;
     } catch (error) {
       lastError = error;
+
+      // CRITICAL: Don't retry if we're rate limited
+      if (error.status === 429) {
+        console.warn('[retryWithBackoff] 429 rate limit error - not retrying');
+        throw error;
+      }
 
       // Check if we should retry
       if (attempt < maxRetries && shouldRetry(error)) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { getUpdateIcon as getUpdateIconComponent } from './UpdateIconRegistry.jsx';
-import { apiGet } from '../../apiClient.js';
+import { apiGet, checkRateLimit } from '../../apiClient.js';
 
 export function UpdatesPanel({
   username,
@@ -25,6 +25,13 @@ export function UpdatesPanel({
       });
       return;
     }
+
+    // CRITICAL: Don't make requests if rate limited
+    if (checkRateLimit && checkRateLimit()) {
+      console.warn('[UpdatesPanel] Rate limited - skipping updates load');
+      return;
+    }
+
     setIsLoadingUpdates(true);
     try {
       const response = await apiGet(

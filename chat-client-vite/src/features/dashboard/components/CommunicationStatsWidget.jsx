@@ -1,5 +1,5 @@
 import React from 'react';
-import { apiGet } from '../../../apiClient.js';
+import { apiGet, checkRateLimit } from '../../../apiClient.js';
 
 export function CommunicationStatsWidget({ username, email, isCheckingAuth = false }) {
   const [stats, setStats] = React.useState(null);
@@ -19,6 +19,14 @@ export function CommunicationStatsWidget({ username, email, isCheckingAuth = fal
       });
       setIsLoading(false);
       setError('Email is required to load stats');
+      return;
+    }
+
+    // CRITICAL: Don't make requests if rate limited
+    if (checkRateLimit && checkRateLimit()) {
+      console.warn('[CommunicationStatsWidget] Rate limited - skipping stats load');
+      setError('Too many requests. Please wait a moment.');
+      setIsLoading(false);
       return;
     }
 
