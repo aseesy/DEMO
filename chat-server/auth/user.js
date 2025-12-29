@@ -7,20 +7,24 @@ const { generateUsernameSuffix, createRegistrationError, RegistrationError } = r
 const { setupUserContextAndRoom } = require('./context');
 const { createWelcomeAndOnboardingTasks } = require('./tasks');
 
-async function getUser(username) {
+async function getUser(email) {
   try {
-    const userResult = await dbSafe.safeSelect(
-      'users',
-      { username: username.toLowerCase() },
-      { limit: 1 }
-    );
+    const emailLower = email.trim().toLowerCase();
+    console.log('[getUser] Looking up user by email:', emailLower);
+    const userResult = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
+    console.log('[getUser] Query result:', userResult);
     const users = dbSafe.parseResult(userResult);
+    console.log('[getUser] Parsed users:', users.length > 0 ? 'found' : 'NOT FOUND');
     if (users.length === 0) return null;
 
     const user = users[0];
 
-    // Get user context
-    const contextResult = await dbSafe.safeSelect('user_context', { user_id: String(user.id) }, { limit: 1 });
+    // Get user context (using email instead of username)
+    const contextResult = await dbSafe.safeSelect(
+      'user_context',
+      { user_email: emailLower },
+      { limit: 1 }
+    );
     const contextRows = dbSafe.parseResult(contextResult);
 
     const defaultContext = {
@@ -35,8 +39,10 @@ async function getUser(username) {
       try {
         user.context = {
           coParentName: data.co_parent || '',
-          children: typeof data.children === 'string' ? JSON.parse(data.children) : data.children || [],
-          concerns: typeof data.contacts === 'string' ? JSON.parse(data.contacts) : data.contacts || [],
+          children:
+            typeof data.children === 'string' ? JSON.parse(data.children) : data.children || [],
+          concerns:
+            typeof data.contacts === 'string' ? JSON.parse(data.contacts) : data.contacts || [],
           newPartner: { name: '', livesWith: false },
         };
       } catch (err) {
@@ -69,49 +75,52 @@ async function getUser(username) {
   }
 }
 
-async function userExists(username) {
-  const usernameLower = username.toLowerCase();
-  const result = await dbSafe.safeSelect('users', { username: usernameLower }, { limit: 1 });
+/**
+ * Check if a user exists by email
+ *
+ * @param {string} email - Email address
+ * @returns {Promise<boolean>} True if user exists
+ */
+async function userExists(email) {
+  if (!email) return false;
+
+  const emailLower = email.trim().toLowerCase();
+  const result = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
   const users = dbSafe.parseResult(result);
   return users.length > 0;
 }
 
+// Deprecated: No longer needed since we use email as primary identifier
+// Keeping for backward compatibility during migration
 async function generateUniqueUsername(baseEmail) {
-  const baseName = baseEmail
-    .split('@')[0]
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .toLowerCase();
-  let username = baseName.substring(0, 15);
-  let attempts = 0;
-
-  while (attempts < 10) {
-    const check = await dbSafe.safeSelect('users', { username }, { limit: 1 });
-    if (dbSafe.parseResult(check).length === 0) return username;
-    username = `${baseName.substring(0, 10)}${generateUsernameSuffix()}`;
-    attempts++;
-  }
+  // Return null to indicate username generation is no longer used
+  // Email is now the primary identifier
   return null;
 }
 
 async function createUser(
-  username,
+  email,
   password,
   context = {},
-  email = null,
   googleId = null,
   oauthProvider = null,
   nameData = {}
 ) {
-  const usernameLower = username.toLowerCase();
+  if (!email) {
+    throw new Error('Email is required');
+  }
+
+  const emailLower = email.trim().toLowerCase();
   const now = new Date().toISOString();
 
+  // Create user with email as primary identifier (no username)
   const userData = {
-    username: usernameLower,
     password_hash: password,
-    email: email ? email.trim().toLowerCase() : null,
+    email: emailLower,
     google_id: googleId,
     created_at: now,
     first_name: nameData.firstName || null,
+    last_name: nameData.lastName || null,
     display_name: nameData.displayName || nameData.firstName || null,
   };
 
@@ -122,36 +131,32 @@ async function createUser(
     userId = await dbSafe.safeInsert('users', userData);
   } catch (err) {
     if (err.code === '23505') {
-      if (err.constraint?.includes('username')) {
-        const usernameError = new Error('Username already exists');
-        usernameError.code = 'USERNAME_CONFLICT';
-        throw usernameError;
-      }
-      if (err.constraint?.includes('email'))
+      if (err.constraint?.includes('email')) {
         throw createRegistrationError(RegistrationError.EMAIL_EXISTS);
+      }
     }
     throw err;
   }
 
-  const { context: contextData, room } = await setupUserContextAndRoom(
-    userId,
-    usernameLower,
-    context
-  );
-  await createWelcomeAndOnboardingTasks(userId, usernameLower);
+  const { context: contextData, room } = await setupUserContextAndRoom(userId, emailLower, context);
+  await createWelcomeAndOnboardingTasks(userId, emailLower);
 
-  neo4jClient
-    .createUserNode(userId, usernameLower, userData.email, userData.display_name)
-    .catch(() => {});
+  const displayName =
+    nameData.displayName ||
+    (nameData.firstName && nameData.lastName
+      ? `${nameData.firstName} ${nameData.lastName}`
+      : nameData.firstName || emailLower);
+
+  neo4jClient.createUserNode(userId, emailLower, emailLower, displayName).catch(() => {});
 
   return {
     id: userId,
-    username: usernameLower,
-    email: userData.email,
+    email: emailLower,
     context: contextData,
     room,
-    firstName: userData.first_name,
-    displayName: userData.display_name,
+    firstName: nameData.firstName || null,
+    lastName: nameData.lastName || null,
+    displayName: displayName,
   };
 }
 
