@@ -6,18 +6,15 @@
  */
 
 const { sanitizeInput, validateUsername } = require('../utils');
-const socketUtils = require('./utils');
-
-// Get buildUserObject from utils - use full module import to avoid destructuring issues
-const buildUserObject = socketUtils.buildUserObject;
+// Use destructuring like messageOperations.js does (it works there)
+const { buildUserObject, getReceiverForMessage } = require('./utils');
 
 // Safety check for buildUserObject (warn but don't crash on startup)
 if (typeof buildUserObject !== 'function') {
   console.error('[connectionOperations] WARNING: buildUserObject is not a function!', {
     type: typeof buildUserObject,
-    utilsKeys: Object.keys(socketUtils),
     buildUserObject: buildUserObject,
-    utilsModule: socketUtils,
+    utilsModule: require('./utils'),
   });
   // Don't throw - let it fail at runtime with a clearer error
   // This allows server to start even if there's a module loading issue
