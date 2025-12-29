@@ -18,7 +18,9 @@ afterAll(() => {
 
 // Mock dependencies before requiring threadManager
 jest.mock('../dbSafe');
-jest.mock('../dbPostgres');
+jest.mock('../dbPostgres', () => ({
+  query: jest.fn().mockResolvedValue({ rows: [] }),
+}));
 jest.mock('../openaiClient');
 jest.mock('../src/infrastructure/database/neo4jClient', () => {
   return {
@@ -26,6 +28,43 @@ jest.mock('../src/infrastructure/database/neo4jClient', () => {
     createOrUpdateThreadNode: jest.fn(),
     linkMessageToThread: jest.fn(),
     findSimilarMessages: jest.fn(),
+  };
+});
+
+// Mock the ThreadServiceFactory to return mocked repository
+const mockThreadRepository = {
+  findById: jest.fn(),
+  findByRoomId: jest.fn(),
+  findByCategory: jest.fn(),
+  create: jest.fn(),
+  updateTitle: jest.fn(),
+  updateCategory: jest.fn(),
+  archive: jest.fn(),
+  getMessages: jest.fn(),
+  addMessage: jest.fn(),
+  removeMessage: jest.fn(),
+};
+
+const mockConversationAnalyzer = {
+  suggestThreadForMessage: jest.fn(),
+  analyzeConversationHistory: jest.fn(),
+  autoAssignMessageToThread: jest.fn(),
+};
+
+const mockCreateThreadUseCase = {
+  execute: jest.fn(),
+};
+
+jest.mock('../src/services/threads/ThreadServiceFactory', () => {
+  return {
+    factory: {
+      getThreadRepository: () => mockThreadRepository,
+      getConversationAnalyzer: () => mockConversationAnalyzer,
+      getCreateThreadUseCase: () => mockCreateThreadUseCase,
+      getAnalyzeConversationUseCase: jest.fn(),
+      getSuggestThreadUseCase: jest.fn(),
+      getAutoAssignMessageUseCase: jest.fn(),
+    },
   };
 });
 
@@ -37,13 +76,26 @@ const openaiClient = require('../openaiClient');
 describe('ThreadManager', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset dbSafe mocks
+    // Reset dbSafe mocks (still used by repository implementation)
     dbSafe.safeInsert = jest.fn();
     dbSafe.safeSelect = jest.fn();
     dbSafe.safeUpdate = jest.fn();
     dbSafe.parseResult = jest.fn((result) => result);
-    // Reset dbPostgres mock
-    dbPostgres.query = jest.fn();
+    // Reset dbPostgres mock - ensure it returns a promise
+    dbPostgres.query = jest.fn().mockResolvedValue({ rows: [] });
+    // Reset repository mocks
+    mockThreadRepository.findById.mockReset();
+    mockThreadRepository.findByRoomId.mockReset();
+    mockThreadRepository.findByCategory.mockReset();
+    mockThreadRepository.create.mockReset();
+    mockThreadRepository.updateTitle.mockReset();
+    mockThreadRepository.updateCategory.mockReset();
+    mockThreadRepository.archive.mockReset();
+    mockThreadRepository.getMessages.mockReset();
+    mockThreadRepository.addMessage.mockReset();
+    mockThreadRepository.removeMessage.mockReset();
+    // Reset use case mocks
+    mockCreateThreadUseCase.execute.mockReset();
   });
 
   describe('createThread', () => {
@@ -53,24 +105,18 @@ describe('ThreadManager', () => {
       const createdBy = 'user1';
       const mockThreadId = 'thread_1234567890_abc123';
 
-      // Mock thread ID generation (simplified - actual uses Date.now())
-      jest.spyOn(Date.prototype, 'getTime').mockReturnValue(1234567890);
-      jest.spyOn(Math, 'random').mockReturnValue(0.5);
-      jest.spyOn(String.prototype, 'substr').mockReturnValue('abc123');
-
-      dbSafe.safeInsert.mockResolvedValue({});
+      mockCreateThreadUseCase.execute.mockResolvedValue(mockThreadId);
 
       const threadId = await threadManager.createThread(roomId, title, createdBy);
 
-      expect(dbSafe.safeInsert).toHaveBeenCalledWith('threads', expect.objectContaining({
-        room_id: roomId,
-        title: title,
-        created_by: createdBy,
-        message_count: 0,
-        is_archived: 0,
-      }));
-      expect(threadId).toBeDefined();
-      expect(typeof threadId).toBe('string');
+      expect(mockCreateThreadUseCase.execute).toHaveBeenCalledWith({
+        roomId,
+        title,
+        createdBy,
+        initialMessageId: null,
+        category: 'logistics',
+      });
+      expect(threadId).toBe(mockThreadId);
     });
 
     it('should create thread with initial message', async () => {
@@ -78,25 +124,20 @@ describe('ThreadManager', () => {
       const title = 'Test Thread';
       const createdBy = 'user1';
       const initialMessageId = 'msg_123';
+      const mockThreadId = 'thread_1234567890_abc123';
 
-      jest.spyOn(Date.prototype, 'getTime').mockReturnValue(1234567890);
-      jest.spyOn(Math, 'random').mockReturnValue(0.5);
-      jest.spyOn(String.prototype, 'substr').mockReturnValue('abc123');
+      mockCreateThreadUseCase.execute.mockResolvedValue(mockThreadId);
 
-      dbSafe.safeInsert.mockResolvedValue({});
-      // Mock for addMessageToThread's atomic sequence + increment
-      dbPostgres.query.mockResolvedValue({
-        rows: [{ message_count: 1, last_message_at: new Date().toISOString(), thread_sequence: 1 }],
+      const threadId = await threadManager.createThread(roomId, title, createdBy, initialMessageId);
+
+      expect(mockCreateThreadUseCase.execute).toHaveBeenCalledWith({
+        roomId,
+        title,
+        createdBy,
+        initialMessageId,
+        category: 'logistics',
       });
-
-      await threadManager.createThread(roomId, title, createdBy, initialMessageId);
-
-      expect(dbSafe.safeInsert).toHaveBeenCalledWith('threads', expect.objectContaining({
-        message_count: 1,
-        last_message_at: expect.any(String),
-      }));
-      // Verify addMessageToThread was called via dbPostgres.query (atomic CTE)
-      expect(dbPostgres.query).toHaveBeenCalled();
+      expect(threadId).toBe(mockThreadId);
     });
 
     it('should handle database errors gracefully', async () => {
@@ -104,7 +145,7 @@ describe('ThreadManager', () => {
       const title = 'Test Thread';
       const createdBy = 'user1';
 
-      dbSafe.safeInsert.mockRejectedValue(new Error('Database error'));
+      mockCreateThreadUseCase.execute.mockRejectedValue(new Error('Database error'));
 
       await expect(
         threadManager.createThread(roomId, title, createdBy)
@@ -120,18 +161,13 @@ describe('ThreadManager', () => {
         { id: 'thread_2', title: 'Thread 2', room_id: roomId },
       ];
 
-      dbSafe.safeSelect.mockResolvedValue(mockThreads);
-      dbSafe.parseResult.mockReturnValue(mockThreads);
+      mockThreadRepository.findByRoomId.mockResolvedValue(mockThreads);
 
       const threads = await threadManager.getThreadsForRoom(roomId);
 
-      expect(dbSafe.safeSelect).toHaveBeenCalledWith(
-        'threads',
-        { room_id: roomId, is_archived: 0 },
-        expect.objectContaining({
-          orderBy: 'updated_at',
-          orderDirection: 'DESC',
-        })
+      expect(mockThreadRepository.findByRoomId).toHaveBeenCalledWith(
+        roomId,
+        { includeArchived: false, limit: 10 }
       );
       expect(threads).toEqual(mockThreads);
     });
@@ -139,23 +175,22 @@ describe('ThreadManager', () => {
     it('should include archived threads when requested', async () => {
       const roomId = 'room_123';
 
-      dbSafe.safeSelect.mockResolvedValue([]);
-      dbSafe.parseResult.mockReturnValue([]);
+      mockThreadRepository.findByRoomId.mockResolvedValue([]);
 
       await threadManager.getThreadsForRoom(roomId, true);
 
-      expect(dbSafe.safeSelect).toHaveBeenCalledWith(
-        'threads',
-        { room_id: roomId },
-        expect.any(Object)
+      expect(mockThreadRepository.findByRoomId).toHaveBeenCalledWith(
+        roomId,
+        { includeArchived: true, limit: 10 }
       );
     });
 
     it('should return empty array on error', async () => {
       const roomId = 'room_123';
 
-      dbSafe.safeSelect.mockRejectedValue(new Error('Database error'));
+      mockThreadRepository.findByRoomId.mockRejectedValue(new Error('Database error'));
 
+      // threadManager should catch errors and return empty array
       const threads = await threadManager.getThreadsForRoom(roomId);
 
       expect(threads).toEqual([]);
@@ -168,20 +203,17 @@ describe('ThreadManager', () => {
       const threadId = 'thread_123';
       const now = new Date().toISOString();
 
-      // Mock dbPostgres.query for atomic sequence + increment (single CTE query)
-      dbPostgres.query.mockResolvedValue({
-        rows: [{ message_count: 6, last_message_at: now, thread_sequence: 5 }],
+      mockThreadRepository.addMessage.mockResolvedValue({
+        success: true,
+        messageCount: 6,
+        lastMessageAt: now,
+        sequenceNumber: 5,
       });
 
       const result = await threadManager.addMessageToThread(messageId, threadId);
 
-      // Should use atomic CTE for sequence assignment + increment
-      expect(dbPostgres.query).toHaveBeenCalledWith(
-        expect.stringContaining('next_sequence = next_sequence + 1'),
-        expect.arrayContaining([threadId, messageId])
-      );
+      expect(mockThreadRepository.addMessage).toHaveBeenCalledWith(messageId, threadId);
 
-      // Returns object with success, messageCount, lastMessageAt, AND sequenceNumber
       expect(result).toEqual({
         success: true,
         messageCount: 6,
@@ -194,12 +226,15 @@ describe('ThreadManager', () => {
       const messageId = 'msg_123';
       const threadId = 'thread_123';
 
-      // Mock query to fail
-      dbPostgres.query.mockRejectedValueOnce(new Error('Database error'));
+      mockThreadRepository.addMessage.mockResolvedValue({
+        success: false,
+        messageCount: 0,
+        lastMessageAt: null,
+        sequenceNumber: null,
+      });
 
       const result = await threadManager.addMessageToThread(messageId, threadId);
 
-      // Returns failure object with null sequenceNumber
       expect(result).toEqual({
         success: false,
         messageCount: 0,
@@ -214,29 +249,16 @@ describe('ThreadManager', () => {
       const messageId = 'msg_123';
       const threadId = 'thread_123';
 
-      // Mock getting the thread_id before nulling it
-      dbPostgres.query
-        .mockResolvedValueOnce({ rows: [{ thread_id: threadId }] }) // Get current thread_id
-        .mockResolvedValueOnce({ rows: [{ message_count: 4 }] }); // Atomic decrement result
-
-      dbSafe.safeUpdate.mockResolvedValue({});
+      mockThreadRepository.removeMessage.mockResolvedValue({
+        success: true,
+        threadId: threadId,
+        messageCount: 4,
+      });
 
       const result = await threadManager.removeMessageFromThread(messageId);
 
-      // Should update message to remove from thread
-      expect(dbSafe.safeUpdate).toHaveBeenCalledWith(
-        'messages',
-        { thread_id: null },
-        { id: messageId }
-      );
+      expect(mockThreadRepository.removeMessage).toHaveBeenCalledWith(messageId);
 
-      // Should use atomic decrement with GREATEST to prevent going below 0
-      expect(dbPostgres.query).toHaveBeenCalledWith(
-        expect.stringContaining('GREATEST(0, message_count - 1)'),
-        expect.arrayContaining([threadId])
-      );
-
-      // New implementation returns object
       expect(result).toEqual({
         success: true,
         threadId: threadId,
@@ -247,20 +269,16 @@ describe('ThreadManager', () => {
     it('should handle message not in any thread', async () => {
       const messageId = 'msg_123';
 
-      // Mock getting the thread_id - message has no thread
-      dbPostgres.query.mockResolvedValueOnce({ rows: [{ thread_id: null }] });
-      dbSafe.safeUpdate.mockResolvedValue({});
+      mockThreadRepository.removeMessage.mockResolvedValue({
+        success: true,
+        threadId: null,
+        messageCount: 0,
+      });
 
       const result = await threadManager.removeMessageFromThread(messageId);
 
-      // Should still update message (idempotent)
-      expect(dbSafe.safeUpdate).toHaveBeenCalledWith(
-        'messages',
-        { thread_id: null },
-        { id: messageId }
-      );
+      expect(mockThreadRepository.removeMessage).toHaveBeenCalledWith(messageId);
 
-      // Should return success with null threadId
       expect(result).toEqual({
         success: true,
         threadId: null,
@@ -274,18 +292,11 @@ describe('ThreadManager', () => {
       const threadId = 'thread_123';
       const newTitle = 'Updated Title';
 
-      dbSafe.safeUpdate.mockResolvedValue({});
+      mockThreadRepository.updateTitle.mockResolvedValue(true);
 
       const result = await threadManager.updateThreadTitle(threadId, newTitle);
 
-      expect(dbSafe.safeUpdate).toHaveBeenCalledWith(
-        'threads',
-        expect.objectContaining({
-          title: newTitle,
-          updated_at: expect.any(String),
-        }),
-        { id: threadId }
-      );
+      expect(mockThreadRepository.updateTitle).toHaveBeenCalledWith(threadId, newTitle);
       expect(result).toBe(true);
     });
   });
@@ -294,35 +305,22 @@ describe('ThreadManager', () => {
     it('should archive a thread', async () => {
       const threadId = 'thread_123';
 
-      dbSafe.safeUpdate.mockResolvedValue({});
+      mockThreadRepository.archive.mockResolvedValue(true);
 
       const result = await threadManager.archiveThread(threadId, true);
 
-      expect(dbSafe.safeUpdate).toHaveBeenCalledWith(
-        'threads',
-        expect.objectContaining({
-          is_archived: 1,
-          updated_at: expect.any(String),
-        }),
-        { id: threadId }
-      );
+      expect(mockThreadRepository.archive).toHaveBeenCalledWith(threadId, true);
       expect(result).toBe(true);
     });
 
     it('should unarchive a thread', async () => {
       const threadId = 'thread_123';
 
-      dbSafe.safeUpdate.mockResolvedValue({});
+      mockThreadRepository.archive.mockResolvedValue(true);
 
       const result = await threadManager.archiveThread(threadId, false);
 
-      expect(dbSafe.safeUpdate).toHaveBeenCalledWith(
-        'threads',
-        expect.objectContaining({
-          is_archived: 0,
-        }),
-        { id: threadId }
-      );
+      expect(mockThreadRepository.archive).toHaveBeenCalledWith(threadId, false);
       expect(result).toBe(true);
     });
   });
@@ -336,27 +334,22 @@ describe('ThreadManager', () => {
         room_id: 'room_123',
       };
 
-      dbSafe.safeSelect.mockResolvedValue([mockThread]);
-      dbSafe.parseResult.mockReturnValue([mockThread]);
+      mockThreadRepository.findById.mockResolvedValue(mockThread);
 
       const thread = await threadManager.getThread(threadId);
 
-      expect(dbSafe.safeSelect).toHaveBeenCalledWith(
-        'threads',
-        { id: threadId },
-        { limit: 1 }
-      );
+      expect(mockThreadRepository.findById).toHaveBeenCalledWith(threadId);
       expect(thread).toEqual(mockThread);
     });
 
     it('should return null if thread not found', async () => {
       const threadId = 'thread_123';
 
-      dbSafe.safeSelect.mockResolvedValue([]);
-      dbSafe.parseResult.mockReturnValue([]);
+      mockThreadRepository.findById.mockResolvedValue(null);
 
       const thread = await threadManager.getThread(threadId);
 
+      expect(mockThreadRepository.findById).toHaveBeenCalledWith(threadId);
       expect(thread).toBeNull();
     });
   });
@@ -367,60 +360,61 @@ describe('ThreadManager', () => {
       const mockMessages = [
         {
           id: 'msg_1',
-          thread_id: threadId,
+          threadId: threadId,
           text: 'Message 1',
           timestamp: new Date().toISOString(),
+          type: 'user',
+          username: 'user1',
+          userEmail: 'user1@example.com',
+          firstName: 'User',
+          displayName: 'User One',
         },
         {
           id: 'msg_2',
-          thread_id: threadId,
+          threadId: threadId,
           text: 'Message 2',
           timestamp: new Date().toISOString(),
+          type: 'user',
+          username: 'user2',
+          userEmail: 'user2@example.com',
+          firstName: 'User',
+          displayName: 'User Two',
         },
       ];
 
-      const dbPostgres = require('../dbPostgres');
-      dbPostgres.query = jest.fn().mockResolvedValue({
-        rows: mockMessages,
-      });
+      mockThreadRepository.getMessages.mockResolvedValue(mockMessages);
 
       const messages = await threadManager.getThreadMessages(threadId);
 
-      expect(dbPostgres.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE thread_id = $1'),
-        [threadId, 50] // Default limit
-      );
+      expect(mockThreadRepository.getMessages).toHaveBeenCalledWith(threadId, 50);
       expect(messages).toHaveLength(2);
       expect(messages[0]).toHaveProperty('threadId', threadId);
+      expect(messages[0]).toHaveProperty('id', 'msg_1');
+      expect(messages[0]).toHaveProperty('text', 'Message 1');
     });
 
     it('should respect limit parameter', async () => {
       const threadId = 'thread_123';
       const limit = 10;
 
-      const dbPostgres = require('../dbPostgres');
-      dbPostgres.query = jest.fn().mockResolvedValue({ rows: [] });
+      mockThreadRepository.getMessages.mockResolvedValue([]);
 
       await threadManager.getThreadMessages(threadId, limit);
 
-      expect(dbPostgres.query).toHaveBeenCalledWith(
-        expect.any(String),
-        [threadId, limit]
-      );
+      expect(mockThreadRepository.getMessages).toHaveBeenCalledWith(threadId, limit);
     });
 
     it('should filter out system, private, and flagged messages', async () => {
       const threadId = 'thread_123';
 
-      const dbPostgres = require('../dbPostgres');
-      dbPostgres.query = jest.fn().mockResolvedValue({ rows: [] });
+      // The filtering is done in the repository implementation
+      // We just verify the repository is called correctly
+      mockThreadRepository.getMessages.mockResolvedValue([]);
 
       await threadManager.getThreadMessages(threadId);
 
-      const query = dbPostgres.query.mock.calls[0][0];
-      expect(query).toContain("type != 'system'");
-      expect(query).toContain('(private = 0 OR private IS NULL)');
-      expect(query).toContain('(flagged = 0 OR flagged IS NULL)');
+      expect(mockThreadRepository.getMessages).toHaveBeenCalledWith(threadId, 50);
+      // The actual SQL filtering is tested in repository tests
     });
   });
 });

@@ -14,13 +14,24 @@
 
 /**
  * Check if a message is from the current user
+ * Uses new sender structure (sender.email) with fallback to legacy fields
  * @param {Object} message - Message object
- * @param {string} currentUsername - Current user's username
+ * @param {string} currentUserEmail - Current user's email (or username for legacy)
  * @returns {boolean}
  */
-export function isOwnMessage(message, currentUsername) {
-  if (!message?.username || !currentUsername) return false;
-  return message.username.toLowerCase() === currentUsername.toLowerCase();
+export function isOwnMessage(message, currentUserEmail) {
+  if (!message || !currentUserEmail) return false;
+  
+  // Try new structure first (sender.email)
+  if (message.sender?.email) {
+    return message.sender.email.toLowerCase() === currentUserEmail.toLowerCase();
+  }
+  
+  // Fallback to legacy fields
+  const messageEmail = message.user_email || message.email || message.username;
+  if (!messageEmail) return false;
+  
+  return messageEmail.toLowerCase() === currentUserEmail.toLowerCase();
 }
 
 /**
@@ -65,7 +76,9 @@ export function messageExistsByContent(messages, message, timeWindowMs = 5000) {
   if (!Array.isArray(messages) || !message) return false;
 
   const normalizedText = (message.text || '').trim().toLowerCase();
-  const normalizedUsername = (message.username || '').toLowerCase();
+  // Use new sender structure (sender.email) with fallback to legacy fields
+  const messageEmail = message.sender?.email || message.user_email || message.email || message.username || '';
+  const normalizedEmail = messageEmail.toLowerCase();
   const messageTime = new Date(message.timestamp || message.created_at || 0).getTime();
 
   return messages.some(msg => {
@@ -74,14 +87,15 @@ export function messageExistsByContent(messages, message, timeWindowMs = 5000) {
 
     // Then check content match
     const msgText = (msg.text || '').trim().toLowerCase();
-    const msgUsername = (msg.username || '').toLowerCase();
+    const msgEmail = msg.sender?.email || msg.user_email || msg.email || msg.username || '';
+    const normalizedMsgEmail = msgEmail.toLowerCase();
     const msgTime = new Date(msg.timestamp || msg.created_at || 0).getTime();
 
     const textMatches = msgText === normalizedText;
-    const usernameMatches = msgUsername === normalizedUsername;
+    const emailMatches = normalizedMsgEmail === normalizedEmail;
     const timeMatches = Math.abs(messageTime - msgTime) < timeWindowMs;
 
-    return textMatches && usernameMatches && timeMatches;
+    return textMatches && emailMatches && timeMatches;
   });
 }
 
@@ -106,11 +120,13 @@ export function findMatchingOptimisticIndex(
 ) {
   if (!Array.isArray(messages) || !serverMessage || !currentUsername) return -1;
 
-  const serverUsername = (serverMessage.username || '').toLowerCase();
-  const normalizedCurrentUsername = currentUsername.toLowerCase();
+  // Use new sender structure (sender.email) with fallback to legacy fields
+  const serverEmail = serverMessage.sender?.email || serverMessage.user_email || serverMessage.email || serverMessage.username || '';
+  const normalizedServerEmail = serverEmail.toLowerCase();
+  const normalizedCurrentEmail = currentUsername.toLowerCase();
 
   // Only match own messages
-  if (serverUsername !== normalizedCurrentUsername) return -1;
+  if (normalizedServerEmail !== normalizedCurrentEmail) return -1;
 
   const normalizedServerText = (serverMessage.text || '').trim().toLowerCase();
   const serverTime = new Date(serverMessage.timestamp || serverMessage.created_at || 0).getTime();
@@ -121,8 +137,9 @@ export function findMatchingOptimisticIndex(
       const msg = messages[i];
       if (!isOptimisticMessage(msg)) continue;
 
-      const msgUsername = (msg.username || '').toLowerCase();
-      if (msgUsername !== normalizedCurrentUsername) continue;
+      const msgEmail = msg.sender?.email || msg.user_email || msg.email || msg.username || '';
+      const normalizedMsgEmail = msgEmail.toLowerCase();
+      if (normalizedMsgEmail !== normalizedCurrentEmail) continue;
 
       if (msg.id === serverMessage.optimisticId) {
         return i;
@@ -138,8 +155,9 @@ export function findMatchingOptimisticIndex(
     if (!isOptimisticMessage(msg)) continue;
 
     // Only consider messages from the same user
-    const msgUsername = (msg.username || '').toLowerCase();
-    if (msgUsername !== normalizedCurrentUsername) continue;
+    const msgEmail = msg.sender?.email || msg.user_email || msg.email || msg.username || '';
+    const normalizedMsgEmail = msgEmail.toLowerCase();
+    if (normalizedMsgEmail !== normalizedCurrentEmail) continue;
 
     // Match by text + time
     const normalizedMsgText = (msg.text || '').trim().toLowerCase();

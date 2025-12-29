@@ -23,7 +23,7 @@ const { isValidEmail } = require('./utils');
  * @returns {ValidationResult}
  */
 function validateSignupInput(body) {
-  const { email, password, displayName } = body;
+  const { email, password, firstName, lastName } = body;
 
   // Required fields
   if (!email || !password) {
@@ -31,6 +31,15 @@ function validateSignupInput(body) {
       valid: false,
       status: 400,
       error: { error: 'Email and password are required' },
+    };
+  }
+
+  // First and last name required
+  if (!firstName || !lastName) {
+    return {
+      valid: false,
+      status: 400,
+      error: { error: 'First name and last name are required' },
     };
   }
 
@@ -59,7 +68,8 @@ function validateSignupInput(body) {
     cleanData: {
       email: cleanEmail,
       password,
-      displayName: displayName?.trim() || null,
+      firstName: firstName?.trim() || '',
+      lastName: lastName?.trim() || '',
     },
   };
 }
@@ -70,7 +80,7 @@ function validateSignupInput(body) {
  * @returns {ValidationResult}
  */
 function validateRegisterInput(body) {
-  const { email, password, displayName, coParentEmail } = body;
+  const { email, password, firstName, lastName, coParentEmail } = body;
 
   // Required fields
   if (!email || !password || !coParentEmail) {
@@ -78,6 +88,15 @@ function validateRegisterInput(body) {
       valid: false,
       status: 400,
       error: { error: 'Missing required fields' },
+    };
+  }
+
+  // First and last name required
+  if (!firstName || !lastName) {
+    return {
+      valid: false,
+      status: 400,
+      error: { error: 'First name and last name are required' },
     };
   }
 
@@ -118,7 +137,8 @@ function validateRegisterInput(body) {
     cleanData: {
       email: cleanEmail,
       password,
-      displayName: displayName?.trim() || null,
+      firstName: firstName?.trim() || '',
+      lastName: lastName?.trim() || '',
       coParentEmail: cleanCoParentEmail,
     },
   };

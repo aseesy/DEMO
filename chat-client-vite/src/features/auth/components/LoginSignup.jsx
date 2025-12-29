@@ -40,7 +40,8 @@ export function LoginSignup() {
   const {
     email,
     password,
-    username,
+    firstName,
+    lastName,
     isAuthenticated,
     isCheckingAuth,
     isLoggingIn,
@@ -49,7 +50,8 @@ export function LoginSignup() {
     error,
     setEmail,
     setPassword,
-    setUsername,
+    setFirstName,
+    setLastName,
     setError,
     handleLogin,
     handleSignup,
@@ -74,9 +76,10 @@ export function LoginSignup() {
   React.useEffect(() => {
     setEmail('');
     setPassword('');
-    setUsername('');
+    setFirstName('');
+    setLastName('');
     setError('');
-  }, [isLoginMode, setEmail, setPassword, setUsername, setError]);
+  }, [isLoginMode, setEmail, setPassword, setFirstName, setLastName, setError]);
 
   const handleModeToggle = React.useCallback(() => {
     setError('');
@@ -163,17 +166,30 @@ export function LoginSignup() {
           </div>
 
           {!isLoginMode && (
-            <Input
-              label="Your Name"
-              type="text"
-              value={username}
-              onChange={setUsername}
-              placeholder="John Doe"
-              required
-              autoComplete="off"
-              data-lpignore="true"
-              data-form-type="other"
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="First Name"
+                type="text"
+                value={firstName}
+                onChange={setFirstName}
+                placeholder="John"
+                required
+                autoComplete="given-name"
+                data-lpignore="true"
+                data-form-type="other"
+              />
+              <Input
+                label="Last Name"
+                type="text"
+                value={lastName}
+                onChange={setLastName}
+                placeholder="Doe"
+                required
+                autoComplete="family-name"
+                data-lpignore="true"
+                data-form-type="other"
+              />
+            </div>
           )}
 
           <Input

@@ -22,7 +22,6 @@ export { useSendMessage } from './model/useSendMessage.js';
 export { useMessageHandlers } from './model/useMessageHandlers.js';
 export { useNewMessageHandler } from './model/useNewMessageHandler.js';
 export { useScrollManager } from './model/useScrollManager.js';
-export { useThreads } from './model/useThreads.js';
 export { useMessageFlaggingModal } from './model/useMessageFlaggingModal.js';
 export { setupSocketEventHandlers } from './model/socketEventHandlers.js';
 

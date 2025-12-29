@@ -3,14 +3,13 @@
  *
  * Handles CRUD operations for threads:
  * - Create threads
- * - Get threads (by room, by ID, by category)
+ * - Get threads (by room, by ID)
  * - Update threads (title, category)
  * - Archive threads
- * - Get thread messages
  */
 
 const dbSafe = require('../../../dbSafe');
-const { validateCategory } = require('./threadCategories');
+const { normalizeCategory } = require('./threadCategories');
 
 // Neo4j client for semantic threading
 let neo4jClient = null;
@@ -41,7 +40,7 @@ async function createThread(
   try {
     const threadId = `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const now = new Date().toISOString();
-    const validCategory = validateCategory(category);
+    const normalizedCategory = normalizeCategory(category);
 
     await dbSafe.safeInsert('threads', {
       id: threadId,
@@ -53,7 +52,7 @@ async function createThread(
       message_count: initialMessageId ? 1 : 0,
       last_message_at: initialMessageId ? now : null,
       is_archived: 0,
-      category: validCategory,
+      category: normalizedCategory,
       // Top-level thread: no parent, root is self, depth is 0
       parent_thread_id: null,
       root_thread_id: threadId, // Self-reference for top-level
@@ -121,49 +120,6 @@ async function getThreadsForRoom(roomId, includeArchived = false, limit = 10) {
 }
 
 /**
- * Get messages for a specific thread
- * Orders by sequence number (temporal integrity) with timestamp fallback
- */
-async function getThreadMessages(threadId, limit = 50) {
-  try {
-    const db = require('../../../dbPostgres');
-    // Get messages for this thread, excluding system messages, private, and flagged
-    // Order by sequence number (handles out-of-order delivery), fallback to timestamp
-    // Join with users table to get first_name for display
-    const query = `
-      SELECT m.*, u.first_name, u.display_name
-      FROM messages m
-      LEFT JOIN users u ON m.user_email = u.email
-      WHERE m.thread_id = $1
-        AND (m.private = 0 OR m.private IS NULL)
-        AND (m.flagged = 0 OR m.flagged IS NULL)
-        AND m.type != 'system'
-      ORDER BY COALESCE(m.thread_sequence, 0) ASC, m.timestamp ASC
-      LIMIT $2
-    `;
-
-    const result = await db.query(query, [threadId, limit]);
-
-    return result.rows.map(msg => ({
-      id: msg.id,
-      type: msg.type,
-      username: msg.username,
-      userEmail: msg.user_email,
-      firstName: msg.first_name,
-      displayName: msg.display_name,
-      text: msg.text,
-      timestamp: msg.timestamp,
-      threadId: msg.thread_id,
-      roomId: msg.room_id,
-      sequenceNumber: msg.thread_sequence, // Include sequence for client-side ordering
-    }));
-  } catch (error) {
-    console.error('Error getting thread messages:', error);
-    return [];
-  }
-}
-
-/**
  * Update thread title
  */
 async function updateThreadTitle(threadId, newTitle) {
@@ -193,12 +149,12 @@ async function updateThreadTitle(threadId, newTitle) {
  */
 async function updateThreadCategory(threadId, newCategory) {
   try {
-    const validCategory = validateCategory(newCategory);
+    const normalizedCategory = normalizeCategory(newCategory);
 
     await dbSafe.safeUpdate(
       'threads',
       {
-        category: validCategory,
+        category: normalizedCategory,
         updated_at: new Date().toISOString(),
       },
       { id: threadId }
@@ -208,29 +164,6 @@ async function updateThreadCategory(threadId, newCategory) {
   } catch (error) {
     console.error('Error updating thread category:', error);
     return false;
-  }
-}
-
-/**
- * Get threads by category for a room
- * @param {string} roomId - Room ID
- * @param {string} category - Category to filter by
- * @param {number} limit - Maximum number of threads
- * @returns {Promise<Array>} Threads in category
- */
-async function getThreadsByCategory(roomId, category, limit = 10) {
-  try {
-    const validCategory = validateCategory(category);
-    const result = await dbSafe.safeSelect(
-      'threads',
-      { room_id: roomId, category: validCategory, is_archived: 0 },
-      { orderBy: 'updated_at', orderDirection: 'DESC', limit }
-    );
-
-    return dbSafe.parseResult(result);
-  } catch (error) {
-    console.error('Error getting threads by category:', error);
-    return [];
   }
 }
 
@@ -260,9 +193,7 @@ module.exports = {
   createThread,
   getThread,
   getThreadsForRoom,
-  getThreadMessages,
   updateThreadTitle,
   updateThreadCategory,
-  getThreadsByCategory,
   archiveThread,
 };

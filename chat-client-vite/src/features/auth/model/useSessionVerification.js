@@ -44,7 +44,7 @@ export function calculateUserProperties(user, isNewUser = false) {
   return properties;
 }
 
-export function useSessionVerification({ setUsername, setIsAuthenticated }) {
+export function useSessionVerification({ setIsAuthenticated }) {
   const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
 
   React.useEffect(() => {
@@ -61,17 +61,14 @@ export function useSessionVerification({ setUsername, setIsAuthenticated }) {
         if (response.ok) {
           const data = await response.json();
           if (data.authenticated && data.user) {
-            // Destructure at boundary - don't reach inside data.user multiple times
-            const { username: userName } = data.user;
-
-            setUsername(userName);
             setIsAuthenticated(true);
-            authStorage.setUsername(userName);
             authStorage.setAuthenticated(true);
 
-            setUserID(userName);
-            const userProperties = calculateUserProperties(data.user, false);
-            setUserProperties(userProperties);
+            if (data.user?.email) {
+              setUserID(data.user.email);
+              const userProperties = calculateUserProperties(data.user, false);
+              setUserProperties(userProperties);
+            }
           } else {
             authStorage.clearAuth();
             setIsAuthenticated(false);
@@ -82,10 +79,8 @@ export function useSessionVerification({ setUsername, setIsAuthenticated }) {
         }
       } catch (err) {
         console.error('Error verifying session:', err);
-        const storedUsername = authStorage.getUsername();
         const storedAuth = authStorage.isAuthenticated();
-        if (storedUsername && storedAuth) {
-          setUsername(storedUsername);
+        if (storedAuth) {
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
@@ -104,7 +99,7 @@ export function useSessionVerification({ setUsername, setIsAuthenticated }) {
     } else {
       setIsCheckingAuth(false);
     }
-  }, [setUsername, setIsAuthenticated]);
+  }, [setIsAuthenticated]);
 
   return { isCheckingAuth };
 }

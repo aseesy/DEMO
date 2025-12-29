@@ -26,7 +26,7 @@ import {
 import { storage, StorageKeys, authStorage } from '../../../adapters/storage';
 import { calculateUserProperties } from './useSessionVerification.js';
 
-export function useGoogleAuth({ setUsername, setIsAuthenticated, setError }) {
+export function useGoogleAuth({ setIsAuthenticated, setError }) {
   const [isGoogleLoggingIn, setIsGoogleLoggingIn] = React.useState(false);
 
   const handleGoogleLogin = React.useCallback(async () => {
@@ -187,10 +187,8 @@ export function useGoogleAuth({ setUsername, setIsAuthenticated, setError }) {
 
         // Success - set authentication state
         setIsAuthenticated(true);
-        if (data.user?.username) {
-          setUsername(data.user.username);
-          authStorage.setUsername(data.user.username);
-          setUserID(data.user.username);
+        if (data.user?.email) {
+          setUserID(data.user.email);
           const userProperties = calculateUserProperties(data.user, false);
           setUserProperties(userProperties);
         }
@@ -218,7 +216,7 @@ export function useGoogleAuth({ setUsername, setIsAuthenticated, setError }) {
         return false;
       }
     },
-    [setUsername, setIsAuthenticated, setError]
+    [setIsAuthenticated, setError]
   );
 
   return {

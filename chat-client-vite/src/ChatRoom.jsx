@@ -46,6 +46,7 @@ const AVAILABLE_VIEWS = ['dashboard', 'chat', 'contacts', 'profile', 'settings',
  */
 function ChatRoomContent({
   usernameFromParent,
+  emailFromParent,
   isAuthenticatedFromParent,
   isCheckingAuthFromParent,
   currentViewFromParent,
@@ -56,6 +57,7 @@ function ChatRoomContent({
 
   // Use auth state from parent (lifted for ChatProvider)
   const username = usernameFromParent;
+  const email = emailFromParent;
   const isAuthenticated = isAuthenticatedFromParent;
   const isCheckingAuth = isCheckingAuthFromParent;
   const currentView = currentViewFromParent;
@@ -439,8 +441,11 @@ function ChatRoomContent({
   // New message handler for toast notifications
   const handleNewMessage = React.useCallback(
     message => {
+      // Use displayName (first name) if available, fallback to username (email)
+      const senderName = message.displayName || message.username || 'Co-parent';
+      
       toast.show({
-        sender: message.username,
+        sender: senderName,
         message: message.text || message.content || '',
         timestamp: message.timestamp
           ? new Date(message.timestamp).toLocaleTimeString([], {
@@ -627,6 +632,7 @@ function ChatRoomContent({
             {currentView === 'dashboard' && (
               <DashboardView
                 username={username}
+                email={email}
                 hasCoParentConnected={hasCoParentConnected}
                 isCheckingCoParent={isCheckingCoParent}
                 contacts={contacts}
@@ -672,7 +678,7 @@ function ChatRoomContent({
             )}
 
             {currentView === 'contacts' && (
-              <ContactsPanel username={username} setCurrentView={setCurrentView} />
+              <ContactsPanel username={username} email={userEmail} setCurrentView={setCurrentView} />
             )}
 
             {currentView === 'profile' && (
@@ -790,7 +796,7 @@ function ChatRoomContent({
 
 // Wrap with ChatProvider - auth state lifted here so ChatProvider has access
 function ChatRoom() {
-  const { username, email, isAuthenticated, isCheckingAuth, verifySession } = useAuthContext();
+  const { username, email: userEmail, isAuthenticated, isCheckingAuth, verifySession } = useAuthContext();
   const [currentView, setCurrentView] = React.useState(() => {
     const stored = storage.getString(StorageKeys.CURRENT_VIEW);
     return stored && AVAILABLE_VIEWS.includes(stored) ? stored : 'dashboard';
@@ -798,26 +804,26 @@ function ChatRoom() {
 
   // Use email for socket connections (backend expects email format)
   // Fall back to username only if it looks like an email
-  const socketUsername = email || (username?.includes('@') ? username : null);
+  const socketUsername = userEmail || (username?.includes('@') ? username : null);
 
   // Debug logging
   React.useEffect(() => {
     console.log('[ChatRoom] Auth state:', {
       username,
-      email,
+      email: userEmail,
       socketUsername,
       isAuthenticated,
       isCheckingAuth,
     });
-  }, [username, email, socketUsername, isAuthenticated, isCheckingAuth]);
+  }, [username, userEmail, socketUsername, isAuthenticated, isCheckingAuth]);
 
   // If authenticated but no email, trigger re-verification to fetch it
   React.useEffect(() => {
-    if (isAuthenticated && !email && !isCheckingAuth && verifySession) {
+    if (isAuthenticated && !userEmail && !isCheckingAuth && verifySession) {
       console.log('[ChatRoom] Authenticated but no email, triggering re-verification');
       verifySession();
     }
-  }, [isAuthenticated, email, isCheckingAuth, verifySession]);
+  }, [isAuthenticated, userEmail, isCheckingAuth, verifySession]);
 
   return (
     <ChatProvider
@@ -827,6 +833,7 @@ function ChatRoom() {
     >
       <ChatRoomContent
         usernameFromParent={username}
+        emailFromParent={userEmail}
         isAuthenticatedFromParent={isAuthenticated}
         isCheckingAuthFromParent={isCheckingAuth}
         currentViewFromParent={currentView}

@@ -609,6 +609,7 @@ async function getPairingById(pairingId, db) {
 
 /**
  * Get pairing status for a user
+ * Uses user_pairing_status VIEW for consistent room lookup via pairings
  * @param {string} userId - User ID
  * @param {object} db - Database connection
  * @returns {Promise<object>} Pairing status
@@ -618,75 +619,171 @@ async function getPairingStatus(userId, db) {
     throw new Error('userId and db are required');
   }
 
-  // Check for active pairing
+  // Check for active pairing using user_pairing_status VIEW
   const activeResult = await db.query(
-    `SELECT ps.*,
-            CASE WHEN ps.parent_a_id = $1 THEN ub.username ELSE ua.username END as partner_name,
-            CASE WHEN ps.parent_a_id = $1 THEN ub.email ELSE ua.email END as partner_email,
-            CASE WHEN ps.parent_a_id = $1 THEN ps.parent_b_id ELSE ps.parent_a_id END as partner_id
-     FROM pairing_sessions ps
-     JOIN users ua ON ps.parent_a_id = ua.id
-     LEFT JOIN users ub ON ps.parent_b_id = ub.id
-     WHERE (ps.parent_a_id = $1 OR ps.parent_b_id = $1)
-       AND ps.status = $2`,
+    `SELECT 
+       ups.pairing_id as id,
+       ups.pairing_code,
+       ups.status,
+       ups.invite_type,
+       ups.user_role,
+       ups.partner_id,
+       ups.shared_room_id,
+       ups.created_at,
+       ups.expires_at,
+       ups.accepted_at,
+       u_partner.username as partner_name,
+       u_partner.email as partner_email,
+       ps.parent_a_id,
+       ps.parent_b_id,
+       ps.parent_b_email,
+       ps.invite_token,
+       ps.invited_by_username
+     FROM user_pairing_status ups
+     JOIN pairing_sessions ps ON ups.pairing_id = ps.id
+     LEFT JOIN users u_partner ON ups.partner_id = u_partner.id
+     WHERE ups.user_id = $1
+       AND ups.status = $2`,
     [userId, PAIRING_STATUS.ACTIVE]
   );
 
   if (activeResult.rows.length > 0) {
+    const pairing = activeResult.rows[0];
     return {
       status: 'paired',
-      pairing: activeResult.rows[0],
-      partnerName: activeResult.rows[0].partner_name,
-      partnerEmail: activeResult.rows[0].partner_email,
-      partnerId: activeResult.rows[0].partner_id,
-      sharedRoomId: activeResult.rows[0].shared_room_id,
+      pairing: {
+        id: pairing.id,
+        pairing_code: pairing.pairing_code,
+        status: pairing.status,
+        invite_type: pairing.invite_type,
+        parent_a_id: pairing.parent_a_id,
+        parent_b_id: pairing.parent_b_id,
+        parent_b_email: pairing.parent_b_email,
+        shared_room_id: pairing.shared_room_id,
+        created_at: pairing.created_at,
+        expires_at: pairing.expires_at,
+        accepted_at: pairing.accepted_at,
+        invite_token: pairing.invite_token,
+        invited_by_username: pairing.invited_by_username,
+      },
+      partnerName: pairing.partner_name,
+      partnerEmail: pairing.partner_email,
+      partnerId: pairing.partner_id,
+      sharedRoomId: pairing.shared_room_id,
     };
   }
 
-  // Check for pending pairing (as initiator)
+  // Check for pending pairing (as initiator) using user_pairing_status VIEW
   const pendingSentResult = await db.query(
-    `SELECT * FROM pairing_sessions
-     WHERE parent_a_id = $1
-       AND status = $2
-       AND expires_at > CURRENT_TIMESTAMP
-     ORDER BY created_at DESC
+    `SELECT 
+       ups.pairing_id as id,
+       ups.pairing_code,
+       ups.status,
+       ups.invite_type,
+       ups.user_role,
+       ups.partner_id,
+       ups.shared_room_id,
+       ups.created_at,
+       ups.expires_at,
+       ups.accepted_at,
+       ps.parent_a_id,
+       ps.parent_b_id,
+       ps.parent_b_email,
+       ps.invite_token,
+       ps.invited_by_username
+     FROM user_pairing_status ups
+     JOIN pairing_sessions ps ON ups.pairing_id = ps.id
+     WHERE ups.user_id = $1
+       AND ups.status = $2
+       AND ups.user_role = 'initiator'
+       AND ups.expires_at > CURRENT_TIMESTAMP
+       AND ups.is_expired = FALSE
+     ORDER BY ups.created_at DESC
      LIMIT 1`,
     [userId, PAIRING_STATUS.PENDING]
   );
 
   if (pendingSentResult.rows.length > 0) {
+    const pairing = pendingSentResult.rows[0];
     return {
       status: 'pending_sent',
-      pairing: pendingSentResult.rows[0],
-      pairingCode: pendingSentResult.rows[0].pairing_code,
-      inviteeEmail: pendingSentResult.rows[0].parent_b_email,
-      expiresAt: pendingSentResult.rows[0].expires_at,
+      pairing: {
+        id: pairing.id,
+        pairing_code: pairing.pairing_code,
+        status: pairing.status,
+        invite_type: pairing.invite_type,
+        parent_a_id: pairing.parent_a_id,
+        parent_b_id: pairing.parent_b_id,
+        parent_b_email: pairing.parent_b_email,
+        shared_room_id: pairing.shared_room_id,
+        created_at: pairing.created_at,
+        expires_at: pairing.expires_at,
+        accepted_at: pairing.accepted_at,
+        invite_token: pairing.invite_token,
+        invited_by_username: pairing.invited_by_username,
+      },
+      pairingCode: pairing.pairing_code,
+      inviteeEmail: pairing.parent_b_email,
+      expiresAt: pairing.expires_at,
     };
   }
 
-  // Check for pending pairing (as invitee by email)
+  // Check for pending pairing (as invitee by email) using user_pairing_status VIEW
   const userResult = await db.query('SELECT email FROM users WHERE id = $1', [userId]);
   if (userResult.rows.length > 0) {
     const userEmail = userResult.rows[0].email;
 
     const pendingReceivedResult = await db.query(
-      `SELECT ps.*, u.username as initiator_name
-       FROM pairing_sessions ps
-       JOIN users u ON ps.parent_a_id = u.id
+      `SELECT 
+         ups.pairing_id as id,
+         ups.pairing_code,
+         ups.status,
+         ups.invite_type,
+         ups.user_role,
+         ups.partner_id,
+         ups.shared_room_id,
+         ups.created_at,
+         ups.expires_at,
+         ups.accepted_at,
+         ps.parent_a_id,
+         ps.parent_b_id,
+         ps.parent_b_email,
+         ps.invite_token,
+         ps.invited_by_username,
+         u_initiator.username as initiator_name
+       FROM user_pairing_status ups
+       JOIN pairing_sessions ps ON ups.pairing_id = ps.id
+       JOIN users u_initiator ON ps.parent_a_id = u_initiator.id
        WHERE LOWER(ps.parent_b_email) = LOWER($1)
-         AND ps.status = $2
-         AND ps.expires_at > CURRENT_TIMESTAMP
-       ORDER BY ps.created_at DESC
+         AND ups.status = $2
+         AND ups.expires_at > CURRENT_TIMESTAMP
+         AND ups.is_expired = FALSE
+       ORDER BY ups.created_at DESC
        LIMIT 1`,
       [userEmail, PAIRING_STATUS.PENDING]
     );
 
     if (pendingReceivedResult.rows.length > 0) {
+      const pairing = pendingReceivedResult.rows[0];
       return {
         status: 'pending_received',
-        pairing: pendingReceivedResult.rows[0],
-        initiatorName: pendingReceivedResult.rows[0].initiator_name,
-        pairingCode: pendingReceivedResult.rows[0].pairing_code,
+        pairing: {
+          id: pairing.id,
+          pairing_code: pairing.pairing_code,
+          status: pairing.status,
+          invite_type: pairing.invite_type,
+          parent_a_id: pairing.parent_a_id,
+          parent_b_id: pairing.parent_b_id,
+          parent_b_email: pairing.parent_b_email,
+          shared_room_id: pairing.shared_room_id,
+          created_at: pairing.created_at,
+          expires_at: pairing.expires_at,
+          accepted_at: pairing.accepted_at,
+          invite_token: pairing.invite_token,
+          invited_by_username: pairing.invited_by_username,
+        },
+        initiatorName: pairing.initiator_name,
+        pairingCode: pairing.pairing_code,
       };
     }
   }

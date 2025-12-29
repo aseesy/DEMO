@@ -47,10 +47,12 @@ async function authenticateUserByEmail(email, password) {
 
   await dbSafe.safeUpdate('users', { last_login: new Date().toISOString() }, { id: user.id });
 
-  const context = await getUserContext(user.id);
+  // Use email-based user context
+  const { getUserContext: getUserContextByEmail } = require('../src/core/profiles/userContext');
+  const context = await getUserContextByEmail(user.email);
   const room = await roomManager.getUserRoom(user.id);
 
-  return { id: user.id, username: user.username, email: user.email || null, context, room };
+  return { id: user.id, email: user.email, firstName: user.first_name, lastName: user.last_name, displayName: user.display_name || user.first_name || user.email, context, room };
 }
 
 async function authenticateUser(username, password) {
@@ -82,14 +84,16 @@ async function authenticateUser(username, password) {
 
   await dbSafe.safeUpdate('users', { last_login: new Date().toISOString() }, { id: user.id });
 
-  const context = await getUserContext(user.id);
+  // Use email-based user context
+  const { getUserContext: getUserContextByEmail } = require('../src/core/profiles/userContext');
+  const context = await getUserContextByEmail(user.email);
   const room = await roomManager.getUserRoom(user.id);
 
-  return { id: user.id, username: user.username, email: user.email || null, context, room };
+  return { id: user.id, email: user.email, firstName: user.first_name, lastName: user.last_name, displayName: user.display_name || user.first_name || user.email, context, room };
 }
 
 /**
- * Get user context data from database
+ * Get user context data from database (DEPRECATED - use getUserContext from userContext.js with email instead)
  * NAMING: Using `get*` for consistency with codebase data retrieval convention.
  */
 async function getUserContext(userId) {

@@ -18,16 +18,16 @@ const db = require('../dbPostgres');
 router.get('/:contactId', async (req, res) => {
   try {
     const { contactId } = req.params;
-    const username = req.query.username || req.body.username;
+    const email = req.query.email || req.query.username || req.body.email || req.body.username; // Support both for backward compatibility
 
-    if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
     }
 
-    // Get user
+    // Get user by email (email is now the primary identifier)
     const userResult = await dbSafe.safeSelect(
       'users',
-      { username: username.toLowerCase() },
+      { email: email.toLowerCase() },
       { limit: 1 }
     );
     const users = dbSafe.parseResult(userResult);
@@ -88,6 +88,7 @@ router.post('/', async (req, res) => {
   try {
     const {
       contactId,
+      email,
       username,
       activityName,
       description,
@@ -107,8 +108,10 @@ router.post('/', async (req, res) => {
       notes,
     } = req.body;
 
-    if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
+    const userEmail = email || username; // Support both for backward compatibility
+
+    if (!userEmail) {
+      return res.status(400).json({ error: 'Email is required' });
     }
 
     if (!contactId || !activityName || !recurrence || !startDate) {
@@ -117,10 +120,10 @@ router.post('/', async (req, res) => {
         .json({ error: 'Contact ID, activity name, recurrence, and start date are required' });
     }
 
-    // Get user
+    // Get user by email (email is now the primary identifier)
     const userResult = await dbSafe.safeSelect(
       'users',
-      { username: username.toLowerCase() },
+      { email: userEmail.toLowerCase() },
       { limit: 1 }
     );
     const users = dbSafe.parseResult(userResult);
@@ -191,6 +194,7 @@ router.put('/:activityId', async (req, res) => {
   try {
     const { activityId } = req.params;
     const {
+      email,
       username,
       activityName,
       description,
@@ -210,14 +214,16 @@ router.put('/:activityId', async (req, res) => {
       notes,
     } = req.body;
 
-    if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
+    const userEmail = email || username; // Support both for backward compatibility
+
+    if (!userEmail) {
+      return res.status(400).json({ error: 'Email is required' });
     }
 
-    // Get user
+    // Get user by email (email is now the primary identifier)
     const userResult = await dbSafe.safeSelect(
       'users',
-      { username: username.toLowerCase() },
+      { email: userEmail.toLowerCase() },
       { limit: 1 }
     );
     const users = dbSafe.parseResult(userResult);
@@ -285,16 +291,16 @@ router.put('/:activityId', async (req, res) => {
 router.delete('/:activityId', async (req, res) => {
   try {
     const { activityId } = req.params;
-    const username = req.query.username || req.body.username;
+    const email = req.query.email || req.query.username || req.body.email || req.body.username; // Support both for backward compatibility
 
-    if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
     }
 
-    // Get user
+    // Get user by email (email is now the primary identifier)
     const userResult = await dbSafe.safeSelect(
       'users',
-      { username: username.toLowerCase() },
+      { email: email.toLowerCase() },
       { limit: 1 }
     );
     const users = dbSafe.parseResult(userResult);

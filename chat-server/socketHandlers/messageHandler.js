@@ -79,17 +79,19 @@ function registerMessageHandlers(socket, io, services) {
     // CRITICAL: Ensure user.roomId is set from userSessionService
     // This ensures messages are saved to the same room that will be loaded on refresh
     if (!user.roomId) {
+      const userEmail = user.email || user.username;
       console.error('[send_message] ERROR: user.roomId is missing!', {
         socketId: socket.id,
-        username: user.username,
+        email: userEmail,
         activeUserData: userSessionService.getUserBySocketId(socket.id),
       });
       emitError(socket, 'Room not available. Please rejoin the chat.');
       return;
     }
 
+    const userEmail = user.email || user.username;
     console.log('[send_message] User sending message:', {
-      username: user.username,
+      email: userEmail,
       roomId: user.roomId,
       socketId: socket.id.substring(0, 20) + '...',
     });
@@ -107,18 +109,20 @@ function registerMessageHandlers(socket, io, services) {
     // Step 3: Get display name and create message
     let displayName;
     try {
-      displayName = await getUserDisplayName(user.username, dbSafe);
+      displayName = await getUserDisplayName(userEmail, dbSafe);
     } catch (error) {
-      // Non-fatal: use username as fallback
-      displayName = user.username;
+      // Non-fatal: use email as fallback
+      displayName = userEmail;
     }
 
-    const message = createUserMessage(
+    // Create message with sender/receiver structure (async)
+    const message = await createUserMessage(
       socket.id,
       user,
       textValidation.cleanText,
       displayName,
-      optimisticId
+      optimisticId,
+      dbSafe // Pass dbSafe for receiver lookup
     );
 
     // Step 4: Delegate to AI mediation handler
@@ -159,9 +163,10 @@ function registerMessageHandlers(socket, io, services) {
     // Step 3: Verify ownership
     let originalMessage;
     try {
+      const userEmail = user.email || user.username; // Fallback for backward compatibility
       const ownership = await verifyMessageOwnership(
         messageId,
-        user.username,
+        userEmail,
         user.roomId,
         dbPostgres
       );
@@ -212,9 +217,10 @@ function registerMessageHandlers(socket, io, services) {
 
     // Step 2: Verify ownership
     try {
+      const userEmail = user.email || user.username; // Fallback for backward compatibility
       const ownership = await verifyMessageOwnership(
         messageId,
-        user.username,
+        userEmail,
         user.roomId,
         dbPostgres
       );
@@ -270,7 +276,8 @@ function registerMessageHandlers(socket, io, services) {
     }
 
     // Step 3: Toggle reaction
-    const updatedReactions = toggleReaction(currentReactions, emoji, user.username);
+    const userEmail = user.email || user.username; // Fallback for backward compatibility
+    const updatedReactions = toggleReaction(currentReactions, emoji, userEmail);
 
     // Step 4: Save updated reactions
     try {

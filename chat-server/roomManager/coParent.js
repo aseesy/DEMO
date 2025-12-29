@@ -10,6 +10,7 @@
 const { PostgresRoomRepository } = require('../src/repositories/postgres/PostgresRoomRepository');
 const neo4jClient = require('../src/infrastructure/database/neo4jClient');
 const { generateRoomId, sendWelcomeMessage } = require('./utils');
+const { syncChildContactsForRoom, ensureContactsForRoomMembers } = require('./contact');
 
 // Repository instance - encapsulates all database access
 const roomRepo = new PostgresRoomRepository();
@@ -116,6 +117,19 @@ async function createCoParentRoom(inviterId, inviteeId, inviterName, inviteeName
     // Sync to Neo4j (optional, but we await it to ensure visibility)
     // This ensures data consistency and proper error logging
     await syncCoParentRelationshipToNeo4j(inviterId, inviteeId, roomId, roomName);
+
+    // Ensure bidirectional co-parent contacts exist
+    await ensureContactsForRoomMembers(roomId);
+
+    // Sync any existing child contacts between the co-parents
+    // This ensures both parents have access to each other's child information
+    try {
+      await syncChildContactsForRoom(roomId);
+      console.log(`✅ Synced child contacts for room ${roomId}`);
+    } catch (syncError) {
+      // Don't fail room creation if child sync fails
+      console.error('Error syncing child contacts for room:', syncError);
+    }
 
     return { roomId, roomName, members: [inviterId, inviteeId], alreadyExisted: false };
   } catch (error) {

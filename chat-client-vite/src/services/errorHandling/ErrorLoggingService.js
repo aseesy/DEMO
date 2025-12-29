@@ -45,10 +45,12 @@ export function logErrorToService(error, context = {}) {
     errorData
   );
 
-  // Send to Sentry if configured
-  if (typeof window !== 'undefined' && window.Sentry) {
+  // Optional: Send to external error tracking service if configured
+  // Note: Sentry was removed, but this pattern allows for future error tracking services
+  // To add error tracking: Set window.errorTrackingService with captureException method
+  if (typeof window !== 'undefined' && window.errorTrackingService?.captureException) {
     try {
-      window.Sentry.captureException(error, {
+      window.errorTrackingService.captureException(error, {
         tags: {
           location,
           category,
@@ -57,8 +59,8 @@ export function logErrorToService(error, context = {}) {
         extra: errorData,
         level: failOpen ? 'warning' : 'error',
       });
-    } catch (sentryError) {
-      console.error('[ErrorLoggingService] Failed to send to Sentry:', sentryError);
+    } catch (trackingError) {
+      console.error('[ErrorLoggingService] Failed to send to error tracking service:', trackingError);
     }
   }
 

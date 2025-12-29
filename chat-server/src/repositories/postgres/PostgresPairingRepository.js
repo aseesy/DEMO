@@ -8,6 +8,11 @@
  *   - Pass db connection to methods for testing
  *   - Falls back to default dbPostgres when no db provided
  *
+ * NAMING CONVENTIONS:
+ *   - Uses snake_case for database columns (shared_room_id, user_id, partner_id)
+ *   - All pairing queries use user_pairing_status VIEW for consistency
+ *   - VIEW provides: user_id, partner_id, shared_room_id, status, user_role
+ *
  * @module repositories/postgres/PostgresPairingRepository
  */
 
@@ -40,37 +45,114 @@ class PostgresPairingRepository {
 
   /**
    * Find active pairing for a user (as either parent)
+   * Uses user_pairing_status VIEW for consistent room lookup via pairings
    */
   async findActiveByUserId(userId, activeStatus, db = null) {
     if (!userId) return null;
 
-    return this.queryOne(
-      `SELECT ps.*,
-              CASE WHEN ps.parent_a_id = $1 THEN ps.parent_b_id ELSE ps.parent_a_id END as partner_id
-       FROM pairing_sessions ps
-       WHERE (ps.parent_a_id = $1 OR ps.parent_b_id = $1)
-         AND ps.status = $2`,
+    // Use user_pairing_status VIEW - canonical source for pairing state
+    const result = await this.queryOne(
+      `SELECT 
+         ups.pairing_id as id,
+         ups.pairing_code,
+         ups.status,
+         ups.invite_type,
+         ups.user_role,
+         ups.partner_id,
+         ups.shared_room_id,
+         ups.created_at,
+         ups.expires_at,
+         ups.accepted_at,
+         ps.parent_a_id,
+         ps.parent_b_id,
+         ps.parent_b_email,
+         ps.invite_token,
+         ps.invited_by_username
+       FROM user_pairing_status ups
+       JOIN pairing_sessions ps ON ups.pairing_id = ps.id
+       WHERE ups.user_id = $1
+         AND ups.status = $2`,
       [userId, activeStatus],
       db
     );
+
+    // Return in same format as before for backward compatibility
+    if (!result) return null;
+
+    return {
+      id: result.id,
+      pairing_code: result.pairing_code,
+      status: result.status,
+      invite_type: result.invite_type,
+      parent_a_id: result.parent_a_id,
+      parent_b_id: result.parent_b_id,
+      parent_b_email: result.parent_b_email,
+      shared_room_id: result.shared_room_id,
+      partner_id: result.partner_id,
+      created_at: result.created_at,
+      expires_at: result.expires_at,
+      accepted_at: result.accepted_at,
+      invite_token: result.invite_token,
+      invited_by_username: result.invited_by_username,
+    };
   }
 
   /**
    * Find pending pairing for a user (as initiator)
+   * Uses user_pairing_status VIEW for consistent pairing state lookup
    */
   async findPendingByInitiator(userId, pendingStatus, db = null) {
     if (!userId) return null;
 
-    return this.queryOne(
-      `SELECT * FROM pairing_sessions
-       WHERE parent_a_id = $1
-         AND status = $2
-         AND expires_at > CURRENT_TIMESTAMP
-       ORDER BY created_at DESC
+    // Use user_pairing_status VIEW - canonical source for pairing state
+    const result = await this.queryOne(
+      `SELECT 
+         ups.pairing_id as id,
+         ups.pairing_code,
+         ups.status,
+         ups.invite_type,
+         ups.user_role,
+         ups.partner_id,
+         ups.shared_room_id,
+         ups.created_at,
+         ups.expires_at,
+         ups.accepted_at,
+         ps.parent_a_id,
+         ps.parent_b_id,
+         ps.parent_b_email,
+         ps.invite_token,
+         ps.invited_by_username
+       FROM user_pairing_status ups
+       JOIN pairing_sessions ps ON ups.pairing_id = ps.id
+       WHERE ups.user_id = $1
+         AND ups.status = $2
+         AND ups.user_role = 'initiator'
+         AND ups.expires_at > CURRENT_TIMESTAMP
+         AND ups.is_expired = FALSE
+       ORDER BY ups.created_at DESC
        LIMIT 1`,
       [userId, pendingStatus],
       db
     );
+
+    // Return in same format as before for backward compatibility
+    if (!result) return null;
+
+    return {
+      id: result.id,
+      pairing_code: result.pairing_code,
+      status: result.status,
+      invite_type: result.invite_type,
+      parent_a_id: result.parent_a_id,
+      parent_b_id: result.parent_b_id,
+      parent_b_email: result.parent_b_email,
+      shared_room_id: result.shared_room_id,
+      created_at: result.created_at,
+      expires_at: result.expires_at,
+      accepted_at: result.accepted_at,
+      invite_token: result.invite_token,
+      invited_by_username: result.invited_by_username,
+    };
   }
 
   /**

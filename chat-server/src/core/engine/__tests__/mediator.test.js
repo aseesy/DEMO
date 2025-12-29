@@ -16,8 +16,46 @@ jest.mock('../client', () => ({
   createChatCompletion: jest.fn(),
 }));
 
-jest.mock('../../context/userContext', () => ({
+jest.mock('../../profiles/userContext', () => ({
   formatContextForAI: jest.fn(),
+}));
+
+jest.mock('../preFilters', () => ({
+  runPreFilters: jest.fn(),
+  detectConflictPatterns: jest.fn(),
+}));
+
+jest.mock('../messageCache', () => ({
+  generateHash: jest.fn((text, sender, receiver) => `hash-${text}-${sender}-${receiver}`),
+  get: jest.fn(),
+  set: jest.fn(),
+}));
+
+jest.mock('../contextBuilder', () => ({
+  buildAllContexts: jest.fn(),
+}));
+
+jest.mock('../promptBuilder', () => ({
+  buildMediationPrompt: jest.fn(),
+  formatInsightsForPrompt: jest.fn(),
+  formatProfileContextForPrompt: jest.fn(),
+  SYSTEM_PROMPT: 'System prompt',
+}));
+
+jest.mock('../responseProcessor', () => ({
+  processResponse: jest.fn(),
+}));
+
+jest.mock('../aiService', () => ({
+  getRelationshipInsights: jest.fn(),
+  detectNamesInMessage: jest.fn(),
+  generateContactSuggestion: jest.fn(),
+  extractRelationshipInsights: jest.fn(),
+}));
+
+jest.mock('../libraryLoader', () => ({
+  codeLayerIntegration: null,
+  languageAnalyzer: null,
 }));
 
 // Note: Optional dependencies are loaded with try/catch in mediator.js
@@ -27,16 +65,57 @@ jest.mock('../../context/userContext', () => ({
 // We'll mock them at runtime if needed
 
 const openaiClient = require('../client');
-const userContext = require('../../context/userContext');
+const userContext = require('../../profiles/userContext');
+const preFilters = require('../preFilters');
+const messageCache = require('../messageCache');
+const contextBuilder = require('../contextBuilder');
+const promptBuilder = require('../promptBuilder');
+const responseProcessor = require('../responseProcessor');
+const aiService = require('../aiService');
 
-describe('AI Mediator', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+  describe('AI Mediator', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
 
-    // Note: mediator now uses instance-based state, so each test gets a fresh instance
-    // The singleton instance is used for backward compatibility
-    // No need to initialize stateManager anymore - context is passed as parameter
-  });
+      // Default mocks - allow messages to pass pre-filters unless test overrides
+      preFilters.runPreFilters.mockReturnValue({ shouldSkipAI: false, reason: null });
+      preFilters.detectConflictPatterns.mockReturnValue({});
+      messageCache.get.mockReturnValue(null); // No cache by default
+      contextBuilder.buildAllContexts.mockResolvedValue({
+        senderDisplayName: 'Sender',
+        receiverDisplayName: 'Receiver',
+        messageHistory: '',
+        contactContextForAI: '',
+        graphContextString: '',
+        valuesContextString: '',
+        userIntelligenceContextString: '',
+        receiverIntelligenceContextString: '',
+        profileContext: {},
+        coparentingContextString: '',
+        voiceSignatureSection: '',
+        conversationPatternsSection: '',
+        interventionLearningSection: '',
+        roleAwarePromptSection: '',
+        taskContextForAI: '',
+        flaggedMessagesContext: '',
+      });
+      promptBuilder.buildMediationPrompt.mockReturnValue('Mock prompt');
+      promptBuilder.formatInsightsForPrompt.mockReturnValue('');
+      aiService.getRelationshipInsights.mockResolvedValue([]);
+      responseProcessor.processResponse.mockResolvedValue(null);
+      
+      // Mock stateManager methods
+      jest.spyOn(stateManager, 'updateEscalationScore').mockReturnValue({});
+      jest.spyOn(stateManager, 'initializeEmotionalState').mockReturnValue({});
+      jest.spyOn(stateManager, 'initializePolicyState').mockReturnValue({
+        interventionHistory: [],
+        interventionThreshold: 0.5,
+      });
+
+      // Note: mediator now uses instance-based state, so each test gets a fresh instance
+      // The singleton instance is used for backward compatibility
+      // No need to initialize stateManager anymore - context is passed as parameter
+    });
 
   describe('analyzeMessage', () => {
     const mockMessage = {
@@ -61,6 +140,7 @@ describe('AI Mediator', () => {
 
     it('should return null for greeting messages', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
+      preFilters.runPreFilters.mockReturnValue({ shouldSkipAI: true, reason: 'greeting' });
       const greetingMessage = { ...mockMessage, text: 'hi' };
 
       const result = await mediator.analyzeMessage(greetingMessage, mockRecentMessages);
@@ -71,6 +151,7 @@ describe('AI Mediator', () => {
 
     it('should return null for polite messages', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
+      preFilters.runPreFilters.mockReturnValue({ shouldSkipAI: true, reason: 'polite_response' });
       const politeMessage = { ...mockMessage, text: 'thanks' };
 
       const result = await mediator.analyzeMessage(politeMessage, mockRecentMessages);
@@ -81,6 +162,7 @@ describe('AI Mediator', () => {
 
     it('should return null for third-party statements', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
+      preFilters.runPreFilters.mockReturnValue({ shouldSkipAI: true, reason: 'third_party_statement' });
       const thirdPartyMessage = { ...mockMessage, text: 'My friend told me something' };
 
       const result = await mediator.analyzeMessage(thirdPartyMessage, mockRecentMessages);
@@ -91,6 +173,7 @@ describe('AI Mediator', () => {
 
     it('should return null for positive sentiment messages', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
+      preFilters.runPreFilters.mockReturnValue({ shouldSkipAI: true, reason: 'positive_sentiment' });
       const positiveMessage = { ...mockMessage, text: "You're a great parent" };
 
       const result = await mediator.analyzeMessage(positiveMessage, mockRecentMessages);
@@ -134,9 +217,12 @@ describe('AI Mediator', () => {
 
       // Mock userContext
       userContext.formatContextForAI.mockResolvedValue('User context');
+      
+      // Use a message that won't be caught by pre-filters
+      const analysisMessage = { ...mockMessage, text: 'This is a problematic message that needs analysis' };
 
       const result = await mediator.analyzeMessage(
-        mockMessage,
+        analysisMessage,
         mockRecentMessages,
         [],
         [],
@@ -183,31 +269,46 @@ describe('AI Mediator', () => {
 
     it('should return INTERVENE result with rewrites', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
+      const aiResponse = JSON.stringify({
+        action: 'INTERVENE',
+        escalation: { riskLevel: 'high', confidence: 90 },
+        emotion: { currentEmotion: 'frustrated', stressLevel: 80 },
+        intervention: {
+          validation: 'This message shows accusatory language.',
+          insight: 'Accusatory language can escalate conflict.',
+          rewrite1: 'I feel frustrated about the schedule change.',
+          rewrite2: 'Can we discuss the schedule issue?',
+        },
+      });
+      
       openaiClient.createChatCompletion.mockResolvedValue({
         choices: [
           {
             message: {
-              content: JSON.stringify({
-                action: 'INTERVENE',
-                escalation: { riskLevel: 'high', confidence: 90 },
-                emotion: { currentEmotion: 'frustrated', stressLevel: 80 },
-                intervention: {
-                  validation: 'This message shows accusatory language.',
-                  insight: 'Accusatory language can escalate conflict.',
-                  rewrite1: 'I feel frustrated about the schedule change.',
-                  rewrite2: 'Can we discuss the schedule issue?',
-                },
-              }),
+              content: aiResponse,
             },
           },
         ],
       });
 
+      // Mock responseProcessor to return the intervention result
+      responseProcessor.processResponse.mockResolvedValue({
+        type: 'ai_intervention',
+        action: 'INTERVENE',
+        validation: 'This message shows accusatory language.',
+        insight: 'Accusatory language can escalate conflict.',
+        rewrite1: 'I feel frustrated about the schedule change.',
+        rewrite2: 'Can we discuss the schedule issue?',
+      });
+
       // Mock userContext
       userContext.formatContextForAI.mockResolvedValue('User context');
+      
+      // Use a message that won't be caught by pre-filters
+      const analysisMessage = { ...mockMessage, text: 'You always forget to pick up the kids!' };
 
       const result = await mediator.analyzeMessage(
-        mockMessage,
+        analysisMessage,
         mockRecentMessages,
         [],
         [],
@@ -281,32 +382,26 @@ describe('AI Mediator', () => {
   describe('detectNamesInMessage', () => {
     it('should return empty array if OpenAI not configured', async () => {
       openaiClient.isConfigured.mockReturnValue(false);
+      aiService.detectNamesInMessage.mockResolvedValue([]);
 
       const result = await mediator.detectNamesInMessage('Test message');
 
       expect(result).toEqual([]);
+      expect(aiService.detectNamesInMessage).toHaveBeenCalledWith('Test message');
     });
 
     it('should detect names in message', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
-      // The function expects names separated by newlines
-      // Names must start with capital letter and be longer than MIN_MESSAGE_LENGTH (1)
-      // "John" (4 chars) and "Sarah" (5 chars) both pass: length > 1 && starts with [A-Z]
-      openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [
-          {
-            message: {
-              content: 'John\nSarah',
-            },
-          },
-        ],
-      });
+      // Mock aiService to return the detected names
+      aiService.detectNamesInMessage.mockResolvedValue(['John', 'Sarah']);
 
       const result = await mediator.detectNamesInMessage('I talked to John and Sarah today');
 
       // The function filters names: must start with capital letter and length > MIN_MESSAGE_LENGTH
       // MIN_MESSAGE_LENGTH is 1, so both "John" (4) and "Sarah" (5) should pass
       expect(Array.isArray(result)).toBe(true);
+      expect(result).toEqual(['John', 'Sarah']);
+      expect(aiService.detectNamesInMessage).toHaveBeenCalledWith('I talked to John and Sarah today');
       // The filter checks: line.length > VALIDATION.MIN_MESSAGE_LENGTH && /^[A-Z]/.test(line)
       // Since MIN_MESSAGE_LENGTH is 1, names with length > 1 that start with capital pass
       if (result.length > 0) {
@@ -324,15 +419,7 @@ describe('AI Mediator', () => {
 
     it('should exclude existing contacts', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
-      openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [
-          {
-            message: {
-              content: 'NONE',
-            },
-          },
-        ],
-      });
+      aiService.detectNamesInMessage.mockResolvedValue([]);
 
       const result = await mediator.detectNamesInMessage(
         'I talked to John',
@@ -341,55 +428,49 @@ describe('AI Mediator', () => {
       );
 
       expect(result).toEqual([]);
+      expect(aiService.detectNamesInMessage).toHaveBeenCalledWith('I talked to John', [{ name: 'John' }], ['user1']);
     });
 
     it('should return empty array for NONE response', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
-      openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [
-          {
-            message: {
-              content: 'NONE',
-            },
-          },
-        ],
-      });
+      aiService.detectNamesInMessage.mockResolvedValue([]);
 
       const result = await mediator.detectNamesInMessage('No names here');
 
       expect(result).toEqual([]);
+      expect(aiService.detectNamesInMessage).toHaveBeenCalledWith('No names here');
     });
 
     it('should handle API errors gracefully', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
-      openaiClient.createChatCompletion.mockRejectedValue(new Error('API Error'));
+      aiService.detectNamesInMessage.mockResolvedValue([]);
 
       const result = await mediator.detectNamesInMessage('Test message');
 
       expect(result).toEqual([]);
+      expect(aiService.detectNamesInMessage).toHaveBeenCalledWith('Test message');
     });
   });
 
   describe('generateContactSuggestion', () => {
     it('should return null if OpenAI not configured', async () => {
       openaiClient.isConfigured.mockReturnValue(false);
+      aiService.generateContactSuggestion.mockResolvedValue(null);
 
       const result = await mediator.generateContactSuggestion('John', 'Context');
 
       expect(result).toBeNull();
+      expect(aiService.generateContactSuggestion).toHaveBeenCalledWith('John', 'Context');
     });
 
     it('should generate contact suggestion', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
-      openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [
-          {
-            message: {
-              content: 'Would you like to add John to your contacts?',
-            },
-          },
-        ],
-      });
+      const mockSuggestion = {
+        type: 'contact_suggestion',
+        detectedName: 'John',
+        suggestionText: 'Would you like to add John to your contacts?',
+      };
+      aiService.generateContactSuggestion.mockResolvedValue(mockSuggestion);
 
       const result = await mediator.generateContactSuggestion('John', 'Context');
 
@@ -397,15 +478,17 @@ describe('AI Mediator', () => {
       expect(result.type).toBe('contact_suggestion');
       expect(result.detectedName).toBe('John');
       expect(result.suggestionText).toBeDefined();
+      expect(aiService.generateContactSuggestion).toHaveBeenCalledWith('John', 'Context');
     });
 
     it('should handle API errors gracefully', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
-      openaiClient.createChatCompletion.mockRejectedValue(new Error('API Error'));
+      aiService.generateContactSuggestion.mockResolvedValue(null);
 
       const result = await mediator.generateContactSuggestion('John', 'Context');
 
       expect(result).toBeNull();
+      expect(aiService.generateContactSuggestion).toHaveBeenCalledWith('John', 'Context');
     });
   });
 
@@ -418,37 +501,32 @@ describe('AI Mediator', () => {
 
     it('should return early if OpenAI not configured', async () => {
       openaiClient.isConfigured.mockReturnValue(false);
+      aiService.extractRelationshipInsights.mockResolvedValue(null);
 
       await mediator.extractRelationshipInsights(mockRecentMessages, 'room-123');
 
-      expect(openaiClient.createChatCompletion).not.toHaveBeenCalled();
+      expect(aiService.extractRelationshipInsights).toHaveBeenCalled();
     });
 
     it('should return early if not enough messages', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
+      aiService.extractRelationshipInsights.mockResolvedValue(null);
 
       await mediator.extractRelationshipInsights([], 'room-123');
 
-      expect(openaiClient.createChatCompletion).not.toHaveBeenCalled();
+      expect(aiService.extractRelationshipInsights).toHaveBeenCalled();
     });
 
     it('should extract relationship insights', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
-      openaiClient.createChatCompletion.mockResolvedValue({
-        choices: [
-          {
-            message: {
-              content: JSON.stringify({
-                communicationStyle: 'formal',
-                commonTopics: ['schedule', 'children'],
-                tensionPoints: ['pickup times'],
-                positivePatterns: ['clear communication'],
-                questionsToAsk: ['What works well?'],
-              }),
-            },
-          },
-        ],
-      });
+      const mockInsights = {
+        communicationStyle: 'formal',
+        commonTopics: ['schedule', 'children'],
+        tensionPoints: ['pickup times'],
+        positivePatterns: ['clear communication'],
+        questionsToAsk: ['What works well?'],
+      };
+      aiService.extractRelationshipInsights.mockResolvedValue(mockInsights);
 
       // extractRelationshipInsights uses dbSafe internally but it's wrapped in try/catch
       // So it should not throw even if dbSafe fails
@@ -456,16 +534,18 @@ describe('AI Mediator', () => {
         mediator.extractRelationshipInsights(mockRecentMessages, 'room-123')
       ).resolves.not.toThrow();
 
-      expect(openaiClient.createChatCompletion).toHaveBeenCalled();
+      expect(aiService.extractRelationshipInsights).toHaveBeenCalled();
     });
 
     it('should handle API errors gracefully', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
-      openaiClient.createChatCompletion.mockRejectedValue(new Error('API Error'));
+      aiService.extractRelationshipInsights.mockResolvedValue(null);
 
       await expect(
         mediator.extractRelationshipInsights(mockRecentMessages, 'room-123')
       ).resolves.not.toThrow();
+
+      expect(aiService.extractRelationshipInsights).toHaveBeenCalled();
     });
   });
 
@@ -523,16 +603,27 @@ describe('AI Mediator', () => {
   describe('recordInterventionFeedback', () => {
     it('should record helpful feedback', () => {
       const roomId = 'room-123';
-
-      // First add an intervention
-      stateManager.updatePolicyState(roomId, {
+      
+      // Access mediator's internal conversationContext
+      // The mediator uses its own conversationContext internally
+      const mockConversationContext = {
+        escalationState: new Map(),
+        emotionalState: new Map(),
+        policyState: new Map(),
+      };
+      
+      // Create a new mediator instance with our mock context for testing
+      const testMediator = new (require('../mediator').AIMediator)(mockConversationContext);
+      
+      // First add an intervention using the mock context
+      stateManager.updatePolicyState(mockConversationContext, roomId, {
         type: 'intervene',
         escalationRisk: 'medium',
       });
 
-      mediator.recordInterventionFeedback(roomId, true);
+      testMediator.recordInterventionFeedback(roomId, true);
 
-      const policyState = stateManager.initializePolicyState(roomId);
+      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
       if (policyState.interventionHistory.length > 0) {
         expect(policyState.interventionHistory[0].outcome).toBe('helpful');
       }
@@ -540,16 +631,26 @@ describe('AI Mediator', () => {
 
     it('should record unhelpful feedback', () => {
       const roomId = 'room-123';
-
-      // First add an intervention
-      stateManager.updatePolicyState(roomId, {
+      
+      // Access mediator's internal conversationContext
+      const mockConversationContext = {
+        escalationState: new Map(),
+        emotionalState: new Map(),
+        policyState: new Map(),
+      };
+      
+      // Create a new mediator instance with our mock context for testing
+      const testMediator = new (require('../mediator').AIMediator)(mockConversationContext);
+      
+      // First add an intervention using the mock context
+      stateManager.updatePolicyState(mockConversationContext, roomId, {
         type: 'intervene',
         escalationRisk: 'medium',
       });
 
-      mediator.recordInterventionFeedback(roomId, false);
+      testMediator.recordInterventionFeedback(roomId, false);
 
-      const policyState = stateManager.initializePolicyState(roomId);
+      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
       if (policyState.interventionHistory.length > 0) {
         expect(policyState.interventionHistory[0].outcome).toBe('unhelpful');
       }

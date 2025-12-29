@@ -35,13 +35,14 @@ router.post(
       return res.status(validation.status).json(validation.error);
     }
 
-    const { email, password, displayName } = validation.cleanData;
+    const { email, password, firstName, lastName } = validation.cleanData;
 
     // Step 2: Create user
     let user;
     try {
       user = await auth.createUserWithEmail(email, password, req.body.context || {}, null, null, {
-        firstName: displayName,
+        firstName,
+        lastName,
       });
     } catch (error) {
       const classified = classifySignupError(error);
@@ -72,7 +73,7 @@ router.post(
       return res.status(validation.status).json(validation.error);
     }
 
-    const { email, password, displayName, coParentEmail } = validation.cleanData;
+    const { email, password, firstName, lastName, coParentEmail } = validation.cleanData;
 
     // Step 2: Register with invitation
     let result;
@@ -81,7 +82,8 @@ router.post(
         {
           email,
           password,
-          displayName,
+          firstName,
+          lastName,
           coParentEmail,
           context: req.body.context || {},
         },

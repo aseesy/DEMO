@@ -1,6 +1,10 @@
 import React from 'react';
 import { useChatSocket } from '../model/useChatSocket.js';
 import { useSearchMessages } from '../model/useSearchMessages.js';
+import { useMessageSending } from '../hooks/useMessageSending.js';
+import { useInputHandling } from '../hooks/useInputHandling.js';
+import { useDerivedState } from '../hooks/useDerivedState.js';
+import { useChatContextValue } from '../hooks/useChatContextValue.js';
 
 /**
  * ChatContext - Provides socket connection and message state app-wide
@@ -91,21 +95,8 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     };
   }, [socketRef, searchHook, setMessages]);
 
-  // Refs for typing
+  // Refs for typing (shared between hooks)
   const typingTimeoutRef = React.useRef(null);
-  const draftAnalysisTimeoutRef = React.useRef(null);
-  const lastAnalyzedTextRef = React.useRef(''); // Track last analyzed text to avoid redundant analysis
-
-  // Compute hasMeanMessage for Navigation
-  const hasMeanMessage = React.useMemo(() => {
-    return messages.some(
-      msg =>
-        msg.username?.toLowerCase() === username?.toLowerCase() &&
-        msg.user_flagged_by &&
-        Array.isArray(msg.user_flagged_by) &&
-        msg.user_flagged_by.length > 0
-    );
-  }, [messages, username]);
 
   // Scroll helpers
   const scrollToBottom = React.useCallback(
@@ -158,163 +149,31 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     }
   }, [currentView, messages.length, isInitialLoad, scrollToBottom]); // Include messages.length to scroll when messages load
 
-  // Helper to emit or queue a message - with optimistic updates for instant UI feedback
-  const emitOrQueueMessage = React.useCallback(
-    text => {
-      // Scroll to bottom after sending message to ensure it's visible above input bar
-      setTimeout(() => {
-        scrollToBottom();
-      }, 100);
-      const messageId = `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const now = new Date().toISOString();
+  // Use extracted hooks
+  const { sendMessage, emitOrQueueMessage } = useMessageSending({
+    socketRef,
+    inputMessage,
+    username,
+    isPreApprovedRewrite,
+    originalRewrite,
+    draftCoaching,
+    setDraftCoaching,
+    setMessages,
+    setPendingMessages,
+    setMessageStatuses,
+    setError,
+    offlineQueueRef,
+    typingTimeoutRef,
+  });
 
-      const optimisticMessage = {
-        id: messageId,
-        text,
-        username,
-        displayName: username,
-        timestamp: now,
-        created_at: now,
-        isPreApprovedRewrite,
-        originalRewrite,
-        status: 'sending', // Visual indicator
-        isOptimistic: true, // Flag for optimistic update
-      };
+  const { handleInputChange } = useInputHandling({
+    socketRef,
+    setInputMessage,
+    setDraftCoaching,
+    typingTimeoutRef,
+  });
 
-      // OPTIMISTIC UPDATE: Add message to UI immediately
-      setMessages(prev => [...prev, optimisticMessage]);
-
-      // Track in pending messages for status updates
-      setPendingMessages(prev => new Map(prev).set(messageId, optimisticMessage));
-      setMessageStatuses(prev => new Map(prev).set(messageId, 'sending'));
-
-      if (socketRef.current?.connected) {
-        socketRef.current.emit('send_message', {
-          text,
-          isPreApprovedRewrite,
-          originalRewrite,
-          optimisticId: messageId, // Send ID so server can correlate
-        });
-      } else {
-        offlineQueueRef.current.push(optimisticMessage);
-        try {
-          localStorage.setItem('liaizen_offline_queue', JSON.stringify(offlineQueueRef.current));
-        } catch (e) {
-          /* ignore */
-        }
-        setError('Not connected. Message will be sent when connection is restored.');
-        // Update status to queued
-        setMessageStatuses(prev => new Map(prev).set(messageId, 'queued'));
-      }
-
-      setInputMessage('');
-      setIsPreApprovedRewrite(false);
-      setOriginalRewrite('');
-      setDraftCoaching(null);
-    },
-    [
-      username,
-      isPreApprovedRewrite,
-      originalRewrite,
-      socketRef,
-      offlineQueueRef,
-      setError,
-      setDraftCoaching,
-      setMessages,
-      setPendingMessages,
-      setMessageStatuses,
-      scrollToBottom,
-    ]
-  );
-
-  // Send message via WebSocket - backend handles all AI analysis
-  // This is the SINGLE transport protocol for message analysis (no HTTP API)
-  const sendMessage = React.useCallback(
-    async e => {
-      if (e?.preventDefault) e.preventDefault();
-      const clean = inputMessage.trim();
-      if (!clean || !socketRef.current) return;
-
-      // If we already have a draft coaching result for this exact message
-      // and it shows intervention needed, don't send
-      if (draftCoaching && draftCoaching.observerData && draftCoaching.originalText === clean) {
-        return;
-      }
-
-      // AI-GENERATED REWRITES: Skip analysis only if not edited
-      if (isPreApprovedRewrite && originalRewrite) {
-        if (clean === originalRewrite.trim()) {
-          console.log('[ChatContext] Skipping analysis for unedited AI rewrite');
-          emitOrQueueMessage(clean);
-          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-          socketRef.current.emit('typing', { isTyping: false });
-          return;
-        }
-      }
-
-      // Show "Analyzing..." state while backend processes
-      setDraftCoaching({ analyzing: true, riskLevel: 'low', shouldSend: false });
-
-      // Send message via WebSocket - backend handles all AI analysis
-      // Backend will emit either:
-      // - 'new_message' if clean (clears analyzing state)
-      // - 'draft_coaching' if intervention needed (shows ObserverCard)
-      emitOrQueueMessage(clean);
-
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      socketRef.current.emit('typing', { isTyping: false });
-    },
-    [
-      inputMessage,
-      emitOrQueueMessage,
-      socketRef,
-      setDraftCoaching,
-      draftCoaching,
-      isPreApprovedRewrite,
-      originalRewrite,
-    ]
-  );
-
-  const handleInputChange = React.useCallback(
-    e => {
-      const value = e.target.value;
-      setInputMessage(value);
-      if (!socketRef.current) return;
-
-      socketRef.current.emit('typing', { isTyping: true });
-
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = setTimeout(() => {
-        socketRef.current?.emit('typing', { isTyping: false });
-      }, 1000);
-
-      if (draftAnalysisTimeoutRef.current) clearTimeout(draftAnalysisTimeoutRef.current);
-
-      const trimmed = value.trim();
-
-      // Quick local check - if message passes fast filters, mark as analyzed
-      if (trimmed.length >= 3) {
-        import('../../../utils/messageAnalyzer.js').then(({ shouldSendMessage }) => {
-          const quickCheck = shouldSendMessage({ action: 'QUICK_CHECK', messageText: trimmed });
-          if (quickCheck.shouldSend) {
-            // Message passes quick check - cache it as analyzed
-            lastAnalyzedTextRef.current = trimmed;
-            setDraftCoaching(null); // Clear any previous coaching
-          } else if (trimmed.length >= 10 && socketRef.current?.connected) {
-            // Needs full analysis - send to server after delay
-            draftAnalysisTimeoutRef.current = setTimeout(() => {
-              socketRef.current?.emit('analyze_draft', { draftText: trimmed });
-              lastAnalyzedTextRef.current = trimmed; // Track what we analyzed
-            }, 800); // Reduced from 1000ms for faster feedback
-          }
-        });
-      } else {
-        setDraftCoaching(null);
-        lastAnalyzedTextRef.current = '';
-      }
-    },
-    [socketRef, setDraftCoaching]
-  );
+  const { hasMeanMessage } = useDerivedState(messages, username);
 
   const removeMessages = React.useCallback(
     predicate => {
@@ -340,117 +199,57 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   const exitSearchMode = searchHook.exitSearchMode;
   const jumpToMessage = searchHook.jumpToMessage;
 
-  const value = React.useMemo(
-    () => ({
-      // Connection
-      socket: socketRef.current,
-      isConnected,
-      isJoined,
-      error,
-
-      // Messages
-      messages,
-      inputMessage,
-      setInputMessage,
-      sendMessage,
-      handleInputChange,
-      removeMessages,
-      flagMessage,
-      messagesEndRef,
-      messagesContainerRef,
-
-      // Message tracking
-      pendingMessages,
-      messageStatuses,
-
-      // Draft coaching
-      draftCoaching,
-      setDraftCoaching,
-      isPreApprovedRewrite,
-      setIsPreApprovedRewrite,
-      originalRewrite,
-      setOriginalRewrite,
-
-      // Threads
-      threads,
-      threadMessages,
-      isLoadingThreadMessages,
-      selectedThreadId,
-      setSelectedThreadId,
-      createThread,
-      getThreads,
-      getThreadMessages,
-      addToThread,
-
-      // Typing
-      typingUsers,
-
-      // Pagination
-      loadOlderMessages,
-      isLoadingOlder,
-      hasMoreMessages,
-
-      // Search
-      searchMessages,
-      searchQuery: searchHook.searchQuery,
-      searchResults: searchHook.searchResults,
-      searchTotal: searchHook.searchTotal,
-      isSearching: searchHook.isSearching,
-      searchMode: searchHook.searchMode,
-      toggleSearchMode,
-      exitSearchMode,
-      jumpToMessage,
-      highlightedMessageId: searchHook.highlightedMessageId,
-
-      // UI state
-      isInitialLoad,
-      unreadCount,
-      setUnreadCount,
-      hasMeanMessage,
-    }),
-    [
-      socketRef,
-      isConnected,
-      isJoined,
-      error,
-      messages,
-      inputMessage,
-      sendMessage,
-      handleInputChange,
-      removeMessages,
-      flagMessage,
-      pendingMessages,
-      messageStatuses,
-      draftCoaching,
-      isPreApprovedRewrite,
-      originalRewrite,
-      threads,
-      threadMessages,
-      isLoadingThreadMessages,
-      selectedThreadId,
-      createThread,
-      getThreads,
-      getThreadMessages,
-      addToThread,
-      typingUsers,
-      loadOlderMessages,
-      isLoadingOlder,
-      hasMoreMessages,
-      searchMessages,
-      searchHook.searchQuery,
-      searchHook.searchResults,
-      searchHook.searchTotal,
-      searchHook.isSearching,
-      searchHook.searchMode,
-      toggleSearchMode,
-      exitSearchMode,
-      jumpToMessage,
-      searchHook.highlightedMessageId,
-      isInitialLoad,
-      unreadCount,
-      hasMeanMessage,
-    ]
-  );
+  // Create context value using extracted hook
+  const value = useChatContextValue({
+    socketRef,
+    isConnected,
+    isJoined,
+    error,
+    messages,
+    inputMessage,
+    setInputMessage,
+    sendMessage,
+    handleInputChange,
+    removeMessages,
+    flagMessage,
+    messagesEndRef,
+    messagesContainerRef,
+    pendingMessages,
+    messageStatuses,
+    draftCoaching,
+    setDraftCoaching,
+    isPreApprovedRewrite,
+    setIsPreApprovedRewrite,
+    originalRewrite,
+    setOriginalRewrite,
+    threads,
+    threadMessages,
+    isLoadingThreadMessages,
+    selectedThreadId,
+    setSelectedThreadId,
+    createThread,
+    getThreads,
+    getThreadMessages,
+    addToThread,
+    typingUsers,
+    loadOlderMessages,
+    isLoadingOlder,
+    hasMoreMessages,
+    searchMessages,
+    searchQuery: searchHook.searchQuery,
+    searchResults: searchHook.searchResults,
+    searchTotal: searchHook.searchTotal,
+    isSearching: searchHook.isSearching,
+    searchMode: searchHook.searchMode,
+    toggleSearchMode,
+    exitSearchMode,
+    jumpToMessage,
+    highlightedMessageId: searchHook.highlightedMessageId,
+    isInitialLoad,
+    unreadCount,
+    setUnreadCount,
+    hasMeanMessage,
+  });
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }
@@ -507,14 +306,28 @@ const defaultContext = {
   hasMeanMessage: false,
 };
 
+// Track if we've already warned to avoid spam in React StrictMode
+let hasWarned = false;
+let warningTimeout = null;
+
 export function useChatContext() {
   const context = React.useContext(ChatContext);
   if (!context) {
     // In development, warn but don't crash - allows React StrictMode/HMR to work
     if (import.meta.env.DEV) {
-      console.warn(
-        '[useChatContext] Context not available - using default. This may indicate a component is rendering outside ChatProvider.'
-      );
+      // Deduplicate warnings: only show once per session to avoid spam from React StrictMode double renders
+      if (!hasWarned) {
+        hasWarned = true;
+        console.warn(
+          '[useChatContext] Context not available - using default. This may indicate a component is rendering outside ChatProvider.',
+          '\nNote: This warning appears once per session. React StrictMode may cause double renders during development.'
+        );
+        // Reset warning flag after 5 seconds to allow for legitimate new warnings
+        if (warningTimeout) clearTimeout(warningTimeout);
+        warningTimeout = setTimeout(() => {
+          hasWarned = false;
+        }, 5000);
+      }
       return defaultContext;
     }
     // In production, still throw to catch real bugs

@@ -6,7 +6,7 @@
  *
  * Encapsulates active user state management:
  * - Register/disconnect users
- * - Query users by socket ID, room ID, username
+ * - Query users by socket ID, room ID, email
  * - Prevent direct mutation of internal state
  * - Thread-safe operations
  */
@@ -24,24 +24,24 @@ class UserSessionService extends BaseService {
   /**
    * Register a user session
    * @param {string} socketId - Socket ID
-   * @param {string} username - Username
+   * @param {string} email - User email (primary identifier)
    * @param {string} roomId - Room ID
    * @returns {Object} User data object
    * @throws {ValidationError} If required parameters missing
    */
-  registerUser(socketId, username, roomId) {
+  registerUser(socketId, email, roomId) {
     if (!socketId) {
       throw new ValidationError('Socket ID is required', 'socketId');
     }
-    if (!username) {
-      throw new ValidationError('Username is required', 'username');
+    if (!email) {
+      throw new ValidationError('Email is required', 'email');
     }
     if (!roomId) {
       throw new ValidationError('Room ID is required', 'roomId');
     }
 
     const userData = {
-      username: username,
+      email: email.toLowerCase().trim(),
       roomId: roomId,
       joinedAt: new Date().toISOString(),
       socketId: socketId,
@@ -50,7 +50,7 @@ class UserSessionService extends BaseService {
     this._activeUsers.set(socketId, userData);
     console.log('[UserSessionService] Registered user:', {
       socketId: socketId.substring(0, 20) + '...',
-      username: username,
+      email: email,
       roomId: roomId,
     });
 
@@ -93,7 +93,7 @@ class UserSessionService extends BaseService {
       this._activeUsers.delete(socketId);
       console.log('[UserSessionService] Disconnected user:', {
         socketId: socketId.substring(0, 20) + '...',
-        username: user.username,
+        email: user.email,
         roomId: user.roomId,
       });
       return true;
@@ -104,19 +104,20 @@ class UserSessionService extends BaseService {
 
   /**
    * Disconnect duplicate connections for a user
-   * Keeps the current socketId, removes others with same username/roomId
+   * Keeps the current socketId, removes others with same email/roomId
    * @param {string} currentSocketId - Socket ID to keep
-   * @param {string} username - Username
+   * @param {string} email - User email
    * @param {string} roomId - Room ID
    * @returns {Array<string>} Array of disconnected socket IDs
    */
-  disconnectDuplicates(currentSocketId, username, roomId) {
+  disconnectDuplicates(currentSocketId, email, roomId) {
     const disconnected = [];
+    const emailLower = email.toLowerCase().trim();
 
     for (const [socketId, userData] of this._activeUsers.entries()) {
       if (
         socketId !== currentSocketId &&
-        userData.username === username &&
+        userData.email === emailLower &&
         userData.roomId === roomId
       ) {
         this._activeUsers.delete(socketId);
@@ -126,7 +127,7 @@ class UserSessionService extends BaseService {
 
     if (disconnected.length > 0) {
       console.log('[UserSessionService] Disconnected duplicate connections:', {
-        username,
+        email: emailLower,
         roomId,
         count: disconnected.length,
       });

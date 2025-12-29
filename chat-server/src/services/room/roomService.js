@@ -97,6 +97,7 @@ class RoomService extends BaseService {
     let roomId = null;
 
     // First check if user has an active pairing with shared_room_id
+    // Uses user_pairing_status VIEW internally for consistent pairing-based room lookup
     try {
       const activePairing = await pairingManager.getActivePairing(userId, this.db);
       if (activePairing && activePairing.shared_room_id) {

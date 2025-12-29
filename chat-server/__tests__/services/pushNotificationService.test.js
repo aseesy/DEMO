@@ -6,13 +6,19 @@
  * subscription management and notification sending.
  */
 
+// Mock dependencies BEFORE requiring the service module
+// This prevents database connection attempts during test initialization
+jest.mock('../../dbPostgres', () => ({
+  query: jest.fn(),
+}));
+jest.mock('web-push', () => ({
+  sendNotification: jest.fn(),
+  setVapidDetails: jest.fn(),
+}));
+
 const pushNotificationService = require('../../services/pushNotificationService');
 const dbPostgres = require('../../dbPostgres');
 const webpush = require('web-push');
-
-// Mock dependencies
-jest.mock('../../dbPostgres');
-jest.mock('web-push');
 
 describe('PushNotificationService', () => {
   beforeEach(() => {
@@ -401,9 +407,12 @@ describe('PushNotificationService', () => {
         },
       ];
 
+      // Mock getUserSubscriptions call (first query)
       dbPostgres.query.mockResolvedValueOnce({ rows: mockSubscriptions });
-      webpush.sendNotification.mockResolvedValue();
-      dbPostgres.query.mockResolvedValue({ rowCount: 1 });
+      // Mock webpush.sendNotification success
+      webpush.sendNotification.mockResolvedValueOnce();
+      // Mock update last_used_at call (second query)
+      dbPostgres.query.mockResolvedValueOnce({ rowCount: 1 });
 
       const result = await pushNotificationService.notifyNewMessage(
         mockRecipientUserId,
@@ -411,6 +420,7 @@ describe('PushNotificationService', () => {
       );
 
       expect(result.sent).toBe(1);
+      expect(result.failed).toBe(0);
       const sentPayload = JSON.parse(webpush.sendNotification.mock.calls[0][1]);
       expect(sentPayload.body).toHaveLength(103); // 100 chars + '...'
       expect(sentPayload.body).toContain('...');
@@ -458,9 +468,12 @@ describe('PushNotificationService', () => {
         },
       ];
 
+      // Mock getUserSubscriptions call (first query)
       dbPostgres.query.mockResolvedValueOnce({ rows: mockSubscriptions });
-      webpush.sendNotification.mockResolvedValue();
-      dbPostgres.query.mockResolvedValue({ rowCount: 1 });
+      // Mock webpush.sendNotification success
+      webpush.sendNotification.mockResolvedValueOnce();
+      // Mock update last_used_at call (second query)
+      dbPostgres.query.mockResolvedValueOnce({ rowCount: 1 });
 
       const result = await pushNotificationService.notifyNewMessage(
         mockRecipientUserId,
@@ -468,6 +481,7 @@ describe('PushNotificationService', () => {
       );
 
       expect(result.sent).toBe(1);
+      expect(result.failed).toBe(0);
       const sentPayload = JSON.parse(webpush.sendNotification.mock.calls[0][1]);
       expect(sentPayload.title).toBe('New message from Sarah');
       expect(sentPayload.data.senderName).toBe('Sarah');
@@ -486,9 +500,12 @@ describe('PushNotificationService', () => {
         },
       ];
 
+      // Mock getUserSubscriptions call (first query)
       dbPostgres.query.mockResolvedValueOnce({ rows: mockSubscriptions });
-      webpush.sendNotification.mockResolvedValue();
-      dbPostgres.query.mockResolvedValue({ rowCount: 1 });
+      // Mock webpush.sendNotification success
+      webpush.sendNotification.mockResolvedValueOnce();
+      // Mock update last_used_at call (second query)
+      dbPostgres.query.mockResolvedValueOnce({ rowCount: 1 });
 
       const result = await pushNotificationService.notifyNewMessage(
         mockRecipientUserId,
@@ -496,6 +513,7 @@ describe('PushNotificationService', () => {
       );
 
       expect(result.sent).toBe(1);
+      expect(result.failed).toBe(0);
       const sentPayload = JSON.parse(webpush.sendNotification.mock.calls[0][1]);
       expect(sentPayload.title).toBe('New message from Co-parent');
       expect(sentPayload.body).toBe('You have a new message');

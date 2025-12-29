@@ -11,6 +11,7 @@ const { ServiceError, getUserIdByUsername } = require('../services/userService')
 const contactsService = require('../services/contactsService');
 const { PostgresRoomRepository } = require('../src/repositories/postgres/PostgresRoomRepository');
 const { createCoParentRoom } = require('../roomManager/coParent');
+const { shareChildContactWithCoParents, isShareableRelationship } = require('../roomManager/contact');
 const dbPostgres = require('../dbPostgres');
 
 const roomRepo = new PostgresRoomRepository();
@@ -109,6 +110,32 @@ async function createContact(req, res) {
       contactName: contact_name,
       relationship: contactData.relationship,
     });
+
+    // Share child contacts with co-parents automatically
+    if (isShareableRelationship(contactData.relationship)) {
+      try {
+        const sharedIds = await shareChildContactWithCoParents(userId, {
+          contact_name,
+          contact_email: contactData.contact_email,
+          relationship: contactData.relationship,
+          phone: contactData.phone,
+          child_age: contactData.child_age,
+          child_birthdate: contactData.child_birthdate,
+          school: contactData.school,
+          custody_arrangement: contactData.custody_arrangement,
+        });
+        if (sharedIds.length > 0) {
+          console.log('[Contact Creation] ✅ Shared child contact with co-parents', {
+            originalContactId: contactId,
+            sharedContactIds: sharedIds,
+            childName: contact_name,
+          });
+        }
+      } catch (shareError) {
+        // Don't fail the request if sharing fails, just log it
+        console.error('[Contact Creation] Error sharing child contact:', shareError);
+      }
+    }
 
     // Auto-complete onboarding tasks
     if (autoCompleteOnboardingTasks) {

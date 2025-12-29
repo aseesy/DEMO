@@ -82,15 +82,17 @@ async function getUserByUsername(cleanUsername, auth) {
  * Get user's existing room (pure lookup - no side effects)
  *
  * NAMING: Using `get*` for consistency with codebase data retrieval convention.
+ * Uses user_pairing_status VIEW via pairingManager.getActivePairing() for consistent room lookup.
  *
  * @param {Object} user - User object with id
- * @param {string} cleanUsername - Username for logging
+ * @param {string} cleanEmail - User email for logging
  * @param {Object} dbPostgres - Database connection
  * @param {Object} roomManager - Room manager service
  * @returns {Promise<RoomResolution|null>} Room info or null if no room exists
  */
 async function getExistingUserRoom(user, cleanEmail, dbPostgres, roomManager) {
   // First check if user has an active pairing with shared_room_id
+  // Uses user_pairing_status VIEW internally for consistent pairing-based room lookup
   const activePairing = await pairingManager.getActivePairing(user.id, dbPostgres);
 
   if (activePairing && activePairing.shared_room_id) {
@@ -265,6 +267,7 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
 
   // Get messages with JOIN to users table (normalized)
   // Receiver info will be added in JavaScript using room members
+  // Order by timestamp DESC, then by id DESC for stable sorting (handles duplicate timestamps)
   const historyQuery = `
     SELECT m.*, 
            u.id as user_id, u.first_name, u.last_name, u.email
@@ -274,7 +277,7 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
       AND (m.type IS NULL OR m.type != 'system')
       AND m.text NOT LIKE '%joined the chat%'
       AND m.text NOT LIKE '%left the chat%'
-    ORDER BY m.timestamp DESC
+    ORDER BY m.timestamp DESC NULLS LAST, m.id DESC
     LIMIT $2 OFFSET $3
   `;
 
@@ -294,8 +297,19 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
 
   console.log('[getMessageHistory] Retrieved', result.rows.length, 'messages from database');
 
-  // Reverse to chronological order (oldest first) for frontend display
-  const messages = result.rows.reverse().map(msg => {
+  // Sort to chronological order (oldest first) for frontend display
+  // Use proper sort instead of reverse() to handle duplicate timestamps correctly
+  const sortedRows = result.rows.sort((a, b) => {
+    const timeA = new Date(a.timestamp || 0).getTime();
+    const timeB = new Date(b.timestamp || 0).getTime();
+    // If timestamps are equal, use ID as tiebreaker for stable sort
+    if (timeA === timeB) {
+      return (a.id || '').localeCompare(b.id || '');
+    }
+    return timeA - timeB; // Ascending order (oldest first)
+  });
+
+  const messages = sortedRows.map(msg => {
     // Build sender object from message data
     // Handle case where user_email might be NULL or user not found in JOIN
     const senderData = {
@@ -315,7 +329,18 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
       });
       // Fallback: define inline to prevent crash
       const fallbackBuildUserObject = (userData, includeEmail = true) => {
-        if (!userData || !userData.id) return null;
+        if (!userData || !userData.id) {
+          // If no user_id but we have email, create minimal sender object
+          if (userData && userData.email) {
+            return {
+              uuid: null,
+              first_name: userData.first_name || null,
+              last_name: userData.last_name || null,
+              email: includeEmail ? userData.email : null,
+            };
+          }
+          return null;
+        }
         return {
           uuid: userData.id,
           first_name: userData.first_name || null,
@@ -326,6 +351,21 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
       sender = fallbackBuildUserObject(senderData);
     } else {
       sender = buildUserObject(senderData);
+      
+      // If buildUserObject returned null but we have user_email, create minimal sender
+      // This handles cases where user record doesn't exist but message does
+      if (!sender && senderData.email) {
+        console.warn('[getMessageHistory] User lookup failed, creating minimal sender from user_email', {
+          user_email: senderData.email,
+          user_id: senderData.id,
+        });
+        sender = {
+          uuid: null, // No user_id available
+          first_name: senderData.first_name || null,
+          last_name: senderData.last_name || null,
+          email: senderData.email,
+        };
+      }
     }
 
     // Build receiver object - find the other user in the room

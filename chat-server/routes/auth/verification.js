@@ -122,11 +122,16 @@ router.post('/register-from-invite', async (req, res) => {
  */
 router.post('/register-with-invite', async (req, res) => {
   try {
-    const { email, password, username, displayName, inviteToken, inviteCode, context } = req.body;
+    const { email, password, firstName, lastName, inviteToken, inviteCode, context } = req.body;
 
     // Validate required fields
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Validate first and last name
+    if (!firstName || !lastName) {
+      return res.status(400).json({ error: 'First name and last name are required' });
     }
 
     if (!inviteToken && !inviteCode) {
@@ -172,7 +177,8 @@ router.post('/register-with-invite', async (req, res) => {
             shortCode: inviteCode,
             email: emailLower,
             password,
-            displayName: displayName || username,
+            firstName: firstName?.trim() || '',
+            lastName: lastName?.trim() || '',
             context: context || {},
           },
           db
@@ -189,7 +195,8 @@ router.post('/register-with-invite', async (req, res) => {
               code: inviteCode,
               email: emailLower,
               password,
-              displayName: displayName || username,
+              firstName: firstName?.trim() || '',
+              lastName: lastName?.trim() || '',
               context: context || {},
             },
             db
@@ -216,7 +223,8 @@ router.post('/register-with-invite', async (req, res) => {
             token: inviteToken,
             email: emailLower,
             password,
-            displayName: displayName || username,
+            firstName: firstName?.trim() || '',
+            lastName: lastName?.trim() || '',
             context: context || {},
           },
           db
@@ -233,7 +241,8 @@ router.post('/register-with-invite', async (req, res) => {
               token: inviteToken,
               email: emailLower,
               password,
-              displayName: displayName || username,
+              firstName: firstName?.trim() || '',
+              lastName: lastName?.trim() || '',
               context: context || {},
             },
             db

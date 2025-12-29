@@ -73,24 +73,29 @@ function AppContent() {
     if ('serviceWorker' in navigator) {
       const handleMessage = event => {
         if (event.data && event.data.type === 'NAVIGATE') {
-          // Update the URL (this will trigger ChatRoom's URL parameter check)
-          window.history.pushState({}, '', event.data.url);
-
+          console.log('[App] Received NAVIGATE message from service worker:', event.data.url);
+          
           // Parse the URL to extract view parameter
           try {
             const url = new URL(event.data.url, window.location.origin);
             const viewParam = url.searchParams.get('view');
 
+            // Update the URL (this will trigger ChatRoom's URL parameter check)
+            window.history.pushState({}, '', event.data.url);
+
             // Trigger a custom event for immediate navigation
             if (viewParam) {
+              console.log('[App] Dispatching navigate-to-view event with view:', viewParam);
               window.dispatchEvent(
                 new CustomEvent('navigate-to-view', { detail: { view: viewParam } })
               );
             } else {
-              // If no view param, just reload to ensure we're on the right page
+              // If no view param, navigate to root
+              console.log('[App] No view param, navigating to root');
               window.location.href = event.data.url;
             }
-          } catch {
+          } catch (error) {
+            console.error('[App] Error parsing navigation URL:', error);
             // Fallback: direct navigation
             window.location.href = event.data.url;
           }

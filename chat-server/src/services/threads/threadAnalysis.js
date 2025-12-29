@@ -4,11 +4,11 @@
  * Handles AI-powered thread analysis:
  * - Suggest threads for messages
  * - Analyze conversation history
- * - Generate embeddings for semantic search
+ * - Auto-assign messages to threads
  */
 
 const openaiClient = require('../../../openaiClient');
-const { validateCategory } = require('./threadCategories');
+const { normalizeCategory, getCategoryKeywords } = require('./threadCategories');
 const { extractDistinctiveKeywords } = require('./threadKeywords');
 
 // Neo4j client for semantic threading
@@ -120,7 +120,7 @@ Respond in JSON:
  * @param {Function} dependencies.createThread - Create new thread
  * @param {Function} dependencies.addMessageToThread - Add message to thread
  * @param {Function} dependencies.archiveThread - Archive thread
- * @param {Function} dependencies.generateEmbeddingForText - Generate embedding
+ * @param {Function} dependencies.generateEmbeddingForText - Generate embedding (from threadEmbeddings)
  * @returns {Promise<Object>} Object with suggestions and createdThreads arrays
  */
 async function analyzeConversationHistory(roomId, limit = 100, dependencies = {}) {
@@ -297,7 +297,8 @@ Only include conversations with confidence >= 60 and at least 3 related messages
         if (neo4jClient && neo4jClient.isAvailable()) {
           try {
             // Generate embedding for the thread title
-            const threadEmbedding = await generateEmbeddingForText(suggestion.title);
+            const threadEmbeddings = require('./threadEmbeddings');
+            const threadEmbedding = await threadEmbeddings.generateEmbeddingForText(suggestion.title);
 
             if (threadEmbedding) {
               console.log(`[threadManager] Using Neo4j semantic search for "${suggestion.title}"`);
@@ -384,7 +385,7 @@ Only include conversations with confidence >= 60 and at least 3 related messages
 
         if (matchingMessages.length >= 3) {
           // Create thread with category
-          const threadCategory = validateCategory(suggestion.category);
+          const threadCategory = normalizeCategory(suggestion.category);
           console.log(
             `[threadManager] Creating thread "${suggestion.title}" [${threadCategory}] with ${matchingMessages.length} messages`
           );
@@ -453,35 +454,91 @@ Only include conversations with confidence >= 60 and at least 3 related messages
 }
 
 /**
- * Generate embedding for text (helper function)
- * @private
+ * Auto-assign a message to the best matching existing thread
+ * Uses fast keyword matching (no AI call) for real-time assignment
+ *
+ * @param {Object} message - Message object with id, text, roomId
+ * @param {Function} getThreadsForRoom - Function to get threads for room
+ * @param {Function} addMessageToThread - Function to add message to thread
+ * @returns {Promise<Object|null>} - { threadId, threadTitle, category, score } or null
  */
-async function generateEmbeddingForText(text) {
-  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+async function autoAssignMessageToThread(message, getThreadsForRoom, addMessageToThread) {
+  if (!message || !message.text || !message.roomId) {
     return null;
   }
 
   try {
-    // Use the OpenAI client from core/engine/client
-    const coreOpenaiClient = require('../../../core/engine/client');
-    const client = coreOpenaiClient.getClient();
+    // Get existing active threads for this room
+    const existingThreads = await getThreadsForRoom(message.roomId, false);
 
-    if (!client) {
+    if (existingThreads.length === 0) {
       return null;
     }
 
-    const response = await client.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: text.trim(),
+    // Extract keywords from the message
+    const messageKeywords = extractDistinctiveKeywords(message.text, 3);
+
+    if (messageKeywords.length === 0) {
+      return null;
+    }
+
+    // Score each thread based on keyword overlap
+    const scoredThreads = existingThreads.map(thread => {
+      // Extract keywords from thread title
+      const titleKeywords = extractDistinctiveKeywords(thread.title, 3);
+
+      // Get category-specific keywords
+      const categoryKeywords = getCategoryKeywords(thread.category);
+
+      // Calculate score
+      let score = 0;
+
+      // 1. Direct keyword match with thread title (highest weight)
+      const titleMatches = messageKeywords.filter(k => titleKeywords.includes(k));
+      score += titleMatches.length * 3;
+
+      // 2. Category keyword match (medium weight)
+      const categoryMatches = messageKeywords.filter(k => categoryKeywords.includes(k));
+      score += categoryMatches.length * 2;
+
+      // 3. Bonus for category keywords appearing in thread title
+      const titleCategoryOverlap = titleKeywords.filter(k => categoryKeywords.includes(k));
+      if (titleCategoryOverlap.length > 0 && categoryMatches.length > 0) {
+        score += 2; // Bonus for strong category alignment
+      }
+
+      return {
+        threadId: thread.id,
+        threadTitle: thread.title,
+        category: thread.category,
+        score,
+        titleMatches,
+        categoryMatches,
+      };
     });
 
-    if (!response.data || !response.data[0] || !response.data[0].embedding) {
-      return null;
+    // Find the best matching thread
+    const bestMatch = scoredThreads
+      .filter(t => t.score >= 3) // Minimum score threshold
+      .sort((a, b) => b.score - a.score)[0];
+
+    if (bestMatch) {
+      console.log(`[threadAnalysis] Auto-assigning message to thread "${bestMatch.threadTitle}" (score: ${bestMatch.score})`);
+
+      // Actually assign the message to the thread
+      await addMessageToThread(message.id, bestMatch.threadId);
+
+      return {
+        threadId: bestMatch.threadId,
+        threadTitle: bestMatch.threadTitle,
+        category: bestMatch.category,
+        score: bestMatch.score,
+      };
     }
 
-    return response.data[0].embedding;
+    return null;
   } catch (error) {
-    console.error('❌ Failed to generate embedding:', error.message);
+    console.error('[threadAnalysis] Error auto-assigning message to thread:', error);
     return null;
   }
 }
@@ -489,5 +546,5 @@ async function generateEmbeddingForText(text) {
 module.exports = {
   suggestThreadForMessage,
   analyzeConversationHistory,
-  generateEmbeddingForText,
+  autoAssignMessageToThread,
 };

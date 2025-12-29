@@ -7,13 +7,8 @@
  * - Message counts use atomic database increments
  */
 
-// Auto-threading service for embedding generation
-let autoThreading = null;
-try {
-  autoThreading = require('../services/autoThreading');
-} catch (err) {
-  console.warn('⚠️  Auto-threading service not available:', err.message);
-}
+// Note: autoThreading is no longer imported here to break dependency cycle
+// Embedding generation is handled by ThreadCreated/SubThreadCreated event listeners
 
 function registerThreadHandlers(socket, io, services) {
   const { threadManager, userSessionService } = services;
@@ -27,18 +22,11 @@ function registerThreadHandlers(socket, io, services) {
         return;
       }
 
-      const threadId = await threadManager.createThread(roomId, title, user.username, messageId, category);
+      const userEmail = user.email || user.username; // Fallback for backward compatibility
+      const threadId = await threadManager.createThread(roomId, title, userEmail, messageId, category);
 
-      // Generate embedding for thread title (for semantic matching)
-      if (autoThreading) {
-        setImmediate(() => {
-          autoThreading
-            .ensureThreadEmbedding(threadId, roomId, title)
-            .catch(err =>
-              console.error('[AutoThreading] Error creating thread embedding:', err.message)
-            );
-        });
-      }
+      // Note: Embedding generation is now handled by ThreadCreated event listener
+      // No need to call autoThreading directly here - decoupled via domain events
 
       if (messageId) {
         await threadManager.addMessageToThread(messageId, threadId);
@@ -163,10 +151,11 @@ function registerThreadHandlers(socket, io, services) {
         return;
       }
 
+      const userEmail = user.email || user.username; // Fallback for backward compatibility
       const threadId = await threadManager.createSubThread(
         roomId,
         title,
-        user.username,
+        userEmail,
         parentThreadId,
         parentMessageId || null
       );

@@ -180,6 +180,11 @@ npm run test:watch
    - `routes/activities.js`
    - Other routes with direct imports
 
+2. **Completed Refactoring** (since this doc was created):
+   - ✅ `routes/admin.js` - Extracted to `debugService`, `statisticsService`, `cleanupService`
+   - ✅ `routes/invitations.js` - Extracted to `invitationService`, `invitationEmailService`
+   - ✅ Both routes now have comprehensive unit tests (43 tests total)
+
 2. **Create Additional Test Utilities**: As needed for:
    - Other service mocks
    - Database transaction mocks

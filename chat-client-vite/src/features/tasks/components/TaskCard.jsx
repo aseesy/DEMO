@@ -41,11 +41,15 @@ export function TaskCard({
   const handleCloseGuide = React.useCallback(() => {
     justClosedRef.current = true;
     setShowIOSGuide(false);
+    // Mark the install task as completed when user clicks "Complete"
+    if (isPWAInstallTask(task) && task.status !== 'completed') {
+      onToggleStatus(task);
+    }
     // Reset the guard after a longer delay to ensure click events have finished
     setTimeout(() => {
       justClosedRef.current = false;
     }, 500);
-  }, []);
+  }, [task, onToggleStatus]);
 
   const handleOpenSettings = React.useCallback(() => {
     if (onNavigate) {

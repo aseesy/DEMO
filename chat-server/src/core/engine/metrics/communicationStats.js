@@ -14,6 +14,7 @@ const dbSafe = require('../../../../dbSafe');
  */
 async function updateCommunicationStats(userId, roomId, hadIntervention) {
   try {
+    console.log(`[communicationStats] updateCommunicationStats called: userId=${userId}, roomId=${roomId}, hadIntervention=${hadIntervention}`);
     const now = new Date().toISOString();
 
     // Get or create stats record for this user-room combination
@@ -27,6 +28,7 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
     );
 
     const stats = dbSafe.parseResult(statsResult);
+    console.log(`[communicationStats] Existing stats found: ${stats.length > 0 ? 'yes' : 'no'}`);
 
     if (stats.length === 0) {
       // Create new stats record
@@ -114,13 +116,16 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
  */
 async function getUserStats(userId) {
   try {
+    console.log(`[communicationStats] getUserStats called for userId: ${userId}`);
     const statsResult = await dbSafe.safeSelect('communication_stats', {
       user_id: userId,
     });
 
     const stats = dbSafe.parseResult(statsResult);
+    console.log(`[communicationStats] Found ${stats.length} stats records for userId ${userId}`);
 
     if (stats.length === 0) {
+      console.log(`[communicationStats] No stats found for userId ${userId}, returning zeros`);
       return {
         currentStreak: 0,
         bestStreak: 0,
@@ -157,6 +162,7 @@ async function getUserStats(userId) {
         ? Math.round((aggregated.totalPositive / aggregated.totalMessages) * 100)
         : 0;
 
+    console.log(`[communicationStats] Aggregated stats for userId ${userId}:`, aggregated);
     return aggregated;
   } catch (error) {
     console.error('Error getting user stats:', error);

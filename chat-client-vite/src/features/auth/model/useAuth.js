@@ -22,7 +22,8 @@ export function useAuth() {
   // Form state
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
-  const [username, setUsername] = React.useState('');
+  const [firstName, setFirstName] = React.useState('');
+  const [lastName, setLastName] = React.useState('');
 
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
@@ -30,13 +31,11 @@ export function useAuth() {
 
   // Compose session verification
   const { isCheckingAuth } = useSessionVerification({
-    setUsername,
     setIsAuthenticated,
   });
 
   // Compose Google auth
   const { isGoogleLoggingIn, handleGoogleLogin, handleGoogleCallback } = useGoogleAuth({
-    setUsername,
     setIsAuthenticated,
     setError,
   });
@@ -45,8 +44,8 @@ export function useAuth() {
   const { isLoggingIn, isSigningUp, handleLogin, handleSignup, handleRegister } = useEmailAuth({
     email,
     password,
-    username,
-    setUsername,
+    firstName,
+    lastName,
     setIsAuthenticated,
     setError,
   });
@@ -62,7 +61,8 @@ export function useAuth() {
       setUserID(null);
       setUserProperties({});
       setIsAuthenticated(false);
-      setUsername('');
+      setFirstName('');
+      setLastName('');
       setEmail('');
       setPassword('');
       setError('');
@@ -73,7 +73,8 @@ export function useAuth() {
     // State
     email,
     password,
-    username,
+    firstName,
+    lastName,
     isAuthenticated,
     isCheckingAuth,
     isLoggingIn,
@@ -84,7 +85,8 @@ export function useAuth() {
     // Setters
     setEmail,
     setPassword,
-    setUsername,
+    setFirstName,
+    setLastName,
     setError,
 
     // Actions

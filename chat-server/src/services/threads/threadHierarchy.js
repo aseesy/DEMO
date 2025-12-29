@@ -10,15 +10,10 @@
  */
 
 const dbSafe = require('../../../dbSafe');
-const { validateCategory } = require('./threadCategories');
-
-// Neo4j client for semantic threading
-let neo4jClient = null;
-try {
-  neo4jClient = require('../../infrastructure/database/neo4jClient');
-} catch (err) {
-  console.warn('⚠️  Neo4j client not available - semantic threading will use fallback');
-}
+const { normalizeCategory } = require('./threadCategories');
+const { factory: semanticIndexFactory } = require('../../infrastructure/semantic/SemanticIndexFactory');
+const { eventEmitter } = require('../../core/events/DomainEventEmitter');
+const { SUB_THREAD_CREATED } = require('../../core/events/ThreadEvents');
 
 /**
  * Create a sub-thread (spawned from a message in an existing thread)
@@ -58,9 +53,9 @@ async function createSubThread(
     const rootThreadId = parentThread.root_thread_id || parentThreadId;
     const depth = (parentThread.depth || 0) + 1;
     // Inherit category from parent if not specified
-    const validCategory = category
-      ? validateCategory(category)
-      : parentThread.category || 'logistics';
+    const normalizedCategory = category
+      ? normalizeCategory(category)
+      : normalizeCategory(parentThread.category || 'logistics');
 
     await dbSafe.safeInsert('threads', {
       id: threadId,
@@ -72,21 +67,21 @@ async function createSubThread(
       message_count: 0,
       last_message_at: null,
       is_archived: 0,
-      category: validCategory,
+      category: normalizedCategory,
       parent_thread_id: parentThreadId,
       root_thread_id: rootThreadId,
       parent_message_id: parentMessageId,
       depth: depth,
     });
 
-    // Create thread node in Neo4j with hierarchy info
-    if (neo4jClient && neo4jClient.isAvailable()) {
+    // Index thread and link to parent in semantic graph (fail-open: errors are non-fatal)
+    const semanticIndex = semanticIndexFactory.getSemanticIndex();
+    if (semanticIndex) {
       try {
-        await neo4jClient.createOrUpdateThreadNode(threadId, roomId, title);
-        // Link to parent thread in Neo4j
-        await neo4jClient.linkThreadToParent(threadId, parentThreadId);
+        await semanticIndex.indexThread(threadId, roomId, title);
+        await semanticIndex.linkThreadToParent(threadId, parentThreadId);
       } catch (err) {
-        console.warn('⚠️  Failed to create Neo4j sub-thread node (non-fatal):', err.message);
+        console.warn('⚠️  Failed to index sub-thread (non-fatal):', err.message);
       }
     }
 

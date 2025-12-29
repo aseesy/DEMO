@@ -1,41 +1,88 @@
 /**
- * Thread Manager - Facade
+ * Thread Manager - Use Case Interactor
  *
- * This file serves as a facade that re-exports all thread management functions
- * from the extracted modules. This maintains backward compatibility while
- * allowing the codebase to be organized into smaller, focused modules.
+ * This file orchestrates thread management through Use Cases.
+ * It depends on abstractions (IConversationAnalyzer, IThreadRepository), not concrete implementations.
+ *
+ * Clean Architecture Pattern:
+ * - Use Cases orchestrate business logic
+ * - Repository handles persistence (can swap PostgreSQL for MongoDB)
+ * - Analyzer handles AI logic (can swap OpenAI for Anthropic)
+ * - This file has ONE reason to change: business workflow changes
  *
  * All functions are now organized in:
- * - src/services/threads/threadCategories.js - Category validation
+ * - src/core/interfaces/IConversationAnalyzer.js - AI analysis interface
+ * - src/repositories/interfaces/IThreadRepository.js - Persistence interface
+ * - src/services/threads/analyzers/AIThreadAnalyzer.js - AI implementation
+ * - src/repositories/postgres/PostgresThreadRepository.js - Persistence implementation
+ * - src/services/threads/useCases/*.js - Use case orchestrators
+ * - src/services/threads/threadCategories.js - Category validation and keywords
  * - src/services/threads/threadKeywords.js - Keyword extraction
- * - src/services/threads/threadOperations.js - CRUD operations
  * - src/services/threads/threadHierarchy.js - Hierarchical operations
- * - src/services/threads/threadMessages.js - Message-thread operations
- * - src/services/threads/threadAnalysis.js - AI analysis
+ * - src/services/threads/threadEmbeddings.js - Embedding generation
  */
 
+const { factory } = require('./src/services/threads/ThreadServiceFactory');
 const threadCategories = require('./src/services/threads/threadCategories');
 const threadKeywords = require('./src/services/threads/threadKeywords');
-const threadOperations = require('./src/services/threads/threadOperations');
 const threadHierarchy = require('./src/services/threads/threadHierarchy');
-const threadMessages = require('./src/services/threads/threadMessages');
-const threadAnalysis = require('./src/services/threads/threadAnalysis');
+const threadEmbeddings = require('./src/services/threads/threadEmbeddings');
 
 // Re-export constants
 const THREAD_CATEGORIES = threadCategories.THREAD_CATEGORIES;
 const validateCategory = threadCategories.validateCategory;
 
-// Re-export operations (with dependency injection for createThread)
+// Get use cases and repository
+const threadRepository = factory.getThreadRepository();
+const createThreadUseCase = factory.getCreateThreadUseCase();
+const analyzeConversationUseCase = factory.getAnalyzeConversationUseCase();
+const suggestThreadUseCase = factory.getSuggestThreadUseCase();
+const autoAssignMessageUseCase = factory.getAutoAssignMessageUseCase();
+
+// Use Case: Create Thread
 const createThread = async (roomId, title, createdBy, initialMessageId = null, category = 'logistics') => {
-  return threadOperations.createThread(roomId, title, createdBy, initialMessageId, category, threadMessages.addMessageToThread);
+  return createThreadUseCase.execute({ roomId, title, createdBy, initialMessageId, category });
 };
-const getThread = threadOperations.getThread;
-const getThreadsForRoom = threadOperations.getThreadsForRoom;
-const getThreadMessages = threadOperations.getThreadMessages;
-const updateThreadTitle = threadOperations.updateThreadTitle;
-const updateThreadCategory = threadOperations.updateThreadCategory;
-const getThreadsByCategory = threadOperations.getThreadsByCategory;
-const archiveThread = threadOperations.archiveThread;
+
+// Repository: Get Thread
+const getThread = async (threadId) => {
+  return threadRepository.findById(threadId);
+};
+
+// Repository: Get Threads for Room
+const getThreadsForRoom = async (roomId, includeArchived = false, limit = 10) => {
+  try {
+    return await threadRepository.findByRoomId(roomId, { includeArchived, limit });
+  } catch (error) {
+    console.error('Error getting threads:', error);
+    return [];
+  }
+};
+
+// Repository: Get Thread Messages
+const getThreadMessages = async (threadId, limit = 50) => {
+  return threadRepository.getMessages(threadId, limit);
+};
+
+// Repository: Update Thread Title
+const updateThreadTitle = async (threadId, newTitle) => {
+  return threadRepository.updateTitle(threadId, newTitle);
+};
+
+// Repository: Update Thread Category
+const updateThreadCategory = async (threadId, newCategory) => {
+  return threadRepository.updateCategory(threadId, newCategory);
+};
+
+// Repository: Get Threads by Category
+const getThreadsByCategory = async (roomId, category, limit = 10) => {
+  return threadRepository.findByCategory(roomId, category, limit);
+};
+
+// Repository: Archive Thread
+const archiveThread = async (threadId, archived = true) => {
+  return threadRepository.archive(threadId, archived);
+};
 
 // Re-export hierarchy operations
 const createSubThread = threadHierarchy.createSubThread;
@@ -44,33 +91,32 @@ const getSubThreads = threadHierarchy.getSubThreads;
 const getThreadHierarchy = threadHierarchy.getThreadHierarchy;
 const getThreadsByRoot = threadHierarchy.getThreadsByRoot;
 
-// Re-export message operations
-const addMessageToThread = threadMessages.addMessageToThread;
-const removeMessageFromThread = threadMessages.removeMessageFromThread;
+// Repository: Add Message to Thread
+const addMessageToThread = async (messageId, threadId) => {
+  return threadRepository.addMessage(messageId, threadId);
+};
 
-// Auto-assign with dependency injection
+// Repository: Remove Message from Thread
+const removeMessageFromThread = async (messageId) => {
+  return threadRepository.removeMessage(messageId);
+};
+
+// Use Case: Auto Assign Message to Thread
 const autoAssignMessageToThread = async (message) => {
-  return threadMessages.autoAssignMessageToThread(message, getThreadsForRoom);
+  return autoAssignMessageUseCase.execute({ message });
 };
 
-// Re-export analysis operations (with dependency injection)
+// Use Case: Suggest Thread for Message
 const suggestThreadForMessage = async (message, recentMessages, roomId) => {
-  return threadAnalysis.suggestThreadForMessage(message, recentMessages, roomId, getThreadsForRoom);
+  return suggestThreadUseCase.execute({ message, recentMessages, roomId });
 };
 
+// Use Case: Analyze Conversation History
 const analyzeConversationHistory = async (roomId, limit = 100) => {
-  return threadAnalysis.analyzeConversationHistory(roomId, limit, {
-    getThreadsForRoom,
-    createThread: async (roomId, title, createdBy, initialMessageId, category) => {
-      return createThread(roomId, title, createdBy, initialMessageId, category);
-    },
-    addMessageToThread,
-    archiveThread,
-    generateEmbeddingForText: threadAnalysis.generateEmbeddingForText,
-  });
+  return analyzeConversationUseCase.execute({ roomId, limit });
 };
 
-const generateEmbeddingForText = threadAnalysis.generateEmbeddingForText;
+const generateEmbeddingForText = threadEmbeddings.generateEmbeddingForText;
 
 module.exports = {
   // Constants

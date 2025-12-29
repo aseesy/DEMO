@@ -203,7 +203,7 @@ describe('State Manager', () => {
       state.lastNegativeTime = Date.now() - ESCALATION.DECAY_INTERVAL_MS - 1000; // 1 second past decay interval
 
       const patterns = { hasAccusatory: false };
-      const updatedState = stateManager.updateEscalationScore(roomId, patterns);
+      const updatedState = stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
 
       expect(updatedState.escalationScore).toBe(9); // 10 - 1 (decay)
     });
@@ -217,7 +217,7 @@ describe('State Manager', () => {
       state.lastNegativeTime = Date.now() - 1000; // 1 second ago (within interval)
 
       const patterns = { hasAccusatory: false };
-      const updatedState = stateManager.updateEscalationScore(roomId, patterns);
+      const updatedState = stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
 
       expect(updatedState.escalationScore).toBe(10); // No decay
     });
@@ -231,7 +231,7 @@ describe('State Manager', () => {
       state.lastNegativeTime = Date.now() - ESCALATION.DECAY_INTERVAL_MS - 1000;
 
       const patterns = { hasAccusatory: false };
-      const updatedState = stateManager.updateEscalationScore(roomId, patterns);
+      const updatedState = stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
 
       expect(updatedState.escalationScore).toBe(0); // Should not go negative
     });
@@ -366,12 +366,12 @@ describe('State Manager', () => {
       const roomId = 'room-123';
 
       // Add two participants with different stress levels
-      stateManager.updateEmotionalState(roomId, 'user1', {
+      stateManager.updateEmotionalState(mockConversationContext, roomId, 'user1', {
         currentEmotion: 'frustrated',
         stressLevel: 80,
       });
 
-      stateManager.updateEmotionalState(roomId, 'user2', {
+      stateManager.updateEmotionalState(mockConversationContext, roomId, 'user2', {
         currentEmotion: 'neutral',
         stressLevel: 20,
       });
@@ -476,7 +476,7 @@ describe('State Manager', () => {
       });
 
       // Record helpful feedback
-      stateManager.recordInterventionFeedback(roomId, true);
+      stateManager.recordInterventionFeedback(mockConversationContext, roomId, true);
       const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
 
       expect(policyState.interventionHistory[0].outcome).toBe('helpful');
@@ -493,7 +493,7 @@ describe('State Manager', () => {
       });
 
       // Record unhelpful feedback
-      stateManager.recordInterventionFeedback(roomId, false);
+      stateManager.recordInterventionFeedback(mockConversationContext, roomId, false);
       const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
 
       expect(policyState.interventionHistory[0].outcome).toBe('unhelpful');
@@ -510,9 +510,9 @@ describe('State Manager', () => {
 
       // Add intervention and record unhelpful feedback
       stateManager.updatePolicyState(mockConversationContext, roomId, { type: 'intervene' });
-      stateManager.recordInterventionFeedback(roomId, false);
+      stateManager.recordInterventionFeedback(mockConversationContext, roomId, false);
 
-      const updatedState = stateManager.initializePolicyState(roomId);
+      const updatedState = stateManager.initializePolicyState(mockConversationContext, roomId);
       expect(updatedState.interventionThreshold).toBe(
         initialThreshold + ESCALATION.INTERVENTION_THRESHOLD_INCREMENT
       );
@@ -528,9 +528,9 @@ describe('State Manager', () => {
 
       // Add intervention and record helpful feedback
       stateManager.updatePolicyState(mockConversationContext, roomId, { type: 'intervene' });
-      stateManager.recordInterventionFeedback(roomId, true);
+      stateManager.recordInterventionFeedback(mockConversationContext, roomId, true);
 
-      const updatedState = stateManager.initializePolicyState(roomId);
+      const updatedState = stateManager.initializePolicyState(mockConversationContext, roomId);
       expect(updatedState.interventionThreshold).toBe(
         initialThreshold - ESCALATION.INTERVENTION_THRESHOLD_DECREMENT
       );
@@ -545,9 +545,9 @@ describe('State Manager', () => {
 
       // Add intervention and record unhelpful feedback
       stateManager.updatePolicyState(mockConversationContext, roomId, { type: 'intervene' });
-      stateManager.recordInterventionFeedback(roomId, false);
+      stateManager.recordInterventionFeedback(mockConversationContext, roomId, false);
 
-      const updatedState = stateManager.initializePolicyState(roomId);
+      const updatedState = stateManager.initializePolicyState(mockConversationContext, roomId);
       expect(updatedState.interventionThreshold).toBe(ESCALATION.INTERVENTION_THRESHOLD_MAX);
     });
 
@@ -560,9 +560,9 @@ describe('State Manager', () => {
 
       // Add intervention and record helpful feedback
       stateManager.updatePolicyState(mockConversationContext, roomId, { type: 'intervene' });
-      stateManager.recordInterventionFeedback(roomId, true);
+      stateManager.recordInterventionFeedback(mockConversationContext, roomId, true);
 
-      const updatedState = stateManager.initializePolicyState(roomId);
+      const updatedState = stateManager.initializePolicyState(mockConversationContext, roomId);
       expect(updatedState.interventionThreshold).toBe(ESCALATION.INTERVENTION_THRESHOLD_MIN);
     });
 
@@ -571,7 +571,7 @@ describe('State Manager', () => {
 
       // Record feedback without any interventions
       expect(() => {
-        stateManager.recordInterventionFeedback(roomId, true);
+        stateManager.recordInterventionFeedback(mockConversationContext, roomId, true);
       }).not.toThrow();
 
       const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
@@ -581,12 +581,13 @@ describe('State Manager', () => {
 
   describe('Edge Cases', () => {
     it('should handle null/undefined roomId gracefully', () => {
+      // Should work with null/undefined roomId (roomId is not validated)
       expect(() => {
         stateManager.initializeEscalationState(mockConversationContext, null);
       }).not.toThrow();
 
       expect(() => {
-        stateManager.initializeEmotionalState(undefined, undefined);
+        stateManager.initializeEmotionalState(mockConversationContext, undefined);
       }).not.toThrow();
     });
 
@@ -594,8 +595,14 @@ describe('State Manager', () => {
       const roomId = 'room-123';
       const patterns = {};
 
+      // Should throw when conversationContext is null (fail-fast design)
       expect(() => {
         stateManager.updateEscalationScore(null, roomId, patterns);
+      }).toThrow('conversationContext is required');
+      
+      // Should work with valid context and empty patterns
+      expect(() => {
+        stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
       }).not.toThrow();
     });
 
@@ -603,10 +610,12 @@ describe('State Manager', () => {
       const roomId = 'room-123';
       const username = 'user1';
 
+      // Should throw when conversationContext is null (fail-fast design)
       expect(() => {
         stateManager.updateEmotionalState(null, roomId, username, null);
-      }).not.toThrow();
+      }).toThrow('conversationContext is required');
 
+      // Should work with valid context and empty emotion data
       expect(() => {
         stateManager.updateEmotionalState(mockConversationContext, roomId, username, {});
       }).not.toThrow();
@@ -615,12 +624,12 @@ describe('State Manager', () => {
     it('should handle missing intervention data', () => {
       const roomId = 'room-123';
 
-      // Should handle null gracefully
+      // Should throw when conversationContext is null (fail-fast design)
       expect(() => {
         stateManager.updatePolicyState(null, roomId, null);
-      }).not.toThrow();
+      }).toThrow('conversationContext is required');
 
-      // Should handle empty object
+      // Should work with valid context and empty intervention data
       expect(() => {
         stateManager.updatePolicyState(mockConversationContext, roomId, {});
       }).not.toThrow();

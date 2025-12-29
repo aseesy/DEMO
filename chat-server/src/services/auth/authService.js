@@ -202,9 +202,9 @@ class AuthService extends BaseService {
       type: LOGIN_RESULT_TYPES.SUCCESS,
       user: {
         id: user.id,
-        username: user.username,
         email: user.email,
         display_name: user.display_name,
+        first_name: user.first_name,
       },
       token,
       security: {
@@ -222,9 +222,9 @@ class AuthService extends BaseService {
   formatUserResponse(user) {
     return {
       id: user.id,
-      username: user.username,
       email: user.email,
       display_name: user.display_name,
+      first_name: user.first_name,
     };
   }
 }

@@ -10,19 +10,16 @@ const { emitError } = require('./utils');
 const {
   validateUserInput,
   getUserByEmail,
-  getUserByUsername, // Deprecated - for backward compatibility
   resolveUserRoom,
   disconnectDuplicateConnections,
   registerActiveUser,
   getMessageHistory,
-  createSystemMessage,
-  saveSystemMessage,
   getRoomUsers,
 } = require('./connectionOperations');
 const { maybeAnalyzeRoomOnJoin } = require('./threadHandler');
 
 function registerConnectionHandlers(socket, io, services) {
-  const { auth, roomManager, dbSafe, dbPostgres, userSessionService } = services;
+  const { auth, roomManager, dbPostgres, userSessionService } = services;
 
   // join handler - now accepts email instead of username
   socket.on('join', async ({ email, username }) => {
@@ -58,7 +55,8 @@ function registerConnectionHandlers(socket, io, services) {
       return;
     }
 
-    // Step 3: Resolve room
+    // Step 3: Resolve room (always finds existing room - users stay in rooms permanently like iMessage)
+    // Room membership persists in room_members table, so users always return to the same room
     let roomId, roomName;
     try {
       const room = await resolveUserRoom(user, cleanEmail, dbPostgres, roomManager);
@@ -70,7 +68,7 @@ function registerConnectionHandlers(socket, io, services) {
       roomName = room.roomName;
       user.room = { roomId, roomName };
       user.roomId = roomId; // CRITICAL: Set roomId on user object for message handlers
-      console.log('[join] Resolved room:', {
+      console.log('[join] Resolved existing room (users stay in rooms permanently):', {
         roomId: roomId,
         roomName: roomName,
         email: cleanEmail,
@@ -122,31 +120,18 @@ function registerConnectionHandlers(socket, io, services) {
       hasMore: historyResult.hasMore,
     });
 
-    // Step 8: Create and save system message
-    const displayName = user.displayName || user.firstName || cleanEmail;
-    const systemMessage = createSystemMessage(
-      socket.id,
-      `${displayName} joined the chat`,
-      roomId,
-      cleanEmail
-    );
-
-    try {
-      await saveSystemMessage(systemMessage, dbSafe);
-    } catch (error) {
-      // Non-fatal: log but continue
-      console.error('Error saving join message:', error);
-    }
-
-    // Step 9: Broadcast join event
+    // Step 8: Broadcast join event (without system message - users stay in rooms like iMessage)
+    // Users remain in rooms permanently, no need for join/leave messages
     const roomUsers = getRoomUsers(userSessionService, roomId);
 
     io.to(roomId).emit('user_joined', {
-      message: systemMessage,
       users: roomUsers,
       roomMembers: members,
     });
 
+    // Get display name for room name fallback
+    const displayName = user.displayName || user.firstName || cleanEmail;
+    
     socket.emit('join_success', {
       email: cleanEmail,
       username: cleanEmail, // Backward compatibility
@@ -175,41 +160,18 @@ function registerConnectionHandlers(socket, io, services) {
   });
 
   // disconnect handler
-  socket.on('disconnect', async () => {
+  // Users stay in rooms permanently (like iMessage) - no leave messages needed
+  socket.on('disconnect', () => {
     const user = userSessionService.getUserBySocketId(socket.id);
     if (!user) return;
 
     const { roomId } = user;
-    const userEmail = user.email || user.username;
     userSessionService.disconnectUser(socket.id);
 
-    const displayName = user.displayName || user.firstName || userEmail;
-    const systemMessage = createSystemMessage(
-      socket.id,
-      `${displayName} left the chat`,
-      roomId,
-      userEmail
-    );
-
-    // Save disconnect message (non-fatal if fails)
-    try {
-      await dbPostgres.query(
-        `INSERT INTO messages (id, type, user_email, text, timestamp, room_id) VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          systemMessage.id,
-          systemMessage.type,
-          systemMessage.user_email || 'system@liaizen.app',
-          systemMessage.text,
-          systemMessage.timestamp,
-          roomId,
-        ]
-      );
-    } catch (error) {
-      // Silently ignore - user is disconnecting anyway
-    }
-
+    // Update room users list (for presence) but don't create leave message
+    // Users remain in room_members table and will rejoin the same room on reconnect
     const roomUsers = getRoomUsers(userSessionService, roomId);
-    io.to(roomId).emit('user_left', { message: systemMessage, users: roomUsers });
+    io.to(roomId).emit('user_left', { users: roomUsers });
   });
 }
 

@@ -137,7 +137,7 @@ describe('Authentication Module', () => {
       expect(user).toBeDefined();
       expect(user.id).toBe(1);
       expect(user.email).toBe(email.toLowerCase());
-      expect(user.username).toBeDefined();
+      expect(user.displayName).toBeDefined();
       expect(dbSafe.safeInsert).toHaveBeenCalled();
     });
 
@@ -153,7 +153,7 @@ describe('Authentication Module', () => {
       );
     });
 
-    test('should generate username from email', async () => {
+    test('should create user with email and return displayName', async () => {
       const email = 'john.doe@example.com';
       const password = 'securePassword123';
 
@@ -162,27 +162,12 @@ describe('Authentication Module', () => {
 
       const user = await auth.createUserWithEmail(email, password, {});
 
-      // Username should be derived from email (johndoe or similar)
-      expect(user.username).toBeDefined();
-      expect(user.username.length).toBeGreaterThan(0);
+      // User should have email and displayName (derived from email if no name provided)
+      expect(user.email).toBe(email.toLowerCase());
+      expect(user.displayName).toBeDefined();
+      expect(user.displayName.length).toBeGreaterThan(0);
     });
 
-    test('should handle username conflicts with suffix', async () => {
-      const email = 'test@example.com';
-      const password = 'securePassword123';
-
-      dbSafe.safeSelect.mockResolvedValue([]);
-
-      // First insert fails with unique constraint, second succeeds
-      dbSafe.safeInsert
-        .mockRejectedValueOnce({ code: '23505', constraint: 'users_username_key' })
-        .mockResolvedValueOnce(1);
-
-      const user = await auth.createUserWithEmail(email, password, {});
-
-      expect(user).toBeDefined();
-      expect(user.id).toBe(1);
-    });
   });
 
   describe('User Authentication (authenticateUserByEmail)', () => {
@@ -448,13 +433,15 @@ describe('Authentication Module', () => {
     });
 
     test('userExists should be case-insensitive', async () => {
-      dbSafe.safeSelect.mockResolvedValue([{ id: 1, username: 'testuser' }]);
+      const email = 'testuser@example.com';
+      dbSafe.safeSelect.mockResolvedValue([{ id: 1, email: 'testuser@example.com' }]);
 
-      await auth.userExists('TESTUSER');
+      const exists = await auth.userExists('TESTUSER@EXAMPLE.COM');
 
+      expect(exists).toBe(true);
       expect(dbSafe.safeSelect).toHaveBeenCalledWith(
         'users',
-        { username: 'testuser' },
+        { email: 'testuser@example.com' },
         { limit: 1 }
       );
     });

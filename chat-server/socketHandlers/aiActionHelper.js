@@ -138,8 +138,9 @@ async function processIntervention(socket, io, services, context) {
 
     // RACE CONDITION GUARD: Check if socket is still connected before emitting
     if (!socket.connected) {
+      const userEmail = user.email || user.username; // Fallback for backward compatibility
       console.warn('[processIntervention] Socket disconnected, skipping emit', {
-        username: user.username,
+        email: userEmail,
         messageId: message.id,
       });
       return;
@@ -238,14 +239,18 @@ async function processApprovedMessage(socket, io, services, context) {
 
       if (roomMembersResult.rows.length > 0) {
         // Find the recipient (other user in room, not the sender)
+        const userEmail = user.email || user.username; // Fallback for backward compatibility
         const recipient = roomMembersResult.rows.find(
-          member => member.username?.toLowerCase() !== user.username?.toLowerCase()
+          member => {
+            const memberEmail = member.email || member.username;
+            return memberEmail?.toLowerCase() !== userEmail?.toLowerCase();
+          }
         );
 
         console.log('[processApprovedMessage] Push notification check:', {
           roomMembersCount: roomMembersResult.rows.length,
-          senderUsername: user.username,
-          roomMembers: roomMembersResult.rows.map(r => r.username),
+          senderEmail: userEmail,
+          roomMembers: roomMembersResult.rows.map(r => r.email || r.username),
           recipientFound: !!recipient,
           recipientUserId: recipient?.user_id,
         });
@@ -270,11 +275,12 @@ async function processApprovedMessage(socket, io, services, context) {
             totalSubscriptions: result.sent + result.failed,
           });
         } else {
+          const userEmail = user.email || user.username; // Fallback for backward compatibility
           console.log('[processApprovedMessage] No recipient found for push notification:', {
             roomMembersCount: roomMembersResult.rows.length,
-            senderUsername: user.username,
+            senderEmail: userEmail,
             roomMembers: roomMembersResult.rows.map(r => ({
-              username: r.username,
+              email: r.email || r.username,
               userId: r.user_id,
             })),
           });
@@ -311,8 +317,9 @@ async function processApprovedMessage(socket, io, services, context) {
       const { gatherAnalysisContext } = require('./aiHelperUtils');
 
       // Get user's ID
-      const userResult = await dbPostgres.query(`SELECT id FROM users WHERE username = $1`, [
-        user.username,
+      const userEmail = user.email || user.username; // Fallback for backward compatibility
+      const userResult = await dbPostgres.query(`SELECT id FROM users WHERE email = $1`, [
+        userEmail.toLowerCase(),
       ]);
 
       if (userResult.rows.length === 0) {

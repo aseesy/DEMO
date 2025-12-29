@@ -133,9 +133,17 @@ function loadServices() {
     dbPostgres: require('./dbPostgres'),
     contactIntelligence: require('./contactIntelligence'),
     threadManager: require('./threadManager'),
-    proactiveCoach: require('./proactiveCoach'),
-    feedbackLearner: require('./feedbackLearner'),
   };
+
+  // Register domain event listeners (decoupled side effects)
+  // This breaks dependency cycles by using events instead of direct calls
+  try {
+    const { registerThreadEventListeners } = require('./src/core/events/listeners/ThreadEventListeners');
+    registerThreadEventListeners();
+    console.log('✅ Domain event listeners registered');
+  } catch (err) {
+    console.warn('⚠️  Failed to register thread event listeners:', err.message);
+  }
 
   // Add services from services layer
   const { profileService, userSessionService } = require('./src/services');
@@ -148,6 +156,10 @@ function loadServices() {
 
   services.isValidEmail = isValidEmail;
   services.ensureProfileColumnsExist = ensureProfileColumnsExist;
+
+  // Add proactive coach and feedback learner
+  services.proactiveCoach = require('./proactiveCoach');
+  services.feedbackLearner = require('./feedbackLearner');
 
   // Initialize Figma service if API token is provided
   services.figmaService = null;

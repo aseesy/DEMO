@@ -48,9 +48,9 @@ describe('AuthService', () => {
 
     const mockUser = {
       id: 1,
-      username: 'testuser',
       email: 'test@example.com',
       display_name: 'Test User',
+      first_name: 'Test',
     };
 
     const mockPreAuthRisk = {
@@ -125,9 +125,9 @@ describe('AuthService', () => {
         expect(result.type).toBe(LOGIN_RESULT_TYPES.SUCCESS);
         expect(result.user).toEqual({
           id: mockUser.id,
-          username: mockUser.username,
           email: mockUser.email,
           display_name: mockUser.display_name,
+          first_name: mockUser.first_name,
         });
         expect(result.token).toBe('mock-jwt-token');
         expect(auth.authenticateUserByEmail).toHaveBeenCalledWith(
@@ -373,6 +373,8 @@ describe('AuthService', () => {
           riskLevel: 'MEDIUM',
           signals: [{ signal: 'NEW_DEVICE' }],
         };
+        // Reset mocks to override beforeEach setup
+        adaptiveAuth.calculateRiskScore.mockReset();
         adaptiveAuth.calculateRiskScore
           .mockResolvedValueOnce(mockPreAuthRisk)
           .mockResolvedValueOnce(highRiskPostAuth);
@@ -391,6 +393,8 @@ describe('AuthService', () => {
           ...mockPostAuthRisk,
           signals: [{ signal: 'UNUSUAL_TIME' }],
         };
+        // Reset mocks to override beforeEach setup
+        adaptiveAuth.calculateRiskScore.mockReset();
         adaptiveAuth.calculateRiskScore
           .mockResolvedValueOnce(mockPreAuthRisk)
           .mockResolvedValueOnce(noNewDeviceRisk);
@@ -406,9 +410,9 @@ describe('AuthService', () => {
     it('should format user data correctly', () => {
       const user = {
         id: 1,
-        username: 'testuser',
         email: 'test@example.com',
         display_name: 'Test User',
+        first_name: 'Test',
         password_hash: 'should-not-be-included',
         other_field: 'should-not-be-included',
       };
@@ -417,9 +421,9 @@ describe('AuthService', () => {
 
       expect(formatted).toEqual({
         id: 1,
-        username: 'testuser',
         email: 'test@example.com',
         display_name: 'Test User',
+        first_name: 'Test',
       });
       expect(formatted).not.toHaveProperty('password_hash');
       expect(formatted).not.toHaveProperty('other_field');

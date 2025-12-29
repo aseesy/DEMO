@@ -4,6 +4,7 @@ import { Button } from '../../components/ui';
 import { disambiguateContacts, filterContactsBySearch } from './model/contactHelpers.js';
 import { ContactsList } from './components/ContactsList.jsx';
 import { ContactForm } from './components/ContactForm.jsx';
+import { ContactDetailView } from './components/ContactDetailView.jsx';
 
 /**
  * ContactsPanel - Contacts management container
@@ -14,9 +15,10 @@ import { ContactForm } from './components/ContactForm.jsx';
  * - Form handling to ContactForm
  *
  * @param {Object} props
- * @param {string} props.username - Current username
+ * @param {string} props.username - Current username (deprecated, use email)
+ * @param {string} props.email - Current user email
  */
-export function ContactsPanel({ username, setCurrentView }) {
+export function ContactsPanel({ username, email, setCurrentView }) {
   const {
     contacts,
     isLoadingContacts,
@@ -36,6 +38,9 @@ export function ContactsPanel({ username, setCurrentView }) {
     inviteContactToChat,
   } = useContacts(username);
 
+  // State for readonly detail view
+  const [viewingContact, setViewingContact] = React.useState(null);
+
   // Apply disambiguation to contacts, then filter using utility functions
   const filteredContacts = React.useMemo(() => {
     const disambiguated = disambiguateContacts(contacts);
@@ -48,7 +53,16 @@ export function ContactsPanel({ username, setCurrentView }) {
   };
 
   const handleContactClick = contact => {
+    setViewingContact(contact);
+  };
+
+  const handleEditFromView = contact => {
+    setViewingContact(null);
     editContact(contact);
+  };
+
+  const handleCloseView = () => {
+    setViewingContact(null);
   };
 
   const handleCloseForm = () => {
@@ -146,6 +160,20 @@ export function ContactsPanel({ username, setCurrentView }) {
         error={error}
       />
 
+      {/* Contact Detail View (Readonly) */}
+      {viewingContact && (
+        <ContactDetailView
+          contact={viewingContact}
+          onEdit={() => handleEditFromView(viewingContact)}
+          onClose={handleCloseView}
+          onDelete={contactId => {
+            handleDeleteContact(contactId);
+            setViewingContact(null);
+          }}
+          onInviteToChat={handleInviteToChat}
+        />
+      )}
+
       {/* Contact Form Modal */}
       <ContactForm
         isOpen={showContactForm}
@@ -158,6 +186,7 @@ export function ContactsPanel({ username, setCurrentView }) {
         onDelete={handleDeleteContact}
         onClose={handleCloseForm}
         username={username}
+        email={email}
         onInviteToChat={handleInviteToChat}
         setCurrentView={setCurrentView}
       />

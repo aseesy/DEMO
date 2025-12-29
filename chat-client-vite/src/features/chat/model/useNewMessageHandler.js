@@ -23,8 +23,11 @@ export function useNewMessageHandler({ username, currentView, notifications, toa
   // Callback for new messages - shows both browser notification and in-app toast
   const handleNewMessage = React.useCallback(
     message => {
+      // Get sender email from new structure (sender.email) or legacy fields
+      const senderEmail = message.sender?.email || message.user_email || message.email || message.username;
+      
       // Only process notifications for messages from other users (case-insensitive)
-      if (message.username?.toLowerCase() === username?.toLowerCase()) {
+      if (senderEmail?.toLowerCase() === username?.toLowerCase()) {
         return; // Don't notify for own messages
       }
 
@@ -43,7 +46,7 @@ export function useNewMessageHandler({ username, currentView, notifications, toa
         return; // Don't notify for AI intervention/coaching messages
       }
 
-      if (aiUsernames.includes(message.username?.toLowerCase())) {
+      if (aiUsernames.includes(senderEmail?.toLowerCase())) {
         return; // Don't notify for messages from AI users
       }
 
@@ -52,10 +55,24 @@ export function useNewMessageHandler({ username, currentView, notifications, toa
         setUnreadCount(prev => prev + 1);
       }
 
+      // Get sender name from new structure (sender object), fallback to legacy fields
+      const getSenderDisplayName = (msg) => {
+        if (msg.sender) {
+          // Use new structure: first_name + last_name > first_name > email
+          if (msg.sender.first_name && msg.sender.last_name) {
+            return `${msg.sender.first_name} ${msg.sender.last_name}`;
+          }
+          return msg.sender.first_name || msg.sender.email || 'Co-parent';
+        }
+        // Fallback to legacy structure
+        return msg.displayName || msg.username || 'Co-parent';
+      };
+      const senderName = getSenderDisplayName(message);
+
       // Show in-app toast notification (visual popup like Google Calendar)
       // Works without any browser permissions
       toast.show({
-        sender: message.username,
+        sender: senderName,
         message: message.text || message.content || '',
         timestamp: message.timestamp
           ? new Date(message.timestamp).toLocaleTimeString([], {

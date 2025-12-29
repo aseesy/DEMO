@@ -67,9 +67,24 @@ async function handleAiMediation(socket, io, services, context) {
   // Use setImmediate to avoid blocking the socket handler
   aiMediator.updateContext(message);
 
+  // Capture socket.id for connection check in callback
+  const socketId = socket.id;
+
   // Process AI analysis asynchronously (non-blocking)
   // Use setImmediate to avoid blocking the socket handler response
   setImmediate(() => {
+    // RACE CONDITION FIX: Check if socket is still connected before processing
+    // The user may have disconnected or the room state may have changed
+    if (!socket.connected) {
+      const userEmail = user.email || user.username; // Fallback for backward compatibility
+      console.warn('[aiHelper] Socket disconnected before AI analysis - skipping', {
+        socketId,
+        email: userEmail,
+        messageId: message.id,
+      });
+      return;
+    }
+
     processAiAnalysis(socket, io, services, {
       user,
       message,
@@ -97,7 +112,7 @@ async function processAiAnalysis(socket, io, services, context) {
   try {
     console.log('[aiHelper] Starting AI analysis for message:', {
       messageId: message.id,
-      username: user.username,
+      email: user.email || user.username,
       roomId: user.roomId,
       text: message.text?.substring(0, 50),
     });
@@ -172,7 +187,7 @@ async function processAiAnalysis(socket, io, services, context) {
       error: aiError.message,
       stack: aiError.stack,
       messageId: message.id,
-      username: user.username,
+      email: user.email || user.username,
     });
     await handleAiFailure(socket, io, {
       user,

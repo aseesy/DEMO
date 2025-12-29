@@ -76,10 +76,14 @@ export function setupMessageHandlers(socket, handlers) {
         return true;
       });
 
-      // Combine existing messages with new ones, sorted by timestamp
+      // Combine existing messages with new ones, sorted by timestamp (stable sort with ID tiebreaker)
       const merged = [...prev, ...newMessages].sort((a, b) => {
         const timeA = new Date(a.timestamp || a.created_at || 0).getTime();
         const timeB = new Date(b.timestamp || b.created_at || 0).getTime();
+        // If timestamps are equal (or very close within 1ms), use ID as tiebreaker for stable sort
+        if (Math.abs(timeA - timeB) < 1) {
+          return (a.id || '').localeCompare(b.id || '');
+        }
         return timeA - timeB;
       });
 

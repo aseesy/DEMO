@@ -22,7 +22,8 @@ import { isPartnerRelationship } from '../../../utils/relationshipMapping.js';
  * @param {Function} props.onSave - Save handler
  * @param {Function} props.onDelete - Delete handler
  * @param {Function} props.onClose - Close modal handler
- * @param {string} props.username - Current username
+ * @param {string} props.username - Current username (deprecated, use email)
+ * @param {string} props.email - Current user email
  * @param {Function} props.onInviteToChat - Handler for inviting contact to chat
  * @param {Function} props.setCurrentView - Function to navigate to different views
  */
@@ -37,6 +38,7 @@ export function ContactForm({
   onDelete,
   onClose,
   username,
+  email,
   onInviteToChat,
   setCurrentView,
 }) {
@@ -57,7 +59,7 @@ export function ContactForm({
     createActivity,
     updateActivity,
     deleteActivity,
-  } = useActivities(contact?.relationship === 'My Child' ? contact.id : null, username);
+  } = useActivities(contact?.relationship === 'My Child' ? contact.id : null, username, email);
 
   // Google Places autocomplete for address field
   const handlePlaceSelected = React.useCallback(

@@ -27,14 +27,19 @@ import { NavigationPaths } from '../../../adapters/navigation';
  * Validate signup form fields
  */
 export function validateSignupForm({
-  displayName,
+  firstName,
+  lastName,
   formEmail,
   formPassword,
   confirmPassword,
   agreeToTerms,
 }) {
-  if (!displayName?.trim()) {
-    return { valid: false, error: 'Please enter your name' };
+  if (!firstName?.trim()) {
+    return { valid: false, error: 'Please enter your first name' };
+  }
+
+  if (!lastName?.trim()) {
+    return { valid: false, error: 'Please enter your last name' };
   }
 
   if (!formEmail?.trim()) {
@@ -91,7 +96,8 @@ export function useAcceptInvitation() {
   const [hasValidated, setHasValidated] = React.useState(false);
 
   // Form state
-  const [displayName, setDisplayName] = React.useState('');
+  const [firstName, setFirstName] = React.useState('');
+  const [lastName, setLastName] = React.useState('');
   const [formPassword, setFormPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [formEmail, setFormEmail] = React.useState('');
@@ -111,7 +117,8 @@ export function useAcceptInvitation() {
     setFormEmail('');
     setFormPassword('');
     setConfirmPassword('');
-    setDisplayName('');
+    setFirstName('');
+    setLastName('');
     setAgreeToTerms(false);
     setFormError('');
   }, []);
@@ -221,7 +228,8 @@ export function useAcceptInvitation() {
       setFormError('');
 
       const validation = validateSignupForm({
-        displayName,
+        firstName,
+        lastName,
         formEmail,
         formPassword,
         confirmPassword,
@@ -235,7 +243,6 @@ export function useAcceptInvitation() {
 
       setEmail(formEmail.trim().toLowerCase());
       setPassword(formPassword);
-      setUsername(displayName.trim());
 
       // Re-validate token before registration
       if (token || shortCode) {
@@ -253,7 +260,8 @@ export function useAcceptInvitation() {
             apiPost('/api/auth/register-with-invite', {
               email: formEmail.trim().toLowerCase(),
               password: formPassword,
-              displayName: displayName.trim(),
+              firstName: firstName.trim(),
+              lastName: lastName.trim(),
               inviteToken: token,
               inviteCode: shortCode,
             }),

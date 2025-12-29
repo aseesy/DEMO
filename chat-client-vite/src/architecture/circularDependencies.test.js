@@ -120,32 +120,6 @@ describe('Hook Definition Order (Temporal Dead Zone Prevention)', () => {
     }
   });
 
-  it('useThreads defines callbacks before useEffects that use them', async () => {
-    const fs = await import('fs');
-    const filePath = path.resolve(__dirname, '../features/chat/model/useThreads.js');
-    const content = fs.readFileSync(filePath, 'utf-8');
-
-    const callbackPattern = /const\s+(\w+)\s*=\s*React\.useCallback/g;
-    const callbackDefs = [];
-    let match;
-    while ((match = callbackPattern.exec(content)) !== null) {
-      callbackDefs.push({ name: match[1], index: match.index });
-    }
-
-    const effectPattern = /React\.useEffect\(\s*\(\)\s*=>\s*\{[\s\S]*?\},\s*\[([^\]]*)\]\)/g;
-    while ((match = effectPattern.exec(content)) !== null) {
-      const effectIndex = match.index;
-      const deps = match[1];
-
-      for (const callback of callbackDefs) {
-        if (deps.includes(callback.name) && callback.index > effectIndex) {
-          expect.fail(
-            `Temporal Dead Zone: ${callback.name} is used before definition in useThreads.js`
-          );
-        }
-      }
-    }
-  });
 });
 
 describe('Required Import Validation', () => {
@@ -157,16 +131,6 @@ describe('Required Import Validation', () => {
     // Check if API_BASE_URL is used
     if (content.includes('API_BASE_URL')) {
       // Verify it's imported
-      expect(content).toMatch(/import\s*\{[^}]*API_BASE_URL[^}]*\}\s*from/);
-    }
-  });
-
-  it('useThreads imports API_BASE_URL', async () => {
-    const fs = await import('fs');
-    const filePath = path.resolve(__dirname, '../features/chat/model/useThreads.js');
-    const content = fs.readFileSync(filePath, 'utf-8');
-
-    if (content.includes('API_BASE_URL')) {
       expect(content).toMatch(/import\s*\{[^}]*API_BASE_URL[^}]*\}\s*from/);
     }
   });

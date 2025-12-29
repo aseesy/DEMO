@@ -94,13 +94,6 @@ describe('Feature Barrel Exports Validation', () => {
   });
 
   describe('Chat Feature (features/chat)', () => {
-    it('exports useThreads from model', async () => {
-      // useThreads was moved here from hooks/
-      const { useThreads } = await import('./chat/model/useThreads.js');
-      expect(useThreads).toBeDefined();
-      expect(typeof useThreads).toBe('function');
-    });
-
     it('exports useMessageFlaggingModal from model', async () => {
       // useMessageFlaggingModal was moved here from hooks/
       const { useMessageFlaggingModal } = await import('./chat/model/useMessageFlaggingModal.js');

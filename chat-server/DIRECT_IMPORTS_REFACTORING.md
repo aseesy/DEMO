@@ -87,10 +87,16 @@ This document tracks all routes and modules that use direct database imports ins
 - **Recommended Solution**: Create `WaitlistService`
 
 ### `routes/invitations.js`
-- **Direct Imports**: 
-  - Inline `require('../dbPostgres')` in functions (lines 173, 212)
-- **Impact**: Medium - Invitation acceptance/decline
-- **Recommended Solution**: Use existing `invitationService` or `invitationManager`
+- **Status**: ✅ Refactored
+- **Previous Issues**:
+  - Inline `require('../dbPostgres')` in functions
+  - Business logic mixed with routing
+  - Direct database queries in route handlers
+- **Solution**:
+  - Extracted business logic to `invitationService.js` and `invitationEmailService.js`
+  - Route handlers now delegate to services
+  - Reduced from 223 lines to 81 lines
+  - All endpoints use `asyncHandler` middleware for error handling
 
 ---
 
@@ -200,7 +206,6 @@ app.use('/api/feature', featureRoutes);
    - `routes/notifications.js`
    - `routes/ai.js`
    - `routes/activities.js`
-   - `routes/invitations.js` (inline requires)
 
 3. **Low Priority** (Supporting features):
    - `routes/connections.js`

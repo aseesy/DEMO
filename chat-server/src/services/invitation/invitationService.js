@@ -17,6 +17,15 @@ const pairingManager = require('../../../libs/pairing-manager');
 // These libraries haven't been refactored to use repositories yet
 const db = require('../../../dbPostgres');
 
+// Lazy load invitationEmailService to avoid circular dependency
+let invitationEmailService = null;
+function getInvitationEmailService() {
+  if (!invitationEmailService) {
+    invitationEmailService = require('./invitationEmailService').invitationEmailService;
+  }
+  return invitationEmailService;
+}
+
 class InvitationService extends BaseService {
   constructor() {
     super('invitations');
@@ -198,6 +207,104 @@ class InvitationService extends BaseService {
   }
 
   /**
+   * Accept an invitation by token (for existing users)
+   * @param {string} token - Invitation token
+   * @param {number} userId - Accepting user ID
+   * @returns {Promise<Object>} Acceptance result
+   */
+  async acceptByToken(token, userId) {
+    if (!token) {
+      throw new ValidationError('Invitation token is required', 'token');
+    }
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId');
+    }
+
+    try {
+      const result = await this.invitationManager.acceptInvitation(token, userId, this.db);
+
+      // Create shared room if not exists
+      let sharedRoom = null;
+      if (result.roomId) {
+        sharedRoom = { id: result.roomId };
+      } else {
+        sharedRoom = await this._createSharedRoom(result.inviterId, userId, this.db);
+      }
+
+      return {
+        success: true,
+        invitation: result.invitation,
+        sharedRoom,
+        inviterId: result.inviterId,
+        inviteeId: result.inviteeId,
+      };
+    } catch (error) {
+      if (error.message.includes('limit reached')) {
+        throw new ConflictError(error.message);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Decline an invitation by token
+   * @param {string} token - Invitation token
+   * @param {number} userId - Declining user ID
+   * @returns {Promise<Object>} Decline result
+   */
+  async declineByToken(token, userId) {
+    if (!token) {
+      throw new ValidationError('Invitation token is required', 'token');
+    }
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId');
+    }
+
+    try {
+      const result = await this.invitationManager.declineInvitation(token, userId, this.db);
+      return {
+        success: true,
+        invitation: result.invitation,
+        inviterId: result.inviterId,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Create invitation and send email if provided
+   * @param {number} inviterId - Inviter user ID
+   * @param {string} inviteeEmail - Optional invitee email
+   * @returns {Promise<Object>} Created invitation with email status
+   */
+  async createInvitationWithEmail(inviterId, inviteeEmail = null) {
+    const result = await this.createInvitation(inviterId, inviteeEmail);
+
+    // Send email if address was provided
+    let emailSent = false;
+    if (inviteeEmail && inviteeEmail.includes('@')) {
+      try {
+        const emailService = getInvitationEmailService();
+        const emailResult = await emailService.sendNewUserInvite({
+          inviteeEmail,
+          inviterName: result.inviterName,
+          token: result.token,
+        });
+        emailSent = emailResult.emailSent;
+      } catch (error) {
+        console.error('[InvitationService] Failed to send email:', error);
+        // Don't fail invitation creation if email fails
+      }
+    }
+
+    return {
+      ...result,
+      emailSent,
+    };
+  }
+
+  /**
    * Resend an invitation
    * @param {number} invitationId - Invitation ID
    * @param {number} userId - Requesting user ID
@@ -207,7 +314,6 @@ class InvitationService extends BaseService {
     if (!invitationId) {
       throw new ValidationError('Invitation ID is required', 'invitationId');
     }
-
 
     const result = await this.invitationManager.resendInvitation(invitationId, userId, this.db);
     const invitation = await this.invitationManager.getInvitationById(invitationId, this.db);
@@ -220,6 +326,33 @@ class InvitationService extends BaseService {
       inviteeEmail: invitation?.invitee_email,
       inviterName: invitation?.inviter_name,
     };
+  }
+
+  /**
+   * Resend invitation and send email if applicable
+   * @param {number} invitationId - Invitation ID
+   * @param {number} userId - Requesting user ID
+   * @returns {Promise<Object>} Updated invitation with email status
+   */
+  async resendInvitationWithEmail(invitationId, userId) {
+    const result = await this.resendInvitation(invitationId, userId);
+
+    // Send email if there's an invitee email
+    if (result.inviteeEmail && !result.inviteeEmail.includes('placeholder')) {
+      try {
+        const emailService = getInvitationEmailService();
+        await emailService.resendInvitationEmail({
+          inviteeEmail: result.inviteeEmail,
+          inviterName: result.inviterName,
+          token: result.token,
+        });
+      } catch (error) {
+        console.error('[InvitationService] Failed to resend email:', error);
+        // Don't fail resend if email fails
+      }
+    }
+
+    return result;
   }
 
   /**

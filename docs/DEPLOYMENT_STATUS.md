@@ -1,154 +1,112 @@
-# 🚀 Deployment Status
+# Deployment Status
 
-## ✅ Current Status
+## Latest Changes Pushed
+
+### Commit: `1bd452c` - Fix Sentry initialization: prevent 500 errors on module load
+- **Date**: Just pushed
+- **Changes**:
+  - Fixed Sentry module loading to prevent 500 errors
+  - Added dynamic import with error handling
+  - Made Sentry initialization fully optional and defensive
+
+### Commit: `de126ee` - Fix messageOperations test: use userSessionService instead of Map
+- **Date**: Just pushed
+- **Changes**:
+  - Fixed test to use `userSessionService` instead of deprecated `Map`
+
+### Commit: `3767d08` - Fix push notification subscription and add diagnostic logging
+- **Date**: Just pushed
+- **Changes**:
+  - Removed dev mode check blocking push subscriptions
+  - Added comprehensive logging for subscription flow
+  - Added diagnostic endpoint `GET /api/push/status`
+  - Enhanced error logging in push notification service
+
+## Deployment Platforms
 
 ### Frontend (Vercel)
-
-- **Status**: ✅ Deployed to Production
-- **URL**: https://chat-client-lurm42see-aseesys-projects.vercel.app
-- **Domain**: `coparentliaizen.com` (SSL certificate being created)
-- **Last Deploy**: Just now
-- **Auto-Deploy**: Enabled (deploys on git push)
+- **Status**: Auto-deploys on push to `main`
+- **URL**: Check Vercel dashboard
+- **Build Command**: `cd chat-client-vite && npm install && npx vite build`
+- **Expected**: Should deploy automatically within 2-5 minutes
 
 ### Backend (Railway)
+- **Status**: Auto-deploys on push to `main`
+- **URL**: Check Railway dashboard
+- **Expected**: Should deploy automatically within 2-5 minutes
 
-- **Status**: ⚠️ Check Railway Dashboard
-- **Auto-Deploy**: Enabled (deploys on git push)
-- **Root Directory**: Should be set to `chat-server`
-- **Last Deploy**: Check Railway dashboard
+## Issues Fixed
 
-## 📋 Next Steps
+### 1. Sentry 500 Error ✅
+**Problem**: `sentry-config.js` was causing 500 errors on load
 
-### 1. Verify Railway Deployment
+**Solution**:
+- Changed to dynamic import with error handling
+- Added defensive checks for browser environment
+- Made Sentry initialization fully optional
 
-1. **Go to Railway Dashboard**:
-   - Navigate to your Railway service
-   - Check **Deployments** tab
-   - Verify latest deployment is successful
+**Status**: Fixed and deployed
 
-2. **If Railway hasn't auto-deployed**:
-   - Railway should auto-deploy after git push
-   - If not, manually trigger a redeploy:
-     - Go to **Deployments** tab
-     - Click **Redeploy** on latest deployment
-     - Or go to **Settings** → **Source** → **Redeploy**
+### 2. Push Notification Subscription ✅
+**Problem**: Subscriptions not working in dev mode, no visibility into flow
 
-3. **Get Railway Domain**:
-   - Go to **Settings** → **Networking**
-   - Copy your Railway domain (e.g., `your-app.up.railway.app`)
-   - This is what your frontend will connect to
+**Solution**:
+- Removed dev mode check that blocked subscriptions
+- Added comprehensive logging throughout subscription flow
+- Added diagnostic endpoint for checking subscription status
 
-### 2. Update Frontend Configuration
+**Status**: Fixed and deployed
 
-1. **Update `chat-client/config.js`**:
-   - Replace `RAILWAY_DOMAIN_PLACEHOLDER` with your actual Railway domain
-   - Example:
-     ```javascript
-     const RAILWAY_DOMAIN = 'https://your-app.up.railway.app';
-     ```
+## Verification Steps
 
-2. **Commit and Push**:
+### 1. Check Sentry Error is Gone
+- Open browser console
+- Look for: `[Sentry] Initialized successfully` (if DSN is set)
+- Should NOT see: `Failed to load resource: 500 (sentry-config.js)`
 
-   ```bash
-   git add chat-client/config.js
-   git commit -m "Update Railway domain in config"
-   git push
-   ```
+### 2. Check Push Notification Subscription
+- Open browser console
+- Look for: `[usePWA] ✅ Push subscription saved to server`
+- Or: `[usePWA] ✅ Existing subscription synced to server`
 
-3. **Vercel will auto-deploy** the updated config
-
-### 3. Configure Railway Environment Variables
-
-Make sure these are set in Railway **Variables** tab:
-
-```env
-NODE_ENV=production
-PORT=3001
-FRONTEND_URL=https://coparentliaizen.com,https://www.coparentliaizen.com,https://*.vercel.app
-
-# Email Configuration
-EMAIL_SERVICE=gmail
-GMAIL_USER=info@liaizen.com
-GMAIL_APP_PASSWORD=your_app_password
-EMAIL_FROM=info@liaizen.com
-APP_NAME=LiaiZen
-
-# AI Moderation
-OPENAI_API_KEY=sk-your-openai-api-key
-
-# Security
-JWT_SECRET=your-super-secret-jwt-key-min-32-chars
+### 3. Verify Subscription Status
+```bash
+# In browser console or via API
+GET /api/push/status
 ```
 
-### 4. Verify Railway Root Directory
+Should return:
+```json
+{
+  "success": true,
+  "userId": 123,
+  "subscriptionCount": 1,
+  "subscriptions": [...]
+}
+```
 
-1. **Go to Railway Dashboard**:
-   - Navigate to your service
-   - Go to **Settings** → **Source**
-   - Verify **Root Directory** is set to: `chat-server`
-   - If not, set it and save
+### 4. Test Real-Time Notifications
+- Send a message from another account
+- Check server logs for:
+  ```
+  [PushNotification] sendNotificationToUser called:
+    subscriptionCount: [should be > 0]
+  
+  [PushNotification] ✅ Sent notifications:
+    sent: [should be > 0]
+  ```
 
-## 🔍 Verification
+## Next Steps
 
-### Frontend
+1. **Monitor Vercel/Railway dashboards** for deployment completion
+2. **Test in production** after deployment completes
+3. **Check browser console** for any remaining errors
+4. **Verify push notifications** work end-to-end
 
-- ✅ Visit: https://chat-client-lurm42see-aseesys-projects.vercel.app
-- ✅ Should load your app
-- ✅ Open browser console (F12)
-- ✅ Check: `API Configuration: { API_URL: '...', ... }`
+## Troubleshooting
 
-### Backend
+If issues persist:
 
-- ⚠️ Visit your Railway domain (e.g., `https://your-app.up.railway.app`)
-- ⚠️ Should see: `{"name":"Multi-User Chat Server",...}`
-- ⚠️ Check `/health` endpoint
-
-### Connection
-
-- ⚠️ Frontend should connect to Railway backend
-- ⚠️ WebSocket connections should work
-- ⚠️ API calls should succeed
-
-## 🆘 Troubleshooting
-
-### Railway Not Deploying
-
-1. **Check Railway Dashboard**:
-   - Go to **Deployments** tab
-   - Check for errors in latest deployment
-   - Check **Logs** for build errors
-
-2. **Verify Root Directory**:
-   - Go to **Settings** → **Source**
-   - Ensure **Root Directory** is set to: `chat-server`
-
-3. **Check Environment Variables**:
-   - Go to **Variables** tab
-   - Ensure all required variables are set
-   - Check for typos or missing values
-
-4. **Manual Redeploy**:
-   - Go to **Deployments** tab
-   - Click **Redeploy** on latest deployment
-   - Or trigger a new deployment from **Settings** → **Source**
-
-### Frontend Can't Connect to Backend
-
-1. **Check Railway Domain**:
-   - Verify Railway domain is correct in `config.js`
-   - Ensure Railway backend is running (check Railway logs)
-
-2. **Check CORS Configuration**:
-   - Verify `FRONTEND_URL` in Railway includes Vercel domains
-   - Check Railway logs for CORS errors
-
-3. **Check Browser Console**:
-   - Open browser console (F12)
-   - Look for CORS errors or connection errors
-   - Verify API_URL points to Railway domain
-
----
-
-**Last Updated**: Just now
-**Frontend**: ✅ Deployed
-**Backend**: ⚠️ Check Railway Dashboard
+1. **Sentry still errors**: Check that `@sentry/react` is installed in `package.json`
+2. **Push notifications not working**: Use diagnostic endpoint and check server logs
+3. **Deployment not triggering**: Check GitHub webhook status in Vercel/Railway

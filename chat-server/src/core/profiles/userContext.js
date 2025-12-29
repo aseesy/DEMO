@@ -8,15 +8,16 @@ const dbSafe = require('../../../dbSafe');
 console.log('📊 UserContext: Using PostgreSQL');
 
 /**
- * Get user context by username
- * @param {string} username - The username
+ * Get user context by email
+ * @param {string} email - The user's email
  * @returns {Promise<Object|null>} - User context or null if not found
  */
-async function getUserContext(username) {
+async function getUserContext(email) {
   try {
-    // PostgreSQL-only: user_context.user_id is TEXT (username)
-    const result = await dbPostgres.query('SELECT * FROM user_context WHERE user_id = $1', [
-      username.toLowerCase(),
+    const emailLower = email.trim().toLowerCase();
+    // Use user_email instead of user_id (which stored username)
+    const result = await dbPostgres.query('SELECT * FROM user_context WHERE user_email = $1', [
+      emailLower,
     ]);
     if (result.rowCount === 0) return null;
 
@@ -28,7 +29,7 @@ async function getUserContext(username) {
       typeof row.contacts === 'string' ? JSON.parse(row.contacts) : row.contacts || [];
 
     return {
-      username: row.user_id,
+      email: row.user_email,
       co_parent: row.co_parent || null,
       children: children,
       contacts: contacts,
@@ -41,29 +42,30 @@ async function getUserContext(username) {
 
 /**
  * Set or update user context
- * @param {string} username - The username
+ * @param {string} email - The user's email
  * @param {Object} context - User context data
  * @returns {Promise<Object>} - The saved context
  */
-async function setUserContext(username, context) {
+async function setUserContext(email, context) {
+  const emailLower = email.trim().toLowerCase();
   const coParent = context.co_parent || context.coParentName;
   const children = context.children || [];
   const contacts = context.contacts || [];
 
   try {
-    // PostgreSQL-only: user_context.user_id is TEXT (username)
+    // Use user_email instead of user_id (which stored username)
     await dbPostgres.query(
-      `INSERT INTO user_context (user_id, co_parent, children, contacts)
+      `INSERT INTO user_context (user_email, co_parent, children, contacts)
        VALUES ($1, $2, $3::jsonb, $4::jsonb)
-         ON CONFLICT (user_id) DO UPDATE SET
+         ON CONFLICT (user_email) DO UPDATE SET
            co_parent = EXCLUDED.co_parent,
            children = EXCLUDED.children,
            contacts = EXCLUDED.contacts,
            updated_at = NOW()`,
-      [username.toLowerCase(), coParent || null, JSON.stringify(children), JSON.stringify(contacts)]
+      [emailLower, coParent || null, JSON.stringify(children), JSON.stringify(contacts)]
     );
 
-    return { username, co_parent: coParent, children, contacts };
+    return { email: emailLower, co_parent: coParent, children, contacts };
   } catch (err) {
     console.error('Error setting user context:', err);
     throw err;
@@ -72,40 +74,41 @@ async function setUserContext(username, context) {
 
 /**
  * Update specific fields in user context
- * @param {string} username - The username
+ * @param {string} email - The user's email
  * @param {Object} updates - Partial context updates
  * @returns {Promise<Object>} - The updated context
  */
-async function updateUserContext(username, updates) {
-  const current = (await getUserContext(username)) || {};
+async function updateUserContext(email, updates) {
+  const current = (await getUserContext(email)) || {};
   const merged = { ...current, ...updates };
-  return setUserContext(username, merged);
+  return setUserContext(email, merged);
 }
 
 /**
  * Format user context for AI prompt
- * @param {string} username - The username
+ * @param {string} email - The user's email
  * @param {Object} profileData - Optional user profile data
  * @returns {Promise<string>} - Formatted context string
  */
-async function formatContextForAI(username, profileData = null) {
-  const context = await getUserContext(username);
+async function formatContextForAI(email, profileData = null) {
+  const emailLower = email.trim().toLowerCase();
+  const context = await getUserContext(emailLower);
 
   // If profileData provided, use it; otherwise try to fetch from database
   let userProfile = profileData;
   if (!userProfile) {
     try {
-      // PostgreSQL-only: use dbSafe to get user
+      // Use email to get user
       const users = await dbSafe.safeSelect(
         'users',
-        { username: username.toLowerCase() },
+        { email: emailLower },
         { limit: 1 }
       );
       if (users.length > 0) {
         userProfile = users[0];
       }
     } catch (err) {
-      console.error(`Error getting profile for ${username}:`, err.message);
+      console.error(`Error getting profile for ${emailLower}:`, err.message);
     }
   }
 
@@ -174,9 +177,10 @@ async function formatContextForAI(username, profileData = null) {
     parts.push(`Timezone: ${userProfile.timezone}`);
   }
 
+  const userIdentifier = displayName.length > 0 ? displayName.join(' ') : emailLower;
   return parts.length > 0
-    ? `${username}${displayName.length > 0 ? ` (${displayName.join(' ')})` : ''}: ${parts.join('; ')}`
-    : `No specific context available for ${username}.`;
+    ? `${userIdentifier}: ${parts.join('; ')}`
+    : `No specific context available for ${userIdentifier}.`;
 }
 
 module.exports = {

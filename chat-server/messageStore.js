@@ -17,9 +17,24 @@ async function saveMessage(message) {
     return;
   }
 
-  // Validate required fields (username required, text can be empty for system messages)
-  if (!message.username) {
-    console.error('❌ Invalid message data: username is required', { message });
+  // Validate required fields (user_email required, text can be empty for system messages)
+  // Support both email and username for backward compatibility during migration
+  let userEmail = message.user_email || message.email;
+  if (!userEmail && message.username) {
+    // Look up email from username for backward compatibility
+    try {
+      const userResult = await dbSafe.safeSelect('users', { username: message.username.toLowerCase() }, { limit: 1 });
+      const users = dbSafe.parseResult(userResult);
+      if (users.length > 0) {
+        userEmail = users[0].email;
+      }
+    } catch (err) {
+      console.error('Error looking up email from username:', err);
+    }
+  }
+  
+  if (!userEmail) {
+    console.error('❌ Invalid message data: user_email or email is required', { message });
     return;
   }
 
@@ -29,7 +44,7 @@ async function saveMessage(message) {
   const coreData = {
     id: id,
     type: message.type || 'user',
-    username: message.username,
+    user_email: userEmail.trim().toLowerCase(),
     text: message.text || '',
     timestamp: message.timestamp || new Date().toISOString(),
     room_id: message.roomId || message.room_id || null,
@@ -120,7 +135,7 @@ async function saveMessage(message) {
                 id,
                 coreData.room_id,
                 coreData.text,
-                coreData.username,
+                coreData.user_email,
                 coreData.timestamp
               )
               .catch(err => {
@@ -148,7 +163,7 @@ async function saveMessage(message) {
       error: err.message,
       messageId: id,
       roomId: coreData.room_id,
-      username: coreData.username,
+      user_email: coreData.user_email,
     });
   }
 }
@@ -177,7 +192,8 @@ async function getRecentMessages(limit = 50) {
         const msg = {
           id: message.id,
           type: message.type,
-          username: message.username,
+          username: message.user_email || message.username, // Support both for backward compatibility
+          user_email: message.user_email || message.username,
           text: message.text,
           timestamp: message.timestamp,
           socketId: message.socket_id,
@@ -234,7 +250,8 @@ async function getMessagesByRoom(roomId, limit = 500) {
       const msg = {
         id: message.id,
         type: message.type,
-        username: message.username,
+        username: message.user_email || message.username, // Support both for backward compatibility
+        user_email: message.user_email || message.username,
         text: message.text,
         timestamp: message.timestamp,
         socketId: message.socket_id,

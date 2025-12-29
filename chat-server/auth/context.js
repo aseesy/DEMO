@@ -4,11 +4,21 @@
 const dbSafe = require('../dbSafe');
 const roomManager = require('../roomManager');
 
-async function setupUserContextAndRoom(userId, username, context) {
+async function setupUserContextAndRoom(userId, email, context) {
   try {
-    // Create user context record
+    // Get user email if not provided
+    let userEmail = email;
+    if (!userEmail) {
+      const userResult = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
+      const users = dbSafe.parseResult(userResult);
+      if (users.length > 0) {
+        userEmail = users[0].email;
+      }
+    }
+
+    // Create user context record (using email instead of username)
     const userContextData = {
-      user_id: userId,
+      user_email: userEmail,
       co_parent: context.coParentName || null,
       children: context.children ? JSON.stringify(context.children) : null,
       contacts: context.contacts ? JSON.stringify(context.contacts) : null,

@@ -252,9 +252,10 @@ async function sendNotificationToUser(userId, payload) {
 /**
  * Send push notification when a message is received
  * @param {number} recipientUserId - User ID who received the message
- * @param {object} message - Message object
- * @param {string} message.displayName - Sender's first name (preferred)
- * @param {string} message.username - Sender username (fallback)
+ * @param {object} message - Message object with sender/receiver structure
+ * @param {object} message.sender - Sender object with first_name, last_name, email
+ * @param {string} message.displayName - Legacy: Sender's first name (fallback)
+ * @param {string} message.username - Legacy: Sender username (fallback)
  * @param {string} message.text - Message text
  * @returns {Promise<{sent: number, failed: number}>} Send statistics
  */
@@ -264,15 +265,22 @@ async function notifyNewMessage(recipientUserId, message) {
       ? (message.text || message.content || '').substring(0, 100) + '...'
       : message.text || message.content || 'You have a new message';
 
-  // Use displayName (first name) if available, fall back to username, then 'Co-parent'
-  const senderName = message.displayName || message.username || 'Co-parent';
+  // Get sender name from new structure (sender object), fallback to legacy fields
+  // Only use first name for privacy and brevity
+  let senderName = 'Co-parent';
+  if (message.sender) {
+    senderName = message.sender.first_name || message.sender.email || 'Co-parent';
+  } else {
+    // Fallback to legacy structure
+    senderName = message.displayName || message.username || 'Co-parent';
+  }
 
   console.log('[PushNotification] notifyNewMessage called:', {
     recipientUserId,
     senderName,
     messageId: message.id,
-    messageUsername: message.username,
-    messageDisplayName: message.displayName,
+    hasSender: !!message.sender,
+    senderEmail: message.sender?.email || message.user_email || message.email || message.username,
     messageText: truncatedText.substring(0, 50),
     hasText: !!message.text,
     timestamp: new Date().toISOString(),

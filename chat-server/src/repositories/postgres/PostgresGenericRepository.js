@@ -15,6 +15,7 @@ const {
   safeUpdate,
   safeDelete,
   withTransaction,
+  parseResult,
 } = require('../../../dbSafe');
 
 /**
@@ -37,7 +38,9 @@ class PostgresGenericRepository extends IGenericRepository {
    * Find multiple records by conditions
    */
   async find(conditions = {}, options = {}) {
-    return safeSelect(this.tableName, conditions, options);
+    const result = await safeSelect(this.tableName, conditions, options);
+    const parsed = parseResult(result);
+    return Array.isArray(parsed) ? parsed : [];
   }
 
   /**
@@ -45,7 +48,7 @@ class PostgresGenericRepository extends IGenericRepository {
    */
   async findOne(conditions = {}) {
     const results = await this.find(conditions, { limit: 1 });
-    return results[0] || null;
+    return (Array.isArray(results) && results.length > 0) ? results[0] : null;
   }
 
   /**

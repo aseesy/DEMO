@@ -10,3 +10,9 @@ module.exports = {
   // CSS and other style files
   '**/*.{css,scss,less}': ['prettier --write'],
 };
+
+
+
+
+
+

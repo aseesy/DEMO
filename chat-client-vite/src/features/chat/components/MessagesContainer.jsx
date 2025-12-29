@@ -1,20 +1,6 @@
 import React from 'react';
 import { ObserverCard } from '../../dashboard/components/ObserverCard.jsx';
-
-/**
- * Thread category colors and labels
- */
-const THREAD_CATEGORIES = {
-  schedule: { label: 'Schedule', color: 'bg-blue-100 text-blue-700', icon: '📅' },
-  medical: { label: 'Medical', color: 'bg-red-100 text-red-700', icon: '🏥' },
-  education: { label: 'Education', color: 'bg-purple-100 text-purple-700', icon: '📚' },
-  finances: { label: 'Finances', color: 'bg-green-100 text-green-700', icon: '💰' },
-  activities: { label: 'Activities', color: 'bg-orange-100 text-orange-700', icon: '⚽' },
-  travel: { label: 'Travel', color: 'bg-cyan-100 text-cyan-700', icon: '✈️' },
-  safety: { label: 'Safety', color: 'bg-yellow-100 text-yellow-800', icon: '🛡️' },
-  logistics: { label: 'Logistics', color: 'bg-gray-100 text-gray-700', icon: '📦' },
-  'co-parenting': { label: 'Co-Parenting', color: 'bg-teal-100 text-teal-700', icon: '🤝' },
-};
+import { getCategoryConfig } from '../../../config/threadCategories.js';
 
 /**
  * MessagesContainer - Renders the scrollable message list with date grouping
@@ -43,7 +29,7 @@ export function MessagesContainer({
   setIsPreApprovedRewrite,
   setOriginalRewrite,
   setDraftCoaching,
-  socket,
+  socket: _socket, // Unused but kept for API compatibility
 }) {
   const messageGroups = React.useMemo(() => {
     const groups = [];
@@ -157,12 +143,15 @@ export function MessagesContainer({
             <div>
               <div className="flex items-center gap-2 mb-0.5">
                 <h3 className="font-semibold text-sm text-teal-dark">{selectedThread.title}</h3>
-                {selectedThread.category && THREAD_CATEGORIES[selectedThread.category] && (
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${THREAD_CATEGORIES[selectedThread.category].color}`}>
-                    <span>{THREAD_CATEGORIES[selectedThread.category].icon}</span>
-                    <span>{THREAD_CATEGORIES[selectedThread.category].label}</span>
-                  </span>
-                )}
+                {selectedThread.category && (() => {
+                  const config = getCategoryConfig(selectedThread.category);
+                  return (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+                      <span>{config.icon}</span>
+                      <span>{config.label}</span>
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-xs text-gray-500">
                 {selectedThread.message_count || 0} message
@@ -226,8 +215,10 @@ export function MessagesContainer({
 
           {/* Messages in this date group */}
           {group.messages.map((msg, msgIndex) => {
-            const isOwn = msg.username?.toLowerCase() === username?.toLowerCase();
-            const isAI = msg.isAI || msg.username === 'LiaiZen';
+            // Use new sender structure (sender.email) with fallback to legacy fields
+            const messageEmail = msg.sender?.email || msg.user_email || msg.email || msg.username;
+            const isOwn = messageEmail && username && messageEmail.toLowerCase() === username.toLowerCase();
+            const isAI = msg.isAI || msg.sender?.email === 'LiaiZen' || msg.username === 'LiaiZen';
             const isHighlighted = highlightedMessageId === msg.id;
             const isSending = msg.isOptimistic || msg.status === 'sending';
 
@@ -366,37 +357,6 @@ export function MessagesContainer({
           })}
         </div>
       ))}
-
-      {/* Blocked Message - Show the original message that was blocked */}
-      {draftCoaching &&
-        draftCoaching.observerData &&
-        !draftCoaching.shouldSend &&
-        draftCoaching.originalText && (
-          <div className="flex justify-end mb-1">
-            <div
-              style={{
-                maxWidth: 'calc(100% - 1rem)',
-                width: 'fit-content',
-              }}
-            >
-              {/* Blocked message bubble */}
-              <div className="px-3 py-2 rounded-2xl bg-gray-100 border-2 border-orange-300 text-gray-600">
-                <p className="text-lg leading-relaxed whitespace-pre-wrap wrap-break-word">
-                  {draftCoaching.originalText}
-                </p>
-              </div>
-              <div className="text-xs mt-0.5 text-gray-600 text-right">
-                {new Date().toLocaleTimeString('en-US', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}
-                <span className="ml-1 text-orange-500" title="Not sent">
-                  ✕
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
 
       {/* Observer Card - Inline in messages when intervention occurs */}
       {draftCoaching && draftCoaching.observerData && !draftCoaching.shouldSend && (

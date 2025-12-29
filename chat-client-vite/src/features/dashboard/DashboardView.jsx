@@ -53,6 +53,7 @@ function CategoryBadge({ category }) {
  */
 export function DashboardView({
   username,
+  email,
   hasCoParentConnected,
   isCheckingCoParent = false,
   contacts,
@@ -104,6 +105,7 @@ export function DashboardView({
         {/* Updates Section */}
         <UpdatesPanel
           username={username}
+          email={email}
           setCurrentView={setCurrentView}
           onContactClick={() => setCurrentView('contacts')}
         />
@@ -131,7 +133,7 @@ export function DashboardView({
 
         {/* Communication Stats Widget */}
         <div className="mt-3">
-          <CommunicationStatsWidget username={username} />
+          <CommunicationStatsWidget username={username} email={email} />
         </div>
 
         {/* Threads Section */}

@@ -61,7 +61,7 @@ async function createUserWithEmail(
  * Create a user with email - NO automatic room creation
  * Use this when accepting invites (a shared room will be created separately)
  */
-async function createUserWithEmailNoRoom(email, password, displayName = null, context = {}) {
+async function createUserWithEmailNoRoom(email, password, firstName = null, lastName = null, context = {}) {
   const emailLower = email.trim().toLowerCase();
 
   // Check if email already exists
@@ -73,11 +73,16 @@ async function createUserWithEmailNoRoom(email, password, displayName = null, co
   const hashedPassword = password ? await hashPassword(password) : null;
   const now = new Date().toISOString();
 
+  const displayName = firstName && lastName 
+    ? `${firstName.trim()} ${lastName.trim()}` 
+    : firstName?.trim() || lastName?.trim() || null;
+
   const userData = {
     password_hash: hashedPassword,
     email: emailLower,
-    display_name: displayName || null,
-    first_name: displayName || null,
+    first_name: firstName?.trim() || null,
+    last_name: lastName?.trim() || null,
+    display_name: displayName,
     created_at: now,
   };
 
@@ -128,13 +133,13 @@ async function createUserWithEmailNoRoom(email, password, displayName = null, co
     email: emailLower,
     displayName: displayName || emailLower,
     firstName: userData.first_name,
-    lastName: null,
+    lastName: userData.last_name,
     room: null, // No room created
   };
 }
 
 async function registerWithInvitation(
-  { email, password, displayName, coParentEmail, context },
+  { email, password, firstName, lastName, coParentEmail, context },
   db
 ) {
   // Validate required parameters
@@ -152,9 +157,10 @@ async function registerWithInvitation(
   if (emailLower === coParentEmailLower)
     throw new Error('You cannot invite yourself as a co-parent');
 
-  const user = await createUserWithEmail(emailLower, password, context);
-  if (displayName)
-    await dbSafe.safeUpdate('users', { display_name: displayName.trim() }, { id: user.id });
+  const user = await createUserWithEmail(emailLower, password, context, null, null, {
+    firstName,
+    lastName,
+  });
 
   const invitationResult = await invitationManager.createInvitation(
     {
@@ -177,7 +183,7 @@ async function registerWithInvitation(
       await notificationManager.createInvitationNotification(
         {
           userId: invitationResult.existingUser.id,
-          inviterName: displayName || user.username,
+          inviterName: firstName || user.first_name || user.display_name || user.email.split('@')[0],
           invitationId: invitationResult.invitation.id,
           invitationToken: invitationResult.token,
         },
@@ -189,7 +195,12 @@ async function registerWithInvitation(
   }
 
   return {
-    user: { ...user, displayName: displayName || user.username },
+    user: { 
+      ...user, 
+      firstName: firstName || user.first_name,
+      lastName: lastName || user.last_name,
+      displayName: firstName && lastName ? `${firstName} ${lastName}` : firstName || user.first_name || user.display_name || user.email.split('@')[0]
+    },
     invitation: {
       id: invitationResult.invitation.id,
       token: invitationResult.token,
@@ -201,7 +212,7 @@ async function registerWithInvitation(
 }
 
 async function registerFromInvitation(params, db) {
-  const { token, email, password, displayName } = params;
+  const { token, email, password, firstName, lastName } = params;
   const emailLower = email.trim().toLowerCase();
 
   const existingEmail = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
@@ -229,37 +240,25 @@ async function registerFromInvitation(params, db) {
   const result = await dbSafe.withTransaction(async client => {
     const now = new Date().toISOString();
     const passwordHash = await hashPassword(password);
-    let baseUsername = emailLower
-      .split('@')[0]
-      .replace(/[^a-z0-9]/g, '')
-      .substring(0, 15);
-    if (baseUsername.length < 3) baseUsername = 'user';
 
-    let username = baseUsername;
-    let userId = null;
-    let attempts = 0;
-
-    while (attempts < 10) {
-      try {
-        const res = await client.query(
-          `INSERT INTO "users" ("username", "email", "password_hash", "display_name", "created_at") VALUES ($1, $2, $3, $4, $5) RETURNING "id", "username"`,
-          [username, emailLower, passwordHash, displayName?.trim() || null, now]
-        );
-        userId = res.rows[0].id;
-        username = res.rows[0].username;
-        break;
-      } catch (err) {
-        if (err.code === '23505' && err.constraint?.includes('username')) {
-          attempts++;
-          username = `${baseUsername}${Math.random().toString(36).substring(2, 6)}`.substring(
-            0,
-            20
-          );
-        } else throw err;
+    // Insert user with email as primary identifier (no username)
+    const displayName = firstName && lastName 
+      ? `${firstName.trim()} ${lastName.trim()}` 
+      : firstName?.trim() || lastName?.trim() || null;
+    
+    let userId;
+    try {
+      const res = await client.query(
+        `INSERT INTO "users" ("email", "password_hash", "first_name", "last_name", "display_name", "created_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"`,
+        [emailLower, passwordHash, firstName?.trim() || null, lastName?.trim() || null, displayName, now]
+      );
+      userId = res.rows[0].id;
+    } catch (err) {
+      if (err.code === '23505' && err.constraint?.includes('email')) {
+        throw createRegistrationError(RegistrationError.EMAIL_EXISTS);
       }
+      throw err;
     }
-
-    if (!userId) throw createRegistrationError(RegistrationError.USERNAME_FAILED);
 
     await client.query(
       `UPDATE "invitations" SET "status" = 'accepted', "invitee_id" = $1, "accepted_at" = $2 WHERE "id" = $3`,
@@ -267,7 +266,7 @@ async function registerFromInvitation(params, db) {
     );
 
     const roomId = `room_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-    const roomName = `${validation.inviterName || 'Co-Parent'} & ${displayName || username}`;
+    const roomName = `${validation.inviterName || 'Co-Parent'} & ${displayName}`;
 
     await client.query(
       `INSERT INTO "rooms" ("id", "name", "created_by", "is_private", "created_at") VALUES ($1, $2, $3, $4, $5)`,
@@ -290,13 +289,8 @@ async function registerFromInvitation(params, db) {
       linked_user_id: invitation.inviter_id,
       created_at: now,
     });
-    // Get first_name for contact name (prefer first_name over displayName/username)
-    const newUserResult = await client.query(
-      'SELECT first_name, display_name FROM users WHERE id = $1 LIMIT 1',
-      [userId]
-    );
-    const newUser = newUserResult.rows[0];
-    const contactName = newUser?.first_name || displayName || username;
+    // Use first_name for contact name (prefer first_name, fallback to displayName)
+    const contactName = firstName?.trim() || displayName || emailLower.split('@')[0];
 
     await dbSafe.safeInsertTx(client, 'contacts', {
       user_id: invitation.inviter_id,
@@ -308,7 +302,13 @@ async function registerFromInvitation(params, db) {
     });
 
     return {
-      user: { id: userId, username, email: emailLower, displayName: displayName || username },
+      user: { 
+        id: userId, 
+        email: emailLower, 
+        firstName: firstName?.trim() || null,
+        lastName: lastName?.trim() || null,
+        displayName: displayName 
+      },
       coParent: { id: invitation.inviter_id, displayName: validation.inviterName },
       room: { id: roomId, name: roomName },
       sync: {
@@ -318,11 +318,11 @@ async function registerFromInvitation(params, db) {
     };
   });
 
-  await createWelcomeAndOnboardingTasks(result.user.id, result.user.username);
+  await createWelcomeAndOnboardingTasks(result.user.id, result.user.email);
   neo4jClient
     .createUserNode(
       result.user.id,
-      result.user.username,
+      result.user.email,
       result.user.email,
       result.user.displayName
     )

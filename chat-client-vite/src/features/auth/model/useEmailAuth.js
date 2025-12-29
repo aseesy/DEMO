@@ -17,16 +17,14 @@ import { calculateUserProperties } from './useSessionVerification.js';
  * Apply successful auth result to state and storage
  * @param {Object} result - Auth result from command
  * @param {boolean} isNewUser - Whether this is a new user signup
- * @param {Function} setUsername - State setter
  * @param {Function} setIsAuthenticated - State setter
  */
-function applyAuthSuccess(result, isNewUser, setUsername, setIsAuthenticated) {
+function applyAuthSuccess(result, isNewUser, setIsAuthenticated) {
   setIsAuthenticated(true);
 
-  if (result.user?.username) {
-    setUsername(result.user.username);
-    authStorage.setUsername(result.user.username);
-    setUserID(result.user.username);
+  // Store user identifier (email) for analytics
+  if (result.user?.email) {
+    setUserID(result.user.email);
     const userProperties = calculateUserProperties(result.user, isNewUser);
     setUserProperties(userProperties);
   }
@@ -49,8 +47,8 @@ function applyAuthSuccess(result, isNewUser, setUsername, setIsAuthenticated) {
 export function useEmailAuth({
   email,
   password,
-  username,
-  setUsername,
+  firstName,
+  lastName,
   setIsAuthenticated,
   setError,
 }) {
@@ -86,12 +84,12 @@ export function useEmailAuth({
       }
 
       // Apply successful auth to state
-      applyAuthSuccess(result, false, setUsername, setIsAuthenticated);
+      applyAuthSuccess(result, false, setIsAuthenticated);
       setIsLoggingIn(false);
 
       return { success: true, user: result.user };
     },
-    [email, password, setUsername, setIsAuthenticated, setError]
+    [email, password, setIsAuthenticated, setError]
   );
 
   /**
@@ -107,7 +105,8 @@ export function useEmailAuth({
       const result = await commandSignup({
         email,
         password,
-        username,
+        firstName,
+        lastName,
         honeypotValue: spamFields.website || '',
       });
 
@@ -124,12 +123,12 @@ export function useEmailAuth({
       }
 
       // Apply successful auth to state
-      applyAuthSuccess(result, true, setUsername, setIsAuthenticated);
+      applyAuthSuccess(result, true, setIsAuthenticated);
       setIsSigningUp(false);
 
       return { success: true, user: result.user };
     },
-    [email, password, username, setUsername, setIsAuthenticated, setError]
+    [email, password, firstName, lastName, setIsAuthenticated, setError]
   );
 
   /**
@@ -145,7 +144,8 @@ export function useEmailAuth({
       const result = await commandRegister({
         email,
         password,
-        username,
+        firstName,
+        lastName,
         coParentEmail,
       });
 
@@ -162,7 +162,7 @@ export function useEmailAuth({
       }
 
       // Apply successful auth to state
-      applyAuthSuccess(result, true, setUsername, setIsAuthenticated);
+      applyAuthSuccess(result, true, setIsAuthenticated);
 
       // Store pending invitation if one was created
       if (result.invitation) {
@@ -176,7 +176,7 @@ export function useEmailAuth({
 
       return { success: true, user: result.user, invitation: result.invitation };
     },
-    [email, password, username, setUsername, setIsAuthenticated, setError]
+    [email, password, firstName, lastName, setIsAuthenticated, setError]
   );
 
   return {

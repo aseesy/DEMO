@@ -18,7 +18,13 @@ jest.mock('../dbSafe', () => ({
   safeInsert: jest.fn(),
   safeUpdate: jest.fn(),
   safeInsertTx: jest.fn(),
-  parseResult: jest.fn(result => result),
+  parseResult: jest.fn(result => {
+    // parseResult implementation matches dbSafe/utils.js
+    if (!result) return [];
+    if (Array.isArray(result)) return result;
+    if (result && result.rows) return result.rows;
+    return [];
+  }),
   withTransaction: jest.fn(),
 }));
 
@@ -83,8 +89,8 @@ describe('CRITICAL: Account Creation', () => {
       expect(user).toBeDefined();
       expect(user.id).toBe(1);
       expect(user.email).toBe(email.toLowerCase());
-      expect(user.username).toBeDefined();
-      expect(user.username.length).toBeGreaterThan(0);
+      expect(user.displayName).toBeDefined();
+      expect(user.displayName.length).toBeGreaterThan(0);
     });
 
     test('MUST reject duplicate email with clear error', async () => {
@@ -97,22 +103,15 @@ describe('CRITICAL: Account Creation', () => {
       );
     });
 
-    test('MUST generate unique username on collision', async () => {
+    test('MUST reject duplicate email', async () => {
       const email = 'test@example.com';
 
       dbSafe.safeSelect.mockResolvedValue([]);
-      // First insert fails, second succeeds
+      // Email conflict should throw error
       dbSafe.safeInsert
-        .mockRejectedValueOnce({ code: '23505', constraint: 'users_username_key' })
-        .mockResolvedValueOnce(1);
+        .mockRejectedValueOnce({ code: '23505', constraint: 'users_email_key' });
 
-      const user = await auth.createUserWithEmail(email, 'password', {});
-
-      expect(user).toBeDefined();
-      expect(user.id).toBe(1);
-      // Username should have been modified due to collision
-      // Note: safeInsert is called multiple times (user + tasks), so check at least 2
-      expect(dbSafe.safeInsert.mock.calls.length).toBeGreaterThanOrEqual(2);
+      await expect(auth.createUserWithEmail(email, 'password', {})).rejects.toThrow('Email already exists');
     });
   });
 
@@ -280,6 +279,17 @@ describe('CRITICAL: User Login', () => {
   });
 
   describe('Legacy Password Migration', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      // Reset parseResult to default implementation
+      dbSafe.parseResult.mockImplementation(result => {
+        if (!result) return [];
+        if (Array.isArray(result)) return result;
+        if (result && result.rows) return result.rows;
+        return [];
+      });
+    });
+
     test('MUST migrate SHA-256 passwords to bcrypt on login', async () => {
       const email = 'legacy@example.com';
       const password = 'legacypassword';
@@ -288,18 +298,34 @@ describe('CRITICAL: User Login', () => {
       const crypto = require('crypto');
       const sha256Hash = crypto.createHash('sha256').update(password).digest('hex');
 
+      // Reset mocks to ensure clean state
+      dbSafe.safeSelect.mockReset();
+      dbSafe.safeUpdate.mockReset();
+      
+      // Mock the user lookup - email is converted to lowercase in authenticateUserByEmail
+      // safeSelect returns result.rows (array), parseResult should return it as-is
       dbSafe.safeSelect
         .mockResolvedValueOnce([
           {
             id: 1,
-            username: 'legacyuser',
-            email,
+            email: email.toLowerCase(),
             password_hash: sha256Hash,
           },
-        ])
-        .mockResolvedValueOnce([]);
+        ]);
 
       dbSafe.safeUpdate.mockResolvedValue(true);
+      
+      // Mock getUserContextByEmail - authenticateUserByEmail calls it
+      // We'll mock it at the module level by requiring and spying
+      try {
+        const userContext = require('../../src/core/profiles/userContext');
+        jest.spyOn(userContext, 'getUserContextByEmail').mockResolvedValue({});
+      } catch (e) {
+        // If module doesn't exist, that's ok - the function will handle it
+      }
+      
+      // Mock roomManager
+      roomManager.getUserRoom = jest.fn().mockResolvedValue(null);
 
       const user = await auth.authenticateUserByEmail(email, password);
 
@@ -403,30 +429,57 @@ describe('CRITICAL: Session Sync', () => {
   });
 
   describe('Session Data Sync', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      // Reset parseResult to default implementation
+      dbSafe.parseResult.mockImplementation(result => {
+        if (!result) return [];
+        if (Array.isArray(result)) return result;
+        if (result && result.rows) return result.rows;
+        return [];
+      });
+    });
+
     test('MUST return user with context and room', async () => {
-      const username = 'testuser';
+      const email = 'test@example.com';
+
+      // Reset mocks to ensure clean state
+      dbSafe.safeSelect.mockReset();
 
       dbSafe.safeSelect
         .mockResolvedValueOnce([
           {
             id: 1,
-            username,
-            email: 'test@example.com',
+            email,
             display_name: 'Test User',
           },
         ])
         .mockResolvedValueOnce([
           {
-            user_id: username,
-            co_parent: 'Co-Parent',
+            user_email: email.toLowerCase(), // getUser converts email to lowercase
+            co_parent: 'Co-Parent', // Note: this maps to coParentName in the context
             children: JSON.stringify([{ name: 'Child' }]),
             contacts: '[]',
           },
+        ])
+        // Mock room_members lookup
+        .mockResolvedValueOnce([
+          {
+            room_id: 'room-123',
+          },
+        ])
+        // Mock rooms lookup
+        .mockResolvedValueOnce([
+          {
+            id: 'room-123',
+            name: 'Test Room',
+          },
         ]);
 
-      roomManager.getUserRoom.mockResolvedValue({ roomId: 'room-123' });
+      // getUser doesn't use roomManager.getUserRoom, it queries room_members and rooms directly
+      // The mocks for room_members and rooms are already set up above
 
-      const user = await auth.getUser(username);
+      const user = await auth.getUser(email);
 
       expect(user).toBeDefined();
       expect(user.id).toBe(1);
@@ -440,6 +493,11 @@ describe('CRITICAL: Session Sync', () => {
 describe('CRITICAL: Co-Parent Sync', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset all dbSafe mocks to default empty array behavior
+    dbSafe.safeSelect.mockReset();
+    dbSafe.safeInsert.mockReset();
+    dbSafe.safeUpdate.mockReset();
+    dbSafe.safeInsertTx.mockReset();
   });
 
   describe('Invitation Acceptance', () => {
@@ -453,9 +511,10 @@ describe('CRITICAL: Co-Parent Sync', () => {
       };
 
       // Pre-transaction validations - need to mock multiple calls
+      // Note: safeSelect returns a result that gets parsed, so we return arrays directly
       dbSafe.safeSelect
-        .mockResolvedValueOnce([]) // Email check
-        .mockResolvedValueOnce([{ id: 100 }]); // Inviter check
+        .mockResolvedValueOnce([]) // Email check - user doesn't exist yet
+        .mockResolvedValueOnce([{ id: 100 }]); // Inviter check - inviter exists
 
       invitationManager.validateToken.mockResolvedValue({
         valid: true,
@@ -472,11 +531,12 @@ describe('CRITICAL: Co-Parent Sync', () => {
       const mockClient = {
         query: jest
           .fn()
-          .mockResolvedValueOnce({ rows: [{ id: 200, username: 'invitee' }] }) // User insert
+          .mockResolvedValueOnce({ rows: [{ id: 200 }] }) // User insert
           .mockResolvedValueOnce({}) // Invitation update
           .mockResolvedValueOnce({}) // Room insert
           .mockResolvedValueOnce({}) // Room member 1
-          .mockResolvedValueOnce({}), // Room member 2
+          .mockResolvedValueOnce({}) // Room member 2
+          .mockResolvedValueOnce({ rows: [{ first_name: 'Test', display_name: 'Test User' }] }), // Query for contact name
       };
 
       dbSafe.withTransaction.mockImplementation(async callback => {

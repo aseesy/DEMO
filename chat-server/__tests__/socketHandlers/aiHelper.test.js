@@ -61,6 +61,7 @@ describe('aiHelper - handleAiMediation', () => {
       id: 'socket-123',
       emit: jest.fn(),
       data: {},
+      connected: true, // Ensure socket appears connected for tests
     };
 
     // Mock io
@@ -179,8 +180,10 @@ describe('aiHelper - handleAiMediation', () => {
 
       await handleAiMediation(mockSocket, mockIo, mockServices, mockContext);
 
-      // Wait for setImmediate callback to execute
+      // Wait for setImmediate callback and all async operations to complete
       await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setTimeout(resolve, 10));
 
       // Should call AI analysis
       expect(mockServices.aiMediator.analyzeMessage).toHaveBeenCalled();
@@ -247,8 +250,10 @@ describe('aiHelper - handleAiMediation', () => {
 
       await handleAiMediation(mockSocket, mockIo, mockServices, mockContext);
 
-      // Wait for setImmediate callback to execute
+      // Wait for setImmediate callback and all async operations to complete
       await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setTimeout(resolve, 10));
 
       // Verify AI mediator was called with correct parameters
       expect(mockServices.aiMediator.updateContext).toHaveBeenCalledWith(mockContext.message);
@@ -300,8 +305,10 @@ describe('aiHelper - handleAiMediation', () => {
 
       await handleAiMediation(mockSocket, mockIo, mockServices, mockContext);
 
-      // Wait for setImmediate callback to execute
+      // Wait for setImmediate callback and all async operations to complete
       await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setTimeout(resolve, 10));
 
       // Should process intervention, not approved message
       expect(aiActionHelper.processIntervention).toHaveBeenCalledWith(
@@ -346,8 +353,10 @@ describe('aiHelper - handleAiMediation', () => {
 
       await handleAiMediation(mockSocket, mockIo, mockServices, mockContext);
 
-      // Wait for setImmediate callback to execute
+      // Wait for setImmediate callback and all async operations to complete
       await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setTimeout(resolve, 10));
 
       // Should process approved message with contact suggestion
       expect(aiActionHelper.processApprovedMessage).toHaveBeenCalledWith(
@@ -386,8 +395,10 @@ describe('aiHelper - handleAiMediation', () => {
 
       await handleAiMediation(mockSocket, mockIo, mockServices, mockContext);
 
-      // Wait for setImmediate callback to execute
+      // Wait for setImmediate callback and all async operations to complete
       await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setTimeout(resolve, 10));
 
       // Should handle failure gracefully
       expect(aiActionHelper.handleAiFailure).toHaveBeenCalledWith(mockSocket, mockIo, {
@@ -423,8 +434,10 @@ describe('aiHelper - handleAiMediation', () => {
 
       await handleAiMediation(mockSocket, mockIo, mockServices, mockContext);
 
-      // Wait for setImmediate callback to execute
+      // Wait for setImmediate callback and all async operations to complete
       await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setTimeout(resolve, 10));
 
       // Should use first other participant as receiver
       expect(aiHelperUtils.gatherAnalysisContext).toHaveBeenCalledWith(
@@ -471,8 +484,10 @@ describe('aiHelper - handleAiMediation', () => {
 
       await handleAiMediation(mockSocket, mockIo, mockServices, mockContext);
 
-      // Wait for setImmediate callback to execute
+      // Wait for setImmediate callback and all async operations to complete
       await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setTimeout(resolve, 10));
 
       // Should have null receiver when no other participants
       expect(aiHelperUtils.gatherAnalysisContext).toHaveBeenCalledWith(

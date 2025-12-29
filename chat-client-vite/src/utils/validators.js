@@ -76,12 +76,13 @@ export function validateLoginCredentials(email, password) {
  * @param {string} username - Display name (optional for basic signup)
  * @returns {{ valid: boolean, errors: object, cleanData: object }}
  */
-export function validateSignupCredentials(email, password, username = '') {
+export function validateSignupCredentials(email, password, firstName = '', lastName = '') {
   const errors = {};
 
   const cleanEmail = email?.trim().toLowerCase() || '';
   const cleanPassword = password?.trim() || '';
-  const cleanUsername = username?.trim() || '';
+  const cleanFirstName = firstName?.trim() || '';
+  const cleanLastName = lastName?.trim() || '';
 
   if (!cleanEmail) {
     errors.email = 'Email is required';
@@ -93,13 +94,22 @@ export function validateSignupCredentials(email, password, username = '') {
     errors.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
   }
 
+  if (!cleanFirstName) {
+    errors.firstName = 'First name is required';
+  }
+
+  if (!cleanLastName) {
+    errors.lastName = 'Last name is required';
+  }
+
   return {
     valid: Object.keys(errors).length === 0,
     errors,
     cleanData: {
       email: cleanEmail,
       password: cleanPassword,
-      username: cleanUsername,
+      firstName: cleanFirstName,
+      lastName: cleanLastName,
     },
   };
 }
@@ -109,21 +119,28 @@ export function validateSignupCredentials(email, password, username = '') {
  * @param {object} params - Registration parameters
  * @param {string} params.email - User's email
  * @param {string} params.password - User's password
- * @param {string} params.username - User's display name
+ * @param {string} params.firstName - User's first name
+ * @param {string} params.lastName - User's last name
  * @param {string} params.coParentEmail - Co-parent's email to invite
  * @returns {{ valid: boolean, errors: object, cleanData: object }}
  */
-export function validateRegistrationWithInvite({ email, password, username, coParentEmail }) {
+export function validateRegistrationWithInvite({ email, password, firstName, lastName, coParentEmail }) {
   const errors = {};
 
   const cleanEmail = email?.trim().toLowerCase() || '';
   const cleanPassword = password?.trim() || '';
-  const cleanUsername = username?.trim() || '';
+  const cleanFirstName = firstName?.trim() || '';
+  const cleanLastName = lastName?.trim() || '';
   const cleanCoParentEmail = coParentEmail?.trim().toLowerCase() || '';
 
-  // Username required for registration
-  if (!cleanUsername) {
-    errors.username = 'Name is required';
+  // First name required for registration
+  if (!cleanFirstName) {
+    errors.firstName = 'First name is required';
+  }
+
+  // Last name required for registration
+  if (!cleanLastName) {
+    errors.lastName = 'Last name is required';
   }
 
   // Email validation
@@ -153,7 +170,8 @@ export function validateRegistrationWithInvite({ email, password, username, coPa
     cleanData: {
       email: cleanEmail,
       password: cleanPassword,
-      username: cleanUsername,
+      firstName: cleanFirstName,
+      lastName: cleanLastName,
       coParentEmail: cleanCoParentEmail,
     },
   };

@@ -63,7 +63,9 @@ export function useNotifications({ username, enabled = true }) {
       }
 
       // Case-insensitive comparison to ensure own messages don't trigger notifications
-      if (message.username?.toLowerCase() === username?.toLowerCase()) {
+      // Check new structure first (sender.email), fallback to legacy (username)
+      const senderEmail = message.sender?.email || message.user_email || message.email || message.username;
+      if (senderEmail?.toLowerCase() === username?.toLowerCase()) {
         return; // Don't notify for own messages
       }
 
@@ -104,18 +106,33 @@ export function useNotifications({ username, enabled = true }) {
           data: {
             url: window.location.href,
             messageId: message.id,
-            username: message.username,
+            username: senderEmail, // Use sender email for backward compatibility
+            senderEmail: senderEmail,
           },
         };
 
+        // Get sender name from new structure (sender object), fallback to legacy fields
+        const getSenderDisplayName = (msg) => {
+          if (msg.sender) {
+            // Use new structure: first_name + last_name > first_name > email
+            if (msg.sender.first_name && msg.sender.last_name) {
+              return `${msg.sender.first_name} ${msg.sender.last_name}`;
+            }
+            return msg.sender.first_name || msg.sender.email || 'Co-parent';
+          }
+          // Fallback to legacy structure
+          return msg.displayName || msg.username || 'Co-parent';
+        };
+        const senderName = getSenderDisplayName(message);
+
         console.log('[useNotifications] Creating notification:', {
-          title: 'New message from ' + message.username,
+          title: 'New message from ' + senderName,
           body: truncatedText,
           permission: Notification.permission,
         });
 
         const notification = new Notification(
-          'New message from ' + message.username,
+          'New message from ' + senderName,
           notificationOptions
         );
 

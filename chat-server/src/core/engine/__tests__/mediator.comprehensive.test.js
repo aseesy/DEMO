@@ -22,7 +22,7 @@ jest.mock('../client', () => ({
   createChatCompletion: jest.fn(),
 }));
 
-jest.mock('../../context/userContext', () => ({
+jest.mock('../../profiles/userContext', () => ({
   formatContextForAI: jest.fn(),
 }));
 

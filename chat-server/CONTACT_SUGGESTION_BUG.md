@@ -19,7 +19,7 @@ When a user mentions a name in chat (e.g., "Vira"), the system:
    - Returns: `['Vira']` (just names)
 
 2. **Backend**: Creates suggestion with only `detectedName` and `suggestionText`
-   - Location: `chat-server/src/core/core/ai/contactSuggester.js`
+   - Location: `chat-server/src/core/engine/ai/contactSuggester.js`
    - Missing: Relationship information
 
 3. **Frontend**: Receives suggestion with only `detectedName` and `text`

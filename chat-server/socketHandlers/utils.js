@@ -57,18 +57,38 @@ async function getUserDisplayName(emailOrUser, dbSafe = null) {
  * @param {Object} userData - User data from database JOIN
  * @param {boolean} includeEmail - Whether to include email (privacy consideration)
  * @returns {Object|null} User object with uuid, first_name, last_name, email (optional)
+ * 
+ * NOTE: If userData.id is null but userData.email exists, returns minimal object with uuid: null.
+ * This handles cases where messages exist but user record is missing (e.g., deleted users).
  */
 function buildUserObject(userData, includeEmail = true) {
-  if (!userData || !userData.id) {
+  if (!userData) {
     return null;
   }
 
-  return {
-    uuid: userData.id, // Use users.id as UUID
-    first_name: userData.first_name || null,
-    last_name: userData.last_name || null,
-    email: includeEmail ? userData.email || null : null, // Privacy-aware
-  };
+  // If we have an ID, return full user object
+  if (userData.id) {
+    return {
+      uuid: userData.id, // Use users.id as UUID
+      first_name: userData.first_name || null,
+      last_name: userData.last_name || null,
+      email: includeEmail ? userData.email || null : null, // Privacy-aware
+    };
+  }
+
+  // If no ID but we have email, return minimal object (for messages where user lookup failed)
+  // This ensures messages are still displayed even if user record is missing
+  if (userData.email) {
+    return {
+      uuid: null, // No user_id available
+      first_name: userData.first_name || null,
+      last_name: userData.last_name || null,
+      email: includeEmail ? userData.email : null,
+    };
+  }
+
+  // No ID and no email - return null
+  return null;
 }
 
 /**

@@ -161,7 +161,7 @@ export function IOSInstallGuide({ isOpen, onClose, onOpenSettings }) {
             }}
             className="flex-1"
           >
-            Close
+            Complete
           </Button>
         </div>
       </div>

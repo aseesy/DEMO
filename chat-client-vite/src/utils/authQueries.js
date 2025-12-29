@@ -125,13 +125,14 @@ export async function commandLogin({ email, password, honeypotValue = '' }) {
  * @param {Object} params - Signup parameters
  * @param {string} params.email - User email
  * @param {string} params.password - User password
- * @param {string} params.username - Display name
+ * @param {string} params.firstName - First name
+ * @param {string} params.lastName - Last name
  * @param {string} params.honeypotValue - Spam protection field
  * @returns {Promise<Object>} Signup result
  */
-export async function commandSignup({ email, password, username, honeypotValue = '' }) {
+export async function commandSignup({ email, password, firstName, lastName, honeypotValue = '' }) {
   // Validate input
-  const validation = validateSignupCredentials(email, password, username);
+  const validation = validateSignupCredentials(email, password, firstName, lastName);
   if (!validation.valid) {
     return {
       success: false,
@@ -148,7 +149,8 @@ export async function commandSignup({ email, password, username, honeypotValue =
         apiPost('/api/auth/signup', {
           email: cleanEmail,
           password: cleanPassword,
-          displayName: username.trim(),
+          firstName: firstName?.trim() || '',
+          lastName: lastName?.trim() || '',
           context: {},
           website: honeypotValue,
         }),
@@ -197,12 +199,13 @@ export async function commandSignup({ email, password, username, honeypotValue =
  * @param {string} params.coParentEmail - Co-parent's email to invite
  * @returns {Promise<Object>} Registration result
  */
-export async function commandRegister({ email, password, username, coParentEmail }) {
+export async function commandRegister({ email, password, firstName, lastName, coParentEmail }) {
   // Validate input
   const validation = validateRegistrationWithInvite({
     email,
     password,
-    username,
+    firstName,
+    lastName,
     coParentEmail,
   });
 
@@ -217,7 +220,8 @@ export async function commandRegister({ email, password, username, coParentEmail
   const {
     email: cleanEmail,
     password: cleanPassword,
-    username: cleanUsername,
+    firstName: cleanFirstName,
+    lastName: cleanLastName,
     coParentEmail: cleanCoParentEmail,
   } = validation.cleanData;
 
@@ -227,7 +231,8 @@ export async function commandRegister({ email, password, username, coParentEmail
         apiPost('/api/auth/register', {
           email: cleanEmail,
           password: cleanPassword,
-          displayName: cleanUsername,
+          firstName: cleanFirstName?.trim() || '',
+          lastName: cleanLastName?.trim() || '',
           coParentEmail: cleanCoParentEmail,
           context: {},
         }),

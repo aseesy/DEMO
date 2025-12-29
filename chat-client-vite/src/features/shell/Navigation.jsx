@@ -23,7 +23,7 @@ function NavigationComponent({
       id: 'dashboard',
       label: 'Dashboard',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -37,7 +37,7 @@ function NavigationComponent({
       id: 'chat',
       label: 'Chat',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -59,7 +59,7 @@ function NavigationComponent({
       id: 'contacts',
       label: 'Contacts',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -77,7 +77,7 @@ function NavigationComponent({
       id: 'profile',
       label: 'Profile',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -95,7 +95,7 @@ function NavigationComponent({
       id: 'settings',
       label: 'Settings',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -119,7 +119,7 @@ function NavigationComponent({
       id: 'account',
       label: 'Account',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -142,7 +142,7 @@ function NavigationComponent({
       id: 'logout',
       label: 'Logout',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -461,7 +461,7 @@ function NavigationComponent({
                     >
                       <span className="flex-shrink-0 relative">
                         {React.cloneElement(item.icon, {
-                          className: `w-4 h-4 ${isActive ? 'text-[#4DA8B0]' : ''}`,
+                          className: `w-5 h-5 ${isActive ? 'text-[#4DA8B0]' : ''}`,
                         })}
                         {item.id === 'chat' && unreadCount > 0 && (
                           <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-red-500 rounded-full" />
@@ -615,7 +615,7 @@ function NavigationComponent({
             aria-current={currentView === 'dashboard' ? 'page' : undefined}
           >
             <span className="flex-shrink-0 relative">
-              {React.cloneElement(navItems[0].icon, { className: 'w-5 h-5' })}
+              {React.cloneElement(navItems[0].icon, { className: 'w-6 h-6' })}
               {/* Red dot indicator when notifications are unread */}
               {notificationCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm" />
@@ -639,7 +639,7 @@ function NavigationComponent({
             aria-expanded={isMenuOpen}
             aria-haspopup="true"
           >
-            <img src="/assets/Logo.svg" alt="LiaiZen menu" className="w-5 h-5 object-contain" />
+            <img src="/assets/Logo.svg" alt="LiaiZen menu" className="w-6 h-6 object-contain" />
           </button>
 
           {/* Chat button */}
@@ -659,7 +659,7 @@ function NavigationComponent({
             aria-current={currentView === 'chat' ? 'page' : undefined}
           >
             <span className="flex-shrink-0 relative">
-              {React.cloneElement(navItems[1].icon, { className: 'w-5 h-5' })}
+              {React.cloneElement(navItems[1].icon, { className: 'w-6 h-6' })}
               {/* Red dot indicator when messages are unread */}
               {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm" />

@@ -158,6 +158,70 @@ function resetServiceMock(serviceMock) {
   });
 }
 
+/**
+ * Create a mock DebugService
+ */
+function mockDebugService(overrides = {}) {
+  const defaultMock = {
+    getUsers: jest.fn().mockResolvedValue({ users: [], count: 0 }),
+    getRooms: jest.fn().mockResolvedValue({ rooms: [], count: 0 }),
+    getUserTasks: jest.fn().mockResolvedValue({ tasks: [] }),
+    getRoomMessages: jest.fn().mockResolvedValue({ messages: [] }),
+    getPendingConnections: jest.fn().mockResolvedValue({ connections: [], count: 0 }),
+    debugPairings: jest.fn().mockResolvedValue({ pairings: [], rooms: [] }),
+  };
+  return { ...defaultMock, ...overrides };
+}
+
+/**
+ * Create a mock StatisticsService
+ */
+function mockStatisticsService(overrides = {}) {
+  const defaultMock = {
+    getUserCount: jest.fn().mockResolvedValue(0),
+    getUserCountByStatus: jest.fn().mockResolvedValue({ verified: 0, unverified: 0, total: 0 }),
+    getRoomStats: jest.fn().mockResolvedValue({ total: 0, active: 0 }),
+    getMessageStats: jest.fn().mockResolvedValue({ total: 0, today: 0 }),
+  };
+  return { ...defaultMock, ...overrides };
+}
+
+/**
+ * Create a mock CleanupService
+ */
+function mockCleanupService(overrides = {}) {
+  const defaultMock = {
+    cleanupOrphanedData: jest.fn().mockResolvedValue({ success: true, deleted: {} }),
+    deleteUser: jest.fn().mockResolvedValue({ success: true }),
+    backfillContacts: jest.fn().mockResolvedValue({ success: true, created: 0 }),
+    cleanupTestData: jest.fn().mockResolvedValue({ success: true, results: {} }),
+    forceConnect: jest.fn().mockResolvedValue({ success: true, room: {}, pairingId: 1 }),
+    repairPairings: jest.fn().mockResolvedValue({ success: true, repaired: 0 }),
+  };
+  return { ...defaultMock, ...overrides };
+}
+
+/**
+ * Create a mock InvitationService
+ */
+function mockInvitationService(overrides = {}) {
+  const defaultMock = {
+    validateToken: jest.fn().mockResolvedValue({ valid: true }),
+    validateCode: jest.fn().mockResolvedValue({ valid: true }),
+    getUserInvitations: jest.fn().mockResolvedValue([]),
+    getActiveInvitation: jest.fn().mockResolvedValue({ hasInvite: false }),
+    createInvitation: jest.fn().mockResolvedValue({ success: true, token: 'test-token' }),
+    createInvitationWithEmail: jest.fn().mockResolvedValue({ success: true, token: 'test-token', emailSent: false }),
+    resendInvitation: jest.fn().mockResolvedValue({ success: true, token: 'new-token' }),
+    resendInvitationWithEmail: jest.fn().mockResolvedValue({ success: true, token: 'new-token' }),
+    cancelInvitation: jest.fn().mockResolvedValue({ success: true }),
+    acceptByToken: jest.fn().mockResolvedValue({ success: true, invitation: {} }),
+    acceptByCode: jest.fn().mockResolvedValue({ success: true, invitation: {} }),
+    declineByToken: jest.fn().mockResolvedValue({ success: true }),
+  };
+  return { ...defaultMock, ...overrides };
+}
+
 module.exports = {
   mockProfileService,
   mockRepository,
@@ -165,5 +229,9 @@ module.exports = {
   mockResponse,
   mockNext,
   resetServiceMock,
+  mockDebugService,
+  mockStatisticsService,
+  mockCleanupService,
+  mockInvitationService,
 };
 
