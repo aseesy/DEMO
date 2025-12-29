@@ -7,14 +7,15 @@
  * - useGoogleAuth: Google OAuth authentication
  *
  * This hook orchestrates authentication state and provides a unified API.
+ * CRITICAL: Uses AuthContext for auth state to ensure synchronization with ChatRoom.
  */
 
 import React from 'react';
 import { apiPost } from '../../../apiClient.js';
 import { setUserProperties, setUserID } from '../../../utils/analyticsEnhancements.js';
 import { authStorage } from '../../../adapters/storage';
+import { useAuthContext } from '../../../context/AuthContext.jsx';
 
-import { useSessionVerification } from './useSessionVerification.js';
 import { useGoogleAuth } from './useGoogleAuth.js';
 import { useEmailAuth } from './useEmailAuth.js';
 
@@ -25,30 +26,65 @@ export function useAuth() {
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
 
-  // Auth state
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  // CRITICAL: Use AuthContext for auth state instead of local state
+  // This ensures synchronization with ChatRoom and prevents auth state mismatches
+  const authContext = useAuthContext();
+  const isAuthenticated = authContext?.isAuthenticated ?? false;
+  const isCheckingAuth = authContext?.isCheckingAuth ?? false;
   const [error, setError] = React.useState('');
-
-  // Compose session verification
-  const { isCheckingAuth } = useSessionVerification({
-    setIsAuthenticated,
-  });
 
   // Compose Google auth
   const { isGoogleLoggingIn, handleGoogleLogin, handleGoogleCallback } = useGoogleAuth({
-    setIsAuthenticated,
+    setIsAuthenticated: value => {
+      authStorage.setAuthenticated(value);
+    },
     setError,
   });
 
-  // Compose email auth
-  const { isLoggingIn, isSigningUp, handleLogin, handleSignup, handleRegister } = useEmailAuth({
+  // Compose email auth - use AuthContext's login function if available
+  // Otherwise fall back to useEmailAuth's commandLogin
+  const emailAuthResult = useEmailAuth({
     email,
     password,
     firstName,
     lastName,
-    setIsAuthenticated,
+    setIsAuthenticated: value => {
+      authStorage.setAuthenticated(value);
+    },
     setError,
   });
+
+  // Override handleLogin to use AuthContext's login if available
+  const handleLogin = React.useCallback(
+    async (e, spamFields = {}) => {
+      if (e?.preventDefault) e.preventDefault();
+      setError('');
+
+      // Use AuthContext's login if available (preferred)
+      if (authContext?.login) {
+        try {
+          const result = await authContext.login(email, password);
+          if (result.success) {
+            return { success: true, user: result.user };
+          } else {
+            const errorMsg = result.error?.userMessage || result.error || 'Login failed';
+            setError(errorMsg);
+            return { success: false, error: result.error };
+          }
+        } catch (err) {
+          const errorMsg = err.message || 'Login failed';
+          setError(errorMsg);
+          return { success: false, error: err };
+        }
+      }
+
+      // Fallback to useEmailAuth's handleLogin
+      return emailAuthResult.handleLogin(e, spamFields);
+    },
+    [email, password, authContext, setError, emailAuthResult]
+  );
+
+  const { isLoggingIn, isSigningUp, handleSignup, handleRegister } = emailAuthResult;
 
   // Handle logout
   const handleLogout = React.useCallback(async () => {
@@ -57,17 +93,21 @@ export function useAuth() {
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
-      authStorage.clearAuth();
+      // Use AuthContext's logout if available, otherwise clear storage
+      if (authContext?.logout) {
+        await authContext.logout();
+      } else {
+        authStorage.clearAuth();
+      }
       setUserID(null);
       setUserProperties({});
-      setIsAuthenticated(false);
       setFirstName('');
       setLastName('');
       setEmail('');
       setPassword('');
       setError('');
     }
-  }, []);
+  }, [authContext]);
 
   return {
     // State

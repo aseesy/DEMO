@@ -183,6 +183,12 @@ function ChatRoomContent({
   const hasRedirectedRef = React.useRef(false);
   const lastPathRef = React.useRef(window.location.pathname);
   const redirectTimeoutRef = React.useRef(null);
+  const showLandingRef = React.useRef(showLanding);
+
+  // Keep ref in sync with state (but don't trigger effect)
+  React.useEffect(() => {
+    showLandingRef.current = showLanding;
+  }, [showLanding]);
 
   React.useEffect(() => {
     const currentPath = window.location.pathname;
@@ -218,7 +224,9 @@ function ChatRoomContent({
         return;
       }
       // Ensure landing page is hidden
-      setShowLanding(false);
+      if (showLandingRef.current) {
+        setShowLanding(false);
+      }
       return;
     }
 
@@ -243,14 +251,16 @@ function ChatRoomContent({
       window.navigator.standalone === true;
 
     // Show landing page if on root and no auth (but not for PWA)
-    if (!showLanding && !isPWA && isOnRoot) {
+    // Use ref to avoid dependency loop
+    if (!showLandingRef.current && !isPWA && isOnRoot) {
       console.log('[ChatRoom] Showing landing page (no auth, on root)');
       setShowLanding(true);
       return;
     }
 
     // Don't redirect if already showing landing or already on sign-in
-    if (showLanding || isOnSignIn) {
+    // Use ref to avoid dependency loop
+    if (showLandingRef.current || isOnSignIn) {
       return;
     }
 
@@ -285,7 +295,7 @@ function ChatRoomContent({
         navigate(NavigationPaths.SIGN_IN, { replace: true });
       }
     }
-  }, [isCheckingAuth, isAuthenticated, showLanding, navigate, getQueryParam]);
+  }, [isCheckingAuth, isAuthenticated, navigate, getQueryParam]); // Removed showLanding from deps
 
   React.useEffect(() => {
     if (isAuthenticated) {
