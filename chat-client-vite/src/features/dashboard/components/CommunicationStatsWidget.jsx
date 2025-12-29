@@ -1,36 +1,56 @@
 import React from 'react';
 import { apiGet } from '../../../apiClient.js';
 
-export function CommunicationStatsWidget({ username }) {
+export function CommunicationStatsWidget({ username, email }) {
   const [stats, setStats] = React.useState(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
 
+  // Use email if available, fallback to username only if it looks like an email
+  // Backend requires email format for user lookup
+  const userEmail = email || (username && username.includes('@') ? username : null);
+
   const loadStats = React.useCallback(async () => {
-    if (!username) return;
+    if (!userEmail) {
+      console.warn('[CommunicationStatsWidget] No valid email provided, skipping stats load', {
+        email,
+        username,
+        userEmail,
+      });
+      setIsLoading(false);
+      setError('Email is required to load stats');
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log('[CommunicationStatsWidget] Loading stats for:', userEmail);
       const response = await apiGet(
-        `/api/dashboard/communication-stats?username=${encodeURIComponent(username)}`
+        `/api/dashboard/communication-stats?email=${encodeURIComponent(userEmail)}`
       );
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[CommunicationStatsWidget] Stats loaded:', data);
         setStats(data.stats);
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[CommunicationStatsWidget] API error:', {
+          status: response.status,
+          error: errorData.error,
+          userEmail,
+        });
         setError(errorData.error || 'Failed to load stats');
       }
     } catch (err) {
-      console.error('Error loading communication stats:', err);
+      console.error('[CommunicationStatsWidget] Error loading communication stats:', err);
       setError('Failed to load stats');
     } finally {
       setIsLoading(false);
     }
-  }, [username]);
+  }, [userEmail, email, username]);
 
   React.useEffect(() => {
     loadStats();

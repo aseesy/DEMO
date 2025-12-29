@@ -2,16 +2,27 @@ import React from 'react';
 import { getUpdateIcon as getUpdateIconComponent } from './UpdateIconRegistry.jsx';
 import { apiGet } from '../../apiClient.js';
 
-export function UpdatesPanel({ username, onContactClick, setCurrentView }) {
+export function UpdatesPanel({ username, email, onContactClick, setCurrentView }) {
   const [updates, setUpdates] = React.useState([]);
   const [isLoadingUpdates, setIsLoadingUpdates] = React.useState(false);
 
+  // Use email if available, fallback to username only if it looks like an email
+  // Backend requires email format for user lookup
+  const userEmail = email || (username && username.includes('@') ? username : null);
+
   const loadUpdates = React.useCallback(async () => {
-    if (!username) return;
+    if (!userEmail) {
+      console.warn('[UpdatesPanel] No valid email provided, skipping updates load', {
+        email,
+        username,
+        userEmail,
+      });
+      return;
+    }
     setIsLoadingUpdates(true);
     try {
       const response = await apiGet(
-        `/api/dashboard/updates?username=${encodeURIComponent(username)}`
+        `/api/dashboard/updates?email=${encodeURIComponent(userEmail)}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -22,7 +33,7 @@ export function UpdatesPanel({ username, onContactClick, setCurrentView }) {
     } finally {
       setIsLoadingUpdates(false);
     }
-  }, [username]);
+  }, [userEmail]);
 
   React.useEffect(() => {
     loadUpdates();

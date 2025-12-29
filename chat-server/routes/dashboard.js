@@ -19,18 +19,23 @@ const communicationStats = require('../communicationStats');
  */
 router.get('/updates', async (req, res) => {
   try {
-    const username = req.query.username;
-
-    if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
+    // Prefer email, but also accept username if it looks like an email
+    let email = req.query.email;
+    if (!email && req.query.username && req.query.username.includes('@')) {
+      email = req.query.username;
     }
 
-    // Get user
-    const users = await dbSafe.safeSelect(
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Get user by email (email is now the primary identifier)
+    const userResult = await dbSafe.safeSelect(
       'users',
-      { username: username.toLowerCase() },
+      { email: email.toLowerCase() },
       { limit: 1 }
     );
+    const users = dbSafe.parseResult(userResult);
 
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -49,7 +54,7 @@ router.get('/updates', async (req, res) => {
     let expenseUpdates = [];
     try {
       const expensesQuery = `
-        SELECT e.*, u.username as requester_name, u.first_name, u.last_name, u.display_name
+        SELECT e.*, u.email as requester_email, u.first_name, u.last_name, u.display_name
         FROM expenses e
         JOIN users u ON e.requested_by = u.id
         WHERE e.room_id IN (SELECT room_id FROM room_members WHERE user_id = $1)
@@ -62,7 +67,9 @@ router.get('/updates', async (req, res) => {
         const isMe = exp.requested_by === userId;
         const personName =
           exp.display_name ||
-          (exp.first_name ? `${exp.first_name} ${exp.last_name || ''}`.trim() : exp.requester_name);
+          (exp.first_name
+            ? `${exp.first_name} ${exp.last_name || ''}`.trim()
+            : exp.requester_email?.split('@')[0] || 'Unknown');
         let description = '';
 
         if (exp.status === 'pending') {
@@ -92,7 +99,7 @@ router.get('/updates', async (req, res) => {
     let agreementUpdates = [];
     try {
       const agreementsQuery = `
-        SELECT a.*, u.username as proposer_name, u.first_name, u.last_name, u.display_name
+        SELECT a.*, u.email as proposer_email, u.first_name, u.last_name, u.display_name
         FROM agreements a
         JOIN users u ON a.proposed_by = u.id
         WHERE a.room_id IN (SELECT room_id FROM room_members WHERE user_id = $1)
@@ -105,7 +112,9 @@ router.get('/updates', async (req, res) => {
         const isMe = agr.proposed_by === userId;
         const personName =
           agr.display_name ||
-          (agr.first_name ? `${agr.first_name} ${agr.last_name || ''}`.trim() : agr.proposer_name);
+          (agr.first_name
+            ? `${agr.first_name} ${agr.last_name || ''}`.trim()
+            : agr.proposer_email?.split('@')[0] || 'Unknown');
         let description = '';
 
         if (agr.status === 'proposed') {
@@ -153,36 +162,101 @@ router.get('/updates', async (req, res) => {
  */
 router.get('/communication-stats', async (req, res) => {
   try {
-    const username = req.query.username;
-
-    if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
+    // Prefer email, but also accept username if it looks like an email
+    let email = req.query.email;
+    if (!email && req.query.username && req.query.username.includes('@')) {
+      email = req.query.username;
     }
 
-    // Get user ID
-    const userResult = await dbSafe.safeSelect(
-      'users',
-      { username: username.toLowerCase() },
-      { limit: 1 }
-    );
+    console.log('[dashboard] /communication-stats called:', {
+      email: email,
+      queryEmail: req.query.email,
+      queryUsername: req.query.username,
+      allQueryParams: req.query,
+    });
+
+    if (!email) {
+      console.warn('[dashboard] /communication-stats: Email is required');
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Get user ID by email (email is now the primary identifier)
+    let userResult;
+    try {
+      userResult = await dbSafe.safeSelect('users', { email: email.toLowerCase() }, { limit: 1 });
+    } catch (dbError) {
+      console.error(
+        '[dashboard] /communication-stats: Database error during user lookup:',
+        dbError
+      );
+      throw dbError;
+    }
+
     const users = dbSafe.parseResult(userResult);
 
+    console.log('[dashboard] /communication-stats: User lookup result:', {
+      email: email.toLowerCase(),
+      found: users.length > 0,
+      userId: users.length > 0 ? users[0].id : null,
+    });
+
     if (users.length === 0) {
+      console.warn(
+        '[dashboard] /communication-stats: User not found for email:',
+        email.toLowerCase()
+      );
       return res.status(404).json({ error: 'User not found' });
     }
 
     const userId = users[0].id;
 
     // Get aggregated stats across all rooms
-    const stats = await communicationStats.getUserStats(userId);
+    let stats;
+    try {
+      stats = await communicationStats.getUserStats(userId);
+    } catch (statsError) {
+      console.error('[dashboard] /communication-stats: Error getting stats:', statsError, {
+        userId,
+        errorMessage: statsError.message,
+        errorStack: statsError.stack,
+      });
+      throw statsError;
+    }
+
+    console.log('[dashboard] /communication-stats: Stats retrieved:', {
+      userId,
+      stats: stats,
+    });
 
     res.json({
       success: true,
       stats: stats,
     });
   } catch (error) {
-    console.error('Error getting communication stats:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[dashboard] Error getting communication stats:', error, {
+      message: error.message,
+      stack: error.stack,
+      query: req.query,
+      errorName: error.name,
+      errorType: error.constructor.name,
+    });
+
+    // If error message contains "Username is required", it's coming from a service that still expects username
+    // Convert it to a more helpful error message
+    let errorMessage = error.message;
+    if (errorMessage && errorMessage.includes('Username is required')) {
+      console.error(
+        '[dashboard] /communication-stats: ERROR - Service is throwing "Username is required"',
+        {
+          errorStack: error.stack,
+          query: req.query,
+        }
+      );
+      errorMessage = 'Email is required. Please ensure you are passing the email parameter.';
+    }
+
+    const statusCode = error.message && error.message.includes('Username is required') ? 400 : 500;
+    res.status(statusCode).json({ error: errorMessage });
   }
 });
 
