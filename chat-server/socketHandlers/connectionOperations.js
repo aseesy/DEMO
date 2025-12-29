@@ -7,7 +7,29 @@
 
 const { sanitizeInput, validateUsername } = require('../utils');
 // Use destructuring like messageOperations.js (it works there)
-const { buildUserObject, getReceiverForMessage } = require('./utils');
+const utilsModule = require('./utils');
+const { buildUserObject, getReceiverForMessage } = utilsModule;
+
+// CRITICAL: Verify imports work - log if they don't (production debugging)
+if (typeof buildUserObject !== 'function') {
+  console.error('[connectionOperations] CRITICAL: buildUserObject import failed!', {
+    buildUserObjectType: typeof buildUserObject,
+    buildUserObjectValue: buildUserObject,
+    utilsModuleKeys: Object.keys(utilsModule),
+    utilsModule: utilsModule,
+    utilsModuleBuildUserObject: utilsModule.buildUserObject,
+    utilsModuleBuildUserObjectType: typeof utilsModule.buildUserObject,
+  });
+  // Don't throw - let it fail at runtime with clearer error
+}
+
+if (typeof getReceiverForMessage !== 'function') {
+  console.error('[connectionOperations] CRITICAL: getReceiverForMessage import failed!', {
+    getReceiverForMessageType: typeof getReceiverForMessage,
+    utilsModuleKeys: Object.keys(utilsModule),
+  });
+}
+
 const pairingManager = require('../libs/pairing-manager');
 
 /**
@@ -303,7 +325,29 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
       first_name: msg.first_name || null,
       last_name: msg.last_name || null,
     };
-    const sender = buildUserObject(senderData);
+
+    // Runtime safety check with fallback
+    let sender;
+    if (typeof buildUserObject !== 'function') {
+      console.error('[getMessageHistory] buildUserObject is not a function at runtime!', {
+        type: typeof buildUserObject,
+        value: buildUserObject,
+        utilsModule: require('./utils'),
+      });
+      // Fallback: define inline to prevent crash
+      const fallbackBuildUserObject = (userData, includeEmail = true) => {
+        if (!userData || !userData.id) return null;
+        return {
+          uuid: userData.id,
+          first_name: userData.first_name || null,
+          last_name: userData.last_name || null,
+          email: includeEmail ? userData.email || null : null,
+        };
+      };
+      sender = fallbackBuildUserObject(senderData);
+    } else {
+      sender = buildUserObject(senderData);
+    }
 
     // Build receiver object - find the other user in the room
     let receiver = null;
@@ -321,7 +365,30 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
           first_name: otherMember.first_name || null,
           last_name: otherMember.last_name || null,
         };
-        receiver = buildUserObject(receiverData);
+
+        // Runtime safety check with fallback
+        if (typeof buildUserObject !== 'function') {
+          console.error(
+            '[getMessageHistory] buildUserObject is not a function when building receiver!',
+            {
+              type: typeof buildUserObject,
+              value: buildUserObject,
+            }
+          );
+          // Fallback: define inline to prevent crash
+          const fallbackBuildUserObject = (userData, includeEmail = true) => {
+            if (!userData || !userData.id) return null;
+            return {
+              uuid: userData.id,
+              first_name: userData.first_name || null,
+              last_name: userData.last_name || null,
+              email: includeEmail ? userData.email || null : null,
+            };
+          };
+          receiver = fallbackBuildUserObject(receiverData);
+        } else {
+          receiver = buildUserObject(receiverData);
+        }
       } else {
         // Log warning if we have 2+ members but couldn't find the other one
         console.warn('[getMessageHistory] Could not find receiver in room members', {
