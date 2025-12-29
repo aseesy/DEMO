@@ -44,11 +44,21 @@ export function useAuth() {
   const isCheckingAuth = authContext?.isCheckingAuth ?? localIsCheckingAuth;
   const [error, setError] = React.useState('');
 
+  // Wrapper for setIsAuthenticated that updates both AuthContext (if available) and local state
+  const setIsAuthenticatedWrapper = React.useCallback(
+    value => {
+      authStorage.setAuthenticated(value);
+      // Update local state if AuthContext is not available
+      if (!authContext) {
+        setLocalIsAuthenticated(value);
+      }
+    },
+    [authContext]
+  );
+
   // Compose Google auth
   const { isGoogleLoggingIn, handleGoogleLogin, handleGoogleCallback } = useGoogleAuth({
-    setIsAuthenticated: value => {
-      authStorage.setAuthenticated(value);
-    },
+    setIsAuthenticated: setIsAuthenticatedWrapper,
     setError,
   });
 
@@ -59,9 +69,7 @@ export function useAuth() {
     password,
     firstName,
     lastName,
-    setIsAuthenticated: value => {
-      authStorage.setAuthenticated(value);
-    },
+    setIsAuthenticated: setIsAuthenticatedWrapper,
     setError,
   });
 
