@@ -39,8 +39,11 @@ async function backfillPWAInstallTask() {
 
       const existingTasks = dbSafe.parseResult(tasksResult);
 
+      // Use email as primary identifier (username is legacy, may be null)
+      const userIdentifier = user.email || user.username || `user_${user.id}`;
+
       if (existingTasks.length > 0) {
-        console.log(`✓ User ${user.username} already has PWA install task`);
+        console.log(`✓ User ${userIdentifier} already has PWA install task`);
         skippedCount++;
         continue;
       }
@@ -61,7 +64,7 @@ async function backfillPWAInstallTask() {
         completed_at: null,
       });
 
-      console.log(`✅ Created PWA install task for user: ${user.username}`);
+      console.log(`✅ Created PWA install task for user: ${userIdentifier}`);
       createdCount++;
     }
 
