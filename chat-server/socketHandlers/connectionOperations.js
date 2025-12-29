@@ -11,15 +11,16 @@ const socketUtils = require('./utils');
 // Get buildUserObject from utils - use full module import to avoid destructuring issues
 const buildUserObject = socketUtils.buildUserObject;
 
-// Safety check for buildUserObject
+// Safety check for buildUserObject (warn but don't crash on startup)
 if (typeof buildUserObject !== 'function') {
-  console.error('[connectionOperations] ERROR: buildUserObject is not a function!', {
+  console.error('[connectionOperations] WARNING: buildUserObject is not a function!', {
     type: typeof buildUserObject,
     utilsKeys: Object.keys(socketUtils),
     buildUserObject: buildUserObject,
     utilsModule: socketUtils,
   });
-  throw new Error('buildUserObject is not available - check utils.js exports');
+  // Don't throw - let it fail at runtime with a clearer error
+  // This allows server to start even if there's a module loading issue
 }
 const pairingManager = require('../libs/pairing-manager');
 
@@ -316,6 +317,10 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
       first_name: msg.first_name || null,
       last_name: msg.last_name || null,
     };
+    // Runtime check for buildUserObject
+    if (typeof buildUserObject !== 'function') {
+      throw new Error('buildUserObject is not available - check utils.js exports');
+    }
     const sender = buildUserObject(senderData);
 
     // Build receiver object - find the other user in the room
@@ -334,6 +339,10 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
           first_name: otherMember.first_name || null,
           last_name: otherMember.last_name || null,
         };
+        // Runtime check for buildUserObject
+        if (typeof buildUserObject !== 'function') {
+          throw new Error('buildUserObject is not available - check utils.js exports');
+        }
         receiver = buildUserObject(receiverData);
       }
     }
