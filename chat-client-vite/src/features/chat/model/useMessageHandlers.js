@@ -35,6 +35,17 @@ export function useMessageHandlers({
   // Track which interventions received feedback
   const [feedbackGiven, setFeedbackGiven] = React.useState(new Set());
 
+  // Helper to extract email from message (supports both new and legacy structures)
+  const getMessageEmail = React.useCallback(msg => {
+    return (
+      msg?.sender?.email ||
+      msg?.user_email ||
+      msg?.email ||
+      msg?.username ||
+      ''
+    ).toLowerCase();
+  }, []);
+
   // Helper function to determine if a message should be removed when rewrite is sent
   const shouldRemoveMessageOnRewrite = React.useCallback((message, pendingOriginal) => {
     // Always remove pending_original and ai_intervention messages
@@ -49,7 +60,9 @@ export function useMessageHandlers({
 
     // Match flagged/private messages that match the pending original
     const isFlaggedPrivate = message.flagged === true && message.private === true;
-    const matchesUsername = message.username === pendingOriginal.username;
+    const messageEmail = getMessageEmail(message);
+    const pendingEmail = getMessageEmail(pendingOriginal);
+    const matchesUsername = messageEmail === pendingEmail;
     const matchesText = message.text === pendingOriginal.text;
 
     // Match by exact timestamp or within 2 seconds (handles timing differences)

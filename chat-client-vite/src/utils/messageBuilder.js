@@ -95,13 +95,24 @@ export function filterSystemMessages(messages) {
 
 /**
  * Check if a message is from the current user
+ * Uses new sender structure (sender.email) with fallback to legacy fields
  * @param {Object} message - Message object
- * @param {string} currentUsername - Current user's username
+ * @param {string} currentUserEmail - Current user's email (or username for legacy)
  * @returns {boolean}
  */
-export function isOwnMessage(message, currentUsername) {
-  if (!message?.username || !currentUsername) return false;
-  return message.username.toLowerCase() === currentUsername.toLowerCase();
+export function isOwnMessage(message, currentUserEmail) {
+  if (!message || !currentUserEmail) return false;
+
+  // Try new structure first (sender.email)
+  if (message.sender?.email) {
+    return message.sender.email.toLowerCase() === currentUserEmail.toLowerCase();
+  }
+
+  // Fallback to legacy fields
+  const messageEmail = message.user_email || message.email || message.username;
+  if (!messageEmail) return false;
+
+  return messageEmail.toLowerCase() === currentUserEmail.toLowerCase();
 }
 
 /**

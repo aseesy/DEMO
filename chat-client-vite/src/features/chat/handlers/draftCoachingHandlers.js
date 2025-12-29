@@ -21,11 +21,19 @@ function handleBlockedMessage(coaching, eventName, handlers) {
 
   console.log(`[${eventName}] Message blocked - removing optimistic message`);
 
+  // Helper to extract email from message (supports both new and legacy structures)
+  const getMessageEmail = msg => {
+    return (msg.sender?.email || msg.user_email || msg.email || msg.username || '').toLowerCase();
+  };
+
+  const normalizedCurrentEmail = (usernameRef.current || '').toLowerCase();
+
   // Remove optimistic messages that match the blocked text
   setMessages(prev => {
     const filtered = prev.filter(msg => {
       if (msg.isOptimistic && coaching.originalText) {
-        if (msg.text === coaching.originalText && msg.username === usernameRef.current) {
+        const msgEmail = getMessageEmail(msg);
+        if (msg.text === coaching.originalText && msgEmail === normalizedCurrentEmail) {
           console.log(`[${eventName}] Removing optimistic message:`, msg.id);
           return false; // Remove this message
         }
@@ -41,10 +49,11 @@ function handleBlockedMessage(coaching, eventName, handlers) {
     let removedId = null;
 
     for (const [id, msg] of next.entries()) {
+      const msgEmail = getMessageEmail(msg);
       if (
         msg.isOptimistic &&
         msg.text === coaching.originalText &&
-        msg.username === usernameRef.current
+        msgEmail === normalizedCurrentEmail
       ) {
         removedId = id;
         next.delete(id);

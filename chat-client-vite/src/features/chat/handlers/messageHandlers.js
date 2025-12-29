@@ -46,13 +46,20 @@ export function setupMessageHandlers(socket, handlers) {
     const messages = Array.isArray(data) ? data : data.messages || [];
     const hasMore = data.hasMore !== undefined ? data.hasMore : true;
 
+    // Helper to extract email from message (supports both new and legacy structures)
+    const getMessageEmail = msg => {
+      return (msg.sender?.email || msg.user_email || msg.email || msg.username || '').toLowerCase();
+    };
+
     // Build set of optimistic message keys to avoid duplicates
     const optimisticKeys = new Set();
     offlineQueueRef.current.forEach(msg => {
-      if (msg.isOptimistic && msg.text && msg.username && msg.timestamp) {
-        // Create a key based on text, username, and time window (within 5 seconds)
+      if (msg.isOptimistic && msg.text && msg.timestamp) {
+        const msgEmail = getMessageEmail(msg);
+        if (!msgEmail) return; // Skip if no email/username
+        // Create a key based on text, email, and time window (within 5 seconds)
         const msgTimeWindow = Math.floor(new Date(msg.timestamp).getTime() / 5000);
-        const key = `${msg.text}_${msg.username}_${msgTimeWindow}`;
+        const key = `${msg.text}_${msgEmail}_${msgTimeWindow}`;
         optimisticKeys.add(key);
       }
     });
@@ -60,10 +67,13 @@ export function setupMessageHandlers(socket, handlers) {
     setMessages(prev => {
       // Filter out messages that match optimistic messages
       const newMessages = messages.filter(msg => {
-        if (!msg.text || !msg.username || !msg.timestamp) return true;
+        if (!msg.text || !msg.timestamp) return true;
+
+        const msgEmail = getMessageEmail(msg);
+        if (!msgEmail) return true; // Keep messages without email (shouldn't happen, but defensive)
 
         const msgTimeWindow = Math.floor(new Date(msg.timestamp).getTime() / 5000);
-        const key = `${msg.text}_${msg.username}_${msgTimeWindow}`;
+        const key = `${msg.text}_${msgEmail}_${msgTimeWindow}`;
 
         if (optimisticKeys.has(key)) {
           console.log('[message_history] Skipping message that matches optimistic:', {
@@ -210,7 +220,8 @@ export function setupMessageHandlers(socket, handlers) {
             currentView: currentViewRef.current,
             documentHidden: document.hidden,
             messageId: message.id,
-            sender: message.username,
+            sender:
+              message.sender?.email || message.user_email || message.email || message.username,
           });
           return newCount;
         });
