@@ -179,22 +179,32 @@ function ChatRoomContent({
 
   // Handle authentication-based routing
   // CRITICAL: Wait for auth check to complete before redirecting
+  // Use ref to prevent infinite redirect loops
+  const hasRedirectedRef = React.useRef(false);
+  const lastPathRef = React.useRef(window.location.pathname);
+
   React.useEffect(() => {
+    const currentPath = window.location.pathname;
+
     // Don't redirect while checking auth - wait for verification to complete
     if (isCheckingAuth) {
       console.log('[ChatRoom] Auth check in progress, waiting...');
+      hasRedirectedRef.current = false; // Reset on auth check
       return;
     }
 
     // If authenticated, ensure we're not on sign-in page (redirect to home)
     if (isAuthenticated) {
       console.log('[ChatRoom] User is authenticated, ensuring correct route');
-      if (window.location.pathname === '/signin' || window.location.pathname === '/sign-in') {
+      if ((currentPath === '/signin' || currentPath === '/sign-in') && !hasRedirectedRef.current) {
         console.log('[ChatRoom] Redirecting authenticated user from sign-in to home');
-        navigate('/');
+        hasRedirectedRef.current = true;
+        lastPathRef.current = '/';
+        navigate('/', { replace: true }); // Use replace to avoid history loop
       }
       // Ensure landing page is hidden
       setShowLanding(false);
+      hasRedirectedRef.current = false; // Reset after authenticated redirect
       return;
     }
 
@@ -206,18 +216,14 @@ function ChatRoomContent({
       console.log('[ChatRoom] Not authenticated but stored auth exists - waiting for verification');
       // Don't redirect yet - might be a temporary network issue
       // The verifySession will eventually clear auth if token is invalid
+      hasRedirectedRef.current = false; // Reset while waiting
       return;
     }
 
     // Definitely not authenticated and no stored auth - redirect to sign-in
-    console.log('[ChatRoom] User not authenticated, redirecting to sign-in');
-
-    // But preserve invite codes and other query params
-    const inviteCode = getQueryParam('invite');
-    if (inviteCode) {
-      navigate(NavigationPaths.withQuery(NavigationPaths.SIGN_IN, { invite: inviteCode }));
-      return;
-    }
+    // But only if we haven't already redirected and we're not already on sign-in
+    const isOnSignIn = currentPath === '/signin' || currentPath === '/sign-in';
+    const isOnRoot = currentPath === '/';
 
     // PWA MODE: Skip landing page - go straight to sign-in
     const isPWA =
@@ -225,31 +231,50 @@ function ChatRoomContent({
       window.navigator.standalone === true;
 
     // Show landing page if on root and no auth (but not for PWA)
-    if (!showLanding && !isPWA && window.location.pathname === '/') {
+    if (!showLanding && !isPWA && isOnRoot) {
       console.log('[ChatRoom] Showing landing page (no auth, on root)');
       setShowLanding(true);
+      hasRedirectedRef.current = false;
       return;
     }
 
     // Don't redirect if already showing landing or already on sign-in
-    if (
-      showLanding ||
-      window.location.pathname === '/signin' ||
-      window.location.pathname === '/sign-in'
-    ) {
+    if (showLanding || isOnSignIn) {
+      hasRedirectedRef.current = false;
+      return;
+    }
+
+    // Prevent infinite redirect loop - only redirect if path actually changed
+    if (hasRedirectedRef.current && currentPath === lastPathRef.current) {
+      console.log('[ChatRoom] Already redirected, preventing loop');
       return;
     }
 
     // PWA on root path without auth - redirect to sign-in
-    if (isPWA && window.location.pathname === '/') {
+    if (isPWA && isOnRoot && !hasRedirectedRef.current) {
       console.log('[ChatRoom] PWA mode: Redirecting to sign-in');
-      navigate(NavigationPaths.SIGN_IN);
+      hasRedirectedRef.current = true;
+      lastPathRef.current = NavigationPaths.SIGN_IN;
+      navigate(NavigationPaths.SIGN_IN, { replace: true });
       return;
     }
 
-    // Redirect to sign-in
-    console.log('[ChatRoom] Redirecting to sign-in');
-    navigate(NavigationPaths.SIGN_IN);
+    // Redirect to sign-in (only if not already there and haven't redirected)
+    if (!isOnSignIn && !hasRedirectedRef.current) {
+      console.log('[ChatRoom] Redirecting to sign-in');
+      hasRedirectedRef.current = true;
+      lastPathRef.current = NavigationPaths.SIGN_IN;
+
+      // But preserve invite codes and other query params
+      const inviteCode = getQueryParam('invite');
+      if (inviteCode) {
+        navigate(NavigationPaths.withQuery(NavigationPaths.SIGN_IN, { invite: inviteCode }), {
+          replace: true,
+        });
+      } else {
+        navigate(NavigationPaths.SIGN_IN, { replace: true });
+      }
+    }
   }, [isCheckingAuth, isAuthenticated, showLanding, navigate, getQueryParam]);
 
   React.useEffect(() => {

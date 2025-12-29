@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * Data Integrity Fix Script
- * 
+ *
  * Automatically fixes common data integrity issues:
  * - Creates missing user records from messages
  * - Fixes email case mismatches
  * - Removes whitespace from emails
  * - Cleans up orphaned records
- * 
+ *
  * Usage: node scripts/fix-data-integrity.js [--production] [--dry-run]
  */
 
@@ -24,9 +24,10 @@ if (!DATABASE_URL) {
 }
 
 // Determine SSL requirement from DATABASE_URL (Railway/Heroku use SSL)
-const requiresSSL = DATABASE_URL.includes('railway.app') || 
-                    DATABASE_URL.includes('heroku.com') ||
-                    DATABASE_URL.includes('amazonaws.com');
+const requiresSSL =
+  DATABASE_URL.includes('railway.app') ||
+  DATABASE_URL.includes('heroku.com') ||
+  DATABASE_URL.includes('amazonaws.com');
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
@@ -66,9 +67,11 @@ async function normalizeEmailCase() {
 
   for (const row of mismatches.rows) {
     const normalizedEmail = row.user_email.toLowerCase().trim();
-    
+
     if (isDryRun) {
-      console.log(`  [DRY RUN] Would update messages.user_email: "${row.message_email}" → "${normalizedEmail}"`);
+      console.log(
+        `  [DRY RUN] Would update messages.user_email: "${row.message_email}" → "${normalizedEmail}"`
+      );
       fixes.caseMismatchesFixed++;
     } else {
       try {
@@ -80,7 +83,9 @@ async function normalizeEmailCase() {
           [normalizedEmail, row.message_email]
         );
         if (result.rowCount > 0) {
-          console.log(`  ✅ Updated ${result.rowCount} messages: "${row.message_email}" → "${normalizedEmail}"`);
+          console.log(
+            `  ✅ Updated ${result.rowCount} messages: "${row.message_email}" → "${normalizedEmail}"`
+          );
           fixes.caseMismatchesFixed += result.rowCount;
         }
       } catch (error) {
@@ -111,7 +116,7 @@ async function removeWhitespaceFromEmails() {
 
   for (const row of whitespaceIssues.rows) {
     const trimmedEmail = row.user_email.trim();
-    
+
     if (isDryRun) {
       console.log(`  [DRY RUN] Would trim: "${row.user_email}" → "${trimmedEmail}"`);
       fixes.emailsNormalized++;
@@ -125,7 +130,9 @@ async function removeWhitespaceFromEmails() {
           [row.user_email]
         );
         if (result.rowCount > 0) {
-          console.log(`  ✅ Trimmed ${result.rowCount} messages: "${row.user_email}" → "${trimmedEmail}"`);
+          console.log(
+            `  ✅ Trimmed ${result.rowCount} messages: "${row.user_email}" → "${trimmedEmail}"`
+          );
           fixes.emailsNormalized += result.rowCount;
         }
       } catch (error) {
@@ -169,7 +176,7 @@ async function createMissingUserRecords() {
     const email = row.user_email.toLowerCase().trim();
     const emailParts = email.split('@');
     const username = emailParts[0] || 'user';
-    
+
     if (isDryRun) {
       console.log(`  [DRY RUN] Would create user: ${email} (${row.message_count} messages)`);
       fixes.missingUsersCreated++;
@@ -194,7 +201,9 @@ async function createMissingUserRecords() {
         );
 
         if (result.rows.length > 0) {
-          console.log(`  ✅ Created user: ${email} (ID: ${result.rows[0].id}, ${row.message_count} messages)`);
+          console.log(
+            `  ✅ Created user: ${email} (ID: ${result.rows[0].id}, ${row.message_count} messages)`
+          );
           fixes.missingUsersCreated++;
         }
       } catch (error) {
@@ -250,7 +259,7 @@ async function generateSummary() {
   console.log('📊 FIX SUMMARY');
   console.log('='.repeat(60) + '\n');
 
-  const totalFixes = 
+  const totalFixes =
     fixes.emailsNormalized +
     fixes.missingUsersCreated +
     fixes.orphanedRecordsRemoved +
@@ -277,6 +286,63 @@ async function generateSummary() {
   }
 }
 
+async function normalizeUsersTableEmails() {
+  console.log('\n🔧 Normalizing emails in users table...\n');
+
+  const nonNormalizedUsers = await pool.query(`
+    SELECT id, email
+    FROM users
+    WHERE email IS NOT NULL
+      AND (email != LOWER(TRIM(email)) OR email != TRIM(email))
+    LIMIT 100
+  `);
+
+  if (nonNormalizedUsers.rows.length === 0) {
+    console.log('✅ All user emails are already normalized');
+    return;
+  }
+
+  console.log(`Found ${nonNormalizedUsers.rows.length} users with non-normalized emails`);
+
+  for (const row of nonNormalizedUsers.rows) {
+    const normalizedEmail = row.email.toLowerCase().trim();
+
+    if (isDryRun) {
+      console.log(`  [DRY RUN] Would normalize: "${row.email}" → "${normalizedEmail}"`);
+      fixes.emailsNormalized++;
+    } else {
+      try {
+        // Check if normalized email already exists
+        const existingCheck = await pool.query(
+          'SELECT id FROM users WHERE LOWER(TRIM(email)) = LOWER($1) AND id != $2',
+          [normalizedEmail, row.id]
+        );
+
+        if (existingCheck.rows.length > 0) {
+          console.log(
+            `  ⚠️  Cannot normalize "${row.email}" - normalized version already exists for user ${existingCheck.rows[0].id}`
+          );
+          continue;
+        }
+
+        const result = await pool.query(
+          `UPDATE users 
+           SET email = $1, updated_at = NOW()
+           WHERE id = $2`,
+          [normalizedEmail, row.id]
+        );
+
+        if (result.rowCount > 0) {
+          console.log(`  ✅ Normalized user ${row.id}: "${row.email}" → "${normalizedEmail}"`);
+          fixes.emailsNormalized++;
+        }
+      } catch (error) {
+        console.error(`  ❌ Error normalizing user ${row.id} ("${row.email}"):`, error.message);
+      }
+    }
+  }
+}
+
 async function main() {
   try {
     console.log(`\n🔧 Data Integrity Fix (${isProduction ? 'PRODUCTION' : 'LOCAL'})`);
@@ -286,6 +352,7 @@ async function main() {
       console.log('⚠️  LIVE MODE - Changes will be applied\n');
     }
 
+    await normalizeUsersTableEmails();
     await normalizeEmailCase();
     await removeWhitespaceFromEmails();
     await createMissingUserRecords();
@@ -305,4 +372,3 @@ async function main() {
 }
 
 main();
-

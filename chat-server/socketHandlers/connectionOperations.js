@@ -222,6 +222,19 @@ function registerActiveUser(userSessionService, socketId, cleanEmail, roomId) {
  * @returns {Promise<MessageHistoryResult>}
  */
 async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
+  // CRITICAL: Validate roomId before proceeding
+  // This prevents database errors from undefined/null roomId
+  if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
+    const error = new Error('Invalid roomId: roomId is required and must be a non-empty string');
+    console.error('[getMessageHistory]', error.message, {
+      roomId,
+      type: typeof roomId,
+      isNull: roomId === null,
+      isUndefined: roomId === undefined,
+    });
+    throw error;
+  }
+
   console.log(
     '[getMessageHistory] Loading messages for room:',
     roomId,

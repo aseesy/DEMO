@@ -61,9 +61,34 @@ function registerConnectionHandlers(socket, io, services) {
     try {
       const room = await resolveUserRoom(user, cleanEmail, dbPostgres, roomManager);
       if (!room || !room.roomId) {
+        console.warn('[join] No room available for user:', {
+          email: cleanEmail,
+          userId: user?.id,
+          hasRoom: !!room,
+          roomRoomId: room?.roomId,
+        });
         emitError(socket, 'No room available. You must be connected to a co-parent.');
         return;
       }
+
+      // CRITICAL: Validate roomId is a valid string before using it
+      // This prevents undefined/null roomId from reaching getMessageHistory
+      if (typeof room.roomId !== 'string' || room.roomId.trim() === '') {
+        console.error('[join] Invalid roomId from resolveUserRoom:', {
+          roomId: room.roomId,
+          type: typeof room.roomId,
+          email: cleanEmail,
+          userId: user?.id,
+        });
+        emitError(
+          socket,
+          'Invalid room configuration. Please try reconnecting.',
+          null,
+          'join:invalidRoomId'
+        );
+        return;
+      }
+
       roomId = room.roomId;
       roomName = room.roomName;
       user.room = { roomId, roomName };
@@ -100,6 +125,24 @@ function registerConnectionHandlers(socket, io, services) {
     }
 
     // Step 7: Get message history
+    // CRITICAL: Double-check roomId is valid before calling getMessageHistory
+    // This prevents errors from race conditions or edge cases
+    if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
+      console.error('[join] Invalid roomId before getMessageHistory:', {
+        roomId,
+        type: typeof roomId,
+        email: cleanEmail,
+        userId: user?.id,
+      });
+      emitError(
+        socket,
+        'Invalid room configuration. Please try reconnecting.',
+        null,
+        'join:invalidRoomId'
+      );
+      return;
+    }
+
     let historyResult;
     try {
       console.log('[join] Loading message history for room:', roomId, 'user:', cleanEmail);
@@ -110,7 +153,13 @@ function registerConnectionHandlers(socket, io, services) {
         roomId: roomId,
       });
     } catch (error) {
-      console.error('[join] Error loading message history:', error);
+      console.error('[join] Error loading message history:', {
+        error: error.message,
+        stack: error.stack,
+        roomId: roomId,
+        email: cleanEmail,
+        userId: user?.id,
+      });
       emitError(socket, 'Failed to load message history.', error, 'join:getMessageHistory');
       return;
     }
@@ -131,7 +180,7 @@ function registerConnectionHandlers(socket, io, services) {
 
     // Get display name for room name fallback
     const displayName = user.displayName || user.firstName || cleanEmail;
-    
+
     socket.emit('join_success', {
       email: cleanEmail,
       username: cleanEmail, // Backward compatibility

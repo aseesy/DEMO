@@ -1,47 +1,18 @@
-# Railway Configuration
-# PostgreSQL-only production setup
-# Frontend is deployed separately on Vercel
-#
-# ============================================================
-# CRITICAL: ROOT DIRECTORY CONFIGURATION
-# ============================================================
-# This config deploys from the PROJECT ROOT (/chat/), NOT /chat-server/
-#
-# The buildCommand and startCommand use "cd chat-server && ..." to navigate
-# to the server directory. This approach:
-# 1. Allows deployment from project root via `railway up`
-# 2. Prevents "Could not find root directory: /chat-server" errors
-# 3. Works with both git-based deploys and CLI uploads
-#
-# DO NOT set rootDirectory in Railway dashboard!
-# DO NOT set root_dir in this file!
-# ALWAYS deploy from /chat/ (project root), not /chat/chat-server/
-#
-# If you see "Could not find root directory: /chat-server":
-# 1. Check Railway dashboard -> service settings -> remove any root directory
-# 2. Run: cd /path/to/chat && railway up (NOT from chat-server/)
-# 3. Or use: ./scripts/deploy-railway.sh
-#
-# pnpm files are excluded via .railwayignore to prevent build failures
-# ============================================================
+# Railway Configuration for Monorepo
+# This file is in the project root
+# Sets root directory to chat-server for build and deployment
+
+[service]
+rootDirectory = "chat-server"
 
 [build]
 builder = "nixpacks"
-watchPatterns = ["chat-server/**"]
-buildCommand = "cd chat-server && npm install --legacy-peer-deps && echo 'Build v1.0.6 root-deploy'"
+buildCommand = "npm install --legacy-peer-deps"
 
 [deploy]
-startCommand = "cd chat-server && node server.js"
+startCommand = "node server.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 
-# REQUIRED ENVIRONMENT VARIABLES:
-# - DATABASE_URL: PostgreSQL connection string (auto-set if using Railway Postgres)
-# - JWT_SECRET: For authentication
-# - OPENAI_API_KEY: For AI mediation features
-# - GMAIL_*: For email notifications
-#
-# OPTIONAL:
-# - NEO4J_URI, NEO4J_PASSWORD: For graph database (set to external URL, not localhost)
