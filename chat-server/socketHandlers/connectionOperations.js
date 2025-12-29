@@ -241,7 +241,8 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
 
   // Get messages with JOIN to users table (normalized)
   // Also get receiver info by joining with room_members and users
-  // Handle NULL user_email by using COALESCE to ensure JOIN works
+  // Handle NULL user_email by checking IS NOT NULL before JOIN
+  // Handle NULL sender user_id in receiver JOIN condition
   const historyQuery = `
     SELECT m.*, 
            u.id as user_id, u.first_name, u.last_name, u.email,
@@ -251,7 +252,8 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
            u_receiver.email as receiver_email
     FROM messages m
     LEFT JOIN users u ON m.user_email IS NOT NULL AND LOWER(m.user_email) = LOWER(u.email)
-    LEFT JOIN room_members rm_receiver ON rm_receiver.room_id = m.room_id AND rm_receiver.user_id != u.id
+    LEFT JOIN room_members rm_receiver ON rm_receiver.room_id = m.room_id 
+      AND (u.id IS NULL OR rm_receiver.user_id != u.id)
     LEFT JOIN users u_receiver ON rm_receiver.user_id = u_receiver.id
     WHERE m.room_id = $1
       AND (m.type IS NULL OR m.type != 'system')
