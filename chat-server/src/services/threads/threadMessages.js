@@ -4,10 +4,11 @@
  * Handles message-thread operations:
  * - Add message to thread
  * - Remove message from thread
+ * - Get messages for a thread
  */
 
 const dbSafe = require('../../../dbSafe');
-const { extractDistinctiveKeywords } = require('./threadKeywords');
+const { buildUserObject } = require('../../../socketHandlers/utils');
 
 // Neo4j client for semantic threading
 let neo4jClient = null;
@@ -16,21 +17,6 @@ try {
 } catch (err) {
   console.warn('⚠️  Neo4j client not available - semantic threading will use fallback');
 }
-
-// =============================================================================
-// CATEGORY KEYWORDS for fast local matching
-// =============================================================================
-const CATEGORY_KEYWORDS = {
-  schedule: ['pickup', 'dropoff', 'drop-off', 'pick-up', 'custody', 'visitation', 'weekend', 'weekday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'morning', 'evening', 'afternoon', 'time', 'schedule', 'arrangement', 'switch', 'exchange'],
-  medical: ['doctor', 'hospital', 'medicine', 'medication', 'prescription', 'appointment', 'sick', 'fever', 'health', 'dentist', 'therapy', 'therapist', 'vaccine', 'checkup', 'illness', 'symptoms', 'allergy'],
-  education: ['school', 'homework', 'teacher', 'grade', 'class', 'test', 'exam', 'tutor', 'tutoring', 'college', 'education', 'learning', 'assignment', 'project', 'report', 'conference'],
-  finances: ['money', 'payment', 'expense', 'cost', 'bill', 'support', 'reimburse', 'financial', 'budget', 'pay', 'paid', 'owe', 'debt', 'invoice', 'receipt', 'spend', 'spent'],
-  activities: ['soccer', 'basketball', 'baseball', 'football', 'practice', 'game', 'sport', 'activity', 'hobby', 'lesson', 'camp', 'club', 'dance', 'music', 'piano', 'swim', 'swimming', 'gymnastics', 'martial', 'arts', 'recital', 'tournament'],
-  travel: ['travel', 'trip', 'vacation', 'flight', 'passport', 'visit', 'holiday', 'plane', 'airport', 'hotel', 'drive', 'road', 'destination', 'traveling'],
-  safety: ['emergency', 'safety', 'concern', 'danger', 'worry', 'secure', 'protect', 'urgent', 'warning', 'alert', 'accident', 'injury', 'hurt'],
-  logistics: ['clothes', 'clothing', 'shoes', 'backpack', 'supplies', 'stuff', 'things', 'items', 'belongings', 'forgot', 'left', 'bring', 'pack', 'packed'],
-  'co-parenting': ['parenting', 'decision', 'agree', 'discuss', 'relationship', 'communication', 'boundary', 'boundaries', 'conflict', 'disagreement', 'cooperate', 'rules', 'discipline'],
-};
 
 /**
  * Add message to thread
@@ -96,10 +82,7 @@ async function removeMessageFromThread(messageId) {
     const db = require('../../../dbPostgres');
 
     // First get the thread_id before we null it
-    const msgResult = await db.query(
-      'SELECT thread_id FROM messages WHERE id = $1',
-      [messageId]
-    );
+    const msgResult = await db.query('SELECT thread_id FROM messages WHERE id = $1', [messageId]);
     const threadId = msgResult.rows[0]?.thread_id;
 
     // Update message to remove from thread
@@ -130,98 +113,70 @@ async function removeMessageFromThread(messageId) {
 }
 
 /**
- * Auto-assign a message to the best matching existing thread
- * Uses fast keyword matching (no AI call) for real-time assignment
- *
- * @param {Object} message - Message object with id, text, roomId
- * @param {Function} getThreadsForRoom - Function to get threads for room
- * @returns {Promise<Object|null>} - { threadId, threadTitle, category, score } or null
+ * Get messages for a specific thread
+ * Orders by sequence number (temporal integrity) with timestamp fallback
+ * @param {string} threadId - Thread ID
+ * @param {number} limit - Maximum number of messages to return (default 50)
+ * @param {number} offset - Offset for pagination (default 0)
+ * @returns {Promise<Array>} Array of message objects with sender/receiver structure
  */
-async function autoAssignMessageToThread(message, getThreadsForRoom) {
-  if (!message || !message.text || !message.roomId) {
-    return null;
-  }
-
+async function getThreadMessages(threadId, limit = 50, offset = 0) {
   try {
-    // Get existing active threads for this room
-    const existingThreads = await getThreadsForRoom(message.roomId, false);
+    const db = require('../../../dbPostgres');
+    // Get messages for this thread, excluding system messages, private, and flagged
+    // Order by sequence number (handles out-of-order delivery), fallback to timestamp
+    // Join with users table to get user details for sender
+    const query = `
+      SELECT m.*, 
+             u.id as user_id, u.first_name, u.last_name, u.email
+      FROM messages m
+      LEFT JOIN users u ON m.user_email = u.email
+      WHERE m.thread_id = $1
+        AND (m.private = 0 OR m.private IS NULL)
+        AND (m.flagged = 0 OR m.flagged IS NULL)
+        AND m.type != 'system'
+      ORDER BY COALESCE(m.thread_sequence, 0) ASC, m.timestamp ASC
+      LIMIT $2 OFFSET $3
+    `;
 
-    if (existingThreads.length === 0) {
-      return null;
-    }
+    const result = await db.query(query, [threadId, limit, offset]);
 
-    // Extract keywords from the message
-    const messageKeywords = extractDistinctiveKeywords(message.text, 3);
-
-    if (messageKeywords.length === 0) {
-      return null;
-    }
-
-    // Score each thread based on keyword overlap
-    const scoredThreads = existingThreads.map(thread => {
-      // Extract keywords from thread title
-      const titleKeywords = extractDistinctiveKeywords(thread.title, 3);
-
-      // Get category-specific keywords
-      const categoryKeywords = CATEGORY_KEYWORDS[thread.category] || [];
-
-      // Calculate score
-      let score = 0;
-
-      // 1. Direct keyword match with thread title (highest weight)
-      const titleMatches = messageKeywords.filter(k => titleKeywords.includes(k));
-      score += titleMatches.length * 3;
-
-      // 2. Category keyword match (medium weight)
-      const categoryMatches = messageKeywords.filter(k => categoryKeywords.includes(k));
-      score += categoryMatches.length * 2;
-
-      // 3. Bonus for category keywords appearing in thread title
-      const titleCategoryOverlap = titleKeywords.filter(k => categoryKeywords.includes(k));
-      if (titleCategoryOverlap.length > 0 && categoryMatches.length > 0) {
-        score += 2; // Bonus for strong category alignment
-      }
+    // Build sender objects (receiver not needed for threads - same room participants)
+    return result.rows.map(msg => {
+      const senderData = {
+        id: msg.user_id,
+        email: msg.user_email,
+        first_name: msg.first_name,
+        last_name: msg.last_name,
+      };
+      const sender = buildUserObject(senderData);
 
       return {
-        threadId: thread.id,
-        threadTitle: thread.title,
-        category: thread.category,
-        score,
-        titleMatches,
-        categoryMatches,
+        id: msg.id,
+        type: msg.type,
+
+        // ✅ NEW STRUCTURE (primary)
+        sender,
+
+        // Database field (keep for database column mapping)
+        user_email: msg.user_email,
+
+        // Core fields
+        text: msg.text,
+        timestamp: msg.timestamp,
+        threadId: msg.thread_id,
+        roomId: msg.room_id,
+        sequenceNumber: msg.thread_sequence, // Include sequence for client-side ordering
       };
     });
-
-    // Find the best matching thread
-    const bestMatch = scoredThreads
-      .filter(t => t.score >= 3) // Minimum score threshold
-      .sort((a, b) => b.score - a.score)[0];
-
-    if (bestMatch) {
-      console.log(`[threadMessages] Auto-assigning message to thread "${bestMatch.threadTitle}" (score: ${bestMatch.score})`);
-
-      // Actually assign the message to the thread
-      await addMessageToThread(message.id, bestMatch.threadId);
-
-      return {
-        threadId: bestMatch.threadId,
-        threadTitle: bestMatch.threadTitle,
-        category: bestMatch.category,
-        score: bestMatch.score,
-      };
-    }
-
-    return null;
   } catch (error) {
-    console.error('[threadMessages] Error auto-assigning message to thread:', error);
-    return null;
+    console.error('Error getting thread messages:', error);
+    return [];
   }
 }
 
 module.exports = {
   addMessageToThread,
   removeMessageFromThread,
-  autoAssignMessageToThread,
-  CATEGORY_KEYWORDS,
+  getThreadMessages,
 };
-

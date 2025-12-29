@@ -24,6 +24,16 @@ jest.mock('../../utils', () => ({
 
 jest.mock('../../socketHandlers/utils', () => ({
   getUserDisplayName: jest.fn(),
+  buildUserObject: jest.fn(userData => {
+    if (!userData || !userData.id) return null;
+    return {
+      uuid: userData.id,
+      first_name: userData.first_name || null,
+      last_name: userData.last_name || null,
+      email: userData.email || null,
+    };
+  }),
+  getReceiverForMessage: jest.fn(() => Promise.resolve(null)),
 }));
 
 describe('messageOperations', () => {
@@ -140,56 +150,69 @@ describe('messageOperations', () => {
       jest.useRealTimers();
     });
 
-    it('should create message with all required fields', () => {
-      const user = { username: 'testuser', roomId: 'room1' };
-      const message = createUserMessage('socket123', user, 'Hello', 'Test User');
+    it('should create message with all required fields', async () => {
+      const user = { id: 123, email: 'testuser@test.com', username: 'testuser', roomId: 'room1' };
+      const message = await createUserMessage('socket123', user, 'Hello', 'Test User');
 
       expect(message).toMatchObject({
         type: 'user',
-        username: 'testuser',
-        displayName: 'Test User',
+        user_email: 'testuser@test.com', // Database field
         text: 'Hello',
         socketId: 'socket123',
         roomId: 'room1',
       });
+      // Verify new structure
+      expect(message.sender).toBeDefined();
+      expect(message.sender.uuid).toBe(123);
+      expect(message.sender.email).toBe('testuser@test.com');
+      // Legacy fields should not be present
+      expect(message).not.toHaveProperty('username');
+      expect(message).not.toHaveProperty('email');
+      expect(message).not.toHaveProperty('displayName');
       expect(message.id).toContain('socket123');
       expect(message.timestamp).toBe('2024-01-15T12:00:00.000Z');
     });
 
-    it('should include optimisticId when provided', () => {
-      const user = { username: 'testuser', roomId: 'room1' };
+    it('should include optimisticId when provided', async () => {
+      const user = { id: 123, email: 'testuser@test.com', username: 'testuser', roomId: 'room1' };
       const optimisticId = 'pending_123456_abc';
 
-      const message = createUserMessage('socket123', user, 'Hello', 'Test User', optimisticId);
+      const message = await createUserMessage(
+        'socket123',
+        user,
+        'Hello',
+        'Test User',
+        optimisticId
+      );
 
       expect(message.optimisticId).toBe('pending_123456_abc');
     });
 
-    it('should NOT include optimisticId when not provided', () => {
-      const user = { username: 'testuser', roomId: 'room1' };
+    it('should NOT include optimisticId when not provided', async () => {
+      const user = { id: 123, email: 'testuser@test.com', username: 'testuser', roomId: 'room1' };
 
-      const message = createUserMessage('socket123', user, 'Hello', 'Test User');
-
-      expect(message).not.toHaveProperty('optimisticId');
-    });
-
-    it('should NOT include optimisticId when null is passed', () => {
-      const user = { username: 'testuser', roomId: 'room1' };
-
-      const message = createUserMessage('socket123', user, 'Hello', 'Test User', null);
+      const message = await createUserMessage('socket123', user, 'Hello', 'Test User');
 
       expect(message).not.toHaveProperty('optimisticId');
     });
 
-    it('should generate unique IDs for different messages', () => {
-      const user = { username: 'testuser', roomId: 'room1' };
+    it('should NOT include optimisticId when null is passed', async () => {
+      const user = { id: 123, email: 'testuser@test.com', username: 'testuser', roomId: 'room1' };
 
-      const message1 = createUserMessage('socket1', user, 'Hello', 'Test User');
+      const message = await createUserMessage('socket123', user, 'Hello', 'Test User', null);
+
+      expect(message).not.toHaveProperty('optimisticId');
+    });
+
+    it('should generate unique IDs for different messages', async () => {
+      const user = { id: 123, email: 'testuser@test.com', username: 'testuser', roomId: 'room1' };
+
+      const message1 = await createUserMessage('socket1', user, 'Hello', 'Test User');
 
       // Advance time by 1ms to get different timestamp
       jest.advanceTimersByTime(1);
 
-      const message2 = createUserMessage('socket2', user, 'World', 'Test User');
+      const message2 = await createUserMessage('socket2', user, 'World', 'Test User');
 
       expect(message1.id).not.toBe(message2.id);
     });
@@ -209,23 +232,37 @@ describe('messageOperations', () => {
       const originalMessage = {
         id: 'msg123',
         type: 'user',
-        username: 'testuser',
+        user_email: 'testuser',
+        sender: {
+          uuid: 123,
+          email: 'testuser',
+          first_name: 'Test',
+          last_name: 'User',
+        },
         text: 'Original text',
         timestamp: '2024-01-15T11:00:00.000Z',
       };
 
       const result = createEditedMessage(originalMessage, 'Updated text', 'room1');
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         id: 'msg123',
         type: 'user',
-        username: 'testuser',
+        user_email: 'testuser', // Database field
         text: 'Updated text',
         timestamp: '2024-01-15T11:00:00.000Z',
         edited: true,
         editedAt: '2024-01-15T12:00:00.000Z',
         roomId: 'room1',
       });
+      // Verify new structure is preserved
+      expect(result).toHaveProperty('sender');
+      expect(result.sender).toEqual(originalMessage.sender);
+      expect(result).toHaveProperty('receiver');
+      // Legacy fields should not be present
+      expect(result).not.toHaveProperty('username');
+      expect(result).not.toHaveProperty('email');
+      expect(result).not.toHaveProperty('displayName');
     });
 
     it('should preserve original message ID', () => {

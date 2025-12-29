@@ -6,6 +6,7 @@
  */
 
 const { sanitizeInput, validateUsername } = require('../utils');
+const { buildUserObject } = require('./utils');
 const pairingManager = require('../libs/pairing-manager');
 
 /**
@@ -201,20 +202,30 @@ function registerActiveUser(userSessionService, socketId, cleanEmail, roomId) {
  * @typedef {Object} MessageHistoryResult
  * @property {Array} messages
  * @property {boolean} hasMore
+ * @property {number} total
+ * @property {number} offset
  */
 
 /**
- * Get room message history
+ * Get room message history with pagination support
  *
  * NAMING: Using `get*` for consistency with codebase data retrieval convention.
  *
  * @param {string} roomId - Room ID
  * @param {Object} dbPostgres - Database connection
  * @param {number} limit - Maximum messages to fetch
+ * @param {number} offset - Offset for pagination
  * @returns {Promise<MessageHistoryResult>}
  */
-async function getMessageHistory(roomId, dbPostgres, limit = 500) {
-  console.log('[getMessageHistory] Loading messages for room:', roomId);
+async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
+  console.log(
+    '[getMessageHistory] Loading messages for room:',
+    roomId,
+    'limit:',
+    limit,
+    'offset:',
+    offset
+  );
 
   // Get total count of user messages (exclude system messages)
   const countResult = await dbPostgres.query(
@@ -228,39 +239,66 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500) {
   const totalMessages = parseInt(countResult.rows[0]?.total || 0, 10);
   console.log('[getMessageHistory] Total user messages in room:', totalMessages);
 
-  // Get messages - order by DESC to get most recent messages first
-  // Exclude system messages (join/leave) BEFORE the limit so we get actual user messages
-  // Use user_email instead of username for joining
+  // Get messages with JOIN to users table (normalized)
+  // Also get receiver info by joining with room_members and users
   const historyQuery = `
-    SELECT m.*, u.display_name, u.first_name, u.last_name, u.email
+    SELECT m.*, 
+           u.id as user_id, u.first_name, u.last_name, u.email,
+           rm_receiver.user_id as receiver_user_id,
+           u_receiver.first_name as receiver_first_name,
+           u_receiver.last_name as receiver_last_name,
+           u_receiver.email as receiver_email
     FROM messages m
     LEFT JOIN users u ON LOWER(m.user_email) = LOWER(u.email)
+    LEFT JOIN room_members rm_receiver ON rm_receiver.room_id = m.room_id AND rm_receiver.user_id != u.id
+    LEFT JOIN users u_receiver ON rm_receiver.user_id = u_receiver.id
     WHERE m.room_id = $1
       AND (m.type IS NULL OR m.type != 'system')
       AND m.text NOT LIKE '%joined the chat%'
       AND m.text NOT LIKE '%left the chat%'
     ORDER BY m.timestamp DESC
-    LIMIT ${limit}
+    LIMIT $2 OFFSET $3
   `;
-  const result = await dbPostgres.query(historyQuery, [roomId]);
+  const result = await dbPostgres.query(historyQuery, [roomId, limit, offset]);
 
   console.log('[getMessageHistory] Retrieved', result.rows.length, 'messages from database');
 
   // Reverse to chronological order (oldest first) for frontend display
   const messages = result.rows.reverse().map(msg => {
-    // Build display name from first_name + last_name, fallback to email
-    const displayName =
-      msg.first_name && msg.last_name
-        ? `${msg.first_name} ${msg.last_name}`
-        : msg.first_name || msg.display_name || msg.user_email || msg.email || 'User';
+    // Build sender object from message data
+    const senderData = {
+      id: msg.user_id,
+      email: msg.user_email || msg.email,
+      first_name: msg.first_name,
+      last_name: msg.last_name,
+    };
+    const sender = buildUserObject(senderData);
+
+    // Build receiver object if available
+    let receiver = null;
+    if (msg.receiver_user_id) {
+      const receiverData = {
+        id: msg.receiver_user_id,
+        email: msg.receiver_email,
+        first_name: msg.receiver_first_name,
+        last_name: msg.receiver_last_name,
+      };
+      receiver = buildUserObject(receiverData);
+    }
 
     // Ensure all required fields are present
     const message = {
       id: msg.id,
       type: msg.type || 'user_message',
-      username: msg.user_email || msg.email || msg.username, // Support both for backward compatibility
+
+      // ✅ NEW STRUCTURE (primary)
+      sender,
+      receiver,
+
+      // Database field (keep for database column mapping)
       user_email: msg.user_email || msg.email || msg.username,
-      displayName: displayName,
+
+      // Core fields
       text: msg.text,
       timestamp: msg.timestamp || msg.created_at,
       threadId: msg.thread_id || null,
@@ -301,7 +339,10 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500) {
 
   return {
     messages,
-    hasMore: totalMessages > limit,
+    hasMore: totalMessages > offset + limit,
+    total: totalMessages,
+    offset,
+    limit,
   };
 }
 
@@ -351,8 +392,7 @@ async function saveSystemMessage(systemMessage, dbSafe) {
 function getRoomUsers(userSessionService, roomId) {
   const users = userSessionService.getUsersInRoom(roomId);
   return users.map(u => ({
-    email: u.email || u.username,
-    username: u.email || u.username,
+    email: u.email,
     joinedAt: u.joinedAt,
   }));
 }

@@ -16,17 +16,33 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
   // Auto-resize textarea to fit content
   const adjustTextareaHeight = React.useCallback(() => {
     if (textareaRef.current) {
+      // Preserve cursor position before adjusting height
+      const textarea = textareaRef.current;
+      const selectionStart = textarea.selectionStart;
+      const selectionEnd = textarea.selectionEnd;
+      const isFocused = document.activeElement === textarea;
+
       // Reset height to auto to get accurate scrollHeight
-      textareaRef.current.style.height = 'auto';
+      textarea.style.height = 'auto';
       // Get the scroll height (content height)
-      const scrollHeight = textareaRef.current.scrollHeight;
+      const scrollHeight = textarea.scrollHeight;
       // Max height is 8rem (128px) - matches max-h-32
       const maxHeight = 128;
       // Set height to scrollHeight, but cap at maxHeight
       const newHeight = Math.min(scrollHeight, maxHeight);
-      textareaRef.current.style.height = `${newHeight}px`;
+      textarea.style.height = `${newHeight}px`;
       // Enable scrolling if content exceeds max height
-      textareaRef.current.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+      textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+
+      // Restore cursor position after height adjustment
+      if (isFocused && selectionStart !== null && selectionEnd !== null) {
+        // Use requestAnimationFrame to ensure DOM has updated
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.setSelectionRange(selectionStart, selectionEnd);
+          }
+        });
+      }
 
       // Scroll textarea into view if it expanded significantly
       // This ensures the full message is visible when AI rewrite is selected
