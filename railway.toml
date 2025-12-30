@@ -1,12 +1,17 @@
-# Railway Configuration
-# Deploy from chat-server directory directly
+# Railway Configuration for Monorepo
+# This config tells Railway to deploy from chat-server directory
+
+[service]
+rootDirectory = "chat-server"
 
 [build]
 builder = "nixpacks"
-buildCommand = "npm ci"
+buildCommand = "npm install --legacy-peer-deps"
 
 [deploy]
-startCommand = "cd /app && node server.js"
+startCommand = "node server.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 2000
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
