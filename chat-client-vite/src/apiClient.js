@@ -1,6 +1,7 @@
 import { API_BASE_URL } from './config.js';
 import { trackAPIError, trackAPIResponseTime } from './utils/analyticsEnhancements.js';
 import { STORAGE_KEYS } from './utils/storageKeys.js';
+import { tokenManager } from './utils/tokenManager.js';
 
 // Thin wrappers around fetch so we have a single place to adjust
 // base URLs, credentials, and common headers.
@@ -84,13 +85,12 @@ export function checkRateLimit() {
 }
 
 /**
- * Get authentication token from localStorage
+ * Get authentication token from TokenManager (single source of truth)
  * @returns {string|null} The auth token or null if not available
  */
 function getAuthToken() {
-  if (typeof window === 'undefined') return null;
-  // Try preferred key first, then legacy fallback for Safari/ITP issues
-  return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) || localStorage.getItem('auth_token_backup');
+  // Use TokenManager for instant, synchronized token access
+  return tokenManager.getToken();
 }
 
 /**
@@ -101,7 +101,22 @@ function getAuthToken() {
 function addAuthHeader(headers = {}) {
   const token = getAuthToken();
   if (token && !headers.Authorization && !headers.authorization) {
-    headers.Authorization = `Bearer ${token}`;
+    // Ensure token doesn't already have "Bearer " prefix
+    const cleanToken = token.startsWith('Bearer ') ? token.substring(7) : token;
+    headers.Authorization = `Bearer ${cleanToken}`;
+
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development') {
+      const tokenParts = cleanToken.split('.');
+      console.log('[apiClient] Adding auth header:', {
+        hasToken: !!cleanToken,
+        tokenParts: tokenParts.length,
+        tokenLength: cleanToken.length,
+        tokenPreview: cleanToken.substring(0, 20) + '...',
+      });
+    }
+  } else if (!token && process.env.NODE_ENV === 'development') {
+    console.warn('[apiClient] No token available - request will be unauthenticated');
   }
   return headers;
 }

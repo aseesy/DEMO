@@ -303,10 +303,23 @@ export function useInviteManagement({
     };
   }, [currentView, isAuthenticated, hasCoParentConnected, checkRoomMembers]);
 
-  // Check once when user first authenticates - immediate check to avoid banner flash
+  // Check once when user first authenticates - wait for token to be available
   React.useEffect(() => {
     if (isAuthenticated && !hasCoParentConnected) {
-      checkRoomMembers();
+      // Wait a bit for token to be stored in localStorage after login
+      const timer = setTimeout(() => {
+        // Verify token exists before making request
+        const token = localStorage.getItem('auth_token_backup');
+        if (token) {
+          checkRoomMembers();
+        } else {
+          // If no token yet, wait a bit more (token should be set by now)
+          setTimeout(() => {
+            checkRoomMembers();
+          }, 500);
+        }
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isAuthenticated, hasCoParentConnected, checkRoomMembers]);
 

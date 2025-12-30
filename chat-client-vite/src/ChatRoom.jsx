@@ -171,6 +171,14 @@ function ChatRoomContent({
         window.matchMedia('(display-mode: standalone)').matches ||
         window.navigator.standalone === true;
 
+      // CRITICAL: If we have stored auth, don't show landing page
+      // This handles the case where user just signed in and auth state hasn't updated yet
+      if (hasStoredAuth) {
+        console.log('[ChatRoom] Stored auth exists, hiding landing page');
+        setShowLanding(false);
+        return;
+      }
+
       if (!hasStoredAuth && !isPWA && window.location.pathname === '/') {
         setShowLanding(true);
       }
@@ -250,9 +258,23 @@ function ChatRoomContent({
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true;
 
+    // CRITICAL: Check for stored auth again before showing landing page
+    // This prevents showing landing page immediately after sign-in when auth state hasn't updated yet
+    const hasStoredAuthCheck =
+      storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
+    if (hasStoredAuthCheck) {
+      console.log('[ChatRoom] Stored auth exists on root path - waiting for auth verification');
+      // Don't show landing page if we have stored auth - wait for verification
+      if (showLandingRef.current) {
+        setShowLanding(false);
+      }
+      return;
+    }
+
     // Show landing page if on root and no auth (but not for PWA)
     // Use ref to avoid dependency loop
-    if (!showLandingRef.current && !isPWA && isOnRoot) {
+    // CRITICAL: Also check !isAuthenticated to prevent race condition after login redirect
+    if (!showLandingRef.current && !isPWA && isOnRoot && !isAuthenticated) {
       console.log('[ChatRoom] Showing landing page (no auth, on root)');
       setShowLanding(true);
       return;

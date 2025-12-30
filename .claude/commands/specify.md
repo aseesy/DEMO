@@ -2,190 +2,109 @@
 description: Create a detailed feature specification using the specification-agent. Executes Phase 1 of the SDD workflow.
 ---
 
-# /specify Command
+# /specify - LiaiZen Edition
 
-**Execute this command to create a detailed, executable feature specification.**
+**Delegates to framework's specification-agent with LiaiZen-specific context.**
 
-## What This Command Does
+## LiaiZen Context Gathering (MCP Queries)
 
-The `/specify` command invokes the **specification-agent** to:
+Before delegating, Claude Code should gather LiaiZen-specific context via MCP servers:
 
-1. **Gather requirements** from user input or business objectives
-2. **Query MCP servers** for technical constraints and design system
-3. **Create user stories** with acceptance criteria
-4. **Define functional requirements** with business rules
-5. **Document non-functional requirements** (performance, security, usability)
-6. **Specify technical constraints** (architecture, APIs, design system)
-7. **Produce specification artifact**: `spec.md`
-
-## Prerequisites
-
-Before running `/specify`:
-
-- ✅ MCP servers are active (restart Claude Desktop if needed)
-- ✅ You're in the project root: `/Users/athenasees/Desktop/chat`
-- ✅ You have a clear feature idea or requirement
-
-## Usage
-
-### Basic Usage (interactive):
+### Architecture & Technical Context
 
 ```
-/specify
+1. "What's the LiaiZen architecture?"
+   → Get system architecture, tech stack, deployment info
+
+2. "Get API endpoints"
+   → Understand existing APIs to reference
+
+3. "Show me database schema"
+   → Know data structures and relationships
 ```
 
-This will:
+### Design & Domain Context
 
-1. Prompt you for feature name and description
-2. Ask for user stories and requirements
-3. Query MCP servers for context
-4. Generate spec.md
+```
+4. "Get design system"
+   → Colors, spacing, components for UI specs
 
-### With Feature Name:
+5. "Get best practices"
+   → LiaiZen coding standards and co-parenting domain principles
+```
+
+### Co-Parenting Domain Context
+
+```
+6. Review co-parenting principles from CLAUDE.md:
+   - Win/Win Outcomes (benefit all parties)
+   - Conflict Reduction (de-escalation focus)
+   - Privacy & Security (COPPA, GDPR)
+   - Accessibility (varying technical skills)
+```
+
+## Delegation to Framework
+
+After gathering context, delegate to framework's specification-agent:
+
+```markdown
+Use the Task tool:
+
+- subagent_type: "specification-agent"
+- description: "Create feature specification with LiaiZen context"
+- prompt: "Execute the /specify command for feature: $FEATURE_NAME
+
+Context from LiaiZen MCP servers:
+
+**Architecture**: [Results from query 1]
+**Existing APIs**: [Results from query 2]
+**Database Schema**: [Results from query 3]
+**Design System**: [Results from query 4]
+**Best Practices**: [Results from query 5]
+**Co-Parenting Principles**: [From CLAUDE.md]
+
+Please create a detailed specification following SDD methodology with this LiaiZen-specific context."
+```
+
+## What the Framework Agent Will Do
+
+The specification-agent (from `sdd-agentic-framework/.claude/agents/product/specification-agent.md`) will:
+
+1. ✅ Create or update feature branch (with user approval)
+2. ✅ Generate `specs/###-feature-name/spec.md` using template
+3. ✅ Include user stories, acceptance criteria, requirements
+4. ✅ Run domain detection to identify needed agents
+5. ✅ Validate specification quality
+6. ✅ Report completion with validation score
+
+## Usage Examples
+
+### Basic Usage
 
 ```
 /specify expense-tracking
 ```
 
-### With Initial Description:
+### With Description
 
 ```
-/specify expense-tracking --description "Allow co-parents to track and split child-related expenses"
+/specify expense-tracking "Allow co-parents to track and split child-related expenses with receipt uploads and fair split calculations"
 ```
 
-## How It Works
-
-The specification-agent will **automatically**:
-
-### Query MCP for Context
-
-```
-1. "What's the LiaiZen architecture?"
-   → Understand technical constraints
-
-2. "Get API endpoints"
-   → Know existing APIs to reference
-
-3. "Show me database schema"
-   → Understand data structure
-
-4. "Get design system"
-   → Colors, spacing for UI specs
-
-5. "Get best practices"
-   → LiaiZen standards and philosophies
-```
-
-### Create Specification Sections
-
-- **Overview**: Feature name, objective, success metrics
-- **User Stories**: As a [user], I want to [action], so that [benefit]
-- **Functional Requirements**: Core functionality, business rules
-- **Non-Functional Requirements**: Performance, security, usability
-- **Technical Constraints**: Architecture, API integration, design system
-- **Acceptance Criteria**: Testable conditions for completion
-
-## Output File
+## Next Steps
 
 After `/specify` completes:
 
 ```
-specs/[feature-id]-[feature-name]/
-└── spec.md              # Feature specification ⭐
+/plan   # Create implementation plan with architecture details
 ```
 
-## Example Output (spec.md)
+## Framework Reference
 
-```markdown
-# Feature Specification: Expense Tracking
-
-## Overview
-
-**Feature Name**: Expense Tracking
-**Business Objective**: Allow co-parents to track, categorize, and fairly split child-related expenses
-
-**Technical Context** (from Codebase Context MCP):
-
-- Architecture: React 18 + Vite frontend, Node.js + Express backend
-- Database: SQLite (expenses table will be added)
-- Deployment: Vercel (frontend), Railway (backend)
-
-## User Stories
-
-**As a co-parent**, I want to **log child-related expenses**, so that **I can track spending and request reimbursement**.
-
-**Acceptance Criteria**:
-
-- Can add expense with amount, category, date, description
-- Can attach receipt photo
-- Can mark as reimbursable or informational
-- Expense appears in shared expense list
-
-## Technical Constraints
-
-**Architecture** (Codebase Context MCP):
-
-- Must integrate with existing authentication (JWT + Google OAuth)
-- Must use Socket.io for real-time updates
-- Must follow React functional component + hooks pattern
-
-**Design System** (Design Tokens MCP):
-
-- Colors: Primary #275559, Success #6dd4b0
-- Forms: min-h-[44px] inputs, border-2
-- Buttons: rounded-lg, min-h-[44px]
-
-**API Integration** (Codebase Context MCP):
-
-- Create new endpoints: GET/POST /api/expenses
-- Follow existing API pattern (RESTful, JWT auth)
-```
-
-## Next Steps After /specify
-
-Once specification is complete:
-
-```
-/plan
-```
-
-This will invoke **planning-agent** to create an implementation plan.
-
-## MCP Server Benefits
-
-The specification-agent **automatically uses MCP servers** to:
-
-- ✅ **Accurate technical constraints** from Codebase Context
-- ✅ **Design system compliance** from Design Tokens
-- ✅ **Existing API patterns** referenced
-- ✅ **Database schema awareness**
-- ✅ **Best practices** automatically incorporated
-
-## Troubleshooting
-
-### "Feature already exists"
-
-**Solution**: Use a different feature name or update existing spec
-
-### "MCP servers not responding"
-
-**Solution**: Restart Claude Desktop (Cmd+Q, reopen)
-
-### "Unclear requirements"
-
-**Solution**: Agent will ask clarifying questions - provide more detail
-
-## Related Commands
-
-- `/plan` - Create implementation plan (Phase 2)
-- `/tasks` - Break down plan into tasks (Phase 3)
-- `/validate-domain` - Validate against co-parenting domain
-
-## Learn More
-
-- **Specification Agent Details**: `sdd-agentic-framework/.claude/agents/product/specification-agent.md`
-- **MCP Integration Guide**: `sdd-agentic-framework/.docs/mcp-integration-guide.md`
+- **Agent**: `sdd-agentic-framework/.claude/agents/product/specification-agent.md`
+- **Template**: `sdd-agentic-framework/.specify/templates/spec-template.md`
+- **Workflow**: Phase 1 of SDD methodology
 
 ---
 
-**Specification with MCP = Technically Accurate, Design-Consistent Specs**
+**Pattern**: LiaiZen context → Framework delegation → Spec artifact

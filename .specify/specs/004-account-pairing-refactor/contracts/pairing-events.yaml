@@ -1,0 +1,451 @@
+# Socket.io Events Contract: Pairing System
+
+## Overview
+
+Real-time events for co-parent pairing system. Events are emitted to specific users via room targeting (`io.to('user:${userId}')`) to ensure privacy and prevent broadcast to all connected clients.
+
+**Connection Setup**:
+```javascript
+// Client-side
+const socket = io('https://demo-production-6dcd.up.railway.app', {
+  auth: { token: jwtToken }
+});
+
+// Server-side authentication
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  // Verify JWT token...
+  socket.userId = decoded.id;
+  socket.join(`user:${socket.userId}`); // Join user-specific room
+  next();
+});
+```
+
+---
+
+## Events
+
+### pairing:created
+**Direction**: Server → Client
+**Emitted to**: Inviter (parent_a)
+**Trigger**: After successful pairing invitation creation
+
+**Purpose**: Confirm that invitation was created and provide pairing details for UI display.
+
+**Payload**:
+```typescript
+{
+  pairingId: number;          // Pairing session ID
+  code: string;               // LZ-842396 format
+  inviteType: 'email' | 'link' | 'code';
+  inviteeEmail?: string;      // Only for email type
+  inviteUrl?: string;         // For link/email types
+  expiresAt: string;          // ISO 8601 timestamp
+  createdAt: string;          // ISO 8601 timestamp
+}
+```
+
+**Example**:
+```json
+{
+  "pairingId": 123,
+  "code": "LZ-842396",
+  "inviteType": "email",
+  "inviteeEmail": "coparent@example.com",
+  "inviteUrl": "https://coparentliaizen.com/accept-pairing?token=abc123...",
+  "expiresAt": "2025-12-04T10:00:00Z",
+  "createdAt": "2025-11-27T10:00:00Z"
+}
+```
+
+**Client Handler**:
+```javascript
+socket.on('pairing:created', (data) => {
+  console.log('Pairing invitation created:', data.code);
+  // Update UI to show pending state
+  updatePairingStatus('pending_sent', data);
+});
+```
+
+---
+
+### pairing:accepted
+**Direction**: Server → Client
+**Emitted to**: Inviter (parent_a)
+**Trigger**: When parent_b accepts the pairing invitation
+
+**Purpose**: Notify inviter in real-time that their co-parent accepted the invitation.
+
+**Payload**:
+```typescript
+{
+  pairingId: number;          // Pairing session ID
+  partnerId: number;          // User ID of partner (parent_b)
+  partnerName: string;        // Username of partner
+  partnerEmail: string;       // Email of partner
+  roomId: string;             // Shared room ID
+  timestamp: string;          // ISO 8601 timestamp
+  method: 'code' | 'link' | 'email' | 'mutual_detection';
+}
+```
+
+**Example**:
+```json
+{
+  "pairingId": 123,
+  "partnerId": 456,
+  "partnerName": "Jane Doe",
+  "partnerEmail": "jane@example.com",
+  "roomId": "room_xyz789",
+  "timestamp": "2025-11-27T12:00:00Z",
+  "method": "email"
+}
+```
+
+**Client Handler**:
+```javascript
+socket.on('pairing:accepted', (data) => {
+  console.log(`${data.partnerName} accepted your pairing!`);
+  // Show success notification
+  showNotification({
+    title: 'Paired!',
+    message: `You are now paired with ${data.partnerName}`,
+    type: 'success'
+  });
+  // Navigate to shared room
+  navigateTo(`/rooms/${data.roomId}`);
+  // Update pairing status
+  updatePairingStatus('paired', data);
+});
+```
+
+---
+
+### pairing:declined
+**Direction**: Server → Client
+**Emitted to**: Inviter (parent_a)
+**Trigger**: When parent_b declines the pairing invitation (future feature)
+
+**Purpose**: Notify inviter that invitation was declined.
+
+**Payload**:
+```typescript
+{
+  pairingId: number;          // Pairing session ID
+  declinedBy: string;         // Email or username
+  timestamp: string;          // ISO 8601 timestamp
+  reason?: string;            // Optional decline reason
+}
+```
+
+**Example**:
+```json
+{
+  "pairingId": 123,
+  "declinedBy": "jane@example.com",
+  "timestamp": "2025-11-27T12:00:00Z",
+  "reason": null
+}
+```
+
+**Client Handler**:
+```javascript
+socket.on('pairing:declined', (data) => {
+  console.log('Pairing invitation declined');
+  // Show neutral notification
+  showNotification({
+    title: 'Pairing Declined',
+    message: 'Your co-parent declined the pairing invitation',
+    type: 'info'
+  });
+  // Reset to unpaired state
+  updatePairingStatus('unpaired');
+});
+```
+
+---
+
+### pairing:canceled
+**Direction**: Server → Client
+**Emitted to**: Both parent_a (confirmation) and parent_b (if exists)
+**Trigger**: When parent_a cancels a pending invitation
+
+**Purpose**: Notify both parties that invitation was canceled.
+
+**Payload**:
+```typescript
+{
+  pairingId: number;          // Pairing session ID
+  canceledBy: number;         // User ID who canceled
+  timestamp: string;          // ISO 8601 timestamp
+}
+```
+
+**Example**:
+```json
+{
+  "pairingId": 123,
+  "canceledBy": 123,
+  "timestamp": "2025-11-27T12:00:00Z"
+}
+```
+
+**Client Handler**:
+```javascript
+socket.on('pairing:canceled', (data) => {
+  console.log('Pairing invitation canceled');
+  // If inviter: update to unpaired
+  // If invitee: remove notification
+  updatePairingStatus('unpaired');
+});
+```
+
+---
+
+### pairing:expired
+**Direction**: Server → Client
+**Emitted to**: Inviter (parent_a)
+**Trigger**: When pairing session expires (hourly cron job)
+
+**Purpose**: Notify inviter that invitation expired.
+
+**Payload**:
+```typescript
+{
+  pairingId: number;          // Pairing session ID
+  code: string;               // Expired code
+  expiredAt: string;          // ISO 8601 timestamp
+}
+```
+
+**Example**:
+```json
+{
+  "pairingId": 123,
+  "code": "LZ-842396",
+  "expiredAt": "2025-12-04T10:00:00Z"
+}
+```
+
+**Client Handler**:
+```javascript
+socket.on('pairing:expired', (data) => {
+  console.log('Pairing invitation expired:', data.code);
+  // Show notification with option to resend
+  showNotification({
+    title: 'Invitation Expired',
+    message: 'Your pairing invitation has expired',
+    type: 'warning',
+    actions: [
+      { label: 'Resend', onClick: () => resendInvitation(data.pairingId) }
+    ]
+  });
+  // Update status to unpaired
+  updatePairingStatus('unpaired');
+});
+```
+
+---
+
+### pairing:status_changed
+**Direction**: Server → Client
+**Emitted to**: Both parties (parent_a and parent_b)
+**Trigger**: Any pairing status change (created, accepted, canceled, expired)
+
+**Purpose**: General-purpose event for UI synchronization across devices/tabs.
+
+**Payload**:
+```typescript
+{
+  status: 'pending' | 'active' | 'canceled' | 'expired';
+  pairingId: number;
+  timestamp: string;          // ISO 8601 timestamp
+  metadata?: any;             // Additional context
+}
+```
+
+**Example**:
+```json
+{
+  "status": "active",
+  "pairingId": 123,
+  "timestamp": "2025-11-27T12:00:00Z",
+  "metadata": {
+    "partnerId": 456,
+    "roomId": "room_xyz789"
+  }
+}
+```
+
+**Client Handler**:
+```javascript
+socket.on('pairing:status_changed', (data) => {
+  console.log('Pairing status changed:', data.status);
+  // Refresh pairing status from API
+  refreshPairingStatus();
+});
+```
+
+---
+
+## Client-to-Server Events (Optional)
+
+### pairing:request_status
+**Direction**: Client → Server
+**Purpose**: Request current pairing status (alternative to polling)
+
+**Payload**:
+```typescript
+{
+  userId: number;             // Requesting user ID
+}
+```
+
+**Server Response**:
+Emits `pairing:status_changed` with current status.
+
+**Example**:
+```javascript
+// Client requests status
+socket.emit('pairing:request_status', { userId: currentUser.id });
+
+// Server responds with status_changed event
+socket.on('pairing:status_changed', (data) => {
+  console.log('Current status:', data.status);
+});
+```
+
+---
+
+## Event Flow Diagrams
+
+### Flow 1: Email Invitation (New User)
+```
+User A (Inviter)          Server              User B (New User)
+     |                      |                      |
+     |--POST /pairing/create-->|                   |
+     |<--pairing:created----   |                   |
+     |                      |                      |
+     |                      |--[Email sent]------->|
+     |                      |                      |
+     |                      |<--POST /accept-with-signup--|
+     |<--pairing:accepted---|                      |
+     |                      |--pairing:status_changed-->|
+```
+
+### Flow 2: Code Pairing (Both Existing)
+```
+User A (Inviter)          Server              User B (Existing)
+     |                      |                      |
+     |--POST /pairing/create (code)-->|            |
+     |<--pairing:created----   |                   |
+     |                      |                      |
+     |  [Share code: LZ-842396]                    |
+     |                      |<--POST /accept-------|
+     |<--pairing:accepted---|                      |
+     |                      |--pairing:accepted--->|
+```
+
+### Flow 3: Mutual Invitation (Auto-Pairing)
+```
+User A                    Server              User B
+     |                      |                      |
+     |--POST /create (to B)-->|                    |
+     |<--pairing:created----  |                    |
+     |                      |<--POST /create (to A)|
+     |                      |  [Mutual detected]   |
+     |<--pairing:accepted---|                      |
+     |                      |--pairing:accepted--->|
+```
+
+---
+
+## Error Events
+
+### pairing:error
+**Direction**: Server → Client
+**Emitted to**: User who triggered the error
+**Trigger**: When a pairing operation fails
+
+**Payload**:
+```typescript
+{
+  errorCode: string;          // ERROR_CODE from API
+  message: string;            // Human-readable message
+  context?: any;              // Optional context
+}
+```
+
+**Example**:
+```json
+{
+  "errorCode": "COPARENT_LIMIT_REACHED",
+  "message": "You are already paired with a co-parent",
+  "context": {
+    "existingPartnerId": 789
+  }
+}
+```
+
+**Client Handler**:
+```javascript
+socket.on('pairing:error', (data) => {
+  console.error('Pairing error:', data.errorCode);
+  showNotification({
+    title: 'Error',
+    message: data.message,
+    type: 'error'
+  });
+});
+```
+
+---
+
+## Testing
+
+### Unit Tests
+```javascript
+describe('Socket.io Pairing Events', () => {
+  it('should emit pairing:created to inviter', async () => {
+    const socket = await connectUser(userA);
+    const data = { code: 'LZ-842396', inviteType: 'email' };
+
+    socket.on('pairing:created', (received) => {
+      expect(received.code).toBe('LZ-842396');
+    });
+
+    await createPairing(userA, 'userB@example.com');
+  });
+
+  it('should emit pairing:accepted to both users', async () => {
+    const socketA = await connectUser(userA);
+    const socketB = await connectUser(userB);
+
+    let acceptedCount = 0;
+    socketA.on('pairing:accepted', () => acceptedCount++);
+    socketB.on('pairing:accepted', () => acceptedCount++);
+
+    await acceptPairing(userB, pairingCode);
+    expect(acceptedCount).toBe(2);
+  });
+});
+```
+
+### Integration Tests
+```javascript
+// Test real-time notification delivery
+it('should notify inviter within 2 seconds of acceptance', async () => {
+  const start = Date.now();
+
+  socketA.on('pairing:accepted', (data) => {
+    const latency = Date.now() - start;
+    expect(latency).toBeLessThan(2000);
+  });
+
+  await acceptPairing(userB, pairingCode);
+});
+```
+
+---
+
+*Socket.io Events Contract for coparentliaizen.com - Real-time Pairing Notifications*

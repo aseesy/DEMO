@@ -7,6 +7,7 @@
 
 import { API_BASE_URL } from '../config.js';
 import { apiGet, apiPost } from '../apiClient.js';
+import { tokenManager } from './tokenManager.js';
 import { logger } from './logger.js';
 
 /**
@@ -16,6 +17,13 @@ import { logger } from './logger.js';
  */
 export async function queryRoomMembers() {
   try {
+    // Verify token exists before making request (use TokenManager for instant access)
+    const token = tokenManager.getToken();
+    if (!token) {
+      console.log('[queryRoomMembers] No token available, skipping request');
+      return { success: false, error: 'No authentication token' };
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 

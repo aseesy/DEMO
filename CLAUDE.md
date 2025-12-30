@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**LiaiZen** (coparentliaizen.com) is a co-parenting communication platform with AI-powered message mediation. The platform helps separated parents communicate better through real-time messaging, conflict reduction via AI coaching, shared task management, and contact sharing.
+**LiaiZen** (coparentliaizen.com) is a communication platform with context aware AI-powered message mediation. The platform helps separated parents communicate better through real-time messaging, conflict reduction via AI coaching, shared task management, and contact sharing.
 
 **Live**: https://coparentliaizen.com
 
@@ -257,9 +257,55 @@ Auto-deploy on push to `main` branch for both platforms.
 
 ## SDD Framework
 
-**Full docs**: `docs/START_HERE.md`, `docs/AGENTS.md`
+**LiaiZen uses the SDD Agentic Framework** as a git submodule with project-specific extensions.
 
-**Commands**: `/create-prd`, `/specify`, `/plan`, `/tasks`, `/validate-domain`, `/create-agent`
+### Framework Architecture
+
+```
+sdd-agentic-framework/           ← Core framework (submodule)
+├── .claude/agents/              ← 14 general-purpose agents
+├── .claude/skills/              ← SDD workflow skills
+├── .specify/                    ← Templates, scripts, constitution
+└── src/sdd/                     ← DS-STAR quality gates (Python)
+
+.claude/                         ← LiaiZen extensions (this project)
+├── agents/                      ← 3 co-parenting domain agents
+├── commands/                    ← MCP-integrated command wrappers
+└── settings.local.json          ← Project permissions
+```
+
+### How It Works
+
+1. **Framework provides**: General SDD methodology, workflow agents (backend, frontend, database, testing, etc.), constitutional principles, quality gates
+2. **LiaiZen adds**: Co-parenting domain expertise (product-manager), MCP server integration, domain validation
+
+### Available Commands
+
+**Core SDD Workflow:**
+
+- `/create-prd` - Create Product Requirements Document
+- `/specify` - Create feature specification (with LiaiZen MCP context)
+- `/plan` - Create implementation plan (with MCP-aware architecture queries)
+- `/tasks` - Generate dependency-ordered task list
+- `/validate-domain` - **LiaiZen-specific** co-parenting domain validation
+- `/create-agent` - Create new specialized agent
+- `/create-skill` - Create new skill
+
+**Documentation:**
+
+- Framework docs: `sdd-agentic-framework/README.md`, `START_HERE.md`, `AGENTS.md`
+- LiaiZen extensions: `.claude/README.md`
+
+### LiaiZen-Specific Agents
+
+Located in `.claude/agents/` (not in framework):
+
+- **product-manager** - Product strategy for co-parenting platform
+- **ui-designer** - UI/UX design specialist
+- **engineering-diagnostic-agent** - Error diagnosis and root cause analysis
+
+**All other agents come from framework** (`sdd-agentic-framework/.claude/agents/`):
+backend-architect, frontend-specialist, database-specialist, testing-specialist, security-specialist, devops-engineer, performance-engineer, planning-agent, prd-specialist, specification-agent, task-orchestrator, tasks-agent, etc.
 
 ## Co-Parenting Domain Principles
 

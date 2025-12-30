@@ -5,6 +5,8 @@ import { setUserProperties, setUserID } from '../utils/analyticsEnhancements.js'
 
 // Storage adapter for abstracting localStorage
 import { storage, StorageKeys, authStorage } from '../adapters/storage';
+// TokenManager for synchronized token access
+import { tokenManager } from '../utils/tokenManager.js';
 
 // Shared auth utilities - single source of truth
 import { calculateUserProperties } from '../features/auth/model/useSessionVerification.js';
@@ -48,7 +50,11 @@ export function AuthProvider({ children }) {
   // This ensures PWA launches show authenticated state immediately
   // This runs during component initialization, before first render
   const initialAuthState = React.useMemo(() => {
+    // Sync TokenManager with localStorage on mount
     const storedToken = authStorage.getToken();
+    if (storedToken) {
+      tokenManager.setToken(storedToken);
+    }
     const storedUsername = authStorage.getUsername();
     // Try to get email from storage, with fallback to stored user object
     let storedEmail = storage.getString(StorageKeys.USER_EMAIL);
@@ -113,6 +119,9 @@ export function AuthProvider({ children }) {
   const [isGoogleLoggingIn, setIsGoogleLoggingIn] = React.useState(false);
   const [error, setError] = React.useState(null);
 
+  // Track when login completes to add grace period for 401 errors
+  const loginCompletedAtRef = React.useRef(null);
+
   /**
    * Load auth state from storage
    * This provides initial state while session verification is in progress
@@ -167,6 +176,8 @@ export function AuthProvider({ children }) {
 
     if (hasValidStoredAuth) {
       // Set initial state from storage (will be verified by verifySession)
+      // Sync TokenManager with stored token (CRITICAL: ensures apiClient can access token immediately)
+      tokenManager.setToken(storedToken);
       setIsAuthenticated(true);
       setUsername(storedUsername);
       setEmail(storedEmail);
@@ -195,11 +206,14 @@ export function AuthProvider({ children }) {
    * Clear auth state
    */
   const clearAuthState = React.useCallback(() => {
+    // CRITICAL: Clear TokenManager FIRST so apiClient immediately knows token is gone
+    tokenManager.clearToken();
     authStorage.clearAuth();
     setIsAuthenticated(false);
     setUsername(null);
     setEmail(null);
     setToken(null);
+    loginCompletedAtRef.current = null; // Clear login timestamp
   }, []);
 
   /**
@@ -253,6 +267,8 @@ export function AuthProvider({ children }) {
             setUsername(storedState.username);
             setEmail(storedState.email);
             setToken(storedState.token);
+            // Sync TokenManager with stored token
+            tokenManager.setToken(storedState.token);
             setIsCheckingAuth(false);
             return;
           }
@@ -276,6 +292,8 @@ export function AuthProvider({ children }) {
 
           setIsAuthenticated(true);
           setToken(storedToken);
+          // Sync TokenManager with verified token
+          tokenManager.setToken(storedToken);
           authStorage.setAuthenticated(true);
 
           // Backend returns email, not username - use email as the identifier
@@ -367,8 +385,20 @@ export function AuthProvider({ children }) {
       storage.set(StorageKeys.USER_EMAIL, cleanEmail);
 
       if (token) {
+        // CRITICAL: Update TokenManager FIRST (synchronously) so apiClient can access token immediately
+        // This must happen before React state updates to prevent race conditions
+        tokenManager.setToken(token);
+        console.log('[AuthContext] Token set in TokenManager:', {
+          hasToken: !!token,
+          tokenLength: token.length,
+          tokenPreview: token.substring(0, 20) + '...',
+        });
+
         setToken(token);
+        // Also update authStorage for compatibility
         authStorage.setToken(token);
+        // Track login completion time for grace period
+        loginCompletedAtRef.current = Date.now();
       }
 
       if (user) {
@@ -435,7 +465,12 @@ export function AuthProvider({ children }) {
 
       if (token) {
         setToken(token);
+        // CRITICAL: Update TokenManager FIRST (synchronously) so apiClient can access token immediately
+        tokenManager.setToken(token);
+        // Also update authStorage for compatibility
         authStorage.setToken(token);
+        // Track signup completion time for grace period
+        loginCompletedAtRef.current = Date.now();
       }
 
       return { success: true, user };
@@ -542,6 +577,27 @@ export function AuthProvider({ children }) {
       // Also ignore 401s on auth endpoints (they're expected during login/signup)
       if (detail.endpoint?.includes('/api/auth/')) {
         console.log('[onAuthFailure] Ignoring 401 - auth endpoint');
+        return;
+      }
+
+      // Grace period: Don't clear auth for 3 seconds after login
+      // This prevents race conditions where API calls happen before token is fully propagated
+      if (loginCompletedAtRef.current) {
+        const timeSinceLogin = Date.now() - loginCompletedAtRef.current;
+        const GRACE_PERIOD_MS = 3000; // 3 seconds
+        if (timeSinceLogin < GRACE_PERIOD_MS) {
+          console.log(
+            `[onAuthFailure] Ignoring 401 - within ${GRACE_PERIOD_MS}ms grace period after login (${timeSinceLogin}ms ago)`
+          );
+          return;
+        }
+      }
+
+      // Only clear auth if we have a token but it's invalid
+      // Check both state token and authStorage (Google auth sets token in authStorage but not state)
+      const hasToken = token || authStorage.getToken();
+      if (!hasToken) {
+        console.log('[onAuthFailure] No token present, not clearing auth');
         return;
       }
 

@@ -1,0 +1,655 @@
+openapi: 3.0.0
+info:
+  title: LiaiZen Pairing API
+  description: API for co-parent account pairing system
+  version: 1.0.0
+  contact:
+    name: LiaiZen Engineering
+    url: https://coparentliaizen.com
+
+servers:
+  - url: https://demo-production-6dcd.up.railway.app
+    description: Production (Railway)
+  - url: http://localhost:3001
+    description: Development
+
+tags:
+  - name: pairing
+    description: Co-parent pairing operations
+
+paths:
+  /api/pairing/create:
+    post:
+      summary: Create new pairing invitation
+      description: |
+        Creates a new co-parent pairing invitation. Supports three invitation types:
+        - **email**: Send invitation to specific email address
+        - **link**: Generate shareable link (no email required)
+        - **code**: Generate quick code for both existing users
+
+        Automatically detects mutual invitations and auto-completes pairing.
+      tags: [pairing]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - inviteType
+              properties:
+                inviteType:
+                  type: string
+                  enum: [email, link, code]
+                  description: How the invitation will be sent
+                inviteeEmail:
+                  type: string
+                  format: email
+                  description: Required for 'email' type, optional for 'link'
+              examples:
+                email:
+                  value:
+                    inviteType: email
+                    inviteeEmail: coparent@example.com
+                link:
+                  value:
+                    inviteType: link
+                code:
+                  value:
+                    inviteType: code
+      responses:
+        '201':
+          description: Pairing invitation created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  pairing:
+                    $ref: '#/components/schemas/PairingInvitation'
+              examples:
+                emailInvite:
+                  value:
+                    success: true
+                    pairing:
+                      id: 123
+                      code: LZ-842396
+                      inviteType: email
+                      inviteeEmail: coparent@example.com
+                      inviteUrl: https://coparentliaizen.com/accept-pairing?token=abc123...
+                      shareableMessage: "Join me on LiaiZen! Use code LZ-842396 or click: https://..."
+                      expiresAt: "2025-12-04T10:00:00Z"
+                mutualDetected:
+                  value:
+                    success: true
+                    mutualPairing: true
+                    pairing:
+                      partnerId: 456
+                      partnerName: Jane Doe
+                      roomId: room_xyz789
+                      pairedAt: "2025-11-27T12:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Conflict - already paired or invitation exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                alreadyPaired:
+                  value:
+                    error: COPARENT_LIMIT_REACHED
+                    message: You are already paired with a co-parent
+                existingInvitation:
+                  value:
+                    error: INVITATION_ALREADY_EXISTS
+                    message: An active invitation already exists for this email
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/pairing/accept:
+    post:
+      summary: Accept pairing invitation (authenticated user)
+      description: |
+        Accept a pairing invitation using either:
+        - Pairing code (LZ-NNNNNN)
+        - Invitation token (from link)
+
+        Requires user to be authenticated. Creates shared room and mutual contacts.
+      tags: [pairing]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              oneOf:
+                - required: [pairingCode]
+                - required: [token]
+              properties:
+                pairingCode:
+                  type: string
+                  pattern: '^LZ-\d{6}$'
+                  example: LZ-842396
+                token:
+                  type: string
+                  example: abc123def456...
+      responses:
+        '200':
+          description: Pairing accepted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  pairing:
+                    $ref: '#/components/schemas/PairingAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - email mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: EMAIL_MISMATCH
+                message: This invitation was sent to a different email address
+        '404':
+          description: Pairing not found or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: PAIRING_NOT_FOUND_OR_EXPIRED
+                message: Pairing code not found or has expired
+        '409':
+          description: Conflict - already paired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: ALREADY_PAIRED
+                message: You are already paired with a co-parent
+
+  /api/pairing/accept-with-signup:
+    post:
+      summary: Accept pairing and create account in one step
+      description: |
+        For new users who received an invitation. Creates account and accepts pairing atomically.
+        Does NOT require authentication (user is not yet registered).
+      tags: [pairing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - username
+              oneOf:
+                - required: [pairingCode]
+                - required: [token]
+              properties:
+                pairingCode:
+                  type: string
+                  pattern: '^LZ-\d{6}$'
+                  example: LZ-842396
+                token:
+                  type: string
+                  example: abc123def456...
+                email:
+                  type: string
+                  format: email
+                  example: newuser@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: securepassword123
+                username:
+                  type: string
+                  minLength: 3
+                  example: Jane Doe
+      responses:
+        '201':
+          description: Account created and pairing accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/User'
+                  pairing:
+                    $ref: '#/components/schemas/PairingAccepted'
+                  authToken:
+                    type: string
+                    description: JWT token for authentication
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/EmailMismatch'
+        '404':
+          $ref: '#/components/responses/PairingNotFound'
+        '409':
+          description: Conflict - email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: EMAIL_EXISTS
+                message: An account with this email already exists
+
+  /api/pairing/status:
+    get:
+      summary: Get current user's pairing status
+      description: |
+        Returns the current pairing status for the authenticated user. Possible states:
+        - **unpaired**: No active pairing or pending invitations
+        - **pending_sent**: User sent invitation, waiting for acceptance
+        - **pending_received**: User received invitation, needs to accept
+        - **paired**: User is actively paired with a co-parent
+      tags: [pairing]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Pairing status retrieved successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/StatusUnpaired'
+                  - $ref: '#/components/schemas/StatusPendingSent'
+                  - $ref: '#/components/schemas/StatusPendingReceived'
+                  - $ref: '#/components/schemas/StatusPaired'
+              examples:
+                unpaired:
+                  value:
+                    state: unpaired
+                pendingSent:
+                  value:
+                    state: pending_sent
+                    invitations:
+                      - id: 123
+                        code: LZ-842396
+                        inviteeEmail: coparent@example.com
+                        inviteType: email
+                        createdAt: "2025-11-27T10:00:00Z"
+                        expiresAt: "2025-12-04T10:00:00Z"
+                paired:
+                  value:
+                    state: paired
+                    partner:
+                      name: Jane Doe
+                      roomId: room_xyz789
+                    pairedAt: "2025-11-27T12:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/pairing/{id}/cancel:
+    post:
+      summary: Cancel pending pairing invitation
+      description: Cancel a pairing invitation that has not been accepted yet
+      tags: [pairing]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Pairing session ID
+      responses:
+        '200':
+          description: Pairing canceled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Pairing invitation canceled
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Pairing not found or cannot be canceled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: PAIRING_NOT_FOUND
+                message: Pairing not found or cannot be canceled
+
+  /api/pairing/{id}/resend:
+    post:
+      summary: Resend pairing invitation email
+      description: |
+        Resend invitation email with a new token. Only works for email-type invitations.
+        Resets expiration date to 7 days from now.
+      tags: [pairing]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Pairing session ID
+      responses:
+        '200':
+          description: Invitation resent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Invitation email resent
+                  pairing:
+                    $ref: '#/components/schemas/PairingInvitation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PairingNotFound'
+
+  /api/pairing/validate-code:
+    post:
+      summary: Validate pairing code without accepting
+      description: |
+        Check if a pairing code is valid and get inviter information.
+        Used for preview before user decides to accept.
+      tags: [pairing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  pattern: '^LZ-\d{6}$'
+                  example: LZ-842396
+      responses:
+        '200':
+          description: Code is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    example: true
+                  inviter:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        example: John Doe
+                      emailDomain:
+                        type: string
+                        example: gmail
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    example: "2025-12-04T10:00:00Z"
+                  inviteType:
+                    type: string
+                    enum: [email, link, code]
+                    example: code
+        '404':
+          description: Code not found or expired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Pairing code not found or has expired
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PairingInvitation:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        code:
+          type: string
+          pattern: '^LZ-\d{6}$'
+          example: LZ-842396
+        inviteType:
+          type: string
+          enum: [email, link, code]
+          example: email
+        inviteeEmail:
+          type: string
+          format: email
+          example: coparent@example.com
+        inviteUrl:
+          type: string
+          format: uri
+          example: https://coparentliaizen.com/accept-pairing?token=abc123...
+        shareableMessage:
+          type: string
+          example: "Join me on LiaiZen! Use code LZ-842396 or click: https://..."
+        expiresAt:
+          type: string
+          format: date-time
+          example: "2025-12-04T10:00:00Z"
+
+    PairingAccepted:
+      type: object
+      properties:
+        partnerId:
+          type: integer
+          example: 456
+        partnerName:
+          type: string
+          example: Jane Doe
+        roomId:
+          type: string
+          example: room_xyz789
+        pairedAt:
+          type: string
+          format: date-time
+          example: "2025-11-27T12:00:00Z"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 789
+        username:
+          type: string
+          example: jane_doe
+        email:
+          type: string
+          format: email
+          example: newuser@example.com
+
+    StatusUnpaired:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [unpaired]
+
+    StatusPendingSent:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [pending_sent]
+        invitations:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              code:
+                type: string
+              inviteeEmail:
+                type: string
+              inviteType:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+              expiresAt:
+                type: string
+                format: date-time
+
+    StatusPendingReceived:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [pending_received]
+        invitations:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              code:
+                type: string
+              inviterName:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+              expiresAt:
+                type: string
+                format: date-time
+
+    StatusPaired:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [paired]
+        partner:
+          type: object
+          properties:
+            name:
+              type: string
+            roomId:
+              type: string
+        pairedAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: ERROR_CODE
+        message:
+          type: string
+          example: Human-readable error message
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: VALIDATION_ERROR
+            message: Invalid request parameters
+
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: UNAUTHORIZED
+            message: Authentication required
+
+    EmailMismatch:
+      description: Forbidden - email mismatch
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: EMAIL_MISMATCH
+            message: This invitation was sent to a different email address
+
+    PairingNotFound:
+      description: Pairing not found or expired
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: PAIRING_NOT_FOUND_OR_EXPIRED
+            message: Pairing code not found or has expired
+
+    RateLimitExceeded:
+      description: Too many requests - rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: RATE_LIMIT_EXCEEDED
+            message: Too many pairing attempts. Please try again later.

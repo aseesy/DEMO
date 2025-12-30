@@ -11,6 +11,7 @@ import React from 'react';
 import { setUserProperties, setUserID } from '../../../utils/analyticsEnhancements.js';
 import { commandLogin, commandSignup, commandRegister } from '../../../utils/authQueries.js';
 import { storage, StorageKeys, authStorage } from '../../../adapters/storage';
+import { tokenManager } from '../../../utils/tokenManager.js';
 import { calculateUserProperties } from './useSessionVerification.js';
 
 /**
@@ -36,6 +37,8 @@ function applyAuthSuccess(result, isNewUser, setIsAuthenticated) {
   }
 
   if (result.token) {
+    // CRITICAL: Update TokenManager FIRST for immediate API access
+    tokenManager.setToken(result.token);
     authStorage.setToken(result.token);
   }
 

@@ -1,0 +1,908 @@
+# REST API Contracts - Conversation Threading
+# Feature: CONV-THREAD-001
+# Protocol: HTTP/1.1
+# Base URL: http://localhost:8080/api (dev) | https://demo-production-6dcd.up.railway.app/api (prod)
+# Content-Type: application/json
+# Authorization: Bearer {jwt_token} in Authorization header
+
+openapi: 3.0.3
+info:
+  title: LiaiZen Threading API
+  description: REST API for thread management (complementary to Socket.io real-time events)
+  version: 1.0.0
+  contact:
+    name: LiaiZen Engineering
+    email: support@coparentliaizen.com
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local development
+  - url: https://demo-production-6dcd.up.railway.app/api
+    description: Production
+
+tags:
+  - name: threads
+    description: Thread management operations
+  - name: thread-messages
+    description: Thread-message association operations
+
+paths:
+  # ============================================================================
+  # THREAD CRUD OPERATIONS
+  # ============================================================================
+
+  /threads:
+    post:
+      summary: Create a new thread
+      description: |
+        Create a top-level thread in a room. For sub-threads, use POST /threads/{threadId}/sub-threads.
+        This endpoint is an alternative to the Socket.io `create_thread` event for non-real-time contexts.
+      tags:
+        - threads
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roomId
+                - title
+              properties:
+                roomId:
+                  type: string
+                  description: Room ID where thread will be created
+                  example: "room-123"
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 100
+                  description: Thread title
+                  example: "Medical Appointment - Dr. Smith"
+                category:
+                  type: string
+                  enum:
+                    - safety
+                    - medical
+                    - education
+                    - schedule
+                    - finances
+                    - activities
+                    - travel
+                    - co-parenting
+                    - logistics
+                  default: logistics
+                  description: Thread category
+                  example: "medical"
+                messageId:
+                  type: string
+                  nullable: true
+                  description: Optional message ID to add as first thread message
+                  example: "msg-456"
+
+      responses:
+        '201':
+          description: Thread created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  threadId:
+                    type: string
+                    description: ID of newly created thread
+                    example: "thread-1640000000000-abc123"
+                  thread:
+                    $ref: '#/components/schemas/Thread'
+
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                title_too_short:
+                  value:
+                    error: "Validation Error"
+                    message: "Thread title must be between 3 and 100 characters"
+                invalid_category:
+                  value:
+                    error: "Validation Error"
+                    message: "Invalid category. Must be one of: safety, medical, education, etc."
+
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        '403':
+          description: Forbidden - Not a room member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Forbidden"
+                message: "You are not a member of this room"
+
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /threads/{roomId}:
+    get:
+      summary: Get threads for a room
+      description: |
+        Fetch all threads for a specific room. Returns active threads by default.
+        Use `includeArchived=true` to include archived threads.
+      tags:
+        - threads
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          description: Room ID
+          schema:
+            type: string
+          example: "room-123"
+
+        - name: includeArchived
+          in: query
+          required: false
+          description: Include archived threads
+          schema:
+            type: boolean
+            default: false
+          example: false
+
+        - name: category
+          in: query
+          required: false
+          description: Filter by category
+          schema:
+            type: string
+            enum:
+              - safety
+              - medical
+              - education
+              - schedule
+              - finances
+              - activities
+              - travel
+              - co-parenting
+              - logistics
+          example: "medical"
+
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of threads to return
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 500
+          example: 50
+
+      responses:
+        '200':
+          description: Threads retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  threads:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Thread'
+                  count:
+                    type: integer
+                    description: Number of threads returned
+                    example: 12
+
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /threads/{threadId}:
+    get:
+      summary: Get thread details
+      description: Retrieve details for a specific thread
+      tags:
+        - threads
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          description: Thread ID
+          schema:
+            type: string
+          example: "thread-1640000000000-abc123"
+
+      responses:
+        '200':
+          description: Thread details retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  thread:
+                    $ref: '#/components/schemas/Thread'
+
+        '404':
+          description: Thread not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Not Found"
+                message: "Thread not found"
+
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    patch:
+      summary: Update thread
+      description: Update thread title or category
+      tags:
+        - threads
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 100
+                  description: New thread title
+                  example: "Medical Appointment - Dr. Johnson (Updated)"
+                category:
+                  type: string
+                  enum:
+                    - safety
+                    - medical
+                    - education
+                    - schedule
+                    - finances
+                    - activities
+                    - travel
+                    - co-parenting
+                    - logistics
+                  description: New category
+                  example: "medical"
+
+      responses:
+        '200':
+          description: Thread updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  thread:
+                    $ref: '#/components/schemas/Thread'
+
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Archive thread (soft delete)
+      description: |
+        Archive a thread (soft delete). Thread becomes hidden from main view but remains in database.
+        Permanent deletion requires both co-parents' approval (see POST /threads/{threadId}/delete-approvals).
+      tags:
+        - threads
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+
+      responses:
+        '200':
+          description: Thread archived successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Thread archived"
+
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /threads/{threadId}/reopen:
+    post:
+      summary: Reopen archived thread
+      description: Reopen a previously archived thread
+      tags:
+        - threads
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+
+      responses:
+        '200':
+          description: Thread reopened successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  thread:
+                    $ref: '#/components/schemas/Thread'
+
+  # ============================================================================
+  # SUB-THREAD OPERATIONS
+  # ============================================================================
+
+  /threads/{parentThreadId}/sub-threads:
+    post:
+      summary: Create sub-thread
+      description: Create a sub-thread under a parent thread
+      tags:
+        - threads
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: parentThreadId
+          in: path
+          required: true
+          description: Parent thread ID
+          schema:
+            type: string
+          example: "thread-001"
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 100
+                  description: Sub-thread title
+                  example: "Uniform Size Discussion"
+                parentMessageId:
+                  type: string
+                  nullable: true
+                  description: Optional message that spawned this sub-thread
+                  example: "msg-999"
+
+      responses:
+        '201':
+          description: Sub-thread created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  threadId:
+                    type: string
+                  thread:
+                    $ref: '#/components/schemas/Thread'
+
+        '400':
+          description: Validation error (e.g., max depth exceeded)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Validation Error"
+                message: "Maximum thread depth (3) reached"
+
+    get:
+      summary: Get sub-threads
+      description: Get all direct child threads of a parent thread
+      tags:
+        - threads
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: parentThreadId
+          in: path
+          required: true
+          schema:
+            type: string
+
+      responses:
+        '200':
+          description: Sub-threads retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  parentThreadId:
+                    type: string
+                  subThreads:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Thread'
+
+  /threads/{threadId}/ancestors:
+    get:
+      summary: Get thread ancestors (breadcrumb navigation)
+      description: Get parent chain from current thread up to root
+      tags:
+        - threads
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+
+      responses:
+        '200':
+          description: Ancestors retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  threadId:
+                    type: string
+                  ancestors:
+                    type: array
+                    description: Ordered from root (depth 0) to parent
+                    items:
+                      $ref: '#/components/schemas/Thread'
+
+  # ============================================================================
+  # THREAD-MESSAGE ASSOCIATION OPERATIONS
+  # ============================================================================
+
+  /threads/{threadId}/messages:
+    get:
+      summary: Get thread messages
+      description: Fetch all messages in a thread with pagination
+      tags:
+        - thread-messages
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+
+        - name: limit
+          in: query
+          required: false
+          description: Number of messages per page
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 500
+
+        - name: offset
+          in: query
+          required: false
+          description: Pagination offset
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+
+      responses:
+        '200':
+          description: Thread messages retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  threadId:
+                    type: string
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  count:
+                    type: integer
+                    description: Number of messages returned
+                  total:
+                    type: integer
+                    description: Total messages in thread
+                  hasMore:
+                    type: boolean
+                    description: Whether more messages exist
+
+    post:
+      summary: Add message to thread
+      description: Associate an existing message with a thread
+      tags:
+        - thread-messages
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - messageId
+              properties:
+                messageId:
+                  type: string
+                  description: Message ID to add to thread
+                  example: "msg-456"
+
+      responses:
+        '201':
+          description: Message added to thread
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  threadId:
+                    type: string
+                  messageId:
+                    type: string
+                  messageCount:
+                    type: integer
+                    description: Updated thread message count
+
+        '400':
+          description: Validation error (e.g., message already in thread)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Validation Error"
+                message: "Message already in thread"
+
+  /threads/{threadId}/messages/{messageId}:
+    delete:
+      summary: Remove message from thread
+      description: Disassociate a message from a thread
+      tags:
+        - thread-messages
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+
+      responses:
+        '200':
+          description: Message removed from thread
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  messageId:
+                    type: string
+                  threadId:
+                    type: string
+                  messageCount:
+                    type: integer
+                    description: Updated thread message count
+
+# ============================================================================
+# SCHEMA DEFINITIONS
+# ============================================================================
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login
+
+  schemas:
+    Thread:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Thread ID
+          example: "thread-1640000000000-abc123"
+        room_id:
+          type: string
+          description: Room ID
+          example: "room-123"
+        title:
+          type: string
+          description: Thread title
+          example: "Medical Appointment - Dr. Smith"
+        created_by:
+          type: string
+          format: email
+          description: Creator email
+          example: "sarah@example.com"
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2025-12-29T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2025-12-29T15:30:00Z"
+        message_count:
+          type: integer
+          minimum: 0
+          description: Number of messages
+          example: 5
+        last_message_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last message timestamp
+          example: "2025-12-29T15:30:00Z"
+        is_archived:
+          type: integer
+          enum: [0, 1]
+          description: Archival status
+          example: 0
+        category:
+          type: string
+          enum:
+            - safety
+            - medical
+            - education
+            - schedule
+            - finances
+            - activities
+            - travel
+            - co-parenting
+            - logistics
+          description: Thread category
+          example: "medical"
+        parent_thread_id:
+          type: string
+          nullable: true
+          description: Parent thread ID
+          example: null
+        root_thread_id:
+          type: string
+          description: Root thread ID
+          example: "thread-1640000000000-abc123"
+        parent_message_id:
+          type: string
+          nullable: true
+          description: Originating message ID
+          example: null
+        depth:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Nesting level
+          example: 0
+
+    Message:
+      type: object
+      description: Chat message (from main chat system)
+      properties:
+        id:
+          type: string
+          example: "msg-456"
+        room_id:
+          type: string
+          example: "room-123"
+        sender_email:
+          type: string
+          format: email
+          example: "sarah@example.com"
+        content:
+          type: string
+          example: "Doctor appointment confirmed for tomorrow at 3pm"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-12-29T15:30:00Z"
+        is_edited:
+          type: boolean
+          example: false
+        reactions:
+          type: object
+          description: Message reactions (JSONB)
+          example: { "👍": ["sarah@example.com"] }
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: "Validation Error"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Thread title must be between 3 and 100 characters"
+        details:
+          type: object
+          description: Additional error context (optional)
+          nullable: true
+
+  responses:
+    Unauthorized:
+      description: Unauthorized - Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Unauthorized"
+            message: "You must be logged in to access this resource"
+
+    Forbidden:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Forbidden"
+            message: "You are not a member of this room"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Not Found"
+            message: "Thread not found"
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Validation Error"
+            message: "Thread title must be between 3 and 100 characters"
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Internal Server Error"
+            message: "An unexpected error occurred. Please try again later."
+
+# ============================================================================
+# NOTES
+# ============================================================================
+
+# Socket.io vs. REST:
+# - Use Socket.io for real-time operations (create, update, add message)
+# - Use REST for non-real-time contexts (initial data fetch, batch operations)
+# - Both APIs share same backend service layer
+
+# Authentication:
+# - All endpoints require JWT token in Authorization header
+# - Token obtained from POST /auth/login
+# - Token format: Bearer {jwt_token}
+
+# Authorization:
+# - All thread operations require user to be room member
+# - Room membership verified via room_members table
+
+# Pagination:
+# - Thread messages support limit/offset pagination
+# - Default limit: 50 messages
+# - Maximum limit: 500 messages
+
+# Error Handling:
+# - All errors return consistent Error schema
+# - HTTP status codes follow REST conventions
+# - Error messages are user-friendly (safe for display)
+
+# Performance:
+# - Thread list cached client-side (5 minutes TTL)
+# - Thread messages use database indexes for fast retrieval
+# - Message count updates use atomic database operations
+
+# Rate Limiting:
+# - POST endpoints: 100 requests/minute per user
+# - GET endpoints: 300 requests/minute per user
+# - Rate limit headers: X-RateLimit-Limit, X-RateLimit-Remaining

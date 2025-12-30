@@ -2,109 +2,124 @@
 description: Create a comprehensive implementation plan for a feature. Uses MCP servers for codebase context, architecture, patterns, and design system.
 ---
 
-# Execute Planning Workflow
+# /plan - LiaiZen Edition
 
-You are now acting as the **planning-agent**. Follow this workflow:
+**Delegates to framework's planning-agent with LiaiZen-specific context.**
 
-## Step 1: Query MCP Servers for Context (REQUIRED)
+## LiaiZen Context Gathering (MCP Queries)
 
-Execute these queries first:
+Before delegating, Claude Code should gather LiaiZen-specific context via MCP servers:
 
-1. **Architecture Context**:
+### Codebase Structure
 
-   ```
-   "What's the LiaiZen architecture?"
-   ```
+```
+1. "Get file structure for frontend"
+   → Understand React component organization
 
-2. **File Structure**:
+2. "Get file structure for backend"
+   → Know Express route and service structure
+```
 
-   ```
-   "Get file structure for frontend"
-   "Get file structure for backend"
-   ```
+### Architecture & Patterns
 
-3. **Design System**:
+```
+3. "What's the LiaiZen architecture?"
+   → System design, boundaries, data flow
 
-   ```
-   "Get design system"
-   ```
+4. "Get common patterns"
+   → Existing code patterns to follow
+```
 
-4. **API & Database**:
+### Design & API Context
 
-   ```
-   "Get API endpoints"
-   "Show me database schema"
-   ```
+```
+5. "Get design system"
+   → Design tokens, component library
 
-5. **Best Practices**:
-   ```
-   "Get best practices"
-   ```
+6. "Get API endpoints"
+   → Existing API structure to integrate with
 
-## Step 2: Analyze Requirements
+7. "Show me database schema"
+   → Tables, relationships, migrations
+```
 
-- If a feature spec exists in `specs/` directory, read it
-- If no spec, ask the user for feature requirements
-- Identify what needs to be built
+### Domain Principles
 
-## Step 3: Create Implementation Plan
+```
+8. Review AI mediation constitution:
+   - Location: chat-server/ai-mediation-constitution.md
+   - Sender-first moderation principles
+   - Communication coaching patterns
+```
 
-Based on MCP context, create a detailed plan with:
+## Delegation to Framework
 
-### Technical Context (from MCP)
+After gathering context, delegate to framework's planning-agent:
 
-- Architecture: [From "What's the LiaiZen architecture?"]
-- File Structure: [From "Get file structure"]
-- Design System: [From "Get design system"]
-- Existing APIs: [From "Get API endpoints"]
-- Database Schema: [From "Show me database schema"]
+```markdown
+Use the Task tool:
 
-### Implementation Steps
+- subagent_type: "planning-agent"
+- description: "Create implementation plan with LiaiZen context"
+- prompt: "Execute the /plan command for the feature in specs/###-feature-name/
 
-For each major component:
+Context from LiaiZen MCP servers:
 
-1. **Component Name**
-   - Location: [Exact path from MCP file structure]
-   - Pattern: [From MCP common patterns]
-   - Design: [Colors/spacing from MCP design tokens]
-   - Implementation details
+**File Structure**:
 
-### File Changes Required
+- Frontend: [Results from query 1]
+- Backend: [Results from query 2]
 
-List all files to create/modify with exact paths from MCP.
+**Architecture**: [Results from query 3]
+**Code Patterns**: [Results from query 4]
+**Design System**: [Results from query 5]
+**API Endpoints**: [Results from query 6]
+**Database Schema**: [Results from query 7]
+**AI Mediation Principles**: [From constitution]
 
-### Design System Compliance
+Please create an implementation plan following SDD methodology (research.md, data-model.md, contracts/, quickstart.md) with this LiaiZen-specific context."
+```
 
-Reference MCP design tokens:
+## What the Framework Agent Will Do
 
-- Colors: Use exact values from Design Tokens MCP
-- Spacing: Use standard tokens
-- Patterns: Follow Codebase Context patterns
+The planning-agent (from `sdd-agentic-framework/.claude/agents/product/planning-agent.md`) will:
 
-### Validation Checklist
+1. ✅ **Phase 0 - Research**: Technology evaluation, library selection, best practices
+2. ✅ **Phase 1 - Design**: API contracts, data models, test scenarios
+3. ✅ Constitutional validation (Library-First, Test-First, Contract-First)
+4. ✅ Generate artifacts in `specs/###-feature-name/`:
+   - `research.md` - Technical decisions and unknowns
+   - `data-model.md` - Entity definitions and relationships
+   - `contracts/` - API schemas (OpenAPI/GraphQL)
+   - `quickstart.md` - Test scenarios and acceptance tests
+5. ✅ Validate plan quality and completeness
+6. ✅ Report readiness for `/tasks` phase
 
-- [ ] Follows architecture from Codebase Context
-- [ ] Uses design tokens from Design Tokens MCP
-- [ ] References existing APIs from Codebase Context
-- [ ] Follows patterns from Codebase Context
-- [ ] Mobile-first design (per best practices)
-- [ ] 44px touch targets (per best practices)
+## Usage
 
-## Step 4: Output the Plan
+Run after `/specify`:
 
-Write the plan in this conversation. Include:
+```
+/plan
+```
 
-- All MCP query results cited
-- Exact file paths
-- Design token references
-- Pattern compliance notes
+The agent will automatically find the spec file and create the implementation plan.
 
-**Important**: Always cite MCP sources like:
+## Next Steps
 
-- "Per Codebase Context MCP..."
-- "Using Design Tokens MCP primary color #275559..."
-- "Following modal pattern from Codebase Context..."
+After `/plan` completes:
+
+```
+/tasks  # Generate dependency-ordered task list
+```
+
+## Framework Reference
+
+- **Agent**: `sdd-agentic-framework/.claude/agents/product/planning-agent.md`
+- **Template**: `sdd-agentic-framework/.specify/templates/plan-template.md`
+- **Scripts**: `sdd-agentic-framework/.specify/scripts/bash/setup-plan.sh`
+- **Workflow**: Phase 2 of SDD methodology
 
 ---
 
-**Now begin the planning workflow by querying the MCP servers.**
+**Pattern**: LiaiZen context → Framework delegation → Plan artifacts

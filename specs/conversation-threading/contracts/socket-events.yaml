@@ -1,0 +1,727 @@
+# Socket.io Event Contracts - Conversation Threading
+# Feature: CONV-THREAD-001
+# Protocol: WebSocket (Socket.io v4)
+# Base URL: ws://localhost:8080 (dev) | wss://demo-production-6dcd.up.railway.app (prod)
+
+---
+# ============================================================================
+# CLIENT → SERVER EVENTS (User Actions)
+# ============================================================================
+
+create_thread:
+  description: Create a new top-level thread in a room
+  direction: client_to_server
+  payload:
+    type: object
+    required:
+      - roomId
+      - title
+    properties:
+      roomId:
+        type: string
+        description: Room ID where thread will be created
+        example: "room-123"
+      title:
+        type: string
+        minLength: 3
+        maxLength: 100
+        description: Thread title (user-editable)
+        example: "Medical Appointment - Dr. Smith"
+      messageId:
+        type: string
+        nullable: true
+        description: Optional message ID to add as first thread message
+        example: "msg-456"
+      category:
+        type: string
+        enum:
+          - safety
+          - medical
+          - education
+          - schedule
+          - finances
+          - activities
+          - travel
+          - co-parenting
+          - logistics
+        default: logistics
+        description: Thread category (defaults to logistics if invalid)
+        example: "medical"
+
+  responses:
+    success:
+      event: thread_created_success
+      payload:
+        type: object
+        properties:
+          threadId:
+            type: string
+            description: ID of newly created thread
+            example: "thread-789"
+          title:
+            type: string
+            description: Thread title (echoed back)
+            example: "Medical Appointment - Dr. Smith"
+
+    error:
+      event: error
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Error description
+            example: "Failed to create thread."
+
+  authorization: User must be a member of the room
+  validation:
+    - Title must be 3-100 characters
+    - Room must exist
+    - User must be authenticated
+
+  side_effects:
+    - New thread created in database
+    - thread_created event broadcast to all room members (delta update)
+    - If messageId provided, message added to thread
+    - Thread embedding generated (async, background task)
+
+---
+
+create_sub_thread:
+  description: Create a sub-thread spawned from a parent thread
+  direction: client_to_server
+  payload:
+    type: object
+    required:
+      - roomId
+      - title
+      - parentThreadId
+    properties:
+      roomId:
+        type: string
+        description: Room ID (must match parent thread's room)
+        example: "room-123"
+      title:
+        type: string
+        minLength: 3
+        maxLength: 100
+        description: Sub-thread title
+        example: "Uniform Size Discussion"
+      parentThreadId:
+        type: string
+        description: Parent thread ID
+        example: "thread-789"
+      parentMessageId:
+        type: string
+        nullable: true
+        description: Optional message that spawned this sub-thread
+        example: "msg-999"
+
+  responses:
+    success:
+      event: sub_thread_created_success
+      payload:
+        type: object
+        properties:
+          threadId:
+            type: string
+            description: ID of newly created sub-thread
+          title:
+            type: string
+            description: Sub-thread title
+          parentThreadId:
+            type: string
+            description: Parent thread ID
+
+    error:
+      event: error
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            examples:
+              - "Failed to create sub-thread."
+              - "Maximum thread depth (3) reached."
+              - "Parent thread ID is required for sub-threads."
+
+  authorization: User must be room member
+  validation:
+    - Parent thread must exist
+    - Parent thread depth must be < 3 (max depth enforcement)
+    - Title must be 3-100 characters
+    - Room ID must match parent thread's room
+
+  side_effects:
+    - New sub-thread created with depth = parent.depth + 1
+    - root_thread_id set to parent's root_thread_id
+    - sub_thread_created event broadcast to room (delta update)
+    - Sub-thread embedding generated (async)
+
+---
+
+get_threads:
+  description: Fetch all threads for a room
+  direction: client_to_server
+  payload:
+    type: object
+    required:
+      - roomId
+    properties:
+      roomId:
+        type: string
+        description: Room ID
+        example: "room-123"
+
+  responses:
+    success:
+      event: threads_list
+      payload:
+        type: array
+        description: Array of thread objects (sorted by updated_at DESC)
+        items:
+          $ref: '#/components/schemas/Thread'
+        example:
+          - id: "thread-789"
+            room_id: "room-123"
+            title: "Medical Appointment"
+            created_by: "sarah@example.com"
+            created_at: "2025-12-29T10:00:00Z"
+            updated_at: "2025-12-29T15:30:00Z"
+            message_count: 5
+            last_message_at: "2025-12-29T15:30:00Z"
+            is_archived: 0
+            category: "medical"
+            parent_thread_id: null
+            root_thread_id: "thread-789"
+            parent_message_id: null
+            depth: 0
+
+    error:
+      event: error
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            example: "Failed to get threads."
+
+  authorization: User must be room member
+  caching: Client should cache response and rely on delta updates
+
+---
+
+get_thread_messages:
+  description: Fetch messages in a specific thread
+  direction: client_to_server
+  payload:
+    type: object
+    required:
+      - threadId
+    properties:
+      threadId:
+        type: string
+        description: Thread ID
+        example: "thread-789"
+
+  responses:
+    success:
+      event: thread_messages
+      payload:
+        type: object
+        properties:
+          threadId:
+            type: string
+            description: Thread ID (echoed back)
+          messages:
+            type: array
+            description: Array of message objects (sorted by timestamp DESC)
+            items:
+              $ref: '#/components/schemas/Message'
+
+    error:
+      event: error
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            example: "Failed to get thread messages."
+
+  authorization: User must be member of thread's room
+  performance: Supports pagination (limit 50 messages per request)
+
+---
+
+add_to_thread:
+  description: Add an existing message to a thread
+  direction: client_to_server
+  payload:
+    type: object
+    required:
+      - messageId
+      - threadId
+    properties:
+      messageId:
+        type: string
+        description: Message ID to add
+        example: "msg-456"
+      threadId:
+        type: string
+        description: Thread ID to add message to
+        example: "thread-789"
+
+  responses:
+    success:
+      event: message_added_to_thread
+      payload:
+        type: object
+        properties:
+          messageId:
+            type: string
+          threadId:
+            type: string
+
+    error:
+      event: error
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            examples:
+              - "Failed to add message to thread."
+              - "Message and thread must belong to same room."
+
+  authorization: User must be room member
+  validation:
+    - Message must belong to same room as thread
+    - Message cannot already be in thread (unique constraint)
+
+  side_effects:
+    - Message added to thread_messages junction table
+    - thread.message_count incremented atomically
+    - thread_message_count_changed event broadcast (delta update)
+
+---
+
+remove_from_thread:
+  description: Remove a message from a thread
+  direction: client_to_server
+  payload:
+    type: object
+    required:
+      - messageId
+    properties:
+      messageId:
+        type: string
+        description: Message ID to remove
+        example: "msg-456"
+
+  responses:
+    success:
+      event: message_removed_from_thread
+      payload:
+        type: object
+        properties:
+          messageId:
+            type: string
+
+    error:
+      event: error
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+
+  authorization: User must be room member
+  side_effects:
+    - Message removed from thread_messages
+    - thread.message_count decremented atomically
+    - thread_message_count_changed event broadcast
+
+---
+
+get_sub_threads:
+  description: Get direct child threads of a thread
+  direction: client_to_server
+  payload:
+    type: object
+    required:
+      - threadId
+    properties:
+      threadId:
+        type: string
+        description: Parent thread ID
+        example: "thread-789"
+
+  responses:
+    success:
+      event: sub_threads_list
+      payload:
+        type: object
+        properties:
+          parentThreadId:
+            type: string
+            description: Parent thread ID (echoed back)
+          subThreads:
+            type: array
+            description: Array of direct child threads
+            items:
+              $ref: '#/components/schemas/Thread'
+
+---
+
+get_thread_ancestors:
+  description: Get parent chain up to root thread (for breadcrumb navigation)
+  direction: client_to_server
+  payload:
+    type: object
+    required:
+      - threadId
+    properties:
+      threadId:
+        type: string
+        description: Thread ID to get ancestors for
+        example: "thread-999"
+
+  responses:
+    success:
+      event: thread_ancestors
+      payload:
+        type: object
+        properties:
+          threadId:
+            type: string
+            description: Original thread ID
+          ancestors:
+            type: array
+            description: Array of ancestor threads (ordered by depth ASC, root first)
+            items:
+              $ref: '#/components/schemas/Thread'
+            example:
+              - id: "thread-001"
+                title: "Schedule"
+                depth: 0
+              - id: "thread-002"
+                title: "Soccer Practice"
+                depth: 1
+              - id: "thread-999"
+                title: "Uniform Size"
+                depth: 2
+
+---
+
+# ============================================================================
+# SERVER → CLIENT EVENTS (Real-Time Updates)
+# ============================================================================
+
+thread_created:
+  description: New thread created (delta update, not full list)
+  direction: server_to_client
+  broadcast: All room members
+  payload:
+    type: object
+    required:
+      - thread
+    properties:
+      thread:
+        $ref: '#/components/schemas/Thread'
+
+  client_action: Add thread to local state (prepend to list)
+
+---
+
+sub_thread_created:
+  description: New sub-thread created (delta update)
+  direction: server_to_client
+  broadcast: All room members
+  payload:
+    type: object
+    required:
+      - thread
+      - parentThreadId
+    properties:
+      thread:
+        $ref: '#/components/schemas/Thread'
+      parentThreadId:
+        type: string
+        description: Parent thread ID (for UI hierarchy updates)
+
+  client_action: Add sub-thread to local state under parent
+
+---
+
+thread_message_count_changed:
+  description: Thread message count updated (delta update for performance)
+  direction: server_to_client
+  broadcast: All room members
+  payload:
+    type: object
+    required:
+      - threadId
+      - messageCount
+    properties:
+      threadId:
+        type: string
+        description: Thread ID
+      messageCount:
+        type: integer
+        description: New message count
+        example: 7
+      lastMessageAt:
+        type: string
+        format: date-time
+        description: Timestamp of last message
+        example: "2025-12-29T16:45:00Z"
+
+  client_action: |
+    Update thread in local state:
+    threads.map(t => t.id === threadId ? { ...t, message_count: messageCount, last_message_at: lastMessageAt } : t)
+
+  bandwidth_savings: ~95% (54 bytes vs. ~1KB for full thread object)
+
+---
+
+threads_list:
+  description: Full thread list (only sent on initial load or reconnect)
+  direction: server_to_client
+  broadcast: Individual socket only (not room-wide)
+  payload:
+    type: array
+    description: Array of all threads in room (active threads only by default)
+    items:
+      $ref: '#/components/schemas/Thread'
+
+  client_action: Replace local thread state completely
+
+---
+
+thread_messages:
+  description: Thread message history response
+  direction: server_to_client
+  broadcast: Individual socket only
+  payload:
+    type: object
+    properties:
+      threadId:
+        type: string
+      messages:
+        type: array
+        items:
+          $ref: '#/components/schemas/Message'
+
+  client_action: Set thread messages in local state
+
+---
+
+# ============================================================================
+# SCHEMA DEFINITIONS
+# ============================================================================
+
+components:
+  schemas:
+    Thread:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Thread ID (format: thread-{timestamp}-{random})
+          example: "thread-1640000000000-abc123"
+        room_id:
+          type: string
+          description: Parent room ID
+          example: "room-123"
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Thread title
+          example: "Medical Appointment - Dr. Smith"
+        created_by:
+          type: string
+          format: email
+          description: Email of user who created thread
+          example: "sarah@example.com"
+        created_at:
+          type: string
+          format: date-time
+          description: Thread creation timestamp
+          example: "2025-12-29T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2025-12-29T15:30:00Z"
+        message_count:
+          type: integer
+          minimum: 0
+          description: Number of messages in thread
+          example: 5
+        last_message_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of most recent message
+          example: "2025-12-29T15:30:00Z"
+        is_archived:
+          type: integer
+          enum: [0, 1]
+          description: Archival status (0=active, 1=archived)
+          example: 0
+        category:
+          type: string
+          enum:
+            - safety
+            - medical
+            - education
+            - schedule
+            - finances
+            - activities
+            - travel
+            - co-parenting
+            - logistics
+          description: Thread category
+          example: "medical"
+        parent_thread_id:
+          type: string
+          nullable: true
+          description: Parent thread ID (for sub-threads)
+          example: null
+        root_thread_id:
+          type: string
+          description: Root thread ID (top of hierarchy)
+          example: "thread-1640000000000-abc123"
+        parent_message_id:
+          type: string
+          nullable: true
+          description: Message that spawned this thread
+          example: null
+        depth:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Nesting level (0=root, 1=sub, 2=sub-sub, max 3)
+          example: 0
+
+    Message:
+      type: object
+      description: Chat message (existing schema from main chat system)
+      properties:
+        id:
+          type: string
+          description: Message ID
+          example: "msg-456"
+        room_id:
+          type: string
+          description: Room ID
+          example: "room-123"
+        sender_email:
+          type: string
+          format: email
+          description: Sender email
+          example: "sarah@example.com"
+        content:
+          type: string
+          description: Message content
+          example: "Doctor appointment confirmed for tomorrow at 3pm"
+        timestamp:
+          type: string
+          format: date-time
+          description: Message timestamp
+          example: "2025-12-29T15:30:00Z"
+        is_edited:
+          type: boolean
+          description: Whether message was edited
+          example: false
+        reactions:
+          type: object
+          description: Message reactions (JSONB)
+          example: { "👍": ["sarah@example.com"], "❤️": ["mike@example.com"] }
+
+---
+
+# ============================================================================
+# ERROR RESPONSES
+# ============================================================================
+
+errors:
+  unauthorized:
+    event: error
+    payload:
+      message: "You must join before creating threads."
+    http_equivalent: 401 Unauthorized
+
+  forbidden:
+    event: error
+    payload:
+      message: "You don't have permission to view this thread."
+    http_equivalent: 403 Forbidden
+
+  not_found:
+    event: error
+    payload:
+      message: "Thread not found."
+    http_equivalent: 404 Not Found
+
+  validation_error:
+    event: error
+    payload:
+      message: "Thread title must be between 3 and 100 characters."
+    http_equivalent: 400 Bad Request
+
+  depth_limit_exceeded:
+    event: error
+    payload:
+      message: "Maximum thread depth (3) reached."
+    http_equivalent: 400 Bad Request
+
+  server_error:
+    event: error
+    payload:
+      message: "Failed to create thread."
+    http_equivalent: 500 Internal Server Error
+
+---
+
+# ============================================================================
+# NOTES & BEST PRACTICES
+# ============================================================================
+
+# Delta Updates Pattern:
+# - Server emits only changed data (not full lists)
+# - Client merges delta into local state
+# - Reduces bandwidth by ~95% for rooms with 100+ threads
+# - Example: thread_created emits single thread object, not full list
+
+# Reconnection Logic:
+# - On socket reconnect, client should emit get_threads to refresh state
+# - Prevents state drift from missed delta updates
+
+# Optimistic Updates (Frontend):
+# - Show UI changes immediately (e.g., thread appears in sidebar)
+# - Sync with server in background
+# - Rollback if server returns error
+
+# AI Mediation Integration:
+# - Thread messages pass through same mediation pipeline as main chat
+# - Thread context (title, category) added to mediation prompt
+# - Intervention UI adapts for thread context
+
+# Performance Targets:
+# - Thread list load: < 500ms for 100 threads
+# - Thread messages load: < 1s for 500 messages
+# - WebSocket latency: < 500ms (p95)
+
+# Authorization:
+# - All thread operations require user to be room member
+# - No private threads within a room (all members have full visibility)
+
+# Idempotency:
+# - create_thread with duplicate messageId: No-op (unique constraint)
+# - add_to_thread with duplicate: No-op (unique constraint)
+
+# Atomic Operations:
+# - Message count updates use database-level increments
+# - Prevents race conditions when multiple users add messages

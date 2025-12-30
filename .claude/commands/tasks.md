@@ -1,242 +1,125 @@
 ---
-description: Break down an implementation plan into actionable tasks using the tasks-agent. Executes Phase 3 of the SDD workflow (after planning).
+description: Break down an implementation plan into actionable tasks using the tasks-agent. Executes Phase 3 of the SDD workflow.
 ---
 
-# /tasks Command
+# /tasks - LiaiZen Edition
 
-**Execute this command to break down an implementation plan into granular, actionable tasks.**
-
-## What This Command Does
-
-The `/tasks` command invokes the **tasks-agent** to:
-
-1. **Load the implementation plan** (from planning-agent)
-2. **Query MCP servers** for file structure, patterns, design tokens
-3. **Decompose plan** into atomic, actionable tasks
-4. **Map task dependencies** and execution sequence
-5. **Add acceptance criteria** for each task
-6. **Estimate complexity** and time requirements
-7. **Produce task artifact**: `tasks.md` (or tasks.yaml)
+**Delegates to framework's tasks-agent with dependency analysis.**
 
 ## Prerequisites
 
 Before running `/tasks`:
 
-- ✅ Implementation plan exists (`plan.md` from `/plan`)
-- ✅ MCP servers are active (restart Claude Desktop if needed)
-- ✅ You're in the project root: `/Users/athenasees/Desktop/chat`
+- ✅ Feature specification exists (`specs/###-feature-name/spec.md`)
+- ✅ Implementation plan complete (`specs/###-feature-name/plan.md`)
+- ✅ Design artifacts generated:
+  - `research.md`
+  - `data-model.md`
+  - `contracts/`
+  - `quickstart.md`
+
+## Delegation to Framework
+
+Delegate directly to framework's tasks-agent:
+
+```markdown
+Use the Task tool:
+
+- subagent_type: "tasks-agent"
+- description: "Generate dependency-ordered task list"
+- prompt: "Execute the /tasks command for the feature in specs/###-feature-name/
+
+Please generate a task list from the implementation plan following SDD methodology with:
+
+- Dependency analysis (sequential vs parallel tasks)
+- Parallel execution markers [P] for independent work
+- Agent assignment recommendations
+- Acceptance criteria linkage"
+```
+
+## What the Framework Agent Will Do
+
+The tasks-agent (from `sdd-agentic-framework/.claude/agents/product/tasks-agent.md`) will:
+
+1. ✅ Read implementation plan and design artifacts
+2. ✅ Analyze task dependencies
+3. ✅ Generate `specs/###-feature-name/tasks.md` with:
+   - Task breakdown by component
+   - Dependency order (what must come first)
+   - Parallel execution markers `[P]`
+   - Suggested agent for each task
+   - Acceptance criteria references
+4. ✅ Validate prerequisites exist
+5. ✅ Report task count and parallelization opportunities
 
 ## Usage
 
-### Basic Usage (with existing plan):
+Run after `/plan`:
 
 ```
 /tasks
 ```
 
-This will:
+The agent will automatically find the plan and generate the task list.
 
-1. Look for the most recent plan.md
-2. Execute tasks-agent workflow
-3. Create tasks.md with dependency-ordered task list
+## Output Format
 
-### With Feature Name:
+Tasks will be organized as:
 
-```
-/tasks expense-tracking
-```
+```markdown
+## Phase 1: Foundation [Sequential]
 
-### With Path to Plan:
+1. Create database migration for expense table
+   - Agent: database-specialist
+   - Depends on: none
+   - Acceptance: Migration creates expense table with required fields
 
-```
-/tasks --plan path/to/plan.md
-```
+2. Define expense API contracts
+   - Agent: backend-architect
+   - Depends on: task 1
+   - Acceptance: OpenAPI schema validated
 
-## How It Works
+## Phase 2: Implementation [Parallel]
 
-The tasks-agent will **automatically**:
+3. [P] Implement backend expense endpoints
+   - Agent: backend-architect
+   - Depends on: task 2
 
-### Query MCP for Context
+4. [P] Create expense form UI components
+   - Agent: frontend-specialist
+   - Depends on: task 2
 
-```
-1. "Get file structure for frontend/backend"
-   → Know exact paths for task file locations
-
-2. "What are common patterns for [feature type]?"
-   → Include pattern details in tasks
-
-3. "Get design tokens"
-   → Reference colors/spacing in styling tasks
-
-4. "Get dependencies"
-   → Know available libraries
-
-5. "Get API endpoints"
-   → Reference existing APIs
+5. [P] Write contract tests for expense API
+   - Agent: testing-specialist
+   - Depends on: task 2
 ```
 
-### Create Tasks with MCP Context
+## LiaiZen-Specific Agent Recommendations
 
-Each task will include:
+The tasks-agent may recommend LiaiZen-specific agents:
 
-- **Exact file paths** from Codebase Context MCP
-- **Pattern details** from common patterns
-- **Design tokens** from Design Tokens MCP
-- **API/database references** from Codebase Context
+- **product-manager**: Feature validation against co-parenting principles
+- **ui-designer**: UI/UX design for co-parent workflows
+- **engineering-diagnostic-agent**: Complex debugging scenarios
 
-## Output File
+These are found in `.claude/agents/` and work seamlessly with framework agents.
+
+## Next Steps
 
 After `/tasks` completes:
 
-```
-specs/[feature-id]/
-├── spec.md              # Feature specification
-├── plan.md              # Implementation plan
-└── tasks.md             # Task list ⭐ NEW
-```
+1. Review task list with team/stakeholders
+2. Assign tasks to developers
+3. Execute tasks in dependency order
+4. Use `/finalize` before committing (framework command for constitutional validation)
 
-## Example Output (tasks.md)
+## Framework Reference
 
-```markdown
-# Task List: Expense Tracking Feature
-
-## Task 1: Create Expenses Database Table
-
-**Type**: infrastructure
-**Priority**: critical
-**Complexity**: small
-**Estimated Hours**: 1
-
-**Description**:
-Create expenses table in SQLite database (from Codebase Context MCP):
-
-- Fields: id, user_id, amount, category, date, description, receipt_url
-- Schema follows existing pattern (users, contacts, tasks tables)
-
-**Files**:
-
-- Path: chat-server/db.js (from "Get file structure")
-  Action: modify
-
-**Acceptance Criteria**:
-
-- [ ] Expenses table created
-- [ ] Migration script added
-- [ ] Table schema validated
+- **Agent**: `sdd-agentic-framework/.claude/agents/product/tasks-agent.md`
+- **Template**: `sdd-agentic-framework/.specify/templates/tasks-template.md`
+- **Scripts**: `sdd-agentic-framework/.specify/scripts/bash/check-task-prerequisites.sh`
+- **Workflow**: Phase 3 of SDD methodology
 
 ---
 
-## Task 2: Create ExpenseModal Component
-
-**Type**: feature
-**Priority**: high
-**Complexity**: medium
-**Estimated Hours**: 3
-**Dependencies**: []
-
-**Description**:
-Create modal following LiaiZen pattern (from Codebase Context MCP):
-
-- Container: z-[100] (above navigation z-50)
-- Positioning: items-center justify-center
-- Padding: pt-16 pb-24 (mobile), pt-4 pb-4 (desktop)
-- Backdrop: bg-black/40
-
-**Files**:
-
-- Path: chat-client-vite/src/components/modals/ExpenseModal.jsx (from "Get file structure")
-  Action: create
-
-**Acceptance Criteria**:
-
-- [ ] Modal follows standard pattern
-- [ ] Form fields included (amount, category, date, description)
-- [ ] Receipt upload functionality
-- [ ] Proper z-index and padding
-
----
-
-## Task 3: Style Expense Form
-
-**Type**: feature
-**Priority**: medium
-**Complexity**: small
-**Estimated Hours**: 2
-**Dependencies**: [Task 2]
-
-**Description**:
-Apply brand styling (from Design Tokens MCP):
-
-- Primary button: bg-[#275559], rounded-lg, min-h-[44px]
-- Input fields: min-h-[44px], border-2, focus:border-[#275559]
-- Success button: bg-[#6dd4b0]
-
-**Acceptance Criteria**:
-
-- [ ] Follows design tokens
-- [ ] Touch targets 44px minimum
-- [ ] Responsive on mobile
-```
-
-## Next Steps After /tasks
-
-Once tasks are created:
-
-1. **Review task list** for accuracy and completeness
-2. **Assign tasks** to team members or AI agents
-3. **Execute tasks** in dependency order
-4. **Track progress** through task checklist
-
-## MCP Server Benefits
-
-The tasks-agent **automatically uses MCP servers** to:
-
-- ✅ **Exact file paths** from Codebase Context (no guessing)
-- ✅ **Pattern compliance** in task descriptions
-- ✅ **Design token references** for styling tasks
-- ✅ **API/database accuracy** from Codebase Context
-- ✅ **Dependency awareness** through context queries
-
-## Troubleshooting
-
-### "Plan not found"
-
-**Solution**: Run `/plan` first to create plan.md
-
-### "MCP servers not responding"
-
-**Solution**: Restart Claude Desktop (Cmd+Q, reopen)
-
-### "Tasks too granular/not granular enough"
-
-**Solution**: Specify `--granularity [coarse|fine]` when running command
-
-### "Incorrect file paths"
-
-**Solution**: Update Codebase Context MCP if file structure changed
-
-## Task Execution Order
-
-Tasks are ordered by dependencies:
-
-1. **Infrastructure tasks** (database, API setup) - no dependencies
-2. **Component tasks** - depend on infrastructure
-3. **Styling tasks** - depend on components
-4. **Integration tasks** - depend on components + API
-5. **Testing tasks** - depend on implementation
-6. **Documentation tasks** - depend on completion
-
-## Related Commands
-
-- `/specify` - Create feature specification (Phase 1)
-- `/plan` - Create implementation plan (Phase 2)
-- `/validate-domain` - Validate against co-parenting domain
-
-## Learn More
-
-- **Tasks Agent Details**: `sdd-agentic-framework/.claude/agents/product/tasks-agent.md`
-- **MCP Integration Guide**: `sdd-agentic-framework/.docs/mcp-integration-guide.md`
-
----
-
-**Tasks with MCP = Accurate Paths, Patterns, and Design References**
+**Pattern**: Framework delegation → Dependency-ordered task list

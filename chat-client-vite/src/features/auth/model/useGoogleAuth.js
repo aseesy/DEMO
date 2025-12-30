@@ -24,6 +24,7 @@ import {
   detectPopupBlocker,
 } from '../../../utils/oauthHelper.js';
 import { storage, StorageKeys, authStorage } from '../../../adapters/storage';
+import { tokenManager } from '../../../utils/tokenManager.js';
 import { calculateUserProperties } from './useSessionVerification.js';
 
 export function useGoogleAuth({ setIsAuthenticated, setError }) {
@@ -197,6 +198,8 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
           storage.set(StorageKeys.USER_EMAIL, data.user.email);
         }
         if (data.token) {
+          // CRITICAL: Update TokenManager FIRST for immediate API access
+          tokenManager.setToken(data.token);
           authStorage.setToken(data.token);
         }
         if (data.user) {

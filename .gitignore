@@ -9,6 +9,7 @@ node_modules
 
 # Claude Code settings (may contain approved command patterns)
 .claude/settings.local.json
+.claude.backup/
 
 # MCP Configuration (contains sensitive tokens)
 .mcp-config.json
@@ -30,3 +31,4 @@ npm-debug.log*
 
 # OS files
 .DS_Store
+.env*.local
