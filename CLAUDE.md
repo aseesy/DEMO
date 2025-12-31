@@ -149,7 +149,7 @@ npm run dev
 # Frontend only (port 5173)
 cd chat-client-vite && npm run dev
 
-# Backend only (port 8080)
+# Backend only (port 3000)
 cd chat-server && node server.js
 
 # Restart services
@@ -227,7 +227,7 @@ Server events: `new_message`, `ai_intervention`, `room_update`
 ### Backend (`chat-server/.env`)
 
 ```
-PORT=8080
+PORT=3000
 JWT_SECRET=
 OPENAI_API_KEY=
 DATABASE_URL=postgresql://...
@@ -241,8 +241,8 @@ NEO4J_PASSWORD=
 ### Frontend (`chat-client-vite/.env`)
 
 ```
-VITE_API_URL=http://localhost:8080
-VITE_WS_URL=ws://localhost:8080
+VITE_API_URL=http://localhost:3000
+VITE_WS_URL=ws://localhost:3000
 ```
 
 ## Deployment

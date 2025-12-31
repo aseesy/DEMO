@@ -106,16 +106,20 @@ function optionalAuth(req, res, next) {
  * @returns {string} JWT token
  */
 function generateToken(user, expiresIn = '30d') {
-  return jwt.sign(
-    {
-      id: user.id,
-      userId: user.id,
-      username: user.username,
-      email: user.email,
-    },
-    JWT_SECRET,
-    { expiresIn }
-  );
+  // Use email as primary identifier (migrated from username)
+  // Username is optional - only include if present
+  const payload = {
+    id: user.id,
+    userId: user.id,
+    email: user.email, // Required - primary identifier
+  };
+  
+  // Include username only if present (for backward compatibility)
+  if (user.username) {
+    payload.username = user.username;
+  }
+  
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
 /**

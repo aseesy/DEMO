@@ -95,16 +95,19 @@ export function AuthProvider({ children }) {
     }
 
     // If we have valid stored auth, use it for initial state
-    const hasValidStoredAuth = storedIsAuthenticated && storedToken && storedUsername;
+    // CRITICAL: Use email as primary identifier (migrated from username)
+    // Username is optional - use email if username not available
+    const identifier = storedEmail || storedUsername;
+    const hasValidStoredAuth = storedIsAuthenticated && storedToken && identifier;
     console.log('[AuthContext] Initial auth state:', {
       isAuthenticated: hasValidStoredAuth,
-      username: hasValidStoredAuth ? storedUsername : null,
+      username: hasValidStoredAuth ? (storedEmail || storedUsername) : null,
     });
 
     return {
       isAuthenticated: hasValidStoredAuth,
-      username: hasValidStoredAuth ? storedUsername : null,
-      email: hasValidStoredAuth ? storedEmail : null,
+      username: hasValidStoredAuth ? (storedEmail || storedUsername) : null,
+      email: hasValidStoredAuth ? (storedEmail || storedUsername) : null,
       token: hasValidStoredAuth ? storedToken : null,
     };
   }, []); // Empty deps - only run once on mount
@@ -121,6 +124,12 @@ export function AuthProvider({ children }) {
 
   // Track when login completes to add grace period for 401 errors
   const loginCompletedAtRef = React.useRef(null);
+  
+  // CRITICAL: Track if verifySession has completed at least once
+  // This prevents onAuthFailure from clearing auth during optimistic initialization
+  // until we've verified the token with the server
+  const verifySessionCompletedRef = React.useRef(false);
+  const verifySessionStartedAtRef = React.useRef(null);
 
   /**
    * Load auth state from storage
@@ -169,23 +178,28 @@ export function AuthProvider({ children }) {
       return { isAuthenticated: false, username: null, email: null, token: null };
     }
 
-    // If we have a valid token and username, set initial state optimistically
+    // If we have a valid token and email, set initial state optimistically
     // This allows the app to show authenticated UI while verification completes
     // The verifySession will confirm or clear this state
-    const hasValidStoredAuth = storedToken && storedUsername && !isTokenExpired(storedToken);
+    // CRITICAL: Use email as primary identifier (migrated from username)
+    // Username is optional - use email if username not available
+    const identifier = storedEmail || storedUsername;
+    const hasValidStoredAuth = storedToken && identifier && !isTokenExpired(storedToken);
 
     if (hasValidStoredAuth) {
       // Set initial state from storage (will be verified by verifySession)
       // Sync TokenManager with stored token (CRITICAL: ensures apiClient can access token immediately)
       tokenManager.setToken(storedToken);
       setIsAuthenticated(true);
-      setUsername(storedUsername);
-      setEmail(storedEmail);
+      // Use email as primary identifier, fallback to username for backward compatibility
+      const userIdentifier = storedEmail || storedUsername;
+      setUsername(userIdentifier);
+      setEmail(storedEmail || storedUsername); // Email takes precedence
       setToken(storedToken);
     } else {
       // Invalid state - clear it
       if (storedIsAuthenticated) {
-        console.log('[loadAuthState] Invalid auth state (missing token/username), clearing');
+        console.log('[loadAuthState] Invalid auth state (missing token/identifier), clearing');
         authStorage.clearAuth();
       }
       setIsAuthenticated(false);
@@ -196,8 +210,8 @@ export function AuthProvider({ children }) {
 
     return {
       isAuthenticated: hasValidStoredAuth,
-      username: hasValidStoredAuth ? storedUsername : null,
-      email: hasValidStoredAuth ? storedEmail : null,
+      username: hasValidStoredAuth ? (storedEmail || storedUsername) : null,
+      email: hasValidStoredAuth ? (storedEmail || storedUsername) : null,
       token: hasValidStoredAuth ? storedToken : null,
     };
   }, []);
@@ -214,6 +228,8 @@ export function AuthProvider({ children }) {
     setEmail(null);
     setToken(null);
     loginCompletedAtRef.current = null; // Clear login timestamp
+    verifySessionCompletedRef.current = false; // Reset verification flag
+    verifySessionStartedAtRef.current = null; // Reset verification start time
   }, []);
 
   /**
@@ -222,6 +238,7 @@ export function AuthProvider({ children }) {
   const verifySession = React.useCallback(async () => {
     setIsCheckingAuth(true);
     setError(null);
+    verifySessionStartedAtRef.current = Date.now();
 
     try {
       const storedToken = authStorage.getToken();
@@ -309,12 +326,17 @@ export function AuthProvider({ children }) {
             setEmail(user.email);
             storage.set(StorageKeys.USER_EMAIL, user.email);
           }
+          
+          // Mark verification as completed successfully
+          verifySessionCompletedRef.current = true;
         } else {
           console.log('[verifySession] ❌ Server says not authenticated, clearing auth');
+          verifySessionCompletedRef.current = true; // Mark as completed (even if failed)
           clearAuthState();
         }
       } else {
         console.log('[verifySession] ❌ Server verification failed, clearing auth');
+        verifySessionCompletedRef.current = true; // Mark as completed (even if failed)
         clearAuthState();
       }
     } catch (err) {
@@ -333,8 +355,11 @@ export function AuthProvider({ children }) {
         setUsername(storedState.username);
         setEmail(storedState.email);
         setToken(storedState.token);
+        // Mark as completed even on network error (we kept optimistic state)
+        verifySessionCompletedRef.current = true;
       } else {
         console.log('[verifySession] ❌ No stored auth, clearing state');
+        verifySessionCompletedRef.current = true; // Mark as completed (even if failed)
         clearAuthState();
       }
     } finally {
@@ -551,8 +576,13 @@ export function AuthProvider({ children }) {
    * Listen for auth failures from API calls (401 errors)
    * When the token is invalid/expired, clear auth state to trigger re-login
    *
-   * CRITICAL: Don't clear auth if verifySession is in progress - this prevents race conditions
-   * where a 401 happens during initial verification but the token is actually valid.
+   * CRITICAL: Don't clear auth if verifySession is in progress OR hasn't completed yet
+   * This prevents race conditions where:
+   * 1. Optimistic initialization sets isAuthenticated = true
+   * 2. Component makes API call before verifySession completes
+   * 3. API call gets 401 (token might be invalid)
+   * 4. onAuthFailure clears auth state
+   * 5. verifySession completes successfully, but auth was already cleared
    */
   React.useEffect(() => {
     return onAuthFailure(detail => {
@@ -560,18 +590,35 @@ export function AuthProvider({ children }) {
         isCheckingAuth,
         isAuthenticated,
         hasToken: !!token,
+        verifySessionCompleted: verifySessionCompletedRef.current,
       });
 
       // CRITICAL: Don't clear auth if we're currently verifying the session
-      // This prevents race conditions where:
-      // 1. verifySession starts (isCheckingAuth = true)
-      // 2. Another API call happens before verification completes
-      // 3. That call gets 401 (maybe token is being refreshed server-side)
-      // 4. onAuthFailure tries to clear auth while verifySession is still running
-      // 5. verifySession completes successfully, but auth was already cleared
+      // This prevents race conditions where API calls happen during verification
       if (isCheckingAuth) {
         console.log('[onAuthFailure] Ignoring 401 - session verification in progress');
         return;
+      }
+
+      // CRITICAL: Don't clear auth if verifySession hasn't completed yet
+      // This prevents clearing auth during optimistic initialization phase
+      // Components might make API calls before verifySession completes, causing false 401s
+      if (!verifySessionCompletedRef.current) {
+        console.log('[onAuthFailure] Ignoring 401 - verifySession has not completed yet (optimistic init phase)');
+        return;
+      }
+
+      // CRITICAL: Add grace period after verifySession starts (even if not completed)
+      // This handles the case where verifySession is slow and API calls happen during verification
+      if (verifySessionStartedAtRef.current) {
+        const timeSinceVerifyStart = Date.now() - verifySessionStartedAtRef.current;
+        const VERIFY_GRACE_PERIOD_MS = 15000; // 15 seconds (longer than verifySession timeout of 10s)
+        if (timeSinceVerifyStart < VERIFY_GRACE_PERIOD_MS) {
+          console.log(
+            `[onAuthFailure] Ignoring 401 - within ${VERIFY_GRACE_PERIOD_MS}ms grace period after verifySession started (${timeSinceVerifyStart}ms ago)`
+          );
+          return;
+        }
       }
 
       // Also ignore 401s on auth endpoints (they're expected during login/signup)
@@ -580,11 +627,20 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      // Grace period: Don't clear auth for 3 seconds after login
+      // CRITICAL: Don't clear auth for /api/room/members/check failures
+      // This endpoint may fail for valid reasons (room not created yet, etc.)
+      // and shouldn't trigger logout. The user is still authenticated.
+      if (detail.endpoint?.includes('/api/room/members/check')) {
+        console.log('[onAuthFailure] Ignoring 401 - room members check endpoint (non-critical)');
+        return;
+      }
+
+      // Grace period: Don't clear auth for 5 seconds after login
       // This prevents race conditions where API calls happen before token is fully propagated
+      // Increased from 3s to 5s to account for slower networks and multiple API calls
       if (loginCompletedAtRef.current) {
         const timeSinceLogin = Date.now() - loginCompletedAtRef.current;
-        const GRACE_PERIOD_MS = 3000; // 3 seconds
+        const GRACE_PERIOD_MS = 5000; // 5 seconds (increased from 3s)
         if (timeSinceLogin < GRACE_PERIOD_MS) {
           console.log(
             `[onAuthFailure] Ignoring 401 - within ${GRACE_PERIOD_MS}ms grace period after login (${timeSinceLogin}ms ago)`
@@ -594,10 +650,11 @@ export function AuthProvider({ children }) {
       }
 
       // Only clear auth if we have a token but it's invalid
-      // Check both state token and authStorage (Google auth sets token in authStorage but not state)
-      const hasToken = token || authStorage.getToken();
+      // CRITICAL: Always check TokenManager (single source of truth) instead of state/authStorage
+      // State might be stale, but TokenManager is always current
+      const hasToken = tokenManager.getToken();
       if (!hasToken) {
-        console.log('[onAuthFailure] No token present, not clearing auth');
+        console.log('[onAuthFailure] No token present in TokenManager, not clearing auth');
         return;
       }
 

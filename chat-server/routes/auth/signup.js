@@ -45,6 +45,28 @@ router.post(
         lastName,
       });
     } catch (error) {
+      // CRITICAL: Check for database connection errors first
+      const isDbError = 
+        error.code === 'ECONNREFUSED' ||
+        error.code === 'ECONNRESET' ||
+        error.code === 'ETIMEDOUT' ||
+        error.code === '08000' ||
+        error.code === '08003' ||
+        error.code === '08006' ||
+        error.message?.toLowerCase().includes('connection') ||
+        error.message?.toLowerCase().includes('database') ||
+        error.message?.toLowerCase().includes('postgresql');
+      
+      if (isDbError) {
+        console.warn('[signup] Database connection error:', error.code || error.message);
+        return res.status(503).json({
+          error: 'Service temporarily unavailable',
+          code: 'DATABASE_NOT_READY',
+          message: 'Database connection is being established. Please try again in a moment.',
+          retryAfter: 5,
+        });
+      }
+      
       const classified = classifySignupError(error);
       return res.status(classified.status).json(classified.body);
     }
@@ -90,6 +112,28 @@ router.post(
         require('../../dbPostgres')
       );
     } catch (error) {
+      // CRITICAL: Check for database connection errors first
+      const isDbError = 
+        error.code === 'ECONNREFUSED' ||
+        error.code === 'ECONNRESET' ||
+        error.code === 'ETIMEDOUT' ||
+        error.code === '08000' ||
+        error.code === '08003' ||
+        error.code === '08006' ||
+        error.message?.toLowerCase().includes('connection') ||
+        error.message?.toLowerCase().includes('database') ||
+        error.message?.toLowerCase().includes('postgresql');
+      
+      if (isDbError) {
+        console.warn('[register] Database connection error:', error.code || error.message);
+        return res.status(503).json({
+          error: 'Service temporarily unavailable',
+          code: 'DATABASE_NOT_READY',
+          message: 'Database connection is being established. Please try again in a moment.',
+          retryAfter: 5,
+        });
+      }
+      
       const classified = classifySignupError(error);
       return res.status(classified.status).json(classified.body);
     }

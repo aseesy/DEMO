@@ -13,6 +13,7 @@ const router = express.Router();
 const { verifyAuth } = require('../middleware/auth');
 const { handleServiceError } = require('../middleware/errorHandlers');
 const { roomService } = require('../src/services');
+const { NotFoundError } = require('../src/services/errors');
 
 // Helper references - set from server.js
 let autoCompleteOnboardingTasks;
@@ -77,8 +78,9 @@ router.post('/backfill-contacts', async (req, res) => {
  */
 router.get('/invite', verifyAuth, async (req, res) => {
   try {
-    const username = req.user?.username;
-    if (!username) {
+    // Use email as primary identifier (migrated from username)
+    const email = req.user?.email;
+    if (!email) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
@@ -87,7 +89,8 @@ router.get('/invite', verifyAuth, async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const result = await roomService.getOrCreateInvite(userId, username);
+    // Use email as identifier (roomService.getOrCreateInvite accepts email)
+    const result = await roomService.getOrCreateInvite(userId, email);
     res.json(result);
   } catch (error) {
     handleServiceError(error, res);
@@ -148,8 +151,9 @@ router.post('/join', async (req, res) => {
  */
 router.get('/members/check', verifyAuth, async (req, res) => {
   try {
-    const username = req.user?.username;
-    if (!username) {
+    // Use email as primary identifier (migrated from username)
+    const email = req.user?.email;
+    if (!email) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
@@ -158,7 +162,8 @@ router.get('/members/check', verifyAuth, async (req, res) => {
       return res.json({ hasMultipleMembers: false, memberCount: 0 });
     }
 
-    const result = await roomService.checkRoomMembers(userId, username);
+    // Use email as identifier (roomService.checkRoomMembers accepts email)
+    const result = await roomService.checkRoomMembers(userId, email);
     res.json(result);
   } catch (error) {
     console.error('[room/members/check] Unexpected error:', error);

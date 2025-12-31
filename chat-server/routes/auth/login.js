@@ -70,6 +70,32 @@ router.post('/login', loginRateLimit, honeypotCheck('website'), async (req, res)
     }
   } catch (error) {
     console.error('Login error:', error);
+    
+    // CRITICAL: Check for database connection errors
+    // These should return 503 Service Unavailable, not 500 or authentication errors
+    const isDbError = 
+      error.message === 'DATABASE_NOT_READY' ||
+      error.code === 'ECONNREFUSED' ||
+      error.code === 'ECONNRESET' ||
+      error.code === 'ETIMEDOUT' ||
+      error.code === '08000' || // PostgreSQL connection_exception
+      error.code === '08003' || // PostgreSQL connection_does_not_exist
+      error.code === '08006' || // PostgreSQL connection_failure
+      error.message?.toLowerCase().includes('connection') ||
+      error.message?.toLowerCase().includes('database') ||
+      error.message?.toLowerCase().includes('postgresql') ||
+      error.message?.toLowerCase().includes('econnrefused');
+    
+    if (isDbError) {
+      console.warn('[login] Database connection error during login:', error.code || error.message);
+      return res.status(503).json({
+        error: 'Service temporarily unavailable',
+        code: 'DATABASE_NOT_READY',
+        message: 'Database connection is being established. Please try again in a moment.',
+        retryAfter: 5,
+      });
+    }
+    
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });

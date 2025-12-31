@@ -16,6 +16,7 @@ import {
 } from '../../../utils/storageMigration.js';
 import { setUserProperties } from '../../../utils/analyticsEnhancements.js';
 import { logger } from '../../../utils/logger.js';
+import { tokenManager } from '../../../utils/tokenManager.js';
 import {
   queryRoomMembers,
   queryCoParentFromMessages,
@@ -306,19 +307,24 @@ export function useInviteManagement({
   // Check once when user first authenticates - wait for token to be available
   React.useEffect(() => {
     if (isAuthenticated && !hasCoParentConnected) {
-      // Wait a bit for token to be stored in localStorage after login
+      // Wait longer for token to be fully propagated after login
+      // Increased delay to prevent race conditions with auth state updates
       const timer = setTimeout(() => {
-        // Verify token exists before making request
-        const token = localStorage.getItem('auth_token_backup');
-        if (token) {
+        // Verify token exists before making request (use TokenManager for instant access)
+        if (tokenManager.hasToken()) {
           checkRoomMembers();
         } else {
           // If no token yet, wait a bit more (token should be set by now)
+          console.log('[useInviteManagement] No token found after 500ms, waiting 1000ms more');
           setTimeout(() => {
-            checkRoomMembers();
-          }, 500);
+            if (tokenManager.hasToken()) {
+      checkRoomMembers();
+            } else {
+              console.log('[useInviteManagement] No token found after 1500ms, skipping checkRoomMembers');
+            }
+          }, 1000);
         }
-      }, 100);
+      }, 500); // Increased from 100ms to 500ms to give auth state time to stabilize
       return () => clearTimeout(timer);
     }
   }, [isAuthenticated, hasCoParentConnected, checkRoomMembers]);

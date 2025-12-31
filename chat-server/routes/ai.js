@@ -154,15 +154,17 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
     }
 
     const user = req.user;
+    // Use email as primary identifier (migrated from username)
+    const userIdentifier = user?.email || user?.username;
     console.log('🔍 /api/mediate/analyze called:', {
       text: text.substring(0, 50),
-      username: user?.username,
+      identifier: userIdentifier,
     });
 
     // 2. Call service (all business logic is in the service)
     const result = await mediationService.analyzeMessage({
       text,
-      username: user.username,
+      username: userIdentifier, // Use email as identifier (service accepts email)
       senderProfile,
       receiverProfile,
     });

@@ -69,8 +69,18 @@ export function LoginSignup() {
     isAuthenticated,
     isNewSignup,
     clearInviteCode: true,
-    delay: isNewSignup ? 100 : 0, // Immediate redirect if already logged in
+    delay: isNewSignup ? 100 : 0, // 100ms delay for signup, immediate for login
   });
+
+  // Reset isNewSignup flag after redirect completes to prevent wrong redirect on logout/login
+  React.useEffect(() => {
+    if (isAuthenticated && isNewSignup) {
+      const timer = setTimeout(() => {
+        setIsNewSignup(false);
+      }, 200); // After redirect delay (100ms) + buffer
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, isNewSignup]);
 
   // Clear form when mode changes
   React.useEffect(() => {

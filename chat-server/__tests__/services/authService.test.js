@@ -30,6 +30,8 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Ensure recordLoginAttempt returns a promise
+    adaptiveAuth.recordLoginAttempt.mockResolvedValue(undefined);
 
     // Mock Express request object
     mockReq = {
@@ -226,10 +228,11 @@ describe('AuthService', () => {
 
       it('should re-throw unexpected authentication errors', async () => {
         const unexpectedError = new Error('Database connection failed');
+        unexpectedError.code = 'ECONNREFUSED'; // Make it a database error
         auth.authenticateUserByEmail.mockRejectedValue(unexpectedError);
 
         await expect(authService.authenticateUser(mockCredentials, mockReq)).rejects.toThrow(
-          'Database connection failed'
+          'DATABASE_NOT_READY'
         );
       });
     });

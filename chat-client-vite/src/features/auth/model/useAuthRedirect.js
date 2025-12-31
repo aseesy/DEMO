@@ -39,7 +39,7 @@ export function useAuthRedirect({
   delay = 100,
   clearInviteCode = true,
 } = {}) {
-  const { navigate } = useAppNavigation();
+  const { navigate, currentPath } = useAppNavigation();
 
   React.useEffect(() => {
     if (!isAuthenticated) {
@@ -54,7 +54,11 @@ export function useAuthRedirect({
 
       // Navigate based on signup vs login
       const destination = isNewSignup ? afterSignupPath : afterLoginPath;
+      
+      // Only navigate if not already on destination path
+      if (currentPath !== destination) {
       navigate(destination, { replace: true });
+      }
     }, delay);
 
     return () => clearTimeout(timer);
@@ -66,6 +70,7 @@ export function useAuthRedirect({
     delay,
     clearInviteCode,
     navigate,
+    currentPath,
   ]);
 }
 

@@ -91,8 +91,28 @@ class AuthService extends BaseService {
         ? await auth.authenticateUserByEmail(loginEmail, password)
         : await auth.authenticateUser(username, password);
     } catch (authError) {
+      // CRITICAL: Check for database connection errors first
+      // These should be distinguished from authentication errors
+      const isDbError = 
+        authError.code === 'ECONNREFUSED' ||
+        authError.code === 'ECONNRESET' ||
+        authError.code === 'ETIMEDOUT' ||
+        authError.code === '08000' || // PostgreSQL connection_exception
+        authError.code === '08003' || // PostgreSQL connection_does_not_exist
+        authError.code === '08006' || // PostgreSQL connection_failure
+        authError.message?.toLowerCase().includes('connection') ||
+        authError.message?.toLowerCase().includes('database') ||
+        authError.message?.toLowerCase().includes('postgresql') ||
+        authError.message?.toLowerCase().includes('econnrefused');
+      
+      if (isDbError) {
+        // Don't record as failed login attempt - it's a system error
+        console.warn('[AuthService] Database connection error during authentication:', authError.code || authError.message);
+        throw new Error('DATABASE_NOT_READY');
+      }
+      
       // Record failed attempt
-      await adaptiveAuth.recordLoginAttempt({
+      const recordPromise = adaptiveAuth.recordLoginAttempt({
         email: loginEmail || username,
         success: false,
         deviceFingerprint: preAuthRisk.deviceFingerprint,
@@ -101,6 +121,11 @@ class AuthService extends BaseService {
         riskScore: preAuthRisk.score,
         riskLevel: preAuthRisk.riskLevel,
       });
+      if (recordPromise && typeof recordPromise.catch === 'function') {
+        recordPromise.catch(() => {
+          // Ignore errors recording login attempt (non-critical)
+        });
+      }
 
       // Handle specific authentication errors
       if (authError.message === 'Invalid password') {

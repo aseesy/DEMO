@@ -1,0 +1,120 @@
+[
+  {
+    "id": "29479fd6-81b7-4583-adb7-5e663df6c0e9",
+    "timestamp": "2025-12-28T06:49:40.089Z",
+    "rating": "⭐",
+    "category": "code-quality",
+    "context": "Excellent use of the Adapter pattern. By wrapping socket.io-client in a custom SocketConnection class, you have successfully decoupled the application logic from the specific websocket library. This makes future replacements or mocking for tests significantly easier.",
+    "behavior": "refactoring",
+    "suggestion": null,
+    "files": [
+      "src/adapters/socket/SocketAdapter.js"
+    ],
+    "sessionId": "user-feedback-2025-01-27"
+  },
+  {
+    "id": "0b1d5693-598a-4032-868f-3d7d3054d4e6",
+    "timestamp": "2025-12-28T06:49:40.110Z",
+    "rating": "❌",
+    "category": "design",
+    "context": "Found inline style fontSize: '15px' in MessageInput.jsx",
+    "behavior": "hardcoded-values",
+    "suggestion": "Use a utility class (e.g., text-sm or text-base) or a defined design token to ensure typography consistency across the app",
+    "files": [
+      "src/features/chat/components/MessageInput.jsx"
+    ],
+    "sessionId": "user-feedback-2025-01-27"
+  },
+  {
+    "id": "eb524976-cb39-4fb9-841d-e12a94484719",
+    "timestamp": "2025-12-28T06:49:40.110Z",
+    "rating": "⭐",
+    "category": "code-quality",
+    "context": "The use of paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' is a great proactive measure for mobile responsiveness, ensuring the input isn't hidden behind the home indicator on iOS devices.",
+    "behavior": "proactive",
+    "suggestion": null,
+    "files": [
+      "src/features/chat/components/MessageInput.jsx"
+    ],
+    "sessionId": "user-feedback-2025-01-27"
+  },
+  {
+    "id": "9fcc0806-db10-455f-a698-3208600eb578",
+    "timestamp": "2025-12-28T06:49:40.110Z",
+    "rating": "❌",
+    "category": "workflow",
+    "context": "useSendMessage.js hook is doing too much - handles UI state, network transport, and business logic",
+    "behavior": "over-engineering",
+    "suggestion": "Split into separate hooks: useMessageUI, useMessageTransport, useMessageMediation. Each should have a single responsibility",
+    "files": [
+      "src/features/chat/model/useSendMessage.js"
+    ],
+    "sessionId": "user-feedback-2025-01-27"
+  },
+  {
+    "id": "b752820c-8b9f-4b47-abb3-142c464b1169",
+    "timestamp": "2025-12-28T06:49:40.110Z",
+    "rating": "⚠️",
+    "category": "code-quality",
+    "context": "Error handling in useSendMessage.js allows 'fail open' behavior if analysis fails",
+    "behavior": "potential-issue",
+    "suggestion": "Consider adding explicit logging or user notification when safety features are bypassed due to analysis failure. May want to implement a 'fail closed' mode for critical safety checks",
+    "files": [
+      "src/features/chat/model/useSendMessage.js"
+    ],
+    "sessionId": "user-feedback-2025-01-27"
+  },
+  {
+    "id": "1cc8dddc-8c75-424b-be1b-12da168fa85a",
+    "timestamp": "2025-12-28T06:49:40.110Z",
+    "rating": "⚠️",
+    "category": "code-quality",
+    "context": "POLITE_REQUEST_PATTERNS and POSITIVE_PATTERNS are hardcoded arrays in messageAnalyzer.js",
+    "behavior": "potential-issue",
+    "suggestion": "Extract patterns to a separate config file (e.g., messagePatterns.js) to keep logic file clean and make patterns easier to maintain",
+    "files": [
+      "src/utils/messageAnalyzer.js"
+    ],
+    "sessionId": "user-feedback-2025-01-27"
+  },
+  {
+    "id": "ed49acf7-1de4-4d01-88a2-a2f942a6854a",
+    "timestamp": "2025-12-28T06:49:40.110Z",
+    "rating": "⭐",
+    "category": "code-quality",
+    "context": "Breaking out quickLocalCheck prevents unnecessary API calls for simple messages (\"ok\", \"thanks\"). This is a good performance optimization.",
+    "behavior": "refactoring",
+    "suggestion": null,
+    "files": [
+      "src/utils/messageAnalyzer.js"
+    ],
+    "sessionId": "user-feedback-2025-01-27"
+  },
+  {
+    "id": "cba59547-205a-4289-9bd3-42d5c187c6f1",
+    "timestamp": "2025-12-28T06:49:40.110Z",
+    "rating": "⭐",
+    "category": "design",
+    "context": "Extracting profile constants and builder functions separates data structure definitions from UI components",
+    "behavior": "design-system",
+    "suggestion": null,
+    "files": [
+      "src/config/profileConfig.js",
+      "src/utils/profileBuilder.js"
+    ],
+    "sessionId": "user-feedback-2025-01-27"
+  },
+  {
+    "id": "bad40c50-9ff7-460a-83bf-36c54f9224ac",
+    "timestamp": "2025-12-28T06:49:40.110Z",
+    "rating": "⭐",
+    "category": "code-quality",
+    "context": "Directory structure organized by Feature (auth, chat, dashboard) rather than file type",
+    "behavior": "refactoring",
+    "suggestion": null,
+    "files": [
+      "src/features/"
+    ],
+    "sessionId": "user-feedback-2025-01-27"
+  }
+]
