@@ -7,6 +7,7 @@ module.exports = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/libs/language-analyzer/', // Stale duplicate - real code is in src/liaizen/analysis/
+    '.*\\.integration\\.test\\.js$', // Integration tests require running server
   ],
   collectCoverageFrom: [
     'auth.js',
