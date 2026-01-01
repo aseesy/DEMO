@@ -1,4 +1,5 @@
 import React from 'react';
+import { socketService } from '../../../services/socket/index.js';
 import { useChatSocket } from '../model/useChatSocket.js';
 import { useSearchMessages } from '../model/useSearchMessages.js';
 import { useMessageSending } from '../hooks/useMessageSending.js';
@@ -56,10 +57,10 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     setDraftCoaching,
     unreadCount,
     setUnreadCount,
-  } = useChatSocket({ 
-    username, 
-    isAuthenticated, 
-    currentView, 
+  } = useChatSocket({
+    username,
+    isAuthenticated,
+    currentView,
     onNewMessage,
     messageUIMethodsRef, // Pass ref so handlers can access useMessageUI methods
   });
@@ -79,34 +80,33 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     setError,
   });
 
-  // Set up socket event handlers for search (after socket is available)
+  // Set up socket event handlers for search (via SocketService)
   React.useEffect(() => {
-    if (!socketRef.current) return;
-
-    const socket = socketRef.current;
+    const unsubscribes = [];
 
     // Handle search results
-    const handleSearchResults = ({ messages: results, total }) => {
-      searchHook.handleSearchResults({ messages: results, total });
-    };
+    unsubscribes.push(
+      socketService.subscribe('search_results', ({ messages: results, total }) => {
+        searchHook.handleSearchResults({ messages: results, total });
+      })
+    );
 
     // Handle jump to message result
-    const handleJumpToMessage = ({ messages: contextMsgs, targetMessageId }) => {
-      searchHook.handleJumpToMessageResult({
-        messages: contextMsgs,
-        targetMessageId,
-        setMessages,
-      });
-    };
+    unsubscribes.push(
+      socketService.subscribe(
+        'jump_to_message_result',
+        ({ messages: contextMsgs, targetMessageId }) => {
+          searchHook.handleJumpToMessageResult({
+            messages: contextMsgs,
+            targetMessageId,
+            setMessages,
+          });
+        }
+      )
+    );
 
-    socket.on('search_results', handleSearchResults);
-    socket.on('jump_to_message_result', handleJumpToMessage);
-
-    return () => {
-      socket.off('search_results', handleSearchResults);
-      socket.off('jump_to_message_result', handleJumpToMessage);
-    };
-  }, [socketRef, searchHook, setMessages]);
+    return () => unsubscribes.forEach(unsub => unsub());
+  }, [searchHook, setMessages]);
 
   // Refs for typing (shared between hooks)
   const typingTimeoutRef = React.useRef(null);
@@ -164,14 +164,15 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
 
   // Build frontend context for mediation (Phase 4: hybrid analysis)
   // Note: This is "current state" context - backend has "historical" context
-  const { senderProfile, receiverProfile, isLoading: isLoadingContext } = useMediationContext(
-    username,
-    isAuthenticated
-  );
+  const {
+    senderProfile,
+    receiverProfile,
+    isLoading: isLoadingContext,
+  } = useMediationContext(username, isAuthenticated);
 
   // Use extracted hooks
-  const { 
-    sendMessage, 
+  const {
+    sendMessage,
     emitOrQueueMessage,
     removePendingMessage, // Expose for handlers to use
     markMessageSent, // Expose for handlers to use

@@ -56,6 +56,3 @@ module.exports = {
   comparePassword,
   generateUsernameSuffix,
 };
-
-
-

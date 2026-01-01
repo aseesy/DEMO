@@ -1,118 +1,59 @@
-import React from 'react';
-import { io } from 'socket.io-client';
-import { setupSocketEventHandlers } from './socketEventHandlers.js';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { socketService } from '../../../services/socket/index.js';
+import { authStorage } from '../../../adapters/storage/index.js';
+import { useSocketState, useSocketConnection, useSocketEmit } from '../../../hooks/socket/index.js';
+
+// State hooks
 import { useRoomId } from '../../../hooks/room/useRoomId.js';
 import { useMessages } from './useMessages.js';
 import { useMessagePagination } from './useMessagePagination.js';
-import { authStorage } from '../../../adapters/storage';
+import { useTypingIndicators } from './useTypingIndicators.js';
+import { useDraftCoaching } from './useDraftCoaching.js';
+import { useUnreadCount } from './useUnreadCount.js';
+import { useThreads } from './useThreads.js';
 
-// Central configuration - Single Source of Truth
-import { SOCKET_URL } from '../../../config.js';
-
-// Import SocketEvents for type-safe event names
-// Note: Full migration to SocketAdapter pending - current code uses raw socket.io
-import { SocketEvents } from '../../../adapters/socket';
-
-/**
- * getSocketUrl - Returns socket URL from central config
- * Uses SOCKET_URL from config.js as the single source of truth
- */
-function getSocketUrl() {
-  // Allow runtime override via window (for testing/debugging)
-  if (typeof window !== 'undefined' && window.SOCKET_URL) {
-    return window.SOCKET_URL;
-  }
-  return SOCKET_URL;
-}
-
-// Debug: Expose socket diagnostic info on window for troubleshooting (development only)
-if (typeof window !== 'undefined' && import.meta.env.DEV) {
-  window.__SOCKET_DEBUG__ = {
-    SOCKET_URL,
-    getSocketUrl,
-    testConnection: () => {
-      const url = getSocketUrl();
-      const authToken = authStorage.getToken();
-      console.log('[Debug] Testing socket connection to:', url);
-      console.log('[Debug] Auth token:', authToken ? 'Present' : 'Missing');
-      if (authToken) {
-        console.log('[Debug] Token preview:', authToken.substring(0, 20) + '...');
-      }
-      const testSocket = io(url, {
-        transports: ['polling'],
-        timeout: 10000, // Increased timeout
-        autoConnect: true,
-        auth: authToken ? { token: authToken } : undefined,
-      });
-      
-      let connected = false;
-      let errorOccurred = false;
-      
-      testSocket.on('connect', () => {
-        connected = true;
-        console.log('[Debug] ✅ Test socket connected! ID:', testSocket.id);
-        setTimeout(() => testSocket.disconnect(), 1000);
-      });
-      
-      testSocket.on('connect_error', (err) => {
-        errorOccurred = true;
-        console.error('[Debug] ❌ Test socket connection failed:', {
-          message: err.message,
-          data: err.data,
-          type: err.type,
-          description: err.description,
-          code: err.data?.code,
-        });
-        console.error('[Debug] Full error object:', err);
-      });
-      
-      // Wait a bit and report status
-      setTimeout(() => {
-        if (!connected && !errorOccurred) {
-          console.warn('[Debug] ⏳ Socket still connecting after 2 seconds...');
-        }
-      }, 2000);
-      
-      return testSocket;
-    },
-    checkAuth: () => {
-      const token = authStorage.getToken();
-      console.log('[Debug] Auth token check:', {
-        hasToken: !!token,
-        tokenLength: token?.length,
-        tokenPreview: token ? token.substring(0, 20) + '...' : null,
-      });
-      return token;
-    },
-  };
-  console.log('[useChatSocket] Debug tools available at window.__SOCKET_DEBUG__');
-  console.log('[useChatSocket] SOCKET_URL =', SOCKET_URL);
-}
+// Initialize debug tools in development
+import './socketDebug.js';
 
 /**
- * useChatSocket - Manages socket connection and message state
+ * useChatSocket - Orchestrates chat state and socket subscriptions
+ *
+ * Architecture:
+ * - SocketService (singleton) manages the socket connection (infrastructure)
+ * - This hook subscribes to events and manages React state (presentation)
+ * - State hooks manage their specific domain state
+ *
+ * The socket lives OUTSIDE React's lifecycle in SocketService.
+ * This hook only subscribes to events and updates React state.
  */
-export function useChatSocket({ username, isAuthenticated, currentView, onNewMessage, messageUIMethodsRef }) {
-  // Debug: Log hook invocation (development only)
+export function useChatSocket({
+  username,
+  isAuthenticated,
+  currentView,
+  onNewMessage,
+  messageUIMethodsRef,
+}) {
   if (import.meta.env.DEV) {
     console.log('[useChatSocket] Hook called with:', { username, isAuthenticated, currentView });
   }
 
-  // Connection state
-  const [isConnected, setIsConnected] = React.useState(false);
-  const [isJoined, setIsJoined] = React.useState(false);
-  const [error, setError] = React.useState('');
-  const [typingUsers, setTypingUsers] = React.useState(new Set());
+  // === SOCKET CONNECTION (via SocketService) ===
+  const getToken = useCallback(() => authStorage.getToken(), []);
+  useSocketConnection({ isAuthenticated, getToken });
 
-  // Threads
-  const [threads, setThreads] = React.useState([]);
-  const [threadMessages, setThreadMessages] = React.useState({});
-  const [isLoadingThreadMessages, setIsLoadingThreadMessages] = React.useState(false);
+  const { isConnected } = useSocketState();
+  const emit = useSocketEmit();
 
-  // Room ID management - extracted to useRoomId hook
+  // === LOCAL STATE ===
+  const [isJoined, setIsJoined] = useState(false);
+  const [error, setError] = useState('');
+
+  // === STATE HOOKS ===
   const { roomId, setRoomId } = useRoomId(username, isAuthenticated);
+  const { typingUsers, setTypingUsers } = useTypingIndicators();
+  const { draftCoaching, setDraftCoaching } = useDraftCoaching();
+  const { unreadCount, setUnreadCount } = useUnreadCount(currentView);
 
-  // Message state management - extracted to useMessages hook
   const {
     messages,
     setMessages,
@@ -122,388 +63,252 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
     setMessageStatuses,
   } = useMessages();
 
-  // Create socketRef early so we can use it in useMessagePagination
-  const socketRef = React.useRef(null);
+  // Socket-like ref for backward compatibility with code expecting socket.on/off/emit
+  // Maps socket methods to SocketService while preserving legacy interface
+  const socketRef = useRef(null);
+  const unsubscribeMapRef = useRef(new Map()); // Track subscriptions for off()
 
-  // Pagination state and operations - extracted to useMessagePagination hook
-  const [isLoadingOlder, setIsLoadingOlder] = React.useState(false);
-  const [hasMoreMessages, setHasMoreMessages] = React.useState(true);
-  const [isInitialLoad, setIsInitialLoad] = React.useState(true);
+  useEffect(() => {
+    socketRef.current = {
+      get connected() {
+        return socketService.isConnected();
+      },
+      get id() {
+        return socketService.getSocketId();
+      },
+      emit: (event, data) => socketService.emit(event, data),
+      on: (event, callback) => {
+        const unsub = socketService.subscribe(event, callback);
+        // Store unsubscribe function keyed by event+callback
+        const key = `${event}:${callback.toString().slice(0, 50)}`;
+        unsubscribeMapRef.current.set(key, unsub);
+      },
+      off: (event, callback) => {
+        const key = `${event}:${callback.toString().slice(0, 50)}`;
+        const unsub = unsubscribeMapRef.current.get(key);
+        if (unsub) {
+          unsub();
+          unsubscribeMapRef.current.delete(key);
+        }
+      },
+    };
 
-  const { loadOlderMessages } = useMessagePagination({
-    socketRef,
-    messages,
+    return () => {
+      // Clean up all subscriptions on unmount
+      unsubscribeMapRef.current.forEach(unsub => unsub());
+      unsubscribeMapRef.current.clear();
+    };
+  }, [isConnected]);
+
+  const {
     isLoadingOlder,
     hasMoreMessages,
     isInitialLoad,
     setIsLoadingOlder,
     setHasMoreMessages,
     setIsInitialLoad,
-  });
+    loadOlderMessages,
+  } = useMessagePagination({ socketRef, messages });
 
-  // Search state - removed (use useSearchMessages hook instead)
+  const {
+    threads,
+    threadMessages,
+    isLoadingThreadMessages,
+    setThreads,
+    setThreadMessages,
+    setIsLoadingThreadMessages,
+    createThread,
+    getThreads,
+    getThreadMessages,
+    addToThread,
+  } = useThreads({ socketRef, roomId, isConnected, isJoined });
 
-  // Draft coaching
-  const [draftCoaching, setDraftCoaching] = React.useState(null);
+  // === REFS ===
+  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const offlineQueueRef = useRef([]);
+  const currentViewRef = useRef(currentView);
+  const onNewMessageRef = useRef(onNewMessage);
+  const usernameRef = useRef(username);
 
-  // Unread count
-  const [unreadCount, setUnreadCount] = React.useState(0);
-
-  // Refs (socketRef created earlier for useMessagePagination)
-  const messagesEndRef = React.useRef(null);
-  const messagesContainerRef = React.useRef(null);
-  const offlineQueueRef = React.useRef([]);
-  const loadingTimeoutRef = React.useRef(null);
-  const lastLoadedRoomIdRef = React.useRef(null); // Track last loaded roomId to prevent duplicate thread loads
-
-  // Keep refs updated to avoid socket reconnection
-  const currentViewRef = React.useRef(currentView);
-  const onNewMessageRef = React.useRef(onNewMessage);
-  const usernameRef = React.useRef(username);
-
-  React.useEffect(() => {
+  useEffect(() => {
     currentViewRef.current = currentView;
   }, [currentView]);
-  React.useEffect(() => {
+  useEffect(() => {
     onNewMessageRef.current = onNewMessage;
   }, [onNewMessage]);
-  React.useEffect(() => {
+  useEffect(() => {
     usernameRef.current = username;
   }, [username]);
 
-  // Reset unread count when viewing chat
-  React.useEffect(() => {
-    if (currentView === 'chat') {
-      console.log('[UnreadCount] Resetting to 0 (viewing chat)');
-      setUnreadCount(0);
-    }
-  }, [currentView]);
+  // === SOCKET EVENT SUBSCRIPTIONS ===
+  useEffect(() => {
+    const unsubscribes = [];
 
-  // Socket connection - persists across view changes
-  // Uses ref to prevent duplicate connections from React Strict Mode double-mounting
-  const socketInitializedRef = React.useRef(false);
-  // Track if cleanup should actually disconnect (prevents StrictMode race condition)
-  const cleanupTimeoutRef = React.useRef(null);
-  const isUnmountingRef = React.useRef(false);
+    // Connection events
+    unsubscribes.push(
+      socketService.subscribe('connect', () => {
+        console.log('[useChatSocket] Connected');
+        setError('');
+      })
+    );
 
-  React.useEffect(() => {
-    // Cancel any pending cleanup from StrictMode's first unmount
-    if (cleanupTimeoutRef.current) {
-      clearTimeout(cleanupTimeoutRef.current);
-      cleanupTimeoutRef.current = null;
-      console.log('[useChatSocket] ↩️ Cancelled pending cleanup (StrictMode remount)');
-    }
-    isUnmountingRef.current = false;
+    unsubscribes.push(
+      socketService.subscribe('disconnect', ({ reason }) => {
+        console.log('[useChatSocket] Disconnected:', reason);
+        setIsJoined(false);
+      })
+    );
 
-    console.log('[useChatSocket] Socket effect running:', {
-      username,
-      isAuthenticated,
-      socketRefExists: !!socketRef.current,
-      socketConnected: socketRef.current?.connected,
-      socketInitialized: socketInitializedRef.current,
-      authToken: authStorage.getToken() ? 'present' : 'missing',
-    });
+    unsubscribes.push(
+      socketService.subscribe('connect_error', ({ error: err }) => {
+        setError(err || 'Connection error');
+      })
+    );
 
-    // Socket creation requires authentication, NOT username
-    // Username is only needed for joining room (handled in connectionHandlers)
-    if (!isAuthenticated) {
-      console.log('[useChatSocket] ⚠️ Not authenticated, skipping socket creation');
-      return;
-    }
-
-    // If socket already exists and is usable, keep it
-    if (socketRef.current) {
-      const existingSocket = socketRef.current;
-      if (existingSocket.connected) {
-        console.log('[useChatSocket] ✅ Reusing existing connected socket:', existingSocket.id);
-        socketInitializedRef.current = true;
-        return;
-      } else if (!existingSocket.disconnected) {
-        // Socket exists but is connecting - let it continue
-        console.log('[useChatSocket] ⏳ Socket exists and is connecting, waiting...');
-        socketInitializedRef.current = true;
-        return;
-      }
-    }
-
-    // Prevent duplicate socket creation
-    if (socketInitializedRef.current) {
-      console.log('[useChatSocket] ⚠️ Socket already initialized, skipping creation');
-      return;
-    }
-    socketInitializedRef.current = true;
-
-    const socketUrl = getSocketUrl();
-    console.log('[useChatSocket] 🔌 Creating socket to:', socketUrl);
-
-    // Get auth token for socket authentication
-    const authToken = authStorage.getToken();
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useChatSocket.js:240',message:'Getting auth token',data:{hasToken:!!authToken,tokenLength:authToken?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
-    if (!authToken) {
-      console.warn('[useChatSocket] ⚠️ No auth token available for socket connection');
-      console.warn('[useChatSocket] ⚠️ Socket connection will fail - user needs to log in first');
-      socketInitializedRef.current = false;
-      return;
-    }
-
-    // Build socket URL with auth token in query params as fallback for polling transport
-    // Socket.io's auth object should work, but query params ensure it reaches the server
-    const socketUrlWithAuth = `${socketUrl}?token=${encodeURIComponent(authToken)}`;
-    
-    let socket;
-    try {
-      const socketConfig = {
-        // In development, use polling only to avoid WebSocket upgrade errors
-        // In production, socket.io will automatically try websocket then fall back to polling
-        transports: import.meta.env.DEV ? ['polling'] : ['polling', 'websocket'],
-        reconnection: true,
-        reconnectionDelay: 2000,
-        reconnectionDelayMax: 10000,
-        reconnectionAttempts: 5,
-        timeout: 20000,
-        forceNew: false,
-        upgrade: !import.meta.env.DEV, // Disable upgrade attempts in dev to avoid console noise
-        autoConnect: true,
-        // Send auth token via query parameter (works with both polling and websocket)
-        // Socket.io preserves query parameters and makes them available in socket.handshake.query
-        query: {
-          token: authToken,
-        },
-        // Also send via auth object as fallback (for WebSocket transport)
-        auth: {
-          token: authToken,
-        },
-        // extraHeaders only works with WebSocket transport, not polling
-        ...(import.meta.env.DEV ? {} : {
-          extraHeaders: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }),
-      };
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useChatSocket.js:278',message:'Creating socket',data:{url:socketUrlWithAuth,hasAuthToken:!!socketConfig.auth.token,transport:socketConfig.transports[0],hasQueryToken:!!socketUrlWithAuth.includes('token=')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
-      socket = io(socketUrlWithAuth, socketConfig);
-      console.log('[useChatSocket] ✅ io() call succeeded');
-    } catch (err) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useChatSocket.js:268',message:'Socket creation failed',data:{error:err.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      console.error('[useChatSocket] ❌ io() call failed:', err);
-      socketInitializedRef.current = false;
-      return;
-    }
-
-    // Debug: Track socket lifecycle events
-    socket.on('connect', () => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useChatSocket.js:276',message:'Socket connected',data:{socketId:socket.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
-      console.log('[useChatSocket] ✅ Socket connected! ID:', socket.id);
-    });
-    socket.on('disconnect', (reason) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useChatSocket.js:279',message:'Socket disconnected',data:{reason},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      console.log('[useChatSocket] ❌ Socket disconnected. Reason:', reason);
-    });
-          socket.on('connect_error', (error) => {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useChatSocket.js:285',message:'Socket connect error',data:{error:error.message,errorType:error.type,errorData:error.data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
-            // Suppress WebSocket upgrade failures - socket.io handles them automatically
-            // These are expected in development and socket.io falls back to polling
-            const isWebSocketUpgradeError =
-              error.message?.includes('WebSocket') ||
-              error.message?.includes('websocket') ||
-              error.type === 'TransportError';
-
-            if (!isWebSocketUpgradeError) {
-              // Only log non-WebSocket connection errors
-              console.log('[useChatSocket] ⚠️ Connection error:', error.message);
-            }
-            // WebSocket errors are silently handled - socket.io will use polling
-          });
-    socket.io.on('reconnect_attempt', (attempt) => {
-      console.log('[useChatSocket] 🔄 Reconnection attempt:', attempt);
-    });
-
-    socketRef.current = socket;
-
-    // Setup event handlers and store cleanup function
-    const cleanupHandlers = setupSocketEventHandlers(socket, {
-      username,
-      isAuthenticated,
-      usernameRef,
-      currentViewRef,
-      onNewMessageRef,
-      offlineQueueRef,
-      messagesContainerRef,
-      messagesEndRef,
-      loadingTimeoutRef,
-      setIsConnected,
-      setError,
-      setIsJoined,
-      setMessages,
-      setHasMoreMessages,
-      setIsInitialLoad,
-      setMessageStatuses,
-      setPendingMessages,
-      setTypingUsers,
-      setThreads,
-      setThreadMessages,
-      setIsLoadingThreadMessages,
-      setIsLoadingOlder,
-      setDraftCoaching,
-      setUnreadCount,
-      setRoomId,
-      // Pass ref to useMessageUI methods for proper state management
-      messageUIMethodsRef, // Contains removePendingMessage, markMessageSent
-    });
-
-    return () => {
-      console.log('[useChatSocket] 🧹 Cleanup scheduled (delayed for StrictMode)');
-      isUnmountingRef.current = true;
-
-      // Delay cleanup to allow StrictMode remount to cancel it
-      cleanupTimeoutRef.current = setTimeout(() => {
-        if (isUnmountingRef.current) {
-          console.log('[useChatSocket] 🧹 Cleanup executing - removing listeners and disconnecting');
-          // Remove all event listeners first to prevent memory leaks
-          if (typeof cleanupHandlers === 'function') {
-            cleanupHandlers();
-          }
-          socket.disconnect();
-          socketInitializedRef.current = false;
-          socketRef.current = null;
+    // Room events
+    unsubscribes.push(
+      socketService.subscribe('joined', data => {
+        console.log('[useChatSocket] Joined room:', data);
+        setIsJoined(true);
+        if (data.roomId) setRoomId(data.roomId);
+        if (data.messages) {
+          setMessages(data.messages);
+          setHasMoreMessages(data.messages.length >= 50);
+          setIsInitialLoad(false);
         }
-      }, 100); // Short delay - enough for StrictMode but not noticeable to users
-    };
-  }, [isAuthenticated]); // Only depend on isAuthenticated - username is handled by auto-join effect
+      })
+    );
 
-  // Room ID is now managed by useRoomId hook
-  // Reset thread loading ref when roomId changes (username change handled by useRoomId)
-  React.useEffect(() => {
-    if (!roomId) {
-      lastLoadedRoomIdRef.current = null;
-    }
-  }, [roomId]);
+    unsubscribes.push(
+      socketService.subscribe('room_created', data => {
+        if (data.roomId) setRoomId(data.roomId);
+      })
+    );
 
-  // Auto-join when navigating to chat view
-  React.useEffect(() => {
-    console.log('[useChatSocket] Auto-join effect:', {
-      currentView,
-      isAuthenticated,
-      username,
-      socketConnected: socketRef.current?.connected,
-      isJoined,
-      shouldJoin: currentView === 'chat' && isAuthenticated && username && socketRef.current?.connected && !isJoined,
-    });
-    
-    if (
-      currentView === 'chat' &&
-      isAuthenticated &&
-      username &&
-      socketRef.current?.connected &&
-      !isJoined
-    ) {
-      console.log('[useChatSocket] 📤 Emitting join event:', { email: username });
-      socketRef.current.emit('join', { email: username });
-    } else {
-      console.log('[useChatSocket] ⏸️ Not joining:', {
-        currentView,
-        isAuthenticated,
-        hasUsername: !!username,
-        socketConnected: socketRef.current?.connected,
-        isJoined,
-      });
-    }
-  }, [currentView, isAuthenticated, username, isJoined]);
+    // Message events
+    unsubscribes.push(
+      socketService.subscribe('new_message', message => {
+        setMessages(prev => [...prev, message]);
+        if (currentViewRef.current !== 'chat' && message.sender !== usernameRef.current) {
+          setUnreadCount(prev => prev + 1);
+        }
+        onNewMessageRef.current?.(message);
+      })
+    );
 
-  // Thread actions - defined BEFORE useEffect that uses them to avoid temporal dead zone
-  const createThread = React.useCallback((roomId, title, messageId, category = 'logistics') => {
-    if (socketRef.current?.connected)
-      socketRef.current.emit('create_thread', { roomId, title, messageId, category });
-  }, []);
+    unsubscribes.push(
+      socketService.subscribe('message_sent', data => {
+        messageUIMethodsRef?.current?.markMessageSent?.(data.tempId, data.message);
+        setMessageStatuses(prev => ({ ...prev, [data.tempId]: 'sent' }));
+      })
+    );
 
-  const getThreads = React.useCallback(roomId => {
-    if (socketRef.current?.connected) socketRef.current.emit('get_threads', { roomId });
-  }, []);
+    unsubscribes.push(
+      socketService.subscribe('message_error', data => {
+        setMessageStatuses(prev => ({ ...prev, [data.tempId]: 'error' }));
+      })
+    );
 
-  const getThreadMessages = React.useCallback(threadId => {
-    if (socketRef.current?.connected) {
-      setIsLoadingThreadMessages(true);
-      socketRef.current.emit('get_thread_messages', { threadId });
-    }
-  }, []);
-
-  const addToThread = React.useCallback((messageId, threadId) => {
-    if (socketRef.current?.connected)
-      socketRef.current.emit('add_to_thread', { messageId, threadId });
-  }, []);
-
-  // Load threads when roomId is available and socket is connected
-  // Use ref to prevent duplicate loads when dependencies change rapidly
-  React.useEffect(() => {
-    if (roomId && socketRef.current?.connected && isJoined) {
-      // Only load if we haven't already loaded threads for this roomId
-      if (lastLoadedRoomIdRef.current !== roomId) {
-        lastLoadedRoomIdRef.current = roomId;
-        getThreads(roomId);
-      }
-    } else if (!roomId) {
-      // Reset ref when roomId is cleared (user lost room or disconnected)
-      lastLoadedRoomIdRef.current = null;
-    }
-  }, [roomId, isConnected, isJoined, getThreads]);
-
-  // Pagination - loadOlderMessages provided by useMessagePagination hook
-  // Timeout handling still managed here (could be extracted later)
-  React.useEffect(() => {
-    if (isLoadingOlder) {
-      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
-      loadingTimeoutRef.current = setTimeout(() => {
-        console.warn('Loading older messages timed out');
+    // Pagination events
+    unsubscribes.push(
+      socketService.subscribe('older_messages', data => {
         setIsLoadingOlder(false);
-      }, 10000);
-    }
-    return () => {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-    };
-  }, [isLoadingOlder]);
+        if (data.messages?.length > 0) {
+          setMessages(prev => [...data.messages, ...prev]);
+          setHasMoreMessages(data.messages.length >= 50);
+        } else {
+          setHasMoreMessages(false);
+        }
+      })
+    );
 
-  // Search - removed (use useSearchMessages hook instead)
+    // Typing events
+    unsubscribes.push(
+      socketService.subscribe('user_typing', data => {
+        if (data.username !== usernameRef.current) {
+          setTypingUsers(prev => new Set([...prev, data.username]));
+        }
+      })
+    );
+
+    unsubscribes.push(
+      socketService.subscribe('user_stopped_typing', data => {
+        setTypingUsers(prev => {
+          const next = new Set(prev);
+          next.delete(data.username);
+          return next;
+        });
+      })
+    );
+
+    // Draft coaching events
+    unsubscribes.push(socketService.subscribe('draft_coaching', setDraftCoaching));
+    unsubscribes.push(socketService.subscribe('coaching_dismissed', () => setDraftCoaching(null)));
+
+    // Thread events
+    unsubscribes.push(socketService.subscribe('threads', data => setThreads(data.threads || [])));
+    unsubscribes.push(
+      socketService.subscribe('thread_created', data => {
+        setThreads(prev => [...prev, data.thread]);
+      })
+    );
+    unsubscribes.push(
+      socketService.subscribe('thread_messages', data => {
+        setIsLoadingThreadMessages(false);
+        setThreadMessages(prev => ({ ...prev, [data.threadId]: data.messages }));
+      })
+    );
+
+    // Error events
+    unsubscribes.push(
+      socketService.subscribe('error', data => {
+        console.error('[useChatSocket] Server error:', data);
+        setError(data.message || 'Server error');
+      })
+    );
+
+    return () => unsubscribes.forEach(unsub => unsub());
+  }, [
+    setRoomId,
+    setMessages,
+    setHasMoreMessages,
+    setIsInitialLoad,
+    setMessageStatuses,
+    setIsLoadingOlder,
+    setTypingUsers,
+    setDraftCoaching,
+    setUnreadCount,
+    setThreads,
+    setThreadMessages,
+    setIsLoadingThreadMessages,
+    messageUIMethodsRef,
+  ]);
+
+  // === AUTO-JOIN EFFECT ===
+  useEffect(() => {
+    if (currentView === 'chat' && isAuthenticated && username && isConnected && !isJoined) {
+      console.log('[useChatSocket] 📤 Emitting join:', { email: username });
+      emit('join', { email: username });
+    }
+  }, [currentView, isAuthenticated, username, isConnected, isJoined, emit]);
 
   return {
-    // Connection
     socketRef,
     isConnected,
     isJoined,
     error,
     setError,
-
-    // Messages
     messages,
     setMessages,
     pendingMessages,
     setPendingMessages,
     messageStatuses,
     setMessageStatuses,
-
-    // Refs
     messagesEndRef,
     messagesContainerRef,
     offlineQueueRef,
-    loadingTimeoutRef,
-
-    // Typing
     typingUsers,
-
-    // Threads
     threads,
     threadMessages,
     setThreadMessages,
@@ -512,22 +317,15 @@ export function useChatSocket({ username, isAuthenticated, currentView, onNewMes
     getThreads,
     getThreadMessages,
     addToThread,
-
-    // Pagination
     isLoadingOlder,
     hasMoreMessages,
     isInitialLoad,
     loadOlderMessages,
-
-    // Search - removed (use useSearchMessages hook instead)
-
-    // Draft coaching
     draftCoaching,
     setDraftCoaching,
-
-    // Unread
     unreadCount,
     setUnreadCount,
+    emit,
   };
 }
 

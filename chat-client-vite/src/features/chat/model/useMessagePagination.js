@@ -23,46 +23,40 @@
 
 import React from 'react';
 
+const LOADING_TIMEOUT_MS = 10000;
+
 /**
  * useMessagePagination - Manages message pagination
  *
  * @param {Object} options
  * @param {React.RefObject} options.socketRef - Socket reference for emitting events
  * @param {Array} options.messages - Current messages array (to get beforeTimestamp)
- * @param {boolean} options.isLoadingOlder - Loading state (optional, creates internal state if not provided)
- * @param {boolean} options.hasMoreMessages - Has more messages state (optional, creates internal state if not provided)
- * @param {boolean} options.isInitialLoad - Initial load state (optional, creates internal state if not provided)
- * @param {Function} options.setIsLoadingOlder - Set loading state (optional, creates internal state if not provided)
- * @param {Function} options.setHasMoreMessages - Set has more messages state (optional, creates internal state if not provided)
- * @param {Function} options.setIsInitialLoad - Set initial load state (optional, creates internal state if not provided)
- * @returns {Object} { isLoadingOlder, hasMoreMessages, isInitialLoad, loadOlderMessages }
+ * @returns {Object} { isLoadingOlder, hasMoreMessages, isInitialLoad, loadOlderMessages, setters... }
  */
-export function useMessagePagination({
-  socketRef,
-  messages = [],
-  isLoadingOlder: externalIsLoadingOlder,
-  hasMoreMessages: externalHasMoreMessages,
-  isInitialLoad: externalIsInitialLoad,
-  setIsLoadingOlder: externalSetIsLoadingOlder,
-  setHasMoreMessages: externalSetHasMoreMessages,
-  setIsInitialLoad: externalSetIsInitialLoad,
-} = {}) {
-  // Internal state (used if external values/setters not provided)
-  const [internalIsLoadingOlder, setInternalIsLoadingOlder] = React.useState(false);
-  const [internalHasMoreMessages, setInternalHasMoreMessages] = React.useState(true);
-  const [internalIsInitialLoad, setInternalIsInitialLoad] = React.useState(true);
+export function useMessagePagination({ socketRef, messages = [] } = {}) {
+  // Pagination state
+  const [isLoadingOlder, setIsLoadingOlder] = React.useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = React.useState(true);
+  const [isInitialLoad, setIsInitialLoad] = React.useState(true);
 
-  // Use external values if provided, otherwise use internal state
-  const isLoadingOlder =
-    externalIsLoadingOlder !== undefined ? externalIsLoadingOlder : internalIsLoadingOlder;
-  const hasMoreMessages =
-    externalHasMoreMessages !== undefined ? externalHasMoreMessages : internalHasMoreMessages;
-  const isInitialLoad =
-    externalIsInitialLoad !== undefined ? externalIsInitialLoad : internalIsInitialLoad;
+  // Timeout ref for loading safety
+  const loadingTimeoutRef = React.useRef(null);
 
-  const setIsLoadingOlder = externalSetIsLoadingOlder || setInternalIsLoadingOlder;
-  const setHasMoreMessages = externalSetHasMoreMessages || setInternalHasMoreMessages;
-  const setIsInitialLoad = externalSetIsInitialLoad || setInternalIsInitialLoad;
+  // Loading timeout effect - prevents stuck loading state
+  React.useEffect(() => {
+    if (isLoadingOlder) {
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.warn('[useMessagePagination] Loading older messages timed out');
+        setIsLoadingOlder(false);
+      }, LOADING_TIMEOUT_MS);
+    }
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, [isLoadingOlder]);
 
   // Load older messages
   const loadOlderMessages = React.useCallback(() => {
@@ -82,17 +76,21 @@ export function useMessagePagination({
       beforeTimestamp: messages[0].timestamp,
       limit: 50,
     });
-  }, [socketRef, messages, isLoadingOlder, hasMoreMessages, setIsLoadingOlder]);
+  }, [socketRef, messages, isLoadingOlder, hasMoreMessages]);
 
   return {
+    // State
     isLoadingOlder,
     hasMoreMessages,
     isInitialLoad,
-    loadOlderMessages,
-    // Expose setters for socket event handlers
+
+    // Setters (for socket event handlers)
     setIsLoadingOlder,
     setHasMoreMessages,
     setIsInitialLoad,
+
+    // Methods
+    loadOlderMessages,
   };
 }
 
