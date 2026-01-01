@@ -104,6 +104,7 @@ app.use('/api', requireDatabaseReadyExceptHealth);
 setupRoutes(app, services);
 
 // Setup Socket.io with config from central config
+console.log('[HYPOTHESIS_E] Creating Socket.io Server instance...');
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
@@ -144,6 +145,7 @@ const io = new Server(server, {
   ...SOCKET_CONFIG,
   allowEIO3: true,
 });
+console.log('[HYPOTHESIS_E] Socket.io Server instance created');
 
 // Add logging for socket.io engine events
 // #region agent log
@@ -167,7 +169,14 @@ io.engine.on('initial_headers', (headers, req) => {
   const hasBody = !!req.body;
   // Check req._query which engine.io uses for query params
   const tokenInQueryObj = req._query?.token;
-  fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server.js:157',message:'Engine initial headers',data:{origin:req.headers.origin,method:req.method,url:req.url,hasAuth,queryAuth:!!queryAuth,headerAuth:!!headerAuth,authInQuery:!!authInQuery,tokenInQuery:!!tokenInQuery,tokenInQueryObj:!!tokenInQueryObj,isPost,hasBody,queryKeys:Object.keys(req._query||{}),urlHasToken:req.url.includes('token=')},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'B'})}).catch(()=>{});
+  
+  // CRITICAL: Log POST requests to see if handshake POST is happening
+  if (isPost) {
+    console.log(`[HYPOTHESIS_E] ✅✅✅ POST REQUEST DETECTED! Method: ${req.method}, URL: ${req.url?.substring(0, 150)} ✅✅✅`);
+    console.log(`[HYPOTHESIS_E] POST body keys:`, req.body ? Object.keys(req.body) : 'No body');
+  }
+  
+  fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server.js:157',message:'Engine initial headers',data:{origin:req.headers.origin,method:req.method,url:req.url,hasAuth,queryAuth:!!queryAuth,headerAuth:!!headerAuth,authInQuery:!!authInQuery,tokenInQuery:!!tokenInQuery,tokenInQueryObj:!!tokenInQueryObj,isPost,hasBody,queryKeys:Object.keys(req._query||{}),urlHasToken:req.url.includes('token=')},timestamp:Date.now(),sessionId:'debug-session',runId:'run6',hypothesisId:'E'})}).catch(()=>{});
   console.log('[Socket.io Engine] Initial headers:', {
     origin: req.headers.origin,
     method: req.method,
@@ -186,7 +195,9 @@ io.engine.on('initial_headers', (headers, req) => {
 
 // Hook into engine.io connection to extract token and authenticate BEFORE Socket.io processes handshake
 // #region agent log
+console.log('[Server] Registering io.engine.on(\'connection\') handler...');
 io.engine.on('connection', (socket) => {
+  console.log(`[HYPOTHESIS_C] ✅✅✅ Engine.io connection handler RUNNING for socket ${socket.id} ✅✅✅`);
   const req = socket.request;
   
   // Extract token from URL query string
@@ -259,6 +270,16 @@ try {
   const middlewareCount = io._nsps?.get('/')?._fns?.length || 0;
   console.log('[Server] ✅ Socket.io handlers setup complete.');
   console.log('[Server] Middleware registered:', middlewareCount, 'middleware functions');
+  console.log('[HYPOTHESIS_D] Checking middleware registration...');
+  const defaultNamespace = io._nsps?.get('/');
+  if (defaultNamespace) {
+    console.log('[HYPOTHESIS_D] Default namespace found, middleware functions:', defaultNamespace._fns?.length || 0);
+    defaultNamespace._fns?.forEach((fn, idx) => {
+      console.log(`[HYPOTHESIS_D] Middleware ${idx}:`, fn.toString().substring(0, 100));
+    });
+  } else {
+    console.warn('[HYPOTHESIS_D] ⚠️ Default namespace not found!');
+  }
   console.log('[Server] ========================================');
 } catch (err) {
   console.error('[Server] ❌ Error setting up sockets:', err);

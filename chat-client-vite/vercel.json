@@ -3,10 +3,10 @@
   "git": {
     "submodules": false
   },
-  "buildCommand": "cd chat-client-vite && npm ci && npm run build",
-  "outputDirectory": "chat-client-vite/dist",
-  "installCommand": "cd chat-client-vite && npm ci",
-  "framework": null,
+  "buildCommand": "npm ci && npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm ci",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/(.*)",

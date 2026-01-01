@@ -43,14 +43,17 @@ function setupSockets(io, services) {
   }
 
   console.log('[setupSockets] Registering Socket.io middleware...');
+  console.log('[HYPOTHESIS_D] About to register io.use() middleware...');
+  console.log('[HYPOTHESIS_D] io object:', typeof io, !!io, io?.constructor?.name);
 
   // ==========================================================================
   // SOCKET AUTHENTICATION MIDDLEWARE
   // Verifies JWT token before allowing connection
   // ==========================================================================
   // TEST: Add a simple middleware first to verify middleware is being called
+  console.log('[HYPOTHESIS_D] Registering TEST middleware...');
   io.use((socket, next) => {
-    console.log(`[TEST Middleware] ✅✅✅ Socket.io middleware called for socket ${socket.id} ✅✅✅`);
+    console.log(`[HYPOTHESIS_D] ✅✅✅ TEST Middleware CALLED for socket ${socket.id} ✅✅✅`);
     console.log(`[TEST Middleware] Handshake:`, {
       query: socket.handshake.query,
       _query: socket.handshake._query,
@@ -61,8 +64,9 @@ function setupSockets(io, services) {
   });
   
   // Wrap auth middleware to log when it's called and extract token from URL if needed
+  console.log('[HYPOTHESIS_D] Registering Auth Wrapper middleware...');
   io.use((socket, next) => {
-    console.log(`[Socket Auth Wrapper] ✅ MIDDLEWARE CALLED for socket ${socket.id}`);
+    console.log(`[HYPOTHESIS_D] ✅✅✅ Auth Wrapper Middleware CALLED for socket ${socket.id} ✅✅✅`);
     
     // Extract token from URL if not already in handshake
     const req = socket.request;
@@ -110,8 +114,9 @@ function setupSockets(io, services) {
   });
 
   // #region agent log
+  console.log('[HYPOTHESIS_D] Registering io.on(\'connection\') handler...');
   io.on('connection', socket => {
-    console.log(`[Socket.io Connection] ✅✅✅ Connection event fired for socket ${socket.id} ✅✅✅`);
+    console.log(`[HYPOTHESIS_D] ✅✅✅ Socket.io Connection event FIRED for socket ${socket.id} ✅✅✅`);
     fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sockets.js:64',message:'Socket.io connection event',data:{socketId:socket.id,hasUser:!!socket.user,userEmail:socket.user?.email,hasQueryToken:!!(socket.handshake.query?.token || socket.handshake._query?.token)},timestamp:Date.now(),sessionId:'debug-session',runId:'run5',hypothesisId:'E'})}).catch(()=>{});
     // #endregion
     
