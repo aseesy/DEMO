@@ -1,5 +1,6 @@
 /**
  * Admin & Debug Routes - Business logic delegated to services layer
+ * @di-pattern: injected
  * Actor: Operations
  */
 

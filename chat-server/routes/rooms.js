@@ -1,5 +1,6 @@
 /**
  * Room Routes
+ * @di-pattern: injected
  *
  * Handles room management including invites, joining, and member management.
  * Business logic delegated to services layer.

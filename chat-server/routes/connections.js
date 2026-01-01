@@ -1,5 +1,6 @@
 /**
  * Connections Routes
+ * @di-pattern: injected
  *
  * Handles email-based invitation and connection management.
  * Includes contact form, sending invitations, validating tokens,

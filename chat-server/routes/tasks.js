@@ -1,5 +1,6 @@
 /**
  * Task Routes
+ * @di-pattern: injected
  *
  * Handles task management including CRUD operations and AI generation.
  * Business logic delegated to services layer.

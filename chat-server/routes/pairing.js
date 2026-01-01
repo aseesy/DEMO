@@ -1,5 +1,6 @@
 /**
  * Pairing Routes
+ * @di-pattern: injected
  *
  * Handles pairing session management for co-parent connections.
  * Supports email, link, and code-based pairing.

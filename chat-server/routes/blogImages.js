@@ -1,6 +1,7 @@
 /**
  * Blog Image Generation Routes
- * 
+ * @di-pattern: direct
+ *
  * API endpoints for generating blog header images and social media graphics
  * using DALL-E 3 or Flux API.
  */

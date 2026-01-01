@@ -49,6 +49,9 @@ const { userSessionService } = require('./session/userSessionService');
 // Auth services (Phase 2.9) ✅
 const { authService } = require('./auth/authService');
 
+// Onboarding services (Phase 4.1) ✅
+const { onboardingService } = require('./onboarding');
+
 // Connection services (Phase 4.2)
 // const { connectionTokenService } = require('./connection/connectionTokenService');
 // const { pendingConnectionService } = require('./connection/pendingConnectionService');
@@ -90,6 +93,9 @@ module.exports = {
 
   // Auth services ✅
   authService,
+
+  // Onboarding services ✅
+  onboardingService,
   // messageSearchService,
   // messageValidator,
   // profileService,

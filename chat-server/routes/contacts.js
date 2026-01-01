@@ -1,5 +1,6 @@
 /**
  * Contacts Routes
+ * @di-pattern: injected
  *
  * Thin router that maps endpoints to controller functions.
  * No business logic here - just routing.

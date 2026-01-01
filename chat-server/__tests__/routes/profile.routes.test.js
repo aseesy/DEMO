@@ -65,7 +65,7 @@ describe('Profile Routes', () => {
     profileRoutes = require('../../routes/profile');
 
     // Inject mocked service
-    profileRoutes.setServices({ profileService });
+    profileRoutes.setHelpers({ profileService });
 
     // Mount routes
     app.use('/api/profile', profileRoutes);
@@ -198,7 +198,7 @@ describe('Profile Routes', () => {
       // Load fresh route
       delete require.cache[require.resolve('../../routes/profile')];
       const testRoutes = require('../../routes/profile');
-      testRoutes.setServices({ profileService });
+      testRoutes.setHelpers({ profileService });
 
       // Mount routes
       testApp.use('/api/profile', testAuth, testRoutes);

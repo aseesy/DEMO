@@ -1,5 +1,6 @@
 /**
  * Activities Routes
+ * @di-pattern: direct
  *
  * Handles child activity management including CRUD operations.
  * Extracted from server.js for better maintainability.

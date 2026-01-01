@@ -1,5 +1,6 @@
 /**
  * Invitations Routes
+ * @di-pattern: direct
  *
  * Handles invitation management including validation, acceptance, and creation.
  * Business logic delegated to services layer.

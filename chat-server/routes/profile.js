@@ -4,11 +4,12 @@ const { authenticate } = require('../middleware/auth');
 const { handleServiceError } = require('../middleware/errorHandlers');
 const { calculateProfileCompletion } = require('../src/services/profileService');
 
-// Service will be injected via router.setServices
+// @di-pattern: injected
+// Service will be injected via router.setHelpers
 let profileService;
 
-router.setServices = function (services) {
-  profileService = services.profileService;
+router.setHelpers = function (helpers) {
+  profileService = helpers.profileService;
 };
 
 /**

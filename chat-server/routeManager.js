@@ -24,153 +24,15 @@ function setupRoutes(app, services) {
   } = services;
 
   // ========================================
-  // Onboarding Helpers
+  // Initialize Onboarding Service
   // ========================================
+  const { onboardingService } = require('./src/services');
+  onboardingService.setDbSafe(dbSafe);
 
-  /**
-   * Check if user has a connected co-parent
-   */
-  async function checkUserHasCoParent(userId) {
-    try {
-      const pairings = await dbSafe.safeSelect('pairing_sessions', { status: 'completed' });
-      for (const pairing of pairings) {
-        if (pairing.initiator_id === userId || pairing.invitee_id === userId) return true;
-      }
-
-      const roomMembers = await dbSafe.safeSelect('room_members', { user_id: userId });
-      for (const member of roomMembers) {
-        const otherMembers = await dbSafe.safeSelect('room_members', { room_id: member.room_id });
-        if (otherMembers.length === 2) return true;
-      }
-
-      const contacts = await dbSafe.safeSelect('contacts', { user_id: userId });
-      const hasCoparentContact = contacts.some(
-        c =>
-          c.relationship === 'My Co-Parent' ||
-          c.relationship === 'co-parent' ||
-          c.relationship === "My Partner's Co-Parent"
-      );
-      return hasCoparentContact;
-    } catch (error) {
-      console.error('Error checking co-parent status:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Auto-complete onboarding tasks when conditions are met
-   */
-  async function autoCompleteOnboardingTasks(userId) {
-    try {
-      const users = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
-      if (users.length === 0) return;
-      const user = users[0];
-      const now = new Date().toISOString();
-
-      const filledFields = [
-        user.first_name,
-        user.last_name,
-        user.address,
-        user.communication_style,
-        user.communication_triggers,
-        user.communication_goals,
-        user.email,
-      ].filter(field => field && field.trim().length > 0).length;
-
-      const profileComplete = filledFields >= 2;
-      const coparentResult = await dbSafe.safeSelect('contacts', { user_id: userId });
-      const allContacts = dbSafe.parseResult(coparentResult);
-
-      const hasCoparent = allContacts.some(c => {
-        const rel = (c.relationship || '').toLowerCase();
-        return rel === 'my co-parent' || rel === 'co-parent' || rel === "my partner's co-parent";
-      });
-
-      const hasChildren = allContacts.some(c => {
-        const rel = (c.relationship || '').toLowerCase();
-        return rel === 'my child' || rel === "my partner's child" || rel === "my co-parent's child";
-      });
-
-      const tasks = await dbSafe.safeSelect('tasks', { user_id: userId, status: 'open' });
-      for (const task of tasks) {
-        let shouldComplete = false;
-        if (task.title === 'Complete Your Profile' && profileComplete) shouldComplete = true;
-        if (
-          (task.title === 'Add Your Co-parent' || task.title === 'Invite Your Co-Parent') &&
-          hasCoparent
-        )
-          shouldComplete = true;
-        if (task.title === 'Add Your Children' && hasChildren) shouldComplete = true;
-
-        if (shouldComplete) {
-          await dbSafe.safeUpdate(
-            'tasks',
-            { status: 'completed', completed_at: now, updated_at: now },
-            { id: task.id }
-          );
-          console.log(`✅ Auto-completed task "${task.title}" for user ${userId}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error in autoCompleteOnboardingTasks:', error);
-    }
-  }
-
-  /**
-   * Backfill onboarding tasks for users
-   */
-  async function backfillOnboardingTasks(userId) {
-    const now = new Date().toISOString();
-    try {
-      const users = await dbSafe.safeSelect('users', { id: userId }, { limit: 1 });
-      if (users.length === 0) return;
-      const hasCoParent = await checkUserHasCoParent(userId);
-      const contacts = await dbSafe.safeSelect('contacts', { user_id: userId });
-      const hasChildren = contacts.some(c => {
-        const rel = (c.relationship || '').toLowerCase();
-        return rel === 'my child' || rel === "my partner's child" || rel === "my co-parent's child";
-      });
-
-      const existingTasks = await dbSafe.safeSelect('tasks', { user_id: userId });
-      const existingTitles = existingTasks.map(t => t.title);
-
-      const onboardingTasks = [
-        {
-          title: 'Complete Your Profile',
-          description: 'Fill out your communication preferences and goals.',
-          status: 'open',
-        },
-        {
-          title: 'Invite Your Co-Parent',
-          description: 'Connect with your co-parent to start mediating messages.',
-          status: hasCoParent ? 'completed' : 'open',
-        },
-        {
-          title: 'Add Your Children',
-          description: 'Add your children to the contacts list for context.',
-          status: hasChildren ? 'completed' : 'open',
-        },
-      ];
-
-      for (const taskData of onboardingTasks) {
-        if (!existingTitles.includes(taskData.title)) {
-          await dbSafe.safeInsert('tasks', {
-            user_id: userId,
-            title: taskData.title,
-            description: taskData.description,
-            status: taskData.status,
-            priority: 'medium',
-            category: 'onboarding',
-            created_at: now,
-            updated_at: now,
-            completed_at: taskData.status === 'completed' ? now : null,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error in backfillOnboardingTasks:', error);
-    }
-  }
+  // Create bound helper functions for route injection
+  const autoCompleteOnboardingTasks = userId =>
+    onboardingService.autoCompleteOnboardingTasks(userId);
+  const backfillOnboardingTasks = userId => onboardingService.backfillOnboardingTasks(userId);
 
   // ========================================
   // Initialize Route Module Helpers
@@ -216,8 +78,8 @@ function setupRoutes(app, services) {
   contactsRoutes.setHelpers({ autoCompleteOnboardingTasks, contactIntelligence });
 
   // Inject services into profile routes
-  if (services.profileService && profileRoutes.setServices) {
-    profileRoutes.setServices({ profileService: services.profileService });
+  if (services.profileService && profileRoutes.setHelpers) {
+    profileRoutes.setHelpers({ profileService: services.profileService });
   }
 
   // ========================================

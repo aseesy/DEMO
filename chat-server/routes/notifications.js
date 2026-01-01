@@ -1,5 +1,6 @@
 /**
  * Notifications Routes
+ * @di-pattern: direct
  *
  * Handles in-app notification management.
  * Extracted from server.js for better maintainability.

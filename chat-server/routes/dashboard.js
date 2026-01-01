@@ -1,5 +1,6 @@
 /**
  * Dashboard Routes
+ * @di-pattern: direct
  *
  * Handles dashboard updates and communication stats.
  * Extracted from server.js for better maintainability.

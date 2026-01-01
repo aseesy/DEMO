@@ -1,5 +1,6 @@
 /**
  * Figma API Routes
+ * @di-pattern: injected
  *
  * Handles Figma integration including file access, image export,
  * comment management, and component sync.

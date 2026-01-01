@@ -1,5 +1,6 @@
 /**
  * Waitlist Routes
+ * @di-pattern: direct
  *
  * Handles pre-launch waitlist email collection.
  * Simple email-only signup for building interest before launch.

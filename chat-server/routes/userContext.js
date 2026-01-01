@@ -1,3 +1,10 @@
+/**
+ * User Context Routes
+ * @di-pattern: direct
+ *
+ * Provides user context data for AI analysis.
+ */
+
 const express = require('express');
 const userContext = require('../userContext');
 

@@ -1,5 +1,6 @@
 /**
  * User Routes - Modular Entry Point
+ * @di-pattern: injected
  *
  * Actor: Product/UX
  */

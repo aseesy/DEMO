@@ -4,6 +4,17 @@
  * This module handles message-related socket events with clear separation:
  * - Business logic delegated to messageOperations.js
  * - Error handling consolidated at handler boundaries
+ *
+ * Architecture:
+ * - registerMessageHandlers(): Main registration function for all message socket events
+ * - addToHistory(): Internal helper for message persistence with auto-threading
+ * - Event handlers: send_message, edit_message, delete_message, add_reaction
+ *
+ * Dependencies:
+ * - messageOperations.js: Pure business logic (validation, message creation, reactions)
+ * - socketMiddleware.js: Security (room membership verification, error codes)
+ * - aiHelper.js: AI mediation for message analysis
+ * - autoThreading (optional): Automatic thread assignment
  */
 
 const { emitError, getUserDisplayName } = require('./utils');
@@ -16,6 +27,11 @@ const {
   parseReactions,
   toggleReaction,
 } = require('./messageOperations');
+const {
+  verifyRoomMembership,
+  emitSocketError,
+  SocketErrorCodes,
+} = require('./socketMiddleware');
 
 // Auto-threading service for semantic thread assignment
 let autoThreading = null;
@@ -87,6 +103,26 @@ function registerMessageHandlers(socket, io, services) {
       });
       emitError(socket, 'Room not available. Please rejoin the chat.');
       return;
+    }
+
+    // Step 1.5: Verify room membership (security check)
+    // Ensures user is actually a member of the room they claim to be in
+    const authenticatedUser = socket.data?.authenticatedUser;
+    if (authenticatedUser?.id && dbSafe) {
+      const isMember = await verifyRoomMembership(authenticatedUser.id, user.roomId, dbSafe);
+      if (!isMember) {
+        console.warn('[send_message] Room membership verification failed:', {
+          userId: authenticatedUser.id,
+          roomId: user.roomId,
+          socketId: socket.id,
+        });
+        emitSocketError(
+          socket,
+          SocketErrorCodes.ROOM_MEMBERSHIP_INVALID,
+          'You are not a member of this room.'
+        );
+        return;
+      }
     }
 
     const userEmail = user.email || user.username;

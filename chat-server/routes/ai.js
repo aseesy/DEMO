@@ -1,5 +1,6 @@
 /**
  * AI Routes
+ * @di-pattern: injected
  *
  * Handles AI-powered features including task generation and message mediation.
  * Extracted from server.js for better maintainability.

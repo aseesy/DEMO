@@ -1,5 +1,6 @@
 /**
  * Push Notifications API Routes
+ * @di-pattern: direct
  *
  * Handles Web Push API subscription management for PWA users.
  */
