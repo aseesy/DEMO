@@ -35,16 +35,30 @@ export function setupMessageHandlers(socket, handlers) {
     setDraftCoaching,
   } = handlers;
 
-  // Message history
-  socket.on('message_history', data => {
-    console.log('[message_history] Received data:', {
+  // Message history handler
+  const handleMessageHistory = data => {
+    console.log('[message_history] 📨 Received data:', {
       isArray: Array.isArray(data),
       hasMessages: !!data.messages,
       messageCount: Array.isArray(data) ? data.length : data.messages?.length || 0,
+      dataKeys: Object.keys(data || {}),
+      firstMessage: Array.isArray(data) ? data[0] : data.messages?.[0],
+      fullData: data, // Log full data for debugging
     });
 
     const messages = Array.isArray(data) ? data : data.messages || [];
     const hasMore = data.hasMore !== undefined ? data.hasMore : true;
+
+    console.log('[message_history] 📊 Processing:', {
+      messagesCount: messages.length,
+      hasMore,
+      messagesSample: messages.slice(0, 3).map(m => ({
+        id: m.id,
+        text: m.text?.substring(0, 30),
+        timestamp: m.timestamp,
+        sender: m.sender?.email || m.user_email || m.email || m.username,
+      })),
+    });
 
     // Helper to extract email from message (supports both new and legacy structures)
     const getMessageEmail = msg => {
@@ -137,10 +151,10 @@ export function setupMessageHandlers(socket, handlers) {
         }, 100);
       });
     });
-  });
+  };
 
   // New message handler - uses pure functions from messageUtils.js for SRP compliance
-  socket.on('new_message', message => {
+  const handleNewMessage = message => {
     // Filter system messages using pure function
     if (isSystemMessage(message)) return;
 
@@ -159,12 +173,20 @@ export function setupMessageHandlers(socket, handlers) {
 
     // Update message status for own messages
     if (ownMessage && message.id) {
-      setMessageStatuses(prev => new Map(prev).set(message.id, 'sent'));
-      setPendingMessages(prev => {
-        const next = new Map(prev);
-        next.delete(message.id);
-        return next;
-      });
+      // Use useMessageUI method if available (proper state management)
+      // Otherwise fall back to legacy setters
+      const markMessageSent = handlers.messageUIMethodsRef?.current?.markMessageSent;
+      if (markMessageSent) {
+        markMessageSent(message.id);
+      } else {
+        // Legacy fallback
+        setMessageStatuses(prev => new Map(prev).set(message.id, 'sent'));
+        setPendingMessages(prev => {
+          const next = new Map(prev);
+          next.delete(message.id);
+          return next;
+        });
+      }
       offlineQueueRef.current = offlineQueueRef.current.filter(m => m.id !== message.id);
     }
 
@@ -198,16 +220,24 @@ export function setupMessageHandlers(socket, handlers) {
     // Clean up pending message tracking after capturing the ID
     // The setMessages callback runs synchronously, so removedMsgId is set by now
     if (removedMsgId) {
-      setPendingMessages(p => {
-        const next = new Map(p);
-        next.delete(removedMsgId);
-        return next;
-      });
-      setMessageStatuses(p => {
-        const next = new Map(p);
-        next.delete(removedMsgId);
-        return next;
-      });
+      // Use useMessageUI method if available (proper state management)
+      // Otherwise fall back to legacy setters
+      const removePendingMessage = handlers.messageUIMethodsRef?.current?.removePendingMessage;
+      if (removePendingMessage) {
+        removePendingMessage(removedMsgId);
+      } else {
+        // Legacy fallback
+        setPendingMessages(p => {
+          const next = new Map(p);
+          next.delete(removedMsgId);
+          return next;
+        });
+        setMessageStatuses(p => {
+          const next = new Map(p);
+          next.delete(removedMsgId);
+          return next;
+        });
+      }
     }
 
     // Trigger callback for new messages
@@ -248,5 +278,15 @@ export function setupMessageHandlers(socket, handlers) {
       // Clear draftCoaching completely - removes both analyzing state and blocked message
       setDraftCoaching(null);
     }
-  });
+  };
+
+  // Register handlers
+  socket.on('message_history', handleMessageHistory);
+  socket.on('new_message', handleNewMessage);
+
+  // Return cleanup function
+  return () => {
+    socket.off('message_history', handleMessageHistory);
+    socket.off('new_message', handleNewMessage);
+  };
 }

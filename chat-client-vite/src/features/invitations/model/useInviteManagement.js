@@ -65,6 +65,11 @@ export function useInviteManagement({
   const [hasPendingInvitation, setHasPendingInvitation] = React.useState(false);
   const [hasAcceptedInvitation, setHasAcceptedInvitation] = React.useState(false);
 
+  // Refs for debouncing and backoff
+  const lastCheckTimeRef = React.useRef(0);
+  const checkInProgressRef = React.useRef(false);
+  const backoffUntilRef = React.useRef(0);
+
   /**
    * Apply co-parent connected state
    */
@@ -178,11 +183,32 @@ export function useInviteManagement({
   /**
    * Check if co-parents are connected
    * Command: Updates hasCoParentConnected state and persists to localStorage
+   * Includes debouncing and backoff to prevent hammering the server
    */
   const checkRoomMembers = React.useCallback(async () => {
     if (!isAuthenticated) return;
 
+    const now = Date.now();
+
+    // Debounce: Skip if called within 1 second of last check
+    if (now - lastCheckTimeRef.current < 1000) {
+      return;
+    }
+
+    // Backoff: Skip if we're in a backoff period (server returned 503)
+    if (now < backoffUntilRef.current) {
+      return;
+    }
+
+    // Prevent concurrent checks
+    if (checkInProgressRef.current) {
+      return;
+    }
+
+    checkInProgressRef.current = true;
+    lastCheckTimeRef.current = now;
     setIsCheckingCoParent(true);
+
     const result = await queryRoomMembers();
 
     if (result.success) {
@@ -199,6 +225,10 @@ export function useInviteManagement({
           roomStatus: 'multi_user',
         });
       }
+    } else if (result.serviceUnavailable) {
+      // Server starting up - back off for 5 seconds
+      backoffUntilRef.current = Date.now() + (result.retryAfter || 5000);
+      console.log('[checkRoomMembers] Server not ready, backing off for 5s');
     } else if (result.notFound || result.networkError) {
       // Fallback to message-based detection
       const hasMultiple = queryCoParentFromMessages(messages, username);
@@ -214,7 +244,9 @@ export function useInviteManagement({
         setWithMigration('hasCoParentConnected', 'has_coparent_connected', 'true');
       }
     }
+
     setIsCheckingCoParent(false);
+    checkInProgressRef.current = false;
   }, [isAuthenticated, messages, username]);
 
   /**

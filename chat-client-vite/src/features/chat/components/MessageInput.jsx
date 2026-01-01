@@ -147,7 +147,7 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
             className={`w-full pl-12 pr-14 py-3 border border-gray-200 rounded-full bg-white/90 focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-base text-gray-900 placeholder-gray-400 min-h-[44px] max-h-32 resize-none font-normal leading-snug shadow-sm transition-all ${
               hasCoachingWarning ? 'placeholder-orange-400 border-orange-300' : ''
             }`}
-            style={{ fontSize: '16px', height: 'auto', overflowY: 'hidden' }}
+            style={{ height: 'auto', overflowY: 'hidden' }}
             onKeyDown={handleKeyDown}
             onFocus={handleFocus}
             onMouseDown={handleMouseDown}

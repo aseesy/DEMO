@@ -85,11 +85,20 @@ class AuthService extends BaseService {
     }
 
     // Step 2: Authenticate user credentials
+    // MIGRATION: Always use email-based authentication
+    // If username provided without email, the legacy function will convert it
     let user;
     try {
-      user = loginEmail
-        ? await auth.authenticateUserByEmail(loginEmail, password)
-        : await auth.authenticateUser(username, password);
+      if (loginEmail) {
+        user = await auth.authenticateUserByEmail(loginEmail, password);
+      } else if (username) {
+        // Legacy path: username provided instead of email
+        // authenticateUser now redirects to authenticateUserByEmail internally
+        console.warn('[AuthService] Login attempted with username instead of email - consider updating client');
+        user = await auth.authenticateUser(username, password);
+      } else {
+        throw new ValidationError('Email is required for login', 'email');
+      }
     } catch (authError) {
       // CRITICAL: Check for database connection errors first
       // These should be distinguished from authentication errors

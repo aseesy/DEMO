@@ -17,16 +17,17 @@
  * Setup thread event handlers
  * @param {Object} socket - Socket.io socket instance
  * @param {Object} handlers - Handler functions and refs
+ * @returns {Function} Cleanup function to remove listeners
  */
 export function setupThreadHandlers(socket, handlers) {
   const { setThreads, setThreadMessages, setIsLoadingThreadMessages } = handlers;
 
   // Thread events - use DELTA UPDATES (client-side reducers, not full list refetches)
   // Full list only on initial load
-  socket.on('threads_list', threadList => setThreads(threadList));
+  const handleThreadsList = threadList => setThreads(threadList);
 
   // Delta: New thread created - add to array
-  socket.on('thread_created', ({ thread }) => {
+  const handleThreadCreated = ({ thread }) => {
     if (thread) {
       setThreads(prev => {
         // Check if thread already exists (prevent duplicates)
@@ -37,10 +38,10 @@ export function setupThreadHandlers(socket, handlers) {
         return [thread, ...prev];
       });
     }
-  });
+  };
 
   // Delta: Thread message count changed - update specific thread
-  socket.on('thread_message_count_changed', ({ threadId, messageCount, lastMessageAt }) => {
+  const handleThreadMessageCountChanged = ({ threadId, messageCount, lastMessageAt }) => {
     setThreads(prev =>
       prev.map(thread =>
         thread.id === threadId
@@ -53,17 +54,17 @@ export function setupThreadHandlers(socket, handlers) {
           : thread
       )
     );
-  });
+  };
 
   // Legacy event - kept for backwards compatibility during transition
-  socket.on('threads_updated', threadList => setThreads(threadList));
+  const handleThreadsUpdated = threadList => setThreads(threadList);
 
   // ============================================================================
   // HIERARCHICAL THREAD EVENTS (nested/sub-thread support)
   // ============================================================================
 
   // Delta: Sub-thread created - add to array with parent reference
-  socket.on('sub_thread_created', ({ thread, parentThreadId }) => {
+  const handleSubThreadCreated = ({ thread, parentThreadId }) => {
     if (thread) {
       setThreads(prev => {
         // Check if thread already exists (prevent duplicates)
@@ -74,31 +75,55 @@ export function setupThreadHandlers(socket, handlers) {
         return [{ ...thread, parent_thread_id: parentThreadId }, ...prev];
       });
     }
-  });
+  };
 
   // Thread ancestors received - dispatch event for components to handle
-  socket.on('thread_ancestors', ({ threadId, ancestors }) => {
+  const handleThreadAncestors = ({ threadId, ancestors }) => {
     window.dispatchEvent(
       new CustomEvent('thread-ancestors-loaded', { detail: { threadId, ancestors } })
     );
-  });
+  };
 
   // Sub-threads list received - dispatch event for components to handle
-  socket.on('sub_threads_list', ({ parentThreadId, subThreads }) => {
+  const handleSubThreadsList = ({ parentThreadId, subThreads }) => {
     window.dispatchEvent(
       new CustomEvent('sub-threads-loaded', { detail: { parentThreadId, subThreads } })
     );
-  });
+  };
 
   // Full thread hierarchy received - dispatch event for tree view components
-  socket.on('thread_hierarchy', ({ rootThreadId, hierarchy }) => {
+  const handleThreadHierarchy = ({ rootThreadId, hierarchy }) => {
     window.dispatchEvent(
       new CustomEvent('thread-hierarchy-loaded', { detail: { rootThreadId, hierarchy } })
     );
-  });
+  };
 
-  socket.on('thread_messages', ({ threadId, messages: msgs }) => {
+  const handleThreadMessages = ({ threadId, messages: msgs }) => {
     setThreadMessages(prev => ({ ...prev, [threadId]: msgs }));
     if (setIsLoadingThreadMessages) setIsLoadingThreadMessages(false);
-  });
+  };
+
+  // Register all handlers
+  socket.on('threads_list', handleThreadsList);
+  socket.on('thread_created', handleThreadCreated);
+  socket.on('thread_message_count_changed', handleThreadMessageCountChanged);
+  socket.on('threads_updated', handleThreadsUpdated);
+  socket.on('sub_thread_created', handleSubThreadCreated);
+  socket.on('thread_ancestors', handleThreadAncestors);
+  socket.on('sub_threads_list', handleSubThreadsList);
+  socket.on('thread_hierarchy', handleThreadHierarchy);
+  socket.on('thread_messages', handleThreadMessages);
+
+  // Return cleanup function
+  return () => {
+    socket.off('threads_list', handleThreadsList);
+    socket.off('thread_created', handleThreadCreated);
+    socket.off('thread_message_count_changed', handleThreadMessageCountChanged);
+    socket.off('threads_updated', handleThreadsUpdated);
+    socket.off('sub_thread_created', handleSubThreadCreated);
+    socket.off('thread_ancestors', handleThreadAncestors);
+    socket.off('sub_threads_list', handleSubThreadsList);
+    socket.off('thread_hierarchy', handleThreadHierarchy);
+    socket.off('thread_messages', handleThreadMessages);
+  };
 }

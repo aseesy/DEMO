@@ -110,7 +110,7 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
     // Threads are managed by ChatContext - analysis happens automatically
     // or can be triggered from the Chat view
     // This is a no-op here since Dashboard doesn't manage thread analysis
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.debug('[useDashboard] analyzeConversation called - threads managed by ChatContext');
     }
   }, []);

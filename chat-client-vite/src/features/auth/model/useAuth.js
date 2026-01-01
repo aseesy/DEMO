@@ -138,8 +138,10 @@ export function useAuth() {
 
       // Use AuthContext's login if available (preferred)
       if (authContext?.login) {
+        console.log('[useAuth] Calling authContext.login');
         try {
           const result = await authContext.login(email, password);
+          console.log('[useAuth] authContext.login result:', result?.success ? 'success' : 'failed', result?.error);
           if (result.success) {
             // Update local state if AuthContext is not managing it
             if (!authContext) {

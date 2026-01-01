@@ -42,6 +42,7 @@ async function createThread(
     const now = new Date().toISOString();
     const normalizedCategory = normalizeCategory(category);
 
+    // Create thread first
     await dbSafe.safeInsert('threads', {
       id: threadId,
       room_id: roomId,
@@ -60,7 +61,13 @@ async function createThread(
       depth: 0,
     });
 
-    // Create thread node in Neo4j for semantic search
+    // If initial message provided, associate it with the thread
+    // NOTE: addMessageToThread already uses an atomic CTE query, so no transaction wrapper needed
+    if (initialMessageId && addMessageToThread) {
+      await addMessageToThread(initialMessageId, threadId);
+    }
+
+    // Create thread node in Neo4j for semantic search (non-critical)
     if (neo4jClient && neo4jClient.isAvailable()) {
       try {
         await neo4jClient.createOrUpdateThreadNode(threadId, roomId, title);
@@ -69,12 +76,6 @@ async function createThread(
       }
     }
 
-    // If initial message provided, associate it with the thread
-    if (initialMessageId && addMessageToThread) {
-      await addMessageToThread(initialMessageId, threadId);
-    }
-
-    // PostgreSQL auto-commits, no manual save needed
     return threadId;
   } catch (error) {
     console.error('Error creating thread:', error);

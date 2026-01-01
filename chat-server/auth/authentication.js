@@ -55,41 +55,26 @@ async function authenticateUserByEmail(email, password) {
   return { id: user.id, email: user.email, firstName: user.first_name, lastName: user.last_name, displayName: user.display_name || user.first_name || user.email, context, room };
 }
 
+/**
+ * @deprecated Use authenticateUserByEmail instead
+ * Legacy function kept for backward compatibility - redirects to email-based auth
+ */
 async function authenticateUser(username, password) {
-  const result = await dbSafe.safeSelect(
-    'users',
-    { username: username.toLowerCase() },
-    { limit: 1 }
-  );
+  // MIGRATION: Username-based auth is deprecated
+  // Try to find user by username and get their email, then use email-based auth
+  console.warn('[DEPRECATED] authenticateUser called with username - use authenticateUserByEmail instead');
+
+  const result = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
   const users = dbSafe.parseResult(result);
 
-  if (users.length === 0) return null;
-
-  const user = users[0];
-  const isBcryptHash = /^\$2[ayb]\$/.test(user.password_hash);
-  let isValid = false;
-
-  if (isBcryptHash) {
-    isValid = await comparePassword(password, user.password_hash);
-  } else {
-    const sha256Hash = crypto.createHash('sha256').update(password).digest('hex');
-    if (sha256Hash === user.password_hash) {
-      isValid = true;
-      const newBcryptHash = await hashPassword(password);
-      await dbSafe.safeUpdate('users', { password_hash: newBcryptHash }, { id: user.id });
-    }
+  if (users.length === 0) {
+    const error = new Error('Account not found');
+    error.code = 'ACCOUNT_NOT_FOUND';
+    throw error;
   }
 
-  if (!isValid) return null;
-
-  await dbSafe.safeUpdate('users', { last_login: new Date().toISOString() }, { id: user.id });
-
-  // Use email-based user context
-  const { getUserContext: getUserContextByEmail } = require('../src/core/profiles/userContext');
-  const context = await getUserContextByEmail(user.email);
-  const room = await roomManager.getUserRoom(user.id);
-
-  return { id: user.id, email: user.email, firstName: user.first_name, lastName: user.last_name, displayName: user.display_name || user.first_name || user.email, context, room };
+  // Redirect to email-based authentication
+  return authenticateUserByEmail(users[0].email, password);
 }
 
 /**

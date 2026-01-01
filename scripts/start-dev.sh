@@ -15,13 +15,16 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Get backend port from config or default to 3000
+BACKEND_PORT=${PORT:-3000}
+
 # Check if backend is already running
-if lsof -ti:3001 > /dev/null 2>&1; then
-    echo -e "${YELLOW}⚠️  Backend server already running on port 3001${NC}"
+if lsof -ti:${BACKEND_PORT} > /dev/null 2>&1; then
+    echo -e "${YELLOW}⚠️  Backend server already running on port ${BACKEND_PORT}${NC}"
     echo "   Skipping backend start..."
 else
     echo -e "${BLUE}🚀 Starting backend server...${NC}"
-    cd "$(dirname "$0")/chat-server"
+    cd "$(dirname "$0")/../chat-server"
     
     # Check for syntax errors
     if ! node -c server.js 2>/dev/null; then
@@ -33,8 +36,8 @@ else
     BACKEND_PID=$!
     sleep 2
     
-    if lsof -ti:3001 > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ Backend server started on port 3001 (PID: $BACKEND_PID)${NC}"
+    if lsof -ti:${BACKEND_PORT} > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Backend server started on port ${BACKEND_PORT} (PID: $BACKEND_PID)${NC}"
     else
         echo -e "${RED}❌ Backend server failed to start${NC}"
         echo "   Check /tmp/chat-server.log for details"
@@ -51,7 +54,7 @@ if lsof -ti:5173 > /dev/null 2>&1; then
     echo ""
     echo -e "${GREEN}✅ Development servers are ready!${NC}"
     echo ""
-    echo "📍 Backend:  http://localhost:3001"
+    echo "📍 Backend:  http://localhost:${BACKEND_PORT}"
     echo "📍 Frontend: http://localhost:5173"
     echo ""
     echo "💡 Vite HMR is active - your UI changes will appear instantly!"
@@ -59,7 +62,7 @@ if lsof -ti:5173 > /dev/null 2>&1; then
 fi
 
 echo -e "${BLUE}🚀 Starting Vite dev server...${NC}"
-cd "$(dirname "$0")/chat-client-vite"
+cd "$(dirname "$0")/../chat-client-vite"
 
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then
@@ -82,7 +85,7 @@ if lsof -ti:5173 > /dev/null 2>&1; then
     echo -e "${GREEN}✅ Development servers are ready!${NC}"
     echo -e "${GREEN}========================================${NC}"
     echo ""
-    echo "📍 Backend:  http://localhost:3001"
+    echo "📍 Backend:  http://localhost:${BACKEND_PORT}"
     echo "📍 Frontend: http://localhost:5173"
     echo ""
     echo -e "${GREEN}💡 Hot Module Replacement (HMR) is active!${NC}"

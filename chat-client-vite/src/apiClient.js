@@ -106,7 +106,7 @@ function addAuthHeader(headers = {}) {
     headers.Authorization = `Bearer ${cleanToken}`;
 
     // Debug logging in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       const tokenParts = cleanToken.split('.');
       console.log('[apiClient] Adding auth header:', {
         hasToken: !!cleanToken,
@@ -115,8 +115,15 @@ function addAuthHeader(headers = {}) {
         tokenPreview: cleanToken.substring(0, 20) + '...',
       });
     }
-  } else if (!token && process.env.NODE_ENV === 'development') {
-    console.warn('[apiClient] No token available - request will be unauthenticated');
+  }
+  
+  // Don't warn about missing tokens - it's expected for:
+  // 1. Login/signup requests (no token yet)
+  // 2. Public endpoints
+  // 3. Initial page loads before auth is verified
+  // Only log in debug mode if needed
+  if (!token && import.meta.env.DEV && import.meta.env.VITE_DEBUG_AUTH) {
+    console.log('[apiClient] No token available (this is normal for login/signup requests)');
   }
   return headers;
 }
@@ -174,6 +181,13 @@ export async function apiPost(path, body, options = {}) {
   const endpoint = path;
   const startTime = performance.now();
 
+  console.log('[apiPost] Making request', { 
+    path, 
+    url: `${API_BASE_URL}${path}`,
+    hasBody: !!body,
+    bodyKeys: body ? Object.keys(body) : []
+  });
+
   try {
     const headers = addAuthHeader({
       'Content-Type': 'application/json',
@@ -181,6 +195,7 @@ export async function apiPost(path, body, options = {}) {
       ...(options.headers || {}),
     });
 
+    console.log('[apiPost] Fetching...', { url: `${API_BASE_URL}${path}` });
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'POST',
       credentials: 'include',
@@ -188,6 +203,7 @@ export async function apiPost(path, body, options = {}) {
       body: JSON.stringify(body),
       ...options,
     });
+    console.log('[apiPost] Response received', { ok: response.ok, status: response.status, statusText: response.statusText });
 
     // Track API response time
     const duration = performance.now() - startTime;

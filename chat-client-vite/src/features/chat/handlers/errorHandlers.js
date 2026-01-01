@@ -12,13 +12,19 @@ import { trackConnectionError } from '../../../utils/analyticsEnhancements.js';
  * Setup error event handlers
  * @param {Object} socket - Socket.io socket instance
  * @param {Object} handlers - Handler functions and refs
+ * @returns {Function} Cleanup function to remove listeners
  */
 export function setupErrorHandlers(socket, handlers) {
   const { setError, setIsLoadingOlder, setIsSearching, loadingTimeoutRef } = handlers;
 
-  socket.on('error', ({ message }) => {
-    trackConnectionError('socket_error', message || 'Unknown socket error');
-    console.error('Socket error:', message);
+  const handleError = ({ message, code }) => {
+    // Enhanced error handling with error codes from server
+    const errorMessage = code
+      ? `${message} (${code})`
+      : message || 'Unknown socket error';
+
+    trackConnectionError('socket_error', errorMessage);
+    console.error('Socket error:', { message, code });
     setError(message);
     setIsLoadingOlder(false);
     if (setIsSearching) setIsSearching(false);
@@ -26,10 +32,19 @@ export function setupErrorHandlers(socket, handlers) {
       clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = null;
     }
-  });
+  };
 
-  socket.on('replaced_by_new_connection', ({ message }) => {
+  const handleReplacedByNewConnection = ({ message }) => {
     setError(message || 'You opened this chat in another tab.');
     socket.disconnect();
-  });
+  };
+
+  socket.on('error', handleError);
+  socket.on('replaced_by_new_connection', handleReplacedByNewConnection);
+
+  // Return cleanup function
+  return () => {
+    socket.off('error', handleError);
+    socket.off('replaced_by_new_connection', handleReplacedByNewConnection);
+  };
 }

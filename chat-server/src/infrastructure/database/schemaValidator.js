@@ -12,7 +12,7 @@ const EXPECTED_CORE_TABLES = {
   users: ['id', 'email', 'created_at'],
   messages: ['id', 'room_id', 'text', 'timestamp'],
   rooms: ['id', 'name', 'created_at'],
-  user_context: ['user_id', 'updated_at'],
+  user_context: ['user_email', 'updated_at'],
   migrations: ['id', 'filename', 'executed_at', 'success'],
 };
 

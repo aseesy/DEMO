@@ -15,8 +15,12 @@ import { logUserTransform } from '../utils/dataTransformDebug.js';
 /**
  * AuthContext - Centralized authentication state management
  *
+ * MIGRATION NOTE: Email is now the primary identifier.
+ * The `username` field is kept for backward compatibility but always equals `email`.
+ * All new code should use `email` instead of `username`.
+ *
  * Provides:
- * - Centralized auth state (isAuthenticated, username, email, token)
+ * - Centralized auth state (isAuthenticated, email, token)
  * - Token management (storage, validation, expiration)
  * - Session verification on mount
  * - State synchronization across tabs
@@ -113,9 +117,12 @@ export function AuthProvider({ children }) {
   }, []); // Empty deps - only run once on mount
 
   const [isAuthenticated, setIsAuthenticated] = React.useState(initialAuthState.isAuthenticated);
-  const [username, setUsername] = React.useState(initialAuthState.username);
+  // MIGRATION: email is the primary identifier, username is kept for backward compatibility
   const [email, setEmail] = React.useState(initialAuthState.email);
   const [token, setToken] = React.useState(initialAuthState.token);
+  // username is now an alias for email - kept for backward compatibility with existing components
+  const username = email;
+  const setUsername = setEmail; // Redirect setUsername calls to setEmail
   const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
   const [isSigningUp, setIsSigningUp] = React.useState(false);
@@ -130,6 +137,8 @@ export function AuthProvider({ children }) {
   // until we've verified the token with the server
   const verifySessionCompletedRef = React.useRef(false);
   const verifySessionStartedAtRef = React.useRef(null);
+  // Track AbortController for cleanup on unmount
+  const verifySessionAbortControllerRef = React.useRef(null);
 
   /**
    * Load auth state from storage
@@ -260,8 +269,14 @@ export function AuthProvider({ children }) {
 
       console.log('[verifySession] Verifying token with server...');
 
+      // Abort any previous verification request
+      if (verifySessionAbortControllerRef.current) {
+        verifySessionAbortControllerRef.current.abort();
+      }
+
       // Add timeout to prevent hanging
       const controller = new AbortController();
+      verifySessionAbortControllerRef.current = controller;
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
       let response;
@@ -273,11 +288,17 @@ export function AuthProvider({ children }) {
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
+        verifySessionAbortControllerRef.current = null; // Clear ref on success
       } catch (err) {
         clearTimeout(timeoutId);
-        if (err.name === 'AbortError') {
-          console.warn('[verifySession] ⚠️ Verification timeout - using optimistic auth state');
-          // On timeout, keep optimistic state if token exists
+        verifySessionAbortControllerRef.current = null; // Clear ref on error
+        // Handle AbortError gracefully - this happens when:
+        // 1. Request times out (intentional abort)
+        // 2. Component unmounts before request completes (React Strict Mode)
+        // 3. New verifySession call aborts previous one
+        if (err.name === 'AbortError' || err.message?.includes('aborted')) {
+          console.log('[verifySession] Request aborted (timeout or component unmount) - using optimistic auth state');
+          // On abort, keep optimistic state if token exists
           const storedState = loadAuthState();
           if (storedState.isAuthenticated && storedState.token) {
             setIsAuthenticated(storedState.isAuthenticated);
@@ -287,8 +308,13 @@ export function AuthProvider({ children }) {
             // Sync TokenManager with stored token
             tokenManager.setToken(storedState.token);
             setIsCheckingAuth(false);
+            verifySessionCompletedRef.current = true;
             return;
           }
+          // No stored auth, clear state
+          setIsCheckingAuth(false);
+          verifySessionCompletedRef.current = true;
+          return;
         }
         throw err; // Re-throw other errors
       }
@@ -340,7 +366,10 @@ export function AuthProvider({ children }) {
         clearAuthState();
       }
     } catch (err) {
-      console.error('[verifySession] ⚠️ Error verifying session:', err);
+      // Don't log AbortError as an error - it's expected behavior
+      if (err.name !== 'AbortError' && !err.message?.includes('aborted')) {
+        console.error('[verifySession] ⚠️ Error verifying session:', err);
+      }
       // CRITICAL: On network errors, keep optimistic auth state
       // This prevents showing landing page when user has valid stored credentials
       // but network is temporarily unavailable
@@ -371,11 +400,14 @@ export function AuthProvider({ children }) {
    * Login with email/password
    */
   const login = React.useCallback(async (email, password) => {
+    console.log('[AuthContext] login called', { email: email ? '***' : 'empty', password: password ? '***' : 'empty' });
     setIsLoggingIn(true);
     setError(null);
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
+
+    console.log('[AuthContext] Calling apiPost /api/auth/login');
 
     try {
       const response = await apiPost('/api/auth/login', {
@@ -383,7 +415,10 @@ export function AuthProvider({ children }) {
         password: cleanPassword,
       });
 
+      console.log('[AuthContext] apiPost response received', { ok: response.ok, status: response.status });
+
       const data = await response.json();
+      console.log('[AuthContext] Response data parsed', { hasUser: !!data.user, hasToken: !!data.token });
 
       if (!response.ok) {
         const errorInfo = getErrorMessage(data, { statusCode: response.status });
@@ -519,6 +554,10 @@ export function AuthProvider({ children }) {
       console.error('Error during logout:', err);
     } finally {
       clearAuthState();
+      // Redirect to sign-in page after logout
+      if (typeof window !== 'undefined') {
+        window.location.href = '/signin';
+      }
     }
   }, [clearAuthState]);
 
@@ -532,6 +571,14 @@ export function AuthProvider({ children }) {
     loadAuthState();
     // Then verify with server (will confirm or clear if invalid)
     verifySession();
+
+    // Cleanup: abort any pending verification request on unmount
+    return () => {
+      if (verifySessionAbortControllerRef.current) {
+        verifySessionAbortControllerRef.current.abort();
+        verifySessionAbortControllerRef.current = null;
+      }
+    };
   }, [loadAuthState, verifySession]);
 
   /**
@@ -652,23 +699,37 @@ export function AuthProvider({ children }) {
       // Only clear auth if we have a token but it's invalid
       // CRITICAL: Always check TokenManager (single source of truth) instead of state/authStorage
       // State might be stale, but TokenManager is always current
-      const hasToken = tokenManager.getToken();
-      if (!hasToken) {
+      const currentToken = tokenManager.getToken();
+      if (!currentToken) {
         console.log('[onAuthFailure] No token present in TokenManager, not clearing auth');
         return;
       }
 
-      console.log('[onAuthFailure] Clearing auth state due to 401 error');
-      // Clear invalid auth state - this will trigger redirect to login
-      clearAuthState();
+      // CRITICAL: Distinguish between expired token (must logout) and network timeout (stay optimistic)
+      // If token is expired, we must clear auth regardless of network conditions
+      // If token is NOT expired but we got 401, it might be a network timeout/offline issue
+      // In that case, stay optimistic and keep the auth state
+      if (isTokenExpired(currentToken)) {
+        console.log('[onAuthFailure] Token expired - clearing auth state (must logout)');
+        clearAuthState();
+        return;
+      }
+
+      // Token is NOT expired but we got 401 - this might be a network timeout or offline issue
+      // Stay optimistic and keep the auth state rather than logging out
+      // The user might be offline or experiencing network issues, and their token is still valid
+      console.warn(
+        '[onAuthFailure] ⚠️ Token not expired but got 401 - likely network timeout/offline issue. Staying optimistic.'
+      );
+      // Don't clear auth - keep optimistic state
     });
   }, [clearAuthState, isCheckingAuth, isAuthenticated, token]);
 
   const value = {
     // State
     isAuthenticated,
-    username,
-    email,
+    email,           // PRIMARY: Use this for user identification
+    username,        // DEPRECATED: Alias for email, kept for backward compatibility
     token,
     isCheckingAuth,
     isLoggingIn,

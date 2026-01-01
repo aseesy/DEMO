@@ -572,7 +572,7 @@ export function logError(error, context = {}) {
   trackError(error, `error_${category}`, true);
 
   // Log to console in development
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.error('Error logged:', logData);
   }
 
@@ -618,7 +618,7 @@ export function setupGlobalErrorHandler() {
       // Prevent default error handling for Safari service worker errors
       event.preventDefault();
       // Silently suppress - don't even log in production
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.debug(
           '[errorHandler] Suppressed Safari service worker error (expected):',
           errorMessage

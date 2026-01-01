@@ -78,10 +78,15 @@ const RATE_LIMIT = {
 
 // Socket.io
 const SOCKET_CONFIG = {
-  pingTimeout: 60000,
-  pingInterval: 25000,
-  maxHttpBufferSize: 1e6,
+  pingTimeout: 25000, // Reduced from 60s - detect dead connections faster
+  pingInterval: 15000, // Reduced from 25s - more responsive heartbeat
+  maxHttpBufferSize: 1e5, // Reduced from 1MB to 100KB - prevent large payload abuse
   transports: ['websocket', 'polling'],
+  // Connection state recovery (Socket.io 4.6+)
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
+    skipMiddlewares: false, // Always run auth middleware on recovery
+  },
 };
 
 // URLs for internal use

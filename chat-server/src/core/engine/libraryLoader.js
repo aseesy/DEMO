@@ -34,6 +34,40 @@ function safeLoad(modulePath, name, initFn = null) {
 }
 
 /**
+ * Create a lazy loader function for a module
+ * Loads the module only when first accessed (lazy loading)
+ * @param {string} modulePath - Path to require
+ * @param {string} name - Human-readable name for logging
+ * @param {Function} [initFn] - Optional async initialization function
+ * @returns {Function} Getter function that loads on first call
+ */
+function createLazyLoader(modulePath, name, initFn = null) {
+  let cachedModule = null;
+  let isLoading = false;
+
+  return function getModule() {
+    // Return cached module if already loaded
+    if (cachedModule !== null) {
+      return cachedModule;
+    }
+
+    // Prevent concurrent loading
+    if (isLoading) {
+      console.warn(`⚠️ Library Loader: ${name} is already loading, returning null`);
+      return null;
+    }
+
+    isLoading = true;
+    try {
+      cachedModule = safeLoad(modulePath, name, initFn);
+      return cachedModule;
+    } finally {
+      isLoading = false;
+    }
+  };
+}
+
+/**
  * Load code layer integration with version check
  */
 function loadCodeLayerIntegration() {
@@ -55,13 +89,20 @@ function loadCodeLayerIntegration() {
 // LOAD ALL LIBRARIES
 // ============================================================================
 
+// Lazy loaders for heavy modules (only load when first accessed)
+const lazyLoaders = {
+  // Language analysis (Feature 005) - LAZY LOADED (only when analyzing messages)
+  languageAnalyzer: createLazyLoader('../analysis/languageAnalyzer', 'Language analyzer'),
+
+  // Communication profile - LAZY LOADED (only when recording rewrites)
+  communicationProfile: createLazyLoader(
+    '../profiles/communicationProfile',
+    'Communication profile'
+  ),
+};
+
+// Eagerly loaded libraries (lightweight or needed at startup)
 const libraries = {
-  // Language analysis (Feature 005)
-  languageAnalyzer: safeLoad('../analysis/languageAnalyzer', 'Language analyzer'),
-
-  // Communication profile for sender/receiver distinction
-  communicationProfile: safeLoad('../profiles/communicationProfile', 'Communication profile'),
-
   // Voice signature extraction (Phase 1: Contextual Awareness)
   voiceSignature: safeLoad(
     '../profiles/communicationProfile/voiceSignature',
@@ -118,17 +159,57 @@ const libraries = {
  * @returns {boolean}
  */
 function isAvailable(name) {
+  // Check lazy loaders first
+  if (lazyLoaders[name]) {
+    const module = lazyLoaders[name]();
+    return module !== null;
+  }
+  // Check regular libraries
   return libraries[name] !== null;
 }
 
 /**
- * Get a loaded library
+ * Get a loaded library (with lazy loading support)
  * @param {string} name - Library name
  * @returns {Object|null}
  */
 function get(name) {
+  // Check lazy loaders first
+  if (lazyLoaders[name]) {
+    return lazyLoaders[name]();
+  }
+  // Return from regular libraries
   return libraries[name];
 }
+
+// Create getters/setters for lazy-loaded modules that load on first access
+// Support both lazy loading and test mocking
+let languageAnalyzerOverride = null;
+let communicationProfileOverride = null;
+
+const languageAnalyzerGetter = () => {
+  // Allow test overrides
+  if (languageAnalyzerOverride !== null) {
+    return languageAnalyzerOverride;
+  }
+  return lazyLoaders.languageAnalyzer();
+};
+
+const communicationProfileGetter = () => {
+  // Allow test overrides
+  if (communicationProfileOverride !== null) {
+    return communicationProfileOverride;
+  }
+  return lazyLoaders.communicationProfile();
+};
+
+const languageAnalyzerSetter = (value) => {
+  languageAnalyzerOverride = value;
+};
+
+const communicationProfileSetter = (value) => {
+  communicationProfileOverride = value;
+};
 
 module.exports = {
   libraries,
@@ -136,8 +217,21 @@ module.exports = {
   get,
 
   // Direct access for convenience
-  languageAnalyzer: libraries.languageAnalyzer,
-  communicationProfile: libraries.communicationProfile,
+  // Lazy-loaded modules (load on first access, supports test mocking)
+  get languageAnalyzer() {
+    return languageAnalyzerGetter();
+  },
+  set languageAnalyzer(value) {
+    languageAnalyzerSetter(value);
+  },
+  get communicationProfile() {
+    return communicationProfileGetter();
+  },
+  set communicationProfile(value) {
+    communicationProfileSetter(value);
+  },
+
+  // Eagerly loaded modules
   voiceSignature: libraries.voiceSignature,
   conversationPatterns: libraries.conversationPatterns,
   interventionLearning: libraries.interventionLearning,

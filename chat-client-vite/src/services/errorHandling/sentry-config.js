@@ -17,7 +17,7 @@ export default {};
 // Export initialization function (no-op)
 export function initSentry() {
   // No-op: Sentry is not configured
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log('[Sentry] Sentry is not configured (stub file)');
   }
 }

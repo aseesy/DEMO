@@ -45,6 +45,11 @@ export async function queryRoomMembers() {
       return { success: false, notFound: true };
     }
 
+    // 503 = server starting up, database not ready yet
+    if (response.status === 503) {
+      return { success: false, serviceUnavailable: true, retryAfter: 5000 };
+    }
+
     // 401 errors will trigger auth failure event via apiGet
     return { success: false, error: `HTTP ${response.status}` };
   } catch (err) {

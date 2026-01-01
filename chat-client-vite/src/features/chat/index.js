@@ -18,12 +18,18 @@ export { ChatProvider, useChatContext } from './context/ChatContext.jsx';
 export { useChatSocket } from './model/useChatSocket.js';
 export { useInputMessage } from './model/useInputMessage.js';
 export { useSearchMessages } from './model/useSearchMessages.js';
-export { useSendMessage } from './model/useSendMessage.js';
+// useSendMessage removed - use useMessageSending from hooks instead
 export { useMessageHandlers } from './model/useMessageHandlers.js';
 export { useNewMessageHandler } from './model/useNewMessageHandler.js';
 export { useScrollManager } from './model/useScrollManager.js';
 export { useMessageFlaggingModal } from './model/useMessageFlaggingModal.js';
 export { setupSocketEventHandlers } from './model/socketEventHandlers.js';
+
+// Hooks (Message Sending - Production)
+export { useMessageSending } from './hooks/useMessageSending.js';
+export { useMessageUI } from './hooks/useMessageUI.js';
+export { useMessageTransport } from './hooks/useMessageTransport.js';
+export { useMessageMediation } from './hooks/useMessageMediation.js';
 
 // Components (The UI Details)
 export { ThreadsSidebar } from './components/ThreadsSidebar.jsx';

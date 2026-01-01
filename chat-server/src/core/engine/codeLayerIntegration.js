@@ -13,14 +13,38 @@
 
 'use strict';
 
-// Import the Code Layer
-let codeLayer;
-try {
-  codeLayer = require('./codeLayer');
-  console.log('✅ Code Layer Integration: Code Layer v' + codeLayer.VERSION + ' loaded');
-} catch (err) {
-  console.warn('⚠️ Code Layer Integration: Code Layer not available:', err.message);
-  codeLayer = null;
+// Lazy load Code Layer (only load when analyzeWithCodeLayer is called)
+// This reduces cold start time by deferring heavy module loading
+let codeLayer = null;
+let codeLayerLoadAttempted = false;
+
+/**
+ * Lazy load the Code Layer module
+ * Only loads on first access to reduce startup time
+ * @returns {Object|null} The Code Layer module or null if unavailable
+ */
+function getCodeLayer() {
+  // Return cached module if already loaded
+  if (codeLayer !== null) {
+    return codeLayer;
+  }
+
+  // Return null if we've already tried and failed
+  if (codeLayerLoadAttempted) {
+    return null;
+  }
+
+  // Attempt to load Code Layer
+  codeLayerLoadAttempted = true;
+  try {
+    codeLayer = require('./codeLayer');
+    console.log('✅ Code Layer Integration: Code Layer v' + codeLayer.VERSION + ' loaded (lazy)');
+    return codeLayer;
+  } catch (err) {
+    console.warn('⚠️ Code Layer Integration: Code Layer not available:', err.message);
+    codeLayer = null;
+    return null;
+  }
 }
 
 // ============================================================================
@@ -287,7 +311,9 @@ function validateAIResponse(aiResponse, parsed) {
  * @returns {Promise<Object>} - { parsed: ParsedMessage, quickPass: Object }
  */
 async function analyzeWithCodeLayer(messageText, context = {}) {
-  if (!codeLayer) {
+  // Lazy load Code Layer on first use
+  const codeLayerModule = getCodeLayer();
+  if (!codeLayerModule) {
     return {
       parsed: null,
       quickPass: { canPass: false, reason: 'code_layer_not_available' },
@@ -296,7 +322,7 @@ async function analyzeWithCodeLayer(messageText, context = {}) {
 
   try {
     // Run Code Layer parsing
-    const parsed = await codeLayer.parse(messageText, context);
+    const parsed = await codeLayerModule.parse(messageText, context);
 
     // Determine quick-pass
     const quickPass = shouldQuickPass(parsed);
@@ -404,7 +430,13 @@ module.exports = {
   recordMetrics,
   getMetrics,
 
-  // Check if Code Layer is available
-  isAvailable: () => codeLayer !== null,
-  getVersion: () => (codeLayer ? codeLayer.VERSION : null),
+  // Check if Code Layer is available (lazy load check)
+  isAvailable: () => {
+    const module = getCodeLayer();
+    return module !== null;
+  },
+  getVersion: () => {
+    const module = getCodeLayer();
+    return module ? module.VERSION : null;
+  },
 };

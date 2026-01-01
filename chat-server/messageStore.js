@@ -235,6 +235,8 @@ async function getMessagesByRoom(roomId, limit = 500) {
 
     // FIXED: Get most recent messages first, then order chronologically
     // This prevents returning ancient messages from 2020-2021
+    // PERFORMANCE: Uses idx_messages_room_timestamp index (created in migration 031/034)
+    //              Outer query reorders results in memory (small dataset after LIMIT)
     const query = `
       SELECT * FROM (
         SELECT * FROM messages

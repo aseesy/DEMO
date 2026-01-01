@@ -34,6 +34,8 @@ class PostgresThreadRepository extends PostgresGenericRepository {
     const { includeArchived = false, limit = 10 } = options;
     const whereClause = includeArchived ? { room_id: roomId } : { room_id: roomId, is_archived: 0 };
 
+    // PERFORMANCE: Uses idx_threads_room_archived_updated or idx_threads_room_active_updated
+    //              (created in migration 034) for optimal query performance
     return this.find(whereClause, {
       orderBy: 'updated_at',
       orderDirection: 'DESC',
@@ -182,6 +184,8 @@ class PostgresThreadRepository extends PostgresGenericRepository {
       // Get messages for this thread, excluding system messages, private, and flagged
       // Order by sequence number (handles out-of-order delivery), fallback to timestamp
       // Join with users table to get user details for sender
+      // PERFORMANCE: Uses idx_messages_thread_timestamp index (created in migration 017)
+      //              Filters by thread_id first (indexed), then applies private/flagged filters
       const query = `
         SELECT m.*, 
                u.id as user_id, u.first_name, u.last_name, u.email

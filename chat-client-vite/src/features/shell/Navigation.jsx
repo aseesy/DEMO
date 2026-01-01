@@ -322,7 +322,7 @@ function NavigationComponent({
   };
 
   // Debug: log when Navigation renders (only in development)
-  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && window.DEBUG_NAV) {
+  if (import.meta.env.DEV && typeof window !== 'undefined' && window.DEBUG_NAV) {
     console.log('[Navigation] Rendering, currentView:', currentView);
   }
 

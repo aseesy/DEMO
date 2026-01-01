@@ -105,10 +105,11 @@ function registerConnectionHandlers(socket, io, services) {
       return;
     }
 
-    // Step 4: Handle duplicate connections (no error possible, just cleanup)
-    disconnectDuplicateConnections(userSessionService, io, roomId, cleanEmail, socket.id);
+    // Step 4: Handle duplicate connections BEFORE joining
+    // This prevents race conditions where both old and new sockets are briefly in the room
+    await disconnectDuplicateConnections(userSessionService, io, roomId, cleanEmail, socket.id);
 
-    // Step 5: Join room and register
+    // Step 5: Join room and register (after duplicates are disconnected)
     socket.join(roomId);
     registerActiveUser(userSessionService, socket.id, cleanEmail, roomId);
 

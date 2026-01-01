@@ -97,21 +97,55 @@ export function LoginSignup() {
   }, [setError]);
 
   const handleSubmit = async e => {
+    console.log('[LoginSignup] handleSubmit called', { 
+      eventType: e?.type, 
+      isLoginMode, 
+      email: email ? '***' : 'empty', 
+      password: password ? '***' : 'empty',
+      isSubmitting 
+    });
+    
     e.preventDefault();
+    e.stopPropagation();
     setError('');
+
+    console.log('[LoginSignup] Form submitted', { isLoginMode, email: email ? '***' : 'empty', password: password ? '***' : 'empty' });
 
     // Get honeypot field value for spam protection
     const honeypotValue = e.target.elements.website?.value || '';
 
-    if (isLoginMode) {
-      await handleLogin(e, { website: honeypotValue });
-    } else {
-      setIsNewSignup(true);
-      await handleSignup(e, { website: honeypotValue });
+    try {
+      if (isLoginMode) {
+        console.log('[LoginSignup] Calling handleLogin');
+        const result = await handleLogin(e, { website: honeypotValue });
+        console.log('[LoginSignup] Login result:', result?.success ? 'success' : 'failed', result?.error);
+      } else {
+        setIsNewSignup(true);
+        console.log('[LoginSignup] Calling handleSignup');
+        const result = await handleSignup(e, { website: honeypotValue });
+        console.log('[LoginSignup] Signup result:', result?.success ? 'success' : 'failed', result?.error);
+      }
+    } catch (err) {
+      console.error('[LoginSignup] Error in handleSubmit:', err);
+      setError(err.message || 'An error occurred. Please try again.');
     }
   };
 
   const isSubmitting = isLoggingIn || isSigningUp || isGoogleLoggingIn;
+
+  // Debug: Log state values
+  React.useEffect(() => {
+    console.log('[LoginSignup] State:', {
+      isCheckingAuth,
+      isAuthenticated,
+      isSubmitting,
+      isLoggingIn,
+      isSigningUp,
+      isGoogleLoggingIn,
+      email: email ? '***' : 'empty',
+      password: password ? '***' : 'empty',
+    });
+  }, [isCheckingAuth, isAuthenticated, isSubmitting, isLoggingIn, isSigningUp, isGoogleLoggingIn, email, password]);
 
   // Show loading while checking auth status or after successful auth (before redirect)
   if (isCheckingAuth || isAuthenticated) {
@@ -161,7 +195,7 @@ export function LoginSignup() {
           {isLoginMode ? 'Welcome back' : 'Create your account'}
         </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-5 mb-8">
+        <form onSubmit={handleSubmit} className="space-y-5 mb-8" noValidate>
           {/* Honeypot field - hidden from users, bots will fill it */}
           <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
             <label htmlFor="website">Website (leave blank)</label>
@@ -246,6 +280,25 @@ export function LoginSignup() {
             disabled={isSubmitting}
             loading={isLoggingIn || isSigningUp}
             className="mt-6 transition-all hover:shadow-lg"
+            onClick={(e) => {
+              console.log('[LoginSignup] Button clicked directly', { 
+                type: e.type, 
+                defaultPrevented: e.defaultPrevented,
+                isSubmitting,
+                disabled: isSubmitting
+              });
+              // Don't prevent default - let form submission work naturally
+              // But ensure form is submitted if button click happens
+              if (e.type === 'click' && !isSubmitting) {
+                const form = e.target.closest('form');
+                if (form && !form.querySelector(':invalid')) {
+                  console.log('[LoginSignup] Form is valid, submitting...');
+                  // Form will submit naturally via type="submit"
+                } else if (form) {
+                  console.log('[LoginSignup] Form has validation errors');
+                }
+              }
+            }}
           >
             {isLoginMode ? 'Log in' : 'Create Account'}
           </Button>

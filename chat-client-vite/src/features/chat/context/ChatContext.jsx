@@ -5,6 +5,7 @@ import { useMessageSending } from '../hooks/useMessageSending.js';
 import { useInputHandling } from '../hooks/useInputHandling.js';
 import { useDerivedState } from '../hooks/useDerivedState.js';
 import { useChatContextValue } from '../hooks/useChatContextValue.js';
+import { useMediationContext } from '../hooks/useMediationContext.js';
 
 /**
  * ChatContext - Provides socket connection and message state app-wide
@@ -16,6 +17,12 @@ import { useChatContextValue } from '../hooks/useChatContextValue.js';
 const ChatContext = React.createContext(null);
 
 export function ChatProvider({ children, username, isAuthenticated, currentView, onNewMessage }) {
+  // Ref to hold useMessageUI methods for handlers (must be declared before useChatSocket)
+  const messageUIMethodsRef = React.useRef({
+    removePendingMessage: null,
+    markMessageSent: null,
+  });
+
   // Get socket connection and state from hook
   const {
     socketRef,
@@ -49,7 +56,13 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     setDraftCoaching,
     unreadCount,
     setUnreadCount,
-  } = useChatSocket({ username, isAuthenticated, currentView, onNewMessage });
+  } = useChatSocket({ 
+    username, 
+    isAuthenticated, 
+    currentView, 
+    onNewMessage,
+    messageUIMethodsRef, // Pass ref so handlers can access useMessageUI methods
+  });
 
   // Input state
   const [inputMessage, setInputMessage] = React.useState('');
@@ -149,8 +162,20 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     }
   }, [currentView, messages.length, isInitialLoad, scrollToBottom]); // Include messages.length to scroll when messages load
 
+  // Build frontend context for mediation (Phase 4: hybrid analysis)
+  // Note: This is "current state" context - backend has "historical" context
+  const { senderProfile, receiverProfile, isLoading: isLoadingContext } = useMediationContext(
+    username,
+    isAuthenticated
+  );
+
   // Use extracted hooks
-  const { sendMessage, emitOrQueueMessage } = useMessageSending({
+  const { 
+    sendMessage, 
+    emitOrQueueMessage,
+    removePendingMessage, // Expose for handlers to use
+    markMessageSent, // Expose for handlers to use
+  } = useMessageSending({
     socketRef,
     inputMessage,
     username,
@@ -164,7 +189,19 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     setError,
     offlineQueueRef,
     typingTimeoutRef,
+    clearInput: () => setInputMessage(''),
+    scrollToBottom,
+    senderProfile, // Phase 4: Frontend context (current state)
+    receiverProfile, // Phase 4: Frontend context (current state)
   });
+
+  // Update ref with useMessageUI methods so handlers can access them
+  React.useEffect(() => {
+    messageUIMethodsRef.current = {
+      removePendingMessage,
+      markMessageSent,
+    };
+  }, [removePendingMessage, markMessageSent]);
 
   const { handleInputChange } = useInputHandling({
     socketRef,
@@ -198,6 +235,20 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   const toggleSearchMode = searchHook.toggleSearchMode;
   const exitSearchMode = searchHook.exitSearchMode;
   const jumpToMessage = searchHook.jumpToMessage;
+
+  // Debug: Log when messages change (development only)
+  React.useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('[ChatProvider] Messages updated:', {
+        count: messages.length,
+        sample: messages.slice(0, 3).map(m => ({
+          id: m.id,
+          text: m.text?.substring(0, 30),
+          timestamp: m.timestamp,
+        })),
+      });
+    }
+  }, [messages]);
 
   // Create context value using extracted hook
   const value = useChatContextValue({
@@ -336,4 +387,5 @@ export function useChatContext() {
   return context;
 }
 
-export default ChatContext;
+// Note: Using named exports only for React Fast Refresh compatibility
+// Do not add default export as it causes HMR invalidation
