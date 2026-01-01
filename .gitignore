@@ -1,6 +1,9 @@
 # Dependencies
 node_modules
 
+# SDD Agentic Framework (local dev only, not needed in production)
+sdd-agentic-framework/
+
 # Environment files (secrets)
 .env
 .env.local
