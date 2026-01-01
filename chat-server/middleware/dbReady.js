@@ -1,9 +1,9 @@
 /**
  * Database Readiness Middleware
- * 
+ *
  * Prevents routes from executing before database is ready.
  * Returns 503 Service Unavailable if database connection is not established.
- * 
+ *
  * This is critical for Railway deployments where:
  * - Server starts before database initialization completes
  * - Health checks need to pass immediately
@@ -27,7 +27,7 @@ function requireDatabaseReady(req, res, next) {
       retryAfter: 5, // Suggest retrying after 5 seconds
     });
   }
-  
+
   next();
 }
 
@@ -36,11 +36,12 @@ function requireDatabaseReady(req, res, next) {
  * Health check endpoint should always work, even if DB is not ready
  */
 function requireDatabaseReadyExceptHealth(req, res, next) {
-  // Allow health check to pass through
-  if (req.path === '/health' || req.path === '/healthcheck') {
+  // Allow health/readiness check endpoints to pass through
+  // These endpoints handle their own database status logic
+  if (req.path === '/health' || req.path === '/healthcheck' || req.path === '/ready') {
     return next();
   }
-  
+
   return requireDatabaseReady(req, res, next);
 }
 
@@ -48,4 +49,3 @@ module.exports = {
   requireDatabaseReady,
   requireDatabaseReadyExceptHealth,
 };
-

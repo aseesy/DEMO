@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 // Database readiness middleware - ensures DB is ready before auth operations
-const { requireDatabaseReady } = require('../../middleware/dbReady');
+const { requireDatabaseReady } = require('../middleware/dbReady');
 
 const signupRoutes = require('./auth/signup');
 const loginRoutes = require('./auth/login');
