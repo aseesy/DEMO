@@ -5,7 +5,7 @@
 rootDirectory = "chat-server"
 
 [build]
-builder = "nixpacks"
+builder = "railpack"
 buildCommand = "npm install --legacy-peer-deps"
 
 [deploy]
