@@ -1,3 +1,5 @@
 [submodule "sdd-agentic-framework"]
 	path = sdd-agentic-framework
 	url = https://github.com/kelleysd-apps/sdd-agentic-framework.git
+	shallow = true
+	ignore = all
