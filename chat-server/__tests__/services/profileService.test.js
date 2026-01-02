@@ -36,19 +36,6 @@ describe('ProfileService', () => {
     jest.clearAllMocks();
   });
 
-  // Note: getProfileColumns was removed during refactoring
-  // ProfileService now uses repositories which handle column management
-  // These tests are skipped as the method no longer exists
-  describe.skip('getProfileColumns', () => {
-    it('should return array of profile column names', async () => {
-      // Method removed - ProfileService now uses repositories
-    });
-
-    it('should exclude system fields', async () => {
-      // Method removed - ProfileService now uses repositories
-    });
-  });
-
   describe('getComprehensiveProfile', () => {
     it('should return complete profile for valid userId', async () => {
       const userId = 1;
