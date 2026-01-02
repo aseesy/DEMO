@@ -94,32 +94,27 @@ class AuthService extends BaseService {
       } else if (username) {
         // Legacy path: username provided instead of email
         // authenticateUser now redirects to authenticateUserByEmail internally
-        console.warn('[AuthService] Login attempted with username instead of email - consider updating client');
+        console.warn(
+          '[AuthService] Login attempted with username instead of email - consider updating client'
+        );
         user = await auth.authenticateUser(username, password);
       } else {
         throw new ValidationError('Email is required for login', 'email');
       }
     } catch (authError) {
-      // CRITICAL: Check for database connection errors first
+      // CRITICAL: Check for database connection errors using centralized classifier
       // These should be distinguished from authentication errors
-      const isDbError = 
-        authError.code === 'ECONNREFUSED' ||
-        authError.code === 'ECONNRESET' ||
-        authError.code === 'ETIMEDOUT' ||
-        authError.code === '08000' || // PostgreSQL connection_exception
-        authError.code === '08003' || // PostgreSQL connection_does_not_exist
-        authError.code === '08006' || // PostgreSQL connection_failure
-        authError.message?.toLowerCase().includes('connection') ||
-        authError.message?.toLowerCase().includes('database') ||
-        authError.message?.toLowerCase().includes('postgresql') ||
-        authError.message?.toLowerCase().includes('econnrefused');
-      
-      if (isDbError) {
+      const { isDatabaseConnectionError } = require('../../utils/databaseErrorClassifier');
+
+      if (isDatabaseConnectionError(authError)) {
         // Don't record as failed login attempt - it's a system error
-        console.warn('[AuthService] Database connection error during authentication:', authError.code || authError.message);
+        console.warn(
+          '[AuthService] Database connection error during authentication:',
+          authError.code || authError.message
+        );
         throw new Error('DATABASE_NOT_READY');
       }
-      
+
       // Record failed attempt
       const recordPromise = adaptiveAuth.recordLoginAttempt({
         email: loginEmail || username,

@@ -5,7 +5,7 @@
  */
 const express = require('express');
 const router = express.Router();
-const { setAuthCookie, clearAuthCookie, verifyAuth } = require('../../middleware/auth');
+const { setAuthCookie, clearAuthCookie } = require('../../middleware/auth');
 const { honeypotCheck } = require('../../middleware/spamProtection');
 const { loginRateLimit } = require('./utils');
 const { LOGIN_RESULT_TYPES } = require('../../src/services/auth/authService');
@@ -70,32 +70,22 @@ router.post('/login', loginRateLimit, honeypotCheck('website'), async (req, res)
     }
   } catch (error) {
     console.error('Login error:', error);
-    
-    // CRITICAL: Check for database connection errors
+
+    // CRITICAL: Check for database connection errors using centralized classifier
     // These should return 503 Service Unavailable, not 500 or authentication errors
-    const isDbError = 
-      error.message === 'DATABASE_NOT_READY' ||
-      error.code === 'ECONNREFUSED' ||
-      error.code === 'ECONNRESET' ||
-      error.code === 'ETIMEDOUT' ||
-      error.code === '08000' || // PostgreSQL connection_exception
-      error.code === '08003' || // PostgreSQL connection_does_not_exist
-      error.code === '08006' || // PostgreSQL connection_failure
-      error.message?.toLowerCase().includes('connection') ||
-      error.message?.toLowerCase().includes('database') ||
-      error.message?.toLowerCase().includes('postgresql') ||
-      error.message?.toLowerCase().includes('econnrefused');
-    
-    if (isDbError) {
+    const {
+      isDatabaseConnectionError,
+      getDatabaseErrorResponse,
+      getDatabaseErrorStatusCode,
+    } = require('../src/utils/databaseErrorClassifier');
+
+    if (isDatabaseConnectionError(error)) {
       console.warn('[login] Database connection error during login:', error.code || error.message);
-      return res.status(503).json({
-        error: 'Service temporarily unavailable',
-        code: 'DATABASE_NOT_READY',
-        message: 'Database connection is being established. Please try again in a moment.',
-        retryAfter: 5,
-      });
+      const errorResponse = getDatabaseErrorResponse(error);
+      const statusCode = getDatabaseErrorStatusCode(error);
+      return res.status(statusCode).json(errorResponse);
     }
-    
+
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });

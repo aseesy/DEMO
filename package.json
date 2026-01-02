@@ -37,7 +37,9 @@
     "tools:db-analysis": "python3 tools/audit/db_analysis.py",
     "tools:dashboard": "python3 tools/dashboard/backend.py",
     "tools:socket-diagnostic": "python3 tools/diagnostics/socket_connection.py",
-    "tools:all": "npm run tools:git-history && npm run tools:db-analysis && npm run tools:dashboard"
+    "tools:all": "npm run tools:git-history && npm run tools:db-analysis && npm run tools:dashboard",
+    "validate:env": "node scripts/validate-env.js",
+    "validate:railway": "node scripts/validate-railway-env.js"
   },
   "private": true,
   "engines": {

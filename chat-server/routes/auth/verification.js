@@ -62,27 +62,20 @@ router.get('/verify', verifyAuth, async (req, res) => {
     });
   } catch (error) {
     // CRITICAL: Check for database connection errors
-    const isDbError = 
-      error.code === 'ECONNREFUSED' ||
-      error.code === 'ECONNRESET' ||
-      error.code === 'ETIMEDOUT' ||
-      error.code === '08000' ||
-      error.code === '08003' ||
-      error.code === '08006' ||
-      error.message?.toLowerCase().includes('connection') ||
-      error.message?.toLowerCase().includes('database') ||
-      error.message?.toLowerCase().includes('postgresql');
-    
-    if (isDbError) {
+    // Use centralized database error classifier
+    const {
+      isDatabaseConnectionError,
+      getDatabaseErrorResponse,
+      getDatabaseErrorStatusCode,
+    } = require('../../src/utils/databaseErrorClassifier');
+
+    if (isDatabaseConnectionError(error)) {
       console.warn('[verify] Database connection error:', error.code || error.message);
-      return res.status(503).json({
-        error: 'Service temporarily unavailable',
-        code: 'DATABASE_NOT_READY',
-        message: 'Database connection is being established. Please try again in a moment.',
-        retryAfter: 5,
-      });
+      const errorResponse = getDatabaseErrorResponse(error);
+      const statusCode = getDatabaseErrorStatusCode(error);
+      return res.status(statusCode).json(errorResponse);
     }
-    
+
     res.status(500).json({ error: error.message });
   }
 });

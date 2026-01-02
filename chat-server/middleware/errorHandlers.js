@@ -28,47 +28,21 @@ const ERROR_STATUS_MAP = new Map([
   [ExternalServiceError, 503],
 ]);
 
+// Import centralized database error classifier
+const {
+  isDatabaseConnectionError: isDbConnectionError,
+  getDatabaseErrorResponse,
+  getDatabaseErrorStatusCode,
+} = require('../src/utils/databaseErrorClassifier');
+
 /**
  * Check if error is a database connection error
  * @param {Error} error - The error to check
  * @returns {boolean} True if it's a database connection error
+ * @deprecated Use databaseErrorClassifier.isDatabaseConnectionError directly
  */
 function isDatabaseConnectionError(error) {
-  if (!error) return false;
-  
-  // Check error code
-  const connectionErrorCodes = [
-    'ECONNREFUSED',
-    'ECONNRESET',
-    'ETIMEDOUT',
-    'ENOTFOUND',
-    'EPIPE',
-    '08000', // PostgreSQL connection_exception
-    '08003', // PostgreSQL connection_does_not_exist
-    '08006', // PostgreSQL connection_failure
-    '57P01', // PostgreSQL admin_shutdown
-    '57P02', // PostgreSQL crash_shutdown
-    '57P03', // PostgreSQL cannot_connect_now
-  ];
-  
-  if (connectionErrorCodes.includes(error.code)) {
-    return true;
-  }
-  
-  // Check error message
-  const message = (error.message || '').toLowerCase();
-  const connectionKeywords = [
-    'connection',
-    'connect',
-    'database',
-    'postgresql',
-    'econnrefused',
-    'timeout',
-    'socket',
-    'network',
-  ];
-  
-  return connectionKeywords.some(keyword => message.includes(keyword));
+  return isDbConnectionError(error);
 }
 
 /**
@@ -89,13 +63,13 @@ function handleServiceError(error, res, options = {}) {
   // CRITICAL: Check for database connection errors first
   // These should return 503 Service Unavailable, not 500 or authentication errors
   if (isDatabaseConnectionError(error)) {
-    console.warn('[handleServiceError] Database connection error detected:', error.code || error.message);
-    return res.status(503).json({
-      error: 'Service temporarily unavailable',
-      code: 'DATABASE_NOT_READY',
-      message: 'Database connection is being established. Please try again in a moment.',
-      retryAfter: 5,
-    });
+    console.warn(
+      '[handleServiceError] Database connection error detected:',
+      error.code || error.message
+    );
+    const errorResponse = getDatabaseErrorResponse(error);
+    const statusCode = getDatabaseErrorStatusCode(error);
+    return res.status(statusCode).json(errorResponse);
   }
 
   // Find matching error type

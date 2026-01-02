@@ -7,14 +7,18 @@
 const express = require('express');
 const router = express.Router();
 const { verifyAuth } = require('../middleware/auth');
-const { handleServiceError, asyncHandler } = require('../middleware/errorHandlers');
+const { asyncHandler } = require('../middleware/errorHandlers');
+const { verifyRoomMembership } = require('../socketHandlers/socketMiddleware/roomMembership');
 const MessageService = require('../src/services/messages/messageService');
+const dbSafe = require('../dbSafe');
 
 const messageService = new MessageService();
 
 /**
  * GET /api/messages/room/:roomId
  * Get messages for a room with pagination
+ *
+ * Verifies user is a member of the room before returning messages.
  */
 router.get(
   '/room/:roomId',
@@ -23,6 +27,40 @@ router.get(
     const { roomId } = req.params;
     const { limit = 50, offset = 0, before, after, threadId } = req.query;
     const userEmail = req.user.email;
+    const userId = req.user.id || req.user.userId;
+
+    // Validate roomId
+    if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid roomId: roomId is required and must be a non-empty string',
+      });
+    }
+
+    // Verify room membership
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'User ID not found in authentication token',
+        code: 'AUTH_ERROR',
+      });
+    }
+
+    const isMember = await verifyRoomMembership(userId, roomId, dbSafe);
+    if (!isMember) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[messages] Room membership check failed:', {
+          userId,
+          roomId,
+          userEmail,
+        });
+      }
+      return res.status(403).json({
+        success: false,
+        error: 'You are not a member of this room',
+        code: 'ROOM_ACCESS_DENIED',
+      });
+    }
 
     // Validate limit
     const limitInt = Math.min(parseInt(limit) || 50, 500);
@@ -37,6 +75,20 @@ router.get(
     };
 
     const result = await messageService.getRoomMessages(roomId, options, userEmail);
+
+    // Return empty array if no messages found (instead of error)
+    if (!result.messages || result.messages.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          messages: [],
+          total: 0,
+          hasMore: false,
+          limit: limitInt,
+          offset: offsetInt,
+        },
+      });
+    }
 
     res.json({
       success: true,
@@ -243,4 +295,3 @@ router.delete(
 );
 
 module.exports = router;
-

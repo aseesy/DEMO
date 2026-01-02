@@ -27,28 +27,9 @@ function setupSockets(io, services) {
   // Middleware runs during handshake processing, before 'connection' event fires
   console.log('[setupSockets] Registering Socket.io middleware...');
 
-  // Token normalization middleware - ensures token is accessible from auth object
-  io.use((socket, next) => {
-    // If token is in query but not in auth, copy it to auth (preferred location)
-    if (socket.handshake.query?.token && !socket.handshake.auth?.token) {
-      if (!socket.handshake.auth) {
-        socket.handshake.auth = {};
-      }
-      socket.handshake.auth.token = socket.handshake.query.token;
-    }
-    
-    // Also check _query as fallback (for polling transport)
-    if (socket.request?._query?.token && !socket.handshake.auth?.token) {
-      if (!socket.handshake.auth) {
-        socket.handshake.auth = {};
-      }
-      socket.handshake.auth.token = socket.request._query.token;
-    }
-
-    next(); // Continue to auth middleware
-  });
-
   // Register authentication middleware
+  // Client MUST send token in auth object: { auth: { token: '...' } }
+  // No fallbacks - fail fast if token is missing or invalid
   io.use(authMiddleware);
   console.log('[setupSockets] ✅ Socket.io middleware registered');
 

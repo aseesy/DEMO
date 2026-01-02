@@ -3,8 +3,6 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
-const fs = require('fs');
 
 // Import refactored modules
 const { healthCheckHandler, setupGracefulShutdown, setupGlobalErrorHandlers } = require('./utils');
@@ -72,7 +70,6 @@ setupRateLimiting(app);
 setupRoutes(app, services);
 
 // Setup Socket.io
-const isDev = process.env.NODE_ENV !== 'production';
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
@@ -110,21 +107,23 @@ const io = new Server(server, {
   pingTimeout: 60000,
   pingInterval: 25000,
   maxHttpBufferSize: 1e6,
-  // In dev: polling only (matches client). In prod: polling first, upgrade to websocket
-  transports: isDev ? ['polling'] : ['polling', 'websocket'],
+  // Transport configuration: Use feature flag for consistency between dev and prod
+  // Set SOCKET_FORCE_POLLING=true to force polling-only (useful for debugging)
+  // Default: allow both polling and websocket in all environments for consistency
+  transports: process.env.SOCKET_FORCE_POLLING === 'true' ? ['polling'] : ['polling', 'websocket'],
   allowEIO3: true,
-  // Allow upgrades in production only (client uses polling-only in dev anyway)
-  allowUpgrades: !isDev,
+  // Allow upgrades unless forced to polling-only
+  allowUpgrades: process.env.SOCKET_FORCE_POLLING !== 'true',
 });
 
 // Initialize Socket Handlers
 console.log('[Server] Socket.io path:', io.path());
 
 // DEBUG: Log Engine.io level events
-io.engine.on('connection', (rawSocket) => {
+io.engine.on('connection', rawSocket => {
   console.log('[Engine.io] New raw connection:', rawSocket.id);
 });
-io.engine.on('connection_error', (err) => {
+io.engine.on('connection_error', err => {
   console.log('[Engine.io] Connection error:', err.message, err.code);
 });
 io.engine.on('initial_headers', (headers, req) => {

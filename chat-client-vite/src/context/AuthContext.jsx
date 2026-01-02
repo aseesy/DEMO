@@ -40,7 +40,7 @@ function isTokenExpired(token) {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const exp = payload.exp * 1000; // Convert to milliseconds
     return Date.now() >= exp;
-  } catch (error) {
+  } catch {
     // If we can't parse the token, consider it expired
     return true;
   }
@@ -79,20 +79,26 @@ export function AuthProvider({ children }) {
       storedIsAuthenticated,
     });
 
-    // Check if token is expired using the same logic as isTokenExpired
+    // Check if token is expired using centralized function
     if (storedToken) {
+      if (isTokenExpired(storedToken)) {
+        if (import.meta.env.DEV) {
+          console.log('[AuthContext] Token expired, clearing auth');
+        }
+        // Token expired
+        return { isAuthenticated: false, username: null, email: null, token: null };
+      }
+      // Get expiration time for logging
       try {
         const payload = JSON.parse(atob(storedToken.split('.')[1]));
         const exp = payload.exp * 1000;
-        const isExpired = Date.now() >= exp;
-        if (isExpired) {
-          console.log('[AuthContext] Token expired, clearing auth');
-          // Token expired
-          return { isAuthenticated: false, username: null, email: null, token: null };
+        if (import.meta.env.DEV) {
+          console.log('[AuthContext] Token valid, expires:', new Date(exp).toLocaleString());
         }
-        console.log('[AuthContext] Token valid, expires:', new Date(exp).toLocaleString());
       } catch (error) {
-        console.warn('[AuthContext] Invalid token format:', error);
+        if (import.meta.env.DEV) {
+          console.warn('[AuthContext] Invalid token format:', error);
+        }
         // Invalid token
         return { isAuthenticated: false, username: null, email: null, token: null };
       }
@@ -105,13 +111,13 @@ export function AuthProvider({ children }) {
     const hasValidStoredAuth = storedIsAuthenticated && storedToken && identifier;
     console.log('[AuthContext] Initial auth state:', {
       isAuthenticated: hasValidStoredAuth,
-      username: hasValidStoredAuth ? (storedEmail || storedUsername) : null,
+      username: hasValidStoredAuth ? storedEmail || storedUsername : null,
     });
 
     return {
       isAuthenticated: hasValidStoredAuth,
-      username: hasValidStoredAuth ? (storedEmail || storedUsername) : null,
-      email: hasValidStoredAuth ? (storedEmail || storedUsername) : null,
+      username: hasValidStoredAuth ? storedEmail || storedUsername : null,
+      email: hasValidStoredAuth ? storedEmail || storedUsername : null,
       token: hasValidStoredAuth ? storedToken : null,
     };
   }, []); // Empty deps - only run once on mount
@@ -126,12 +132,11 @@ export function AuthProvider({ children }) {
   const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
   const [isSigningUp, setIsSigningUp] = React.useState(false);
-  const [isGoogleLoggingIn, setIsGoogleLoggingIn] = React.useState(false);
   const [error, setError] = React.useState(null);
 
   // Track when login completes to add grace period for 401 errors
   const loginCompletedAtRef = React.useRef(null);
-  
+
   // CRITICAL: Track if verifySession has completed at least once
   // This prevents onAuthFailure from clearing auth during optimistic initialization
   // until we've verified the token with the server
@@ -219,8 +224,8 @@ export function AuthProvider({ children }) {
 
     return {
       isAuthenticated: hasValidStoredAuth,
-      username: hasValidStoredAuth ? (storedEmail || storedUsername) : null,
-      email: hasValidStoredAuth ? (storedEmail || storedUsername) : null,
+      username: hasValidStoredAuth ? storedEmail || storedUsername : null,
+      email: hasValidStoredAuth ? storedEmail || storedUsername : null,
       token: hasValidStoredAuth ? storedToken : null,
     };
   }, []);
@@ -297,7 +302,9 @@ export function AuthProvider({ children }) {
         // 2. Component unmounts before request completes (React Strict Mode)
         // 3. New verifySession call aborts previous one
         if (err.name === 'AbortError' || err.message?.includes('aborted')) {
-          console.log('[verifySession] Request aborted (timeout or component unmount) - using optimistic auth state');
+          console.log(
+            '[verifySession] Request aborted (timeout or component unmount) - using optimistic auth state'
+          );
           // On abort, keep optimistic state if token exists
           const storedState = loadAuthState();
           if (storedState.isAuthenticated && storedState.token) {
@@ -352,7 +359,7 @@ export function AuthProvider({ children }) {
             setEmail(user.email);
             storage.set(StorageKeys.USER_EMAIL, user.email);
           }
-          
+
           // Mark verification as completed successfully
           verifySessionCompletedRef.current = true;
         } else {
@@ -400,7 +407,10 @@ export function AuthProvider({ children }) {
    * Login with email/password
    */
   const login = React.useCallback(async (email, password) => {
-    console.log('[AuthContext] login called', { email: email ? '***' : 'empty', password: password ? '***' : 'empty' });
+    console.log('[AuthContext] login called', {
+      email: email ? '***' : 'empty',
+      password: password ? '***' : 'empty',
+    });
     setIsLoggingIn(true);
     setError(null);
 
@@ -415,10 +425,16 @@ export function AuthProvider({ children }) {
         password: cleanPassword,
       });
 
-      console.log('[AuthContext] apiPost response received', { ok: response.ok, status: response.status });
+      console.log('[AuthContext] apiPost response received', {
+        ok: response.ok,
+        status: response.status,
+      });
 
       const data = await response.json();
-      console.log('[AuthContext] Response data parsed', { hasUser: !!data.user, hasToken: !!data.token });
+      console.log('[AuthContext] Response data parsed', {
+        hasUser: !!data.user,
+        hasToken: !!data.token,
+      });
 
       if (!response.ok) {
         const errorInfo = getErrorMessage(data, { statusCode: response.status });
@@ -479,7 +495,7 @@ export function AuthProvider({ children }) {
   /**
    * Signup with email/password
    */
-  const signup = React.useCallback(async (email, password, username = null) => {
+  const signup = React.useCallback(async (email, password, _username = null) => {
     setIsSigningUp(true);
     setError(null);
 
@@ -651,7 +667,9 @@ export function AuthProvider({ children }) {
       // This prevents clearing auth during optimistic initialization phase
       // Components might make API calls before verifySession completes, causing false 401s
       if (!verifySessionCompletedRef.current) {
-        console.log('[onAuthFailure] Ignoring 401 - verifySession has not completed yet (optimistic init phase)');
+        console.log(
+          '[onAuthFailure] Ignoring 401 - verifySession has not completed yet (optimistic init phase)'
+        );
         return;
       }
 
@@ -728,13 +746,12 @@ export function AuthProvider({ children }) {
   const value = {
     // State
     isAuthenticated,
-    email,           // PRIMARY: Use this for user identification
-    username,        // DEPRECATED: Alias for email, kept for backward compatibility
+    email, // PRIMARY: Use this for user identification
+    username, // DEPRECATED: Alias for email, kept for backward compatibility
     token,
     isCheckingAuth,
     isLoggingIn,
     isSigningUp,
-    isGoogleLoggingIn,
     error,
 
     // Actions

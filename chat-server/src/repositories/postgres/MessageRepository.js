@@ -26,13 +26,7 @@ class MessageRepository extends PostgresGenericRepository {
    * @returns {Promise<Object>} { messages, total, hasMore }
    */
   async findByRoomId(roomId, options = {}) {
-    const {
-      limit = 50,
-      offset = 0,
-      before = null,
-      after = null,
-      threadId = null,
-    } = options;
+    const { limit = 50, offset = 0, before = null, after = null, threadId = null } = options;
 
     // Build WHERE clause
     let whereConditions = ['m.room_id = $1'];
@@ -193,6 +187,7 @@ class MessageRepository extends PostgresGenericRepository {
       id,
       type = 'user',
       user_email,
+      username,
       text = '',
       timestamp = new Date().toISOString(),
       room_id,
@@ -212,13 +207,16 @@ class MessageRepository extends PostgresGenericRepository {
       user_flagged_by = [],
     } = messageData;
 
+    // username is required - fallback to user_email if not provided
+    const resolvedUsername = username || user_email;
+
     const insertQuery = `
       INSERT INTO messages (
-        id, type, user_email, text, timestamp, room_id, thread_id, thread_sequence,
+        id, type, user_email, username, text, timestamp, room_id, thread_id, thread_sequence,
         socket_id, private, flagged, validation, tip1, tip2, rewrite, original_message,
         edited, edited_at, reactions, user_flagged_by
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
       )
       RETURNING *
     `;
@@ -227,6 +225,7 @@ class MessageRepository extends PostgresGenericRepository {
       id,
       type,
       user_email.toLowerCase().trim(),
+      resolvedUsername,
       text,
       timestamp,
       room_id,
@@ -395,4 +394,3 @@ class MessageRepository extends PostgresGenericRepository {
 }
 
 module.exports = MessageRepository;
-

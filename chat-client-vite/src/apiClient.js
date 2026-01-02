@@ -1,6 +1,5 @@
 import { API_BASE_URL } from './config.js';
 import { trackAPIError, trackAPIResponseTime } from './utils/analyticsEnhancements.js';
-import { STORAGE_KEYS } from './utils/storageKeys.js';
 import { tokenManager } from './utils/tokenManager.js';
 
 // Thin wrappers around fetch so we have a single place to adjust
@@ -12,7 +11,29 @@ const AUTH_FAILURE_EVENT = 'liaizen:auth-failure';
 const RATE_LIMIT_EVENT = 'liaizen:rate-limit';
 
 // Rate limit state - prevent excessive retries
-let rateLimitUntil = 0;
+// Persisted to sessionStorage to survive page refreshes
+const RATE_LIMIT_STORAGE_KEY = 'liaizen:rate-limit-until';
+
+function getRateLimitUntil() {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const stored = sessionStorage.getItem(RATE_LIMIT_STORAGE_KEY);
+    return stored ? parseInt(stored, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function setRateLimitUntil(timestamp) {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(RATE_LIMIT_STORAGE_KEY, timestamp.toString());
+  } catch {
+    // Ignore storage errors (e.g., private browsing mode)
+  }
+}
+
+let rateLimitUntil = getRateLimitUntil();
 
 /**
  * Dispatch auth failure event for global handling
@@ -37,6 +58,7 @@ function dispatchRateLimit(endpoint, retryAfter) {
     // Set rate limit cooldown period
     const cooldownMs = retryAfter ? retryAfter * 1000 : 60000; // Default 60s if no retry-after
     rateLimitUntil = Date.now() + cooldownMs;
+    setRateLimitUntil(rateLimitUntil); // Persist to sessionStorage
 
     window.dispatchEvent(
       new CustomEvent(RATE_LIMIT_EVENT, {
@@ -48,8 +70,14 @@ function dispatchRateLimit(endpoint, retryAfter) {
 
 /**
  * Check if we're currently rate limited
+ * Checks both in-memory state and sessionStorage for persistence
  */
 function isRateLimited() {
+  // Sync with sessionStorage in case it was set elsewhere
+  const stored = getRateLimitUntil();
+  if (stored > rateLimitUntil) {
+    rateLimitUntil = stored;
+  }
   return Date.now() < rateLimitUntil;
 }
 
@@ -116,7 +144,7 @@ function addAuthHeader(headers = {}) {
       });
     }
   }
-  
+
   // Don't warn about missing tokens - it's expected for:
   // 1. Login/signup requests (no token yet)
   // 2. Public endpoints
@@ -181,12 +209,15 @@ export async function apiPost(path, body, options = {}) {
   const endpoint = path;
   const startTime = performance.now();
 
-  console.log('[apiPost] Making request', { 
-    path, 
-    url: `${API_BASE_URL}${path}`,
-    hasBody: !!body,
-    bodyKeys: body ? Object.keys(body) : []
-  });
+  // Only log in development to avoid exposing sensitive data in production
+  if (import.meta.env.DEV) {
+    console.log('[apiPost] Making request', {
+      path,
+      url: `${API_BASE_URL}${path}`,
+      hasBody: !!body,
+      bodyKeys: body ? Object.keys(body) : [],
+    });
+  }
 
   try {
     const headers = addAuthHeader({
@@ -195,7 +226,10 @@ export async function apiPost(path, body, options = {}) {
       ...(options.headers || {}),
     });
 
-    console.log('[apiPost] Fetching...', { url: `${API_BASE_URL}${path}` });
+    if (import.meta.env.DEV) {
+      console.log('[apiPost] Fetching...', { url: `${API_BASE_URL}${path}` });
+    }
+
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'POST',
       credentials: 'include',
@@ -203,7 +237,14 @@ export async function apiPost(path, body, options = {}) {
       body: JSON.stringify(body),
       ...options,
     });
-    console.log('[apiPost] Response received', { ok: response.ok, status: response.status, statusText: response.statusText });
+
+    if (import.meta.env.DEV) {
+      console.log('[apiPost] Response received', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+      });
+    }
 
     // Track API response time
     const duration = performance.now() - startTime;

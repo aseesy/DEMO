@@ -3,12 +3,14 @@
  *
  * Business logic layer for message operations.
  * Handles validation, formatting, and business rules.
+ * Includes built-in retry logic for transient database errors.
  *
  * @module services/messages/messageService
  */
 
 const MessageRepository = require('../../repositories/postgres/MessageRepository');
 const { buildUserObject } = require('../../../socketHandlers/utils');
+const { withRetry } = require('../../../utils/dbRetry');
 const dbPostgres = require('../../../dbPostgres');
 
 class MessageService {
@@ -29,7 +31,7 @@ class MessageService {
     }
 
     const result = await this.repository.findByRoomId(roomId, options);
-    
+
     // Resolve receivers for messages
     if (userEmail && result.messages.length > 0) {
       const roomMembers = await this._getRoomMembers(roomId);
@@ -52,7 +54,7 @@ class MessageService {
     }
 
     const result = await this.repository.findByThreadId(threadId, options);
-    
+
     // Get room ID from first message to resolve receivers
     if (userEmail && result.messages.length > 0) {
       const roomId = result.messages[0].roomId;
@@ -92,12 +94,17 @@ class MessageService {
   }
 
   /**
-   * Create a new message
+   * Create a new message with built-in retry logic for transient database errors
    * @param {Object} messageData - Message data
    * @param {string} userEmail - Sender email
+   * @param {Object} options - Options
+   * @param {boolean} options.retry - Whether to retry on transient errors (default: true)
+   * @param {number} options.maxRetries - Maximum retry attempts (default: 3)
    * @returns {Promise<Object>} Created message
    */
-  async createMessage(messageData, userEmail) {
+  async createMessage(messageData, userEmail, options = {}) {
+    const { retry = true, maxRetries = 3 } = options;
+
     // Validate
     this._validateMessageData(messageData, userEmail);
 
@@ -121,7 +128,8 @@ class MessageService {
       tip1: messageData.metadata?.tip1 || messageData.tip1 || null,
       tip2: messageData.metadata?.tip2 || messageData.tip2 || null,
       rewrite: messageData.metadata?.rewrite || messageData.rewrite || null,
-      original_message: messageData.metadata?.originalMessage || messageData.originalMessage || null,
+      original_message:
+        messageData.metadata?.originalMessage || messageData.originalMessage || null,
       edited: false,
       edited_at: null,
       reactions: messageData.reactions || {},
@@ -133,16 +141,29 @@ class MessageService {
       throw new Error('Cannot save private, flagged, or pending_original messages');
     }
 
-    const message = await this.repository.create(data);
+    // Create message with retry logic for transient database errors
+    const createOperation = async () => {
+      const message = await this.repository.create(data);
 
-    // Resolve receiver
-    if (message.roomId) {
-      const roomMembers = await this._getRoomMembers(message.roomId);
-      const messages = this._resolveReceivers([message], roomMembers, userEmail);
-      return messages[0];
+      // Resolve receiver
+      if (message.roomId) {
+        const roomMembers = await this._getRoomMembers(message.roomId);
+        const messages = this._resolveReceivers([message], roomMembers, userEmail);
+        return messages[0];
+      }
+
+      return message;
+    };
+
+    if (retry) {
+      return await withRetry(createOperation, {
+        maxRetries,
+        operationName: 'createMessage',
+        context: { messageId: id, userEmail, roomId: data.room_id },
+      });
     }
 
-    return message;
+    return await createOperation();
   }
 
   /**
@@ -164,7 +185,7 @@ class MessageService {
     }
 
     if (message.user_email.toLowerCase() !== userEmail.toLowerCase()) {
-      throw new Error('Unauthorized: cannot edit another user\'s message');
+      throw new Error("Unauthorized: cannot edit another user's message");
     }
 
     // Prepare updates
@@ -199,7 +220,7 @@ class MessageService {
     }
 
     const updated = await this.repository.update(messageId, updateData);
-    
+
     // Resolve receiver
     if (updated && updated.roomId) {
       const roomMembers = await this._getRoomMembers(updated.roomId);
@@ -228,7 +249,7 @@ class MessageService {
     }
 
     if (message.user_email.toLowerCase() !== userEmail.toLowerCase()) {
-      throw new Error('Unauthorized: cannot delete another user\'s message');
+      throw new Error("Unauthorized: cannot delete another user's message");
     }
 
     return await this.repository.delete(messageId);
@@ -358,4 +379,3 @@ class MessageService {
 }
 
 module.exports = MessageService;
-

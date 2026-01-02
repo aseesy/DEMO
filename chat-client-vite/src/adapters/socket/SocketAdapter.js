@@ -145,6 +145,31 @@ class SocketConnection {
   }
 
   /**
+   * Subscribe to all events (onAny)
+   * @param {Function} handler - Event handler (receives eventName, ...args)
+   * @returns {Function} Unsubscribe function
+   */
+  onAny(handler) {
+    if (this._socket && typeof this._socket.onAny === 'function') {
+      this._socket.onAny(handler);
+      // Track for cleanup
+      if (!this._listeners.has('*')) {
+        this._listeners.set('*', new Set());
+      }
+      this._listeners.get('*').add(handler);
+      return () => {
+        this._socket.offAny(handler);
+        const handlers = this._listeners.get('*');
+        if (handlers) {
+          handlers.delete(handler);
+        }
+      };
+    }
+    // Fallback if onAny not available
+    return () => {};
+  }
+
+  /**
    * Emit an event
    * @param {string} event - Event name (use SocketEvents constants)
    * @param {*} data - Data to send
@@ -215,28 +240,57 @@ class SocketConnection {
 /**
  * createSocketConnection - Factory function to create a socket connection
  *
+ * This is the SINGLE POINT where socket.io-client is used.
+ * All socket connections must go through this function.
+ *
  * @param {string} url - Server URL
  * @param {Object} options - Connection options
  * @param {boolean} options.autoConnect - Auto-connect on creation (default: true)
  * @param {boolean} options.withCredentials - Include credentials (default: true)
- * @param {string[]} options.transports - Transport methods (default: ['websocket', 'polling'])
- * @param {Object} options.auth - Authentication data
+ * @param {string[]} options.transports - Transport methods (default: ['polling', 'websocket'])
+ * @param {Object} options.auth - Authentication data (REQUIRED: { token: '...' })
+ * @param {boolean} options.reconnection - Enable reconnection (default: true)
+ * @param {number} options.reconnectionDelay - Delay between reconnection attempts (default: 1000)
+ * @param {number} options.reconnectionDelayMax - Max delay (default: 5000)
+ * @param {number} options.reconnectionAttempts - Max attempts (default: Infinity)
+ * @param {number} options.timeout - Connection timeout (default: 20000)
  * @returns {SocketConnection} Wrapped socket instance
  */
 export function createSocketConnection(url, options = {}) {
   const {
     autoConnect = true,
     withCredentials = true,
-    transports = ['websocket', 'polling'],
+    // Transport configuration: Use feature flag for consistency
+    transports = import.meta.env.VITE_SOCKET_FORCE_POLLING === 'true'
+      ? ['polling']
+      : ['polling', 'websocket'],
     auth,
+    reconnection = true,
+    reconnectionDelay = 1000,
+    reconnectionDelayMax = 5000,
+    reconnectionAttempts = Infinity,
+    timeout = 20000,
     ...restOptions
   } = options;
 
+  // CRITICAL: Token MUST be in auth object
+  // Server expects: socket.handshake.auth.token
+  if (!auth?.token) {
+    throw new Error('SocketAdapter: auth.token is required. Use { auth: { token: "..." } }');
+  }
+
+  // Create socket connection using socket.io-client
+  // This is the ONLY place in the codebase that uses io() directly
   const socket = io(url, {
     autoConnect,
     withCredentials,
     transports,
-    auth,
+    auth, // Token in auth object (standard Socket.io v4+ pattern)
+    reconnection,
+    reconnectionDelay,
+    reconnectionDelayMax,
+    reconnectionAttempts,
+    timeout,
     ...restOptions,
   });
 

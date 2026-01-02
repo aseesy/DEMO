@@ -47,50 +47,62 @@ function registerMessageHandlers(socket, io, services) {
    * Helper to add to message history
    * Uses MessageService for persistence - no in-memory cache needed
    */
+  /**
+   * Add message to history
+   * Uses MessageService with built-in retry logic - single source of truth for persistence
+   * @param {Object} message - Message to save
+   * @param {string} roomId - Room ID
+   */
   async function addToHistory(message, roomId) {
+    const MessageService = require('../src/services/messages/messageService');
+    const messageService = new MessageService();
+
+    const userEmail =
+      message.sender?.email || message.user_email || message.email || message.username;
+    if (!userEmail) {
+      console.error('[addToHistory] No user email found in message:', message);
+      return;
+    }
+
+    const messageToSave = {
+      id: message.id,
+      roomId: roomId || message.roomId,
+      text: message.text || '',
+      type: message.type || 'user',
+      threadId: message.threadId || message.thread_id || null,
+      threadSequence: message.threadSequence || message.thread_sequence || null,
+      socketId: message.socketId || message.socket_id || null,
+      private: message.private || false,
+      flagged: message.flagged || false,
+      metadata: {
+        validation: message.validation || message.metadata?.validation || null,
+        tip1: message.tip1 || message.metadata?.tip1 || null,
+        tip2: message.tip2 || message.metadata?.tip2 || null,
+        rewrite: message.rewrite || message.metadata?.rewrite || null,
+        originalMessage: message.originalMessage || message.metadata?.originalMessage || null,
+      },
+      reactions: message.reactions || {},
+      user_flagged_by: message.user_flagged_by || [],
+      timestamp: message.timestamp || new Date().toISOString(),
+    };
+
     try {
-      // Use new MessageService if available, fallback to messageStore
-      const MessageService = require('../src/services/messages/messageService');
-      const messageService = new MessageService();
-      
-      const userEmail = message.sender?.email || message.user_email || message.email || message.username;
-      if (!userEmail) {
-        console.error('[addToHistory] No user email found in message:', message);
-        return;
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[addToHistory] Saving message via MessageService:', {
+          id: messageToSave.id,
+          userEmail,
+          text: messageToSave.text?.substring(0, 50),
+          type: messageToSave.type,
+          roomId: messageToSave.roomId,
+        });
       }
 
-      const messageToSave = {
-        id: message.id,
-        roomId: roomId || message.roomId,
-        text: message.text || '',
-        type: message.type || 'user',
-        threadId: message.threadId || message.thread_id || null,
-        threadSequence: message.threadSequence || message.thread_sequence || null,
-        socketId: message.socketId || message.socket_id || null,
-        private: message.private || false,
-        flagged: message.flagged || false,
-        metadata: {
-          validation: message.validation || message.metadata?.validation || null,
-          tip1: message.tip1 || message.metadata?.tip1 || null,
-          tip2: message.tip2 || message.metadata?.tip2 || null,
-          rewrite: message.rewrite || message.metadata?.rewrite || null,
-          originalMessage: message.originalMessage || message.metadata?.originalMessage || null,
-        },
-        reactions: message.reactions || {},
-        user_flagged_by: message.user_flagged_by || [],
-        timestamp: message.timestamp || new Date().toISOString(),
-      };
+      // MessageService has built-in retry logic for transient database errors
+      await messageService.createMessage(messageToSave, userEmail, { retry: true, maxRetries: 3 });
 
-      console.log('[addToHistory] Saving message via MessageService:', {
-        id: messageToSave.id,
-        userEmail,
-        text: messageToSave.text?.substring(0, 50),
-        type: messageToSave.type,
-        roomId: messageToSave.roomId,
-      });
-
-      await messageService.createMessage(messageToSave, userEmail);
-      console.log('[addToHistory] Message saved successfully via MessageService');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[addToHistory] Message saved successfully via MessageService');
+      }
 
       // Auto-threading: Process message in background (non-blocking)
       // Only process regular user messages, not system/AI messages
@@ -102,125 +114,129 @@ function registerMessageHandlers(socket, io, services) {
         });
       }
     } catch (err) {
-      console.error('❌ Error saving message via MessageService:', err);
-      // Fallback to messageStore if available
-      if (messageStore) {
-        try {
-          const messageToSave = { ...message, roomId };
-          await messageStore.saveMessage(messageToSave);
-          console.log('[addToHistory] Fallback: saved via messageStore');
-        } catch (fallbackErr) {
-          console.error('❌ Fallback messageStore also failed:', fallbackErr);
-          console.error('Message data:', JSON.stringify(message, null, 2));
-        }
-      } else {
-        console.error('Message data:', JSON.stringify(message, null, 2));
-      }
+      // MessageService handles retries internally, so if we get here, it's a persistent error
+      console.error('❌ Error saving message (after retries):', {
+        error: err.message,
+        code: err.code,
+        messageId: messageToSave.id,
+        roomId: messageToSave.roomId,
+        userEmail,
+      });
+      // Log full message data for debugging
+      console.error('Message data:', JSON.stringify(messageToSave, null, 2));
+      // Don't throw - let the error boundary handle it if needed
     }
   }
 
   // send_message handler - wrapped with error boundary and retry
-  socket.on('send_message', wrapSocketHandler(async data => {
-    // Step 1: Validate user is active
-    const userValidation = validateActiveUser(userSessionService, socket.id);
-    if (!userValidation.valid) {
-      emitError(socket, userValidation.error);
-      return;
-    }
-    const { user } = userValidation;
+  socket.on(
+    'send_message',
+    wrapSocketHandler(
+      async data => {
+        // Step 1: Validate user is active
+        const userValidation = validateActiveUser(userSessionService, socket.id);
+        if (!userValidation.valid) {
+          emitError(socket, userValidation.error);
+          return;
+        }
+        const { user } = userValidation;
 
-    // CRITICAL: Ensure user.roomId is set from userSessionService
-    // This ensures messages are saved to the same room that will be loaded on refresh
-    if (!user.roomId) {
-      const userEmail = user.email || user.username;
-      console.error('[send_message] ERROR: user.roomId is missing!', {
-        socketId: socket.id,
-        email: userEmail,
-        activeUserData: userSessionService.getUserBySocketId(socket.id),
-      });
-      emitError(socket, 'Room not available. Please rejoin the chat.');
-      return;
-    }
+        // CRITICAL: Ensure user.roomId is set from userSessionService
+        // This ensures messages are saved to the same room that will be loaded on refresh
+        if (!user.roomId) {
+          const userEmail = user.email || user.username;
+          console.error('[send_message] ERROR: user.roomId is missing!', {
+            socketId: socket.id,
+            email: userEmail,
+            activeUserData: userSessionService.getUserBySocketId(socket.id),
+          });
+          emitError(socket, 'Room not available. Please rejoin the chat.');
+          return;
+        }
 
-    // Step 1.5: Verify room membership (security check)
-    // Ensures user is actually a member of the room they claim to be in
-    const authenticatedUser = socket.data?.authenticatedUser;
-    if (authenticatedUser?.id && dbSafe) {
-      const isMember = await verifyRoomMembership(authenticatedUser.id, user.roomId, dbSafe);
-      if (!isMember) {
-        console.warn('[send_message] Room membership verification failed:', {
-          userId: authenticatedUser.id,
+        // Step 1.5: Verify room membership (security check)
+        // Ensures user is actually a member of the room they claim to be in
+        const authenticatedUser = socket.data?.authenticatedUser;
+        if (authenticatedUser?.id && dbSafe) {
+          const isMember = await verifyRoomMembership(authenticatedUser.id, user.roomId, dbSafe);
+          if (!isMember) {
+            console.warn('[send_message] Room membership verification failed:', {
+              userId: authenticatedUser.id,
+              roomId: user.roomId,
+              socketId: socket.id,
+            });
+            emitSocketError(
+              socket,
+              SocketErrorCodes.ROOM_MEMBERSHIP_INVALID,
+              'You are not a member of this room.'
+            );
+            return;
+          }
+        }
+
+        const userEmail = user.email || user.username;
+        console.log('[send_message] User sending message:', {
+          email: userEmail,
           roomId: user.roomId,
-          socketId: socket.id,
+          socketId: socket.id.substring(0, 20) + '...',
         });
-        emitSocketError(
-          socket,
-          SocketErrorCodes.ROOM_MEMBERSHIP_INVALID,
-          'You are not a member of this room.'
-        );
-        return;
-      }
-    }
 
-    const userEmail = user.email || user.username;
-    console.log('[send_message] User sending message:', {
-      email: userEmail,
-      roomId: user.roomId,
-      socketId: socket.id.substring(0, 20) + '...',
-    });
+        // Step 2: Validate message text
+        const { text, isPreApprovedRewrite, originalRewrite, bypassMediation, optimisticId } = data;
+        const textValidation = validateMessageText(text);
 
-    // Step 2: Validate message text
-    const { text, isPreApprovedRewrite, originalRewrite, bypassMediation, optimisticId } = data;
-    const textValidation = validateMessageText(text);
+        if (!textValidation.valid) {
+          if (textValidation.empty) return; // Silent ignore for empty
+          emitError(socket, textValidation.error);
+          return;
+        }
 
-    if (!textValidation.valid) {
-      if (textValidation.empty) return; // Silent ignore for empty
-      emitError(socket, textValidation.error);
-      return;
-    }
+        // Step 3: Get display name and create message
+        let displayName;
+        try {
+          displayName = await getUserDisplayName(userEmail, dbSafe);
+        } catch (error) {
+          // Non-fatal: use email as fallback
+          displayName = userEmail;
+        }
 
-    // Step 3: Get display name and create message
-    let displayName;
-    try {
-      displayName = await getUserDisplayName(userEmail, dbSafe);
-    } catch (error) {
-      // Non-fatal: use email as fallback
-      displayName = userEmail;
-    }
-
-    // Create message with sender/receiver structure (async)
-    const message = await createUserMessage(
-      socket.id,
-      user,
-      textValidation.cleanText,
-      displayName,
-      optimisticId,
-      dbSafe // Pass dbSafe for receiver lookup
-    );
-
-    // Step 4: Delegate to AI mediation handler
-    try {
-      const { handleAiMediation } = require('./aiHelper');
-      await handleAiMediation(socket, io, services, {
-        user,
-        message,
-        data,
-        addToHistory,
-      });
-    } catch (error) {
-      console.error('[send_message] AI mediation error:', error.message);
-      emitError(socket, 'Failed to send message.', error, 'send_message:aiMediation');
-
-      // Emit message_error for client reconciliation (Invariant I-15)
-      if (optimisticId) {
-        socket.emit('message_error', {
+        // Create message with sender/receiver structure (async)
+        const message = await createUserMessage(
+          socket.id,
+          user,
+          textValidation.cleanText,
+          displayName,
           optimisticId,
-          error: 'Message failed to send',
-          code: 'SEND_FAILED',
-        });
-      }
-    }
-  }, 'send_message', { retry: true }));
+          dbSafe // Pass dbSafe for receiver lookup
+        );
+
+        // Step 4: Delegate to AI mediation handler
+        try {
+          const { handleAiMediation } = require('./aiHelper');
+          await handleAiMediation(socket, io, services, {
+            user,
+            message,
+            data,
+            addToHistory,
+          });
+        } catch (error) {
+          console.error('[send_message] AI mediation error:', error.message);
+          emitError(socket, 'Failed to send message.', error, 'send_message:aiMediation');
+
+          // Emit message_error for client reconciliation (Invariant I-15)
+          if (optimisticId) {
+            socket.emit('message_error', {
+              optimisticId,
+              error: 'Message failed to send',
+              code: 'SEND_FAILED',
+            });
+          }
+        }
+      },
+      'send_message',
+      { retry: true }
+    )
+  );
 
   // edit_message handler
   socket.on('edit_message', async ({ messageId, text }) => {
@@ -263,10 +279,14 @@ function registerMessageHandlers(socket, io, services) {
       const MessageService = require('../src/services/messages/messageService');
       const messageService = new MessageService();
       const userEmail = user.email || user.username;
-      
-      await messageService.updateMessage(messageId, {
-        text: textValidation.cleanText,
-      }, userEmail);
+
+      await messageService.updateMessage(
+        messageId,
+        {
+          text: textValidation.cleanText,
+        },
+        userEmail
+      );
     } catch (error) {
       console.error('[edit_message] MessageService failed, falling back to dbSafe:', error.message);
       // Fallback to direct database update
@@ -323,10 +343,13 @@ function registerMessageHandlers(socket, io, services) {
       const MessageService = require('../src/services/messages/messageService');
       const messageService = new MessageService();
       const userEmail = user.email || user.username;
-      
+
       await messageService.deleteMessage(messageId, userEmail);
     } catch (error) {
-      console.error('[delete_message] MessageService failed, falling back to dbSafe:', error.message);
+      console.error(
+        '[delete_message] MessageService failed, falling back to dbSafe:',
+        error.message
+      );
       // Fallback to direct database update (soft delete)
       try {
         await dbSafe.safeUpdate(
@@ -359,9 +382,9 @@ function registerMessageHandlers(socket, io, services) {
       const MessageService = require('../src/services/messages/messageService');
       const messageService = new MessageService();
       const userEmail = user.email || user.username;
-      
+
       const updatedMessage = await messageService.addReaction(messageId, emoji, userEmail);
-      
+
       if (updatedMessage) {
         // Broadcast updated message
         io.to(user.roomId).emit('reaction_updated', {
@@ -371,7 +394,10 @@ function registerMessageHandlers(socket, io, services) {
         });
       }
     } catch (error) {
-      console.error('[add_reaction] MessageService failed, falling back to manual update:', error.message);
+      console.error(
+        '[add_reaction] MessageService failed, falling back to manual update:',
+        error.message
+      );
       // Fallback to manual reaction handling
       try {
         // Get current reactions

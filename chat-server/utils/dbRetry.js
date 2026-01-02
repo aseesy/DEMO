@@ -5,6 +5,9 @@
  * Used by services to ensure data persistence during temporary connectivity issues.
  */
 
+// Import centralized database error classifier
+const { isRetryableDatabaseError } = require('../src/utils/databaseErrorClassifier');
+
 /**
  * Check if an error is retryable (transient)
  * @param {Error} err - The error to check
@@ -13,33 +16,8 @@
 function isRetryableError(err) {
   if (!err) return false;
 
-  // Connection-related error codes
-  const retryableCodes = ['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'EPIPE'];
-  if (retryableCodes.includes(err.code)) return true;
-
-  // PostgreSQL-specific transient errors
-  const pgTransientCodes = [
-    '08000', // connection_exception
-    '08003', // connection_does_not_exist
-    '08006', // connection_failure
-    '57P01', // admin_shutdown
-    '57P02', // crash_shutdown
-    '57P03', // cannot_connect_now
-  ];
-  if (pgTransientCodes.includes(err.code)) return true;
-
-  // Message-based detection
-  const message = err.message?.toLowerCase() || '';
-  if (
-    message.includes('connection') ||
-    message.includes('timeout') ||
-    message.includes('econnreset') ||
-    message.includes('socket')
-  ) {
-    return true;
-  }
-
-  return false;
+  // Use centralized database error classifier
+  return isRetryableDatabaseError(err);
 }
 
 /**

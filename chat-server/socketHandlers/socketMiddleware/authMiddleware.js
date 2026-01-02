@@ -15,40 +15,33 @@ const { SocketErrorCodes } = require('./errorCodes');
  * @param {Function} next - Next middleware
  */
 function authMiddleware(socket, next) {
-  console.log(`[Socket Auth] Middleware called for socket ${socket.id}`);
-  console.log(`[Socket Auth] Handshake auth:`, socket.handshake.auth);
-  console.log(
-    `[Socket Auth] Handshake headers auth:`,
-    socket.handshake.headers?.authorization ? 'Present' : 'Missing'
-  );
+  // Only log in development to avoid noise in production
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[Socket Auth] Middleware called for socket ${socket.id}`);
+    console.log(`[Socket Auth] Handshake auth:`, socket.handshake.auth);
+  }
 
   try {
-    // Priority order: auth object (preferred) > query > headers > _query
-    // The normalization middleware should have already copied query token to auth
-    const token =
-      socket.handshake.auth?.token ||
-      socket.handshake.query?.token ||
-      socket.handshake.headers?.authorization?.replace('Bearer ', '') ||
-      socket.handshake._query?.token ||
-      socket.request?._query?.token;
+    // CRITICAL: Token MUST be in auth object
+    // Client should send: io(url, { auth: { token: '...' } })
+    // No fallbacks - this is the single source of truth
+    const token = socket.handshake.auth?.token;
 
     if (!token) {
-      console.warn(`[Socket Auth] ❌ No token provided for socket ${socket.id}`);
-      console.warn(`[Socket Auth] Handshake auth:`, socket.handshake.auth);
-      console.warn(`[Socket Auth] Handshake query:`, socket.handshake.query);
-      console.warn(
-        `[Socket Auth] Handshake headers:`,
-        socket.handshake.headers?.authorization ? 'Present' : 'Missing'
-      );
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[Socket Auth] ❌ No token in auth object for socket ${socket.id}`);
+        console.warn(`[Socket Auth] Handshake auth:`, socket.handshake.auth);
+        console.warn(
+          `[Socket Auth] Client must send token in auth object: { auth: { token: '...' } }`
+        );
+      }
       const err = new Error('Authentication required');
       err.data = { code: SocketErrorCodes.AUTH_REQUIRED };
       return next(err);
     }
 
-    console.log(`[Socket Auth] Token found, verifying...`);
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log(`[Socket Auth] Token verified for user:`, decoded.email);
 
     // Attach user info to socket
     socket.user = {
@@ -58,10 +51,15 @@ function authMiddleware(socket, next) {
       tokenExp: decoded.exp,
     };
 
-    console.log(`[Socket Auth] Authenticated: ${socket.user.email} (socket: ${socket.id})`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Socket Auth] ✅ Authenticated: ${socket.user.email} (socket: ${socket.id})`);
+    }
     next();
   } catch (err) {
-    console.warn(`[Socket Auth] Authentication failed for socket ${socket.id}:`, err.message);
+    // Only log in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[Socket Auth] ❌ Authentication failed for socket ${socket.id}:`, err.message);
+    }
 
     const error = new Error('Authentication failed');
     if (err.name === 'TokenExpiredError') {
