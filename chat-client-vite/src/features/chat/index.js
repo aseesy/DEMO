@@ -5,7 +5,7 @@
  * Delete this folder to remove the Chat feature entirely.
  *
  * Usage:
- *   import { ChatPage, useChatSocket, ChatHeader } from '@features/chat';
+ *   import { ChatPage, ChatProvider, ChatHeader } from '@features/chat';
  */
 
 // Page (The View)
@@ -15,7 +15,7 @@ export { ChatPage, ChatPage as ChatView } from './ChatPage.jsx';
 export { ChatProvider, useChatContext } from './context/ChatContext.jsx';
 
 // Model (The Logic)
-export { useChatSocket } from './model/useChatSocket.js';
+// Note: useChatSocket removed - using service-based architecture (ChatProvider) instead
 export { useInputMessage } from './model/useInputMessage.js';
 export { useSearchMessages } from './model/useSearchMessages.js';
 // useSendMessage removed - use useMessageSending from hooks instead

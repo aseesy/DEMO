@@ -1,27 +1,22 @@
 /**
  * useMessagePagination Hook
  *
- * Responsibility: Message pagination state and operations ONLY
+ * Responsibility: Message pagination state, operations, AND subscriptions
  *
  * What it does:
  * - Manages pagination state (isLoadingOlder, hasMoreMessages, isInitialLoad)
+ * - Subscribes to older_messages socket event
  * - Provides loadOlderMessages function
- * - Handles pagination logic
+ * - Handles loading timeout safety
  *
  * What it does NOT do:
  * - ❌ Socket connection management
- * - ❌ Message state management
+ * - ❌ Message content management (appending done via callback)
  * - ❌ UI concerns (scrolling, etc.)
- *
- * Architecture:
- *   useMessagePagination (this hook)
- *     ↓ uses
- *   socketRef (from useChatSocket)
- *     ↓ emits
- *   Socket.io (load_older_messages event)
  */
 
-import React from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { socketService } from '../../../services/socket/index.js';
 
 const LOADING_TIMEOUT_MS = 10000;
 
@@ -29,21 +24,44 @@ const LOADING_TIMEOUT_MS = 10000;
  * useMessagePagination - Manages message pagination
  *
  * @param {Object} options
- * @param {React.RefObject} options.socketRef - Socket reference for emitting events
  * @param {Array} options.messages - Current messages array (to get beforeTimestamp)
+ * @param {Function} options.onOlderMessages - Callback when older messages are received
  * @returns {Object} { isLoadingOlder, hasMoreMessages, isInitialLoad, loadOlderMessages, setters... }
  */
-export function useMessagePagination({ socketRef, messages = [] } = {}) {
+export function useMessagePagination({ messages = [], onOlderMessages } = {}) {
   // Pagination state
-  const [isLoadingOlder, setIsLoadingOlder] = React.useState(false);
-  const [hasMoreMessages, setHasMoreMessages] = React.useState(true);
-  const [isInitialLoad, setIsInitialLoad] = React.useState(true);
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Timeout ref for loading safety
-  const loadingTimeoutRef = React.useRef(null);
+  const loadingTimeoutRef = useRef(null);
+
+  // Keep callback ref in sync
+  const onOlderMessagesRef = useRef(onOlderMessages);
+  useEffect(() => {
+    onOlderMessagesRef.current = onOlderMessages;
+  }, [onOlderMessages]);
+
+  // Subscribe to older_messages event
+  useEffect(() => {
+    const unsubscribe = socketService.subscribe('older_messages', data => {
+      setIsLoadingOlder(false);
+
+      if (data.messages?.length > 0) {
+        setHasMoreMessages(data.messages.length >= 50);
+        // Notify parent to prepend messages
+        onOlderMessagesRef.current?.(data.messages);
+      } else {
+        setHasMoreMessages(false);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
 
   // Loading timeout effect - prevents stuck loading state
-  React.useEffect(() => {
+  useEffect(() => {
     if (isLoadingOlder) {
       if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = setTimeout(() => {
@@ -59,9 +77,9 @@ export function useMessagePagination({ socketRef, messages = [] } = {}) {
   }, [isLoadingOlder]);
 
   // Load older messages
-  const loadOlderMessages = React.useCallback(() => {
+  const loadOlderMessages = useCallback(() => {
     if (
-      !socketRef?.current?.connected ||
+      !socketService.isConnected() ||
       isLoadingOlder ||
       !hasMoreMessages ||
       messages.length === 0
@@ -71,12 +89,11 @@ export function useMessagePagination({ socketRef, messages = [] } = {}) {
 
     setIsLoadingOlder(true);
 
-    // Emit load_older_messages event
-    socketRef.current.emit('load_older_messages', {
+    socketService.emit('load_older_messages', {
       beforeTimestamp: messages[0].timestamp,
       limit: 50,
     });
-  }, [socketRef, messages, isLoadingOlder, hasMoreMessages]);
+  }, [messages, isLoadingOlder, hasMoreMessages]);
 
   return {
     // State
@@ -84,7 +101,7 @@ export function useMessagePagination({ socketRef, messages = [] } = {}) {
     hasMoreMessages,
     isInitialLoad,
 
-    // Setters (for socket event handlers)
+    // Setters (for external use, e.g., when joining room)
     setIsLoadingOlder,
     setHasMoreMessages,
     setIsInitialLoad,

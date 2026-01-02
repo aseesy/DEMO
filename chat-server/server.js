@@ -72,6 +72,7 @@ setupRateLimiting(app);
 setupRoutes(app, services);
 
 // Setup Socket.io
+const isDev = process.env.NODE_ENV !== 'production';
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
@@ -109,8 +110,28 @@ const io = new Server(server, {
   pingTimeout: 60000,
   pingInterval: 25000,
   maxHttpBufferSize: 1e6,
-  transports: ['websocket', 'polling'],
+  // In dev mode, use polling only to avoid session race conditions during upgrade
+  // In production, allow both websocket and polling with websocket preferred
+  transports: isDev ? ['polling'] : ['websocket', 'polling'],
   allowEIO3: true,
+  // Allow upgrades only in production
+  allowUpgrades: !isDev,
+});
+
+// VERY FIRST middleware - test if ANY middleware runs
+io.use((socket, next) => {
+  try {
+    console.log(`[SERVER.JS] 🔥🔥🔥 FIRST MIDDLEWARE CALLED for socket ${socket.id} 🔥🔥🔥`);
+    next();
+  } catch (err) {
+    console.error(`[SERVER.JS] ❌ MIDDLEWARE ERROR:`, err);
+    next(err);
+  }
+});
+
+// Catch any errors on the namespace itself
+io.of('/').on('connect_error', err => {
+  console.error(`[SERVER.JS] ❌ Namespace connect_error:`, err);
 });
 
 // CRITICAL: Hook into Socket.io connection events to track handshake processing
@@ -136,6 +157,38 @@ io.engine.on('connection_error', err => {
   console.error('[Socket.io Engine] ❌ Connection error:', err.message, err);
   console.error('[Socket.io Engine] ❌ Connection error stack:', err.stack);
 });
+
+// CRITICAL: Hook into Engine.io connection events
+io.engine.on('connection', socket => {
+  console.log(`[Socket.io Engine] 🔌 New transport connection: ${socket.id}`);
+
+  // Track when transport closes
+  socket.on('close', (reason, description) => {
+    console.log(
+      `[Socket.io Engine] 🔒 Transport CLOSED: ${socket.id} - reason: ${reason}, desc: ${description}`
+    );
+  });
+
+  socket.on('error', err => {
+    console.log(`[Socket.io Engine] ⚠️ Transport ERROR: ${socket.id} - ${err}`);
+  });
+
+  // Log when packets are received
+  socket.on('packet', packet => {
+    console.log(
+      `[Socket.io Engine] 📦 Packet from ${socket.id}:`,
+      packet.type,
+      packet.data?.substring?.(0, 100)
+    );
+  });
+});
+
+io.engine.on('initial_headers', (headers, req) => {
+  console.log(`[Socket.io Engine] 📋 Initial headers for ${req.url}`);
+});
+
+// Log all incoming requests to socket.io path
+console.log('[Server] Socket.io path:', io.path());
 
 // Initialize Socket Handlers
 setupSockets(io, services);

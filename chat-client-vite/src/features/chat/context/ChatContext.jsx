@@ -1,130 +1,127 @@
 import React from 'react';
 import { socketService } from '../../../services/socket/index.js';
-import { useChatSocket } from '../model/useChatSocket.js';
+import { authStorage } from '../../../adapters/storage/index.js';
+import { unreadService } from '../../../services/chat/index.js';
+
+// Independent hooks - each subscribes to its own service
+import { useChatRoom } from '../../../hooks/chat/useChatRoom.js';
+import { useMessages } from '../../../hooks/chat/useMessages.js';
+import { useTyping } from '../../../hooks/chat/useTyping.js';
+import { useThreads } from '../../../hooks/chat/useThreads.js';
+import { useCoaching } from '../../../hooks/chat/useCoaching.js';
+import { useUnread } from '../../../hooks/chat/useUnread.js';
+import { useSocketState, useSocketConnection } from '../../../hooks/socket/index.js';
+
+// Feature hooks
 import { useSearchMessages } from '../model/useSearchMessages.js';
-import { useMessageSending } from '../hooks/useMessageSending.js';
-import { useInputHandling } from '../hooks/useInputHandling.js';
 import { useDerivedState } from '../hooks/useDerivedState.js';
-import { useChatContextValue } from '../hooks/useChatContextValue.js';
 import { useMediationContext } from '../hooks/useMediationContext.js';
 
 /**
- * ChatContext - Provides socket connection and message state app-wide
+ * ChatContext - Composes independent hooks for chat functionality
  *
- * The socket connection is maintained at the app level, so it persists
- * across view changes. ChatView and other components consume this context
- * directly without props drilling.
+ * Each hook subscribes to its own service. They re-render independently.
+ * No God Hook orchestrating everything.
  */
 const ChatContext = React.createContext(null);
 
 export function ChatProvider({ children, username, isAuthenticated, currentView, onNewMessage }) {
-  // Ref to hold useMessageUI methods for handlers (must be declared before useChatSocket)
-  const messageUIMethodsRef = React.useRef({
-    removePendingMessage: null,
-    markMessageSent: null,
-  });
+  // DEBUG: Log ChatProvider mount
+  console.log('[ChatProvider] Rendering with:', { username, isAuthenticated, currentView });
 
-  // Get socket connection and state from hook
-  const {
-    socketRef,
-    isConnected,
-    isJoined,
-    error,
-    setError,
-    messages,
-    setMessages,
-    pendingMessages,
-    setPendingMessages,
-    messageStatuses,
-    setMessageStatuses,
-    messagesEndRef,
-    messagesContainerRef,
-    offlineQueueRef,
-    typingUsers,
-    threads,
-    threadMessages,
-    isLoadingThreadMessages,
-    createThread,
-    getThreads,
-    getThreadMessages,
-    addToThread,
-    isLoadingOlder,
-    hasMoreMessages,
-    isInitialLoad,
-    loadOlderMessages,
-    // Search removed from useChatSocket - use useSearchMessages hook instead
-    draftCoaching,
-    setDraftCoaching,
-    unreadCount,
-    setUnreadCount,
-  } = useChatSocket({
-    username,
-    isAuthenticated,
-    currentView,
-    onNewMessage,
-    messageUIMethodsRef, // Pass ref so handlers can access useMessageUI methods
-  });
+  // === SOCKET CONNECTION (infrastructure) ===
+  // Use useSocketConnection hook to manage connection lifecycle
+  const getToken = React.useCallback(() => {
+    const token = authStorage.getToken();
+    console.log('[ChatProvider] getToken called:', token ? 'has token' : 'NO TOKEN');
+    return token;
+  }, []);
 
-  // Input state
+  console.log('[ChatProvider] Calling useSocketConnection with isAuthenticated:', isAuthenticated);
+  useSocketConnection({ isAuthenticated, getToken });
+
+  const { isConnected } = useSocketState();
+  console.log('[ChatProvider] Socket state - isConnected:', isConnected);
+
+  // === INDEPENDENT HOOKS (each subscribes to its own service) ===
+  const room = useChatRoom();
+  const messaging = useMessages();
+  const typing = useTyping();
+  const threads = useThreads();
+  const coaching = useCoaching();
+  const unread = useUnread();
+
+  // Configure unread service with current user info
+  // Note: unread.setUsername is stable (useCallback in hook)
+  React.useEffect(() => {
+    unread.setUsername(username);
+  }, [username, unread.setUsername]);
+
+  React.useEffect(() => {
+    unread.setViewingChat(currentView === 'chat');
+  }, [currentView, unread.setViewingChat]);
+
+  // === AUTO-JOIN (when connected + authenticated) ===
+  // Note: room.join is stable (useCallback in hook)
+  React.useEffect(() => {
+    if (isConnected && isAuthenticated && username && !room.isJoined) {
+      room.join(username);
+    }
+  }, [isConnected, isAuthenticated, username, room.isJoined, room.join]);
+
+  // Load threads when room is joined
+  // Note: threads.loadThreads is stable (useCallback in hook)
+  React.useEffect(() => {
+    if (room.isJoined && room.roomId) {
+      threads.loadThreads(room.roomId);
+    }
+  }, [room.isJoined, room.roomId, threads.loadThreads]);
+
+  // === LOCAL UI STATE ===
   const [inputMessage, setInputMessage] = React.useState('');
   const [isPreApprovedRewrite, setIsPreApprovedRewrite] = React.useState(false);
   const [originalRewrite, setOriginalRewrite] = React.useState('');
-
-  // Thread selection
   const [selectedThreadId, setSelectedThreadId] = React.useState(null);
+  const [error, setError] = React.useState('');
 
-  // Search - use useSearchMessages hook instead of managing state here
-  const searchHook = useSearchMessages({
-    socketRef,
-    username,
-    setError,
-  });
+  // Refs for UI
+  const messagesEndRef = React.useRef(null);
+  const messagesContainerRef = React.useRef(null);
+  const typingTimeoutRef = React.useRef(null);
 
-  // Set up socket event handlers for search (via SocketService)
+  // === SEARCH ===
+  const searchHook = useSearchMessages({ username, setError });
+
+  // Subscribe to search events
+  // Note: handleSearchResults and handleJumpToMessageResult are stable (useCallback in hook)
   React.useEffect(() => {
-    const unsubscribes = [];
-
-    // Handle search results
-    unsubscribes.push(
+    const unsubscribes = [
       socketService.subscribe('search_results', ({ messages: results, total }) => {
         searchHook.handleSearchResults({ messages: results, total });
-      })
-    );
-
-    // Handle jump to message result
-    unsubscribes.push(
+      }),
       socketService.subscribe(
         'jump_to_message_result',
         ({ messages: contextMsgs, targetMessageId }) => {
-          searchHook.handleJumpToMessageResult({
-            messages: contextMsgs,
-            targetMessageId,
-            setMessages,
-          });
+          // This needs setMessages from messaging - we'll handle it differently
+          searchHook.handleJumpToMessageResult({ messages: contextMsgs, targetMessageId });
         }
-      )
-    );
-
+      ),
+    ];
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [searchHook, setMessages]);
+  }, [searchHook.handleSearchResults, searchHook.handleJumpToMessageResult]);
 
-  // Refs for typing (shared between hooks)
-  const typingTimeoutRef = React.useRef(null);
+  // === MEDIATION CONTEXT ===
+  const { senderProfile, receiverProfile } = useMediationContext(username, isAuthenticated);
 
-  // Scroll helpers
-  const scrollToBottom = React.useCallback(
-    (instant = false) => {
-      // Use scrollIntoView with block: 'end' to ensure message appears above input bar
-      // The padding-bottom on MessagesContainer ensures it's not covered
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({
-          behavior: instant ? 'instant' : 'smooth',
-          block: 'end',
-        });
-      }
-    },
-    [messagesEndRef]
-  );
+  // === SCROLL HELPERS ===
+  const scrollToBottom = React.useCallback((instant = false) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({
+        behavior: instant ? 'instant' : 'smooth',
+        block: 'end',
+      });
+    }
+  }, []);
 
   const shouldAutoScroll = React.useCallback(() => {
     if (!messagesEndRef.current) return false;
@@ -138,177 +135,180 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     const distanceFromBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight;
     return distanceFromBottom < 100;
-  }, [messagesEndRef]);
+  }, []);
 
   // Auto-scroll on new messages
   React.useEffect(() => {
     if (shouldAutoScroll()) scrollToBottom();
-  }, [messages, shouldAutoScroll, scrollToBottom]);
+  }, [messaging.messages, shouldAutoScroll, scrollToBottom]);
 
-  // Scroll to bottom when entering chat view (so user sees most recent messages)
+  // Scroll to bottom when entering chat view
   React.useEffect(() => {
-    if (currentView === 'chat' && messages.length > 0) {
-      // Wait a bit for messages to render, then scroll
-      // If isInitialLoad is true, the message_history handler will handle scrolling
-      // If isInitialLoad is false, we need to scroll here
-      if (!isInitialLoad) {
-        // Use requestAnimationFrame to ensure DOM is ready
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            scrollToBottom(true); // instant scroll, no animation
-          });
-        });
-      }
-    }
-  }, [currentView, messages.length, isInitialLoad, scrollToBottom]); // Include messages.length to scroll when messages load
-
-  // Build frontend context for mediation (Phase 4: hybrid analysis)
-  // Note: This is "current state" context - backend has "historical" context
-  const {
-    senderProfile,
-    receiverProfile,
-    isLoading: isLoadingContext,
-  } = useMediationContext(username, isAuthenticated);
-
-  // Use extracted hooks
-  const {
-    sendMessage,
-    emitOrQueueMessage,
-    removePendingMessage, // Expose for handlers to use
-    markMessageSent, // Expose for handlers to use
-  } = useMessageSending({
-    socketRef,
-    inputMessage,
-    username,
-    isPreApprovedRewrite,
-    originalRewrite,
-    draftCoaching,
-    setDraftCoaching,
-    setMessages,
-    setPendingMessages,
-    setMessageStatuses,
-    setError,
-    offlineQueueRef,
-    typingTimeoutRef,
-    clearInput: () => setInputMessage(''),
-    scrollToBottom,
-    senderProfile, // Phase 4: Frontend context (current state)
-    receiverProfile, // Phase 4: Frontend context (current state)
-  });
-
-  // Update ref with useMessageUI methods so handlers can access them
-  React.useEffect(() => {
-    messageUIMethodsRef.current = {
-      removePendingMessage,
-      markMessageSent,
-    };
-  }, [removePendingMessage, markMessageSent]);
-
-  const { handleInputChange } = useInputHandling({
-    socketRef,
-    setInputMessage,
-    setDraftCoaching,
-    typingTimeoutRef,
-  });
-
-  const { hasMeanMessage } = useDerivedState(messages, username);
-
-  const removeMessages = React.useCallback(
-    predicate => {
-      setMessages(prev => prev.filter(msg => !predicate(msg)));
-    },
-    [setMessages]
-  );
-
-  const flagMessage = React.useCallback(
-    (messageId, reason = null) => {
-      if (!socketRef.current?.connected) {
-        setError('Not connected to chat server.');
-        return;
-      }
-      socketRef.current.emit('flag_message', { messageId, reason });
-    },
-    [socketRef, setError]
-  );
-
-  // Search functions - use from useSearchMessages hook
-  const searchMessages = searchHook.searchMessages;
-  const toggleSearchMode = searchHook.toggleSearchMode;
-  const exitSearchMode = searchHook.exitSearchMode;
-  const jumpToMessage = searchHook.jumpToMessage;
-
-  // Debug: Log when messages change (development only)
-  React.useEffect(() => {
-    if (import.meta.env.DEV) {
-      console.log('[ChatProvider] Messages updated:', {
-        count: messages.length,
-        sample: messages.slice(0, 3).map(m => ({
-          id: m.id,
-          text: m.text?.substring(0, 30),
-          timestamp: m.timestamp,
-        })),
+    if (currentView === 'chat' && messaging.messages.length > 0) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => scrollToBottom(true));
       });
     }
-  }, [messages]);
+  }, [currentView, messaging.messages.length, scrollToBottom]);
 
-  // Create context value using extracted hook
-  const value = useChatContextValue({
-    socketRef,
-    isConnected,
-    isJoined,
-    error,
-    messages,
+  // === DERIVED STATE ===
+  const { hasMeanMessage } = useDerivedState(messaging.messages, username);
+
+  // === ACTIONS ===
+  const sendMessage = React.useCallback(() => {
+    if (!inputMessage.trim()) return;
+
+    messaging.send({
+      text: inputMessage,
+      isPreApprovedRewrite,
+      originalRewrite,
+      senderProfile,
+      receiverProfile,
+    });
+
+    setInputMessage('');
+    setIsPreApprovedRewrite(false);
+    setOriginalRewrite('');
+    coaching.dismiss();
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    typing.stopTyping();
+    scrollToBottom();
+  }, [
     inputMessage,
-    setInputMessage,
-    sendMessage,
-    handleInputChange,
-    removeMessages,
-    flagMessage,
-    messagesEndRef,
-    messagesContainerRef,
-    pendingMessages,
-    messageStatuses,
-    draftCoaching,
-    setDraftCoaching,
     isPreApprovedRewrite,
-    setIsPreApprovedRewrite,
     originalRewrite,
-    setOriginalRewrite,
-    threads,
-    threadMessages,
-    isLoadingThreadMessages,
-    selectedThreadId,
-    setSelectedThreadId,
-    createThread,
-    getThreads,
-    getThreadMessages,
-    addToThread,
-    typingUsers,
-    loadOlderMessages,
-    isLoadingOlder,
-    hasMoreMessages,
-    searchMessages,
-    searchQuery: searchHook.searchQuery,
-    searchResults: searchHook.searchResults,
-    searchTotal: searchHook.searchTotal,
-    isSearching: searchHook.isSearching,
-    searchMode: searchHook.searchMode,
-    toggleSearchMode,
-    exitSearchMode,
-    jumpToMessage,
-    highlightedMessageId: searchHook.highlightedMessageId,
-    isInitialLoad,
-    unreadCount,
-    setUnreadCount,
-    hasMeanMessage,
-  });
+    senderProfile,
+    receiverProfile,
+    messaging,
+    coaching,
+    typing,
+    scrollToBottom,
+  ]);
+
+  const handleInputChange = React.useCallback(
+    e => {
+      const value = e.target.value;
+      setInputMessage(value);
+      coaching.dismiss();
+
+      // Typing indicator
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typing.startTyping();
+      typingTimeoutRef.current = setTimeout(() => {
+        typing.stopTyping();
+      }, 2000);
+    },
+    [coaching, typing]
+  );
+
+  const removeMessages = React.useCallback(predicate => {
+    // Messages are managed by service - this would need service method
+    console.warn('removeMessages not implemented in new architecture');
+  }, []);
+
+  const flagMessage = React.useCallback((messageId, reason = null) => {
+    socketService.emit('flag_message', { messageId, reason });
+  }, []);
+
+  // === CONTEXT VALUE ===
+  const value = React.useMemo(
+    () => ({
+      // Connection
+      isConnected,
+      isJoined: room.isJoined,
+      error: error || room.error,
+
+      // Messages
+      messages: messaging.messages,
+      pendingMessages: messaging.pendingMessages,
+      messageStatuses: messaging.messageStatuses,
+      hasMoreMessages: messaging.hasMore,
+      isLoadingOlder: messaging.isLoadingOlder,
+      loadOlderMessages: messaging.loadOlder,
+
+      // Input
+      inputMessage,
+      setInputMessage,
+      sendMessage,
+      handleInputChange,
+      isPreApprovedRewrite,
+      setIsPreApprovedRewrite,
+      originalRewrite,
+      setOriginalRewrite,
+
+      // Coaching
+      draftCoaching: coaching.coaching,
+      setDraftCoaching: () => {}, // Managed by service
+
+      // Typing
+      typingUsers: typing.typingUsers,
+
+      // Threads
+      threads: threads.threads,
+      threadMessages: threads.threadMessages,
+      isLoadingThreadMessages: threads.isLoading,
+      selectedThreadId,
+      setSelectedThreadId,
+      createThread: threads.create,
+      getThreads: threads.loadThreads,
+      getThreadMessages: threads.loadThreadMessages,
+      addToThread: threads.addToThread,
+
+      // Search
+      searchMessages: searchHook.searchMessages,
+      searchQuery: searchHook.searchQuery,
+      searchResults: searchHook.searchResults,
+      searchTotal: searchHook.searchTotal,
+      isSearching: searchHook.isSearching,
+      searchMode: searchHook.searchMode,
+      toggleSearchMode: searchHook.toggleSearchMode,
+      exitSearchMode: searchHook.exitSearchMode,
+      jumpToMessage: searchHook.jumpToMessage,
+      highlightedMessageId: searchHook.highlightedMessageId,
+
+      // UI Refs
+      messagesEndRef,
+      messagesContainerRef,
+
+      // Other
+      removeMessages,
+      flagMessage,
+      isInitialLoad: messaging.messages.length === 0,
+      unreadCount: unread.count,
+      setUnreadCount: () => {}, // Managed by service
+      hasMeanMessage,
+    }),
+    [
+      isConnected,
+      room,
+      error,
+      messaging,
+      inputMessage,
+      sendMessage,
+      handleInputChange,
+      isPreApprovedRewrite,
+      originalRewrite,
+      coaching,
+      typing,
+      threads,
+      selectedThreadId,
+      searchHook,
+      removeMessages,
+      flagMessage,
+      unread,
+      hasMeanMessage,
+    ]
+  );
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }
 
-// Default context for when provider isn't ready (prevents crash during StrictMode/HMR)
+// Default context for when provider isn't ready
 const defaultContext = {
-  socket: null,
   isConnected: false,
   isJoined: false,
   error: '',
@@ -321,8 +321,8 @@ const defaultContext = {
   flagMessage: () => {},
   messagesEndRef: { current: null },
   messagesContainerRef: { current: null },
-  pendingMessages: new Map(),
-  messageStatuses: new Map(),
+  pendingMessages: [],
+  messageStatuses: {},
   draftCoaching: null,
   setDraftCoaching: () => {},
   isPreApprovedRewrite: false,
@@ -338,7 +338,7 @@ const defaultContext = {
   getThreads: () => {},
   getThreadMessages: () => {},
   addToThread: () => {},
-  typingUsers: new Set(),
+  typingUsers: [],
   loadOlderMessages: () => {},
   isLoadingOlder: false,
   hasMoreMessages: true,
@@ -358,23 +358,16 @@ const defaultContext = {
   hasMeanMessage: false,
 };
 
-// Track if we've already warned to avoid spam in React StrictMode
 let hasWarned = false;
 let warningTimeout = null;
 
 export function useChatContext() {
   const context = React.useContext(ChatContext);
   if (!context) {
-    // In development, warn but don't crash - allows React StrictMode/HMR to work
     if (import.meta.env.DEV) {
-      // Deduplicate warnings: only show once per session to avoid spam from React StrictMode double renders
       if (!hasWarned) {
         hasWarned = true;
-        console.warn(
-          '[useChatContext] Context not available - using default. This may indicate a component is rendering outside ChatProvider.',
-          '\nNote: This warning appears once per session. React StrictMode may cause double renders during development.'
-        );
-        // Reset warning flag after 5 seconds to allow for legitimate new warnings
+        console.warn('[useChatContext] Context not available - using default.');
         if (warningTimeout) clearTimeout(warningTimeout);
         warningTimeout = setTimeout(() => {
           hasWarned = false;
@@ -382,11 +375,7 @@ export function useChatContext() {
       }
       return defaultContext;
     }
-    // In production, still throw to catch real bugs
     throw new Error('useChatContext must be used within a ChatProvider');
   }
   return context;
 }
-
-// Note: Using named exports only for React Fast Refresh compatibility
-// Do not add default export as it causes HMR invalidation

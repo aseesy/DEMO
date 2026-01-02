@@ -20,6 +20,9 @@ function setupSockets(io, services) {
   // CRITICAL: Register Socket.io middleware BEFORE connection handler
   // Middleware runs during handshake processing, before 'connection' event fires
   console.log('[setupSockets] Registering Socket.io middleware...');
+  console.log('[setupSockets] io.engine exists:', !!io.engine);
+  console.log('[setupSockets] io._nsps:', [...io._nsps.keys()]);
+
   io.use((socket, next) => {
     console.log(`[setupSockets] ✅✅✅ TEST Middleware CALLED for socket ${socket.id} ✅✅✅`);
     console.log(`[setupSockets] Handshake:`, {

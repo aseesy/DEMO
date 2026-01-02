@@ -127,7 +127,6 @@ function loadServices() {
     auth: require('./auth'),
     messageStore: require('./messageStore'),
     roomManager: require('./roomManager'),
-    connectionManager: require('./connectionManager'),
     emailService: require('./emailService'),
     dbSafe: require('./dbSafe'),
     FigmaService: require('./figmaService'),

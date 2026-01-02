@@ -42,15 +42,25 @@ class SocketService {
    * @returns {boolean} - Whether connection was initiated
    */
   connect(token) {
+    console.log('[SocketService] connect() called, token:', token ? 'present' : 'missing');
+
     if (!token) {
       console.warn('[SocketService] Cannot connect without auth token');
       return false;
     }
 
-    // Already connected or connecting
+    // Already connected
     if (this.socket?.connected) {
       console.log('[SocketService] Already connected:', this.socket.id);
       return true;
+    }
+
+    // If we have a socket that's not connected, clean it up first
+    if (this.socket) {
+      console.log('[SocketService] Cleaning up old disconnected socket');
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
+      this.socket = null;
     }
 
     if (this.connectionState === 'connecting') {
@@ -61,28 +71,47 @@ class SocketService {
     this.setConnectionState('connecting');
 
     const socketUrl = this.getSocketUrl();
-    const socketUrlWithAuth = `${socketUrl}?token=${encodeURIComponent(token)}`;
-
     console.log('[SocketService] 🔌 Connecting to:', socketUrl);
+    console.log(
+      '[SocketService] Current location:',
+      typeof window !== 'undefined' ? window.location.href : 'SSR'
+    );
 
     try {
-      this.socket = io(socketUrlWithAuth, {
-        transports: import.meta.env.DEV ? ['polling'] : ['polling', 'websocket'],
+      // In dev mode, use polling only to avoid session race conditions
+      // In production, start with polling and upgrade to websocket
+      const isDev = import.meta.env.DEV;
+
+      this.socket = io(socketUrl, {
+        transports: isDev ? ['polling'] : ['polling', 'websocket'],
         reconnection: true,
         reconnectionDelay: 2000,
         reconnectionDelayMax: 10000,
         reconnectionAttempts: 5,
         timeout: 20000,
-        forceNew: false,
-        upgrade: !import.meta.env.DEV,
+        forceNew: true, // Force new connection to avoid stale socket issues
+        upgrade: !isDev, // Only upgrade to websocket in production
         autoConnect: true,
-        query: { token },
         auth: { token },
-        ...(import.meta.env.DEV
-          ? {}
-          : {
-              extraHeaders: { Authorization: `Bearer ${token}` },
-            }),
+        // Also pass in query for backwards compatibility with server middleware
+        query: { token },
+      });
+
+      console.log('[SocketService] Socket created, id:', this.socket.id);
+      console.log('[SocketService] Socket.io manager:', this.socket.io);
+
+      // Log transport events for debugging
+      this.socket.io.on('open', () => {
+        console.log('[SocketService] 🔓 Transport open');
+      });
+      this.socket.io.on('close', reason => {
+        console.log('[SocketService] 🔒 Transport closed:', reason);
+      });
+      this.socket.io.on('packet', packet => {
+        console.log('[SocketService] 📦 Packet received:', packet.type);
+      });
+      this.socket.io.on('error', err => {
+        console.log('[SocketService] ⚠️ Transport error:', err);
       });
 
       this.setupInternalHandlers();
@@ -260,13 +289,24 @@ class SocketService {
   }
 }
 
-// Singleton instance
-export const socketService = new SocketService();
+// Singleton instance - check for existing instance from HMR
+let socketService;
+
+if (typeof window !== 'undefined' && window.__SOCKET_SERVICE__) {
+  // Reuse existing instance from HMR to avoid duplicate sockets
+  socketService = window.__SOCKET_SERVICE__;
+  console.log('[SocketService] Reusing existing instance from HMR');
+} else {
+  socketService = new SocketService();
+  console.log('[SocketService] Created new instance');
+}
 
 // Debug: Expose on window in development
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
   window.__SOCKET_SERVICE__ = socketService;
   console.log('[SocketService] Debug: Available at window.__SOCKET_SERVICE__');
 }
+
+export { socketService };
 
 export default socketService;

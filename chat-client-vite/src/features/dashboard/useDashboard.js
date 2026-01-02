@@ -85,7 +85,7 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
   const chatContext = useChatContext();
 
   // Extract thread-related state from ChatContext
-  // ChatContext provides threads from useChatSocket which manages the socket connection
+  // ChatContext provides threads from service-based architecture (ThreadService)
   const threads = chatContext?.threads || [];
   const threadMessages = chatContext?.threadMessages || {};
   const isLoadingThreadMessages = chatContext?.isLoadingThreadMessages || false;

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { socketService } from '../../services/socket/index.js';
 
 /**
@@ -90,19 +90,35 @@ export function useSocketEmit() {
  * @param {Function} options.getToken - Function to get auth token
  */
 export function useSocketConnection({ isAuthenticated, getToken }) {
-  useEffect(() => {
-    if (isAuthenticated) {
-      const token = getToken();
-      if (token) {
-        socketService.connect(token);
-      }
-    } else {
-      socketService.disconnect();
-    }
+  console.log('[useSocketConnection] Hook called with isAuthenticated:', isAuthenticated);
 
-    // Don't disconnect on unmount - service manages its own lifecycle
-    // Only disconnect when auth state changes to false
-  }, [isAuthenticated, getToken]);
+  // Track if we've already initiated connection
+  const hasConnectedRef = useRef(false);
+  const wasAuthenticatedRef = useRef(false);
+
+  // Connect directly during render if authenticated and not already connected
+  if (isAuthenticated && !hasConnectedRef.current) {
+    const token = getToken();
+    console.log('[useSocketConnection] Token check:', token ? 'present' : 'missing');
+    if (token) {
+      console.log('[useSocketConnection] Initiating socket connection...');
+      hasConnectedRef.current = true;
+      wasAuthenticatedRef.current = true;
+      // Connect in a microtask to avoid blocking render
+      Promise.resolve().then(() => {
+        console.log('[useSocketConnection] Calling socketService.connect()');
+        socketService.connect(token);
+      });
+    }
+  }
+
+  // Handle logout - disconnect when auth changes from true to false
+  if (!isAuthenticated && wasAuthenticatedRef.current) {
+    console.log('[useSocketConnection] Auth lost, disconnecting');
+    wasAuthenticatedRef.current = false;
+    hasConnectedRef.current = false;
+    socketService.disconnect();
+  }
 }
 
 export default {

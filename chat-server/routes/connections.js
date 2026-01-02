@@ -12,7 +12,17 @@ const express = require('express');
 const router = express.Router();
 
 const dbSafe = require('../dbSafe');
-const connectionManager = require('../connectionManager');
+const {
+  validateEmail,
+  emailExists,
+  getUserByEmail,
+} = require('../connectionManager/emailValidation');
+const {
+  generateInviteToken,
+  validateConnectionToken,
+} = require('../connectionManager/tokenService');
+const { createPendingConnection } = require('../connectionManager/pendingConnections');
+const { acceptPendingConnection } = require('../connectionManager/connectionAcceptance');
 const emailService = require('../emailService');
 const { getPasswordError, getPasswordRequirements } = require('../libs/password-validator');
 const {
@@ -124,7 +134,7 @@ router.post('/invite', async (req, res) => {
     }
 
     // Validate email format
-    if (!connectionManager.validateEmail(email)) {
+    if (!validateEmail(email)) {
       return res.status(400).json({ error: 'Invalid email format' });
     }
 
@@ -135,11 +145,11 @@ router.post('/invite', async (req, res) => {
     }
 
     // Check if email already exists in database
-    const emailExists = await connectionManager.emailExists(email);
-    const inviteeUser = emailExists ? await connectionManager.getUserByEmail(email) : null;
+    const emailExistsResult = await emailExists(email);
+    const inviteeUser = emailExistsResult ? await getUserByEmail(email) : null;
 
     // Create pending connection
-    const connection = await connectionManager.createPendingConnection(inviter.id, email);
+    const connection = await createPendingConnection(inviter.id, email);
 
     // Send appropriate email based on whether user exists
     if (emailExists && inviteeUser) {
@@ -161,10 +171,10 @@ router.post('/invite', async (req, res) => {
 
     res.json({
       success: true,
-      message: emailExists
+      message: emailExistsResult
         ? 'Connection request sent to existing user'
         : 'Invitation email sent to new user',
-      isExistingUser: emailExists,
+      isExistingUser: emailExistsResult,
     });
   } catch (error) {
     console.error('Error sending invitation:', error);
@@ -184,7 +194,7 @@ router.get('/join', async (req, res) => {
       return res.status(400).json({ error: 'Token is required' });
     }
 
-    const connection = await connectionManager.validateConnectionToken(token);
+    const connection = await validateConnectionToken(token);
 
     if (!connection) {
       return res.status(404).json({
@@ -194,7 +204,7 @@ router.get('/join', async (req, res) => {
     }
 
     // Check if invitee email has an account
-    const inviteeUser = await connectionManager.getUserByEmail(connection.inviteeEmail);
+    const inviteeUser = await getUserByEmail(connection.inviteeEmail);
 
     res.json({
       valid: true,
@@ -221,7 +231,7 @@ router.post('/join/accept', async (req, res) => {
     }
 
     // Validate token
-    const connection = await connectionManager.validateConnectionToken(token);
+    const connection = await validateConnectionToken(token);
     if (!connection) {
       return res.status(404).json({ error: 'Invalid or expired invitation token' });
     }
@@ -246,14 +256,14 @@ router.post('/join/accept', async (req, res) => {
     }
 
     // Accept connection
-    const result = await connectionManager.acceptPendingConnection(token, user.id);
+    const result = await acceptPendingConnection(token, user.id);
 
     // Auto-complete onboarding tasks for both users after accepting invite
     if (autoCompleteOnboardingTasks) {
       try {
         await autoCompleteOnboardingTasks(user.id);
         // Also complete tasks for the inviter
-        const connectionRefetch = await connectionManager.validateConnectionToken(token);
+        const connectionRefetch = await validateConnectionToken(token);
         if (connectionRefetch && connectionRefetch.inviterId) {
           await autoCompleteOnboardingTasks(connectionRefetch.inviterId);
         }
@@ -299,7 +309,7 @@ router.post('/auth/signup-with-token', async (req, res) => {
     }
 
     // Validate token
-    const connection = await connectionManager.validateConnectionToken(token);
+    const connection = await validateConnectionToken(token);
     if (!connection) {
       return res.status(404).json({ error: 'Invalid or expired invitation token' });
     }
@@ -308,7 +318,7 @@ router.post('/auth/signup-with-token', async (req, res) => {
     const user = await auth.createUser(username, password, context || {}, connection.inviteeEmail);
 
     // Immediately accept the connection
-    await connectionManager.acceptPendingConnection(token, user.id);
+    await acceptPendingConnection(token, user.id);
 
     res.json({
       success: true,
