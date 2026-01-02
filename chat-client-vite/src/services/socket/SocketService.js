@@ -1,5 +1,18 @@
 import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../../config.js';
+import { SOCKET_URL, API_BASE_URL } from '../../config.js';
+
+// DEBUG: Helper to send logs to server (so we can see them)
+const debugToServer = async (message, data = {}) => {
+  try {
+    await fetch(`${API_BASE_URL}/api/debug-log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, data, timestamp: new Date().toISOString() }),
+    });
+  } catch (e) {
+    // Ignore errors
+  }
+};
 
 /**
  * SocketService - Infrastructure layer for Socket.io connection
@@ -20,6 +33,10 @@ import { SOCKET_URL } from '../../config.js';
  */
 class SocketService {
   constructor() {
+    console.log('[SocketService] ========================================');
+    console.log('[SocketService] CONSTRUCTOR CALLED at', new Date().toISOString());
+    console.log('[SocketService] ========================================');
+    debugToServer('SocketService CONSTRUCTOR', { timestamp: new Date().toISOString() });
     this.socket = null;
     this.subscribers = new Map(); // event -> Set<callback>
     this.connectionState = 'disconnected'; // disconnected | connecting | connected
@@ -42,7 +59,16 @@ class SocketService {
    * @returns {boolean} - Whether connection was initiated
    */
   connect(token) {
-    console.log('[SocketService] connect() called, token:', token ? 'present' : 'missing');
+    console.log('[SocketService] ========== CONNECT CALLED ==========');
+    console.log('[SocketService] Token:', token ? `present (${token.substring(0, 20)}...)` : 'MISSING');
+    console.log('[SocketService] Current state:', this.connectionState);
+    console.log('[SocketService] Socket exists:', !!this.socket);
+    console.log('[SocketService] Socket connected:', this.socket?.connected);
+    debugToServer('SocketService CONNECT CALLED', {
+      hasToken: !!token,
+      state: this.connectionState,
+      socketExists: !!this.socket
+    });
 
     if (!token) {
       console.warn('[SocketService] Cannot connect without auth token');
@@ -82,42 +108,70 @@ class SocketService {
       // In production, start with polling and upgrade to websocket
       const isDev = import.meta.env.DEV;
 
+      // Use polling-first in dev to avoid WebSocket upgrade issues with allowUpgrades:false
+      const transports = isDev ? ['polling'] : ['polling', 'websocket'];
+
+      console.log('[SocketService] ========================================');
+      console.log('[SocketService] CREATING SOCKET at', new Date().toISOString());
+      console.log('[SocketService] URL:', socketUrl);
+      console.log('[SocketService] Transports:', transports);
+      console.log('[SocketService] Token length:', token?.length);
+      console.log('[SocketService] io function type:', typeof io);
+      console.log('[SocketService] ========================================');
+
+      if (typeof io !== 'function') {
+        console.error('[SocketService] ❌ io is not a function! Socket.io-client may not be loaded correctly');
+        this.setConnectionState('disconnected');
+        return false;
+      }
+
       this.socket = io(socketUrl, {
-        transports: isDev ? ['polling'] : ['polling', 'websocket'],
+        transports,
         reconnection: true,
         reconnectionDelay: 2000,
         reconnectionDelayMax: 10000,
         reconnectionAttempts: 5,
         timeout: 20000,
         forceNew: true, // Force new connection to avoid stale socket issues
-        upgrade: !isDev, // Only upgrade to websocket in production
         autoConnect: true,
+        withCredentials: true, // Send cookies/credentials for CORS
         auth: { token },
         // Also pass in query for backwards compatibility with server middleware
         query: { token },
       });
 
-      console.log('[SocketService] Socket created, id:', this.socket.id);
-      console.log('[SocketService] Socket.io manager:', this.socket.io);
+      console.log('[SocketService] Socket created successfully!');
+      console.log('[SocketService] Socket object:', this.socket);
+      console.log('[SocketService] Socket id:', this.socket?.id);
+      console.log('[SocketService] Socket manager:', this.socket?.io);
+      console.log('[SocketService] Socket connected:', this.socket?.connected);
 
       // Log transport events for debugging
-      this.socket.io.on('open', () => {
-        console.log('[SocketService] 🔓 Transport open');
-      });
-      this.socket.io.on('close', reason => {
-        console.log('[SocketService] 🔒 Transport closed:', reason);
-      });
-      this.socket.io.on('packet', packet => {
-        console.log('[SocketService] 📦 Packet received:', packet.type);
-      });
-      this.socket.io.on('error', err => {
-        console.log('[SocketService] ⚠️ Transport error:', err);
-      });
+      if (this.socket?.io) {
+        this.socket.io.on('open', () => {
+          console.log('[SocketService] 🔓 Transport open');
+        });
+        this.socket.io.on('close', reason => {
+          console.log('[SocketService] 🔒 Transport closed:', reason);
+        });
+        this.socket.io.on('packet', packet => {
+          console.log('[SocketService] 📦 Packet received:', packet.type);
+        });
+        this.socket.io.on('error', err => {
+          console.log('[SocketService] ⚠️ Transport error:', err);
+        });
+      } else {
+        console.error('[SocketService] ❌ Socket.io manager not available');
+      }
 
       this.setupInternalHandlers();
+      console.log('[SocketService] ✅ Internal handlers set up');
       return true;
     } catch (err) {
-      console.error('[SocketService] ❌ Connection failed:', err);
+      console.error('[SocketService] ❌ Connection failed with error:', err);
+      console.error('[SocketService] Error name:', err.name);
+      console.error('[SocketService] Error message:', err.message);
+      console.error('[SocketService] Error stack:', err.stack);
       this.setConnectionState('disconnected');
       return false;
     }
@@ -162,8 +216,17 @@ class SocketService {
 
       if (!isWebSocketError) {
         console.log('[SocketService] ⚠️ Connection error:', error.message);
+        // Reset state to allow retry (socket.io handles reconnection internally)
+        this.setConnectionState('disconnected');
         this.notifySubscribers('connect_error', { error: error.message });
       }
+    });
+
+    // Handle when all reconnection attempts fail
+    this.socket.io.on('reconnect_failed', () => {
+      console.log('[SocketService] ❌ All reconnection attempts failed');
+      this.setConnectionState('disconnected');
+      this.notifySubscribers('reconnect_failed', {});
     });
 
     this.socket.io.on('reconnect_attempt', attempt => {
@@ -293,9 +356,21 @@ class SocketService {
 let socketService;
 
 if (typeof window !== 'undefined' && window.__SOCKET_SERVICE__) {
-  // Reuse existing instance from HMR to avoid duplicate sockets
-  socketService = window.__SOCKET_SERVICE__;
-  console.log('[SocketService] Reusing existing instance from HMR');
+  // HMR: Clean up old socket completely and create fresh instance
+  const oldService = window.__SOCKET_SERVICE__;
+  console.log('[SocketService] HMR detected - cleaning up old socket');
+
+  // Fully disconnect and clean up old socket
+  if (oldService.socket) {
+    console.log('[SocketService] Destroying old socket:', oldService.socket.id);
+    oldService.socket.removeAllListeners();
+    oldService.socket.disconnect();
+    oldService.socket = null;
+  }
+
+  // Create fresh instance for clean state
+  socketService = new SocketService();
+  console.log('[SocketService] Created fresh instance after HMR cleanup');
 } else {
   socketService = new SocketService();
   console.log('[SocketService] Created new instance');

@@ -10,6 +10,8 @@ const { getRoomUsers } = require('./connectionOperations/sessionManagement');
 const { maybeAnalyzeRoomOnJoin } = require('./threadHandler');
 
 function registerConnectionHandlers(socket, io, services) {
+  // Phase 2: No longer receives activeUsers/messageHistory
+  // Services manage their own state via UserSessionService
   const { userSessionService } = services;
 
   socket.on('join', async ({ email, username }) => {
@@ -66,12 +68,12 @@ function registerConnectionHandlers(socket, io, services) {
     }
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     const user = userSessionService.getUserBySocketId(socket.id);
     if (!user) return;
 
     const { roomId } = user;
-    userSessionService.disconnectUser(socket.id);
+    await userSessionService.disconnectUser(socket.id);
 
     const roomUsers = getRoomUsers(userSessionService, roomId);
     io.to(roomId).emit('user_left', { users: roomUsers });

@@ -11,6 +11,8 @@
 // Embedding generation is handled by ThreadCreated/SubThreadCreated event listeners
 
 function registerThreadHandlers(socket, io, services) {
+  // Phase 2: No longer receives activeUsers
+  // Services manage their own state via UserSessionService
   const { threadManager, userSessionService } = services;
 
   // create_thread handler - emits delta (new thread only)

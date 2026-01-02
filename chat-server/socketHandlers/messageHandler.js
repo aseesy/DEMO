@@ -28,6 +28,7 @@ const {
   toggleReaction,
 } = require('./messageOperations');
 const { verifyRoomMembership, emitSocketError, SocketErrorCodes } = require('./socketMiddleware');
+const { wrapSocketHandler } = require('./errorBoundary');
 
 // Auto-threading service for semantic thread assignment
 let autoThreading = null;
@@ -38,48 +39,88 @@ try {
 }
 
 function registerMessageHandlers(socket, io, services) {
+  // Phase 2: No longer receives activeUsers/messageHistory
+  // Services manage their own state via UserSessionService
   const { messageStore, dbSafe, dbPostgres, userSessionService } = services;
 
   /**
    * Helper to add to message history
-   * Uses messageStore for persistence - no in-memory cache needed
+   * Uses MessageService for persistence - no in-memory cache needed
    */
   async function addToHistory(message, roomId) {
-    if (messageStore) {
-      try {
-        const messageToSave = { ...message, roomId };
-        console.log('[addToHistory] Saving message:', {
-          id: messageToSave.id,
-          username: messageToSave.username,
-          text: messageToSave.text?.substring(0, 50),
-          type: messageToSave.type,
-          private: messageToSave.private,
-          flagged: messageToSave.flagged,
-          roomId: messageToSave.roomId,
-        });
-        await messageStore.saveMessage(messageToSave);
-        console.log('[addToHistory] Message saved successfully');
+    try {
+      // Use new MessageService if available, fallback to messageStore
+      const MessageService = require('../src/services/messages/messageService');
+      const messageService = new MessageService();
+      
+      const userEmail = message.sender?.email || message.user_email || message.email || message.username;
+      if (!userEmail) {
+        console.error('[addToHistory] No user email found in message:', message);
+        return;
+      }
 
-        // Auto-threading: Process message in background (non-blocking)
-        // Only process regular user messages, not system/AI messages
-        if (autoThreading && message.type !== 'system' && message.type !== 'ai_intervention') {
-          setImmediate(() => {
-            autoThreading
-              .processMessageForThreading(messageToSave, { io })
-              .catch(err => console.error('[AutoThreading] Background error:', err.message));
-          });
+      const messageToSave = {
+        id: message.id,
+        roomId: roomId || message.roomId,
+        text: message.text || '',
+        type: message.type || 'user',
+        threadId: message.threadId || message.thread_id || null,
+        threadSequence: message.threadSequence || message.thread_sequence || null,
+        socketId: message.socketId || message.socket_id || null,
+        private: message.private || false,
+        flagged: message.flagged || false,
+        metadata: {
+          validation: message.validation || message.metadata?.validation || null,
+          tip1: message.tip1 || message.metadata?.tip1 || null,
+          tip2: message.tip2 || message.metadata?.tip2 || null,
+          rewrite: message.rewrite || message.metadata?.rewrite || null,
+          originalMessage: message.originalMessage || message.metadata?.originalMessage || null,
+        },
+        reactions: message.reactions || {},
+        user_flagged_by: message.user_flagged_by || [],
+        timestamp: message.timestamp || new Date().toISOString(),
+      };
+
+      console.log('[addToHistory] Saving message via MessageService:', {
+        id: messageToSave.id,
+        userEmail,
+        text: messageToSave.text?.substring(0, 50),
+        type: messageToSave.type,
+        roomId: messageToSave.roomId,
+      });
+
+      await messageService.createMessage(messageToSave, userEmail);
+      console.log('[addToHistory] Message saved successfully via MessageService');
+
+      // Auto-threading: Process message in background (non-blocking)
+      // Only process regular user messages, not system/AI messages
+      if (autoThreading && message.type !== 'system' && message.type !== 'ai_intervention') {
+        setImmediate(() => {
+          autoThreading
+            .processMessageForThreading(messageToSave, { io })
+            .catch(err => console.error('[AutoThreading] Background error:', err.message));
+        });
+      }
+    } catch (err) {
+      console.error('❌ Error saving message via MessageService:', err);
+      // Fallback to messageStore if available
+      if (messageStore) {
+        try {
+          const messageToSave = { ...message, roomId };
+          await messageStore.saveMessage(messageToSave);
+          console.log('[addToHistory] Fallback: saved via messageStore');
+        } catch (fallbackErr) {
+          console.error('❌ Fallback messageStore also failed:', fallbackErr);
+          console.error('Message data:', JSON.stringify(message, null, 2));
         }
-      } catch (err) {
-        console.error('❌ Error saving message to database:', err);
+      } else {
         console.error('Message data:', JSON.stringify(message, null, 2));
       }
-    } else {
-      console.warn('[addToHistory] messageStore is not available');
     }
   }
 
-  // send_message handler
-  socket.on('send_message', async data => {
+  // send_message handler - wrapped with error boundary and retry
+  socket.on('send_message', wrapSocketHandler(async data => {
     // Step 1: Validate user is active
     const userValidation = validateActiveUser(userSessionService, socket.id);
     if (!userValidation.valid) {
@@ -179,7 +220,7 @@ function registerMessageHandlers(socket, io, services) {
         });
       }
     }
-  });
+  }, 'send_message', { retry: true }));
 
   // edit_message handler
   socket.on('edit_message', async ({ messageId, text }) => {
@@ -217,20 +258,32 @@ function registerMessageHandlers(socket, io, services) {
       return;
     }
 
-    // Step 4: Update message in database
+    // Step 4: Update message in database using MessageService
     try {
-      await dbSafe.safeUpdate(
-        'messages',
-        {
-          text: textValidation.cleanText,
-          edited: 1,
-          edited_at: new Date().toISOString(),
-        },
-        { id: messageId }
-      );
+      const MessageService = require('../src/services/messages/messageService');
+      const messageService = new MessageService();
+      const userEmail = user.email || user.username;
+      
+      await messageService.updateMessage(messageId, {
+        text: textValidation.cleanText,
+      }, userEmail);
     } catch (error) {
-      emitError(socket, 'Failed to edit message.', error, 'edit_message:update');
-      return;
+      console.error('[edit_message] MessageService failed, falling back to dbSafe:', error.message);
+      // Fallback to direct database update
+      try {
+        await dbSafe.safeUpdate(
+          'messages',
+          {
+            text: textValidation.cleanText,
+            edited: 1,
+            edited_at: new Date().toISOString(),
+          },
+          { id: messageId }
+        );
+      } catch (fallbackError) {
+        emitError(socket, 'Failed to edit message.', fallbackError, 'edit_message:update');
+        return;
+      }
     }
 
     // Step 5: Broadcast edited message
@@ -265,19 +318,29 @@ function registerMessageHandlers(socket, io, services) {
       return;
     }
 
-    // Step 3: Mark message as deleted
+    // Step 3: Delete message using MessageService
     try {
-      await dbSafe.safeUpdate(
-        'messages',
-        {
-          deleted: 1,
-          deleted_at: new Date().toISOString(),
-        },
-        { id: messageId }
-      );
+      const MessageService = require('../src/services/messages/messageService');
+      const messageService = new MessageService();
+      const userEmail = user.email || user.username;
+      
+      await messageService.deleteMessage(messageId, userEmail);
     } catch (error) {
-      emitError(socket, 'Failed to delete message.', error, 'delete_message:update');
-      return;
+      console.error('[delete_message] MessageService failed, falling back to dbSafe:', error.message);
+      // Fallback to direct database update (soft delete)
+      try {
+        await dbSafe.safeUpdate(
+          'messages',
+          {
+            deleted: 1,
+            deleted_at: new Date().toISOString(),
+          },
+          { id: messageId }
+        );
+      } catch (fallbackError) {
+        emitError(socket, 'Failed to delete message.', fallbackError, 'delete_message:update');
+        return;
+      }
     }
 
     // Step 4: Broadcast deletion
@@ -291,44 +354,58 @@ function registerMessageHandlers(socket, io, services) {
     if (!userValidation.valid || !emoji) return;
     const { user } = userValidation;
 
-    // Step 2: Get current reactions
-    let currentReactions;
+    // Step 2: Add reaction using MessageService
     try {
-      const result = await dbSafe.safeSelect(
-        'messages',
-        { id: messageId, room_id: user.roomId },
-        { limit: 1, fields: ['reactions'] }
-      );
-      const messages = dbSafe.parseResult(result);
-      if (messages.length === 0) return;
-      currentReactions = parseReactions(messages[0].reactions);
+      const MessageService = require('../src/services/messages/messageService');
+      const messageService = new MessageService();
+      const userEmail = user.email || user.username;
+      
+      const updatedMessage = await messageService.addReaction(messageId, emoji, userEmail);
+      
+      if (updatedMessage) {
+        // Broadcast updated message
+        io.to(user.roomId).emit('reaction_updated', {
+          messageId,
+          reactions: updatedMessage.reactions,
+          roomId: user.roomId,
+        });
+      }
     } catch (error) {
-      console.error('Error getting reactions:', error);
-      return;
+      console.error('[add_reaction] MessageService failed, falling back to manual update:', error.message);
+      // Fallback to manual reaction handling
+      try {
+        // Get current reactions
+        let currentReactions;
+        const result = await dbSafe.safeSelect(
+          'messages',
+          { id: messageId, room_id: user.roomId },
+          { limit: 1, fields: ['reactions'] }
+        );
+        const messages = dbSafe.parseResult(result);
+        if (messages.length === 0) return;
+        currentReactions = parseReactions(messages[0].reactions);
+
+        // Toggle reaction
+        const userEmail = user.email || user.username;
+        const updatedReactions = toggleReaction(currentReactions, emoji, userEmail);
+
+        // Save updated reactions
+        await dbSafe.safeUpdate(
+          'messages',
+          { reactions: JSON.stringify(updatedReactions) },
+          { id: messageId }
+        );
+
+        // Broadcast update
+        io.to(user.roomId).emit('reaction_updated', {
+          messageId,
+          reactions: updatedReactions,
+          roomId: user.roomId,
+        });
+      } catch (fallbackError) {
+        console.error('Error in fallback reaction handling:', fallbackError);
+      }
     }
-
-    // Step 3: Toggle reaction
-    const userEmail = user.email || user.username; // Fallback for backward compatibility
-    const updatedReactions = toggleReaction(currentReactions, emoji, userEmail);
-
-    // Step 4: Save updated reactions
-    try {
-      await dbSafe.safeUpdate(
-        'messages',
-        { reactions: JSON.stringify(updatedReactions) },
-        { id: messageId }
-      );
-    } catch (error) {
-      console.error('Error saving reaction:', error);
-      return;
-    }
-
-    // Step 5: Broadcast update
-    io.to(user.roomId).emit('reaction_updated', {
-      messageId,
-      reactions: updatedReactions,
-      roomId: user.roomId,
-    });
   });
 }
 

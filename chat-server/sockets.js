@@ -61,34 +61,21 @@ function setupSockets(io, services) {
   io.use(authMiddleware);
   console.log('[setupSockets] ✅ Socket.io middleware registered');
 
-  // In-memory storage for active connections
-  const activeUsers = new Map(); // socketId -> user data
-  const messageHistory = []; // In-memory cache of recent messages
-
-  // Load messages from database on startup
-  (async () => {
-    try {
-      if (messageStore) {
-        const recentMessages = await messageStore.getRecentMessages(MAX_MESSAGE_HISTORY);
-        messageHistory.push(...recentMessages);
-        console.log(`✅ Sockets: Loaded ${recentMessages.length} messages from database`);
-      }
-    } catch (err) {
-      console.error('❌ Sockets: Error loading messages:', err);
-    }
-  })();
+  // Phase 2: Event-Driven Architecture
+  // No longer passing activeUsers/messageHistory - services use UserSessionService and EventBus
+  // Handlers now subscribe to events instead of receiving state directly
 
   io.on('connection', socket => {
     console.log(`New connection: ${socket.id}`);
 
-    // Register modular handlers
-    registerConnectionHandlers(socket, io, services, activeUsers, messageHistory);
-    registerMessageHandlers(socket, io, services, activeUsers, messageHistory);
-    registerThreadHandlers(socket, io, services, activeUsers);
-    registerFeedbackHandlers(socket, io, services, activeUsers);
-    registerNavigationHandlers(socket, io, services, activeUsers);
-    registerContactHandlers(socket, io, services, activeUsers);
-    registerCoachingHandlers(socket, io, services, activeUsers);
+    // Register modular handlers (no state passing - services handle their own state)
+    registerConnectionHandlers(socket, io, services);
+    registerMessageHandlers(socket, io, services);
+    registerThreadHandlers(socket, io, services);
+    registerFeedbackHandlers(socket, io, services);
+    registerNavigationHandlers(socket, io, services);
+    registerContactHandlers(socket, io, services);
+    registerCoachingHandlers(socket, io, services);
 
     // Global error handler
     socket.on('error', error => {
@@ -96,7 +83,9 @@ function setupSockets(io, services) {
     });
   });
 
-  return { activeUsers, messageHistory };
+  // Phase 2: Return empty object (backward compatibility)
+  // Services manage their own state via UserSessionService and EventBus
+  return {};
 }
 
 module.exports = { setupSockets };

@@ -110,16 +110,27 @@ const io = new Server(server, {
   pingTimeout: 60000,
   pingInterval: 25000,
   maxHttpBufferSize: 1e6,
-  // In dev mode, use polling only to avoid session race conditions during upgrade
-  // In production, allow both websocket and polling with websocket preferred
+  // In dev: polling only (matches client). In prod: both with websocket preferred
   transports: isDev ? ['polling'] : ['websocket', 'polling'],
   allowEIO3: true,
-  // Allow upgrades only in production
+  // Allow upgrades in production only (client uses polling-only in dev anyway)
   allowUpgrades: !isDev,
 });
 
 // Initialize Socket Handlers
 console.log('[Server] Socket.io path:', io.path());
+
+// DEBUG: Log Engine.io level events
+io.engine.on('connection', (rawSocket) => {
+  console.log('[Engine.io] New raw connection:', rawSocket.id);
+});
+io.engine.on('connection_error', (err) => {
+  console.log('[Engine.io] Connection error:', err.message, err.code);
+});
+io.engine.on('initial_headers', (headers, req) => {
+  console.log('[Engine.io] Initial headers for:', req.url);
+});
+
 setupSockets(io, services);
 
 // Configure Global Error Handling (Express)
@@ -127,7 +138,7 @@ setupErrorHandling(app);
 
 // Setup global process error handlers and graceful shutdown
 setupGlobalErrorHandlers();
-setupGracefulShutdown(server);
+setupGracefulShutdown(server, io, services);
 
 // Final log
 console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);

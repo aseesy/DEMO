@@ -90,35 +90,64 @@ export function useSocketEmit() {
  * @param {Function} options.getToken - Function to get auth token
  */
 export function useSocketConnection({ isAuthenticated, getToken }) {
-  console.log('[useSocketConnection] Hook called with isAuthenticated:', isAuthenticated);
+  console.log('[useSocketConnection] ========================================');
+  console.log('[useSocketConnection] CALLED at', new Date().toISOString());
+  console.log('[useSocketConnection] isAuthenticated:', isAuthenticated);
+  console.log('[useSocketConnection] getToken exists:', typeof getToken === 'function');
+  console.log('[useSocketConnection] ========================================');
 
-  // Track if we've already initiated connection
+  // Track if we've already initiated connection (persists across renders)
   const hasConnectedRef = useRef(false);
   const wasAuthenticatedRef = useRef(false);
 
-  // Connect directly during render if authenticated and not already connected
-  if (isAuthenticated && !hasConnectedRef.current) {
-    const token = getToken();
-    console.log('[useSocketConnection] Token check:', token ? 'present' : 'missing');
-    if (token) {
-      console.log('[useSocketConnection] Initiating socket connection...');
-      hasConnectedRef.current = true;
-      wasAuthenticatedRef.current = true;
-      // Connect in a microtask to avoid blocking render
-      Promise.resolve().then(() => {
-        console.log('[useSocketConnection] Calling socketService.connect()');
-        socketService.connect(token);
-      });
-    }
-  }
+  // Subscribe to connection state to reset hasConnectedRef on disconnect
+  // This allows reconnection after errors
+  useEffect(() => {
+    return socketService.subscribeToState(state => {
+      if (state === 'disconnected' && hasConnectedRef.current) {
+        console.log('[useSocketConnection] Socket disconnected, allowing reconnection');
+        hasConnectedRef.current = false;
+      }
+    });
+  }, []);
 
-  // Handle logout - disconnect when auth changes from true to false
-  if (!isAuthenticated && wasAuthenticatedRef.current) {
-    console.log('[useSocketConnection] Auth lost, disconnecting');
-    wasAuthenticatedRef.current = false;
-    hasConnectedRef.current = false;
-    socketService.disconnect();
-  }
+  // Connect/disconnect based on auth state (useEffect for side effects)
+  useEffect(() => {
+    console.log('[useSocketConnection] useEffect triggered:', {
+      isAuthenticated,
+      hasConnected: hasConnectedRef.current,
+      wasAuthenticated: wasAuthenticatedRef.current,
+      socketConnected: socketService.isConnected(),
+    });
+
+    // Connect if authenticated and not already connected
+    if (isAuthenticated && !hasConnectedRef.current) {
+      const token = getToken();
+      console.log('[useSocketConnection] Token check:', token ? `present (${token.length} chars)` : 'MISSING!');
+      if (token) {
+        console.log('[useSocketConnection] ✅ Initiating socket connection...');
+        hasConnectedRef.current = true;
+        wasAuthenticatedRef.current = true;
+        console.log('[useSocketConnection] Calling socketService.connect()');
+        const result = socketService.connect(token);
+        console.log('[useSocketConnection] connect() returned:', result);
+      } else {
+        console.error('[useSocketConnection] ❌ CANNOT CONNECT - No token available!');
+      }
+    } else if (isAuthenticated && hasConnectedRef.current) {
+      console.log('[useSocketConnection] Already connected, skipping');
+    } else if (!isAuthenticated) {
+      console.log('[useSocketConnection] Not authenticated, skipping connection');
+    }
+
+    // Disconnect if auth changed from true to false
+    if (!isAuthenticated && wasAuthenticatedRef.current) {
+      console.log('[useSocketConnection] Auth lost, disconnecting');
+      wasAuthenticatedRef.current = false;
+      hasConnectedRef.current = false;
+      socketService.disconnect();
+    }
+  }, [isAuthenticated, getToken]);
 }
 
 export default {

@@ -18,7 +18,7 @@
  * @param {string} cleanEmail - Email to check
  * @param {string} currentSocketId - Current socket ID to exclude
  */
-function disconnectDuplicateConnections(
+async function disconnectDuplicateConnections(
   userSessionService,
   io,
   roomId,
@@ -26,7 +26,7 @@ function disconnectDuplicateConnections(
   currentSocketId
 ) {
   // Use service to disconnect duplicates
-  const disconnectedSocketIds = userSessionService.disconnectDuplicates(
+  const disconnectedSocketIds = await userSessionService.disconnectDuplicates(
     currentSocketId,
     cleanEmail,
     roomId
@@ -54,8 +54,8 @@ function disconnectDuplicateConnections(
  * @param {string} roomId - Room ID
  * @returns {Object} User data object
  */
-function registerActiveUser(userSessionService, socketId, cleanEmail, roomId) {
-  return userSessionService.registerUser(socketId, cleanEmail, roomId);
+async function registerActiveUser(userSessionService, socketId, cleanEmail, roomId) {
+  return await userSessionService.registerUser(socketId, cleanEmail, roomId);
 }
 
 /**
