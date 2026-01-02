@@ -26,10 +26,9 @@ const { invitationService, invitationEmailService } = require('./invitation');
 // Room services (Phase 2.3) ✅
 const { roomService } = require('./room');
 
-// Message services (Phase 3)
-// const { messageHistoryService } = require('./message/messageHistoryService');
-// const { messageSearchService } = require('./message/messageSearchService');
-// const { messageValidator } = require('./message/messageValidator');
+// Message services (Phase 3) ✅
+const MessageService = require('./messages/messageService');
+const messageService = new MessageService();
 
 // Profile services (Phase 2.4) ✅
 const { profileService } = require('./profile');
@@ -96,8 +95,10 @@ module.exports = {
 
   // Onboarding services ✅
   onboardingService,
-  // messageSearchService,
-  // messageValidator,
+
+  // Message services ✅
+  messageService,
+  MessageService,
   // profileService,
   // profileCompletionService,
   // privacyService,

@@ -16,7 +16,6 @@ function setupRoutes(app, services) {
     roomManager,
     contactIntelligence,
     aiMediator,
-    figmaService,
     invitationManager,
     notificationManager,
     pairingManager,
@@ -49,8 +48,8 @@ function setupRoutes(app, services) {
   const activitiesRoutes = require('./routes/activities');
   const userRoutes = require('./routes/user');
   const roomsRoutes = require('./routes/rooms');
+  const messagesRoutes = require('./routes/messages');
   const adminRoutes = require('./routes/admin');
-  const figmaRoutes = require('./routes/figma');
   const aiRoutes = require('./routes/ai');
   const connectionsRoutes = require('./routes/connections');
   const profileRoutes = require('./routes/profile');
@@ -60,7 +59,6 @@ function setupRoutes(app, services) {
   pairingRoutes.setHelpers({ roomManager });
   roomsRoutes.setHelpers({ auth, roomManager, autoCompleteOnboardingTasks });
   adminRoutes.setHelpers({ roomManager });
-  figmaRoutes.setHelpers({ figmaService, ...services }); // Figma needs multiple components
   // Load mediation service and inject dependencies
   const { mediationService, authService } = require('./src/services');
   mediationService.setAiMediator(aiMediator);
@@ -98,8 +96,8 @@ function setupRoutes(app, services) {
   app.use('/api/activities', activitiesRoutes);
   app.use('/api/user', userRoutes);
   app.use('/api/room', roomsRoutes);
+  app.use('/api/messages', messagesRoutes);
   app.use('/api', adminRoutes);
-  app.use('/api/figma', figmaRoutes);
   app.use('/api', aiRoutes);
   app.use('/api', connectionsRoutes);
   app.use('/api/blog/images', blogImagesRoutes);
@@ -250,6 +248,13 @@ function setupRoutes(app, services) {
   // API info endpoint
   app.get('/api/info', (req, res) => {
     res.json({ name: 'LiaiZen Chat Server', version: '1.0.0' });
+  });
+
+  // DEBUG: Client-side log relay endpoint (TEMPORARY - remove after debugging)
+  app.post('/api/debug-log', express.json(), (req, res) => {
+    const { message, data, timestamp } = req.body;
+    console.log(`[CLIENT-DEBUG] ${timestamp} - ${message}`, JSON.stringify(data || {}, null, 2));
+    res.json({ received: true });
   });
 }
 

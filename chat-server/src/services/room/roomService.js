@@ -443,7 +443,7 @@ class RoomService extends BaseService {
     user.roomId = roomId;
 
     // Step 4: Handle duplicates and register session
-    const disconnectedSocketIds = this.userSessionService.disconnectDuplicates(
+    const disconnectedSocketIds = await this.userSessionService.disconnectDuplicates(
       socketId,
       cleanEmail,
       roomId
@@ -461,7 +461,7 @@ class RoomService extends BaseService {
     }
 
     // Register new session
-    this.userSessionService.registerUser(socketId, cleanEmail, roomId);
+    await this.userSessionService.registerUser(socketId, cleanEmail, roomId);
 
     // Step 5: Ensure contacts (non-fatal)
     let roomMembers = [];
@@ -481,16 +481,30 @@ class RoomService extends BaseService {
     let messages = [];
     let hasMore = false;
     try {
-      const history = await getMessageHistory(roomId, this.db);
+      // Use new MessageService for consistent message loading
+      const MessageService = require('../messages/messageService');
+      const messageService = new MessageService();
+      const history = await messageService.getRoomMessages(roomId, {
+        limit: 500,
+        offset: 0,
+      }, cleanEmail);
       messages = history.messages;
       hasMore = history.hasMore;
     } catch (error) {
-      console.error('[RoomService.joinSocketRoom] getMessageHistory failed:', error.message);
-      return {
-        success: false,
-        error: 'Failed to load message history.',
-        errorContext: 'getMessageHistory',
-      };
+      console.error('[RoomService.joinSocketRoom] MessageService failed:', error.message);
+      // Fallback to old method for backward compatibility
+      try {
+        const history = await getMessageHistory(roomId, this.db);
+        messages = history.messages;
+        hasMore = history.hasMore;
+      } catch (fallbackError) {
+        console.error('[RoomService.joinSocketRoom] Fallback getMessageHistory also failed:', fallbackError.message);
+        return {
+          success: false,
+          error: 'Failed to load message history.',
+          errorContext: 'getMessageHistory',
+        };
+      }
     }
 
     // Step 7: Get current room users
