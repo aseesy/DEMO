@@ -285,6 +285,10 @@ class MessageRepository extends PostgresGenericRepository {
         } else if (key === 'user_flagged_by' && value) {
           updateFields.push(`${key} = $${paramIndex}`);
           params.push(JSON.stringify(value));
+        } else if (key === 'edited') {
+          // Convert boolean to integer for database (edited column is INTEGER 0/1)
+          updateFields.push(`${key} = $${paramIndex}`);
+          params.push(value ? 1 : 0);
         } else {
           updateFields.push(`${key} = $${paramIndex}`);
           params.push(value);
