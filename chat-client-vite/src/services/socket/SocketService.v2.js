@@ -20,6 +20,8 @@ class SocketService {
     this.subscribers = new Map(); // event -> Set<callback>
     this.stateSubscribers = new Set(); // callbacks for state changes
     this.emitQueue = []; // Queue of {event, data} to emit when connected
+    this.connecting = false; // Flag to prevent multiple simultaneous connections
+    this.currentToken = null; // Track current token to detect changes
   }
 
   /**
@@ -80,17 +82,31 @@ class SocketService {
       return;
     }
 
-    // Already connected
-    if (this.socket?.connected) {
-      console.log('[SocketService] Already connected');
+    // Already connected with same token - no need to reconnect
+    if (this.socket?.connected && this.currentToken === token) {
+      console.log('[SocketService] Already connected with same token');
       return;
     }
 
-    // Clean up existing socket if disconnected
-    if (this.socket && !this.socket.connected) {
-      this.socket.removeAllListeners();
-      this.socket.disconnect();
-      this.socket = null;
+    // If connecting, wait for it to complete
+    if (this.connecting) {
+      console.log('[SocketService] Connection already in progress, waiting...');
+      return;
+    }
+
+    // Clean up existing socket if disconnected or token changed
+    if (this.socket) {
+      if (this.currentToken !== token) {
+        console.log('[SocketService] Token changed, cleaning up old connection');
+        this.socket.removeAllListeners();
+        this.socket.disconnect();
+        this.socket = null;
+      } else if (!this.socket.connected) {
+        console.log('[SocketService] Cleaning up disconnected socket');
+        this.socket.removeAllListeners();
+        this.socket.disconnect();
+        this.socket = null;
+      }
     }
 
     const socketUrl = this.getSocketUrl();
@@ -99,36 +115,78 @@ class SocketService {
 
     console.log('[SocketService] Connecting to:', socketUrl);
 
+    // Set connecting flag to prevent race conditions
+    this.connecting = true;
+    this.currentToken = token;
+
     try {
+      // Only use forceNew if we have an existing disconnected socket
+      const forceNew = this.socket !== null && !this.socket.connected;
+      
       this.socket = io(socketUrl, {
         transports,
         reconnection: true,
-        reconnectionDelay: 2000,
-        reconnectionDelayMax: 10000,
-        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: Infinity, // Keep trying
         timeout: 20000,
-        forceNew: true,
+        forceNew: forceNew, // Only force new if needed
         autoConnect: true,
         withCredentials: true,
-        auth: { token },
-        query: { token },
+        auth: { token }, // Primary token location
+        // Don't use query for token - auth object is preferred
       });
 
       // Set up connection event handlers
       this.socket.on('connect', () => {
-        console.log('[SocketService] Connected:', this.socket.id);
+        console.log('[SocketService] ✅ Connected:', this.socket.id);
+        this.connecting = false;
         this.notifyStateSubscribers();
         // Process queued emits
         this.processEmitQueue();
       });
 
-      this.socket.on('disconnect', () => {
-        console.log('[SocketService] Disconnected');
+      this.socket.on('disconnect', (reason) => {
+        console.log('[SocketService] Disconnected:', reason);
+        this.connecting = false;
         this.notifyStateSubscribers();
+        
+        // If disconnect was not intentional, log for debugging
+        if (reason !== 'io client disconnect') {
+          console.warn('[SocketService] Unexpected disconnect:', reason);
+        }
       });
 
       this.socket.on('connect_error', (error) => {
-        console.error('[SocketService] Connection error:', error);
+        console.error('[SocketService] Connection error:', error.message);
+        this.connecting = false;
+        this.notifyStateSubscribers();
+        
+        // If auth error, clear token to force re-auth
+        if (error.message?.includes('auth') || error.message?.includes('Authentication')) {
+          console.warn('[SocketService] Auth error detected, may need new token');
+        }
+      });
+
+      // Handle reconnection attempts
+      this.socket.on('reconnect_attempt', (attemptNumber) => {
+        console.log('[SocketService] Reconnection attempt:', attemptNumber);
+      });
+
+      this.socket.on('reconnect', (attemptNumber) => {
+        console.log('[SocketService] ✅ Reconnected after', attemptNumber, 'attempts');
+        this.connecting = false;
+        this.notifyStateSubscribers();
+        this.processEmitQueue();
+      });
+
+      this.socket.on('reconnect_error', (error) => {
+        console.error('[SocketService] Reconnection error:', error.message);
+      });
+
+      this.socket.on('reconnect_failed', () => {
+        console.error('[SocketService] Reconnection failed - giving up');
+        this.connecting = false;
         this.notifyStateSubscribers();
       });
 
@@ -150,6 +208,7 @@ class SocketService {
       this.notifyStateSubscribers();
     } catch (error) {
       console.error('[SocketService] Failed to create socket:', error);
+      this.connecting = false;
       this.socket = null;
       this.notifyStateSubscribers();
     }
@@ -161,6 +220,8 @@ class SocketService {
   disconnect() {
     if (this.socket) {
       console.log('[SocketService] Disconnecting');
+      this.connecting = false;
+      this.currentToken = null;
       this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;

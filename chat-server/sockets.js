@@ -26,32 +26,23 @@ function setupSockets(io, services) {
   // CRITICAL: Register Socket.io middleware BEFORE connection handler
   // Middleware runs during handshake processing, before 'connection' event fires
   console.log('[setupSockets] Registering Socket.io middleware...');
-  console.log('[setupSockets] io.engine exists:', !!io.engine);
-  console.log('[setupSockets] io._nsps:', [...io._nsps.keys()]);
 
+  // Token normalization middleware - ensures token is accessible from auth object
   io.use((socket, next) => {
-    console.log(`[setupSockets] ✅✅✅ TEST Middleware CALLED for socket ${socket.id} ✅✅✅`);
-    console.log(`[setupSockets] Handshake:`, {
-      query: socket.handshake.query,
-      _query: socket.handshake._query,
-      auth: socket.handshake.auth,
-      url: socket.request?.url,
-    });
-
-    // CRITICAL: If token is in req._query but not in handshake.query, copy it
-    if (socket.request?._query?.token && !socket.handshake.query?.token) {
-      console.log(
-        `[setupSockets] ⚠️ Token found in req._query but not in handshake.query - copying it`
-      );
-      if (!socket.handshake.query) {
-        socket.handshake.query = {};
+    // If token is in query but not in auth, copy it to auth (preferred location)
+    if (socket.handshake.query?.token && !socket.handshake.auth?.token) {
+      if (!socket.handshake.auth) {
+        socket.handshake.auth = {};
       }
-      if (!socket.handshake._query) {
-        socket.handshake._query = {};
+      socket.handshake.auth.token = socket.handshake.query.token;
+    }
+    
+    // Also check _query as fallback (for polling transport)
+    if (socket.request?._query?.token && !socket.handshake.auth?.token) {
+      if (!socket.handshake.auth) {
+        socket.handshake.auth = {};
       }
-      socket.handshake.query.token = socket.request._query.token;
-      socket.handshake._query.token = socket.request._query.token;
-      console.log(`[setupSockets] ✅ Copied token from req._query to handshake.query`);
+      socket.handshake.auth.token = socket.request._query.token;
     }
 
     next(); // Continue to auth middleware

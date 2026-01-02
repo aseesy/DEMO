@@ -23,19 +23,19 @@ function authMiddleware(socket, next) {
   );
 
   try {
-    // Get token from auth object, authorization header, or query parameters (for polling transport)
-    // Socket.io's query option populates socket.handshake.query
-    // Engine.io also exposes req._query which becomes socket.handshake._query
+    // Priority order: auth object (preferred) > query > headers > _query
+    // The normalization middleware should have already copied query token to auth
     const token =
       socket.handshake.auth?.token ||
-      socket.handshake.headers?.authorization?.replace('Bearer ', '') ||
       socket.handshake.query?.token ||
+      socket.handshake.headers?.authorization?.replace('Bearer ', '') ||
       socket.handshake._query?.token ||
-      socket.request?._query?.token; // Also check raw request query
+      socket.request?._query?.token;
 
     if (!token) {
       console.warn(`[Socket Auth] ❌ No token provided for socket ${socket.id}`);
       console.warn(`[Socket Auth] Handshake auth:`, socket.handshake.auth);
+      console.warn(`[Socket Auth] Handshake query:`, socket.handshake.query);
       console.warn(
         `[Socket Auth] Handshake headers:`,
         socket.handshake.headers?.authorization ? 'Present' : 'Missing'

@@ -34,7 +34,11 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
 
   // === SOCKET CONNECTION (infrastructure) - v2 Simplified System ===
   // Memoize token to prevent unnecessary re-connections
-  const token = React.useMemo(() => tokenManager.getToken(), []);
+  // Include isAuthenticated in deps to update when auth state changes
+  const token = React.useMemo(() => {
+    if (!isAuthenticated) return null;
+    return tokenManager.getToken();
+  }, [isAuthenticated]);
   const { isConnected } = useSocket({ 
     token, 
     enabled: isAuthenticated 
