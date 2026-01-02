@@ -15,7 +15,13 @@ const { authMiddleware } = require('./socketHandlers/socketMiddleware');
  * Initialize Socket.io handlers
  */
 function setupSockets(io, services) {
-  const { messageStore } = services;
+  const { messageStore, auth, roomManager, userSessionService } = services;
+
+  // Configure RoomService for socket join operations
+  const { roomService } = require('./src/services');
+  roomService.setAuth(auth);
+  roomService.setRoomManager(roomManager);
+  roomService.setUserSessionService(userSessionService);
 
   // CRITICAL: Register Socket.io middleware BEFORE connection handler
   // Middleware runs during handshake processing, before 'connection' event fires

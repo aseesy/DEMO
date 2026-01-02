@@ -13,6 +13,16 @@ const { PostgresRoomRepository } = require('../../repositories');
 const pairingManager = require('../../../libs/pairing-manager');
 // Note: db is required here for passing to external library (pairingManager)
 const db = require('../../../dbPostgres');
+const {
+  validateUserInput,
+  getUserByEmail,
+} = require('../../../socketHandlers/connectionOperations/userLookup');
+const {
+  resolveOrCreateUserRoom,
+} = require('../../../socketHandlers/connectionOperations/roomResolution');
+const {
+  getMessageHistory,
+} = require('../../../socketHandlers/connectionOperations/messageHistory');
 
 class RoomService extends BaseService {
   constructor() {
@@ -20,6 +30,7 @@ class RoomService extends BaseService {
     this.roomRepository = this.repository; // Alias for clarity
     this.roomManager = null; // Injected via setRoomManager
     this.auth = null; // Injected via setAuth
+    this.userSessionService = null; // Injected via setUserSessionService
     this.db = db; // Cache db reference for external library calls
   }
 
@@ -35,6 +46,13 @@ class RoomService extends BaseService {
    */
   setAuth(auth) {
     this.auth = auth;
+  }
+
+  /**
+   * Set the user session service instance (injected from server.js)
+   */
+  setUserSessionService(userSessionService) {
+    this.userSessionService = userSessionService;
   }
 
   /**
@@ -351,6 +369,146 @@ class RoomService extends BaseService {
     return {
       success: true,
       message: 'Contacts backfilled for shared room',
+    };
+  }
+
+  /**
+   * Join socket room - orchestrates complete socket join flow
+   *
+   * This method encapsulates all the business logic for joining a room via socket:
+   * - Validates user input
+   * - Looks up user
+   * - Resolves room
+   * - Handles duplicate connections
+   * - Registers session
+   * - Ensures contacts
+   * - Loads message history
+   *
+   * @param {string} userIdentifier - Email or username
+   * @param {string} socketId - Socket ID
+   * @param {Object} io - Socket.io server instance (for disconnecting duplicates)
+   * @returns {Promise<Object>} Join result with success, error, or room data
+   */
+  async joinSocketRoom(userIdentifier, socketId, io) {
+    // Validate dependencies
+    if (!this.auth) {
+      throw new Error('RoomService: auth must be set via setAuth()');
+    }
+    if (!this.roomManager) {
+      throw new Error('RoomService: roomManager must be set via setRoomManager()');
+    }
+    if (!this.userSessionService) {
+      throw new Error('RoomService: userSessionService must be set via setUserSessionService()');
+    }
+
+    // Step 1: Validate input
+    const validation = validateUserInput(userIdentifier);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+    const { cleanEmail } = validation;
+
+    // Step 2: Get user
+    let user;
+    try {
+      user = await getUserByEmail(cleanEmail, this.auth);
+    } catch (error) {
+      console.error('[RoomService.joinSocketRoom] getUserByEmail failed:', error.message);
+      return { success: false, error: 'Failed to verify user.', errorContext: 'getUserByEmail' };
+    }
+
+    if (!user) {
+      return { success: false, error: 'User not found.' };
+    }
+
+    // Step 3: Resolve room
+    let room;
+    try {
+      room = await resolveOrCreateUserRoom(user, cleanEmail, this.db, this.roomManager);
+    } catch (error) {
+      console.error('[RoomService.joinSocketRoom] resolveOrCreateUserRoom failed:', error.message);
+      return { success: false, error: 'Failed to join chat room.', errorContext: 'resolveRoom' };
+    }
+
+    if (!room?.roomId || typeof room.roomId !== 'string' || !room.roomId.trim()) {
+      console.warn('[RoomService.joinSocketRoom] No valid room for user:', {
+        email: cleanEmail,
+        userId: user?.id,
+      });
+      return { success: false, error: 'No room available. You must be connected to a co-parent.' };
+    }
+
+    const { roomId, roomName } = room;
+    user.room = { roomId, roomName };
+    user.roomId = roomId;
+
+    // Step 4: Handle duplicates and register session
+    const disconnectedSocketIds = this.userSessionService.disconnectDuplicates(
+      socketId,
+      cleanEmail,
+      roomId
+    );
+
+    // Disconnect the old sockets via io
+    for (const oldSocketId of disconnectedSocketIds) {
+      const oldSocket = io.sockets.sockets.get(oldSocketId);
+      if (oldSocket) {
+        oldSocket.emit('replaced_by_new_connection', {
+          message: 'Disconnected by another login.',
+        });
+        oldSocket.disconnect(true);
+      }
+    }
+
+    // Register new session
+    this.userSessionService.registerUser(socketId, cleanEmail, roomId);
+
+    // Step 5: Ensure contacts (non-fatal)
+    let roomMembers = [];
+    try {
+      roomMembers = await this.roomManager.getRoomMembers(roomId);
+      if (roomMembers.length > 1) {
+        await this.roomManager.ensureContactsForRoomMembers(roomId);
+      }
+    } catch (error) {
+      console.error(
+        '[RoomService.joinSocketRoom] ensureContacts failed (non-fatal):',
+        error.message
+      );
+    }
+
+    // Step 6: Load message history
+    let messages = [];
+    let hasMore = false;
+    try {
+      const history = await getMessageHistory(roomId, this.db);
+      messages = history.messages;
+      hasMore = history.hasMore;
+    } catch (error) {
+      console.error('[RoomService.joinSocketRoom] getMessageHistory failed:', error.message);
+      return {
+        success: false,
+        error: 'Failed to load message history.',
+        errorContext: 'getMessageHistory',
+      };
+    }
+
+    // Step 7: Get current room users
+    const roomUsers = this.userSessionService.getUsersInRoom(roomId).map(u => ({
+      email: u.email,
+      joinedAt: u.joinedAt,
+    }));
+
+    return {
+      success: true,
+      user,
+      email: cleanEmail,
+      roomId,
+      roomName: roomName || `${user.displayName || user.firstName || cleanEmail}'s Room`,
+      messages,
+      hasMore,
+      roomUsers,
+      roomMembers,
     };
   }
 }

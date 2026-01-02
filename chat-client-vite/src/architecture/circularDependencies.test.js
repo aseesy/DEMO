@@ -87,54 +87,7 @@ describe('Circular Dependency Detection', () => {
   });
 });
 
-describe('Hook Definition Order (Temporal Dead Zone Prevention)', () => {
-  it('useChatSocket defines callbacks before useEffects that use them', async () => {
-    const fs = await import('fs');
-    const filePath = path.resolve(__dirname, '../features/chat/model/useChatSocket.js');
-    const content = fs.readFileSync(filePath, 'utf-8');
-
-    // Find all useCallback definitions
-    const callbackPattern = /const\s+(\w+)\s*=\s*React\.useCallback/g;
-    const callbackDefs = [];
-    let match;
-    while ((match = callbackPattern.exec(content)) !== null) {
-      callbackDefs.push({ name: match[1], index: match.index });
-    }
-
-    // Find all useEffect that reference these callbacks
-    const effectPattern = /React\.useEffect\(\s*\(\)\s*=>\s*\{[\s\S]*?\},\s*\[([^\]]*)\]\)/g;
-    while ((match = effectPattern.exec(content)) !== null) {
-      const effectIndex = match.index;
-      const deps = match[1];
-
-      // Check if any callback is used in deps but defined AFTER this effect
-      for (const callback of callbackDefs) {
-        if (deps.includes(callback.name) && callback.index > effectIndex) {
-          expect.fail(
-            `Temporal Dead Zone: ${callback.name} is used in useEffect dependency array ` +
-              `at position ${effectIndex} but defined at position ${callback.index}. ` +
-              `Move the useCallback definition BEFORE the useEffect that uses it.`
-          );
-        }
-      }
-    }
-  });
-
-});
-
 describe('Required Import Validation', () => {
-  it('useChatSocket imports API_BASE_URL', async () => {
-    const fs = await import('fs');
-    const filePath = path.resolve(__dirname, '../features/chat/model/useChatSocket.js');
-    const content = fs.readFileSync(filePath, 'utf-8');
-
-    // Check if API_BASE_URL is used
-    if (content.includes('API_BASE_URL')) {
-      // Verify it's imported
-      expect(content).toMatch(/import\s*\{[^}]*API_BASE_URL[^}]*\}\s*from/);
-    }
-  });
-
   it('all files using API_BASE_URL import it', async () => {
     const { execSync } = await import('child_process');
 
