@@ -231,8 +231,7 @@ if (require.main === module) {
       process.exit(0); // Explicitly exit with success
     })
     .catch(err => {
-      console.error('Unexpected error in migration:', err);
-      console.log('⚠️  Exiting with success to allow server to start...');
-      process.exit(0); // Exit with success even on error to prevent deployment failure
+      console.error('❌ Migration failed:', err);
+      process.exit(1); // Exit with failure so deployments are halted on migration errors
     });
 }

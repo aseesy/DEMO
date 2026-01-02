@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { Button } from '../../components/ui';
 
 export function BlogArticleLayout({ children, meta, breadcrumbs, keyTakeaways, ctaOverride }) {
@@ -162,7 +163,7 @@ export function BlogArticleLayout({ children, meta, breadcrumbs, keyTakeaways, c
               {keyTakeaways.map((item, index) => (
                 <li key={index} className="flex items-start gap-2">
                   <span className="text-teal-400 mt-1.5">•</span>
-                  <span dangerouslySetInnerHTML={{ __html: item }} />
+                  <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item) }} />
                 </li>
               ))}
             </ul>
