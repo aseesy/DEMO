@@ -55,7 +55,7 @@ router.get('/', async (req, res) => {
 module.exports = router;
 ```
 
-**Examples:** `admin.js`, `ai.js`, `connections.js`, `contacts.js`, `figma.js`, `pairing.js`, `profile.js`, `rooms.js`, `tasks.js`, `user.js`
+**Examples:** `admin.js`, `ai.js`, `connections.js`, `contacts.js`, `pairing.js`, `profile.js`, `rooms.js`, `tasks.js`, `user.js`
 
 ## Method Naming Convention
 
@@ -109,7 +109,6 @@ routes/
 ├── connections.js          # Co-parent connections
 ├── contacts.js             # Contact management
 ├── dashboard.js            # Dashboard data
-├── figma.js                # Figma integration
 ├── invitations.js          # Invitation system
 ├── notifications.js        # Notifications
 ├── pairing.js              # Co-parent pairing

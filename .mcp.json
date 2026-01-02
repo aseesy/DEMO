@@ -1,6 +1,7 @@
 {
   "mcpServers": {
-    "html.to.design": {
+    "html.to" : {
+      "type": "sse",
       "url": "https://h2d-mcp.divriots.com/5037cb16-a03f-4fc3-91f3-2d9667b94657/mcp"
     }
   }

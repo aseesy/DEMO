@@ -1,8 +1,10 @@
 # Coding Feedback System
 
+**⚠️ DEPRECATED**: This feedback system has been archived. See `.cursor/rules` "Anti-Patterns to Avoid" section for current guidance.
+
 ## Overview
 
-This system allows you to provide feedback on AI coding behaviors to help improve future performance. Feedback is stored and analyzed to identify patterns and preferences.
+This system allowed you to provide feedback on AI coding behaviors to help improve future performance. The system has been replaced with direct rule-based guidance in `.cursor/rules`.
 
 ## Quick Feedback Commands
 

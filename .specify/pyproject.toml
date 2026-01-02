@@ -18,5 +18,91 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "black>=23.0.0",
-    "ruff>=0.1.0"
+    "ruff>=0.1.0",
+    "pyright>=1.1.0"
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["sdd"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.pyright]
+# Type checking configuration
+# Enforces Contract-First principle (Principle III) by requiring type hints
+
+include = ["src/sdd"]
+exclude = [
+    "**/__pycache__",
+    "**/.*",
+    "**/node_modules",
+    "**/.venv",
+    "**/venv",
+    "**/build",
+    "**/dist",
+]
+
+# Python version
+pythonVersion = "3.11"
+
+# Type checking mode (strict = most checks enabled)
+typeCheckingMode = "basic"  # "basic" | "standard" | "strict"
+
+# Report settings
+reportMissingImports = "warning"
+reportMissingTypeStubs = "none"  # Allow untyped dependencies
+reportUnusedImport = "warning"
+reportUnusedClass = "warning"
+reportUnusedFunction = "warning"
+reportUnusedVariable = "warning"
+reportDuplicateImport = "warning"
+reportWildcardImportFromLibrary = "warning"
+reportOptionalSubscript = "warning"
+reportOptionalMemberAccess = "warning"
+reportOptionalCall = "warning"
+reportOptionalIterable = "warning"
+reportOptionalContextManager = "warning"
+reportOptionalOperand = "warning"
+reportGeneralTypeIssues = "warning"
+reportPrivateImportUsage = "warning"
+reportConstantRedefinition = "warning"
+reportIncompatibleMethodOverride = "error"
+reportIncompatibleVariableOverride = "error"
+reportOverlappingOverloads = "error"
+
+# Pydantic support (if using pydantic plugin)
+# Note: Pydantic v2 works well with pyright out of the box

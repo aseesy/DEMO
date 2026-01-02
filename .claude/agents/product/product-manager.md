@@ -1,3 +1,7 @@
+---
+name: product-manager
+---
+
 # Agent: product-manager
 
 **Department**: product

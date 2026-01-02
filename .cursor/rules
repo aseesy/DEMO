@@ -110,22 +110,184 @@ When creating UI components:
 - `text-[#275559]` → `text-teal-dark`
 
 See `DESIGN_TOKENS_USAGE.md` for complete token reference.
-10. ✅ Run pre-generation checklist from design_critic.md
 
 ## Architecture
 
-- Frontend: React 18+ with Vite, Tailwind CSS v4
-- Backend: Node.js 18+ with Express.js
-- Database: SQLite (with PostgreSQL migration path)
-- Realtime: Socket.io
-- AI: OpenAI API for message mediation
+- **Frontend**: React 18+ with Vite, Tailwind CSS v4
+- **Backend**: Node.js 18+ with Express.js
+- **Database**: SQLite (local) / PostgreSQL (production migration path)
+- **Realtime**: Socket.io for WebSocket communication
+- **AI**: OpenAI API for message mediation
+- **Deployment**: Vercel (frontend), Railway (backend)
+
+### Architecture Pattern: Service-Based with React Hooks
+
+**CRITICAL**: This codebase uses a **service-based architecture** where:
+- **Services** (`src/services/`) are singletons that manage state and business logic OUTSIDE React
+- **React Hooks** (`src/hooks/` or `src/features/*/hooks/`) subscribe to services for UI state
+- Services are infrastructure/domain layer, hooks are presentation layer
+
+**Key Principle**: Services manage state, hooks subscribe to it. Services don't know about React.
 
 ## File Structure
 
-- `chat-client-vite/src/components/` - React components
-- `chat-client-vite/src/components/modals/` - Modal components
-- `chat-client-vite/src/hooks/` - Custom React hooks
-- `chat-server/` - Backend server code
+### Frontend (`chat-client-vite/src/`)
+
+- `components/` - Reusable React components
+- `components/modals/` - Modal components
+- `components/ui/` - UI primitives (Button, Modal, etc.)
+- `features/` - Feature-based organization (auth, chat, dashboard)
+  - `features/*/hooks/` - Feature-specific hooks
+  - `features/*/components/` - Feature-specific components
+  - `features/*/model/` - Feature business logic (deprecated, use services)
+- `hooks/` - Shared custom React hooks (socket, message, etc.)
+- `services/` - **Singleton services** (SocketService, MessageService, etc.)
+  - `services/socket/` - Socket.io infrastructure
+  - `services/chat/` - Chat domain services
+  - `services/message/` - Message domain services
+  - `services/mediation/` - AI mediation services
+  - `services/errorHandling/` - Error handling services
+- `config/` - Configuration files (patterns, constants)
+
+### Backend (`chat-server/`)
+
+- `src/services/` - **Singleton services** (extend BaseService)
+  - Services use Repository Pattern (see BaseService.js)
+  - Each service manages one domain concept (Room, Message, Profile, etc.)
+- `src/repositories/` - Data access layer (PostgresGenericRepository)
+- `src/domain/` - Domain models and business logic
+- `src/infrastructure/` - Infrastructure concerns (db, validation, etc.)
+- `src/core/` - Core engine (LiaiZen AI mediation pipeline)
+- `socketHandlers/` - Socket.io event handlers (thin layer, delegate to services)
+- `routes/` - REST API routes
+- `migrations/` - Database migrations
+
+### Tools & Docs
+
+- `tools/` - Python tools for auditing and dashboard functionality
+- `docs/` - Documentation (architecture, flows, decisions)
+- `.cursor/` - Cursor AI configuration
+
+## Service Architecture Patterns
+
+### Backend Services
+
+**Pattern**: Services extend `BaseService` and use Repository Pattern
+
+```javascript
+// ✅ CORRECT: Service extends BaseService
+const { BaseService } = require('../BaseService');
+const { PostgresGenericRepository } = require('../../repositories/...');
+
+class RoomService extends BaseService {
+  constructor() {
+    super(null, new PostgresGenericRepository('rooms'));
+  }
+  
+  async getRoomByUserId(userId) {
+    return this.findOne({ userId });
+  }
+}
+
+// Export singleton instance
+module.exports = { roomService: new RoomService() };
+```
+
+**Key Points**:
+- Services are singletons (one instance per service)
+- Services use repositories for data access (Dependency Inversion)
+- Services contain business logic, not just data access
+- Import services from `src/services/index.js`
+
+### Frontend Services
+
+**Pattern**: Singleton services manage state outside React, hooks subscribe
+
+```javascript
+// ✅ CORRECT: Service is singleton, manages socket connection
+class SocketService {
+  constructor() {
+    this.socket = null;
+    this.connectionState = 'disconnected';
+    this.stateSubscribers = new Set();
+  }
+  
+  subscribeToState(callback) {
+    this.stateSubscribers.add(callback);
+    callback(this.connectionState);
+    return () => this.stateSubscribers.delete(callback);
+  }
+}
+
+export const socketService = new SocketService();
+
+// ✅ CORRECT: Hook subscribes to service
+export function useSocketState() {
+  const [state, setState] = useState(socketService.getConnectionState());
+  
+  useEffect(() => {
+    return socketService.subscribeToState(setState);
+  }, []);
+  
+  return { connectionState: state, isConnected: state === 'connected' };
+}
+```
+
+**Key Points**:
+- Services are singletons (one instance)
+- Services manage their own state (not React state)
+- Hooks subscribe to services via `useEffect`
+- Services emit events/notify subscribers when state changes
+- Never call `socketService.connect()` during render - use `useEffect`
+
+### React Hooks with Services Pattern
+
+**CRITICAL**: Follow these patterns when using services in hooks:
+
+1. **Subscription in useEffect**:
+```javascript
+// ✅ CORRECT: Subscribe in useEffect
+useEffect(() => {
+  return messageService.subscribe(setMessages);
+}, []); // Empty deps - subscribe once on mount
+```
+
+2. **Side effects in useEffect**:
+```javascript
+// ✅ CORRECT: Side effects (connect, emit) in useEffect
+useEffect(() => {
+  if (isAuthenticated) {
+    socketService.connect(token);
+  }
+  return () => socketService.disconnect();
+}, [isAuthenticated, token]);
+```
+
+3. **Never side effects in render**:
+```javascript
+// ❌ WRONG: Side effect during render
+function MyComponent() {
+  socketService.connect(token); // ❌ Don't do this!
+}
+
+// ✅ CORRECT: Side effect in useEffect
+function MyComponent() {
+  useEffect(() => {
+    socketService.connect(token);
+  }, [token]);
+}
+```
+
+## Socket Connection Patterns
+
+**CRITICAL**: Socket connection must follow this pattern:
+
+1. **Single Source of Truth**: `SocketService` manages the socket connection
+2. **React Hooks Subscribe**: `useSocketConnection`, `useSocketState` subscribe to service
+3. **Never Duplicate**: Don't call `socketService.connect()` from multiple places
+4. **Lifecycle Management**: Connection/disconnection in `useEffect`, not render
+
+**See**: `docs/USESOCKETCONNECTION_FIX.md` for correct patterns
 
 ## Common Patterns
 
@@ -136,6 +298,191 @@ See `.codebase-context-mcp/codebase-context.json` for:
 - Button patterns
 - Form patterns
 
+## Python Tools
+
+**Location**: `tools/` directory
+
+### Requirements
+- ✅ Use Python 3 standard library only (no external dependencies)
+- ✅ Follow PEP 8 style guidelines
+- ✅ Include type hints where possible (`from typing import Dict, List, Optional`)
+- ✅ Use docstrings for all functions and modules (Google or NumPy style)
+- ✅ Keep functions small and focused (single responsibility principle)
+
+### Structure
+- `tools/audit/` - Git history and database analysis tools
+- `tools/dashboard/` - Dashboard UI and backend utilities
+
+### Code Style
+- Use descriptive variable names (snake_case)
+- Keep functions under 50 lines when possible
+- Use pathlib.Path for file operations
+- Use subprocess for shell commands (when needed)
+- Handle exceptions explicitly with try/except blocks
+
+### Documentation
+- Module-level docstrings explain purpose
+- Function docstrings include Args, Returns, Raises
+- Type hints on function signatures
+- Inline comments for complex logic
+
+### Testing
+- Include `if __name__ == '__main__':` blocks with example usage
+- Test with real data when possible (git log, migration files)
+- Handle edge cases (empty inputs, missing files, errors)
+
+See `tools/README.md` for usage examples and structure details.
+
+## Anti-Patterns to Avoid
+
+**CRITICAL**: These patterns have been identified as problematic. Avoid them and reference the linked rules.
+
+### Hardcoded Values ❌
+**Pattern**: Using inline styles or hardcoded hex colors instead of design tokens  
+**Example**: `style={{ fontSize: '15px' }}` or `bg-[#275559]`  
+**Rule Reference**: See "Design Token Usage" section above  
+**Correct Approach**: Use Tailwind classes from design tokens (e.g., `bg-teal-dark`, `text-base`)
+
+### Over-Engineering ❌
+**Pattern**: Hooks or components doing too much (multiple responsibilities)  
+**Example**: A hook that handles UI state, network transport, and business logic all in one  
+**Rule Reference**: See "Code Style" section - Single responsibility principle  
+**Correct Approach**: Break into focused, single-purpose hooks/components
+
+### Fail-Open Behavior ❌
+**Pattern**: Error handling that silently allows failures without user notification  
+**Example**: Analysis fails but message is sent anyway without alerting user  
+**Rule Reference**: See "Best Practices" #8 - Handle errors gracefully  
+**Correct Approach**: Always notify users of errors, implement proper error states
+
+### Hardcoded Patterns/Constants ❌
+**Pattern**: Magic values, patterns, or constants defined inline instead of in config files  
+**Example**: Pattern arrays defined directly in business logic files  
+**Rule Reference**: See "Code Style" and "Best Practices" sections  
+**Correct Approach**: Extract to configuration files, use constants, follow single source of truth
+
+## Code Quality Reviews
+
+### Regular Review Process
+1. **Weekly**: Quick scan for anti-patterns during code review
+2. **Monthly**: Pattern analysis to identify recurring issues
+3. **Quarterly**: Comprehensive rules review and update based on findings
+
+### Review Checklist
+- [ ] No hardcoded values (colors, spacing, magic numbers)
+- [ ] Components/hooks follow single responsibility principle
+- [ ] All errors are handled with user notifications
+- [ ] Constants/patterns are in config files, not inline
+- [ ] Design token usage verified
+- [ ] Code style compliance (PEP 8 for Python, React patterns for JS)
+
+### When Reviewing Code
+1. Check against anti-patterns listed above
+2. Reference linked rule sections for guidance
+3. Document new patterns if they recur
+4. Update rules if gaps are identified
+
+## Testing Patterns
+
+### Frontend Testing (Vitest)
+
+- **Location**: `chat-client-vite/src/**/*.test.js`
+- **Framework**: Vitest
+- **Run tests**: `npm run test:frontend` (from root) or `npm test` (from chat-client-vite)
+- **Coverage**: Aim for 80%+ coverage
+
+**Pattern**:
+```javascript
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { messageService } from './MessageService.js';
+
+describe('MessageService', () => {
+  beforeEach(() => {
+    messageService.clear(); // Reset state between tests
+  });
+  
+  it('should merge messages correctly', () => {
+    // Test implementation
+  });
+});
+```
+
+### Backend Testing (Jest)
+
+- **Location**: `chat-server/__tests__/`
+- **Framework**: Jest
+- **Run tests**: `npm run test:backend` (from root) or `npm test` (from chat-server)
+- **Coverage**: Aim for 80%+ coverage, 95%+ for AI/security features
+
+**Pattern**:
+```javascript
+const { roomService } = require('../src/services');
+
+describe('RoomService', () => {
+  it('should get room by user ID', async () => {
+    const room = await roomService.getRoomByUserId('user123');
+    expect(room).toBeDefined();
+  });
+});
+```
+
+### Testing Services
+
+- **Mock dependencies**: Use `vi.mock()` for external dependencies
+- **Reset state**: Clear service state in `beforeEach`
+- **Test singletons carefully**: Services are singletons, reset state between tests
+
+## Core User Flows
+
+**CRITICAL**: These flows must always work. See `docs/CORE_USER_FLOWS.md` for complete contracts.
+
+1. **User Authentication & Socket Connection** - Login → Socket connects → State tracked
+2. **Join Chat Room & Load Message History** - Join room → Receive history → Display messages
+3. **Send Message** - Type → Validate → Send → Show pending → Confirm sent
+4. **Receive Message** - Socket receives → Update state → Display in UI
+5. **Message Mediation** - Detect hostility → Show rewrites → User chooses
+6. **Reconnection** - Network loss → Auto-reconnect → Restore state → Resume
+
+**Before implementing features affecting these flows, read `docs/CORE_USER_FLOWS.md` for complete contracts and success criteria.**
+
+## Error Handling Patterns
+
+### Frontend Error Handling
+
+**Use Error Handling Services**:
+- `ErrorClassificationService` - Classify errors
+- `ErrorHandlingStrategy` - Determine handling strategy
+- `ErrorNotificationService` - Notify users of errors
+
+**Pattern**:
+```javascript
+import { errorNotificationService } from '@/services/errorHandling';
+
+try {
+  await someOperation();
+} catch (error) {
+  errorNotificationService.notifyUser(error);
+  // Never fail-open silently
+}
+```
+
+### Backend Error Handling
+
+- Use service errors from `src/services/errors.js`
+- Return appropriate HTTP status codes
+- Log errors for monitoring
+- Never expose internal errors to clients
+
+## Documentation References
+
+**Before implementing features, reference these documents**:
+
+- `docs/CORE_USER_FLOWS.md` - Core user flow contracts (MUST READ for flow changes)
+- `docs/ARCHITECTURE_DECISION.md` - Architecture decisions and patterns
+- `CLAUDE.md` - Overall architecture overview
+- `README.md` - Project overview and setup
+- `.cursor/archive/` - Historical refactoring documentation
+
 ## Best Practices
 
 1. Always reference design system AND design critic before writing UI
@@ -145,7 +492,14 @@ See `.codebase-context-mcp/codebase-context.json` for:
 5. Ensure accessibility (WCAG 2.1 AA)
 6. Test on mobile devices
 7. Use semantic HTML
-8. Handle errors gracefully
+8. Handle errors gracefully (with user notifications, never fail-open silently)
 9. Validate all user input
 10. Ask "Would a design professional approve this?" before submitting
+11. For Python tools: Follow PEP 8, use type hints, include docstrings, prefer standard library
+12. Avoid anti-patterns: Check this rules file before coding
+13. **Services are singletons**: Import and use directly, don't create new instances
+14. **Hooks subscribe to services**: Use `useEffect` to subscribe, not direct calls in render
+15. **Side effects in useEffect**: Never call service methods during render
+16. **Test core user flows**: Ensure critical flows always work (see CORE_USER_FLOWS.md)
+17. **Single responsibility**: Services do one thing, hooks do presentation concerns
 

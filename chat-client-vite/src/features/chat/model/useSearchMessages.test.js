@@ -6,21 +6,27 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+
+// Mock socketService
+vi.mock('../../../services/socket/index.js', () => ({
+  socketService: {
+    isConnected: vi.fn(() => true),
+    emit: vi.fn(),
+  },
+}));
+
+import { socketService } from '../../../services/socket/index.js';
 import { useSearchMessages } from './useSearchMessages.js';
 
 describe('useSearchMessages', () => {
-  let mockSocketRef;
   let mockSetError;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    mockSocketRef = {
-      current: {
-        emit: vi.fn(),
-        connected: true,
-      },
-    };
     mockSetError = vi.fn();
+    // Reset mocks
+    vi.mocked(socketService.isConnected).mockReturnValue(true);
+    vi.mocked(socketService.emit).mockClear();
   });
 
   afterEach(() => {
@@ -32,7 +38,6 @@ describe('useSearchMessages', () => {
     it('should initialize with empty search query', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -44,7 +49,6 @@ describe('useSearchMessages', () => {
     it('should initialize with empty search results', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -56,7 +60,6 @@ describe('useSearchMessages', () => {
     it('should initialize with searchTotal as 0', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -68,7 +71,6 @@ describe('useSearchMessages', () => {
     it('should initialize with isSearching as false', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -80,7 +82,6 @@ describe('useSearchMessages', () => {
     it('should initialize with searchMode as false', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -92,7 +93,6 @@ describe('useSearchMessages', () => {
     it('should initialize with highlightedMessageId as null', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -106,7 +106,6 @@ describe('useSearchMessages', () => {
     it('should emit search_messages event for valid query', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -116,7 +115,7 @@ describe('useSearchMessages', () => {
         result.current.searchMessages('hello world');
       });
 
-      expect(mockSocketRef.current.emit).toHaveBeenCalledWith('search_messages', {
+      expect(socketService.emit).toHaveBeenCalledWith('search_messages', {
         query: 'hello world',
         limit: 50,
         offset: 0,
@@ -126,7 +125,6 @@ describe('useSearchMessages', () => {
     it('should set isSearching to true when searching', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -142,7 +140,6 @@ describe('useSearchMessages', () => {
     it('should update searchQuery when searching', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -158,7 +155,6 @@ describe('useSearchMessages', () => {
     it('should not emit for query less than 2 characters', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -168,14 +164,13 @@ describe('useSearchMessages', () => {
         result.current.searchMessages('h');
       });
 
-      expect(mockSocketRef.current.emit).not.toHaveBeenCalled();
+      expect(socketService.emit).not.toHaveBeenCalled();
       expect(result.current.searchResults).toEqual([]);
     });
 
     it('should clear results for empty query', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -197,11 +192,10 @@ describe('useSearchMessages', () => {
     });
 
     it('should set error when socket is not connected', () => {
-      mockSocketRef.current.connected = false;
+      vi.mocked(socketService.isConnected).mockReturnValue(false);
 
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -212,6 +206,7 @@ describe('useSearchMessages', () => {
       });
 
       expect(mockSetError).toHaveBeenCalledWith('Not connected to chat server.');
+      expect(socketService.emit).not.toHaveBeenCalled();
     });
   });
 
@@ -219,7 +214,6 @@ describe('useSearchMessages', () => {
     it('should emit jump_to_message event', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -229,17 +223,16 @@ describe('useSearchMessages', () => {
         result.current.jumpToMessage('msg-123');
       });
 
-      expect(mockSocketRef.current.emit).toHaveBeenCalledWith('jump_to_message', {
+      expect(socketService.emit).toHaveBeenCalledWith('jump_to_message', {
         messageId: 'msg-123',
       });
     });
 
     it('should set error when socket is not connected', () => {
-      mockSocketRef.current.connected = false;
+      vi.mocked(socketService.isConnected).mockReturnValue(false);
 
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -250,6 +243,7 @@ describe('useSearchMessages', () => {
       });
 
       expect(mockSetError).toHaveBeenCalledWith('Not connected to chat server.');
+      expect(socketService.emit).not.toHaveBeenCalled();
     });
   });
 
@@ -257,7 +251,6 @@ describe('useSearchMessages', () => {
     it('should toggle searchMode from false to true', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -273,7 +266,6 @@ describe('useSearchMessages', () => {
     it('should toggle searchMode from true to false and clear search', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -302,7 +294,6 @@ describe('useSearchMessages', () => {
     it('should set searchMode to false', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -322,7 +313,6 @@ describe('useSearchMessages', () => {
     it('should clear all search state', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -346,7 +336,6 @@ describe('useSearchMessages', () => {
     it('should emit join event to reload messages', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -356,7 +345,7 @@ describe('useSearchMessages', () => {
         result.current.exitSearchMode();
       });
 
-      expect(mockSocketRef.current.emit).toHaveBeenCalledWith('join', { email: 'testuser' });
+      expect(socketService.emit).toHaveBeenCalledWith('join', { email: 'testuser' });
     });
   });
 
@@ -364,7 +353,6 @@ describe('useSearchMessages', () => {
     it('should update search results and total', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -387,7 +375,6 @@ describe('useSearchMessages', () => {
     it('should handle empty results', () => {
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -407,7 +394,6 @@ describe('useSearchMessages', () => {
       const mockSetMessages = vi.fn();
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -436,7 +422,6 @@ describe('useSearchMessages', () => {
       const mockSetMessages = vi.fn();
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })
@@ -463,7 +448,6 @@ describe('useSearchMessages', () => {
       const mockSetMessages = vi.fn();
       const { result } = renderHook(() =>
         useSearchMessages({
-          socketRef: mockSocketRef,
           username: 'testuser',
           setError: mockSetError,
         })

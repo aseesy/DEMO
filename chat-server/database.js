@@ -37,10 +37,13 @@ async function initDatabase() {
     // Health check will report database status but server stays up
   }
 
+  // Phase 2: Use TaskManager for background tasks
+  const { taskManager } = require('./src/infrastructure/tasks/TaskManager');
+
   // Run background tasks if connected
   if (dbConnected) {
     // Validate schema on startup (non-blocking)
-    setTimeout(async () => {
+    taskManager.schedule('schema-validation', async () => {
       try {
         const schemaValidator = require('./src/infrastructure/database/schemaValidator');
         const validation = await schemaValidator.validateCoreSchema();
@@ -69,33 +72,33 @@ async function initDatabase() {
     }, 1000);
 
     // Run PostgreSQL migration in background
-    setTimeout(() => {
+    taskManager.schedule('run-migration', async () => {
       const { runMigration } = require('./run-migration');
-      runMigration().catch(err => {
+      await runMigration().catch(err => {
         console.error('⚠️  Migration error (non-blocking):', err.message);
       });
     }, 2000);
 
     // Initialize Neo4j indexes and sync
-    setTimeout(() => {
+    taskManager.schedule('neo4j-init', async () => {
       try {
         const neo4jClient = require('./src/infrastructure/database/neo4jClient');
         if (neo4jClient.isAvailable()) {
           console.log('🔄 Initializing Neo4j indexes...');
-          neo4jClient.initializeIndexes().catch(err => {
+          await neo4jClient.initializeIndexes().catch(err => {
             console.warn('⚠️  Neo4j index initialization failed (non-blocking):', err.message);
           });
 
           // Run initial sync validation with auto-fix enabled
-          setTimeout(() => {
+          taskManager.schedule('db-sync-validation', async () => {
             const dbSyncValidator = require('./src/services/sync/dbSyncValidator');
-            dbSyncValidator.runFullValidation(true).catch(err => {
+            await dbSyncValidator.runFullValidation(true).catch(err => {
               console.warn('⚠️  Database sync validation failed (non-blocking):', err.message);
             });
           }, 5000);
 
           // Start periodic relationship metadata sync job
-          setTimeout(() => {
+          taskManager.schedule('relationship-sync', async () => {
             try {
               const relationshipSync = require('./src/services/sync/relationshipSync');
               relationshipSync.startSyncJob(60);
@@ -129,9 +132,6 @@ function loadServices() {
     roomManager: require('./roomManager'),
     emailService: require('./emailService'),
     dbSafe: require('./dbSafe'),
-    FigmaService: require('./figmaService'),
-    ComponentScanner: require('./componentScanner'),
-    FigmaGenerator: require('./figmaGenerator'),
     communicationStats: require('./communicationStats'),
     invitationManager: require('./libs/invitation-manager'),
     notificationManager: require('./libs/notification-manager'),
@@ -141,6 +141,24 @@ function loadServices() {
     contactIntelligence: require('./contactIntelligence'),
     threadManager: require('./threadManager'),
   };
+
+  // Add services from services layer
+  const { profileService, userSessionService } = require('./src/services');
+  services.profileService = profileService;
+  services.userSessionService = userSessionService;
+
+  // Phase 2: Add EventBus and TaskManager to services
+  const { eventBus } = require('./src/infrastructure/events/EventBus');
+  const { taskManager } = require('./src/infrastructure/tasks/TaskManager');
+  services.eventBus = eventBus;
+  services.taskManager = taskManager;
+
+  // Phase 1: Initialize UserSessionService (load sessions from database)
+  if (userSessionService && userSessionService.initialize) {
+    userSessionService.initialize().catch(err => {
+      console.warn('[loadServices] UserSessionService initialization failed (non-blocking):', err.message);
+    });
+  }
 
   // Register domain event listeners (decoupled side effects)
   // This breaks dependency cycles by using events instead of direct calls
@@ -154,11 +172,6 @@ function loadServices() {
     console.warn('⚠️  Failed to register thread event listeners:', err.message);
   }
 
-  // Add services from services layer
-  const { profileService, userSessionService } = require('./src/services');
-  services.profileService = profileService;
-  services.userSessionService = userSessionService;
-
   // Add specific utility functions
   const { isValidEmail } = require('./src/infrastructure/validation/validators');
   const { ensureProfileColumnsExist } = require('./src/infrastructure/database/schema');
@@ -169,17 +182,6 @@ function loadServices() {
   // Add proactive coach and feedback learner
   services.proactiveCoach = require('./proactiveCoach');
   services.feedbackLearner = require('./feedbackLearner');
-
-  // Initialize Figma service if API token is provided
-  services.figmaService = null;
-  if (process.env.FIGMA_ACCESS_TOKEN) {
-    try {
-      services.figmaService = new services.FigmaService(process.env.FIGMA_ACCESS_TOKEN);
-      console.log('✅ Figma API service initialized');
-    } catch (error) {
-      console.warn('⚠️  Figma API service not available:', error.message);
-    }
-  }
 
   return services;
 }

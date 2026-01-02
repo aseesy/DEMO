@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "LiaiZen - Collaborative Parenting Platform",
   "scripts": {
+    "test:shutdown": "cd chat-server && npm run test:shutdown",
+    "test:shutdown:kill": "cd chat-server && npm run test:shutdown:kill",
+    "monitor:tasks": "cd chat-server && npm run monitor:tasks",
+    "monitor:events": "cd chat-server && npm run monitor:events",
     "restart": "./scripts/restart-servers.sh",
     "restart:backend": "./scripts/restart-servers.sh backend",
     "restart:frontend": "./scripts/restart-servers.sh frontend",
@@ -28,7 +32,12 @@
     "test:coverage:backend": "cd chat-server && npm run test:coverage -- --passWithNoTests || true",
     "test:coverage:frontend": "cd chat-client-vite && npm run test:coverage -- --passWithNoTests || true",
     "verify:production": "node scripts/test/verify-production.js",
-    "test:deploy": "node scripts/test/git-vercel.test.js"
+    "test:deploy": "node scripts/test/git-vercel.test.js",
+    "tools:git-history": "python3 tools/audit/git_history.py",
+    "tools:db-analysis": "python3 tools/audit/db_analysis.py",
+    "tools:dashboard": "python3 tools/dashboard/backend.py",
+    "tools:socket-diagnostic": "python3 tools/diagnostics/socket_connection.py",
+    "tools:all": "npm run tools:git-history && npm run tools:db-analysis && npm run tools:dashboard"
   },
   "private": true,
   "engines": {

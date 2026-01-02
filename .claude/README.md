@@ -1,14 +1,16 @@
 # .claude/ - LiaiZen Project Extensions
 
-This directory contains **LiaiZen-specific extensions** to the [sdd-agentic-framework](../sdd-agentic-framework/).
+This directory contains **LiaiZen-specific extensions** to the SDD framework.
 
-## Architecture Pattern: Framework + Project Extensions
+## Architecture Pattern: Integrated Framework + Project Extensions
 
 ```
-sdd-agentic-framework/           ← Core SDD framework (git submodule)
-├── .claude/                     ← Framework's agents, skills, commands
-├── .specify/                    ← Templates, scripts, constitution
-└── src/sdd/                     ← Python DS-STAR agents
+.specify/                        ← SDD framework code (integrated)
+├── memory/                      ← Constitutional governance
+├── scripts/bash/                ← Automation scripts
+├── src/sdd/                     ← Python DS-STAR agents
+├── config/                      ← Framework configuration
+└── specs/                       ← Feature specifications
 
 .claude/                         ← LiaiZen-specific extensions (THIS DIRECTORY)
 ├── agents/                      ← LiaiZen domain-specific agents only
@@ -26,32 +28,9 @@ sdd-agentic-framework/           ← Core SDD framework (git submodule)
 - `agents/product/ui-designer.md` - UI/UX design specialist
 - `agents/quality/engineering-diagnostic-agent.md` - Error diagnosis and root cause analysis
 
-**All other agents come from the framework:**
+**General-purpose agents are referenced via SDD framework patterns:**
 
-```bash
-# Framework agents (use these via relative paths):
-../sdd-agentic-framework/.claude/agents/
-├── architecture/
-│   ├── backend-architect.md
-│   └── subagent-architect.md
-├── data/
-│   └── database-specialist.md
-├── engineering/
-│   ├── frontend-specialist.md
-│   └── full-stack-developer.md
-├── operations/
-│   ├── devops-engineer.md
-│   └── performance-engineer.md
-├── product/
-│   ├── planning-agent.md
-│   ├── prd-specialist.md
-│   ├── specification-agent.md
-│   ├── task-orchestrator.md
-│   └── tasks-agent.md
-└── quality/
-    ├── security-specialist.md
-    └── testing-specialist.md
-```
+The SDD framework provides general-purpose agent patterns and workflows. For specific agent implementations, refer to the SDD framework documentation in `.specify/` and `docs/AGENTS.md`.
 
 ### Commands (LiaiZen-Customized Wrappers)
 
@@ -74,24 +53,9 @@ These commands are **customized for LiaiZen** with:
 
 These commands **delegate to framework agents** but add LiaiZen-specific context.
 
-### Skills (Use Framework's)
+### Skills (SDD Framework)
 
-We **DO NOT duplicate skills** - use framework versions directly:
-
-```bash
-# Framework skills (symlink or reference these):
-../sdd-agentic-framework/.claude/skills/
-├── sdd-workflow/
-│   ├── planning-agent/
-│   ├── sdd-planning/
-│   ├── sdd-specification/
-│   └── sdd-tasks/
-└── validation/
-```
-
-**To use framework skills:**
-
-Claude Code automatically searches parent directories for `.claude/skills/`, so the framework's skills are accessible.
+SDD framework skills and workflows are integrated into the framework codebase in `.specify/`. For skill patterns and workflows, refer to the SDD framework documentation.
 
 ## Usage Pattern
 
@@ -109,21 +73,16 @@ Claude Code automatically searches parent directories for `.claude/skills/`, so 
 - ❌ Skill is part of SDD workflow (planning, specification, tasks)
 - ❌ Command is standard SDD workflow step
 
-### Example: Using Framework Agent
+### Example: Using SDD Framework Patterns
 
 ```markdown
 # In a LiaiZen feature spec
 
-When implementing backend changes, delegate to framework's backend-architect:
+When implementing backend changes, refer to SDD framework patterns:
 
-Use the Task tool:
-
-- subagent_type: "backend-architect"
-- description: "Design API endpoints for expense sharing"
-- prompt: "Design RESTful API for co-parent expense tracking..."
+Use the Task tool with appropriate agent type for backend architecture work.
+Refer to docs/AGENTS.md for available agent patterns.
 ```
-
-Claude Code will find `backend-architect` in `../sdd-agentic-framework/.claude/agents/`.
 
 ### Example: Using LiaiZen Agent
 
@@ -141,59 +100,31 @@ Claude Code will find `product-manager` in `.claude/agents/product/`.
 
 ## Benefits of This Pattern
 
-### ✅ Framework Updates
-
-Get improvements from sdd-agentic-framework:
-
-```bash
-cd sdd-agentic-framework
-git pull origin main
-# Automatically get updated agents, skills, and core commands
-```
-
 ### ✅ Clear Separation
 
-- **Framework** = General SDD methodology, agents, workflows
+- **Framework** = General SDD methodology (in `.specify/`)
 - **Project** = LiaiZen domain expertise, MCP integration, custom validation
 
 ### ✅ Reduced Duplication
 
-- 3 agents instead of 17
-- 0 duplicate skills
+- 3 LiaiZen-specific agents
 - Commands reference framework but add LiaiZen context
+- Framework code integrated in `.specify/`
 
 ### ✅ Easier Maintenance
 
-- Framework agents update automatically via git submodule
+- Framework code integrated directly (no submodule complexity)
 - Only maintain LiaiZen-specific additions
 - Clear documentation of what's custom vs standard
-
-## Updating the Framework
-
-To get latest framework improvements:
-
-```bash
-# Update submodule
-git submodule update --remote sdd-agentic-framework
-
-# Review changes
-cd sdd-agentic-framework
-git log --oneline -10
-
-# Test that LiaiZen extensions still work
-cd ..
-# Run your /specify or /plan commands
-```
 
 ## Framework vs Project Responsibilities
 
 | Concern                                  | Owned By    | Location                                                |
 | ---------------------------------------- | ----------- | ------------------------------------------------------- |
-| SDD methodology                          | Framework   | `sdd-agentic-framework/.specify/`                       |
-| Constitutional principles                | Framework   | `sdd-agentic-framework/.specify/memory/constitution.md` |
-| General agents (backend, frontend, etc.) | Framework   | `sdd-agentic-framework/.claude/agents/`                 |
-| SDD workflow skills                      | Framework   | `sdd-agentic-framework/.claude/skills/`                 |
-| DS-STAR quality gates                    | Framework   | `sdd-agentic-framework/src/sdd/`                        |
+| SDD methodology                          | Framework   | `.specify/`                                             |
+| Constitutional principles                | Framework   | `.specify/memory/constitution.md`                       |
+| DS-STAR quality gates                    | Framework   | `.specify/src/sdd/`                                     |
+| Automation scripts                       | Framework   | `.specify/scripts/bash/`                                |
 | **Co-parenting domain**                  | **Project** | `.claude/agents/product/product-manager.md`             |
 | **MCP integration**                      | **Project** | `.claude/commands/*.md`                                 |
 | **LiaiZen validation**                   | **Project** | `.claude/commands/validate-domain.md`                   |
@@ -203,45 +134,20 @@ cd ..
 
 ### "Agent not found"
 
-Check if it's a framework agent:
-
-```bash
-find sdd-agentic-framework/.claude/agents -name "backend-architect.md"
-```
-
-If found, it's accessible - Claude Code searches parent `.claude/` directories.
-
-### "Skill not found"
-
-Framework skills should be auto-discovered. If not:
-
-```bash
-ls sdd-agentic-framework/.claude/skills/
-```
-
-Verify the framework submodule is properly initialized:
-
-```bash
-git submodule status
-git submodule update --init
-```
+LiaiZen-specific agents are in `.claude/agents/`. For general SDD framework agent patterns, refer to `docs/AGENTS.md`.
 
 ### "Command behavior changed"
 
-If framework updates break LiaiZen commands, you have two options:
-
-1. **Pin framework version**: `cd sdd-agentic-framework && git checkout <stable-tag>`
-2. **Update LiaiZen commands**: Adjust `.claude/commands/*.md` to work with new framework
+If framework changes break LiaiZen commands, update `.claude/commands/*.md` to work with the updated framework code in `.specify/`.
 
 ## Related Documentation
 
-- **Framework README**: `../sdd-agentic-framework/README.md`
-- **Framework Setup**: `../sdd-agentic-framework/START_HERE.md`
-- **SDD Workflow**: `../sdd-agentic-framework/AGENTS.md`
-- **LiaiZen Architecture**: `../CLAUDE.md`
+- **SDD Framework**: `.specify/` directory (framework code)
+- **SDD Agents Reference**: `docs/AGENTS.md`
+- **LiaiZen Architecture**: `CLAUDE.md`
 - **Co-Parenting Domain**: See agents/product/product-manager.md
 
 ---
 
-**Last Updated**: 2025-12-29
-**Pattern**: Framework + Project Extensions (Option 2)
+**Last Updated**: 2025-01-02
+**Pattern**: Integrated Framework + Project Extensions

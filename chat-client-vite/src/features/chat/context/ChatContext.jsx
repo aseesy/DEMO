@@ -1,6 +1,6 @@
 import React from 'react';
-import { socketService } from '../../../services/socket/index.js';
-import { authStorage } from '../../../adapters/storage/index.js';
+import { socketService as socketServiceV2 } from '../../../services/socket/SocketService.v2.js';
+import { tokenManager } from '../../../utils/tokenManager.js';
 import { unreadService } from '../../../services/chat/index.js';
 
 // Independent hooks - each subscribes to its own service
@@ -10,7 +10,7 @@ import { useTyping } from '../../../hooks/chat/useTyping.js';
 import { useThreads } from '../../../hooks/chat/useThreads.js';
 import { useCoaching } from '../../../hooks/chat/useCoaching.js';
 import { useUnread } from '../../../hooks/chat/useUnread.js';
-import { useSocketState, useSocketConnection } from '../../../hooks/socket/index.js';
+import { useSocket } from '../../../hooks/socket/useSocket.js';
 
 // Feature hooks
 import { useSearchMessages } from '../model/useSearchMessages.js';
@@ -26,21 +26,19 @@ import { useMediationContext } from '../hooks/useMediationContext.js';
 const ChatContext = React.createContext(null);
 
 export function ChatProvider({ children, username, isAuthenticated, currentView, onNewMessage }) {
-  // DEBUG: Log ChatProvider mount
-  console.log('[ChatProvider] Rendering with:', { username, isAuthenticated, currentView });
+  // DEBUG: Log ChatProvider mount with timestamp
+  console.log('[ChatProvider] ========================================');
+  console.log('[ChatProvider] MOUNT at', new Date().toISOString());
+  console.log('[ChatProvider] Props:', { username, isAuthenticated, currentView });
+  console.log('[ChatProvider] ========================================');
 
-  // === SOCKET CONNECTION (infrastructure) ===
-  // Use useSocketConnection hook to manage connection lifecycle
-  const getToken = React.useCallback(() => {
-    const token = authStorage.getToken();
-    console.log('[ChatProvider] getToken called:', token ? 'has token' : 'NO TOKEN');
-    return token;
-  }, []);
-
-  console.log('[ChatProvider] Calling useSocketConnection with isAuthenticated:', isAuthenticated);
-  useSocketConnection({ isAuthenticated, getToken });
-
-  const { isConnected } = useSocketState();
+  // === SOCKET CONNECTION (infrastructure) - v2 Simplified System ===
+  // Memoize token to prevent unnecessary re-connections
+  const token = React.useMemo(() => tokenManager.getToken(), []);
+  const { isConnected } = useSocket({ 
+    token, 
+    enabled: isAuthenticated 
+  });
   console.log('[ChatProvider] Socket state - isConnected:', isConnected);
 
   // === INDEPENDENT HOOKS (each subscribes to its own service) ===
@@ -96,10 +94,10 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   // Note: handleSearchResults and handleJumpToMessageResult are stable (useCallback in hook)
   React.useEffect(() => {
     const unsubscribes = [
-      socketService.subscribe('search_results', ({ messages: results, total }) => {
+      socketServiceV2.subscribe('search_results', ({ messages: results, total }) => {
         searchHook.handleSearchResults({ messages: results, total });
       }),
-      socketService.subscribe(
+      socketServiceV2.subscribe(
         'jump_to_message_result',
         ({ messages: contextMsgs, targetMessageId }) => {
           // This needs setMessages from messaging - we'll handle it differently
@@ -211,7 +209,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   }, []);
 
   const flagMessage = React.useCallback((messageId, reason = null) => {
-    socketService.emit('flag_message', { messageId, reason });
+    socketServiceV2.emit('flag_message', { messageId, reason });
   }, []);
 
   // === CONTEXT VALUE ===

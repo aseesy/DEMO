@@ -1,8 +1,11 @@
 # .claude/ Refactoring Summary
 
-**Date**: 2025-12-29
-**Pattern**: Framework + Project Extensions (Option 2)
+**Date**: 2025-12-29  
+**Last Updated**: 2025-01-02  
+**Pattern**: Integrated Framework + Project Extensions  
 **Status**: ✅ Complete
+
+**Note**: This document describes the refactoring that happened on 2025-12-29. The SDD framework is now integrated directly in `.specify/` (not as a submodule). See `.claude/README.md` for current architecture.
 
 ## What Changed
 
@@ -121,13 +124,8 @@ sdd-agentic-framework/.claude/
 
 ## Backup
 
-Full backup created at `.claude.backup/` (gitignored) in case rollback needed:
-
-```bash
-# To rollback (if needed):
-rm -rf .claude
-mv .claude.backup .claude
-```
+~~Full backup created at `.claude.backup/` (gitignored) in case rollback needed~~  
+**Note**: Backup removed on 2025-01-02 after confirming refactoring is stable.
 
 ## Verification
 

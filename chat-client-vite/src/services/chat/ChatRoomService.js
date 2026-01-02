@@ -28,6 +28,9 @@ class ChatRoomService {
   }
 
   handleJoinSuccess(data) {
+    console.log('[ChatRoomService] ========== JOIN_SUCCESS RECEIVED ==========');
+    console.log('[ChatRoomService] Room ID:', data.roomId);
+    console.log('[ChatRoomService] Email:', data.email);
     this.roomId = data.roomId || this.roomId;
     this.isJoined = true;
     this.error = null;
@@ -53,10 +56,24 @@ class ChatRoomService {
 
   /**
    * Join a room
+   * Will emit immediately if connected, or wait for connection
    */
   join(email) {
     if (!email) return false;
-    return socketService.emit('join', { email });
+
+    // If connected, emit immediately
+    if (socketService.isConnected()) {
+      return socketService.emit('join', { email });
+    }
+
+    // Not connected yet - wait for connection then emit
+    console.log('[ChatRoomService] Waiting for connection before joining...');
+    const unsubscribe = socketService.subscribe('connect', () => {
+      console.log('[ChatRoomService] Connected, now joining room');
+      socketService.emit('join', { email });
+      unsubscribe();
+    });
+    return true; // Pending
   }
 
   /**

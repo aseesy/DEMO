@@ -75,6 +75,8 @@ function ChatRoomContent({
     toggleSearchMode,
     exitSearchMode,
     messages,
+    isConnected,
+    isJoined,
   } = useChatContext();
 
   // Landing page state
@@ -636,6 +638,28 @@ function ChatRoomContent({
   // Main authenticated UI
   return (
     <>
+      {/* DEBUG: Socket connection indicator - REMOVE after debugging */}
+      {import.meta.env.DEV && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+            backgroundColor: isConnected ? '#22c55e' : '#ef4444',
+            color: 'white',
+            padding: '4px 8px',
+            fontSize: '12px',
+            textAlign: 'center',
+          }}
+        >
+          Socket: {isConnected ? 'CONNECTED' : 'DISCONNECTED'} |
+          Joined: {isJoined ? 'YES' : 'NO'} |
+          Messages: {messages?.length || 0} |
+          Auth: {isAuthenticated ? 'YES' : 'NO'}
+        </div>
+      )}
       <Navigation
         currentView={currentView}
         setCurrentView={setCurrentView}

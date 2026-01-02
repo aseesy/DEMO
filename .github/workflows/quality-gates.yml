@@ -151,10 +151,54 @@ jobs:
           echo "📦 Bundle size: $SIZE"
           # Add size check logic here if needed
 
+  python-sdd:
+    name: Python SDD Quality Checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .specify
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Upgrade pip
+        run: pip install --upgrade pip
+      
+      - name: Install dependencies
+        run: pip install '.[dev]'
+      
+      - name: Run ruff (linting)
+        run: ruff check src/sdd
+      
+      - name: Check ruff formatting
+        run: ruff format --check src/sdd
+      
+      - name: Run pyright (type checking)
+        run: pyright src/sdd || {
+          echo "⚠️ Type checking issues found. Review pyright output above."
+          exit 1
+        }
+      
+      - name: Run pytest (if tests exist)
+        run: |
+          if [ -d "tests" ] || [ -n "$(find . -name '*test*.py' -type f)" ]; then
+            pytest --cov=sdd --cov-report=term-missing --cov-report=xml || {
+              echo "⚠️ Tests failed or coverage threshold not met"
+              exit 1
+            }
+          else
+            echo "ℹ️ No tests found, skipping pytest"
+          fi
+
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
-    needs: [lint, test-backend, test-frontend, security, build]
+    needs: [lint, test-backend, test-frontend, security, build, python-sdd]
     steps:
       - uses: actions/checkout@v4
       
@@ -166,6 +210,8 @@ jobs:
           echo "  - Tests: ✅"
           echo "  - Security: ✅"
           echo "  - Build: ✅"
+          echo "  - Python SDD: ✅"
+
 
 
 

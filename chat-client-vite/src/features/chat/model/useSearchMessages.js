@@ -9,8 +9,9 @@
  */
 
 import React from 'react';
+import { socketService } from '../../../services/socket/index.js';
 
-export function useSearchMessages({ socketRef, username, setError }) {
+export function useSearchMessages({ username, setError }) {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchResults, setSearchResults] = React.useState([]);
   const [searchTotal, setSearchTotal] = React.useState(0);
@@ -21,7 +22,7 @@ export function useSearchMessages({ socketRef, username, setError }) {
   // Search messages
   const searchMessages = React.useCallback(
     query => {
-      if (!socketRef?.current?.connected) {
+      if (!socketService.isConnected()) {
         setError?.('Not connected to chat server.');
         return;
       }
@@ -35,26 +36,26 @@ export function useSearchMessages({ socketRef, username, setError }) {
       }
 
       setIsSearching(true);
-      socketRef.current.emit('search_messages', {
+      socketService.emit('search_messages', {
         query: query.trim(),
         limit: 50,
         offset: 0,
       });
     },
-    [socketRef, setError]
+    [setError]
   );
 
   // Jump to a specific message
   const jumpToMessage = React.useCallback(
     messageId => {
-      if (!socketRef?.current?.connected) {
+      if (!socketService.isConnected()) {
         setError?.('Not connected to chat server.');
         return;
       }
 
-      socketRef.current.emit('jump_to_message', { messageId });
+      socketService.emit('jump_to_message', { messageId });
     },
-    [socketRef, setError]
+    [setError]
   );
 
   // Toggle search mode
@@ -77,10 +78,10 @@ export function useSearchMessages({ socketRef, username, setError }) {
     setSearchResults([]);
     setSearchTotal(0);
     // Re-join to reload current messages
-    if (socketRef?.current?.connected && username) {
-      socketRef.current.emit('join', { email: username });
+    if (socketService.isConnected() && username) {
+      socketService.emit('join', { email: username });
     }
-  }, [socketRef, username]);
+  }, [username]);
 
   // Handle search results from socket
   const handleSearchResults = React.useCallback(({ messages: results, total }) => {

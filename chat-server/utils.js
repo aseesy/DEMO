@@ -121,6 +121,8 @@ function validateUsername(username) {
 
 /**
  * Health check route handler
+ * Phase 1: Added connection pool monitoring
+ * Phase 2: Added TaskManager and EventBus stats
  */
 function healthCheckHandler(req, res, dbConnected, dbError) {
   // CRITICAL: Always return 200 for Railway health checks
@@ -142,7 +144,51 @@ function healthCheckHandler(req, res, dbConnected, dbError) {
     response.databaseError = dbError;
     response.warning = 'Database connection failed - retrying in background';
   } else {
-    response.database = dbConnected ? 'connected' : 'connecting';
+    response.database = {
+      status: dbConnected ? 'connected' : 'connecting'
+    };
+    
+    // Phase 1: Add pool stats if available
+    try {
+      const dbPostgres = require('./dbPostgres');
+      const poolStats = dbPostgres.getPoolStats();
+      if (poolStats) {
+        response.database.pool = poolStats;
+      }
+    } catch (err) {
+      // Ignore errors getting pool stats
+    }
+  }
+
+  // Phase 2: Add TaskManager stats
+  try {
+    const { taskManager } = require('./src/infrastructure/tasks/TaskManager');
+    response.tasks = {
+      active: taskManager.getTaskCount(),
+      details: taskManager.getActiveTasks().map(t => ({
+        name: t.name,
+        type: t.type,
+        createdAt: t.createdAt
+      }))
+    };
+  } catch (err) {
+    // Ignore errors getting task stats
+  }
+
+  // Phase 2: Add EventBus stats
+  try {
+    const { eventBus } = require('./src/infrastructure/events/EventBus');
+    const history = eventBus.getHistory(10);
+    response.events = {
+      recent: history.length,
+      subscribers: eventBus.getSubscriberCount(),
+      recentEvents: history.map(e => ({
+        event: e.event,
+        timestamp: e.timestamp
+      }))
+    };
+  } catch (err) {
+    // Ignore errors getting event stats
   }
 
   // Always return 200 - server is up and responding
@@ -152,19 +198,92 @@ function healthCheckHandler(req, res, dbConnected, dbError) {
 
 /**
  * Graceful shutdown handlers
+ * Phase 2: Complete shutdown - closes sockets, DB, and cancels tasks
  */
-function setupGracefulShutdown(server) {
-  const shutdown = signal => {
+function setupGracefulShutdown(server, io, services) {
+  const shutdown = async (signal) => {
     console.log(`${signal} received, shutting down gracefully...`);
-    server.close(() => {
-      console.log('Server closed');
-      process.exit(0);
-    });
+    
+    let shutdownComplete = false;
 
-    // Force exit after 10 seconds
+    // Phase 2: Cancel all background tasks first
+    try {
+      const { taskManager } = require('./src/infrastructure/tasks/TaskManager');
+      const cancelledCount = taskManager.cancelAll();
+      console.log(`[Shutdown] Cancelled ${cancelledCount} background tasks`);
+    } catch (err) {
+      console.warn('[Shutdown] Error cancelling tasks:', err.message);
+    }
+
+    // Phase 2: Close Socket.io server (disconnects all clients gracefully)
+    if (io) {
+      return new Promise((resolve) => {
+        io.close(() => {
+          console.log('[Shutdown] Socket.io server closed');
+          
+          // Close HTTP server
+          server.close(() => {
+            console.log('[Shutdown] HTTP server closed');
+            
+            // Phase 2: Close database connections
+            if (services?.dbPostgres) {
+              const db = services.dbPostgres;
+              if (db.end) {
+                db.end()
+                  .then(() => {
+                    console.log('[Shutdown] Database connections closed');
+                    shutdownComplete = true;
+                    process.exit(0);
+                  })
+                  .catch((err) => {
+                    console.error('[Shutdown] Error closing database:', err.message);
+                    shutdownComplete = true;
+                    process.exit(1);
+                  });
+              } else {
+                shutdownComplete = true;
+                process.exit(0);
+              }
+            } else {
+              shutdownComplete = true;
+              process.exit(0);
+            }
+          });
+        });
+      });
+    } else {
+      // No Socket.io - just close HTTP server
+      server.close(() => {
+        console.log('[Shutdown] HTTP server closed');
+        
+        // Close database connections
+        if (services?.dbPostgres) {
+          const db = services.dbPostgres;
+          if (db.end) {
+            db.end()
+              .then(() => {
+                console.log('[Shutdown] Database connections closed');
+                process.exit(0);
+              })
+              .catch((err) => {
+                console.error('[Shutdown] Error closing database:', err.message);
+                process.exit(1);
+              });
+          } else {
+            process.exit(0);
+          }
+        } else {
+          process.exit(0);
+        }
+      });
+    }
+
+    // Force exit after 10 seconds (safety timeout)
     setTimeout(() => {
-      console.error('Forced shutdown after timeout');
-      process.exit(1);
+      if (!shutdownComplete) {
+        console.error('[Shutdown] Forced shutdown after timeout');
+        process.exit(1);
+      }
     }, 10000);
   };
 

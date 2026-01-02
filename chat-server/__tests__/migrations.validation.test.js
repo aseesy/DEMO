@@ -252,8 +252,9 @@ describe('Migration File Integrity', () => {
       const danglingBegin = (content.match(/BEGIN/gi) || []).length;
       const commits = (content.match(/COMMIT/gi) || []).length;
 
-      // Transactions should be balanced (or use DO $$ blocks)
-      if (danglingBegin > 0 && !content.includes('DO $$')) {
+      // Transactions should be balanced (or use DO $$ blocks or PL/pgSQL functions)
+      const hasPLpgSQL = content.includes('DO $$') || content.includes('AS $$') || content.includes('LANGUAGE plpgsql');
+      if (danglingBegin > 0 && !hasPLpgSQL) {
         if (commits < danglingBegin) {
           throw new Error(`${file}: Unbalanced BEGIN/COMMIT`);
         }

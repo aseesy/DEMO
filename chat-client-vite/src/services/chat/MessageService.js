@@ -96,6 +96,9 @@ class MessageService {
   }
 
   handleMessageHistory(data) {
+    console.log('[MessageService] ========== MESSAGE_HISTORY RECEIVED ==========');
+    console.log('[MessageService] Messages count:', data.messages?.length);
+    console.log('[MessageService] HasMore:', data.hasMore);
     if (data.messages) {
       // Root cause fix: Don't replace existing messages with empty array
       // message_history is meant to REPLACE (fresh load), but if server sends

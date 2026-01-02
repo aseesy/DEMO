@@ -1,3 +1,7 @@
+---
+name: ui-designer
+---
+
 # Agent: ui-designer
 
 **Department**: product

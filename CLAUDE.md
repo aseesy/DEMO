@@ -257,16 +257,17 @@ Auto-deploy on push to `main` branch for both platforms.
 
 ## SDD Framework
 
-**LiaiZen uses the SDD Agentic Framework** as a git submodule with project-specific extensions.
+**LiaiZen uses the SDD Agentic Framework** integrated directly with project-specific extensions.
 
 ### Framework Architecture
 
 ```
-sdd-agentic-framework/           ← Core framework (submodule)
-├── .claude/agents/              ← 14 general-purpose agents
-├── .claude/skills/              ← SDD workflow skills
-├── .specify/                    ← Templates, scripts, constitution
-└── src/sdd/                     ← DS-STAR quality gates (Python)
+.specify/                        ← SDD framework code (integrated)
+├── memory/                      ← Constitutional governance
+├── scripts/bash/                ← Automation scripts
+├── src/sdd/                     ← DS-STAR quality gates (Python)
+├── config/                      ← Framework configuration
+└── specs/                       ← Feature specifications
 
 .claude/                         ← LiaiZen extensions (this project)
 ├── agents/                      ← 3 co-parenting domain agents
@@ -276,8 +277,8 @@ sdd-agentic-framework/           ← Core framework (submodule)
 
 ### How It Works
 
-1. **Framework provides**: General SDD methodology, workflow agents (backend, frontend, database, testing, etc.), constitutional principles, quality gates
-2. **LiaiZen adds**: Co-parenting domain expertise (product-manager), MCP server integration, domain validation
+1. **Framework provides** (in `.specify/`): General SDD methodology, constitutional principles, quality gates, automation scripts
+2. **LiaiZen adds** (in `.claude/`): Co-parenting domain expertise (product-manager), MCP server integration, domain validation
 
 ### Available Commands
 
@@ -293,19 +294,19 @@ sdd-agentic-framework/           ← Core framework (submodule)
 
 **Documentation:**
 
-- Framework docs: `sdd-agentic-framework/README.md`, `START_HERE.md`, `AGENTS.md`
+- SDD Framework: `.specify/` directory
+- SDD Agents Reference: `docs/AGENTS.md`
 - LiaiZen extensions: `.claude/README.md`
 
 ### LiaiZen-Specific Agents
 
-Located in `.claude/agents/` (not in framework):
+Located in `.claude/agents/`:
 
 - **product-manager** - Product strategy for co-parenting platform
 - **ui-designer** - UI/UX design specialist
 - **engineering-diagnostic-agent** - Error diagnosis and root cause analysis
 
-**All other agents come from framework** (`sdd-agentic-framework/.claude/agents/`):
-backend-architect, frontend-specialist, database-specialist, testing-specialist, security-specialist, devops-engineer, performance-engineer, planning-agent, prd-specialist, specification-agent, task-orchestrator, tasks-agent, etc.
+For general SDD agent patterns and workflows, refer to `docs/AGENTS.md` and the SDD framework code in `.specify/`.
 
 ## Co-Parenting Domain Principles
 

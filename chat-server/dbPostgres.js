@@ -76,6 +76,23 @@ module.exports = Object.assign(db, {
       return false;
     }
   },
+  // Phase 1: Connection pool monitoring
+  getPoolStats: () => {
+    if (!db || !db.totalCount) {
+      return null;
+    }
+    try {
+      return {
+        total: db.totalCount || 0,
+        idle: db.idleCount || 0,
+        waiting: db.waitingCount || 0,
+        max: db.options?.max || 10,
+        healthy: (db.totalCount || 0) < (db.options?.max || 10),
+      };
+    } catch (err) {
+      return null;
+    }
+  },
   // Compatibility functions for migration from SQLite
   getDb: async () => db, // Return the PostgreSQL pool
   saveDatabase: () => {

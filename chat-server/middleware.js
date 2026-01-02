@@ -151,7 +151,6 @@ function setupCors(app) {
     allowedHeaders: [
       'Content-Type',
       'Authorization',
-      'X-Figma-Token',
       'X-Requested-With',
       'Accept',
       'Origin',

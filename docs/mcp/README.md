@@ -318,7 +318,6 @@ When brand values change:
 
 Consider adding:
 
-- **Figma MCP**: Design-to-code workflow
 - **Firebase MCP**: Direct database access
 - **OpenAI MCP**: AI model integration
 - **Vercel MCP**: Deployment management

@@ -18,6 +18,9 @@ import { PrivacyPage } from './features/legal/PrivacyPage.jsx';
 import { TermsPage } from './features/legal/TermsPage.jsx';
 // Showcase
 import { UIShowcase } from './features/showcase/UIShowcase.jsx';
+// Debug
+import SocketDiagnostic from './SocketDiagnostic.jsx';
+import { SocketTestV2 } from './features/chat/test/SocketTest.v2.jsx';
 // Quizzes
 import { QuizzesPage } from './features/quizzes/QuizzesPage.jsx';
 import { CoParentingStanceQuiz } from './features/quizzes/CoParentingStanceQuiz.jsx';
@@ -225,6 +228,10 @@ function App() {
                   <Route path="/reset-password" element={<ResetPassword />} />
                   {/* UI Component Showcase - Design System Documentation */}
                   <Route path="/ui-showcase" element={<UIShowcase />} />
+                  {/* Socket Debug Page - TEMPORARY */}
+                  <Route path="/socket-diagnostic" element={<SocketDiagnostic />} />
+                  {/* Socket Test v2 - New Simplified System */}
+                  <Route path="/socket-test-v2" element={<SocketTestV2 />} />
                   {/* Privacy Policy Page */}
                   <Route path="/privacy" element={<PrivacyPage />} />
                   {/* Terms of Service Page */}

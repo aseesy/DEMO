@@ -12,7 +12,6 @@ echo "You'll need access to:"
 echo "  - OpenAI Platform"
 echo "  - Google Account (Gmail App Passwords)"
 echo "  - GitHub Settings"
-echo "  - Figma Settings"
 echo "  - Railway Dashboard"
 echo "  - Neo4j Aura Console"
 echo ""
@@ -82,26 +81,9 @@ echo ""
 read -p "Paste new GitHub token: " new_github_token
 echo ""
 
-# 5. Figma Access Token
+# 5. JWT Secret
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "5️⃣  FIGMA ACCESS TOKEN"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "🔗 Visit: https://www.figma.com/settings"
-echo ""
-echo "Steps:"
-echo "  1. Scroll to 'Personal access tokens'"
-echo "  2. Find old token (if listed) and delete it"
-echo "  3. Click 'Generate new token'"
-echo "  4. Name it: 'LiaiZen Design System'"
-echo "  5. Copy the new token (starts with figd_)"
-echo ""
-read -p "Paste new Figma token: " new_figma_token
-echo ""
-
-# 6. JWT Secret
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "6️⃣  JWT SECRET"
+echo "5️⃣  JWT SECRET"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "Generating new JWT secret..."
@@ -109,9 +91,9 @@ new_jwt_secret=$(node -e "console.log(require('crypto').randomBytes(64).toString
 echo "✅ Generated: $new_jwt_secret"
 echo ""
 
-# 7. Neo4j Password
+# 6. Neo4j Password
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "7️⃣  NEO4J PASSWORD"
+echo "6️⃣  NEO4J PASSWORD"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "🔗 Visit: https://console.neo4j.io"
@@ -124,9 +106,9 @@ echo ""
 read -p "Paste new Neo4j password: " new_neo4j_password
 echo ""
 
-# 8. Railway Database (handled by Railway)
+# 7. Railway Database (handled by Railway)
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "8️⃣  RAILWAY DATABASE"
+echo "7️⃣  RAILWAY DATABASE"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "🔗 Visit: https://railway.app/project/your-project"
@@ -155,7 +137,6 @@ sed -i '' "s|^OPENAI_API_KEY=.*|OPENAI_API_KEY=$new_openai_key|" "$ENV_FILE"
 sed -i '' "s|^GMAIL_APP_PASSWORD=.*|GMAIL_APP_PASSWORD=$new_gmail_password|" "$ENV_FILE"
 sed -i '' "s|^GITHUB_TOKEN=.*|GITHUB_TOKEN=$new_github_token|" "$ENV_FILE"
 sed -i '' "s|^MCP_SERVICE_TOKEN=.*|MCP_SERVICE_TOKEN=$new_github_token|" "$ENV_FILE"
-sed -i '' "s|^FIGMA_ACCESS_TOKEN=.*|FIGMA_ACCESS_TOKEN=$new_figma_token|" "$ENV_FILE"
 sed -i '' "s|^JWT_SECRET=.*|JWT_SECRET=$new_jwt_secret|" "$ENV_FILE"
 sed -i '' "s|^NEO4J_PASSWORD=.*|NEO4J_PASSWORD=$new_neo4j_password|" "$ENV_FILE"
 
@@ -172,7 +153,6 @@ echo ""
 echo "railway variables set OPENAI_API_KEY='$new_openai_key'"
 echo "railway variables set GMAIL_APP_PASSWORD='$new_gmail_password'"
 echo "railway variables set GITHUB_TOKEN='$new_github_token'"
-echo "railway variables set FIGMA_ACCESS_TOKEN='$new_figma_token'"
 echo "railway variables set JWT_SECRET='$new_jwt_secret'"
 echo "railway variables set NEO4J_PASSWORD='$new_neo4j_password'"
 echo ""
@@ -184,7 +164,6 @@ cat > /Users/athenasees/Desktop/chat/scripts/railway-update-secrets.sh << EOF
 railway variables set OPENAI_API_KEY='$new_openai_key'
 railway variables set GMAIL_APP_PASSWORD='$new_gmail_password'
 railway variables set GITHUB_TOKEN='$new_github_token'
-railway variables set FIGMA_ACCESS_TOKEN='$new_figma_token'
 railway variables set JWT_SECRET='$new_jwt_secret'
 railway variables set NEO4J_PASSWORD='$new_neo4j_password'
 EOF
