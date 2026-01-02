@@ -13,6 +13,28 @@ const {
 } = require('./aiActionHelper');
 const { updateUserStats, sendMessageDirectly, gatherAnalysisContext } = require('./aiHelperUtils');
 
+// AI analysis timeout (30 seconds) - prevents indefinite hangs
+const AI_ANALYSIS_TIMEOUT_MS = 30000;
+
+/**
+ * Wrap a promise with a timeout
+ * @param {Promise} promise - Promise to wrap
+ * @param {number} timeoutMs - Timeout in milliseconds
+ * @param {string} operationName - Name for error message
+ * @returns {Promise} Promise that rejects on timeout
+ */
+function withTimeout(promise, timeoutMs, operationName = 'Operation') {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`${operationName} timed out after ${timeoutMs}ms`)),
+        timeoutMs
+      )
+    ),
+  ]);
+}
+
 /**
  * Handles AI mediation for incoming messages
  * @param {Object} socket - Socket.io connection
@@ -124,17 +146,21 @@ async function processAiAnalysis(socket, io, services, context) {
       participants: analysisContext.participantUsernames.length,
     });
 
-    // Call AI mediator
-    const intervention = await aiMediator.analyzeMessage(
-      message,
-      analysisContext.recentMessages,
-      analysisContext.participantUsernames,
-      analysisContext.contactContext.existingContacts,
-      analysisContext.contactContext.aiContext,
-      user.roomId,
-      analysisContext.taskContext,
-      analysisContext.flaggedContext,
-      analysisContext.roleContext
+    // Call AI mediator with timeout protection
+    const intervention = await withTimeout(
+      aiMediator.analyzeMessage(
+        message,
+        analysisContext.recentMessages,
+        analysisContext.participantUsernames,
+        analysisContext.contactContext.existingContacts,
+        analysisContext.contactContext.aiContext,
+        user.roomId,
+        analysisContext.taskContext,
+        analysisContext.flaggedContext,
+        analysisContext.roleContext
+      ),
+      AI_ANALYSIS_TIMEOUT_MS,
+      'AI analysis'
     );
 
     // Handle contact detection if no intervention

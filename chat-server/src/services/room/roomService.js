@@ -10,19 +10,13 @@
 const { BaseService } = require('../BaseService');
 const { NotFoundError, ValidationError, ConflictError } = require('../errors');
 const { PostgresRoomRepository } = require('../../repositories');
-const pairingManager = require('../../../libs/pairing-manager');
 // Note: db is required here for passing to external library (pairingManager)
 const db = require('../../../dbPostgres');
 const {
-  validateUserInput,
-  getUserByEmail,
-} = require('../../../socketHandlers/connectionOperations/userLookup');
-const {
-  resolveOrCreateUserRoom,
-} = require('../../../socketHandlers/connectionOperations/roomResolution');
-const {
-  getMessageHistory,
-} = require('../../../socketHandlers/connectionOperations/messageHistory');
+  joinSocketRoom: joinSocketRoomUseCase,
+  checkRoomMembers: checkRoomMembersUseCase,
+  checkSharedRoom: checkSharedRoomUseCase,
+} = require('./useCases');
 
 class RoomService extends BaseService {
   constructor() {
@@ -97,8 +91,11 @@ class RoomService extends BaseService {
       throw new NotFoundError('User', username);
     }
 
-    const sharedRooms = await this.roomRepository.findSharedRooms(parseInt(user.id));
-    return { isShared: sharedRooms.length > 0 };
+    // Delegate to use case
+    return checkSharedRoomUseCase({
+      userId: user.id,
+      roomRepository: this.roomRepository,
+    });
   }
 
   /**
@@ -112,59 +109,13 @@ class RoomService extends BaseService {
       throw new ValidationError('User ID is required', 'userId');
     }
 
-    let roomId = null;
-
-    // First check if user has an active pairing with shared_room_id
-    // Uses user_pairing_status VIEW internally for consistent pairing-based room lookup
-    try {
-      const activePairing = await pairingManager.getActivePairing(userId, this.db);
-      if (activePairing && activePairing.shared_room_id) {
-        roomId = activePairing.shared_room_id;
-        console.log(
-          `[roomService.checkRoomMembers] User ${username} has active pairing, using shared room: ${roomId}`
-        );
-      }
-    } catch (pairingError) {
-      console.error(
-        `[roomService.checkRoomMembers] Error checking pairing for ${userId}:`,
-        pairingError
-      );
-    }
-
-    // Fallback: get user's room the traditional way
-    if (!roomId) {
-      try {
-        const room = await this.roomManager.getUserRoom(userId);
-        roomId = room?.roomId;
-      } catch (roomError) {
-        console.error(
-          `[roomService.checkRoomMembers] Error getting user room for ${userId}:`,
-          roomError
-        );
-        return { hasMultipleMembers: false, memberCount: 0 };
-      }
-    }
-
-    if (!roomId) {
-      return { hasMultipleMembers: false, memberCount: 0 };
-    }
-
-    // Get room members
-    let members = [];
-    try {
-      members = await this.roomManager.getRoomMembers(roomId);
-    } catch (membersError) {
-      console.error(
-        `[roomService.checkRoomMembers] Error getting room members for ${roomId}:`,
-        membersError
-      );
-      return { hasMultipleMembers: false, memberCount: 0 };
-    }
-
-    return {
-      hasMultipleMembers: members && members.length >= 2,
-      memberCount: members ? members.length : 0,
-    };
+    // Delegate to use case
+    return checkRoomMembersUseCase({
+      userId,
+      username,
+      roomManager: this.roomManager,
+      db: this.db,
+    });
   }
 
   /**
@@ -373,16 +324,10 @@ class RoomService extends BaseService {
   }
 
   /**
-   * Join socket room - orchestrates complete socket join flow
+   * Join socket room - delegates to use case
    *
-   * This method encapsulates all the business logic for joining a room via socket:
-   * - Validates user input
-   * - Looks up user
-   * - Resolves room
-   * - Handles duplicate connections
-   * - Registers session
-   * - Ensures contacts
-   * - Loads message history
+   * REFACTORED: Orchestration logic moved to JoinSocketRoomUseCase.
+   * This method now just validates dependencies and delegates to the use case.
    *
    * @param {string} userIdentifier - Email or username
    * @param {string} socketId - Socket ID
@@ -401,129 +346,16 @@ class RoomService extends BaseService {
       throw new Error('RoomService: userSessionService must be set via setUserSessionService()');
     }
 
-    // Step 1: Validate input
-    const validation = validateUserInput(userIdentifier);
-    if (!validation.valid) {
-      return { success: false, error: validation.error };
-    }
-    const { cleanEmail } = validation;
-
-    // Step 2: Get user
-    let user;
-    try {
-      user = await getUserByEmail(cleanEmail, this.auth);
-    } catch (error) {
-      console.error('[RoomService.joinSocketRoom] getUserByEmail failed:', error.message);
-      return { success: false, error: 'Failed to verify user.', errorContext: 'getUserByEmail' };
-    }
-
-    if (!user) {
-      return { success: false, error: 'User not found.' };
-    }
-
-    // Step 3: Resolve room
-    let room;
-    try {
-      room = await resolveOrCreateUserRoom(user, cleanEmail, this.db, this.roomManager);
-    } catch (error) {
-      console.error('[RoomService.joinSocketRoom] resolveOrCreateUserRoom failed:', error.message);
-      return { success: false, error: 'Failed to join chat room.', errorContext: 'resolveRoom' };
-    }
-
-    if (!room?.roomId || typeof room.roomId !== 'string' || !room.roomId.trim()) {
-      console.warn('[RoomService.joinSocketRoom] No valid room for user:', {
-        email: cleanEmail,
-        userId: user?.id,
-      });
-      return { success: false, error: 'No room available. You must be connected to a co-parent.' };
-    }
-
-    const { roomId, roomName } = room;
-    user.room = { roomId, roomName };
-    user.roomId = roomId;
-
-    // Step 4: Handle duplicates and register session
-    const disconnectedSocketIds = await this.userSessionService.disconnectDuplicates(
+    // Delegate to use case - all orchestration happens there
+    return joinSocketRoomUseCase({
+      userIdentifier,
       socketId,
-      cleanEmail,
-      roomId
-    );
-
-    // Disconnect the old sockets via io
-    for (const oldSocketId of disconnectedSocketIds) {
-      const oldSocket = io.sockets.sockets.get(oldSocketId);
-      if (oldSocket) {
-        oldSocket.emit('replaced_by_new_connection', {
-          message: 'Disconnected by another login.',
-        });
-        oldSocket.disconnect(true);
-      }
-    }
-
-    // Register new session
-    await this.userSessionService.registerUser(socketId, cleanEmail, roomId);
-
-    // Step 5: Ensure contacts (non-fatal)
-    let roomMembers = [];
-    try {
-      roomMembers = await this.roomManager.getRoomMembers(roomId);
-      if (roomMembers.length > 1) {
-        await this.roomManager.ensureContactsForRoomMembers(roomId);
-      }
-    } catch (error) {
-      console.error(
-        '[RoomService.joinSocketRoom] ensureContacts failed (non-fatal):',
-        error.message
-      );
-    }
-
-    // Step 6: Load message history
-    let messages = [];
-    let hasMore = false;
-    try {
-      // Use new MessageService for consistent message loading
-      const MessageService = require('../messages/messageService');
-      const messageService = new MessageService();
-      const history = await messageService.getRoomMessages(roomId, {
-        limit: 500,
-        offset: 0,
-      }, cleanEmail);
-      messages = history.messages;
-      hasMore = history.hasMore;
-    } catch (error) {
-      console.error('[RoomService.joinSocketRoom] MessageService failed:', error.message);
-      // Fallback to old method for backward compatibility
-      try {
-        const history = await getMessageHistory(roomId, this.db);
-        messages = history.messages;
-        hasMore = history.hasMore;
-      } catch (fallbackError) {
-        console.error('[RoomService.joinSocketRoom] Fallback getMessageHistory also failed:', fallbackError.message);
-        return {
-          success: false,
-          error: 'Failed to load message history.',
-          errorContext: 'getMessageHistory',
-        };
-      }
-    }
-
-    // Step 7: Get current room users
-    const roomUsers = this.userSessionService.getUsersInRoom(roomId).map(u => ({
-      email: u.email,
-      joinedAt: u.joinedAt,
-    }));
-
-    return {
-      success: true,
-      user,
-      email: cleanEmail,
-      roomId,
-      roomName: roomName || `${user.displayName || user.firstName || cleanEmail}'s Room`,
-      messages,
-      hasMore,
-      roomUsers,
-      roomMembers,
-    };
+      io,
+      auth: this.auth,
+      roomManager: this.roomManager,
+      userSessionService: this.userSessionService,
+      db: this.db,
+    });
   }
 }
 

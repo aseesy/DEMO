@@ -8,6 +8,7 @@ const { SocketErrorCodes, emitSocketError } = require('./errorCodes');
 
 // Rate limit config per event type (requests per second)
 const RATE_LIMITS = {
+  join: { max: 2, windowMs: 1000 }, // 2 joins/sec (prevent DDoS via room join spam)
   send_message: { max: 5, windowMs: 1000 }, // 5 msgs/sec
   typing: { max: 10, windowMs: 1000 }, // 10 typing events/sec
   add_reaction: { max: 10, windowMs: 1000 }, // 10 reactions/sec
@@ -82,10 +83,15 @@ function rateLimitMiddleware(socket) {
 
     if (isRateLimited(socket, event)) {
       console.warn(`[Rate Limit] Socket ${socket.id} rate limited on event: ${event}`);
-      emitSocketError(socket, SocketErrorCodes.RATE_LIMITED, 'Too many requests. Please slow down.', {
-        event,
-        retryAfter: 1000,
-      });
+      emitSocketError(
+        socket,
+        SocketErrorCodes.RATE_LIMITED,
+        'Too many requests. Please slow down.',
+        {
+          event,
+          retryAfter: 1000,
+        }
+      );
       // Don't call next() - drop the event
       return;
     }

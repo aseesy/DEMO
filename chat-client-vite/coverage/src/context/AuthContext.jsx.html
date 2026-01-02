@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">43.82% </span>
+                <span class="strong">43.56% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>149/340</span>
+                <span class='fraction'>149/342</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">41.61% </span>
+                <span class="strong">40.71% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>67/161</span>
+                <span class='fraction'>68/167</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">43.58% </span>
+                <span class="strong">43.32% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>146/335</span>
+                <span class='fraction'>146/337</span>
             </div>
         
             
@@ -832,7 +832,13 @@
 <a name='L767'></a><a href='#L767'>767</a>
 <a name='L768'></a><a href='#L768'>768</a>
 <a name='L769'></a><a href='#L769'>769</a>
-<a name='L770'></a><a href='#L770'>770</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L770'></a><a href='#L770'>770</a>
+<a name='L771'></a><a href='#L771'>771</a>
+<a name='L772'></a><a href='#L772'>772</a>
+<a name='L773'></a><a href='#L773'>773</a>
+<a name='L774'></a><a href='#L774'>774</a>
+<a name='L775'></a><a href='#L775'>775</a>
+<a name='L776'></a><a href='#L776'>776</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -868,12 +874,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -916,17 +922,23 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1682,20 +1694,26 @@ export function AuthProvider({ children }) {
       storedIsAuthenticated,
     });
 &nbsp;
-    // Check if token is expired using the same logic as isTokenExpired
+    // Check if token is expired using centralized function
     if (storedToken) {
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (isTokenExpired(storedToken)) {
+<span class="cstat-no" title="statement not covered" >        if (import.meta.env.DEV) {</span>
+<span class="cstat-no" title="statement not covered" >          console.log('[AuthContext] Token expired, clearing auth');</span>
+        }
+        // Token expired
+<span class="cstat-no" title="statement not covered" >        return { isAuthenticated: false, username: null, email: null, token: null };</span>
+      }
+      // Get expiration time for logging
       try {
         const payload = JSON.parse(atob(storedToken.split('.')[1]));
         const exp = payload.exp * 1000;
-        const isExpired = Date.now() &gt;= exp;
-        <span class="missing-if-branch" title="if path not taken" >I</span>if (isExpired) {
-<span class="cstat-no" title="statement not covered" >          console.log('[AuthContext] Token expired, clearing auth');</span>
-          // Token expired
-<span class="cstat-no" title="statement not covered" >          return { isAuthenticated: false, username: null, email: null, token: null };</span>
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (import.meta.env.DEV) {
+          console.log('[AuthContext] Token valid, expires:', new Date(exp).toLocaleString());
         }
-        console.log('[AuthContext] Token valid, expires:', new Date(exp).toLocaleString());
       } catch (error) {
-<span class="cstat-no" title="statement not covered" >        console.warn('[AuthContext] Invalid token format:', error);</span>
+<span class="cstat-no" title="statement not covered" >        if (import.meta.env.DEV) {</span>
+<span class="cstat-no" title="statement not covered" >          console.warn('[AuthContext] Invalid token format:', error);</span>
+        }
         // Invalid token
 <span class="cstat-no" title="statement not covered" >        return { isAuthenticated: false, username: null, email: null, token: null };</span>
       }
@@ -2377,7 +2395,7 @@ export default AuthContext;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-01T09:46:14.612Z
+                at 2026-01-02T15:58:27.909Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

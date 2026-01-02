@@ -1,0 +1,126 @@
+/**
+ * Profile Audit Module
+ *
+ * Single Responsibility: Log profile access and changes for audit trails.
+ *
+ * Provides non-blocking audit logging that doesn't break main application flow.
+ */
+
+const { PROFILE_SECTIONS, SENSITIVE_FIELDS } = require('./constants');
+
+/**
+ * Log a profile view event
+ *
+ * @param {number} profileUserId - ID of the user whose profile was viewed
+ * @param {number} viewerUserId - ID of the user who viewed the profile
+ * @param {Object} db - Database connection (unused, kept for API compatibility)
+ * @param {Object} requestInfo - Request info (ip, user agent)
+ */
+async function logProfileView(profileUserId, viewerUserId, db, requestInfo = {}) {
+  try {
+    const dbSafe = require('../../dbSafe');
+    await dbSafe.safeInsert('profile_audit_log', {
+      user_id: profileUserId,
+      action: 'view',
+      actor_user_id: viewerUserId,
+      ip_address: requestInfo.ip || null,
+      user_agent: requestInfo.userAgent || null,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error logging profile view:', error.message);
+    // Don't throw - audit logging should not break the main flow
+  }
+}
+
+/**
+ * Log profile field changes
+ *
+ * @param {number} userId - ID of the user whose profile was updated
+ * @param {Object} oldProfile - Previous profile data
+ * @param {Object} newProfile - New profile data
+ * @param {Object} requestInfo - Request info (ip, user agent)
+ */
+async function logProfileChanges(userId, oldProfile, newProfile, requestInfo = {}) {
+  try {
+    const dbSafe = require('../../dbSafe');
+
+    // Find changed fields
+    const allFields = [
+      ...PROFILE_SECTIONS.personal,
+      ...PROFILE_SECTIONS.work,
+      ...PROFILE_SECTIONS.health,
+      ...PROFILE_SECTIONS.financial,
+      ...PROFILE_SECTIONS.background,
+    ];
+
+    for (const field of allFields) {
+      const oldValue = oldProfile[field] || null;
+      const newValue = newProfile[field] || null;
+
+      if (oldValue !== newValue) {
+        // Don't log actual values for sensitive fields
+        const isSensitive = SENSITIVE_FIELDS.includes(field);
+
+        await dbSafe.safeInsert('profile_audit_log', {
+          user_id: userId,
+          action: 'update',
+          field_name: field,
+          old_value: isSensitive ? '[ENCRYPTED]' : oldValue || '',
+          new_value: isSensitive ? '[ENCRYPTED]' : newValue || '',
+          actor_user_id: userId,
+          ip_address: requestInfo.ip || null,
+          user_agent: requestInfo.userAgent || null,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error logging profile changes:', error.message);
+    // Don't throw - audit logging should not break the main flow
+  }
+}
+
+/**
+ * Log a privacy settings change
+ *
+ * @param {number} userId - ID of the user whose privacy was updated
+ * @param {Object} oldSettings - Previous privacy settings
+ * @param {Object} newSettings - New privacy settings
+ * @param {Object} requestInfo - Request info (ip, user agent)
+ */
+async function logPrivacyChange(userId, oldSettings, newSettings, requestInfo = {}) {
+  try {
+    const dbSafe = require('../../dbSafe');
+
+    const visibilityFields = ['personal_visibility', 'work_visibility', 'background_visibility'];
+
+    for (const field of visibilityFields) {
+      const oldValue = oldSettings[field] || 'private';
+      const newValue = newSettings[field] || 'private';
+
+      if (oldValue !== newValue) {
+        await dbSafe.safeInsert('profile_audit_log', {
+          user_id: userId,
+          action: 'privacy_change',
+          field_name: field,
+          old_value: oldValue,
+          new_value: newValue,
+          actor_user_id: userId,
+          ip_address: requestInfo.ip || null,
+          user_agent: requestInfo.userAgent || null,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error logging privacy change:', error.message);
+    // Don't throw - audit logging should not break the main flow
+  }
+}
+
+module.exports = {
+  logProfileView,
+  logProfileChanges,
+  logPrivacyChange,
+};

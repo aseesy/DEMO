@@ -3,8 +3,6 @@
  */
 
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
 
 /**
  * Configure all API routes and static asset serving
@@ -104,158 +102,18 @@ function setupRoutes(app, services) {
   app.use('/api/push', require('./routes/pushNotifications'));
 
   // ========================================
-  // Admin & Import Routes (Inline)
+  // Admin & Import Routes (Extracted)
   // ========================================
-
-  app.get('/admin', (req, res) => {
-    const adminPath = path.join(__dirname, 'admin.html');
-    res.sendFile(adminPath, err => {
-      if (err) res.status(500).send('Error loading admin page');
-    });
-  });
-
-  app.post('/api/import/messages', express.json({ limit: '50mb' }), async (req, res) => {
-    try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || authHeader !== `Bearer ${process.env.JWT_SECRET}`) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      const { messages, roomId } = req.body;
-      if (!messages || !Array.isArray(messages) || !roomId) {
-        return res.status(400).json({ error: 'messages array and roomId required' });
-      }
-      let imported = 0;
-      for (const msg of messages) {
-        const messageId = `${Date.now()}-import-${Math.random().toString(36).substr(2, 9)}`;
-        await dbPostgres.query(
-          `INSERT INTO messages (id, type, username, text, timestamp, room_id) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING`,
-          [messageId, 'message', msg.username, msg.text, msg.timestamp, roomId]
-        );
-        imported++;
-      }
-      res.json({ success: true, imported, total: messages.length });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post('/api/admin/update-display-names', express.json(), async (req, res) => {
-    try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || authHeader !== `Bearer ${process.env.JWT_SECRET}`) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      const { updates } = req.body;
-      if (!updates || !Array.isArray(updates)) {
-        return res.status(400).json({ error: 'updates array required' });
-      }
-      let updated = 0;
-      for (const { username, displayName, firstName, preferredName } of updates) {
-        if (!username) continue;
-        const fields = [];
-        const values = [];
-        let paramIndex = 1;
-        if (displayName !== undefined) {
-          fields.push(`display_name = $${paramIndex++}`);
-          values.push(displayName);
-        }
-        if (firstName !== undefined) {
-          fields.push(`first_name = $${paramIndex++}`);
-          values.push(firstName);
-        }
-        if (preferredName !== undefined) {
-          fields.push(`preferred_name = $${paramIndex++}`);
-          values.push(preferredName);
-        }
-        if (fields.length === 0) continue;
-        values.push(username);
-        const query = `UPDATE users SET ${fields.join(', ')} WHERE LOWER(username) = LOWER($${paramIndex})`;
-        const result = await dbPostgres.query(query, values);
-        if (result.rowCount > 0) updated++;
-      }
-      res.json({ success: true, updated });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post('/api/import/cleanup', express.json(), async (req, res) => {
-    try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || authHeader !== `Bearer ${process.env.JWT_SECRET}`)
-        return res.status(401).json({ error: 'Unauthorized' });
-      const { roomId, patterns } = req.body;
-      if (!roomId) return res.status(400).json({ error: 'roomId required' });
-      const cleanupPatterns = patterns || [
-        '__kIMMessagePartAttributeName',
-        '__kIMFileTransferGUIDAttributeName',
-        '__kIMDataDetectedAttributeName',
-      ];
-      let totalDeleted = 0;
-      for (const pattern of cleanupPatterns) {
-        const result = await dbPostgres.query(
-          `DELETE FROM messages WHERE room_id = $1 AND text = $2`,
-          [roomId, pattern]
-        );
-        totalDeleted += result.rowCount || 0;
-      }
-      const stripResult = await dbPostgres.query(
-        `UPDATE messages SET text = SUBSTRING(text FROM 3) WHERE room_id = $1 AND text LIKE '+#%'`,
-        [roomId]
-      );
-      res.json({
-        success: true,
-        deleted: totalDeleted,
-        prefixesStripped: stripResult.rowCount || 0,
-      });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  const adminImportRoutes = require('./routes/admin/importRoutes');
+  const adminAdminRoutes = require('./routes/admin/adminRoutes');
+  app.use('/api', adminImportRoutes);
+  app.use('/', adminAdminRoutes);
 
   // ========================================
-  // Static Assets (Production)
+  // Static Assets (Extracted)
   // ========================================
-  const distPath = path.join(__dirname, 'dist');
-  if (fs.existsSync(distPath)) {
-    app.use(express.static(distPath, { maxAge: '1y', etag: true, lastModified: true }));
-    app.get('/favicon.ico', (req, res) => {
-      const fav = path.join(distPath, 'favicon.ico');
-      if (fs.existsSync(fav)) res.sendFile(fav);
-      else res.status(404).end();
-    });
-    app.get('*', (req, res, next) => {
-      if (
-        req.path.startsWith('/api') ||
-        req.path.startsWith('/admin') ||
-        req.path.startsWith('/health')
-      )
-        return next();
-      const indexPath = path.join(distPath, 'index.html');
-      if (fs.existsSync(indexPath)) res.sendFile(indexPath);
-      else next();
-    });
-  } else {
-    app.get('/', (req, res) => {
-      res.json({
-        name: 'LiaiZen API Server',
-        status: 'running',
-        endpoints: { api: '/api', health: '/health', admin: '/admin' },
-      });
-    });
-  }
-
-  // API info endpoint
-  app.get('/api/info', (req, res) => {
-    res.json({ name: 'LiaiZen Chat Server', version: '1.0.0' });
-  });
-
-  // DEBUG: Client-side log relay endpoint (TEMPORARY - remove after debugging)
-  app.post('/api/debug-log', express.json(), (req, res) => {
-    const { message, data, timestamp } = req.body;
-    console.log(`[CLIENT-DEBUG] ${timestamp} - ${message}`, JSON.stringify(data || {}, null, 2));
-    res.json({ received: true });
-  });
+  const { setupStaticAssets } = require('./middleware/staticAssets');
+  setupStaticAssets(app);
 }
 
 module.exports = { setupRoutes };

@@ -87,7 +87,8 @@ describeIfDb('Message History - Real Database', () => {
       const found = result.messages.find(m => m.id === message.id);
 
       expect(found).toBeDefined();
-      expect(found.tip1).toBe('Be kind');
+      // tip1 is stored inside metadata object by _formatMessages
+      expect(found.metadata?.tip1).toBe('Be kind');
     });
 
     it('should return messages in chronological order', async () => {

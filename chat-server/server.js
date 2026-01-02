@@ -109,8 +109,8 @@ const io = new Server(server, {
   maxHttpBufferSize: 1e6,
   // Transport configuration: Use feature flag for consistency between dev and prod
   // Set SOCKET_FORCE_POLLING=true to force polling-only (useful for debugging)
-  // Default: allow both polling and websocket in all environments for consistency
-  transports: process.env.SOCKET_FORCE_POLLING === 'true' ? ['polling'] : ['polling', 'websocket'],
+  // Default: websocket first (more efficient), polling as fallback
+  transports: process.env.SOCKET_FORCE_POLLING === 'true' ? ['polling'] : ['websocket', 'polling'],
   allowEIO3: true,
   // Allow upgrades unless forced to polling-only
   allowUpgrades: process.env.SOCKET_FORCE_POLLING !== 'true',
@@ -119,16 +119,33 @@ const io = new Server(server, {
 // Initialize Socket Handlers
 console.log('[Server] Socket.io path:', io.path());
 
-// DEBUG: Log Engine.io level events
-io.engine.on('connection', rawSocket => {
-  console.log('[Engine.io] New raw connection:', rawSocket.id);
-});
-io.engine.on('connection_error', err => {
-  console.log('[Engine.io] Connection error:', err.message, err.code);
-});
-io.engine.on('initial_headers', (headers, req) => {
-  console.log('[Engine.io] Initial headers for:', req.url);
-});
+// PROPER Socket.io pattern: All connection logic goes through Socket.io middleware (io.use)
+// DO NOT manipulate handshake.query at engine.io level - Socket.io handles this automatically!
+// These are read-only logging listeners only - no manipulation of handshake objects
+if (process.env.NODE_ENV !== 'production') {
+  io.engine.on('connection', rawSocket => {
+    console.log('[Engine.io] New raw connection:', rawSocket.id);
+    // Track when/why connections close
+    rawSocket.on('close', (reason, description) => {
+      console.log(
+        '[Engine.io] Connection closed:',
+        rawSocket.id,
+        'reason:',
+        reason,
+        description || ''
+      );
+    });
+    rawSocket.on('error', err => {
+      console.log('[Engine.io] Socket error:', rawSocket.id, err.message);
+    });
+  });
+  io.engine.on('connection_error', err => {
+    console.log('[Engine.io] Connection error:', err.message, err.code);
+  });
+  io.engine.on('initial_headers', (headers, req) => {
+    console.log('[Engine.io] Initial headers for:', req.url);
+  });
+}
 
 setupSockets(io, services);
 

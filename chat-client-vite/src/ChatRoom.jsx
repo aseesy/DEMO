@@ -12,7 +12,6 @@ import { ToastContainer } from './components/ui/Toast/Toast.jsx';
 import { ContactsPanel } from './features/contacts';
 import { ProfilePanel } from './features/profile/components/ProfilePanel.jsx';
 import { Navigation } from './features/shell/Navigation.jsx';
-import { LandingPage } from './features/landing/LandingPage.jsx';
 import { GlobalModals } from './features/shell/GlobalModals.jsx';
 import { SettingsViewLegacy } from './features/settings';
 import { DashboardView } from './features/dashboard';
@@ -22,6 +21,12 @@ import { ChatPage as ChatView } from './features/chat';
 import { useAppNavigation, NavigationPaths } from './adapters/navigation';
 import { storage, StorageKeys } from './adapters/storage';
 import { usePWABadge } from './utils/usePWABadge.js';
+
+// Extracted hooks and components
+import { usePWADetector } from './features/shell/hooks/usePWADetector.js';
+import { useLandingPageController } from './features/shell/hooks/useLandingPageController.js';
+import { useNavigationManager } from './features/shell/hooks/useNavigationManager.js';
+import { AuthGuard } from './features/shell/components/AuthGuard.jsx';
 
 // Lazy-load AccountView for code-splitting
 const AccountView = React.lazy(() => import('./features/profile/components/AccountView.jsx'));
@@ -79,51 +84,10 @@ function ChatRoomContent({
     isJoined,
   } = useChatContext();
 
-  // Landing page state
-  // CRITICAL: Initialize based on auth state from context (not just storage)
-  // This ensures PWA launches with stored auth don't show landing page
-  // The auth context loads state optimistically, so isAuthenticated may be true on first render
-  const [showLanding, setShowLanding] = React.useState(() => {
-    // PWA MODE: Skip landing page entirely - go straight to login
-    // Users who installed the app don't need to see marketing content
-    const isPWA =
-      typeof window !== 'undefined' &&
-      (window.matchMedia('(display-mode: standalone)').matches ||
-        window.navigator.standalone === true); // iOS Safari standalone
-    if (isPWA) {
-      console.log('[ChatRoom] PWA mode detected, skipping landing page');
-      return false;
-    }
-
-    // If authenticated from context (optimistic load), never show landing
-    if (isAuthenticated) {
-      console.log('[ChatRoom] Initializing: isAuthenticated=true, hiding landing');
-      return false;
-    }
-    // If checking auth, don't show landing yet (wait for result)
-    if (isCheckingAuth) {
-      console.log(
-        '[ChatRoom] Initializing: isCheckingAuth=true, hiding landing (waiting for auth check)'
-      );
-      return false;
-    }
-    // CRITICAL: Check storage directly - if user has stored auth, don't show landing
-    // This handles the case where optimistic load hasn't completed yet
-    const hasStoredAuth =
-      storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
-    if (hasStoredAuth) {
-      console.log('[ChatRoom] Initializing: stored auth exists, hiding landing');
-      return false;
-    }
-    // Only show landing if definitely no auth anywhere
-    const shouldShow = true;
-    console.log('[ChatRoom] Initializing showLanding:', {
-      isAuthenticated,
-      isCheckingAuth,
-      hasStoredAuth,
-      shouldShow,
-    });
-    return shouldShow;
+  // Landing page controller - extracted to hook
+  const { showLanding, setShowLanding } = useLandingPageController({
+    isAuthenticated,
+    isCheckingAuth,
   });
 
   // In-app notifications
@@ -158,234 +122,14 @@ function ChatRoomContent({
     storage.set(StorageKeys.NOTIFICATION_PREFERENCES, notificationPrefs);
   }, [notificationPrefs]);
 
-  // Auth effects - hide landing page when authenticated
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      setShowLanding(false);
-    } else if (!isCheckingAuth) {
-      // Only show landing if we're not checking auth and not authenticated
-      // This prevents showing landing during the brief moment before auth check completes
-      const hasStoredAuth =
-        storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
-
-      // PWA MODE: Never show landing page - go straight to login
-      const isPWA =
-        window.matchMedia('(display-mode: standalone)').matches ||
-        window.navigator.standalone === true;
-
-      // CRITICAL: If we have stored auth, don't show landing page
-      // This handles the case where user just signed in and auth state hasn't updated yet
-      if (hasStoredAuth) {
-        console.log('[ChatRoom] Stored auth exists, hiding landing page');
-        setShowLanding(false);
-        return;
-      }
-
-      if (!hasStoredAuth && !isPWA && window.location.pathname === '/') {
-        setShowLanding(true);
-      }
-    }
-  }, [isAuthenticated, isCheckingAuth]);
-
-  // Handle authentication-based routing
-  // CRITICAL: Wait for auth check to complete before redirecting
-  // Use ref to prevent infinite redirect loops
-  const hasRedirectedRef = React.useRef(false);
-  const lastPathRef = React.useRef(window.location.pathname);
-  const redirectTimeoutRef = React.useRef(null);
-  const showLandingRef = React.useRef(showLanding);
-
-  // Keep ref in sync with state (but don't trigger effect)
-  React.useEffect(() => {
-    showLandingRef.current = showLanding;
-  }, [showLanding]);
-
-  React.useEffect(() => {
-    const currentPath = window.location.pathname;
-
-    // CRITICAL: Only reset redirect ref when path actually changes
-    // This prevents loops when state changes but we're already on the correct page
-    if (currentPath !== lastPathRef.current) {
-      hasRedirectedRef.current = false;
-      lastPathRef.current = currentPath;
-    }
-
-    // Clear any pending redirect timeout
-    if (redirectTimeoutRef.current) {
-      clearTimeout(redirectTimeoutRef.current);
-      redirectTimeoutRef.current = null;
-    }
-
-    // Don't redirect while checking auth - wait for verification to complete
-    if (isCheckingAuth) {
-      console.log('[ChatRoom] Auth check in progress, waiting...');
-      return;
-    }
-
-    // If authenticated, ensure we're not on sign-in page (redirect to home)
-    if (isAuthenticated) {
-      console.log('[ChatRoom] User is authenticated, ensuring correct route');
-      const isOnSignIn = currentPath === '/signin' || currentPath === '/sign-in';
-      if (isOnSignIn && !hasRedirectedRef.current) {
-        console.log('[ChatRoom] Redirecting authenticated user from sign-in to home');
-        hasRedirectedRef.current = true;
-        lastPathRef.current = '/';
-        navigate('/', { replace: true });
-        return;
-      }
-      // Ensure landing page is hidden
-      if (showLandingRef.current) {
-        setShowLanding(false);
-      }
-      return;
-    }
-
-    // Not authenticated - but check if we have stored auth first
-    // This handles the case where server verification failed but token exists
-    const hasStoredAuth =
-      storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
-    if (hasStoredAuth) {
-      console.log('[ChatRoom] Not authenticated but stored auth exists - waiting for verification');
-      // Don't redirect yet - might be a temporary network issue
-      // The verifySession will eventually clear auth if token is invalid
-      return;
-    }
-
-    // Definitely not authenticated and no stored auth
-    const isOnSignIn = currentPath === '/signin' || currentPath === '/sign-in';
-    const isOnRoot = currentPath === '/';
-
-    // PWA MODE: Skip landing page - go straight to sign-in
-    const isPWA =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true;
-
-    // CRITICAL: Check for stored auth again before showing landing page
-    // This prevents showing landing page immediately after sign-in when auth state hasn't updated yet
-    const hasStoredAuthCheck =
-      storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
-    if (hasStoredAuthCheck) {
-      console.log('[ChatRoom] Stored auth exists on root path - waiting for auth verification');
-      // Don't show landing page if we have stored auth - wait for verification
-      if (showLandingRef.current) {
-        setShowLanding(false);
-      }
-      return;
-    }
-
-    // Show landing page if on root and no auth (but not for PWA)
-    // Use ref to avoid dependency loop
-    // CRITICAL: Also check !isAuthenticated to prevent race condition after login redirect
-    if (!showLandingRef.current && !isPWA && isOnRoot && !isAuthenticated) {
-      console.log('[ChatRoom] Showing landing page (no auth, on root)');
-      setShowLanding(true);
-      return;
-    }
-
-    // Don't redirect if already showing landing or already on sign-in
-    // Use ref to avoid dependency loop
-    if (showLandingRef.current || isOnSignIn) {
-      return;
-    }
-
-    // Prevent infinite redirect loop - only redirect if we haven't already redirected to this path
-    if (hasRedirectedRef.current) {
-      console.log('[ChatRoom] Already redirected, preventing loop');
-      return;
-    }
-
-    // PWA on root path without auth - redirect to sign-in
-    if (isPWA && isOnRoot) {
-      console.log('[ChatRoom] PWA mode: Redirecting to sign-in');
-      hasRedirectedRef.current = true;
-      lastPathRef.current = NavigationPaths.SIGN_IN;
-      navigate(NavigationPaths.SIGN_IN, { replace: true });
-      return;
-    }
-
-    // Redirect to sign-in (only if not already there and haven't redirected)
-    if (!isOnSignIn) {
-      console.log('[ChatRoom] Redirecting to sign-in');
-      hasRedirectedRef.current = true;
-      lastPathRef.current = NavigationPaths.SIGN_IN;
-
-      // But preserve invite codes and other query params
-      const inviteCode = getQueryParam('invite');
-      if (inviteCode) {
-        navigate(NavigationPaths.withQuery(NavigationPaths.SIGN_IN, { invite: inviteCode }), {
-          replace: true,
-        });
-      } else {
-        navigate(NavigationPaths.SIGN_IN, { replace: true });
-      }
-    }
-  }, [isCheckingAuth, isAuthenticated, navigate, getQueryParam]); // Removed showLanding from deps
-
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      storage.set(StorageKeys.CURRENT_VIEW, currentView);
-    }
-  }, [isAuthenticated, currentView]);
-
-  // Listen for navigation events from service worker (when notification is clicked)
-  // Single Responsibility: Handle navigation events and update view state
-  React.useEffect(() => {
-    const handleNavigateToView = event => {
-      if (event.detail && event.detail.view) {
-        const targetView = event.detail.view;
-        console.log('[ChatRoom] Received navigate-to-view event:', targetView, {
-          isAuthenticated,
-          currentView,
-          isValidView: AVAILABLE_VIEWS.includes(targetView),
-        });
-
-        // Only navigate if authenticated and view is valid
-        if (isAuthenticated && AVAILABLE_VIEWS.includes(targetView)) {
-          console.log('[ChatRoom] Navigating to view from notification:', targetView);
-          setCurrentView(targetView);
-        } else if (!isAuthenticated) {
-          console.warn('[ChatRoom] Cannot navigate - user not authenticated');
-        } else if (!AVAILABLE_VIEWS.includes(targetView)) {
-          console.warn('[ChatRoom] Invalid view:', targetView);
-        }
-      }
-    };
-
-    window.addEventListener('navigate-to-view', handleNavigateToView);
-
-    return () => {
-      window.removeEventListener('navigate-to-view', handleNavigateToView);
-    };
-  }, [isAuthenticated, setCurrentView, currentView]);
-
-  // Check URL for view parameter on mount (handles deep links from notifications)
-  // Single Responsibility: Read URL parameters and navigate to correct view
-  React.useEffect(() => {
-    if (isAuthenticated && !isCheckingAuth) {
-      const viewParam = getQueryParam('view');
-      if (viewParam && AVAILABLE_VIEWS.includes(viewParam) && viewParam !== currentView) {
-        console.log('[ChatRoom] Found view parameter in URL, navigating to:', viewParam);
-        setCurrentView(viewParam);
-      }
-    }
-  }, [isAuthenticated, isCheckingAuth, getQueryParam, currentView, setCurrentView]);
-
-  // Redirect to sign-in if not authenticated (with timeout)
-  // This must be outside conditional blocks to follow Rules of Hooks
-  // CRITICAL: Don't redirect if showLanding is true - visitor is on landing/waitlist page
-  React.useEffect(() => {
-    if (!isAuthenticated && !isCheckingAuth && !showLanding) {
-      const timer = setTimeout(() => {
-        console.log('[ChatRoom] Not authenticated after timeout, redirecting to sign-in');
-        const currentPath = window.location.pathname;
-        // Only redirect if not already on signin page
-        if (currentPath !== '/signin' && currentPath !== '/sign-in' && currentPath !== '/siginin') {
-          navigate('/signin');
-        }
-      }, 2000); // 2 second timeout
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated, isCheckingAuth, showLanding, navigate]);
+  // Navigation manager - extracted to hook
+  useNavigationManager({
+    isAuthenticated,
+    isCheckingAuth,
+    showLanding,
+    currentView,
+    setCurrentView,
+  });
 
   // Dashboard hook - ViewModel that owns its state
   // The Dashboard manages its own dependencies internally
@@ -472,11 +216,18 @@ function ChatRoomContent({
 
   // Modal state for non-Dashboard views (contact suggestions, message flagging)
   // These modals need messages, so they're separate from Dashboard modals
-  const { contactSuggestionModal, messageFlaggingModal } = useModalControllerDefault({
+  const modalController = useModalControllerDefault({
     messages,
     setCurrentView,
     dependencies: {},
   });
+  const contactSuggestionModal = modalController?.contactSuggestionModal || {
+    pendingContactSuggestion: null,
+    handleAddContactFromSuggestion: () => {},
+    setPendingContactSuggestion: () => {},
+    setDismissedSuggestions: () => {},
+  };
+  const messageFlaggingModal = modalController?.messageFlaggingModal || {};
 
   // Handlers
   const handleNavigateToContacts = React.useCallback(
@@ -490,6 +241,9 @@ function ChatRoomContent({
   const handleGetStarted = React.useCallback(() => {
     navigate(NavigationPaths.SIGN_IN);
   }, [navigate]);
+
+  // PWA detector - extracted to hook (used for analytics/logging)
+  const isPWA = usePWADetector();
 
   // handleAddContactFromSuggestion is now provided by useModalController
 
@@ -531,42 +285,6 @@ function ChatRoomContent({
     [toast, username, notifications]
   );
 
-  // Show loading state while checking auth (prevents flash of landing page)
-  // CRITICAL: If we have stored auth, show loading instead of landing page
-  if (isCheckingAuth) {
-    const hasStoredAuth =
-      storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
-    console.log('[ChatRoom] Checking auth:', {
-      isCheckingAuth: true,
-      hasStoredAuth,
-      isAuthenticated,
-    });
-    return (
-      <div
-        className="min-h-screen bg-gray-50 flex items-center justify-center px-4"
-        style={{
-          width: '100%',
-          height: '100vh',
-          backgroundColor: '#f9fafb',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <div
-          className="text-gray-600 text-lg"
-          style={{
-            color: '#4b5563',
-            fontSize: '18px',
-            fontWeight: '500',
-          }}
-        >
-          Checking your session…
-        </div>
-      </div>
-    );
-  }
-
   // Debug: Log render state
   console.log('[ChatRoom] Rendering:', {
     isAuthenticated,
@@ -575,314 +293,259 @@ function ChatRoomContent({
     currentView,
   });
 
-  // Landing page - only show if definitely not authenticated and not in PWA mode
-  // CRITICAL: Check both isAuthenticated AND storage to prevent showing landing when user has auth
-  const hasStoredAuth =
-    storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
-  const isPWA =
-    typeof window !== 'undefined' &&
-    (window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true);
-  const shouldShowLanding =
-    !isAuthenticated &&
-    !hasStoredAuth &&
-    !isPWA && // PWA users skip landing
-    showLanding;
-
-  if (shouldShowLanding) {
-    console.log('[ChatRoom] Showing landing page:', {
-      isAuthenticated,
-      isCheckingAuth,
-      showLanding,
-      hasToken: storage.has(StorageKeys.AUTH_TOKEN),
-      hasIsAuth: storage.has(StorageKeys.IS_AUTHENTICATED),
-    });
-    return <LandingPage onGetStarted={handleGetStarted} />;
-  }
-
-  if (!isAuthenticated) {
-    // If we're already on signin page, render LoginSignup directly
-    const currentPath = window.location.pathname;
-    if (currentPath === '/signin' || currentPath === '/sign-in' || currentPath === '/siginin') {
-      console.log('[ChatRoom] Already on signin page, rendering LoginSignup');
-      const { LoginSignup } = require('./features/auth/components/LoginSignup.jsx');
-      return <LoginSignup />;
-    }
-
-    return (
-      <div
-        className="min-h-screen bg-gray-50 flex items-center justify-center px-4"
-        style={{
-          width: '100%',
-          height: '100vh',
-          backgroundColor: '#f9fafb',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <div
-          className="text-gray-600 text-lg"
-          style={{
-            color: '#4b5563',
-            fontSize: '18px',
-            fontWeight: '500',
-          }}
-        >
-          Redirecting to sign in…
-        </div>
-      </div>
-    );
-  }
-
-  // Main authenticated UI
+  // Main authenticated UI - wrapped in AuthGuard
   return (
-    <>
-      {/* DEBUG: Socket connection indicator - REMOVE after debugging */}
-      {import.meta.env.DEV && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 9999,
-            backgroundColor: isConnected ? '#22c55e' : '#ef4444',
-            color: 'white',
-            padding: '4px 8px',
-            fontSize: '12px',
-            textAlign: 'center',
+    <AuthGuard
+      isAuthenticated={isAuthenticated}
+      isCheckingAuth={isCheckingAuth}
+      showLanding={showLanding}
+      onGetStarted={handleGetStarted}
+    >
+      <>
+        {/* DEBUG: Socket connection indicator - REMOVE after debugging */}
+        {import.meta.env.DEV && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 9999,
+              backgroundColor: isConnected ? '#22c55e' : '#ef4444',
+              color: 'white',
+              padding: '4px 8px',
+              fontSize: '12px',
+              textAlign: 'center',
+            }}
+          >
+            Socket: {isConnected ? 'CONNECTED' : 'DISCONNECTED'} | Joined: {isJoined ? 'YES' : 'NO'}{' '}
+            | Messages: {messages?.length || 0} | Auth: {isAuthenticated ? 'YES' : 'NO'}
+          </div>
+        )}
+        <Navigation
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          onLogout={handleLogout}
+          unreadCount={unreadCount}
+          notificationCount={notificationCount}
+          onInvitationAccepted={handleInvitationAccepted}
+          hasMeanMessage={hasMeanMessage}
+          // Search props for chat view
+          searchQuery={currentView === 'chat' ? searchQuery : ''}
+          searchMessages={currentView === 'chat' ? searchMessages : () => {}}
+          searchMode={currentView === 'chat' ? searchMode : false}
+          toggleSearchMode={currentView === 'chat' ? toggleSearchMode : () => {}}
+          exitSearchMode={currentView === 'chat' ? exitSearchMode : () => {}}
+          messages={currentView === 'chat' ? messages : []}
+          username={username}
+        />
+
+        <ToastContainer
+          toasts={toast.toasts}
+          onDismiss={toast.dismiss}
+          onClick={clickedToast => {
+            setCurrentView('chat');
+            toast.dismiss(clickedToast.id);
           }}
-        >
-          Socket: {isConnected ? 'CONNECTED' : 'DISCONNECTED'} |
-          Joined: {isJoined ? 'YES' : 'NO'} |
-          Messages: {messages?.length || 0} |
-          Auth: {isAuthenticated ? 'YES' : 'NO'}
-        </div>
-      )}
-      <Navigation
-        currentView={currentView}
-        setCurrentView={setCurrentView}
-        onLogout={handleLogout}
-        unreadCount={unreadCount}
-        notificationCount={notificationCount}
-        onInvitationAccepted={handleInvitationAccepted}
-        hasMeanMessage={hasMeanMessage}
-        // Search props for chat view
-        searchQuery={currentView === 'chat' ? searchQuery : ''}
-        searchMessages={currentView === 'chat' ? searchMessages : () => {}}
-        searchMode={currentView === 'chat' ? searchMode : false}
-        toggleSearchMode={currentView === 'chat' ? toggleSearchMode : () => {}}
-        exitSearchMode={currentView === 'chat' ? exitSearchMode : () => {}}
-        messages={currentView === 'chat' ? messages : []}
-        username={username}
-      />
+        />
 
-      <ToastContainer
-        toasts={toast.toasts}
-        onDismiss={toast.dismiss}
-        onClick={clickedToast => {
-          setCurrentView('chat');
-          toast.dismiss(clickedToast.id);
-        }}
-      />
-
-      <div
-        className="bg-white flex flex-col overflow-hidden overscroll-none relative z-0"
-        style={{
-          height: '100%',
-          maxHeight: '100%',
-          width: '100%',
-          maxWidth: '100vw',
-          overflowX: 'hidden',
-          position: 'relative',
-        }}
-      >
         <div
-          className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 md:pt-14' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto overflow-x-hidden' : 'pt-0 md:pt-14 pb-14 md:pb-6 overflow-y-auto overflow-x-hidden px-3 sm:px-4 md:px-6'}`}
+          className="bg-white flex flex-col overflow-hidden overscroll-none relative z-0"
           style={{
+            height: '100%',
+            maxHeight: '100%',
             width: '100%',
             maxWidth: '100vw',
-            WebkitOverflowScrolling: 'touch',
-            // No padding-bottom for chat view - bottom nav is fixed and doesn't need space
-            paddingBottom:
-              currentView === 'chat'
-                ? 0
-                : typeof window !== 'undefined' && window.innerWidth < 768
-                  ? 'calc(3.5rem + env(safe-area-inset-bottom))'
-                  : 0,
+            overflowX: 'hidden',
+            position: 'relative',
           }}
         >
           <div
-            className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : currentView === 'profile' ? 'w-full max-w-full' : 'max-w-7xl mx-auto w-full'}`}
+            className={`${currentView === 'chat' ? 'flex-1 min-h-0 overflow-hidden pt-0 md:pt-14' : currentView === 'profile' ? 'pt-0 md:pt-14 pb-0 overflow-y-auto overflow-x-hidden' : 'pt-0 md:pt-14 pb-14 md:pb-6 overflow-y-auto overflow-x-hidden px-3 sm:px-4 md:px-6'}`}
             style={{
               width: '100%',
-              maxWidth: '100%',
+              maxWidth: '100vw',
+              WebkitOverflowScrolling: 'touch',
+              // No padding-bottom for chat view - bottom nav is fixed and doesn't need space
+              paddingBottom:
+                currentView === 'chat'
+                  ? 0
+                  : typeof window !== 'undefined' && window.innerWidth < 768
+                    ? 'calc(3.5rem + env(safe-area-inset-bottom))'
+                    : 0,
             }}
           >
-            {currentView === 'dashboard' && (
-              <DashboardView
-                username={username}
-                email={email}
-                hasCoParentConnected={hasCoParentConnected}
-                isCheckingCoParent={isCheckingCoParent}
-                isCheckingAuth={isCheckingAuth}
-                contacts={contacts}
-                setCurrentView={setCurrentView}
-                taskState={dashboardProps.taskState}
-                taskHandlers={dashboardProps.taskHandlers}
-                modalHandlers={dashboardProps.modalHandlers}
-                threadState={dashboardProps.threadState}
-              />
-            )}
-
-            {currentView === 'chat' && (
-              <ChatView
-                username={email || username}
-                isAuthenticated={isAuthenticated}
-                inviteState={{
-                  inviteLink,
-                  inviteCode,
-                  inviteCopied,
-                  inviteError,
-                  isLoadingInvite,
-                  hasCoParentConnected,
-                  hasPendingInvitation,
-                  hasAcceptedInvitation,
-                  showManualInvite,
-                  manualInviteCode,
-                  pendingInviteCode,
-                  isAcceptingInvite,
-                }}
-                inviteHandlers={{
-                  setInviteLink,
-                  setInviteCode,
-                  setInviteCopied,
-                  setInviteError,
-                  handleLoadInvite,
-                  handleCopyInvite,
-                  setShowManualInvite,
-                  setManualInviteCode,
-                  setPendingInviteCode,
-                  handleManualAcceptInvite,
-                }}
-              />
-            )}
-
-            {currentView === 'contacts' && (
-              <ContactsPanel username={username} email={email} setCurrentView={setCurrentView} />
-            )}
-
-            {currentView === 'profile' && (
-              <div className="pb-20 md:pb-8">
-                <ProfilePanel
+            <div
+              className={`${currentView === 'chat' ? 'h-full flex flex-col overflow-hidden' : currentView === 'profile' ? 'w-full max-w-full' : 'max-w-7xl mx-auto w-full'}`}
+              style={{
+                width: '100%',
+                maxWidth: '100%',
+              }}
+            >
+              {currentView === 'dashboard' && (
+                <DashboardView
                   username={username}
-                  onLogout={handleLogout}
-                  onNavigateToContacts={handleNavigateToContacts}
-                />
-              </div>
-            )}
-
-            {currentView === 'settings' && (
-              <div className="pb-20 md:pb-8">
-                <SettingsViewLegacy
-                  username={username}
-                  notifications={notifications}
-                  notificationPrefs={notificationPrefs}
-                  setNotificationPrefs={setNotificationPrefs}
+                  email={email}
                   hasCoParentConnected={hasCoParentConnected}
-                  inviteLink={inviteLink}
-                  inviteCode={inviteCode}
-                  inviteError={inviteError}
-                  isLoadingInvite={isLoadingInvite}
-                  inviteCopied={inviteCopied}
-                  setInviteCopied={setInviteCopied}
-                  setInviteLink={setInviteLink}
-                  setInviteCode={setInviteCode}
-                  manualInviteCode={manualInviteCode}
-                  setManualInviteCode={setManualInviteCode}
-                  isAcceptingInvite={isAcceptingInvite}
-                  onLoadInvite={handleLoadInvite}
-                  onCopyInvite={handleCopyInvite}
-                  onManualAcceptInvite={handleManualAcceptInvite}
+                  isCheckingCoParent={isCheckingCoParent}
+                  isCheckingAuth={isCheckingAuth}
+                  contacts={contacts}
+                  setCurrentView={setCurrentView}
+                  taskState={dashboardProps.taskState}
+                  taskHandlers={dashboardProps.taskHandlers}
+                  modalHandlers={dashboardProps.modalHandlers}
+                  threadState={dashboardProps.threadState}
                 />
-              </div>
-            )}
+              )}
 
-            {currentView === 'account' && (
-              <React.Suspense
-                fallback={
-                  <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden p-8">
-                    <div className="text-center py-16">
-                      <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-100 border-t-teal-medium" />
-                      <p className="mt-6 text-teal-medium font-semibold text-lg">
-                        Loading account...
-                      </p>
+              {currentView === 'chat' && (
+                <ChatView
+                  username={email || username}
+                  isAuthenticated={isAuthenticated}
+                  inviteState={{
+                    inviteLink,
+                    inviteCode,
+                    inviteCopied,
+                    inviteError,
+                    isLoadingInvite,
+                    hasCoParentConnected,
+                    hasPendingInvitation,
+                    hasAcceptedInvitation,
+                    showManualInvite,
+                    manualInviteCode,
+                    pendingInviteCode,
+                    isAcceptingInvite,
+                  }}
+                  inviteHandlers={{
+                    setInviteLink,
+                    setInviteCode,
+                    setInviteCopied,
+                    setInviteError,
+                    handleLoadInvite,
+                    handleCopyInvite,
+                    setShowManualInvite,
+                    setManualInviteCode,
+                    setPendingInviteCode,
+                    handleManualAcceptInvite,
+                  }}
+                />
+              )}
+
+              {currentView === 'contacts' && (
+                <ContactsPanel username={username} email={email} setCurrentView={setCurrentView} />
+              )}
+
+              {currentView === 'profile' && (
+                <div className="pb-20 md:pb-8">
+                  <ProfilePanel
+                    username={username}
+                    onLogout={handleLogout}
+                    onNavigateToContacts={handleNavigateToContacts}
+                  />
+                </div>
+              )}
+
+              {currentView === 'settings' && (
+                <div className="pb-20 md:pb-8">
+                  <SettingsViewLegacy
+                    username={username}
+                    notifications={notifications}
+                    notificationPrefs={notificationPrefs}
+                    setNotificationPrefs={setNotificationPrefs}
+                    hasCoParentConnected={hasCoParentConnected}
+                    inviteLink={inviteLink}
+                    inviteCode={inviteCode}
+                    inviteError={inviteError}
+                    isLoadingInvite={isLoadingInvite}
+                    inviteCopied={inviteCopied}
+                    setInviteCopied={setInviteCopied}
+                    setInviteLink={setInviteLink}
+                    setInviteCode={setInviteCode}
+                    manualInviteCode={manualInviteCode}
+                    setManualInviteCode={setManualInviteCode}
+                    isAcceptingInvite={isAcceptingInvite}
+                    onLoadInvite={handleLoadInvite}
+                    onCopyInvite={handleCopyInvite}
+                    onManualAcceptInvite={handleManualAcceptInvite}
+                  />
+                </div>
+              )}
+
+              {currentView === 'account' && (
+                <React.Suspense
+                  fallback={
+                    <div className="bg-white rounded-2xl border-2 border-teal-light shadow-lg overflow-hidden p-8">
+                      <div className="text-center py-16">
+                        <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-100 border-t-teal-medium" />
+                        <p className="mt-6 text-teal-medium font-semibold text-lg">
+                          Loading account...
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                }
-              >
-                <AccountView username={username} />
-              </React.Suspense>
-            )}
+                  }
+                >
+                  <AccountView username={username} />
+                </React.Suspense>
+              )}
 
-            <GlobalModals
-              showTaskForm={showTaskForm}
-              editingTask={editingTask}
-              taskFormMode={taskFormMode}
-              setTaskFormMode={setTaskFormMode}
-              aiTaskDetails={aiTaskDetails}
-              setAiTaskDetails={setAiTaskDetails}
-              isGeneratingTask={isGeneratingTask}
-              setIsGeneratingTask={setIsGeneratingTask}
-              taskFormData={taskFormData}
-              setTaskFormData={setTaskFormData}
-              contacts={contacts}
-              username={username}
-              onCloseTaskForm={() => {
-                setShowTaskForm(false);
-                setEditingTask(null);
-              }}
-              onSaveTask={saveTask}
-              onDeleteTask={deleteTask}
-              showWelcomeModal={welcomeModal?.show || false}
-              onCloseWelcome={() => {
-                setShowWelcomeModal(false);
-                setEditingTask(null);
-              }}
-              onCompleteWelcome={() => {
-                toggleTaskStatus(editingTask);
-                setShowWelcomeModal(false);
-                setEditingTask(null);
-              }}
-              showProfileTaskModal={profileTaskModal?.show || false}
-              onCloseProfileTask={() => {
-                setShowProfileTaskModal(false);
-                setEditingTask(null);
-              }}
-              onNavigateToProfile={() => {
-                setShowProfileTaskModal(false);
-                setEditingTask(null);
-                setCurrentView('profile');
-              }}
-              showInviteModal={inviteModal?.show || false}
-              onCloseInvite={() => setShowInviteModal(false)}
-              onInviteSuccess={() => {
-                setShowInviteModal(false);
-                if (loadTasks) loadTasks();
-                setHasCoParentConnected(true);
-              }}
-              pendingContactSuggestion={contactSuggestionModal.pendingContactSuggestion}
-              onAddContact={contactSuggestionModal.handleAddContactFromSuggestion}
-              onDismissContactSuggestion={() =>
-                contactSuggestionModal.setPendingContactSuggestion(null)
-              }
-              setDismissedSuggestions={contactSuggestionModal.setDismissedSuggestions}
-            />
+              <GlobalModals
+                showTaskForm={showTaskForm}
+                editingTask={editingTask}
+                taskFormMode={taskFormMode}
+                setTaskFormMode={setTaskFormMode}
+                aiTaskDetails={aiTaskDetails}
+                setAiTaskDetails={setAiTaskDetails}
+                isGeneratingTask={isGeneratingTask}
+                setIsGeneratingTask={setIsGeneratingTask}
+                taskFormData={taskFormData}
+                setTaskFormData={setTaskFormData}
+                contacts={contacts}
+                username={username}
+                onCloseTaskForm={() => {
+                  setShowTaskForm(false);
+                  setEditingTask(null);
+                }}
+                onSaveTask={saveTask}
+                onDeleteTask={deleteTask}
+                showWelcomeModal={welcomeModal?.show || false}
+                onCloseWelcome={() => {
+                  setShowWelcomeModal(false);
+                  setEditingTask(null);
+                }}
+                onCompleteWelcome={() => {
+                  toggleTaskStatus(editingTask);
+                  setShowWelcomeModal(false);
+                  setEditingTask(null);
+                }}
+                showProfileTaskModal={profileTaskModal?.show || false}
+                onCloseProfileTask={() => {
+                  setShowProfileTaskModal(false);
+                  setEditingTask(null);
+                }}
+                onNavigateToProfile={() => {
+                  setShowProfileTaskModal(false);
+                  setEditingTask(null);
+                  setCurrentView('profile');
+                }}
+                showInviteModal={inviteModal?.show || false}
+                onCloseInvite={() => setShowInviteModal(false)}
+                onInviteSuccess={() => {
+                  setShowInviteModal(false);
+                  if (loadTasks) loadTasks();
+                  setHasCoParentConnected(true);
+                }}
+                pendingContactSuggestion={contactSuggestionModal.pendingContactSuggestion}
+                onAddContact={contactSuggestionModal.handleAddContactFromSuggestion}
+                onDismissContactSuggestion={() =>
+                  contactSuggestionModal.setPendingContactSuggestion(null)
+                }
+                setDismissedSuggestions={contactSuggestionModal.setDismissedSuggestions}
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </>
+      </>
+    </AuthGuard>
   );
 }
 

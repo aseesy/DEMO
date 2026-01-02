@@ -26,15 +26,17 @@ function registerContactHandlers(socket, io, services) {
           return;
         }
 
+        // Look up by email (more reliable than username for case normalization)
         const userResult = await dbSafe.safeSelect(
           'users',
-          { username: user.username.toLowerCase() },
+          { email: (user.email || user.username).toLowerCase() },
           { limit: 1 }
         );
-        if (userResult.length > 0) {
+        const users = dbSafe.parseResult(userResult);
+        if (users && users.length > 0) {
           const now = new Date().toISOString();
           await dbSafe.safeInsert('contacts', {
-            user_id: userResult[0].id,
+            user_id: users[0].id,
             contact_name: pending.detectedName,
             relationship: relationship || null,
             notes: `Mentioned in chat: ${pending.messageContext}`,
@@ -63,16 +65,18 @@ function registerContactHandlers(socket, io, services) {
       const user = userSessionService.getUserBySocketId(socket.id);
       if (!user || !socket.data || !socket.data.pendingContactSuggestion) return;
 
+      // Look up by email (more reliable than username for case normalization)
       const userResult = await dbSafe.safeSelect(
         'users',
-        { username: user.username.toLowerCase() },
+        { email: (user.email || user.username).toLowerCase() },
         { limit: 1 }
       );
-      if (userResult.length > 0) {
+      const users = dbSafe.parseResult(userResult);
+      if (users && users.length > 0) {
         const pending = socket.data.pendingContactSuggestion;
         const now = new Date().toISOString();
         await dbSafe.safeInsert('contacts', {
-          user_id: userResult[0].id,
+          user_id: users[0].id,
           contact_name: detectedName || pending.detectedName,
           relationship: relationship || null,
           notes: `Mentioned in chat: ${pending.messageContext}`,
@@ -142,4 +146,3 @@ function registerContactHandlers(socket, io, services) {
 }
 
 module.exports = { registerContactHandlers };
-

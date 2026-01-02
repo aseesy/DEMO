@@ -9,7 +9,7 @@ const { registerNavigationHandlers } = require('./socketHandlers/navigationHandl
 const { registerContactHandlers } = require('./socketHandlers/contactHandler');
 const { registerConnectionHandlers } = require('./socketHandlers/connectionHandler');
 const { registerCoachingHandlers } = require('./socketHandlers/coachingHandler');
-const { authMiddleware } = require('./socketHandlers/socketMiddleware');
+const { authMiddleware, rateLimitMiddleware } = require('./socketHandlers/socketMiddleware');
 
 /**
  * Initialize Socket.io handlers
@@ -23,11 +23,12 @@ function setupSockets(io, services) {
   roomService.setRoomManager(roomManager);
   roomService.setUserSessionService(userSessionService);
 
-  // CRITICAL: Register Socket.io middleware BEFORE connection handler
+  // SINGLE SOURCE OF TRUTH: Authentication happens ONLY in middleware
   // Middleware runs during handshake processing, before 'connection' event fires
+  // If connection event fires, socket.user is guaranteed to exist - TRUST THE MIDDLEWARE
   console.log('[setupSockets] Registering Socket.io middleware...');
 
-  // Register authentication middleware
+  // Register authentication middleware - THIS IS THE ONLY PLACE AUTH HAPPENS
   // Client MUST send token in auth object: { auth: { token: '...' } }
   // No fallbacks - fail fast if token is missing or invalid
   io.use(authMiddleware);
@@ -37,8 +38,24 @@ function setupSockets(io, services) {
   // No longer passing activeUsers/messageHistory - services use UserSessionService and EventBus
   // Handlers now subscribe to events instead of receiving state directly
 
+  // TRUST THE MIDDLEWARE: If connection event fires, authentication succeeded
+  // socket.user is guaranteed to exist - no need to check again
   io.on('connection', socket => {
-    console.log(`New connection: ${socket.id}`);
+    // Assert that middleware worked (development only)
+    if (process.env.NODE_ENV !== 'production' && !socket.user) {
+      console.error('[setupSockets] CRITICAL: Connection event fired but socket.user is missing!');
+      console.error(
+        '[setupSockets] This should never happen - middleware should have rejected this connection'
+      );
+      socket.disconnect(true);
+      return;
+    }
+
+    console.log(`New connection: ${socket.id} (user: ${socket.user?.email || 'unknown'})`);
+
+    // Apply per-socket rate limiting middleware
+    // This intercepts all events and rate limits per event type
+    rateLimitMiddleware(socket);
 
     // Register modular handlers (no state passing - services handle their own state)
     registerConnectionHandlers(socket, io, services);

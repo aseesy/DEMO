@@ -260,10 +260,11 @@ export function createSocketConnection(url, options = {}) {
   const {
     autoConnect = true,
     withCredentials = true,
-    // Transport configuration: Use feature flag for consistency
+    // Transport configuration: websocket first (more efficient), polling as fallback
+    // Must match server config in server.js for consistent behavior
     transports = import.meta.env.VITE_SOCKET_FORCE_POLLING === 'true'
       ? ['polling']
-      : ['polling', 'websocket'],
+      : ['websocket', 'polling'],
     auth,
     reconnection = true,
     reconnectionDelay = 1000,

@@ -42,7 +42,7 @@ function generateTestToken(payload = {}) {
 function createClient(options = {}) {
   const token = options.token || generateTestToken(options.user || {});
   return Client(TEST_SERVER_URL, {
-    transports: ['polling', 'websocket'],
+    transports: ['websocket', 'polling'],
     reconnection: false,
     timeout: 10000,
     auth: { token },
@@ -205,7 +205,7 @@ describe('E2E Integration Tests', () => {
       if (shouldSkip) return done();
 
       socket = Client(TEST_SERVER_URL, {
-        transports: ['polling', 'websocket'],
+        transports: ['websocket', 'polling'],
         reconnection: false,
         timeout: 5000,
         // No auth token
