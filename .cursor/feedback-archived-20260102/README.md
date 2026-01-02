@@ -15,13 +15,15 @@ This directory contains the coding feedback system and all implementation improv
 
 **Problem:** Silent fail-open behavior and hardcoded patterns scattered across codebase.
 
-**Solution:** 
+**Solution:**
+
 - ✅ Centralized pattern management
 - ✅ Comprehensive error handling with retry logic
 - ✅ User notifications for all error scenarios
 - ✅ Structured error logging
 
 **See:**
+
 - [`IMPROVEMENT_STRATEGY.md`](./IMPROVEMENT_STRATEGY.md) - Strategy overview
 - [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) - Implementation details
 - [`CHANGELOG.md`](./CHANGELOG.md) - Complete changelog
@@ -30,12 +32,14 @@ This directory contains the coding feedback system and all implementation improv
 ## Files
 
 ### Feedback System
+
 - `feedback.json` - All feedback entries
 - `patterns.json` - Identified patterns
 - `goals.json` - Goal tracking
 - `report.md` - Generated feedback report
 
 ### Documentation
+
 - `QUICK_START.md` - Quick start guide
 - `FEEDBACK_OPTIONS.md` - All feedback options explained
 - `IMPROVEMENT_STRATEGY.md` - Strategy for improvements
@@ -47,6 +51,7 @@ This directory contains the coding feedback system and all implementation improv
 - `CHANGELOG.md` - Changelog
 
 ### Scripts
+
 - `.cursor/scripts/add-feedback.js` - Add feedback entries
 - `.cursor/scripts/process-feedback.js` - Process and generate reports
 - `.cursor/scripts/parse-feedback.js` - Parse feedback from text
@@ -55,17 +60,20 @@ This directory contains the coding feedback system and all implementation improv
 ## Usage
 
 ### Quick Feedback
+
 ```
 @feedback ⭐ design-system
 @feedback ❌ hardcoded-values
 ```
 
 ### Generate Report
+
 ```bash
 node .cursor/scripts/process-feedback.js report
 ```
 
 ### Validate Patterns
+
 ```bash
 node scripts/validate-pattern-sync.js
 ```
@@ -73,6 +81,7 @@ node scripts/validate-pattern-sync.js
 ## Current Statistics
 
 Run the report generator to see current feedback statistics:
+
 ```bash
 node .cursor/scripts/process-feedback.js report
 ```

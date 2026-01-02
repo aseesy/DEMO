@@ -18,28 +18,34 @@ Generated: 12/28/2025, 8:02:50 AM
 ## Top Positive Patterns
 
 ### refactoring
+
 - Frequency: 3
 - Last seen: 12/28/2025
 
 ### proactive
+
 - Frequency: 1
 - Last seen: 12/28/2025
 
 ### design-system
+
 - Frequency: 1
 - Last seen: 12/28/2025
 
 ## Top Negative Patterns
 
 ### potential-issue
+
 - Frequency: 2
 - Last seen: 12/28/2025
 
 ### hardcoded-values
+
 - Frequency: 1
 - Last seen: 12/28/2025
 
 ### over-engineering
+
 - Frequency: 1
 - Last seen: 12/28/2025
 

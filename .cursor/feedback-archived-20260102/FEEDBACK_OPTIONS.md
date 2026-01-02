@@ -16,11 +16,13 @@ I've created a comprehensive feedback system with multiple options for providing
 ```
 
 **Pros:**
+
 - Fast and easy
 - No setup required
 - Works in any context
 
 **Cons:**
+
 - Less structured
 - Manual tracking needed
 
@@ -33,11 +35,13 @@ node .cursor/scripts/add-feedback.js ⭐ "Good behavior" "Used design tokens" --
 ```
 
 **Pros:**
+
 - Structured data
 - Automatic tracking
 - Rich metadata
 
 **Cons:**
+
 - Requires running script
 - More steps
 
@@ -51,11 +55,13 @@ node .cursor/scripts/add-feedback.js ⭐ "Good behavior" "Used design tokens" --
 4. View progress in `feedback/report.md`
 
 **Pros:**
+
 - Visual progress tracking
 - Focused improvement
 - Measurable outcomes
 
 **Cons:**
+
 - Requires goal definition
 - Needs regular updates
 
@@ -68,11 +74,13 @@ node .cursor/scripts/process-feedback.js patterns
 ```
 
 **Pros:**
+
 - Automatic pattern detection
 - Identifies trends
 - Helps prioritize improvements
 
 **Cons:**
+
 - Needs sufficient data
 - Patterns emerge over time
 
@@ -83,11 +91,13 @@ node .cursor/scripts/process-feedback.js patterns
 The `goal-chart-template.md` provides a visual progress chart that updates automatically when you run the report generator.
 
 **Pros:**
+
 - Visual representation
 - Easy to understand
 - Motivational
 
 **Cons:**
+
 - Requires manual template updates
 - Static until report runs
 
@@ -103,16 +113,19 @@ The `goal-chart-template.md` provides a visual progress chart that updates autom
 ## Integration Ideas
 
 ### With Cursor Memory
+
 - Reference feedback in conversations
 - "Based on previous feedback, I should..."
 - "Previous feedback showed..."
 
 ### With Code Reviews
+
 - Include feedback in PR descriptions
 - Reference patterns in code comments
 - Track improvement over time
 
 ### With Documentation
+
 - Update design system based on feedback
 - Document preferred patterns
 - Create guidelines from positive feedback
@@ -120,12 +133,14 @@ The `goal-chart-template.md` provides a visual progress chart that updates autom
 ## Example Workflow
 
 1. **During coding session:**
+
    ```
    @feedback ⭐ design-system
    Context: Used teal-medium class correctly
    ```
 
 2. **After session:**
+
    ```bash
    node .cursor/scripts/process-feedback.js report
    ```
@@ -161,7 +176,7 @@ The `goal-chart-template.md` provides a visual progress chart that updates autom
 ## Questions?
 
 See:
+
 - `QUICK_START.md` - How to get started
 - `coding-feedback.md` - Full documentation
 - `README.md` - System overview
-

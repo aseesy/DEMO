@@ -7,23 +7,17 @@
         {
           "context": "Excellent use of the Adapter pattern. By wrapping socket.io-client in a custom SocketConnection class, you have successfully decoupled the application logic from the specific websocket library. This makes future replacements or mocking for tests significantly easier.",
           "timestamp": "2025-12-28T06:49:40.089Z",
-          "files": [
-            "src/adapters/socket/SocketAdapter.js"
-          ]
+          "files": ["src/adapters/socket/SocketAdapter.js"]
         },
         {
           "context": "Breaking out quickLocalCheck prevents unnecessary API calls for simple messages (\"ok\", \"thanks\"). This is a good performance optimization.",
           "timestamp": "2025-12-28T06:49:40.110Z",
-          "files": [
-            "src/utils/messageAnalyzer.js"
-          ]
+          "files": ["src/utils/messageAnalyzer.js"]
         },
         {
           "context": "Directory structure organized by Feature (auth, chat, dashboard) rather than file type",
           "timestamp": "2025-12-28T06:49:40.110Z",
-          "files": [
-            "src/features/"
-          ]
+          "files": ["src/features/"]
         }
       ]
     },
@@ -34,9 +28,7 @@
         {
           "context": "The use of paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' is a great proactive measure for mobile responsiveness, ensuring the input isn't hidden behind the home indicator on iOS devices.",
           "timestamp": "2025-12-28T06:49:40.110Z",
-          "files": [
-            "src/features/chat/components/MessageInput.jsx"
-          ]
+          "files": ["src/features/chat/components/MessageInput.jsx"]
         }
       ]
     },
@@ -47,10 +39,7 @@
         {
           "context": "Extracting profile constants and builder functions separates data structure definitions from UI components",
           "timestamp": "2025-12-28T06:49:40.110Z",
-          "files": [
-            "src/config/profileConfig.js",
-            "src/utils/profileBuilder.js"
-          ]
+          "files": ["src/config/profileConfig.js", "src/utils/profileBuilder.js"]
         }
       ]
     }
@@ -63,9 +52,7 @@
         {
           "context": "Found inline style fontSize: '15px' in MessageInput.jsx",
           "timestamp": "2025-12-28T06:49:40.110Z",
-          "files": [
-            "src/features/chat/components/MessageInput.jsx"
-          ]
+          "files": ["src/features/chat/components/MessageInput.jsx"]
         }
       ]
     },
@@ -76,9 +63,7 @@
         {
           "context": "useSendMessage.js hook is doing too much - handles UI state, network transport, and business logic",
           "timestamp": "2025-12-28T06:49:40.110Z",
-          "files": [
-            "src/features/chat/model/useSendMessage.js"
-          ]
+          "files": ["src/features/chat/model/useSendMessage.js"]
         }
       ]
     },
@@ -89,16 +74,12 @@
         {
           "context": "Error handling in useSendMessage.js allows 'fail open' behavior if analysis fails",
           "timestamp": "2025-12-28T06:49:40.110Z",
-          "files": [
-            "src/features/chat/model/useSendMessage.js"
-          ]
+          "files": ["src/features/chat/model/useSendMessage.js"]
         },
         {
           "context": "POLITE_REQUEST_PATTERNS and POSITIVE_PATTERNS are hardcoded arrays in messageAnalyzer.js",
           "timestamp": "2025-12-28T06:49:40.110Z",
-          "files": [
-            "src/utils/messageAnalyzer.js"
-          ]
+          "files": ["src/utils/messageAnalyzer.js"]
         }
       ]
     }

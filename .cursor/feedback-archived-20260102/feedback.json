@@ -7,9 +7,7 @@
     "context": "Excellent use of the Adapter pattern. By wrapping socket.io-client in a custom SocketConnection class, you have successfully decoupled the application logic from the specific websocket library. This makes future replacements or mocking for tests significantly easier.",
     "behavior": "refactoring",
     "suggestion": null,
-    "files": [
-      "src/adapters/socket/SocketAdapter.js"
-    ],
+    "files": ["src/adapters/socket/SocketAdapter.js"],
     "sessionId": "user-feedback-2025-01-27"
   },
   {
@@ -20,9 +18,7 @@
     "context": "Found inline style fontSize: '15px' in MessageInput.jsx",
     "behavior": "hardcoded-values",
     "suggestion": "Use a utility class (e.g., text-sm or text-base) or a defined design token to ensure typography consistency across the app",
-    "files": [
-      "src/features/chat/components/MessageInput.jsx"
-    ],
+    "files": ["src/features/chat/components/MessageInput.jsx"],
     "sessionId": "user-feedback-2025-01-27"
   },
   {
@@ -33,9 +29,7 @@
     "context": "The use of paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' is a great proactive measure for mobile responsiveness, ensuring the input isn't hidden behind the home indicator on iOS devices.",
     "behavior": "proactive",
     "suggestion": null,
-    "files": [
-      "src/features/chat/components/MessageInput.jsx"
-    ],
+    "files": ["src/features/chat/components/MessageInput.jsx"],
     "sessionId": "user-feedback-2025-01-27"
   },
   {
@@ -46,9 +40,7 @@
     "context": "useSendMessage.js hook is doing too much - handles UI state, network transport, and business logic",
     "behavior": "over-engineering",
     "suggestion": "Split into separate hooks: useMessageUI, useMessageTransport, useMessageMediation. Each should have a single responsibility",
-    "files": [
-      "src/features/chat/model/useSendMessage.js"
-    ],
+    "files": ["src/features/chat/model/useSendMessage.js"],
     "sessionId": "user-feedback-2025-01-27"
   },
   {
@@ -59,9 +51,7 @@
     "context": "Error handling in useSendMessage.js allows 'fail open' behavior if analysis fails",
     "behavior": "potential-issue",
     "suggestion": "Consider adding explicit logging or user notification when safety features are bypassed due to analysis failure. May want to implement a 'fail closed' mode for critical safety checks",
-    "files": [
-      "src/features/chat/model/useSendMessage.js"
-    ],
+    "files": ["src/features/chat/model/useSendMessage.js"],
     "sessionId": "user-feedback-2025-01-27"
   },
   {
@@ -72,9 +62,7 @@
     "context": "POLITE_REQUEST_PATTERNS and POSITIVE_PATTERNS are hardcoded arrays in messageAnalyzer.js",
     "behavior": "potential-issue",
     "suggestion": "Extract patterns to a separate config file (e.g., messagePatterns.js) to keep logic file clean and make patterns easier to maintain",
-    "files": [
-      "src/utils/messageAnalyzer.js"
-    ],
+    "files": ["src/utils/messageAnalyzer.js"],
     "sessionId": "user-feedback-2025-01-27"
   },
   {
@@ -85,9 +73,7 @@
     "context": "Breaking out quickLocalCheck prevents unnecessary API calls for simple messages (\"ok\", \"thanks\"). This is a good performance optimization.",
     "behavior": "refactoring",
     "suggestion": null,
-    "files": [
-      "src/utils/messageAnalyzer.js"
-    ],
+    "files": ["src/utils/messageAnalyzer.js"],
     "sessionId": "user-feedback-2025-01-27"
   },
   {
@@ -98,10 +84,7 @@
     "context": "Extracting profile constants and builder functions separates data structure definitions from UI components",
     "behavior": "design-system",
     "suggestion": null,
-    "files": [
-      "src/config/profileConfig.js",
-      "src/utils/profileBuilder.js"
-    ],
+    "files": ["src/config/profileConfig.js", "src/utils/profileBuilder.js"],
     "sessionId": "user-feedback-2025-01-27"
   },
   {
@@ -112,9 +95,7 @@
     "context": "Directory structure organized by Feature (auth, chat, dashboard) rather than file type",
     "behavior": "refactoring",
     "suggestion": null,
-    "files": [
-      "src/features/"
-    ],
+    "files": ["src/features/"],
     "sessionId": "user-feedback-2025-01-27"
   },
   {

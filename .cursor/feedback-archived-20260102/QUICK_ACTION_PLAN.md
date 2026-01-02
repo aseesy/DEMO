@@ -3,6 +3,7 @@
 ## 🎯 Goal
 
 Address the two critical feedback items:
+
 1. **Error Handling Strategy** - Stop silent fail-open behavior
 2. **Pattern Management** - Extract hardcoded patterns to config
 
@@ -23,12 +24,14 @@ mkdir -p chat-client-vite/src/config/patterns
 ```
 
 **Files to create:**
+
 - `chat-client-vite/src/config/patterns/polite-requests.js`
 - `chat-client-vite/src/config/patterns/positive-messages.js`
 - `chat-client-vite/src/config/patterns/simple-responses.js`
 - `chat-client-vite/src/config/patterns/index.js`
 
 **Update:**
+
 - `chat-client-vite/src/utils/messageAnalyzer.js` - Replace hardcoded arrays with imports
 
 **Result:** ✅ Patterns no longer hardcoded in logic file
@@ -40,6 +43,7 @@ mkdir -p chat-client-vite/src/config/patterns
 **Action:** Log all fail-open events
 
 **Update `messageAnalyzer.js` catch block:**
+
 ```javascript
 catch (error) {
   // Log fail-open event
@@ -48,9 +52,9 @@ catch (error) {
     timestamp: new Date().toISOString(),
     messagePreview: messageText.substring(0, 50),
   });
-  
+
   // TODO: Send to logging service (Sentry, etc.)
-  
+
   // Return safe default
   return { action: 'STAY_SILENT', ... };
 }
@@ -65,12 +69,14 @@ catch (error) {
 **Action:** Show warning banner when fail-open occurs
 
 **Create simple notification:**
+
 ```javascript
 // In messageAnalyzer.js catch block
 if (typeof window !== 'undefined') {
   const banner = document.createElement('div');
   banner.textContent = '⚠️ Analysis temporarily unavailable. Message sent without analysis.';
-  banner.style.cssText = 'position:fixed;top:20px;right:20px;background:#f59e0b;color:white;padding:12px 20px;border-radius:8px;z-index:10000;';
+  banner.style.cssText =
+    'position:fixed;top:20px;right:20px;background:#f59e0b;color:white;padding:12px 20px;border-radius:8px;z-index:10000;';
   document.body.appendChild(banner);
   setTimeout(() => banner.remove(), 5000);
 }
@@ -85,17 +91,18 @@ if (typeof window !== 'undefined') {
 **Action:** Document fail-open strategy in code
 
 **Add comment to `messageAnalyzer.js`:**
+
 ```javascript
 /**
  * Error Handling Strategy:
- * 
+ *
  * Current: Fail-open (allow message through on error)
  * Rationale: Ensure message deliverability even if analysis fails
- * 
+ *
  * TODO: Implement fail-closed for critical errors
  * TODO: Add retry logic for network errors
  * TODO: Add user notification for all fail-open events
- * 
+ *
  * See: .cursor/feedback/IMPROVEMENT_STRATEGY.md
  */
 ```
@@ -131,11 +138,13 @@ if (typeof window !== 'undefined') {
 Track these metrics to measure improvement:
 
 ### Error Handling
+
 - [ ] Fail-open events logged: 100%
 - [ ] User notifications shown: 100%
 - [ ] Fail-open rate: <5% (target: <1%)
 
 ### Pattern Management
+
 - [ ] Hardcoded patterns: 0
 - [ ] Patterns in config: 100%
 - [ ] Frontend/backend sync: 100%
@@ -173,4 +182,3 @@ Track these metrics to measure improvement:
 - Add logging before changing behavior (understand current state)
 - Test each change independently
 - Monitor metrics after changes
-
