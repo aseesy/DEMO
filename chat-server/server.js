@@ -110,8 +110,8 @@ const io = new Server(server, {
   pingTimeout: 60000,
   pingInterval: 25000,
   maxHttpBufferSize: 1e6,
-  // In dev: polling only (matches client). In prod: both with websocket preferred
-  transports: isDev ? ['polling'] : ['websocket', 'polling'],
+  // In dev: polling only (matches client). In prod: polling first, upgrade to websocket
+  transports: isDev ? ['polling'] : ['polling', 'websocket'],
   allowEIO3: true,
   // Allow upgrades in production only (client uses polling-only in dev anyway)
   allowUpgrades: !isDev,
