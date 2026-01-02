@@ -49,6 +49,7 @@ export class MessageTransportService {
    * @param {string} messagePayload.text - Message text
    * @param {boolean} [messagePayload.isPreApprovedRewrite] - Is this a rewrite
    * @param {string} [messagePayload.originalRewrite] - Original message if rewrite
+   * @param {string} [messagePayload.optimisticId] - Client-generated ID for reconciliation
    * @returns {Promise<boolean>} True if sent, false if queued/failed
    */
   async sendMessage(messagePayload) {
@@ -61,6 +62,7 @@ export class MessageTransportService {
         text: messagePayload.text,
         isPreApprovedRewrite: messagePayload.isPreApprovedRewrite || false,
         originalRewrite: messagePayload.originalRewrite || null,
+        optimisticId: messagePayload.optimisticId || null,
       });
 
       return success;

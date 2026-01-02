@@ -5,7 +5,7 @@
  * Handler just calls this and emits events based on result.
  */
 
-const { roomService } = require('../../../src/services');
+const { roomService } = require('../../src/services');
 
 /**
  * @typedef {Object} JoinResult

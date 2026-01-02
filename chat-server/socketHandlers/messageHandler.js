@@ -27,11 +27,7 @@ const {
   parseReactions,
   toggleReaction,
 } = require('./messageOperations');
-const {
-  verifyRoomMembership,
-  emitSocketError,
-  SocketErrorCodes,
-} = require('./socketMiddleware');
+const { verifyRoomMembership, emitSocketError, SocketErrorCodes } = require('./socketMiddleware');
 
 // Auto-threading service for semantic thread assignment
 let autoThreading = null;
@@ -171,7 +167,17 @@ function registerMessageHandlers(socket, io, services) {
         addToHistory,
       });
     } catch (error) {
+      console.error('[send_message] AI mediation error:', error.message);
       emitError(socket, 'Failed to send message.', error, 'send_message:aiMediation');
+
+      // Emit message_error for client reconciliation (Invariant I-15)
+      if (optimisticId) {
+        socket.emit('message_error', {
+          optimisticId,
+          error: 'Message failed to send',
+          code: 'SEND_FAILED',
+        });
+      }
     }
   });
 
@@ -200,12 +206,7 @@ function registerMessageHandlers(socket, io, services) {
     let originalMessage;
     try {
       const userEmail = user.email || user.username; // Fallback for backward compatibility
-      const ownership = await verifyMessageOwnership(
-        messageId,
-        userEmail,
-        user.roomId,
-        dbPostgres
-      );
+      const ownership = await verifyMessageOwnership(messageId, userEmail, user.roomId, dbPostgres);
       if (!ownership.valid) {
         emitError(socket, ownership.error);
         return;
@@ -254,12 +255,7 @@ function registerMessageHandlers(socket, io, services) {
     // Step 2: Verify ownership
     try {
       const userEmail = user.email || user.username; // Fallback for backward compatibility
-      const ownership = await verifyMessageOwnership(
-        messageId,
-        userEmail,
-        user.roomId,
-        dbPostgres
-      );
+      const ownership = await verifyMessageOwnership(messageId, userEmail, user.roomId, dbPostgres);
       if (!ownership.valid) {
         emitError(socket, ownership.error);
         return;

@@ -47,6 +47,16 @@ async function processApprovedMessage(socket, io, services, context) {
     // But log the error so we can debug
   }
 
+  // Emit reconciliation event to original sender (for optimistic update correlation)
+  // This allows the sender's client to update the optimistic message ID to the server ID
+  if (message.optimisticId && socket.connected) {
+    socket.emit('message_reconciled', {
+      optimisticId: message.optimisticId,
+      messageId: message.id,
+      timestamp: message.timestamp,
+    });
+  }
+
   // Emit to room AFTER saving (ensures persistence)
   io.to(user.roomId).emit('new_message', message);
 
