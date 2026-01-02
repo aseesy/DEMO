@@ -340,13 +340,4 @@ export function createSocketConnection(url, options = {}) {
   return new SocketConnection(socket);
 }
 
-/**
- * getSocketUrl - Get the socket server URL based on environment
- *
- * @returns {string} Socket server URL
- */
-export function getSocketUrl() {
-  return import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080';
-}
-
 export default createSocketConnection;
