@@ -48,10 +48,15 @@ class SocketService {
    * Get socket URL from config or window override
    */
   getSocketUrl() {
+    let url;
     if (typeof window !== 'undefined' && window.SOCKET_URL) {
-      return window.SOCKET_URL;
+      url = window.SOCKET_URL;
+    } else {
+      url = SOCKET_URL;
     }
-    return SOCKET_URL;
+    // CRITICAL: Trim URL to remove any trailing whitespace/newlines
+    // A trailing newline corrupts Socket.io namespace causing "forced close"
+    return url.trim();
   }
 
   /**

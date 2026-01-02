@@ -119,31 +119,17 @@ const io = new Server(server, {
 // Initialize Socket Handlers
 console.log('[Server] Socket.io path:', io.path());
 
-// PROPER Socket.io pattern: All connection logic goes through Socket.io middleware (io.use)
-// DO NOT manipulate handshake.query at engine.io level - Socket.io handles this automatically!
-// These are read-only logging listeners only - no manipulation of handshake objects
+// Engine.io debugging (development only)
+// Reduced logging - see socket-test.html for detailed packet debugging if needed
 if (process.env.NODE_ENV !== 'production') {
   io.engine.on('connection', rawSocket => {
-    console.log('[Engine.io] New raw connection:', rawSocket.id);
-    // Track when/why connections close
-    rawSocket.on('close', (reason, description) => {
-      console.log(
-        '[Engine.io] Connection closed:',
-        rawSocket.id,
-        'reason:',
-        reason,
-        description || ''
-      );
-    });
-    rawSocket.on('error', err => {
-      console.log('[Engine.io] Socket error:', rawSocket.id, err.message);
+    console.log('[Engine.io] Connection:', rawSocket.id, 'transport:', rawSocket.transport?.name);
+    rawSocket.on('close', reason => {
+      console.log('[Engine.io] Closed:', rawSocket.id, 'reason:', reason);
     });
   });
   io.engine.on('connection_error', err => {
-    console.log('[Engine.io] Connection error:', err.message, err.code);
-  });
-  io.engine.on('initial_headers', (headers, req) => {
-    console.log('[Engine.io] Initial headers for:', req.url);
+    console.log('[Engine.io] Error:', err.message, 'code:', err.code);
   });
 }
 

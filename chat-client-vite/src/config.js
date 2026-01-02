@@ -45,7 +45,9 @@ const isDevelopment = () => {
 function getApiBaseUrl() {
   // 1. Explicit env var takes precedence
   if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+    // IMPORTANT: Trim to remove any trailing newlines/whitespace
+    // A trailing newline in the URL causes Socket.io namespace corruption
+    return import.meta.env.VITE_API_URL.trim();
   }
 
   // 2. Development - use configured port

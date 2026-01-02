@@ -12,7 +12,41 @@
  *   socket.on(SocketEvents.MESSAGE, handler);
  */
 
-import { io } from 'socket.io-client';
+/**
+ * Socket.io-client Loading Strategy
+ *
+ * CURRENT APPROACH: CDN (Recommended for Vite)
+ * - Loaded from CDN in index.html: <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+ * - Accessed via window.io (global from CDN)
+ * - Why: Vite bundler has historically caused issues with socket.io-client
+ *
+ * ALTERNATIVE: Vite Alias (If CDN causes issues)
+ * - Uncomment alias in vite.config.js: 'socket.io-client': 'socket.io-client/dist/socket.io.min.js'
+ * - Import normally: import { io } from 'socket.io-client'
+ * - Requires socket.io-client in dependencies (currently in devDependencies)
+ *
+ * See SOCKET_IO_VITE_SETUP.md for details
+ */
+
+// IMPORTANT: Get io at connection time, not module load time, to ensure CDN script has loaded
+function getIo() {
+  if (typeof window !== 'undefined' && window.io) {
+    return window.io;
+  }
+  // Fallback: If CDN fails, could try importing from npm (requires Vite alias)
+  // This is a safety net - CDN should always be available
+  return null;
+}
+
+// Verify CDN is loaded at module load time (development only)
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  const loadTimeIo = window.io;
+  if (!loadTimeIo) {
+    console.warn(
+      '[SocketAdapter] window.io not available at module load - CDN may not have loaded yet'
+    );
+  }
+}
 
 /**
  * SocketEvents - Centralized event name constants
@@ -260,8 +294,8 @@ export function createSocketConnection(url, options = {}) {
   const {
     autoConnect = true,
     withCredentials = true,
-    // Transport configuration: websocket first (more efficient), polling as fallback
-    // Must match server config in server.js for consistent behavior
+    // Transport configuration: Must match server config in server.js for consistent behavior
+    // websocket first (more efficient), polling as fallback
     transports = import.meta.env.VITE_SOCKET_FORCE_POLLING === 'true'
       ? ['polling']
       : ['websocket', 'polling'],
@@ -280,8 +314,16 @@ export function createSocketConnection(url, options = {}) {
     throw new Error('SocketAdapter: auth.token is required. Use { auth: { token: "..." } }');
   }
 
-  // Create socket connection using socket.io-client
-  // This is the ONLY place in the codebase that uses io() directly
+  // Create socket connection using socket.io-client from CDN
+  // Get io at connection time to ensure CDN has loaded
+  const io = getIo();
+
+  if (!io) {
+    throw new Error(
+      '[SocketAdapter] FATAL: io is null! CDN script not loaded. Check index.html for socket.io CDN script.'
+    );
+  }
+
   const socket = io(url, {
     autoConnect,
     withCredentials,

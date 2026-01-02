@@ -9,12 +9,9 @@
 
 import React from 'react';
 import { apiGet, apiPost, apiPut } from '../../../apiClient.js';
-import {
-  toBackendRelationship,
-  toDisplayRelationship,
-} from '../../../utils/relationshipMapping.js';
+import { toBackendRelationship } from '../../../utils/relationshipMapping.js';
 import { mapFormDataToContact } from './contactMapper.js';
-import { logContactTransform } from '../../../utils/dataTransformDebug.js';
+import { transformContactsForDisplay } from '../../../services/contacts/ContactTransformService.js';
 
 export function useContactsApi(username, isAuthenticated = true) {
   const [contacts, setContacts] = React.useState([]);
@@ -35,23 +32,9 @@ export function useContactsApi(username, isAuthenticated = true) {
         const response = await apiGet('/api/contacts');
         if (response.ok) {
           const data = await response.json();
-          // Transform relationship fields from backend format to display format
-          const transformedContacts = (data.contacts || []).map(contact => {
-            const transformed = {
-              ...contact,
-              relationship: contact.relationship
-                ? toDisplayRelationship(contact.relationship)
-                : contact.relationship,
-            };
-
-            // Debug logging for relationship transformations
-            // Enable via VITE_DEBUG_DATA_TRANSFORM=true or in development
-            if (contact.relationship) {
-              logContactTransform(contact, transformed);
-            }
-
-            return transformed;
-          });
+          // ✅ Delegate transformation to Application layer service
+          // Business rule: How contacts are transformed for display
+          const transformedContacts = transformContactsForDisplay(data.contacts || []);
           setContacts(transformedContacts);
         } else if (response.status === 401) {
           setContacts([]);

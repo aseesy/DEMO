@@ -1,4 +1,6 @@
-import { io } from 'socket.io-client';
+// WORKAROUND: Use socket.io from CDN (loaded in index.html) instead of npm package
+// The Vite-bundled version was sending malformed packets with newline characters
+const io = typeof window !== 'undefined' && window.io ? window.io : null;
 import { SOCKET_URL, API_BASE_URL } from '../../config.js';
 
 // DEBUG: Helper to send logs to server (so we can see them)
@@ -60,14 +62,17 @@ class SocketService {
    */
   connect(token) {
     console.log('[SocketService] ========== CONNECT CALLED ==========');
-    console.log('[SocketService] Token:', token ? `present (${token.substring(0, 20)}...)` : 'MISSING');
+    console.log(
+      '[SocketService] Token:',
+      token ? `present (${token.substring(0, 20)}...)` : 'MISSING'
+    );
     console.log('[SocketService] Current state:', this.connectionState);
     console.log('[SocketService] Socket exists:', !!this.socket);
     console.log('[SocketService] Socket connected:', this.socket?.connected);
     debugToServer('SocketService CONNECT CALLED', {
       hasToken: !!token,
       state: this.connectionState,
-      socketExists: !!this.socket
+      socketExists: !!this.socket,
     });
 
     if (!token) {
@@ -120,7 +125,9 @@ class SocketService {
       console.log('[SocketService] ========================================');
 
       if (typeof io !== 'function') {
-        console.error('[SocketService] ❌ io is not a function! Socket.io-client may not be loaded correctly');
+        console.error(
+          '[SocketService] ❌ io is not a function! Socket.io-client may not be loaded correctly'
+        );
         this.setConnectionState('disconnected');
         return false;
       }

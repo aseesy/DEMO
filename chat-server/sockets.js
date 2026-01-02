@@ -31,7 +31,16 @@ function setupSockets(io, services) {
   // Register authentication middleware - THIS IS THE ONLY PLACE AUTH HAPPENS
   // Client MUST send token in auth object: { auth: { token: '...' } }
   // No fallbacks - fail fast if token is missing or invalid
-  io.use(authMiddleware);
+  io.use((socket, next) => {
+    console.log('[setupSockets] >>> Middleware wrapper START for:', socket.id);
+    try {
+      authMiddleware(socket, next);
+      console.log('[setupSockets] >>> Middleware wrapper END (sync) for:', socket.id);
+    } catch (err) {
+      console.error('[setupSockets] >>> Middleware SYNC ERROR:', err);
+      next(err);
+    }
+  });
   console.log('[setupSockets] ✅ Socket.io middleware registered');
 
   // Phase 2: Event-Driven Architecture

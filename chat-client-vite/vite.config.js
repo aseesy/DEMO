@@ -14,6 +14,10 @@ const VENDOR_LIBS = [
 ];
 
 export default defineConfig({
+  // Exclude socket.io-client from optimization to prevent bundler issues
+  optimizeDeps: {
+    exclude: ['socket.io-client', 'socket.io-parser', 'engine.io-client', 'engine.io-parser'],
+  },
   plugins: [
     react(),
     VitePWA({
@@ -151,6 +155,11 @@ export default defineConfig({
       '@config': path.resolve(__dirname, './src/config'),
       '@utils': path.resolve(__dirname, './src/utils'),
       '@adapters': path.resolve(__dirname, './src/adapters'),
+      // Socket.io-client alias: Point to dist build to avoid bundler issues
+      // This is a Vite-specific workaround for socket.io-client bundling problems
+      // Alternative: Use CDN (currently used - see index.html line 134)
+      // If switching from CDN to npm package, uncomment this alias:
+      // 'socket.io-client': path.resolve(__dirname, './node_modules/socket.io-client/dist/socket.io.min.js'),
     },
   },
   build: {
