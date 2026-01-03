@@ -131,9 +131,26 @@ function setupCors(app) {
     allowedOrigins.push(serverOrigin);
   }
 
+  // Log CORS configuration in production for debugging
+  if (IS_PRODUCTION) {
+    console.log(`[CORS] Configuration loaded:`);
+    console.log(`[CORS] FRONTEND_URL env var: ${process.env.FRONTEND_URL || 'NOT SET'}`);
+    console.log(`[CORS] Allowed origins: ${allowedOrigins.join(', ')}`);
+  }
+
   const corsOptions = {
     origin: (origin, callback) => {
+      // Debug logging in production to diagnose CORS issues
+      if (IS_PRODUCTION && origin) {
+        console.log(`[CORS] Checking origin: ${origin}`);
+        console.log(`[CORS] Allowed origins: ${allowedOrigins.join(', ')}`);
+        console.log(`[CORS] isOriginAllowed result: ${isOriginAllowed(origin, allowedOrigins)}`);
+      }
+
       if (!origin || origin === 'null' || isOriginAllowed(origin, allowedOrigins)) {
+        if (IS_PRODUCTION && origin) {
+          console.log(`[CORS] ✅ Allowing origin: ${origin}`);
+        }
         callback(null, true);
       } else {
         if (
@@ -143,7 +160,8 @@ function setupCors(app) {
         ) {
           callback(null, true);
         } else {
-          console.warn(`CORS blocked origin: ${origin}`);
+          console.warn(`[CORS] ❌ Blocked origin: ${origin}`);
+          console.warn(`[CORS] Allowed list: ${allowedOrigins.join(', ')}`);
           callback(new Error('Not allowed by CORS'));
         }
       }
