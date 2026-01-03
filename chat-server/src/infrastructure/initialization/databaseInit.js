@@ -32,7 +32,8 @@ async function initDatabase() {
   try {
     // Initialize PostgreSQL client (non-blocking)
     // Connection pool is created but connection test happens asynchronously
-    require('../../dbPostgres');
+    // Path: from src/infrastructure/initialization/ -> ../../../dbPostgres (chat-server root)
+    require('../../../dbPostgres');
     // Mark as connected immediately - actual connection test happens in background
     // This allows server to start even if database is slow to connect
     dbConnected = true;
