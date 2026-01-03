@@ -97,9 +97,8 @@ export function useNavigationManager({
     const isOnSignIn = currentPath === '/signin' || currentPath === '/sign-in';
     const isOnRoot = currentPath === '/';
 
-    // Don't redirect if already showing landing or already on sign-in
-    // Use ref to avoid dependency loop
-    if (showLandingRef.current || isOnSignIn) {
+    // Don't redirect if already on sign-in
+    if (isOnSignIn) {
       return;
     }
 
@@ -176,9 +175,9 @@ export function useNavigationManager({
   }, [isAuthenticated, isCheckingAuth, getQueryParam, currentView, setCurrentView]);
 
   // Redirect to sign-in if not authenticated (with timeout)
-  // CRITICAL: Don't redirect if showLanding is true - visitor is on landing/waitlist page
+  // Landing page is now on marketing site (www.coparentliaizen.com)
   useEffect(() => {
-    if (!isAuthenticated && !isCheckingAuth && !showLanding) {
+    if (!isAuthenticated && !isCheckingAuth) {
       const timer = setTimeout(() => {
         console.log('[NavigationManager] Not authenticated after timeout, redirecting to sign-in');
         const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
