@@ -1,5 +1,5 @@
 import React from 'react';
-import { SectionHeader, Heading } from '../../components/ui';
+import { SectionHeader } from '../../components/ui';
 import { blogStructure } from './blogData';
 
 export function BlogPillarPage({ categoryId }) {
