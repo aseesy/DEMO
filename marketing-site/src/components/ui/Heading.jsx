@@ -3,13 +3,7 @@ import React from 'react';
 /**
  * Heading Component - Simple heading for marketing site
  */
-export function Heading({
-  children,
-  level = 2,
-  className = '',
-  ...props
-}) => {
-  const Tag = `h${level}`;
+export function Heading({ children, level = 2, className = '', ...props }) {
   const baseClasses = 'font-bold text-gray-900';
 
   const sizeClasses = {
@@ -21,15 +15,17 @@ export function Heading({
     6: 'text-base sm:text-lg',
   };
 
-  return (
-    <Tag
-      className={`${baseClasses} ${sizeClasses[level] || sizeClasses[2]} ${className}`}
-      {...props}
-    >
-      {children}
-    </Tag>
+  const sizeClass = sizeClasses[level] || sizeClasses[2];
+  const Tag = `h${level}`;
+
+  return React.createElement(
+    Tag,
+    {
+      className: `${baseClasses} ${sizeClass} ${className}`,
+      ...props,
+    },
+    children
   );
 }
 
 export default Heading;
-

@@ -1,17 +1,20 @@
 import React from 'react';
-import { SectionHeader, Heading, Button } from '../../components/ui';
-import { trackFormSubmit } from '../../utils/analytics';
+import { SectionHeader } from '../../components/ui';
+// Simple analytics - just console.log for now
+const trackFormSubmit = (form, field) =>
+  console.log(`[Analytics] Form submit: ${form} field: ${field}`);
 
 export function CoParentingCommunicationHub() {
-  const [email, setEmail] = React.useState('');
-  const [subscribed, setSubscribed] = React.useState(false);
+  // Email subscription functionality - can be implemented later
+  // const [email, setEmail] = React.useState('');
+  // const [subscribed, setSubscribed] = React.useState(false);
 
-  const handleSubscribe = e => {
-    e.preventDefault();
-    trackFormSubmit('blog_subscription', 'email');
-    setSubscribed(true);
-    setEmail('');
-  };
+  // const handleSubscribe = e => {
+  //   e.preventDefault();
+  //   trackFormSubmit('blog_subscription', 'email');
+  //   setSubscribed(true);
+  //   setEmail('');
+  // };
 
   const articles = [
     {
