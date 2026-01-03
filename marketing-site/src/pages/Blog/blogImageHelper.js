@@ -1,47 +1,23 @@
 /**
  * Blog Image Helper
  *
- * Automatically loads blog images from the generated mapping file.
- * This allows articles to automatically get their images without manual imports.
+ * Automatically loads blog images from the backend API.
+ * Images are served from /api/blog/images/* endpoint.
  */
 
-import { blogImageMap as importedMap } from './blogImageMap';
-
-// Use the imported map (will be empty object if file doesn't exist yet)
-const blogImageMap = importedMap || {};
-const imageMapLoaded = Object.keys(blogImageMap).length > 0;
-
-// Debug: Log on import
-if (typeof window !== 'undefined') {
-  console.log('[blogImageHelper] Initialized:', {
-    mapLoaded: imageMapLoaded,
-    availableSlugs: Object.keys(blogImageMap),
-    mapSize: Object.keys(blogImageMap).length,
-  });
-}
+import { API_BASE_URL } from '../../config.js';
 
 /**
  * Get image path for an article by its slug
  * @param {string} slug - Article slug (e.g., 'emotional-triggers')
- * @returns {string|null} Image path or null if not found
+ * @returns {string} Image URL from backend API
  */
 export function getBlogImage(slug) {
-  if (!imageMapLoaded) {
-    console.warn(`[blogImageHelper] Image map not loaded. Slug: ${slug}`);
-    return null;
-  }
-  const imagePath = blogImageMap[slug] || null;
-  if (!imagePath) {
-    console.warn(
-      `[blogImageHelper] No image found for slug: ${slug}. Available slugs:`,
-      Object.keys(blogImageMap)
-    );
-    return null;
-  }
+  // Blog images are served from backend API
+  // Format: /api/blog/images/{slug}.png
+  const imagePath = `${API_BASE_URL}/api/blog/images/${slug}.png`;
 
-  // Add cache-busting query parameter to force browser to reload optimized images
-  // This ensures browsers load the new optimized version instead of cached old version
-  // Increment version when regenerating images: v=8 for concept-driven visual metaphors
+  // Add cache-busting query parameter
   const separator = imagePath.includes('?') ? '&' : '?';
   return `${imagePath}${separator}v=8`;
 }
@@ -87,17 +63,17 @@ export function getBlogImageFromTitle(title) {
 }
 
 /**
- * Check if image mapping is loaded
+ * Check if image mapping is loaded (always true for API-based images)
  * @returns {boolean}
  */
 export function isImageMapLoaded() {
-  return imageMapLoaded;
+  return true;
 }
 
 /**
- * Get all available image slugs
+ * Get all available image slugs (not applicable for API-based images)
  * @returns {string[]}
  */
 export function getAvailableImageSlugs() {
-  return Object.keys(blogImageMap);
+  return [];
 }

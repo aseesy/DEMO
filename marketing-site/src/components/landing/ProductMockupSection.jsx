@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heading } from '../../../components/ui';
+import { Heading } from '../ui';
 
 /**
  * ProductMockupSection - Before/After message comparison

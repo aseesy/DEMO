@@ -1,8 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { BlogArticleLayout } from './BlogArticleLayout';
-import whyArgumentsRepeatImage from '../../assets/blog/why_arguments_repeat_vector.png';
-import gameTheoryMatrix from '../../assets/blog/game_theory_matrix.png';
+import { getBlogImage } from './blogImageHelper';
+import { API_BASE_URL } from '../../config.js';
+
+// Blog images are served from backend API
+const whyArgumentsRepeatImage =
+  getBlogImage('why-arguments-repeat') ||
+  `${API_BASE_URL}/api/blog/images/why-arguments-repeat.png`;
+const gameTheoryMatrix = `${API_BASE_URL}/api/blog/images/game-theory-matrix.png`;
 
 export function WhyArgumentsRepeat() {
   const meta = {
