@@ -125,7 +125,7 @@ export const NavigationPaths = {
   // Content routes
   PRIVACY: '/privacy',
   TERMS: '/terms',
-  BLOG: '/blog',
+  // BLOG: '/blog', // Moved to marketing site (www.coparentliaizen.com)
   QUIZZES: '/quizzes',
 
   // Invitation routes

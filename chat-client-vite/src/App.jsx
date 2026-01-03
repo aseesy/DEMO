@@ -56,7 +56,7 @@ function AppContent() {
       const handleMessage = event => {
         if (event.data && event.data.type === 'NAVIGATE') {
           console.log('[App] Received NAVIGATE message from service worker:', event.data.url);
-          
+
           // Parse the URL to extract view parameter
           try {
             const url = new URL(event.data.url, window.location.origin);
@@ -220,88 +220,7 @@ function App() {
                   <Route path="/sign-in" element={<LoginSignup />} />
                   {/* Catch-all for unknown routes */}
                   <Route path="*" element={<ChatRoom />} />
-                  {/* Blog Routes */}
-                  {/* Pillar 1: Communication */}
-                  <Route
-                    path="/co-parenting-communication"
-                    element={<BlogPillarPage categoryId="communication" />}
-                  />
-                  <Route
-                    path="/break-co-parenting-argument-cycle-game-theory"
-                    element={<WhyArgumentsRepeat />}
-                  />
-                  <Route
-                    path="/co-parenting-communication/why-arguments-repeat"
-                    element={<WhyArgumentsRepeat />}
-                  />{' '}
-                  {/* Legacy URL redirect */}
-                  <Route
-                    path="/co-parenting-communication/emotional-triggers"
-                    element={<EmotionalTriggers />}
-                  />
-                  <Route
-                    path="/co-parenting-communication/emotional-regulation"
-                    element={<EmotionalRegulation />}
-                  />
-                  <Route
-                    path="/co-parenting-communication/reaction-vs-response"
-                    element={<ReactionVsResponse />}
-                  />
-                  <Route
-                    path="/co-parenting-communication/pause-before-reacting"
-                    element={<PauseBeforeReacting />}
-                  />
-                  <Route
-                    path="/co-parenting-communication/defensiveness-strategies"
-                    element={<DefensivenessStrategies />}
-                  />
-                  {/* Pillar 2: High Conflict */}
-                  <Route
-                    path="/high-conflict-co-parenting"
-                    element={<BlogPillarPage categoryId="high-conflict" />}
-                  />
-                  <Route
-                    path="/high-conflict/why-it-feels-impossible"
-                    element={<WhyItFeelsImpossible />}
-                  />
-                  <Route
-                    path="/high-conflict/de-escalation-techniques"
-                    element={<DeEscalationTechniques />}
-                  />
-                  <Route
-                    path="/high-conflict/gaslighting-guilt-blame"
-                    element={<GaslightingGuiltBlame />}
-                  />
-                  <Route
-                    path="/high-conflict/mental-health-protection"
-                    element={<MentalHealthProtection />}
-                  />
-                  <Route
-                    path="/high-conflict/every-conversation-fight"
-                    element={<EveryConversationFight />}
-                  />
-                  {/* Pillar 3: Child Centered */}
-                  <Route
-                    path="/child-centered-co-parenting"
-                    element={<BlogPillarPage categoryId="child-centered" />}
-                  />
-                  <Route path="/child-impact/long-term-effects" element={<LongTermEffects />} />
-                  <Route path="/child-impact/what-kids-need" element={<WhatKidsNeed />} />
-                  <Route path="/child-impact/stability-stress" element={<StabilityStress />} />
-                  <Route
-                    path="/child-impact/modeling-communication"
-                    element={<ModelingCommunication />}
-                  />
-                  {/* Pillar 4: AI Tools */}
-                  <Route
-                    path="/liaizen-ai-co-parenting"
-                    element={<BlogPillarPage categoryId="liaizen-ai" />}
-                  />
-                  <Route path="/liaizen/how-ai-mediation-works" element={<AiGuidedMediation />} />
-                  <Route path="/liaizen/escalation-prevention" element={<EscalationPrevention />} />
-                  <Route path="/liaizen/calm-communication-ai" element={<CalmCommunication />} />
-                  <Route path="/liaizen/ai-safety-for-parents" element={<AiSafety />} />
-                  <Route path="/liaizen/ai-vs-impulse" element={<AiVsImpulse />} />
+                  {/* Blog routes moved to marketing site (www.coparentliaizen.com) */}
                   {/* Quizzes */}
                   <Route path="/quizzes" element={<QuizzesPage />} />
                   <Route path="/quizzes/co-parenting-stance" element={<CoParentingStanceQuiz />} />

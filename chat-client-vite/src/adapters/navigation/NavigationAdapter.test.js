@@ -36,7 +36,8 @@ describe('NavigationPaths', () => {
     it('should have correct content paths', () => {
       expect(NavigationPaths.PRIVACY).toBe('/privacy');
       expect(NavigationPaths.TERMS).toBe('/terms');
-      expect(NavigationPaths.BLOG).toBe('/blog');
+      // BLOG moved to marketing site - path removed from main app
+      // expect(NavigationPaths.BLOG).toBe('/blog');
       expect(NavigationPaths.QUIZZES).toBe('/quizzes');
     });
   });

@@ -82,43 +82,106 @@ function setupGlobalMiddleware(app) {
 }
 
 /**
+ * Normalize an origin by parsing it and lowercasing the hostname
+ * @param {string} origin - Raw origin string
+ * @returns {{ hostname: string, normalized: string } | null}
+ */
+function normalizeOrigin(origin) {
+  if (!origin || origin === 'null') return null;
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname.toLowerCase();
+    // Normalize: protocol + lowercase hostname (drop port if default)
+    const normalized = `${url.protocol}//${hostname}`;
+    return { hostname, normalized };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Frozen allowlist of production domains (hostnames only, lowercase)
+ */
+const ALLOWED_HOSTNAMES = Object.freeze([
+  'coparentliaizen.com',
+  'www.coparentliaizen.com',
+  'app.coparentliaizen.com',
+]);
+
+/**
+ * Frozen allowlist of domain suffixes (for platform wildcards)
+ */
+const ALLOWED_SUFFIXES = Object.freeze(['.vercel.app', '.railway.app']);
+
+/**
  * Check if origin is allowed
+ * @param {string} origin - Request origin
+ * @param {string[]} allowedList - Additional allowed origins from config
+ * @returns {{ allowed: boolean, reason: string }}
  */
 function isOriginAllowed(origin, allowedList) {
-  if (!origin || origin === 'null') return true;
-
-  // Local development flexibility
-  if (
-    origin.startsWith('http://localhost:') ||
-    origin.startsWith('http://127.0.0.1:') ||
-    origin.startsWith('http://192.168.') ||
-    origin.startsWith('http://10.') ||
-    origin.endsWith('.local:5173') ||
-    origin.endsWith('.local:3000')
-  ) {
-    return true;
+  // No origin (same-origin or server-to-server) - allow
+  if (!origin || origin === 'null') {
+    return { allowed: true, reason: 'no-origin' };
   }
 
-  // Production domain checks (case-insensitive)
-  const originLower = origin.toLowerCase();
-  if (originLower.includes('.vercel.app') || originLower.includes('vercel.app')) return true;
-  // Allow both marketing site (www) and main app (app) subdomains
-  if (originLower.includes('coparentliaizen.com')) return true;
-  if (originLower.includes('www.coparentliaizen.com')) return true;
-  if (originLower.includes('app.coparentliaizen.com')) return true;
-  if (originLower.includes('.railway.app') || originLower.includes('railway.app')) return true;
+  const parsed = normalizeOrigin(origin);
+  if (!parsed) {
+    return { allowed: false, reason: `invalid-url: ${origin}` };
+  }
 
-  if (allowedList.includes(origin) || allowedList.includes('*')) return true;
+  const { hostname } = parsed;
 
-  for (const allowed of allowedList) {
-    if (allowed.includes('*')) {
-      const pattern = allowed.replace(/\*/g, '.*');
-      const regex = new RegExp(`^${pattern}$`);
-      if (regex.test(origin)) return true;
+  // Local development - allow all localhost/private IPs
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('10.') ||
+    hostname.endsWith('.local')
+  ) {
+    return { allowed: true, reason: 'local-dev' };
+  }
+
+  // Check frozen production hostnames (exact match, case-insensitive via normalization)
+  if (ALLOWED_HOSTNAMES.includes(hostname)) {
+    return { allowed: true, reason: `allowed-hostname: ${hostname}` };
+  }
+
+  // Check frozen domain suffixes (Vercel, Railway)
+  for (const suffix of ALLOWED_SUFFIXES) {
+    if (hostname.endsWith(suffix)) {
+      return { allowed: true, reason: `allowed-suffix: ${suffix}` };
     }
   }
 
-  return false;
+  // Check config allowlist (exact match)
+  if (allowedList.includes('*')) {
+    return { allowed: true, reason: 'wildcard-allowlist' };
+  }
+
+  for (const allowed of allowedList) {
+    const allowedParsed = normalizeOrigin(allowed);
+    if (allowedParsed && allowedParsed.hostname === hostname) {
+      return { allowed: true, reason: `config-allowlist: ${allowed}` };
+    }
+  }
+
+  // Wildcard patterns in config
+  for (const allowed of allowedList) {
+    if (allowed.includes('*')) {
+      const pattern = allowed.replace(/\*/g, '.*');
+      const regex = new RegExp(`^${pattern}$`, 'i');
+      if (regex.test(origin)) {
+        return { allowed: true, reason: `config-pattern: ${allowed}` };
+      }
+    }
+  }
+
+  return {
+    allowed: false,
+    reason: `not-in-allowlist: hostname=${hostname}, checked=[${ALLOWED_HOSTNAMES.join(',')}] + suffixes=[${ALLOWED_SUFFIXES.join(',')}]`,
+  };
 }
 
 /**
@@ -143,30 +206,17 @@ function setupCors(app) {
 
   const corsOptions = {
     origin: (origin, callback) => {
-      // Debug logging in production to diagnose CORS issues
-      if (IS_PRODUCTION && origin) {
-        console.log(`[CORS] Checking origin: ${origin}`);
-        console.log(`[CORS] Allowed origins: ${allowedOrigins.join(', ')}`);
-        console.log(`[CORS] isOriginAllowed result: ${isOriginAllowed(origin, allowedOrigins)}`);
-      }
+      const result = isOriginAllowed(origin, allowedOrigins);
 
-      if (!origin || origin === 'null' || isOriginAllowed(origin, allowedOrigins)) {
+      if (result.allowed) {
         if (IS_PRODUCTION && origin) {
-          console.log(`[CORS] ✅ Allowing origin: ${origin}`);
+          console.log(`[CORS] ✅ ${origin} → ${result.reason}`);
         }
         callback(null, true);
       } else {
-        if (
-          origin.startsWith('http://localhost:') ||
-          origin.startsWith('http://127.0.0.1:') ||
-          origin.startsWith('http://192.168.')
-        ) {
-          callback(null, true);
-        } else {
-          console.warn(`[CORS] ❌ Blocked origin: ${origin}`);
-          console.warn(`[CORS] Allowed list: ${allowedOrigins.join(', ')}`);
-          callback(new Error('Not allowed by CORS'));
-        }
+        console.warn(`[CORS] ❌ BLOCKED: ${origin}`);
+        console.warn(`[CORS] Reason: ${result.reason}`);
+        callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: true,

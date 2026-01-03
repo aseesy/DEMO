@@ -73,23 +73,13 @@ setupRoutes(app, services);
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      // Use the shared origin check logic
-      if (!origin || origin === 'null' || isOriginAllowed(origin, allowedOrigins)) {
+      const result = isOriginAllowed(origin, allowedOrigins);
+      if (result.allowed) {
         callback(null, true);
       } else {
-        // Development fallbacks - be slightly more permissive in dev
-        const isLocal =
-          origin.startsWith('http://localhost:') ||
-          origin.startsWith('http://127.0.0.1:') ||
-          origin.startsWith('http://192.168.') ||
-          origin.startsWith('http://10.');
-
-        if (isLocal) {
-          callback(null, true);
-        } else {
-          console.warn(`Socket.io CORS blocked origin: ${origin}`);
-          callback(new Error('Not allowed by CORS'));
-        }
+        console.warn(`[Socket.io CORS] ❌ BLOCKED: ${origin}`);
+        console.warn(`[Socket.io CORS] Reason: ${result.reason}`);
+        callback(new Error('Not allowed by CORS'));
       }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
