@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Socket.io Test</title>
+  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+</head>
+<body>
+  <h1>Socket.io Connection Test</h1>
+  <div id="status">Connecting...</div>
+  <pre id="log"></pre>
+
+  <script>
+    const log = (msg) => {
+      console.log(msg);
+      document.getElementById('log').textContent += msg + '\n';
+    };
+
+    const status = (msg) => {
+      document.getElementById('status').textContent = msg;
+    };
+
+    // Get token from localStorage or use a test token
+    const token = localStorage.getItem('token') || 'test-token';
+    log('Token: ' + token.substring(0, 30) + '...');
+
+    try {
+      const socket = io('http://localhost:3000', {
+        transports: ['polling'],
+        auth: { token },
+        autoConnect: false,
+        timeout: 10000,
+        forceNew: true
+      });
+
+      log('Socket created');
+
+      socket.io.on('open', () => log('[Engine] OPEN'));
+      socket.io.on('close', (reason) => log('[Engine] CLOSE: ' + reason));
+      socket.io.on('error', (err) => log('[Engine] ERROR: ' + err.message));
+      socket.io.on('packet', (packet) => log('[Engine] Packet: ' + JSON.stringify(packet)));
+
+      socket.on('connect', () => {
+        log('[Socket] CONNECTED: ' + socket.id);
+        status('Connected: ' + socket.id);
+      });
+
+      socket.on('connect_error', (err) => {
+        log('[Socket] ERROR: ' + err.message);
+        log('[Socket] Error data: ' + JSON.stringify(err.data));
+        status('Error: ' + err.message);
+      });
+
+      socket.on('disconnect', (reason) => {
+        log('[Socket] DISCONNECTED: ' + reason);
+        status('Disconnected: ' + reason);
+      });
+
+      log('Connecting...');
+      socket.connect();
+
+    } catch (err) {
+      log('EXCEPTION: ' + err.message);
+      status('Exception: ' + err.message);
+    }
+  </script>
+</body>
+</html>

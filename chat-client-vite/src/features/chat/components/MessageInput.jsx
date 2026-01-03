@@ -120,9 +120,10 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
 
   return (
     <div
-      className="px-4 sm:px-6 md:px-8 pb-4 pt-2 safe-area-inset-bottom"
+      className="px-4 sm:px-6 md:px-8 safe-area-inset-bottom"
       style={{
-        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+        paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))',
+        paddingTop: '0px',
         width: '100%',
         maxWidth: '100%',
         overflowX: 'hidden',
@@ -130,7 +131,7 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
     >
       <form
         onSubmit={sendMessage}
-        className="flex-1 relative max-w-3xl mx-auto min-w-0 flex items-end gap-2"
+        className="flex-1 relative max-w-3xl mx-auto min-w-0 flex items-center gap-2"
         style={{ width: '100%', maxWidth: '100%' }}
       >
         <div className="flex-1 relative">
@@ -144,7 +145,7 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
             }}
             placeholder="Type a message..."
             rows={1}
-            className={`w-full pl-12 pr-14 py-3 border border-gray-200 rounded-full bg-white/90 focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-base text-gray-900 placeholder-gray-400 min-h-[44px] max-h-32 resize-none font-normal leading-snug shadow-sm transition-all ${
+            className={`w-full pl-12 pr-14 py-2.5 border border-gray-200 rounded-full bg-white/90 focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-base text-gray-900 placeholder-gray-400 min-h-[44px] max-h-32 resize-none font-normal leading-snug shadow-sm transition-all ${
               hasCoachingWarning ? 'placeholder-orange-400 border-orange-300' : ''
             }`}
             style={{ height: 'auto', overflowY: 'hidden' }}
