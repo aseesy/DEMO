@@ -14,7 +14,7 @@ import {
   Footer,
   StickyMobileCTA,
   useLandingPageState,
-} from './components';
+} from '../components/landing';
 
 /**
  * LandingPage - Main landing page component

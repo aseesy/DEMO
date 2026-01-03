@@ -102,7 +102,10 @@ function isOriginAllowed(origin, allowedList) {
   // Production domain checks (case-insensitive)
   const originLower = origin.toLowerCase();
   if (originLower.includes('.vercel.app') || originLower.includes('vercel.app')) return true;
+  // Allow both marketing site (www) and main app (app) subdomains
   if (originLower.includes('coparentliaizen.com')) return true;
+  if (originLower.includes('www.coparentliaizen.com')) return true;
+  if (originLower.includes('app.coparentliaizen.com')) return true;
   if (originLower.includes('.railway.app') || originLower.includes('railway.app')) return true;
 
   if (allowedList.includes(origin) || allowedList.includes('*')) return true;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Heading } from '../../../components/ui';
+import { Button, Heading } from '../ui';
 import { trackCTAClick } from '../../../utils/analytics.js';
 
 /**

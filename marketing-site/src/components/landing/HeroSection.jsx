@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, SectionHeader } from '../../../components/ui';
+import { Button, SectionHeader } from '../ui';
 
 /**
  * HeroSection - Main landing page hero with waitlist form

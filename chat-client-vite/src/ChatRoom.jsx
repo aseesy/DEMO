@@ -24,7 +24,6 @@ import { usePWABadge } from './utils/usePWABadge.js';
 
 // Extracted hooks and components
 import { usePWADetector } from './features/shell/hooks/usePWADetector.js';
-import { useLandingPageController } from './features/shell/hooks/useLandingPageController.js';
 import { useNavigationManager } from './features/shell/hooks/useNavigationManager.js';
 import { AuthGuard } from './features/shell/components/AuthGuard.jsx';
 
@@ -84,15 +83,11 @@ function ChatRoomContent({
     isJoined,
   } = useChatContext();
 
-  // Landing page controller - extracted to hook
-  const { showLanding, setShowLanding } = useLandingPageController({
-    isAuthenticated,
-    isCheckingAuth,
-  });
+  // No landing page - marketing site handles that
 
   // In-app notifications
   const { unreadCount: notificationCount, refresh: refreshNotifications } = useInAppNotifications({
-    enabled: isAuthenticated && !showLanding && !isCheckingAuth,
+    enabled: isAuthenticated && !isCheckingAuth,
   });
 
   // Update PWA badge with unread message count
@@ -126,7 +121,6 @@ function ChatRoomContent({
   useNavigationManager({
     isAuthenticated,
     isCheckingAuth,
-    showLanding,
     currentView,
     setCurrentView,
   });
@@ -174,14 +168,14 @@ function ChatRoomContent({
 
   // Contacts
   const { contacts } = useContacts(
-    showLanding ? null : username,
-    isAuthenticated && !showLanding && !isCheckingAuth
+    username,
+    isAuthenticated && !isCheckingAuth
   );
 
   // Notifications
   const notifications = useNotifications({
     username,
-    enabled: isAuthenticated && !showLanding && notificationPrefs.newMessages,
+    enabled: isAuthenticated && notificationPrefs.newMessages,
   });
 
   const toast = useToast();
@@ -289,7 +283,6 @@ function ChatRoomContent({
   console.log('[ChatRoom] Rendering:', {
     isAuthenticated,
     isCheckingAuth,
-    showLanding,
     currentView,
   });
 
@@ -298,7 +291,6 @@ function ChatRoomContent({
     <AuthGuard
       isAuthenticated={isAuthenticated}
       isCheckingAuth={isCheckingAuth}
-      showLanding={showLanding}
       onGetStarted={handleGetStarted}
     >
       <>

@@ -16,8 +16,8 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Check if we're in the right directory
-if [ ! -f "vercel.json" ]; then
-    echo -e "${RED}Error: Must run from project root (where vercel.json is)${NC}"
+if [ ! -f "chat-client-vite/vercel.json" ]; then
+    echo -e "${RED}Error: Must run from project root (vercel.json should be in chat-client-vite/)${NC}"
     exit 1
 fi
 
@@ -51,6 +51,9 @@ echo ""
 echo -e "${YELLOW}Step 3: Set Vercel environment variable${NC}"
 echo "Setting VITE_API_URL=$RAILWAY_URL"
 
+# Navigate to chat-client-vite for vercel commands
+cd chat-client-vite
+
 # Check if variable already exists
 if vercel env ls production 2>&1 | grep -q "VITE_API_URL"; then
     echo "Removing existing VITE_API_URL..."
@@ -63,12 +66,17 @@ echo "$RAILWAY_URL" | vercel env add VITE_API_URL production
 echo -e "${GREEN}✓ VITE_API_URL set to $RAILWAY_URL${NC}"
 echo ""
 
+# Return to project root
+cd ..
+
 echo -e "${YELLOW}Step 4: Verify vercel.json configuration${NC}"
-cat vercel.json
+cat chat-client-vite/vercel.json
 echo ""
 
-if ! grep -q "chat-client-vite" vercel.json; then
-    echo -e "${RED}Error: vercel.json does not reference chat-client-vite${NC}"
+# Verify vercel.json has correct structure (no cd commands, paths relative to chat-client-vite)
+if grep -q "cd chat-client-vite" chat-client-vite/vercel.json; then
+    echo -e "${RED}Error: vercel.json should not contain 'cd chat-client-vite' commands${NC}"
+    echo -e "${YELLOW}  (Vercel Root Directory is set to chat-client-vite, so paths are already relative)${NC}"
     exit 1
 fi
 echo -e "${GREEN}✓ vercel.json configuration looks correct${NC}"

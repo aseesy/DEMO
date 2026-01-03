@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { apiGet, apiPost } from '../../../apiClient.js';
-import {
-  trackConversion,
-  trackFormSubmit,
-  trackScrollDepth,
-  trackSectionView,
-} from '../../../utils/analytics.js';
+import { apiGet, apiPost } from '../../api/client.js';
+// Simple analytics - just console.log for now (can add Google Analytics later)
+const trackConversion = (type, source) => console.log(`[Analytics] Conversion: ${type} from ${source}`);
+const trackFormSubmit = (form, field) => console.log(`[Analytics] Form submit: ${form} field: ${field}`);
+const trackScrollDepth = (depth) => console.log(`[Analytics] Scroll depth: ${depth}%`);
+const trackSectionView = (section) => console.log(`[Analytics] Section view: ${section}`);
 
 /**
  * useLandingPageState - Centralized state management for landing page

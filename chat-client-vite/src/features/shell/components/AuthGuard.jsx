@@ -5,17 +5,16 @@
  *
  * Shows:
  * - Loading state while checking auth
- * - Landing page if not authenticated and not PWA
  * - Sign-in page if not authenticated
  * - Main app if authenticated
+ *
+ * NOTE: Landing page is now on the marketing site (www.coparentliaizen.com)
  */
 
 import React from 'react';
 import { storage, StorageKeys } from '../../../adapters/storage';
-import { LandingPage } from '../../landing/LandingPage.jsx';
 import { LoginSignup } from '../../auth/components/LoginSignup.jsx';
 import { useAppNavigation, NavigationPaths } from '../../../adapters/navigation';
-import { usePWADetector } from '../hooks/usePWADetector.js';
 
 /**
  * Auth Guard - handles authentication-based rendering
@@ -23,23 +22,17 @@ import { usePWADetector } from '../hooks/usePWADetector.js';
  * @param {Object} props - Component props
  * @param {boolean} props.isAuthenticated - Whether user is authenticated
  * @param {boolean} props.isCheckingAuth - Whether auth check is in progress
- * @param {boolean} props.showLanding - Whether to show landing page
- * @param {Function} props.onGetStarted - Callback when user clicks "Get Started"
+ * @param {Function} props.onGetStarted - Callback when user clicks "Get Started" (not used, kept for compatibility)
  * @param {React.ReactNode} props.children - Content to render if authenticated
  * @returns {React.ReactNode}
  */
 export function AuthGuard({
   isAuthenticated,
   isCheckingAuth,
-  showLanding,
   onGetStarted,
   children,
 }) {
-  const { navigate } = useAppNavigation();
-  const isPWA = usePWADetector();
-
-  // Show loading state while checking auth (prevents flash of landing page)
-  // CRITICAL: If we have stored auth, show loading instead of landing page
+  // Show loading state while checking auth
   if (isCheckingAuth) {
     const hasStoredAuth =
       storage.has(StorageKeys.AUTH_TOKEN) || storage.has(StorageKeys.IS_AUTHENTICATED);
@@ -72,18 +65,6 @@ export function AuthGuard({
         </div>
       </div>
     );
-  }
-
-  // Show landing page if not authenticated and not PWA
-  if (showLanding) {
-    console.log('[AuthGuard] Showing landing page:', {
-      isAuthenticated,
-      isCheckingAuth,
-      showLanding,
-      hasToken: storage.has(StorageKeys.AUTH_TOKEN),
-      hasIsAuth: storage.has(StorageKeys.IS_AUTHENTICATED),
-    });
-    return <LandingPage onGetStarted={onGetStarted || (() => navigate(NavigationPaths.SIGN_IN))} />;
   }
 
   // If not authenticated, show sign-in page or redirect

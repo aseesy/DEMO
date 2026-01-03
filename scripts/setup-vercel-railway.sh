@@ -22,11 +22,11 @@ RAILWAY_URL="https://demo-production-6dcd.up.railway.app"
 echo -e "${BLUE}📋 Step 1: Verify Config Files${NC}"
 echo ""
 
-if [ ! -f "$PROJECT_ROOT/vercel.json" ]; then
-    echo -e "${RED}❌ vercel.json not found at root${NC}"
+if [ ! -f "$PROJECT_ROOT/chat-client-vite/vercel.json" ]; then
+    echo -e "${RED}❌ vercel.json not found in chat-client-vite/${NC}"
     exit 1
 fi
-echo -e "${GREEN}✅ vercel.json found${NC}"
+echo -e "${GREEN}✅ vercel.json found in chat-client-vite/${NC}"
 
 if [ ! -f "$PROJECT_ROOT/railway.toml" ]; then
     echo -e "${RED}❌ railway.toml not found at root${NC}"
@@ -52,16 +52,16 @@ fi
 
 echo -e "${GREEN}✅ Vercel CLI ready${NC}"
 
-# Link Vercel project from root
+# Link Vercel project from chat-client-vite directory
 echo ""
 echo -e "${BLUE}🔗 Linking Vercel project...${NC}"
-cd "$PROJECT_ROOT"
+cd "$PROJECT_ROOT/chat-client-vite"
 vercel link --yes 2>&1 | head -10
 
-# Set Vercel environment variables (from root, since we linked from root)
+# Set Vercel environment variables (from chat-client-vite, since that's the root directory)
 echo ""
 echo -e "${BLUE}🔧 Setting Vercel Environment Variables...${NC}"
-cd "$PROJECT_ROOT"
+cd "$PROJECT_ROOT/chat-client-vite"
 
 echo -e "${BLUE}  Setting VITE_API_URL for production...${NC}"
 echo "$RAILWAY_URL" | vercel env add VITE_API_URL production 2>/dev/null || {
@@ -130,8 +130,8 @@ echo -e "${GREEN}✅ Setup Complete!${NC}"
 echo ""
 echo -e "${BLUE}📋 Next Steps:${NC}"
 echo "  1. Commit and push config files:"
-echo "     git add vercel.json railway.toml"
-echo "     git commit -m 'Add root-level Vercel and Railway configs'"
+echo "     git add chat-client-vite/vercel.json railway.toml"
+echo "     git commit -m 'Add Vercel and Railway configs'"
 echo "     git push"
 echo ""
 echo "  2. Vercel will auto-deploy on push"

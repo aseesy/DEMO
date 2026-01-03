@@ -167,30 +167,18 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Split node_modules into separate chunks
           if (id.includes('node_modules')) {
+            // Extract package name (handle scoped packages like @vitejs/plugin-react)
             const parts = id.split('node_modules/')[1].split('/');
             const pkg = parts[0].startsWith('@') ? `${parts[0]}/${parts[1]}` : parts[0];
             if (VENDOR_LIBS.includes(pkg)) {
               return 'vendor';
             }
-            // Split other large dependencies
-            if (pkg.includes('socket.io') || pkg.includes('socketio')) {
-              return 'vendor-socket';
-            }
           }
-          // Split blog routes (they have large images)
+          // Blog routes are lazily loaded and have large images
           if (id.includes('features/blog')) {
             return 'blog';
           }
-        },
-        // Optimize asset handling
-        assetFileNames: assetInfo => {
-          // Keep images in assets folder but optimize naming
-          if (assetInfo.name && /\.(png|jpe?g|svg|gif|webp)$/.test(assetInfo.name)) {
-            return 'assets/[name]-[hash][extname]';
-          }
-          return 'assets/[name]-[hash][extname]';
         },
       },
     },

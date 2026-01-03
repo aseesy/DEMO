@@ -22,7 +22,6 @@ const AVAILABLE_VIEWS = ['dashboard', 'chat', 'contacts', 'profile', 'settings',
  * @param {Object} params - Hook parameters
  * @param {boolean} params.isAuthenticated - Whether user is authenticated
  * @param {boolean} params.isCheckingAuth - Whether auth check is in progress
- * @param {boolean} params.showLanding - Whether landing page is showing
  * @param {string} params.currentView - Current view name
  * @param {Function} params.setCurrentView - Function to set current view
  * @returns {void}
@@ -30,7 +29,6 @@ const AVAILABLE_VIEWS = ['dashboard', 'chat', 'contacts', 'profile', 'settings',
 export function useNavigationManager({
   isAuthenticated,
   isCheckingAuth,
-  showLanding,
   currentView,
   setCurrentView,
 }) {
@@ -40,12 +38,6 @@ export function useNavigationManager({
   const hasRedirectedRef = useRef(false);
   const lastPathRef = useRef(typeof window !== 'undefined' ? window.location.pathname : '/');
   const redirectTimeoutRef = useRef(null);
-  const showLandingRef = useRef(showLanding);
-
-  // Keep ref in sync with state (but don't trigger effect)
-  useEffect(() => {
-    showLandingRef.current = showLanding;
-  }, [showLanding]);
 
   // Main navigation effect - handles auth-based redirects
   useEffect(() => {
@@ -133,7 +125,7 @@ export function useNavigationManager({
         navigate(NavigationPaths.SIGN_IN, { replace: true });
       }
     }
-  }, [isCheckingAuth, isAuthenticated, navigate, getQueryParam, showLanding]);
+  }, [isCheckingAuth, isAuthenticated, navigate, getQueryParam]);
 
   // Save current view to storage
   useEffect(() => {
@@ -197,5 +189,5 @@ export function useNavigationManager({
       }, 2000); // 2 second timeout
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, isCheckingAuth, showLanding, navigate]);
+  }, [isAuthenticated, isCheckingAuth, navigate]);
 }

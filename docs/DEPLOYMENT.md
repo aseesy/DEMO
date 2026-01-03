@@ -126,6 +126,11 @@ vercel
 - Project name? → `liaizen` (or your preference)
 - Directory? → `./` (current directory)
 
+**Important:** After initial setup, configure the Root Directory in Vercel Dashboard:
+- Go to **Settings** → **General** → **Root Directory**
+- Set to: `chat-client-vite`
+- This ensures Vercel builds from the correct directory
+
 ### Step 3: Production Deployment
 
 ```bash
@@ -134,15 +139,26 @@ vercel --prod
 
 Or promote deployment from Vercel dashboard.
 
-### Step 4: Update API Configuration
+### Step 4: Configure Environment Variables
 
 1. **Get Railway domain:**
    - Railway Dashboard → Service → **Settings** → **Networking**
    - Copy your Railway domain (e.g., `your-app.up.railway.app`)
 
-2. **Update frontend config:**
-   - Update `chat-client-vite/src/config.js` with Railway domain
-   - Commit and push (Vercel auto-deploys)
+2. **Set Vercel environment variable:**
+   - Go to Vercel Dashboard → Your Project → **Settings** → **Environment Variables**
+   - Add `VITE_API_URL` with value: `https://your-railway-domain.up.railway.app`
+   - Select environments: **Production**, **Preview**, and **Development**
+   - Click **Save**
+
+   **Or use CLI:**
+   ```bash
+   cd chat-client-vite
+   vercel env add VITE_API_URL production
+   # Enter: https://your-railway-domain.up.railway.app
+   ```
+
+3. **Important:** The `VITE_API_URL` environment variable is required. The application will fall back to a hardcoded URL if not set, which may not be correct for your deployment.
 
 ### Step 5: Custom Domain (Vercel)
 

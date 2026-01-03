@@ -24,28 +24,7 @@ import { SocketTestV2 } from './features/chat/test/SocketTest.v2.jsx';
 // Quizzes
 import { QuizzesPage } from './features/quizzes/QuizzesPage.jsx';
 import { CoParentingStanceQuiz } from './features/quizzes/CoParentingStanceQuiz.jsx';
-// Blog articles
-import { WhyArgumentsRepeat } from './features/blog/WhyArgumentsRepeat.jsx';
-import { EmotionalTriggers } from './features/blog/EmotionalTriggers.jsx';
-import { EmotionalRegulation } from './features/blog/EmotionalRegulation.jsx';
-import { ReactionVsResponse } from './features/blog/ReactionVsResponse.jsx';
-import { PauseBeforeReacting } from './features/blog/PauseBeforeReacting.jsx';
-import { DefensivenessStrategies } from './features/blog/DefensivenessStrategies.jsx';
-import { WhyItFeelsImpossible } from './features/blog/WhyItFeelsImpossible.jsx';
-import { DeEscalationTechniques } from './features/blog/DeEscalationTechniques.jsx';
-import { GaslightingGuiltBlame } from './features/blog/GaslightingGuiltBlame.jsx';
-import { MentalHealthProtection } from './features/blog/MentalHealthProtection.jsx';
-import { EveryConversationFight } from './features/blog/EveryConversationFight.jsx';
-import { LongTermEffects } from './features/blog/LongTermEffects.jsx';
-import { WhatKidsNeed } from './features/blog/WhatKidsNeed.jsx';
-import { StabilityStress } from './features/blog/StabilityStress.jsx';
-import { ModelingCommunication } from './features/blog/ModelingCommunication.jsx';
-import { BlogPillarPage } from './features/blog/BlogPillarPage.jsx';
-import { AiGuidedMediation } from './features/blog/AiGuidedMediation.jsx';
-import { EscalationPrevention } from './features/blog/EscalationPrevention.jsx';
-import { CalmCommunication } from './features/blog/CalmCommunication.jsx';
-import { AiSafety } from './features/blog/AiSafety.jsx';
-import { AiVsImpulse } from './features/blog/AiVsImpulse.jsx';
+// Blog articles - MOVED TO MARKETING SITE (www.coparentliaizen.com)
 
 /**
  * AppContent Component

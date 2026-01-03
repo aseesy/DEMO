@@ -1,0 +1,23 @@
+{
+  "addresseeWords": ["you", "you're", "your", "yours", "yourself", "youre"],
+  "speakerWords": ["i", "i'm", "im", "me", "my", "mine", "myself", "i've", "ive", "i'd", "id", "i'll", "ill"],
+  "intensifiers": ["always", "never", "every", "completely", "totally", "absolutely", "constantly", "forever", "entirely", "extremely", "very", "really", "so", "such", "definitely", "certainly", "obviously", "clearly"],
+  "absolutes": ["always", "never", "every", "all", "none", "nothing", "everything", "everyone", "nobody", "no one", "nowhere", "everywhere"],
+  "softeners": ["just", "maybe", "might", "perhaps", "possibly", "probably", "kind of", "sort of", "somewhat", "a bit", "a little", "slightly", "basically", "actually", "honestly", "frankly", "simply", "only", "merely"],
+  "thirdPartyPronouns": ["she", "she's", "shes", "her", "hers", "herself", "he", "he's", "hes", "him", "his", "himself", "they", "they're", "theyre", "them", "their", "theirs", "themselves"],
+  "childTerms": ["kids", "children", "child", "kid", "daughter", "son", "baby", "the kids", "the children", "our kids", "our children", "our daughter", "our son", "my daughter", "my son", "your daughter", "your son"],
+  "actionVerbs": ["pick", "drop", "bring", "take", "get", "give", "send", "receive", "tell", "say", "said", "told", "ask", "asked", "help", "helped", "change", "changed", "cancel", "cancelled", "forgot", "forget", "remember", "remembered", "miss", "missed", "call", "called", "text", "texted", "respond", "responded", "reply", "replied", "agree", "agreed", "disagree", "disagreed", "decide", "decided"],
+  "domainKeywords": {
+    "schedule": ["pickup", "drop-off", "dropoff", "custody", "time", "schedule", "weekend", "holiday", "vacation", "visitation", "overnight", "weekday", "evening", "morning", "afternoon", "today", "tomorrow", "yesterday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    "money": ["payment", "support", "child support", "money", "expense", "expenses", "cost", "pay", "paid", "afford", "financial", "bill", "bills", "fee", "fees", "tuition", "insurance", "medical", "dental"],
+    "child_education": ["homework", "school", "teacher", "class", "grade", "grades", "test", "project", "assignment", "report card", "parent-teacher", "conference", "education", "learning", "tutoring", "tutor"],
+    "parenting": ["discipline", "rules", "bedtime", "routine", "behavior", "behaviour", "screen time", "chores", "responsibilities", "parenting", "raising", "teaching", "boundaries", "consequences"],
+    "character": ["behavior", "behaviour", "attitude", "personality", "character", "trait", "habit", "habits", "way", "ways", "kind of person", "type of person"]
+  },
+  "posPatterns": {
+    "article": ["a", "an", "the"],
+    "preposition": ["in", "on", "at", "to", "for", "with", "by", "from", "about", "into", "through", "during", "before", "after", "above", "below", "between", "under", "over", "since", "until", "of"],
+    "conjunction": ["and", "but", "or", "nor", "for", "yet", "so", "because", "although", "though", "while", "if", "when", "where", "since", "unless", "however"],
+    "auxiliary": ["is", "are", "was", "were", "be", "been", "being", "am", "have", "has", "had", "do", "does", "did", "will", "would", "could", "should", "may", "might", "must", "shall", "can", "can't", "won't", "wouldn't", "couldn't", "shouldn't", "don't", "doesn't", "didn't"]
+  }
+}

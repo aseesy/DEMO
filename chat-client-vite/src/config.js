@@ -43,10 +43,8 @@ const isDevelopment = () => {
 // API URL RESOLUTION
 // =============================================================================
 function getApiBaseUrl() {
-  // 1. Explicit env var takes precedence
+  // 1. Explicit env var takes precedence (trim whitespace that breaks Socket.io)
   if (import.meta.env.VITE_API_URL) {
-    // IMPORTANT: Trim to remove any trailing newlines/whitespace
-    // A trailing newline in the URL causes Socket.io namespace corruption
     return import.meta.env.VITE_API_URL.trim();
   }
 

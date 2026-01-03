@@ -44,30 +44,12 @@ class InvitationService extends BaseService {
     if (!token) {
       throw new ValidationError('Token is required', 'token');
     }
-
-    // Try invitations table first (legacy system)
-    let validation = await this.invitationManager.validateToken(token, this.db);
-
-    // If not found, try pairing_sessions table (new system)
-    if (!validation.valid && validation.code === 'INVALID_TOKEN') {
-      console.log('Token not found in invitations table, trying pairing_sessions...');
-      const pairingValidation = await this.pairingManager.validateToken(token, this.db);
-
-      if (pairingValidation.valid) {
-        return this._formatPairingValidation(pairingValidation);
-      }
-
-      // Return pairing error if different from INVALID_TOKEN
-      if (pairingValidation.code !== 'INVALID_TOKEN') {
-        throw this._createValidationError(pairingValidation);
-      }
-    }
-
-    if (!validation.valid) {
-      throw this._createValidationError(validation);
-    }
-
-    return this._formatInvitationValidation(validation);
+    return this._validateWithFallback(
+      () => this.invitationManager.validateToken(token, this.db),
+      () => this.pairingManager.validateToken(token, this.db),
+      'INVALID_TOKEN',
+      'Token'
+    );
   }
 
   /**
@@ -79,29 +61,12 @@ class InvitationService extends BaseService {
     if (!code) {
       throw new ValidationError('Invite code is required', 'code');
     }
-
-    // Try invitations table first
-    let validation = await this.invitationManager.validateByShortCode(code, this.db);
-
-    // If not found, try pairing_sessions table
-    if (!validation.valid && validation.code === 'INVALID_CODE') {
-      console.log('Code not found in invitations table, trying pairing_sessions...');
-      const pairingValidation = await this.pairingManager.validateCode(code, this.db);
-
-      if (pairingValidation.valid) {
-        return this._formatPairingValidation(pairingValidation);
-      }
-
-      if (pairingValidation.code !== 'INVALID_CODE') {
-        throw this._createValidationError(pairingValidation);
-      }
-    }
-
-    if (!validation.valid) {
-      throw this._createValidationError(validation);
-    }
-
-    return this._formatInvitationValidation(validation);
+    return this._validateWithFallback(
+      () => this.invitationManager.validateByShortCode(code, this.db),
+      () => this.pairingManager.validateCode(code, this.db),
+      'INVALID_CODE',
+      'Code'
+    );
   }
 
   /**
@@ -418,6 +383,36 @@ class InvitationService extends BaseService {
   // ─────────────────────────────────────────────────────────────
   // Private Helper Methods
   // ─────────────────────────────────────────────────────────────
+
+  /**
+   * Validate using primary system, fall back to secondary if not found
+   * @param {Function} primaryFn - Primary validation function
+   * @param {Function} fallbackFn - Fallback validation function
+   * @param {string} notFoundCode - Error code indicating "not found"
+   * @param {string} type - Type label for logging
+   * @returns {Promise<Object>} Formatted validation result
+   */
+  async _validateWithFallback(primaryFn, fallbackFn, notFoundCode, type) {
+    const validation = await primaryFn();
+
+    if (!validation.valid && validation.code === notFoundCode) {
+      console.log(`${type} not found in invitations table, trying pairing_sessions...`);
+      const pairingValidation = await fallbackFn();
+
+      if (pairingValidation.valid) {
+        return this._formatPairingValidation(pairingValidation);
+      }
+      if (pairingValidation.code !== notFoundCode) {
+        throw this._createValidationError(pairingValidation);
+      }
+    }
+
+    if (!validation.valid) {
+      throw this._createValidationError(validation);
+    }
+
+    return this._formatInvitationValidation(validation);
+  }
 
   /**
    * Format pairing validation to standard format

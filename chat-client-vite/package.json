@@ -4,7 +4,7 @@
   "version": "0.0.2",
   "type": "module",
   "engines": {
-    "node": ">=18.0.0 <25.0.0"
+    "node": ">=20.0.0 <25.0.0"
   },
   "scripts": {
     "dev": "vite",
@@ -24,6 +24,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6",
+    "socket.io-client": "^4.8.3",
     "vite": "^7.2.2",
     "@vitejs/plugin-react": "^5.1.0",
     "vite-plugin-pwa": "^1.2.0",
@@ -44,7 +45,6 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "jsdom": "^27.2.0",
-    "socket.io-client": "^4.8.3",
     "vitest": "^4.0.13"
   }
 }
