@@ -1,8 +1,9 @@
 import React from 'react';
 import { SectionHeader } from '../../components/ui';
+// Email subscription functionality - can be implemented later
 // Simple analytics - just console.log for now
-const trackFormSubmit = (form, field) =>
-  console.log(`[Analytics] Form submit: ${form} field: ${field}`);
+// const trackFormSubmit = (form, field) =>
+//   console.log(`[Analytics] Form submit: ${form} field: ${field}`);
 
 export function CoParentingCommunicationHub() {
   // Email subscription functionality - can be implemented later
