@@ -1,6 +1,8 @@
 import React from 'react';
 import { Button } from '../ui';
-import { trackCTAClick } from '../../../utils/analytics.js';
+// Simple analytics - just console.log for now
+const trackCTAClick = (location, label, type) =>
+  console.log(`[Analytics] CTA click: ${location} - ${label} (${type})`);
 
 /**
  * StickyMobileCTA - Fixed bottom CTA bar for mobile

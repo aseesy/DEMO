@@ -1,6 +1,8 @@
 import React from 'react';
 import { Button, Heading } from '../ui';
-import { trackCTAClick } from '../../../utils/analytics.js';
+// Simple analytics - just console.log for now
+const trackCTAClick = (location, label, type) =>
+  console.log(`[Analytics] CTA click: ${location} - ${label} (${type})`);
 
 /**
  * HowItWorksSection - 3-step process explanation

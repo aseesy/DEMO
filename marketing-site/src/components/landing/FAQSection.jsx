@@ -1,6 +1,7 @@
 import React from 'react';
 import { Heading } from '../ui';
-import { trackFAQExpand } from '../../../utils/analytics.js';
+// Simple analytics - just console.log for now
+const trackFAQExpand = question => console.log(`[Analytics] FAQ expand: ${question}`);
 
 /**
  * FAQSection - Frequently asked questions
