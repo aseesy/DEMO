@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "LiaiZen - Collaborative Parenting Platform",
   "scripts": {
-    "postinstall": "cd chat-client-vite && npm ci --include=dev",
+    "postinstall": "cd chat-client-vite && npm install",
+    "build": "cd chat-client-vite && npm run build",
+    "vercel-build": "cd chat-client-vite && npm run build",
     "test:shutdown": "cd chat-server && npm run test:shutdown",
     "test:shutdown:kill": "cd chat-server && npm run test:shutdown:kill",
     "monitor:tasks": "cd chat-server && npm run monitor:tasks",
