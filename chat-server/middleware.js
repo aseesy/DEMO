@@ -99,9 +99,11 @@ function isOriginAllowed(origin, allowedList) {
     return true;
   }
 
-  if (origin.includes('.vercel.app') || origin.includes('vercel.app')) return true;
-  if (origin.includes('coparentliaizen.com')) return true;
-  if (origin.includes('.railway.app') || origin.includes('railway.app')) return true;
+  // Production domain checks (case-insensitive)
+  const originLower = origin.toLowerCase();
+  if (originLower.includes('.vercel.app') || originLower.includes('vercel.app')) return true;
+  if (originLower.includes('coparentliaizen.com')) return true;
+  if (originLower.includes('.railway.app') || originLower.includes('railway.app')) return true;
 
   if (allowedList.includes(origin) || allowedList.includes('*')) return true;
 
