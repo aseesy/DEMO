@@ -10,8 +10,6 @@
  * - Error handling
  */
 
-/* global jest, describe, beforeEach, afterEach, it, expect */
-
 const { handleAiMediation } = require('../../socketHandlers/aiHelper');
 
 // Mock dependencies
@@ -41,7 +39,7 @@ jest.mock('../../socketHandlers/aiHelperUtils', () => ({
 }));
 
 const stringSimilarity = require('string-similarity');
-const aiContextHelper = require('../../socketHandlers/aiContextHelper');
+const _aiContextHelper = require('../../socketHandlers/aiContextHelper');
 const aiActionHelper = require('../../socketHandlers/aiActionHelper');
 const aiHelperUtils = require('../../socketHandlers/aiHelperUtils');
 
@@ -191,10 +189,11 @@ describe('aiHelper - handleAiMediation', () => {
   });
 
   describe('Bypass mediation handling', () => {
-    it('should bypass mediation when bypassMediation flag is true', async () => {
+    it('should bypass mediation when bypassMediation flag is true (for non-hostile messages)', async () => {
       mockContext.data = {
         bypassMediation: true,
       };
+      mockContext.message.text = 'Can you pick up the kids?';
 
       await handleAiMediation(mockSocket, mockIo, mockServices, mockContext);
 
@@ -214,6 +213,29 @@ describe('aiHelper - handleAiMediation', () => {
         mockIo,
         mockAddToHistory,
         { bypassedMediation: true }
+      );
+    });
+
+    it('should BLOCK bypass for direct insults (e.g., "you suck more")', async () => {
+      mockContext.data = {
+        bypassMediation: true,
+      };
+      mockContext.message.text = 'you suck more';
+
+      await handleAiMediation(mockSocket, mockIo, mockServices, mockContext);
+
+      // Should NOT call AI analysis (bypass was attempted)
+      expect(mockServices.aiMediator.analyzeMessage).not.toHaveBeenCalled();
+
+      // Should NOT send message directly
+      expect(aiHelperUtils.sendMessageDirectly).not.toHaveBeenCalled();
+
+      // Should emit error to socket
+      expect(mockSocket.emit).toHaveBeenCalledWith(
+        'error',
+        expect.objectContaining({
+          message: expect.stringContaining('direct hostility'),
+        })
       );
     });
   });

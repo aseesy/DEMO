@@ -576,7 +576,7 @@ function NavigationComponent({
       {/* Bottom Navigation - Mobile Only */}
       {/* Using isMobile state since Tailwind responsive classes aren't working */}
       <nav
-        className="fixed left-0 right-0 z-50 bg-white shadow-[0_-4px_12px_-1px_rgba(0,0,0,0.08)] border-t border-gray-100"
+        className="fixed left-0 right-0 z-50 backdrop-blur-sm"
         style={{
           // Show only on mobile
           display: isMobile ? 'block' : 'none',
@@ -590,13 +590,15 @@ function NavigationComponent({
           left: 0,
           right: 0,
           zIndex: 50,
-          backgroundColor: 'white',
+          // Gradient fade from white (bottom) to transparent (top)
+          background:
+            'linear-gradient(to top, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.95) 40%, rgba(255, 255, 255, 0) 100%)',
         }}
         data-testid="mobile-nav"
       >
         <div
-          className="relative flex items-center justify-around min-h-[3.5rem] px-2 z-10"
-          style={{ height: '3.5rem' }}
+          className="relative flex items-center justify-around min-h-[3rem] px-2 z-10"
+          style={{ height: '3rem' }}
         >
           {/* Dashboard button */}
           <button
@@ -606,40 +608,50 @@ function NavigationComponent({
               setIsMenuOpen(false);
               setCurrentView('dashboard');
             }}
-            className={`relative flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
+            className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
               currentView === 'dashboard'
-                ? 'bg-teal-lightest text-teal-medium border border-teal-light'
-                : 'text-teal-medium active:bg-teal-lightest'
+                ? 'bg-teal-lightest text-teal-medium scale-105'
+                : 'text-teal-medium/70 hover:text-teal-medium active:scale-95 active:bg-teal-lightest/50'
             }`}
             aria-label="Dashboard"
             aria-current={currentView === 'dashboard' ? 'page' : undefined}
           >
             <span className="flex-shrink-0 relative">
-              {React.cloneElement(navItems[0].icon, { className: 'w-6 h-6' })}
+              {React.cloneElement(navItems[0].icon, {
+                className: `w-5 h-5 transition-all duration-300 ${
+                  currentView === 'dashboard' ? 'scale-110' : ''
+                }`,
+              })}
               {/* Red dot indicator when notifications are unread */}
               {notificationCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
               )}
             </span>
           </button>
 
-          {/* LiaiZen Menu button - matches other buttons */}
+          {/* LiaiZen Menu button - bigger logo */}
           <button
             type="button"
             onClick={e => {
               e.stopPropagation();
               setIsMenuOpen(prev => !prev);
             }}
-            className={`relative flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
+            className={`relative flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
               isMenuOpen
-                ? 'bg-teal-lightest text-teal-medium border border-teal-light'
-                : 'text-teal-medium active:bg-teal-lightest'
+                ? 'bg-teal-lightest text-teal-medium scale-105'
+                : 'text-teal-medium/70 hover:text-teal-medium active:scale-95 active:bg-teal-lightest/50'
             }`}
             aria-label="Menu"
             aria-expanded={isMenuOpen}
             aria-haspopup="true"
           >
-            <img src="/assets/Logo.svg" alt="LiaiZen menu" className="w-6 h-6 object-contain" />
+            <img
+              src="/assets/Logo.svg"
+              alt="LiaiZen menu"
+              className={`w-7 h-7 object-contain transition-transform duration-300 ${
+                isMenuOpen ? 'scale-125' : ''
+              }`}
+            />
           </button>
 
           {/* Chat button */}
@@ -650,19 +662,23 @@ function NavigationComponent({
               setIsMenuOpen(false);
               setCurrentView('chat');
             }}
-            className={`relative flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
+            className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
               currentView === 'chat'
-                ? 'bg-teal-lightest text-teal-medium border border-teal-light'
-                : 'text-teal-medium active:bg-teal-lightest'
+                ? 'bg-teal-lightest text-teal-medium scale-105'
+                : 'text-teal-medium/70 hover:text-teal-medium active:scale-95 active:bg-teal-lightest/50'
             }`}
             aria-label="Chat"
             aria-current={currentView === 'chat' ? 'page' : undefined}
           >
             <span className="flex-shrink-0 relative">
-              {React.cloneElement(navItems[1].icon, { className: 'w-6 h-6' })}
+              {React.cloneElement(navItems[1].icon, {
+                className: `w-5 h-5 transition-all duration-300 ${
+                  currentView === 'chat' ? 'scale-110' : ''
+                }`,
+              })}
               {/* Red dot indicator when messages are unread */}
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
               )}
             </span>
           </button>

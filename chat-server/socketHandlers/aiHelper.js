@@ -69,7 +69,29 @@ async function handleAiMediation(socket, io, services, context) {
   }
 
   // 2. User chose "Send Original Anyway" - bypass mediation
+  // CRITICAL: Prevent bypass for direct insults/hostility (should NEVER be transmitted)
   if (bypassMediation) {
+    // Quick check for direct hostility before allowing bypass
+    const { hasDirectHostility } = require('./utils/directHostilityCheck');
+    const hasDirectInsult = hasDirectHostility(message.text);
+
+    if (hasDirectInsult) {
+      console.warn('[aiHelper] BLOCKED bypass attempt for direct hostility:', {
+        messageId: message.id,
+        email: user.email || user.username,
+        text: message.text.substring(0, 50),
+      });
+      // Emit error to client - direct insults cannot be bypassed
+      const { emitError } = require('./utils');
+      emitError(
+        socket,
+        'This message contains direct hostility and cannot be sent as-is. Please use one of the suggested rewrites.',
+        null,
+        'bypass_blocked_direct_hostility'
+      );
+      return;
+    }
+
     await updateUserStats(services, user, user.roomId, false);
     await sendMessageDirectly(message, user.roomId, io, addToHistory, { bypassedMediation: true });
     return;
