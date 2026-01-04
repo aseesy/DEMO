@@ -16,6 +16,7 @@ Enhanced context building for frontend mediation pre-check. The system now loads
 - Returns `senderProfile` and `receiverProfile` for frontend pre-check
 
 **Features**:
+
 - Automatically loads contacts when authenticated
 - Memoizes context building for performance
 - Handles loading states
@@ -47,12 +48,14 @@ useMessageSending → useMessageMediation → MediationService.analyze()
 ## Context Flow
 
 ### Frontend Context (Current State)
+
 - **Source**: User profile + Contacts (from API)
 - **Built by**: `useMediationContext` hook
 - **Used for**: Frontend pre-check (instant feedback)
 - **Includes**: Current user role, position, resources, conflict level, co-parent info
 
 ### Backend Context (Historical)
+
 - **Source**: Database (profiles, messages, patterns, intervention history)
 - **Built by**: Backend context builders
 - **Used for**: Full analysis (final authority)
@@ -69,7 +72,7 @@ const { senderProfile, receiverProfile } = useMediationContext(username, isAuthe
 // Passed to useMessageSending
 const { sendMessage } = useMessageSending({
   // ... other props
-  senderProfile,   // Frontend context (current state)
+  senderProfile, // Frontend context (current state)
   receiverProfile, // Frontend context (current state)
 });
 ```
@@ -110,4 +113,3 @@ const { sendMessage } = useMessageSending({
 
 **Status**: ✅ Context Building Complete
 **Date**: 2025-12-31
-

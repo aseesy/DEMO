@@ -3,12 +3,14 @@
 ## ✅ Local Build Status
 
 **Local build: SUCCESS** ✓
+
 - Build completed in 1.40s
 - Output directory: `chat-client-vite/dist`
 - `index.html` exists
 - All assets generated
 
 **Warning (non-blocking):**
+
 - Dynamic import warning for `apiClient.js` (this is fine, just a bundling optimization note)
 
 ---
@@ -58,7 +60,9 @@ npm run build
 **Error:** `Error: Node version X.X.X is not supported`
 
 **Fix:**
+
 - Add to `vercel.json`:
+
 ```json
 {
   "build": {
@@ -70,6 +74,7 @@ npm run build
 ```
 
 Or set in Vercel Dashboard:
+
 - Project → Settings → Node.js Version → Select "20.x"
 
 ---
@@ -79,6 +84,7 @@ Or set in Vercel Dashboard:
 **Error:** `Cannot find module 'X'` or `Module not found`
 
 **Fix:**
+
 ```bash
 # Check if dependency is in package.json
 cd chat-client-vite
@@ -95,17 +101,20 @@ npm list --depth=0
 **Error:** `Build command failed` or `Command not found`
 
 **Current Build Command:**
+
 ```json
 "buildCommand": "cd chat-client-vite && npm install && npm run build"
 ```
 
 **Test Locally:**
+
 ```bash
 cd /Users/athenasees/Desktop/chat
 cd chat-client-vite && npm install && npm run build
 ```
 
 **If this works locally but fails on Vercel:**
+
 - Check Vercel is using correct root directory
 - Verify `vercel.json` is in project root
 - Check build logs for specific error
@@ -117,17 +126,20 @@ cd chat-client-vite && npm install && npm run build
 **Error:** `Output directory "chat-client-vite/dist" does not exist`
 
 **Current Config:**
+
 ```json
 "outputDirectory": "chat-client-vite/dist"
 ```
 
 **Verify:**
+
 ```bash
 # After build, check if dist exists
 ls -la chat-client-vite/dist/index.html
 ```
 
 **If missing:**
+
 - Build command might not be running from correct directory
 - Check build logs to see where it's running
 
@@ -140,6 +152,7 @@ ls -la chat-client-vite/dist/index.html
 **Note:** `VITE_*` variables are injected at build time, not runtime. They should be available.
 
 **Check:**
+
 ```bash
 # Verify Vercel has the variable
 cd chat-client-vite
@@ -153,6 +166,7 @@ vercel env ls
 **Error:** `Build exceeded maximum duration`
 
 **Vercel Limits:**
+
 - Free tier: 45 minutes
 - Pro tier: 60 minutes
 
@@ -165,6 +179,7 @@ vercel env ls
 **Error:** Vercel auto-detects wrong framework
 
 **Fix:** Already set in `vercel.json`:
+
 ```json
 "framework": null
 ```
@@ -176,6 +191,7 @@ vercel env ls
 **Error:** `File size exceeds limit`
 
 **Check:**
+
 ```bash
 # Check for large files
 find chat-client-vite/dist -type f -size +5M
@@ -238,4 +254,3 @@ npm install --dry-run
 ✅ **Node Version:** `>=18.0.0 <25.0.0` (compatible)
 
 **Everything looks correct!** If Vercel is still failing, the error logs will tell us exactly what's wrong.
-

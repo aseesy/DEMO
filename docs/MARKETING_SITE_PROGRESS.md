@@ -3,6 +3,7 @@
 ## ✅ Completed
 
 ### Phase 1: Marketing Site Structure
+
 - [x] Created `marketing-site/` directory
 - [x] Set up Vite configuration
 - [x] Created `package.json` with minimal dependencies
@@ -13,6 +14,7 @@
 - [x] Created `src/index.css`
 
 ### Phase 2: Landing Page
+
 - [x] Copied landing page components
 - [x] Organized into `src/pages/LandingPage.jsx` and `src/components/landing/`
 - [x] Updated `useLandingPageState` to use new API client
@@ -20,16 +22,19 @@
 - [x] Updated all imports
 
 ### Phase 3: Blog
+
 - [x] Copied blog components to `src/pages/Blog/`
 - [x] Created `App.jsx` with all blog routes
 - [x] Blog image helper works (uses blogImageMap)
 
 ### Phase 4: API Client
+
 - [x] Created `src/api/client.js` (simple fetch wrapper)
 - [x] Created `src/config.js` for API URL
 - [x] Updated landing page to use new API client
 
 ### Phase 5: Configuration
+
 - [x] Created `vercel.json` for deployment
 - [x] Copied public assets
 - [x] Created README
@@ -37,6 +42,7 @@
 ## 🔄 In Progress
 
 ### Phase 6: Clean Main App
+
 - [ ] Remove landing page from `ChatRoom.jsx`
 - [ ] Remove landing page logic from `AuthGuard.jsx`
 - [ ] Remove blog routes from `App.jsx`
@@ -45,6 +51,7 @@
 - [ ] Remove `useLandingPageController` hook
 
 ### Phase 7: Backend CORS
+
 - [ ] Update `chat-server/middleware.js` to allow both:
   - `https://www.coparentliaizen.com` (marketing)
   - `https://app.coparentliaizen.com` (main app)
@@ -52,11 +59,13 @@
 ## 📋 Next Steps
 
 1. **Test Marketing Site Locally**
+
    ```bash
    cd marketing-site
    npm install
    npm run dev
    ```
+
    - Verify landing page loads
    - Test waitlist form submission
    - Test blog routes
@@ -88,4 +97,3 @@
 - Need to verify all blog components work (may need additional UI components)
 - Need to test waitlist API integration
 - Need to verify blog image paths work correctly
-

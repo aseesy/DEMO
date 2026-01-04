@@ -11,6 +11,7 @@ Refactor `useMessageSending` to use hybrid analysis approach with clean separati
 ## Phase 1: Extract useMessageUI (Day 1)
 
 ### Goal
+
 Extract UI state management into `useMessageUI` hook.
 
 ### Steps
@@ -32,10 +33,12 @@ Extract UI state management into `useMessageUI` hook.
    - Verify animations work
 
 ### Files to Create/Modify
+
 - ✅ Create: `hooks/useMessageUI.js` (already exists, enhance it)
 - Modify: `hooks/useMessageSending.js`
 
 ### Success Criteria
+
 - ✅ UI state extracted
 - ✅ No behavior changes
 - ✅ Tests pass
@@ -45,6 +48,7 @@ Extract UI state management into `useMessageUI` hook.
 ## Phase 2: Extract useMessageTransport (Day 2)
 
 ### Goal
+
 Extract network logic into `useMessageTransport` hook.
 
 ### Steps
@@ -66,10 +70,12 @@ Extract network logic into `useMessageTransport` hook.
    - Verify connection state tracking
 
 ### Files to Create/Modify
+
 - ✅ Create: `hooks/useMessageTransport.js` (already exists, enhance it)
 - Modify: `hooks/useMessageSending.js`
 
 ### Success Criteria
+
 - ✅ Transport logic extracted
 - ✅ No behavior changes
 - ✅ Tests pass
@@ -79,6 +85,7 @@ Extract network logic into `useMessageTransport` hook.
 ## Phase 3: Create MediationService (Day 3)
 
 ### Goal
+
 Create pure service for frontend validation logic.
 
 ### Steps
@@ -101,11 +108,13 @@ Create pure service for frontend validation logic.
    - Integration tests for `useMessageMediation`
 
 ### Files to Create/Modify
+
 - Create: `services/mediation/MediationService.js`
 - ✅ Enhance: `hooks/useMessageMediation.js` (already exists)
 - Modify: `utils/profileBuilder.js` (ensure context building is complete)
 
 ### Success Criteria
+
 - ✅ Pure service created
 - ✅ Unit tests pass
 - ✅ Frontend pre-check works
@@ -115,6 +124,7 @@ Create pure service for frontend validation logic.
 ## Phase 4: Integrate useMessageMediation (Day 4)
 
 ### Goal
+
 Integrate mediation hook into `useMessageSending` with pending state.
 
 ### Steps
@@ -137,10 +147,12 @@ Integrate mediation hook into `useMessageSending` with pending state.
    - Verify blocked messages don't show as "sent"
 
 ### Files to Modify
+
 - Modify: `hooks/useMessageSending.js`
 - Modify: `components/MessagesContainer.jsx` (pending state display)
 
 ### Success Criteria
+
 - ✅ Hybrid analysis works
 - ✅ Pending state implemented
 - ✅ No emotional whiplash
@@ -151,6 +163,7 @@ Integrate mediation hook into `useMessageSending` with pending state.
 ## Phase 5: Clean Up Unused Code (Day 5)
 
 ### Goal
+
 Remove unused implementations and update exports.
 
 ### Steps
@@ -171,15 +184,18 @@ Remove unused implementations and update exports.
    - Document new architecture
 
 ### Files to Delete
+
 - `model/useSendMessage.js`
 - `model/useSendMessage.refactored.js`
 - `hooks/useSendMessageComposed.js`
 
 ### Files to Modify
+
 - `features/chat/index.js`
 - `ARCHITECTURE_REVIEW_useSendMessage.md`
 
 ### Success Criteria
+
 - ✅ Unused code removed
 - ✅ Exports updated
 - ✅ Documentation updated
@@ -191,12 +207,14 @@ Remove unused implementations and update exports.
 ### Pending State Implementation
 
 **Current Flow:**
+
 ```
 User sends → Optimistic "sent" → Backend blocks → Remove message → Show coaching
 (Emotional whiplash: "it sent... jk it didn't")
 ```
 
 **New Flow:**
+
 ```
 User sends → "Sending..." (pending) → Backend responds:
   - Allowed → "Sent" (confirmed)
@@ -205,9 +223,10 @@ User sends → "Sending..." (pending) → Backend responds:
 ```
 
 **Implementation:**
+
 ```javascript
 // In useMessageSending
-const sendMessage = async (e) => {
+const sendMessage = async e => {
   // 1. Frontend pre-check (optional, for instant feedback)
   const preCheck = await mediation.validateMessage(clean);
   if (!preCheck.shouldSend) {
@@ -222,13 +241,13 @@ const sendMessage = async (e) => {
     status: 'pending', // Not 'sent'!
     isPending: true,
   };
-  
+
   ui.setPendingMessages(prev => new Map(prev).set(pendingMessage.id, pendingMessage));
   ui.markMessagePending(pendingMessage.id);
 
   // 3. Send via transport
   await transport.sendMessage({ text: clean });
-  
+
   // 4. Backend will respond with:
   // - 'new_message' → mark as sent
   // - 'draft_coaching' → collapse into coaching UI
@@ -238,6 +257,7 @@ const sendMessage = async (e) => {
 ### Context Building
 
 **Frontend Context** (current state):
+
 ```javascript
 // In useMessageMediation
 const frontendContext = buildMediationContext({
@@ -255,6 +275,7 @@ const preCheck = await MediationService.analyze(
 ```
 
 **Backend Context** (historical patterns):
+
 - Built server-side from database
 - Includes intervention history, patterns, temporal decay
 - More complete but slower
@@ -262,6 +283,7 @@ const preCheck = await MediationService.analyze(
 ### Service Structure
 
 **MediationService.js:**
+
 ```javascript
 export class MediationService {
   /**
@@ -284,16 +306,19 @@ export class MediationService {
 ## Testing Strategy
 
 ### Unit Tests
+
 - `MediationService.analyze()` - Pure function tests
 - `useMessageUI` - State management tests
 - `useMessageTransport` - Network logic tests
 
 ### Integration Tests
+
 - `useMessageSending` - Full flow tests
 - Pending state transitions
 - Frontend pre-check + backend analysis
 
 ### E2E Tests
+
 - User sends message → sees pending → backend responds
 - User sends blocked message → sees coaching immediately
 - Offline queue → messages queue → send when online
@@ -303,6 +328,7 @@ export class MediationService {
 ## Rollback Plan
 
 If issues arise:
+
 1. Keep old `useMessageSending` as backup
 2. Feature flag to switch between old/new
 3. Gradual rollout (test with subset of users)
@@ -338,4 +364,3 @@ If issues arise:
 2. Start Phase 1 (extract `useMessageUI`)
 3. Test incrementally
 4. Proceed to next phase
-

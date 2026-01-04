@@ -9,6 +9,7 @@
 ## Problem
 
 Vercel build fails with:
+
 ```
 npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync.
 npm error Missing: @tailwindcss/oxide-android-arm64@4.1.17 from lock file
@@ -25,6 +26,7 @@ npm error Missing: @esbuild/android-arm@0.25.12 from lock file
 Changed `vercel.json` to use `npm install` instead of `npm ci`:
 
 **Before:**
+
 ```json
 {
   "buildCommand": "npm ci && npm run build",
@@ -33,6 +35,7 @@ Changed `vercel.json` to use `npm install` instead of `npm ci`:
 ```
 
 **After:**
+
 ```json
 {
   "buildCommand": "npm install && npm run build",
@@ -96,12 +99,14 @@ Changed `vercel.json` to use `npm install` instead of `npm ci`:
 To use `npm ci` in the future (more deterministic):
 
 1. Generate `package-lock.json` locally:
+
    ```bash
    cd chat-client-vite
    npm install
    ```
 
 2. Commit `package-lock.json`:
+
    ```bash
    git add chat-client-vite/package-lock.json
    git commit -m "chore: Add package-lock.json for npm ci"
@@ -119,4 +124,3 @@ To use `npm ci` in the future (more deterministic):
 ---
 
 **Workaround is now active. Vercel should be able to build successfully.** 🚀
-

@@ -9,12 +9,14 @@
 ## Problem Statement (Precise)
 
 **Vercel build fails with:**
+
 ```
 sh: line 1: cd: chat-client-vite: No such file or directory
 Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ```
 
 **Context:**
+
 - Repository: `github.com/aseesy/DEMO` (branch: `main`, commit: `d850f70`)
 - Build location: Washington, D.C., USA (East) – iad1
 - Build machine: 4 cores, 8 GB
@@ -27,6 +29,7 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ## Confirmed Symptoms (Repeatable)
 
 ### ✅ Local Environment
+
 1. **Local build succeeds:**
    - Command: `cd chat-client-vite && npm install && npm run build`
    - Result: ✅ Build completes in ~1.69s
@@ -44,6 +47,7 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
    - `git check-ignore chat-client-vite` returns: not ignored
 
 ### ❌ Vercel Environment
+
 1. **Build fails at install phase:**
    - Phase: "Running install command"
    - Command attempted: `cd chat-client-vite && npm ci --include=dev`
@@ -81,6 +85,7 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ## Chronological Attempts & Outcomes (Current Session)
 
 ### Attempt 1: Initial Diagnosis
+
 **Action:** Tested local build to verify it works  
 **Outcome:** ✅ Local build succeeds  
 **Evidence:** Build completes successfully, all files generated  
@@ -89,9 +94,11 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ---
 
 ### Attempt 2: Update vercel.json to use `npm ci`
+
 **Action:** Changed `installCommand` and `buildCommand` from `npm install` to `npm ci`  
 **File:** `/Users/athenasees/Desktop/chat/vercel.json`  
 **Change:**
+
 ```json
 "buildCommand": "cd chat-client-vite && npm ci && npm run build",
 "installCommand": "cd chat-client-vite && npm ci",
@@ -105,9 +112,11 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ---
 
 ### Attempt 3: Create vercel.json in chat-client-vite directory
+
 **Action:** Created new `vercel.json` at `chat-client-vite/vercel.json` with simplified paths  
 **File:** `/Users/athenasees/Desktop/chat/chat-client-vite/vercel.json`  
 **Change:**
+
 ```json
 "buildCommand": "npm ci && npm run build",
 "outputDirectory": "dist",
@@ -124,7 +133,9 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ## What We Ruled Out
 
 ### ✅ Ruled Out: Directory Not in Git
+
 **Evidence:**
+
 - `git ls-files chat-client-vite/package.json` returns file path
 - `git check-ignore chat-client-vite` confirms directory is tracked
 - Multiple files from `chat-client-vite/` appear in `git ls-files` output
@@ -134,7 +145,9 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ---
 
 ### ✅ Ruled Out: vercel.json Not Committed
+
 **Evidence:**
+
 - `git ls-files | grep vercel.json` shows `vercel.json` is tracked
 - File exists at repository root
 - File is readable and valid JSON
@@ -144,7 +157,9 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ---
 
 ### ✅ Ruled Out: Build Command Syntax Error
+
 **Evidence:**
+
 - Command `cd chat-client-vite && npm ci && npm run build` works locally
 - Same command structure works in local shell
 - No syntax errors in `vercel.json` (valid JSON)
@@ -154,7 +169,9 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ---
 
 ### ✅ Ruled Out: Local Build Issues
+
 **Evidence:**
+
 - Local build completes successfully
 - All dependencies install correctly
 - Output files generated as expected
@@ -165,7 +182,9 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ---
 
 ### ✅ Ruled Out: Package.json Issues
+
 **Evidence:**
+
 - `package.json` exists in `chat-client-vite/`
 - `package-lock.json` exists and is tracked
 - `npm ci` works locally without errors
@@ -178,6 +197,7 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ## What We Don't Know (Open Questions)
 
 ### ❓ Vercel Root Directory Setting
+
 **Question:** What is the "Root Directory" setting in Vercel Dashboard?  
 **Impact:** If set to `chat-client-vite`, then `cd chat-client-vite` would fail (already in that directory)  
 **Evidence Needed:** Vercel Dashboard → Project Settings → Root Directory  
@@ -186,6 +206,7 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ---
 
 ### ❓ Repository Structure on GitHub
+
 **Question:** Does the repository structure on GitHub match the local structure?  
 **Impact:** If `chat-client-vite/` is missing on GitHub, Vercel can't find it  
 **Evidence Needed:** Check GitHub repository file tree  
@@ -194,6 +215,7 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ---
 
 ### ❓ Vercel Build Context
+
 **Question:** What is the working directory when Vercel executes the build command?  
 **Impact:** If Vercel runs from a different directory, relative paths would fail  
 **Evidence Needed:** Vercel build logs showing `pwd` or working directory  
@@ -202,6 +224,7 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ---
 
 ### ❓ Git Submodule or Sparse Checkout
+
 **Question:** Is `chat-client-vite` a git submodule or excluded via sparse checkout?  
 **Impact:** Submodules require explicit initialization; sparse checkout excludes files  
 **Evidence Needed:** Check `.gitmodules` file, git submodule status  
@@ -236,23 +259,27 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ## Recommended Next Steps
 
 ### Priority 1: Verify Vercel Root Directory
+
 1. Go to Vercel Dashboard → Project → Settings
 2. Check "Root Directory" setting
 3. If set to `chat-client-vite`, change to `.` (repository root)
 4. If set to `.` or empty, proceed to Priority 2
 
 ### Priority 2: Verify GitHub Repository Structure
+
 1. Check GitHub repository: `github.com/aseesy/DEMO`
 2. Verify `chat-client-vite/` directory exists in repository
 3. Verify `vercel.json` exists at repository root
 4. Compare GitHub structure to local structure
 
 ### Priority 3: Test Alternative Configuration
+
 1. If `chat-client-vite/vercel.json` exists, test deployment with it
 2. Set Vercel Root Directory to `chat-client-vite` if using that config
 3. Update paths in root `vercel.json` if keeping root as base
 
 ### Priority 4: Add Diagnostic Logging
+
 1. Add `pwd` command to build command to see working directory
 2. Add `ls -la` to list files in build context
 3. Add `ls -la chat-client-vite` to verify directory existence
@@ -294,22 +321,25 @@ Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
 ## For Fresh Engineer Taking Over
 
 **Start here:**
+
 1. Check Vercel Dashboard → Settings → Root Directory (5 minutes)
 2. Verify GitHub repository structure matches local (5 minutes)
 3. If root directory is wrong, fix it and redeploy (2 minutes)
 
 **If still failing:**
+
 1. Remove one of the `vercel.json` files (keep only one)
 2. Add diagnostic commands to build to see working directory
 3. Check Vercel build logs for `pwd` output
 
 **Don't repeat:**
+
 - ❌ Don't change npm commands (already correct)
 - ❌ Don't modify build configuration (works locally)
 - ❌ Don't assume it's a dependency issue (fails before npm runs)
 
 **Focus on:**
+
 - ✅ Vercel configuration (root directory, project settings)
 - ✅ Repository structure verification
 - ✅ Build context and working directory
-

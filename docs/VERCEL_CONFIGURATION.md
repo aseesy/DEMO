@@ -68,6 +68,7 @@ Located at: `chat-client-vite/vercel.json`
 ```
 
 **Key Points:**
+
 - ✅ No `cd` commands needed (Vercel Root Directory is `chat-client-vite`)
 - ✅ Paths are relative to `chat-client-vite/` directory
 - ✅ Uses `npm ci` for reproducible builds
@@ -80,12 +81,14 @@ Located at: `chat-client-vite/vercel.json`
 ### Required Variable
 
 **`VITE_API_URL`**
+
 - **Purpose:** Backend API URL for the frontend to connect to
 - **Example:** `https://demo-production-6dcd.up.railway.app`
 - **Set in:** Vercel Dashboard → Project → Settings → Environment Variables
 - **Environments:** Production, Preview, Development
 
 **How to Set:**
+
 ```bash
 cd chat-client-vite
 vercel env add VITE_API_URL production
@@ -93,6 +96,7 @@ vercel env add VITE_API_URL production
 ```
 
 **Or via Dashboard:**
+
 1. Go to Vercel Dashboard → Your Project
 2. Settings → Environment Variables
 3. Add `VITE_API_URL` with your Railway backend URL
@@ -109,6 +113,7 @@ vercel env add VITE_API_URL production
 **Value:** `chat-client-vite`
 
 This tells Vercel to:
+
 - Build from the `chat-client-vite/` directory
 - Use `chat-client-vite/vercel.json` for configuration
 - Run build commands relative to `chat-client-vite/`
@@ -169,11 +174,13 @@ npm ci && npm run build
 ## Migration Notes
 
 **Previous Configuration (Incorrect):**
+
 - `vercel.json` was in repository root
 - Commands used `cd chat-client-vite`
 - Root Directory was not set in Vercel
 
 **Current Configuration (Correct):**
+
 - `vercel.json` is in `chat-client-vite/` directory
 - Commands are relative (no `cd` needed)
 - Root Directory is set to `chat-client-vite` in Vercel Dashboard
@@ -184,4 +191,3 @@ npm ci && npm run build
 
 - ✅ `chat-client-vite/vercel.json` - Vercel configuration (correct location)
 - ❌ `vercel.json` (root) - Removed (was incorrect)
-

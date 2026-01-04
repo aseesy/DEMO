@@ -13,6 +13,7 @@
 The build succeeds, but there are ESLint errors that **might** cause Vercel to fail if it's configured to fail on lint errors:
 
 ### Errors Found:
+
 1. **Unused variables** in:
    - `ChatRoom.jsx` (8 unused vars)
    - `scripts/test-pwa-auth-flow.js`
@@ -36,6 +37,7 @@ npm run lint:fix
 ```
 
 This will auto-fix some issues. For unused variables, you may need to:
+
 - Remove the unused variable
 - Or prefix with `_` if it's intentionally unused
 
@@ -54,6 +56,7 @@ This will auto-fix some issues. For unused variables, you may need to:
 ## How to Check Vercel Build Logs
 
 ### Via Dashboard:
+
 1. Go to https://vercel.com/dashboard
 2. Click your project
 3. Click the **failed deployment**
@@ -61,6 +64,7 @@ This will auto-fix some issues. For unused variables, you may need to:
 5. Look for red error messages
 
 ### Via CLI:
+
 ```bash
 # Install Vercel CLI
 npm install -g vercel
@@ -96,6 +100,7 @@ cd chat-client-vite && npm install && npm run build
 ```
 
 If this works, the issue is likely:
+
 - Vercel environment differences
 - ESLint configuration
 - Node version mismatch
@@ -103,6 +108,7 @@ If this works, the issue is likely:
 ### 2. Check Vercel Configuration
 
 Verify in Vercel Dashboard:
+
 - **Node.js Version:** Should be 20.x (or 18.x minimum)
 - **Build Command:** Should match `vercel.json`
 - **Output Directory:** Should be `chat-client-vite/dist`
@@ -126,6 +132,6 @@ npm run lint:fix
 4. **Test build command** exactly as Vercel runs it
 
 The local build works, so the configuration is correct. The issue is likely:
+
 - ESLint errors causing build to fail
 - Environment differences between local and Vercel
-

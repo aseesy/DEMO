@@ -1,11 +1,13 @@
 # Railway 502 Error Diagnostic
 
 ## Status
+
 Server is returning 502 "Application failed to respond" errors.
 
 **Latest**: Container is starting (`Starting Container` message seen in logs), but application not responding yet.
 
 ## Fixes Applied
+
 1. ✅ **Database Import Path** (commit `34d6605`)
    - Fixed: `require('../../dbPostgres')` → `require('../../../dbPostgres')`
    - Verified locally: Import works correctly
@@ -18,11 +20,13 @@ Server is returning 502 "Application failed to respond" errors.
 ## Possible Causes
 
 ### 1. Railway Deployment Still In Progress
+
 - **Check**: Railway dashboard → Deployments tab
 - **Look for**: Active deployment with "Building" or "Deploying" status
 - **Wait**: Can take 3-5 minutes for full deployment
 
 ### 2. Server Crashing on Startup
+
 - **Check**: Railway dashboard → Logs tab
 - **Look for**:
   - `❌ Database initialization error:`
@@ -31,6 +35,7 @@ Server is returning 502 "Application failed to respond" errors.
   - Any stack traces or error messages
 
 ### 3. Missing Environment Variables
+
 - **Check**: Railway dashboard → Variables tab
 - **Required**:
   - `DATABASE_URL` - PostgreSQL connection string
@@ -39,6 +44,7 @@ Server is returning 502 "Application failed to respond" errors.
   - `PORT` - Railway sets this automatically
 
 ### 4. Database Connection Issues
+
 - **Check**: Railway dashboard → PostgreSQL service
 - **Verify**: Database is running and accessible
 - **Check**: `DATABASE_URL` format is correct
@@ -46,6 +52,7 @@ Server is returning 502 "Application failed to respond" errors.
 ## Diagnostic Steps
 
 ### Step 1: Check Railway Logs
+
 ```bash
 # In Railway dashboard, go to Logs tab
 # Look for:
@@ -55,6 +62,7 @@ Server is returning 502 "Application failed to respond" errors.
 ```
 
 ### Step 2: Verify Environment Variables
+
 ```bash
 # In Railway dashboard, go to Variables tab
 # Verify these are set:
@@ -64,6 +72,7 @@ JWT_SECRET=...
 ```
 
 ### Step 3: Check Deployment Status
+
 ```bash
 # In Railway dashboard, go to Deployments tab
 # Check if latest deployment:
@@ -73,6 +82,7 @@ JWT_SECRET=...
 ```
 
 ### Step 4: Test Health Endpoint
+
 ```bash
 curl https://demo-production-6dcd.up.railway.app/health
 # Should return: {"status":"ok","database":"connected"} or similar
@@ -81,6 +91,7 @@ curl https://demo-production-6dcd.up.railway.app/health
 ## Expected Startup Logs
 
 When server starts successfully, you should see:
+
 ```
 🐘 PostgreSQL mode: DATABASE_URL detected
 📊 Using PostgreSQL database (connection testing in background)
@@ -112,8 +123,8 @@ Server listening on port 3001
    ```
 
 ## Files Changed
+
 - `chat-server/src/infrastructure/initialization/databaseInit.js` - Fixed import path
 - `chat-server/middleware.js` - Added CORS debug logging
 
 Both changes are committed and pushed to GitHub.
-

@@ -1,11 +1,13 @@
 # Marketing Site Separation Plan
 
 ## Goal
+
 Separate the marketing site (landing page + blog) from the main application. The marketing site is for waitlist signups and SEO content, while the main app is the actual application.
 
 ## Current Architecture
 
 ### Current Structure
+
 ```
 chat-client-vite/
 ├── src/
@@ -19,6 +21,7 @@ chat-client-vite/
 ```
 
 ### Current Issues
+
 - Marketing content (landing + blog) bundled with main app
 - Main app includes PWA, authentication, socket.io - unnecessary for marketing
 - Can't deploy marketing separately
@@ -27,6 +30,7 @@ chat-client-vite/
 ## Target Architecture
 
 ### New Structure
+
 ```
 /
 ├── marketing-site/          # NEW: Separate marketing site
@@ -59,6 +63,7 @@ chat-client-vite/
 ## Implementation Plan
 
 ### Phase 1: Create Marketing Site Structure
+
 1. **Create `marketing-site/` directory**
    - New Vite + React project
    - Minimal dependencies (React, React Router, Tailwind)
@@ -75,6 +80,7 @@ chat-client-vite/
    - Update blog image references
 
 ### Phase 2: Create API Client for Marketing Site
+
 1. **Create `marketing-site/src/api/client.js`**
    - Simple fetch wrapper
    - Points to backend API (`VITE_API_URL`)
@@ -89,6 +95,7 @@ chat-client-vite/
    - Remove app-specific analytics (keep basic tracking)
 
 ### Phase 3: Clean Main App
+
 1. **Remove from `chat-client-vite/`**
    - Delete `src/features/landing/`
    - Delete `src/features/blog/`
@@ -106,6 +113,7 @@ chat-client-vite/
    - Keep only app routes (chat, dashboard, auth, etc.)
 
 ### Phase 4: Configure Marketing Site
+
 1. **Create `marketing-site/vite.config.js`**
    - Simple Vite config (no PWA plugin)
    - Tailwind CSS
@@ -121,6 +129,7 @@ chat-client-vite/
    - Or subdomain (e.g., `www.coparentliaizen.com`)
 
 ### Phase 5: Update Backend CORS
+
 1. **Update `chat-server/middleware.js`**
    - Add marketing site domain to `FRONTEND_URL`
    - Allow both:
@@ -130,12 +139,14 @@ chat-client-vite/
 ### Phase 6: Deployment Strategy
 
 #### Option A: Separate Vercel Projects
+
 - **Marketing Site**: `marketing-site/` → New Vercel project
   - Domain: `www.coparentliaizen.com` (or `marketing.coparentliaizen.com`)
 - **Main App**: `chat-client-vite/` → Existing Vercel project
   - Domain: `app.coparentliaizen.com` (or current domain)
 
 #### Option B: Same Vercel Project, Different Routes
+
 - Deploy marketing site to `/` (root)
 - Deploy main app to `/app/*`
 - Requires routing configuration
@@ -145,6 +156,7 @@ chat-client-vite/
 ## Files to Move/Copy
 
 ### Landing Page
+
 - `chat-client-vite/src/features/landing/LandingPage.jsx`
 - `chat-client-vite/src/features/landing/components/*` (all components)
 - Dependencies:
@@ -152,6 +164,7 @@ chat-client-vite/
   - `analytics.js` → Keep basic tracking, remove app-specific
 
 ### Blog
+
 - `chat-client-vite/src/features/blog/*` (all blog components)
 - `chat-client-vite/src/features/blog/blogData.js`
 - `chat-client-vite/src/features/blog/blogImageHelper.js`
@@ -160,6 +173,7 @@ chat-client-vite/
 ## Files to Update
 
 ### Main App (`chat-client-vite/`)
+
 1. **`src/App.jsx`**
    - Remove blog route imports (lines 27-48)
    - Remove blog routes (lines 244-325)
@@ -178,12 +192,14 @@ chat-client-vite/
    - Show login/signup directly
 
 ### Backend (`chat-server/`)
+
 1. **`middleware.js`**
    - Add marketing site domain to CORS allowed origins
 
 ## Dependencies
 
 ### Marketing Site (New)
+
 ```json
 {
   "dependencies": {
@@ -202,16 +218,19 @@ chat-client-vite/
 ```
 
 ### Main App (Updated)
+
 - Remove blog/landing dependencies (if any)
 - Keep all app dependencies (socket.io, PWA, etc.)
 
 ## Environment Variables
 
 ### Marketing Site
+
 - `VITE_API_URL` - Backend API URL (same as main app)
 - No other env vars needed
 
 ### Main App
+
 - Keep existing env vars
 - No changes needed
 
@@ -286,4 +305,3 @@ chat-client-vite/
 1. Get approval on plan
 2. Create marketing site structure
 3. Start Phase 1 implementation
-

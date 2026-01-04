@@ -11,8 +11,9 @@
 Frontend at `https://www.coparentliaizen.com` was blocked by CORS when accessing Railway backend API.
 
 **Error:**
+
 ```
-Access to fetch at 'https://demo-production-6dcd.up.railway.app/api/auth/google?state=...' 
+Access to fetch at 'https://demo-production-6dcd.up.railway.app/api/auth/google?state=...'
 from origin 'https://www.coparentliaizen.com' has been blocked by CORS policy
 ```
 
@@ -30,11 +31,13 @@ from origin 'https://www.coparentliaizen.com' has been blocked by CORS policy
 ### 1. Railway Environment Variable ✅
 
 **Updated `FRONTEND_URL` to:**
+
 ```
 https://coparentliaizen.com,https://www.coparentliaizen.com,https://*.vercel.app
 ```
 
 **Command:**
+
 ```bash
 railway variables --set "FRONTEND_URL=https://coparentliaizen.com,https://www.coparentliaizen.com,https://*.vercel.app"
 ```
@@ -44,11 +47,13 @@ railway variables --set "FRONTEND_URL=https://coparentliaizen.com,https://www.co
 **File:** `chat-server/middleware.js`
 
 **Before:**
+
 ```javascript
 if (origin.includes('coparentliaizen.com')) return true;
 ```
 
 **After:**
+
 ```javascript
 const originLower = origin.toLowerCase();
 if (originLower.includes('coparentliaizen.com')) return true;
@@ -68,14 +73,15 @@ if (originLower.includes('coparentliaizen.com')) return true;
 4. **If blocked:** Backend doesn't send the header → Browser blocks the request
 
 **Current Logic:**
+
 ```javascript
 function isOriginAllowed(origin, allowedList) {
   // 1. Hardcoded checks (always work)
   if (originLower.includes('coparentliaizen.com')) return true;
-  
+
   // 2. Check against FRONTEND_URL environment variable
   if (allowedList.includes(origin)) return true;
-  
+
   // 3. Check wildcard patterns
   for (const allowed of allowedList) {
     if (allowed.includes('*')) {
@@ -84,7 +90,7 @@ function isOriginAllowed(origin, allowedList) {
       if (regex.test(origin)) return true;
     }
   }
-  
+
   return false;
 }
 ```
@@ -105,6 +111,7 @@ function isOriginAllowed(origin, allowedList) {
 After Railway finishes deploying:
 
 1. **Check Railway Logs:**
+
    ```
    🔒 CORS enabled for: https://coparentliaizen.com, https://www.coparentliaizen.com, https://*.vercel.app
    ```
@@ -140,4 +147,3 @@ After Railway finishes deploying:
 ---
 
 **Both fixes are applied. Railway is deploying. Test login after deployment completes (~2 minutes).** 🚀
-

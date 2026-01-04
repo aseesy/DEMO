@@ -8,8 +8,9 @@
  * regardless of import order.
  */
 
-// Ensure dotenv is loaded - safe to call multiple times
-require('dotenv').config();
+// Ensure dotenv is loaded - override any existing env vars from shell
+// This prevents stale shell environment from overriding .env values
+require('dotenv').config({ override: true });
 
 // =============================================================================
 // ENV PARSING - Strip quotes, trim whitespace, validate

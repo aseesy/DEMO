@@ -3,6 +3,7 @@
 ## Problem
 
 Vercel error:
+
 ```
 sh: line 1: cd: chat-client-vite: No such file or directory
 Error: Command "cd chat-client-vite && npm ci --include=dev" exited with 1
@@ -47,6 +48,7 @@ Update `vercel.json` to use absolute paths (but this is fragile).
 
 **vercel.json location:** Repository root (`/`)  
 **Expected structure:**
+
 ```
 /
 ├── vercel.json
@@ -60,11 +62,13 @@ Update `vercel.json` to use absolute paths (but this is fragile).
 ## Verification Steps
 
 1. **Check GitHub repository structure:**
+
    ```bash
    git ls-files | grep -E "(vercel\.json|chat-client-vite)" | head -10
    ```
 
 2. **Verify vercel.json is committed:**
+
    ```bash
    git status vercel.json
    ```
@@ -80,7 +84,7 @@ Update `vercel.json` to use absolute paths (but this is fragile).
 Updated `vercel.json` to use `npm ci` instead of `npm install` (matches Vercel's default behavior).
 
 **Next Steps:**
+
 1. Check Vercel Dashboard → Settings → Root Directory
 2. Ensure it's set to repository root (`.` or empty)
 3. Redeploy
-

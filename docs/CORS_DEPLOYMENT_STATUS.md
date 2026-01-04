@@ -3,6 +3,7 @@
 ## Latest Changes
 
 ### Commit `8b211f3` - CORS Debug Logging
+
 - Added production debug logging to CORS middleware
 - Logs will show:
   - FRONTEND_URL environment variable value
@@ -10,6 +11,7 @@
   - Each origin check with result
 
 ### Commit `34d6605` - Database Import Path Fix
+
 - Fixed `databaseInit.js` import path: `../../dbPostgres` → `../../../dbPostgres`
 - This was preventing server from starting (502 errors)
 
@@ -18,6 +20,7 @@
 **Server Status**: Railway is deploying (502 errors expected during deployment)
 
 **Next Steps**:
+
 1. Wait for Railway deployment to complete (~2-3 minutes)
 2. Check Railway logs for:
    - `[CORS] Configuration loaded:` - Shows FRONTEND_URL and allowed origins
@@ -26,6 +29,7 @@
    - `[CORS] ❌ Blocked origin:` - Shows blocked origins
 
 3. Test CORS:
+
    ```bash
    curl -I -X OPTIONS "https://demo-production-6dcd.up.railway.app/api/auth/google?state=test" \
      -H "Origin: https://www.coparentliaizen.com" \
@@ -60,13 +64,14 @@
 **Current Issue**: Server returning 502 (Application failed to respond)
 
 **Possible Causes**:
+
 1. Railway deployment still in progress (can take 3-5 minutes)
 2. Server crashing on startup (check Railway logs)
 3. Database connection issues (though we fixed the import path)
 
 **Next Actions**:
+
 1. Wait for Railway deployment to complete
 2. Check Railway dashboard logs for startup errors
 3. Verify `DATABASE_URL` environment variable is set
 4. Test health endpoint: `curl https://demo-production-6dcd.up.railway.app/health`
-

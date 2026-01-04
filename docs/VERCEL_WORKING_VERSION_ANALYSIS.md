@@ -13,6 +13,7 @@
 **vercel.json Location:** Repository root (`/vercel.json`)
 
 **Configuration:**
+
 ```json
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
@@ -28,6 +29,7 @@
 ```
 
 **Key Points:**
+
 - ✅ `vercel.json` was at **repository root**
 - ✅ Commands used `cd chat-client-vite` (relative to root)
 - ✅ Had `"git": { "submodules": false }` setting
@@ -40,6 +42,7 @@
 **vercel.json Location:** `chat-client-vite/vercel.json`
 
 **Configuration:**
+
 ```json
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
@@ -52,6 +55,7 @@
 ```
 
 **Key Points:**
+
 - ✅ `vercel.json` is in `chat-client-vite/` directory
 - ✅ Commands are relative (no `cd` needed)
 - ❌ Missing `"git": { "submodules": false }` setting
@@ -64,10 +68,12 @@
 ### 1. Package.json Dependencies Moved
 
 **Working Version:**
+
 - `vite`, `@vitejs/plugin-react`, `vite-plugin-pwa`, `tailwindcss`, etc. were in **devDependencies**
 - `socket.io-client` was in **dependencies**
 
 **Current Version:**
+
 - `vite`, `@vitejs/plugin-react`, `vite-plugin-pwa`, `tailwindcss`, etc. moved to **dependencies**
 - `socket.io-client` moved to **devDependencies**
 
@@ -78,6 +84,7 @@
 ### 2. Git Submodules Setting
 
 **Working Version Had:**
+
 ```json
 "git": {
   "submodules": false
@@ -93,10 +100,12 @@
 ### 3. Root Directory Configuration
 
 **Working Version:**
+
 - Root Directory: Repository root (`.`)
 - `vercel.json`: At root with `cd chat-client-vite` commands
 
 **Current Version:**
+
 - Root Directory: `chat-client-vite` (per user)
 - `vercel.json`: In `chat-client-vite/` with relative paths
 
@@ -111,6 +120,7 @@
 If Vercel Root Directory is actually set to repository root (not `chat-client-vite`), restore the working configuration:
 
 1. **Create root `vercel.json`:**
+
 ```json
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
@@ -136,6 +146,7 @@ If Vercel Root Directory is actually set to repository root (not `chat-client-vi
 If Root Directory is correctly set to `chat-client-vite`, add missing settings:
 
 1. **Add git submodules setting to `chat-client-vite/vercel.json`:**
+
 ```json
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
@@ -190,4 +201,3 @@ Based on the working version, the most likely issue is:
 2. **Add `git.submodules: false`** to current `vercel.json`
 3. **Verify package.json** has build tools in correct location
 4. **Test deployment** with these fixes
-

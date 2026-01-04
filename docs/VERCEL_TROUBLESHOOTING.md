@@ -5,11 +5,13 @@
 ### 1. **Build Errors**
 
 **Symptoms:**
+
 - Deployment fails during build
 - Error logs show compilation errors
 - Build timeout
 
 **Common Causes:**
+
 - Missing dependencies in `package.json`
 - TypeScript/ESLint errors
 - Import errors (missing files/modules)
@@ -17,6 +19,7 @@
 - Build command incorrect
 
 **Solutions:**
+
 ```bash
 # Test build locally first
 cd chat-client-vite
@@ -34,30 +37,32 @@ node --version  # Should match engines.node in package.json
 ### 2. **Configuration Issues**
 
 **Symptoms:**
+
 - 404 errors on routes
 - Assets not loading
 - Redirects not working
 
 **Check `vercel.json`:**
+
 - Root directory set correctly
 - Build command matches `package.json`
 - Output directory correct (`dist` for Vite)
 - Rewrites/routes configured properly
 
 **Current Config (chat-client-vite/vercel.json):**
+
 ```json
 {
   "buildCommand": "npm ci && npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm ci",
   "framework": null,
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
 ```
 
 **Important:**
+
 - `vercel.json` is located in `chat-client-vite/` directory (the only vercel.json)
 - Vercel Root Directory must be set to `chat-client-vite` in Project Settings
 - Paths in `vercel.json` are relative to `chat-client-vite/` (no `cd` commands needed)
@@ -68,22 +73,26 @@ node --version  # Should match engines.node in package.json
 ### 3. **Environment Variables Missing**
 
 **Symptoms:**
+
 - API calls fail
 - Features don't work
 - Runtime errors about undefined variables
 
 **Required Variables:**
+
 - `VITE_API_URL` - Backend API URL
 - `VITE_WS_URL` - WebSocket URL (optional)
 - `VITE_GOOGLE_PLACES_API_KEY` - If using Google Places
 
 **Check:**
+
 ```bash
 cd chat-client-vite
 vercel env ls
 ```
 
 **Set Missing Variables:**
+
 ```bash
 cd chat-client-vite
 vercel env add VITE_API_URL production
@@ -91,6 +100,7 @@ vercel env add VITE_API_URL production
 ```
 
 **Or via Dashboard:**
+
 1. Vercel Dashboard → Project → **Settings** → **Environment Variables**
 2. Add `VITE_API_URL` with your Railway backend URL
 3. Select all environments (Production, Preview, Development)
@@ -103,18 +113,22 @@ vercel env add VITE_API_URL production
 ### 4. **Node Version Mismatch**
 
 **Symptoms:**
+
 - Build fails with version errors
 - Runtime errors about unsupported features
 
 **Check:**
+
 - `package.json` has `engines.node` specified
 - Vercel uses Node 18.x by default
 - Your code requires Node 20+ (check `chat-server/package.json`)
 
 **Fix:**
+
 - Set Node version in Vercel dashboard:
   - Project → Settings → Node.js Version → Select version
 - Or add to `vercel.json`:
+
 ```json
 {
   "build": {
@@ -130,16 +144,19 @@ vercel env add VITE_API_URL production
 ### 5. **Build Command Issues**
 
 **Symptoms:**
+
 - Build completes but site doesn't work
 - Wrong files deployed
 - Missing assets
 
 **Current Setup:**
+
 - Root Directory: `chat-client-vite` (set in Vercel Project Settings)
 - Build command: `npm ci && npm run build`
 - Output: `dist` (relative to root directory)
 
 **Verify:**
+
 ```bash
 # Test build command locally
 cd /Users/athenasees/Desktop/chat/chat-client-vite
@@ -154,10 +171,12 @@ ls -la dist
 ### 6. **Framework Detection Issues**
 
 **Symptoms:**
+
 - Vercel auto-detects wrong framework
 - Build uses wrong settings
 
 **Fix:**
+
 - Set `framework: null` in `vercel.json` (already done)
 - Or explicitly set framework in Vercel dashboard
 
@@ -166,16 +185,19 @@ ls -la dist
 ### 7. **File Size Limits**
 
 **Symptoms:**
+
 - Large files fail to upload
 - Build times out
 - Deployment fails
 
 **Vercel Limits:**
+
 - Function size: 50MB
 - Asset size: Individual files should be < 10MB
 - Total deployment: 100MB (free tier)
 
 **Check:**
+
 ```bash
 # Check build output size
 du -sh chat-client-vite/dist
@@ -189,16 +211,19 @@ find chat-client-vite/dist -type f -size +5M
 ### 8. **CORS/API Connection Issues**
 
 **Symptoms:**
+
 - Frontend loads but API calls fail
 - CORS errors in browser console
 - 401/403 errors
 
 **Check:**
+
 - `VITE_API_URL` points to correct backend
 - Backend `FRONTEND_URL` includes Vercel domain
 - CORS configured on backend
 
 **Test:**
+
 ```bash
 # Check environment variable
 vercel env ls production | grep VITE_API_URL
@@ -212,17 +237,18 @@ curl https://your-vercel-app.vercel.app
 ### 9. **Routing Issues (SPA)**
 
 **Symptoms:**
+
 - Direct URL access returns 404
 - Refresh breaks navigation
 - Routes don't work
 
 **Fix:**
+
 - Ensure `vercel.json` has rewrites for SPA:
+
 ```json
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
 ```
 
@@ -231,11 +257,13 @@ curl https://your-vercel-app.vercel.app
 ### 10. **Dependencies Issues**
 
 **Symptoms:**
+
 - Build fails with module not found
 - Runtime errors about missing packages
 - Version conflicts
 
 **Check:**
+
 ```bash
 # Verify all dependencies installed
 cd chat-client-vite
@@ -253,15 +281,18 @@ ls package-lock.json
 ### 11. **Environment-Specific Issues**
 
 **Symptoms:**
+
 - Works locally but not on Vercel
 - Different behavior in production
 
 **Common Causes:**
+
 - Hardcoded localhost URLs
 - Missing environment variables
 - Development-only code running in production
 
 **Check:**
+
 ```javascript
 // In your code, check for:
 if (import.meta.env.DEV) {
@@ -269,7 +300,7 @@ if (import.meta.env.DEV) {
 }
 
 // Make sure production uses env vars:
-const apiUrl = import.meta.env.VITE_API_URL || 'fallback'
+const apiUrl = import.meta.env.VITE_API_URL || 'fallback';
 ```
 
 ---
@@ -277,14 +308,17 @@ const apiUrl = import.meta.env.VITE_API_URL || 'fallback'
 ### 12. **Build Timeout**
 
 **Symptoms:**
+
 - Build starts but times out
 - Deployment hangs
 
 **Vercel Limits:**
+
 - Free tier: 45 minutes
 - Pro tier: 60 minutes
 
 **Solutions:**
+
 - Optimize build (remove unused dependencies)
 - Split builds if needed
 - Check for infinite loops in build scripts
@@ -294,11 +328,13 @@ const apiUrl = import.meta.env.VITE_API_URL || 'fallback'
 ### 13. **Git Integration Issues**
 
 **Symptoms:**
+
 - Auto-deployments not triggering
 - Wrong branch deployed
 - Deployment stuck
 
 **Check:**
+
 - Vercel dashboard → Settings → Git
 - Production branch set correctly (usually `main`)
 - Auto-deploy enabled
@@ -309,10 +345,12 @@ const apiUrl = import.meta.env.VITE_API_URL || 'fallback'
 ### 14. **Output Directory Wrong**
 
 **Symptoms:**
+
 - Build succeeds but 404 on all routes
 - Wrong files served
 
 **Current Config (in chat-client-vite/vercel.json):**
+
 ```json
 {
   "outputDirectory": "dist"
@@ -320,6 +358,7 @@ const apiUrl = import.meta.env.VITE_API_URL || 'fallback'
 ```
 
 **Verify:**
+
 ```bash
 # Check if dist exists after build (from chat-client-vite directory)
 ls -la dist/index.html
@@ -330,11 +369,13 @@ ls -la dist/index.html
 ### 15. **Service Worker/PWA Issues**
 
 **Symptoms:**
+
 - Caching issues
 - Updates not showing
 - Service worker errors
 
 **Check:**
+
 - `vite-plugin-pwa` configuration
 - Service worker registration
 - Cache strategies
@@ -371,6 +412,7 @@ vercel logs
 ## Most Common Fixes
 
 1. **Missing Environment Variables**
+
    ```bash
    vercel env add VITE_API_URL production
    ```
@@ -402,11 +444,13 @@ vercel logs
    - Project → Deployments → Click failed deployment → View logs
 
 2. **Check Build Logs:**
+
    ```bash
    vercel logs [deployment-url]
    ```
 
 3. **Test Locally:**
+
    ```bash
    npm run build
    npm run preview
@@ -414,4 +458,3 @@ vercel logs
 
 4. **Vercel Status:**
    - https://vercel-status.com
-

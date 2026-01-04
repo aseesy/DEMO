@@ -31,4 +31,3 @@ Pass `removePendingMessage` from `useMessageSending` to handlers so they can pro
 - ✅ No state desync issues
 - ✅ Single source of truth for pending messages
 - ✅ Cleaner architecture
-

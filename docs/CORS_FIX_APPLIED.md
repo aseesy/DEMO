@@ -11,8 +11,9 @@
 Frontend at `https://www.coparentliaizen.com` was blocked by CORS when trying to access the Railway backend API.
 
 **Error:**
+
 ```
-Access to fetch at 'https://demo-production-6dcd.up.railway.app/api/auth/login' 
+Access to fetch at 'https://demo-production-6dcd.up.railway.app/api/auth/login'
 from origin 'https://www.coparentliaizen.com' has been blocked by CORS policy
 ```
 
@@ -23,6 +24,7 @@ from origin 'https://www.coparentliaizen.com' has been blocked by CORS policy
 The Railway `FRONTEND_URL` environment variable didn't include the production domain `https://www.coparentliaizen.com`.
 
 **How CORS Works:**
+
 - Backend reads `FRONTEND_URL` from environment variable
 - Splits by comma to get allowed origins: `FRONTEND_URL.split(',').map(url => url.trim())`
 - Only requests from origins in this list are allowed
@@ -33,11 +35,13 @@ The Railway `FRONTEND_URL` environment variable didn't include the production do
 ## Fix Applied
 
 **Updated Railway `FRONTEND_URL` to:**
+
 ```
 https://coparentliaizen.com,https://www.coparentliaizen.com,https://*.vercel.app
 ```
 
 **Command used:**
+
 ```bash
 railway variables set FRONTEND_URL="https://coparentliaizen.com,https://www.coparentliaizen.com,https://*.vercel.app"
 ```
@@ -74,6 +78,7 @@ After Railway redeploys, check:
 ## Configuration Details
 
 **Backend Code:** `chat-server/config.js`
+
 ```javascript
 const FRONTEND_URLS = (
   process.env.FRONTEND_URL ||
@@ -85,6 +90,7 @@ const FRONTEND_URLS = (
 ```
 
 **CORS Setup:** `chat-server/middleware.js`
+
 ```javascript
 function setupCors(app) {
   const allowedOrigins = [...FRONTEND_URLS];
@@ -103,4 +109,3 @@ function setupCors(app) {
 ---
 
 **CORS fix is applied. Railway will redeploy automatically. Test login after deployment completes.** 🚀
-
