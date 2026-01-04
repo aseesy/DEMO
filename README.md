@@ -126,30 +126,43 @@ npm install
 ### **Development**
 
 ```bash
-# Start all services (frontend + backend)
+# Start all development servers (frontend + backend)
 npm run dev
-# Or use the new dev stack command:
-npm run dev:stack
 
-# Frontend only (port 5173)
-cd chat-client-vite && npm run dev
+# Start specific servers
+npm run dev:backend      # Backend only (port 3000)
+npm run dev:frontend     # Frontend only (port 5173)
 
-# Backend only (port 8080)
-cd chat-server && node server.js
+# Stop servers
+npm stop
 
-# Run tests
-npm test
+# Restart servers
+npm run restart
+
+# Get help with commands
+npm run help
+
+# Validate your setup
+npm run doctor
 ```
 
-### **Development Scripts** (Phase 1)
+### **Production**
+
+```bash
+# Start production server (for Railway/Vercel)
+npm start
+# This delegates to chat-server workspace which runs: node server.js
+```
+
+### **Development Scripts**
 
 LiaiZen includes development scripts for maintaining code quality:
 
 ```bash
 # Database & Data Hygiene
-cd chat-server
-npm run db:validate      # Validate PostgreSQL schema
-npm run reset:data       # Safe data reset (dev only)
+npm run migrate          # Run database migrations
+npm run db:validate      # Validate database schema (from chat-server)
+npm run db:backup        # Backup database
 
 # AI Pipeline Quality
 npm run prompts:lint     # Validate mediation prompts
@@ -157,7 +170,7 @@ npm run ai:test          # AI regression tests
 
 # Developer Productivity
 npm run lint:fix         # Auto-fix code quality issues
-npm run dev:stack        # Start all dev services
+npm run format           # Format code with Prettier
 ```
 
 See `chat-server/scripts/README.md` for detailed documentation.

@@ -11,10 +11,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Stop backend on port 3001
-if lsof -ti:3001 > /dev/null 2>&1; then
-    echo -e "${BLUE}🛑 Stopping backend server (port 3001)...${NC}"
-    lsof -ti:3001 | xargs kill -9 2>/dev/null || true
+# Stop backend on port 3000 (default port, or use PORT env var)
+BACKEND_PORT=${PORT:-3000}
+if lsof -ti:${BACKEND_PORT} > /dev/null 2>&1; then
+    echo -e "${BLUE}🛑 Stopping backend server (port ${BACKEND_PORT})...${NC}"
+    lsof -ti:${BACKEND_PORT} | xargs kill -9 2>/dev/null || true
     sleep 1
     echo -e "${GREEN}✅ Backend server stopped${NC}"
 else
