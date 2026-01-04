@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "rootDirectory": "chat-client-vite",
+  "buildCommand": "cd chat-client-vite && npm ci && npm run build",
+  "outputDirectory": "chat-client-vite/dist",
   "rewrites": [
     {
       "source": "/(.*)",
