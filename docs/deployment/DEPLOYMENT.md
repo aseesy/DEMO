@@ -127,6 +127,7 @@ vercel
 - Directory? → `./` (current directory)
 
 **Important:** After initial setup, configure the Root Directory in Vercel Dashboard:
+
 - Go to **Settings** → **General** → **Root Directory**
 - Set to: `chat-client-vite`
 - This ensures Vercel builds from the correct directory
@@ -152,6 +153,7 @@ Or promote deployment from Vercel dashboard.
    - Click **Save**
 
    **Or use CLI:**
+
    ```bash
    cd chat-client-vite
    vercel env add VITE_API_URL production
