@@ -354,14 +354,14 @@ function NavigationComponent({
           className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100"
           style={{ height: '3.5rem' }}
         >
-          <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 h-full">
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 h-full">
             <div className="flex items-center justify-between h-full gap-3">
               {/* Left side: Search bar (only in chat view) */}
               {currentView === 'chat' && (
-                <div className="flex-1 max-w-md">
+                <div className="flex-1 max-w-md sm:max-w-lg md:max-w-xl">
                   <div className="relative">
                     <svg
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -412,7 +412,12 @@ function NavigationComponent({
 
                         return firstName ? `Conversation With ${firstName}` : 'messages...';
                       })()}
-                      className="w-full pl-10 pr-8 py-1.5 border border-gray-200 rounded-full bg-white focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-sm text-gray-900 placeholder-gray-400 h-8"
+                      className="w-full pl-12 pr-12 border border-gray-200 rounded-full bg-white/90 focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-base text-gray-900 placeholder-gray-400 min-h-[32px] shadow-sm transition-all"
+                      style={{
+                        paddingTop: '0.375rem',
+                        paddingBottom: '0.375rem',
+                        lineHeight: '1.5',
+                      }}
                     />
                     {searchQuery && (
                       <button
@@ -421,7 +426,7 @@ function NavigationComponent({
                           searchMessages('');
                           exitSearchMode();
                         }}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-dark p-0.5 rounded hover:bg-gray-50"
+                        className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-dark p-0.5 rounded hover:bg-gray-50"
                         aria-label="Clear search"
                       >
                         <svg
@@ -579,7 +584,8 @@ function NavigationComponent({
         className="fixed left-0 right-0 z-50 backdrop-blur-sm"
         style={{
           // Show only on mobile
-          display: isMobile ? 'block' : 'none',
+          display: isMobile ? 'flex' : 'none',
+          alignItems: 'center',
           bottom: 0,
           paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
           // Ensure visibility on iOS Safari by creating stacking context
@@ -593,12 +599,20 @@ function NavigationComponent({
           // Gradient fade from white (bottom) to transparent (top)
           background:
             'linear-gradient(to top, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.95) 40%, rgba(255, 255, 255, 0) 100%)',
+          // Shorter nav height
+          height: '2.5rem',
         }}
         data-testid="mobile-nav"
       >
         <div
-          className="relative flex items-center justify-around min-h-[3rem] px-2 z-10"
-          style={{ height: '3rem' }}
+          className="relative flex items-center justify-around w-full px-4 z-10"
+          style={{
+            lineHeight: '20px',
+            verticalAlign: 'bottom',
+            boxSizing: 'content-box',
+            marginTop: '0px',
+            paddingTop: '0px',
+          }}
         >
           {/* Dashboard button */}
           <button
@@ -608,7 +622,7 @@ function NavigationComponent({
               setIsMenuOpen(false);
               setCurrentView('dashboard');
             }}
-            className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
+            className={`relative flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
               currentView === 'dashboard'
                 ? 'bg-teal-lightest text-teal-medium scale-105'
                 : 'text-teal-medium/70 hover:text-teal-medium active:scale-95 active:bg-teal-lightest/50'
@@ -636,7 +650,7 @@ function NavigationComponent({
               e.stopPropagation();
               setIsMenuOpen(prev => !prev);
             }}
-            className={`relative flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
+            className={`relative flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
               isMenuOpen
                 ? 'bg-teal-lightest text-teal-medium scale-105'
                 : 'text-teal-medium/70 hover:text-teal-medium active:scale-95 active:bg-teal-lightest/50'
@@ -648,7 +662,7 @@ function NavigationComponent({
             <img
               src="/assets/Logo.svg"
               alt="LiaiZen menu"
-              className={`w-7 h-7 object-contain transition-transform duration-300 ${
+              className={`w-8 h-8 object-contain transition-transform duration-300 ${
                 isMenuOpen ? 'scale-125' : ''
               }`}
             />
@@ -662,7 +676,7 @@ function NavigationComponent({
               setIsMenuOpen(false);
               setCurrentView('chat');
             }}
-            className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
+            className={`relative flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
               currentView === 'chat'
                 ? 'bg-teal-lightest text-teal-medium scale-105'
                 : 'text-teal-medium/70 hover:text-teal-medium active:scale-95 active:bg-teal-lightest/50'

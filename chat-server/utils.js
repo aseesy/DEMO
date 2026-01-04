@@ -132,6 +132,7 @@ function healthCheckHandler(req, res, dbConnected, dbError) {
   const response = {
     status: 'ok',
     server: 'running',
+    port: parseInt(process.env.PORT, 10) || 3000,
     timestamp: new Date().toISOString(),
   };
 
@@ -145,9 +146,9 @@ function healthCheckHandler(req, res, dbConnected, dbError) {
     response.warning = 'Database connection failed - retrying in background';
   } else {
     response.database = {
-      status: dbConnected ? 'connected' : 'connecting'
+      status: dbConnected ? 'connected' : 'connecting',
     };
-    
+
     // Phase 1: Add pool stats if available
     try {
       const dbPostgres = require('./dbPostgres');
@@ -168,8 +169,8 @@ function healthCheckHandler(req, res, dbConnected, dbError) {
       details: taskManager.getActiveTasks().map(t => ({
         name: t.name,
         type: t.type,
-        createdAt: t.createdAt
-      }))
+        createdAt: t.createdAt,
+      })),
     };
   } catch (err) {
     // Ignore errors getting task stats
@@ -184,8 +185,8 @@ function healthCheckHandler(req, res, dbConnected, dbError) {
       subscribers: eventBus.getSubscriberCount(),
       recentEvents: history.map(e => ({
         event: e.event,
-        timestamp: e.timestamp
-      }))
+        timestamp: e.timestamp,
+      })),
     };
   } catch (err) {
     // Ignore errors getting event stats
@@ -201,9 +202,9 @@ function healthCheckHandler(req, res, dbConnected, dbError) {
  * Phase 2: Complete shutdown - closes sockets, DB, and cancels tasks
  */
 function setupGracefulShutdown(server, io, services) {
-  const shutdown = async (signal) => {
+  const shutdown = async signal => {
     console.log(`${signal} received, shutting down gracefully...`);
-    
+
     let shutdownComplete = false;
 
     // Phase 2: Cancel all background tasks first
@@ -217,14 +218,14 @@ function setupGracefulShutdown(server, io, services) {
 
     // Phase 2: Close Socket.io server (disconnects all clients gracefully)
     if (io) {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         io.close(() => {
           console.log('[Shutdown] Socket.io server closed');
-          
+
           // Close HTTP server
           server.close(() => {
             console.log('[Shutdown] HTTP server closed');
-            
+
             // Phase 2: Close database connections
             if (services?.dbPostgres) {
               const db = services.dbPostgres;
@@ -235,7 +236,7 @@ function setupGracefulShutdown(server, io, services) {
                     shutdownComplete = true;
                     process.exit(0);
                   })
-                  .catch((err) => {
+                  .catch(err => {
                     console.error('[Shutdown] Error closing database:', err.message);
                     shutdownComplete = true;
                     process.exit(1);
@@ -255,7 +256,7 @@ function setupGracefulShutdown(server, io, services) {
       // No Socket.io - just close HTTP server
       server.close(() => {
         console.log('[Shutdown] HTTP server closed');
-        
+
         // Close database connections
         if (services?.dbPostgres) {
           const db = services.dbPostgres;
@@ -265,7 +266,7 @@ function setupGracefulShutdown(server, io, services) {
                 console.log('[Shutdown] Database connections closed');
                 process.exit(0);
               })
-              .catch((err) => {
+              .catch(err => {
                 console.error('[Shutdown] Error closing database:', err.message);
                 process.exit(1);
               });

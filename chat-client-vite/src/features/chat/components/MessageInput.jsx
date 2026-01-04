@@ -118,23 +118,49 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
     }
   };
 
+  // Responsive positioning: fixed at bottom on mobile, relative on desktop
+  const [isMobile, setIsMobile] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return true;
+  });
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div
       className="px-4 sm:px-6 md:px-8 safe-area-inset-bottom"
       style={{
-        paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))',
+        paddingBottom: '0px',
         paddingTop: '0px',
+        position: isMobile ? 'fixed' : 'relative',
+        bottom: isMobile ? 'calc(2.5rem + 0.5rem)' : 'auto',
+        left: 0,
+        right: 0,
         width: '100%',
         maxWidth: '100%',
         overflowX: 'hidden',
+        backgroundColor: 'white',
+        zIndex: isMobile ? 40 : 'auto',
       }}
     >
       <form
         onSubmit={sendMessage}
         className="flex-1 relative max-w-3xl mx-auto min-w-0 flex items-center gap-2"
-        style={{ width: '100%', maxWidth: '100%' }}
+        style={{
+          width: '100%',
+          maxWidth: isMobile ? '100%' : 'min(100%, 48rem)',
+        }}
       >
-        <div className="flex-1 relative">
+        <div className="flex-1 relative" style={{ display: 'flex', alignItems: 'center' }}>
           <textarea
             ref={textareaRef}
             value={inputMessage}
@@ -143,12 +169,19 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
               // Adjust height after value changes
               setTimeout(adjustTextareaHeight, 0);
             }}
-            placeholder="Type a message..."
+            placeholder="Send message..."
             rows={1}
-            className={`w-full pl-12 pr-14 py-2.5 border border-gray-200 rounded-full bg-white/90 focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-base text-gray-900 placeholder-gray-400 min-h-[44px] max-h-32 resize-none font-normal leading-snug shadow-sm transition-all ${
+            className={`w-full pl-4 pr-12 border border-gray-200 rounded-full bg-white/90 focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-base text-gray-900 placeholder-gray-400 min-h-[32px] max-h-32 resize-none font-normal leading-snug shadow-sm transition-all ${
               hasCoachingWarning ? 'placeholder-orange-400 border-orange-300' : ''
             }`}
-            style={{ height: 'auto', overflowY: 'hidden' }}
+            style={{
+              height: 'auto',
+              overflowY: 'hidden',
+              textAlign: 'left',
+              paddingTop: '0.375rem',
+              paddingBottom: '0.375rem',
+              lineHeight: '1.5',
+            }}
             onKeyDown={handleKeyDown}
             onFocus={handleFocus}
             onMouseDown={handleMouseDown}
@@ -165,16 +198,20 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
             autoCapitalize="off"
             spellCheck="false"
           />
-          {/* Send button positioned inside textarea (absolute) */}
+          {/* Send button positioned on the right, vertically centered */}
           <button
             type="submit"
             disabled={!inputMessage.trim()}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-teal-600 text-white rounded-full font-bold hover:bg-teal-700 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md group z-10"
+            className="absolute right-2.5 w-7 h-7 bg-teal-600 text-white rounded-full font-bold hover:bg-teal-700 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md group z-10"
             title="Send message"
-            style={{ pointerEvents: 'auto' }}
+            style={{
+              pointerEvents: 'auto',
+              top: '50%',
+              transform: 'translateY(-50%)',
+            }}
           >
             <svg
-              className="w-4 h-4 transition-transform duration-200 group-hover:rotate-45"
+              className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-45"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

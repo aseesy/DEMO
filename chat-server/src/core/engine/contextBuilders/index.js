@@ -82,11 +82,62 @@ async function buildAllContexts({
   );
   const conversationPatternsSection = buildConversationPatternsSection(roleContext, recentMessages);
 
-  // Get display names
+  // Get display names - prefer contact_name from contacts, then first_name from profile, fallback to username
+  // Contacts may have relationship names like "Dad" or "Mom" which are preferred
+  const senderProfile = participantProfiles.get(message.username?.toLowerCase());
+  const receiverProfile = participantProfiles.get(roleContext?.receiverId?.toLowerCase());
+
+  // Try to get display name from contacts first (contact_name might be "Dad" or "Mom")
+  // existingContacts are the sender's contacts, so we can find how the sender refers to the receiver
+  let receiverContactName = null;
+  if (existingContacts && roleContext?.receiverId) {
+    // Get receiver user ID if available from profile (for linked_user_id matching)
+    const receiverUserId = receiverProfile?.id;
+    const receiverIdLower = roleContext.receiverId.toString().toLowerCase();
+
+    // Find the contact where receiver is the co-parent
+    // Match by linked_user_id (user ID) or contact_email (email/username)
+    const receiverContact = existingContacts.find(c => {
+      const isCoParent =
+        c.relationship === 'co-parent' ||
+        c.relationship === 'My Co-Parent' ||
+        c.relationship === 'coparent';
+
+      if (!isCoParent) return false;
+
+      // Match by linked_user_id if available (links to user ID)
+      // Check against receiver user ID from profile
+      if (c.linked_user_id && receiverUserId && c.linked_user_id === receiverUserId) {
+        return true;
+      }
+
+      // Also check if receiverId is a numeric string matching linked_user_id
+      if (c.linked_user_id) {
+        const linkedUserIdStr = c.linked_user_id.toString();
+        if (linkedUserIdStr === roleContext.receiverId.toString()) return true;
+      }
+
+      // Match by contact_email (might be email or username)
+      if (c.contact_email) {
+        const contactEmailLower = c.contact_email.toLowerCase();
+        if (contactEmailLower === receiverIdLower) return true;
+      }
+
+      return false;
+    });
+    receiverContactName = receiverContact?.contact_name;
+  }
+
+  // Fallback chain: contact_name > first_name > username
+  const senderFirstName = senderProfile?.first_name?.split(' ')[0];
+  const receiverFirstName = receiverProfile?.first_name?.split(' ')[0];
+  const senderFallback = senderFirstName || message.username;
+  const receiverFallback = receiverContactName || receiverFirstName || roleContext?.receiverId;
+
   const { senderDisplayName, receiverDisplayName } = getDisplayNames(
     roleAwareContext,
-    message.username,
-    roleContext?.receiverId
+    senderFallback,
+    receiverFallback
   );
 
   // Format role-aware prompt section

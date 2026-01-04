@@ -92,6 +92,23 @@ export function MessagesContainer({
   // Find the selected thread to show its title
   const selectedThread = selectedThreadId ? threads.find(t => t.id === selectedThreadId) : null;
 
+  // Responsive padding calculation
+  const [isMobile, setIsMobile] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return true; // Default to mobile for SSR
+  });
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div
       ref={messagesContainerRef}
@@ -101,12 +118,15 @@ export function MessagesContainer({
         opacity: isInitialLoad ? 0 : 1,
         transition: 'opacity 0.15s ease-out',
         WebkitOverflowScrolling: 'touch',
-        // Horizontal padding - use rem for consistency
-        paddingLeft: '0.5rem',
-        paddingRight: '0.5rem',
+        // Horizontal padding - responsive: match input bar padding
+        paddingLeft: 'clamp(1rem, 4vw, 2rem)',
+        paddingRight: 'clamp(1rem, 4vw, 2rem)',
         // Add padding at bottom to ensure messages are visible above input bar
-        // Account for: input bar (~5rem) + safe area
-        paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))',
+        // On mobile: account for input bar (~3rem) + gap (0.5rem) + nav (2.5rem) + safe area
+        // On desktop: account for input bar only (~3rem + 0.5rem gap)
+        paddingBottom: isMobile
+          ? 'calc(3rem + 0.5rem + 2.5rem + env(safe-area-inset-bottom))'
+          : 'calc(3rem + 0.5rem)',
         // Ensure no horizontal overflow
         overflowX: 'hidden',
         width: '100%',

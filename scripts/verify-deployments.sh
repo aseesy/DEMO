@@ -89,6 +89,23 @@ if ! check_json "$RAILWAY_URL" "Health endpoint" "/health"; then
     ((failures++))
 fi
 
+# Check for port mismatch
+echo -n "Checking port configuration... "
+EXPECTED_PORT=3000
+ACTUAL_PORT=$(curl -s "$RAILWAY_URL/health" 2>/dev/null | grep -o '"port":[0-9]*' | cut -d: -f2)
+if [ -n "$ACTUAL_PORT" ]; then
+    if [ "$ACTUAL_PORT" -eq "$EXPECTED_PORT" ]; then
+        echo -e "${GREEN}✓ OK (port $ACTUAL_PORT)${NC}"
+    else
+        echo -e "${RED}✗ PORT MISMATCH!${NC}"
+        echo "   Expected: $EXPECTED_PORT, Actual: $ACTUAL_PORT"
+        echo "   Fix: Railway Dashboard → Settings → Networking → Target Port = $EXPECTED_PORT"
+        ((failures++))
+    fi
+else
+    echo -e "${YELLOW}⚠ Could not verify port${NC}"
+fi
+
 if ! check_url "$RAILWAY_URL" "Auth endpoint" "/api/auth/verify"; then
     echo -e "${YELLOW}   (401 expected for unauthenticated request)${NC}"
 fi

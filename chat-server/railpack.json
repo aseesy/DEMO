@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "packages": {
+    "node": "20"
+  },
+  "steps": {
+    "install": {
+      "commands": ["npm install --legacy-peer-deps"]
+    }
+  },
+  "deploy": {
+    "startCommand": "node server.js"
+  }
+}

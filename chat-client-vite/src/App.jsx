@@ -192,9 +192,11 @@ function App() {
             <MediatorProvider>
               <BrowserRouter>
                 <Routes>
-                  {/* Root route - shows landing or dashboard based on auth */}
+                  {/* Root route - redirect to signup for new visitors, dashboard for auth users */}
                   <Route path="/" element={<ChatRoom />} />
-                  {/* Sign in route - dedicated login/signup page */}
+                  {/* Sign up route - default to signup form (primary CTA) */}
+                  <Route path="/signup" element={<LoginSignup defaultToSignup={true} />} />
+                  {/* Sign in route - for returning users */}
                   <Route path="/signin" element={<LoginSignup />} />
                   {/* Accept invitation route - for users accepting co-parent invitations */}
                   <Route path="/accept-invite" element={<AcceptInvitationPage />} />

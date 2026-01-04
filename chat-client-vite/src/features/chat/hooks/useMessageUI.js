@@ -1,15 +1,15 @@
 /**
  * useMessageUI Hook
- * 
+ *
  * Responsibility: UI State Management ONLY
- * 
+ *
  * What it does:
  * - Manages pending message state (UI concerns)
  * - Manages message statuses (UI concerns)
  * - Creates pending messages (not optimistic "sent" - true pending state)
  * - Handles UI feedback (scrolling, clearing input, animations)
  * - Updates UI based on message state changes
- * 
+ *
  * What it does NOT do:
  * - ❌ Network transport (delegated to useMessageTransport)
  * - ❌ Business logic/validation (delegated to useMessageMediation)
@@ -22,16 +22,16 @@ import { createPendingMessage, MESSAGE_STATUS } from '../../../utils/messageBuil
 
 /**
  * useMessageUI - Manages UI state for messages
- * 
+ *
  * @param {Object} options
  * @param {Function} options.clearInput - Clear input callback
  * @param {Function} options.scrollToBottom - Scroll callback
- * @returns {Object} { 
- *   pendingMessages, 
- *   setPendingMessages, 
- *   messageStatuses, 
- *   setMessageStatuses, 
- *   markMessageSent, 
+ * @returns {Object} {
+ *   pendingMessages,
+ *   setPendingMessages,
+ *   messageStatuses,
+ *   setMessageStatuses,
+ *   markMessageSent,
  *   markMessageFailed,
  *   markMessagePending,
  *   createPendingMessageState,
@@ -46,7 +46,7 @@ export function useMessageUI({ clearInput, scrollToBottom } = {}) {
   /**
    * Create a pending message state (not optimistic "sent" - true pending)
    * This implements the UX improvement: messages start as "pending" not "sent"
-   * 
+   *
    * @param {Object} params
    * @param {string} params.text - Message text
    * @param {string} params.username - Sender username
@@ -87,21 +87,18 @@ export function useMessageUI({ clearInput, scrollToBottom } = {}) {
   );
 
   // Mark message as sent (UI state update)
-  const markMessageSent = React.useCallback(
-    messageId => {
-      setMessageStatuses(prev => {
-        const next = new Map(prev);
-        next.set(messageId, 'sent');
-        return next;
-      });
-      setPendingMessages(prev => {
-        const next = new Map(prev);
-        next.delete(messageId);
-        return next;
-      });
-    },
-    []
-  );
+  const markMessageSent = React.useCallback(messageId => {
+    setMessageStatuses(prev => {
+      const next = new Map(prev);
+      next.set(messageId, 'sent');
+      return next;
+    });
+    setPendingMessages(prev => {
+      const next = new Map(prev);
+      next.delete(messageId);
+      return next;
+    });
+  }, []);
 
   // Mark message as failed (UI state update)
   const markMessageFailed = React.useCallback(messageId => {
@@ -130,7 +127,17 @@ export function useMessageUI({ clearInput, scrollToBottom } = {}) {
     });
   }, []);
 
-  // Remove pending message (e.g., when blocked by backend)
+  // Mark message as blocked (pending mediation) - keep visible on sender's side
+  const markMessageBlocked = React.useCallback(messageId => {
+    setMessageStatuses(prev => {
+      const next = new Map(prev);
+      next.set(messageId, 'blocked'); // or 'pending_mediation'
+      return next;
+    });
+    // Keep in pending messages so it stays visible
+  }, []);
+
+  // Remove pending message (e.g., when dismissed or rewrite sent)
   const removePendingMessage = React.useCallback(messageId => {
     setPendingMessages(prev => {
       const next = new Map(prev);
@@ -158,21 +165,21 @@ export function useMessageUI({ clearInput, scrollToBottom } = {}) {
     // State
     pendingMessages,
     messageStatuses,
-    
+
     // Setters (for external control if needed)
     setPendingMessages,
     setMessageStatuses,
-    
+
     // Actions
     createPendingMessageState,
     markMessageSent,
     markMessageFailed,
     markMessagePending,
     markMessageQueued,
+    markMessageBlocked,
     removePendingMessage,
     handleMessageSent,
   };
 }
 
 export default useMessageUI;
-

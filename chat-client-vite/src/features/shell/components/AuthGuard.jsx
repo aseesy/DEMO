@@ -26,12 +26,7 @@ import { useAppNavigation, NavigationPaths } from '../../../adapters/navigation'
  * @param {React.ReactNode} props.children - Content to render if authenticated
  * @returns {React.ReactNode}
  */
-export function AuthGuard({
-  isAuthenticated,
-  isCheckingAuth,
-  onGetStarted,
-  children,
-}) {
+export function AuthGuard({ isAuthenticated, isCheckingAuth, onGetStarted, children }) {
   // Show loading state while checking auth
   if (isCheckingAuth) {
     const hasStoredAuth =
@@ -67,18 +62,25 @@ export function AuthGuard({
     );
   }
 
-  // If not authenticated, show sign-in page or redirect
+  // If not authenticated, show sign-up/sign-in page
   if (!isAuthenticated) {
-    // If we're already on signin page, render LoginSignup directly
     if (typeof window !== 'undefined') {
       const currentPath = window.location.pathname;
+
+      // If on signin page, show login form
       if (currentPath === '/signin' || currentPath === '/sign-in' || currentPath === '/siginin') {
-        console.log('[AuthGuard] Already on signin page, rendering LoginSignup');
+        console.log('[AuthGuard] On signin page, rendering LoginSignup (login mode)');
         return <LoginSignup />;
+      }
+
+      // For root path or signup path, show signup form (default for new visitors)
+      if (currentPath === '/' || currentPath === '/signup') {
+        console.log('[AuthGuard] New visitor, rendering LoginSignup (signup mode)');
+        return <LoginSignup defaultToSignup={true} />;
       }
     }
 
-    // Show redirecting message
+    // For any other path, redirect to signup
     return (
       <div
         className="min-h-screen bg-gray-50 flex items-center justify-center px-4"
@@ -99,7 +101,7 @@ export function AuthGuard({
             fontWeight: '500',
           }}
         >
-          Redirecting to sign in…
+          Redirecting to sign up…
         </div>
       </div>
     );

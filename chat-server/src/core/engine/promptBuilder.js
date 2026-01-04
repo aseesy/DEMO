@@ -44,6 +44,7 @@ function buildMediationPrompt({
   interventionLearningSection,
   roleAwarePromptSection,
   insightsString,
+  humanUnderstandingString,
   taskContextForAI,
   flaggedMessagesContext,
 }) {
@@ -67,6 +68,8 @@ When in doubt, STAY_SILENT. A polite request should NEVER trigger intervention.
 
 MESSAGE FROM ${senderDisplayName}: "${messageText}"
 
+${humanUnderstandingString ? `\n${humanUnderstandingString}\n` : ''}
+
 ${relationshipContext}
 ${graphContextString || ''}
 ${valuesContextString || ''}
@@ -85,20 +88,28 @@ IF YOU INTERVENE, provide THREE parts:
 
 1. validation: 1-2 sentences that normalize the reaction without taking sides.
 
+   ⚠️ CRITICAL: Use the DEEP HUMAN UNDERSTANDING insights above to craft this validation.
+   Draw from the "humanNature", "relationalDynamics", "underlyingNeeds", and "communicationBreakdown" insights.
+   Make the validation feel genuinely attuned to what they're experiencing, not generic.
+
    PRINCIPLES (guide your response, don't copy phrases):
    - Normalize: This is a natural response, not a flaw
    - Externalize: Frame as brain/body reaction, not "you being crazy"
    - Universalize: All humans respond this way, not just them
    - Depersonalize: About the nervous system, not the other person being evil
    - No "I" statements, no therapeutic language, no agreeing they're right
+   - Draw from the human understanding insights - reference specific dynamics, needs, or context factors
 
    Make it specific to THEIR situation — varied, contextual, relevant to what they said.
+   Reference concrete details from their message, their relationship context, and the human understanding insights.
 
 2. refocusQuestions: THREE brief, compassionate questions to shift from reactivity to responsiveness.
 
    PURPOSE: When upset, the emotional brain is in overdrive. These questions gently engage the prefrontal cortex to create space between feeling and reaction. They replace certainty with curiosity — not to excuse harmful behavior, but to communicate in a way that's more likely to be heard.
 
-   ⚠️ CRITICAL: CUSTOMIZE each question to their SPECIFIC situation. Don't use generic templates — rewrite each question to reference what they actually said, the specific person, the actual circumstance.
+   ⚠️ CRITICAL: Use the DEEP HUMAN UNDERSTANDING insights to inform these questions.
+   Draw from "underlyingNeeds", "contextFactors", and "pathForward" insights to craft questions that probe beneath the surface.
+   CUSTOMIZE each question to their SPECIFIC situation. Don't use generic templates — rewrite each question to reference what they actually said, the specific person, the actual circumstance, and the insights about their needs.
 
    PICK 3 QUESTIONS FROM DIFFERENT CATEGORIES AND CUSTOMIZE THEM:
 
@@ -127,7 +138,7 @@ IF YOU INTERVENE, provide THREE parts:
 
    ⏳ CONSEQUENCE (how will this play out long-term?):
    - "Will this matter in a week? A month?"
-   - "Is being 'right' more important than preserving this relationship?"
+   - "Is being 'right' worth the tension it creates?"
    - "What kind of co-parent do you want to be in this moment?"
    Why: Connects present reactions to deeper values and long-term well-being.
 
@@ -149,7 +160,7 @@ IF YOU INTERVENE, provide THREE parts:
    - Generic: "What do you really need?"
    - Customized: "Do you need them to apologize, or just acknowledge the impact?"
 
-   - Generic: "Is being right more important than the relationship?"
+   - Generic: "Is being right worth the tension it creates?"
    - Customized: "Is proving they forgot more important than planning the next birthday together?"
 
    CRITICAL RULES:
@@ -168,7 +179,9 @@ IF YOU INTERVENE, provide THREE parts:
 
 3. rewrite1 and rewrite2: These are REWRITTEN VERSIONS of the sender's original message.
 
-   ⚠️ CRITICAL: The sender (${senderDisplayName}) wants to express the SAME THING differently.
+   ⚠️ CRITICAL: Use the DEEP HUMAN UNDERSTANDING insights to craft rewrites that address the UNDERLYING NEED, not just the surface message.
+   The "underlyingNeeds" and "pathForward" insights should inform how you rewrite the message to express the real need.
+   The sender (${senderDisplayName}) wants to express the SAME THING differently, but in a way that addresses what they really need.
 
    EXAMPLE:
    - Original: "You never let me see the kids on time!"

@@ -7,7 +7,7 @@
  */
 
 /**
- * Helper function to handle blocked messages (removes optimistic message)
+ * Helper function to handle blocked messages (marks message as blocked, keeps it visible)
  * @param {Object} coaching - Coaching data
  * @param {string} eventName - Event name for logging
  * @param {Object} handlers - Handler functions and refs
@@ -17,9 +17,10 @@ function handleBlockedMessage(coaching, eventName, handlers) {
     return;
   }
 
-  const { usernameRef, setMessages, setPendingMessages, setMessageStatuses, messageUIMethodsRef } = handlers;
+  const { usernameRef, setMessages, setPendingMessages, setMessageStatuses, messageUIMethodsRef } =
+    handlers;
 
-  console.log(`[${eventName}] Message blocked - removing optimistic message`);
+  console.log(`[${eventName}] Message blocked - marking as pending mediation (keeping visible)`);
 
   // Helper to extract email from message (supports both new and legacy structures)
   const getMessageEmail = msg => {
@@ -29,62 +30,56 @@ function handleBlockedMessage(coaching, eventName, handlers) {
   const normalizedCurrentEmail = (usernameRef.current || '').toLowerCase();
 
   // Get useMessageUI method if available (preferred path)
-  const removePendingMessage = messageUIMethodsRef?.current?.removePendingMessage;
-  
-  // Find message IDs to remove by searching pending messages
-  // We'll search both messages array and pending messages to find all matches
-  const messageIdsToRemove = [];
-  
-  // First, search pending messages to find IDs
-  setPendingMessages(prev => {
-    for (const [id, msg] of prev.entries()) {
-      const msgEmail = getMessageEmail(msg);
-      if (
-        msg.isOptimistic &&
-        msg.text === coaching.originalText &&
-        msgEmail === normalizedCurrentEmail
-      ) {
-        messageIdsToRemove.push(id);
-      }
-    }
-    return prev; // Don't modify here - will use proper method or legacy setters
-  });
+  const markMessageBlocked = messageUIMethodsRef?.current?.markMessageBlocked;
 
-  // Remove optimistic messages that match the blocked text
+  // Find message IDs to mark as blocked by searching messages
+  const messageIdsToBlock = [];
+
+  // Mark optimistic messages that match the blocked text as "blocked" or "pending_mediation"
+  // Keep them visible on sender's side - DON'T remove them
   setMessages(prev => {
-    return prev.filter(msg => {
+    return prev.map(msg => {
       if (msg.isOptimistic && coaching.originalText) {
         const msgEmail = getMessageEmail(msg);
         if (msg.text === coaching.originalText && msgEmail === normalizedCurrentEmail) {
-          console.log(`[${eventName}] Removing optimistic message:`, msg.id);
-          return false; // Remove this message
+          console.log(`[${eventName}] Marking message as blocked (pending mediation):`, msg.id);
+          messageIdsToBlock.push(msg.id);
+          // Mark message as blocked but keep it visible
+          return {
+            ...msg,
+            status: 'blocked', // or 'pending_mediation'
+            isBlocked: true,
+            needsMediation: true,
+          };
         }
       }
-      return true; // Keep this message
+      return msg; // Keep other messages unchanged
     });
   });
 
-  // Remove from pending messages and update status
+  // Update status for blocked messages - keep them in pending messages
   // Use useMessageUI method if available, otherwise use legacy setters
-  if (messageIdsToRemove.length > 0) {
-    messageIdsToRemove.forEach(messageId => {
-      if (removePendingMessage) {
-        // useMessageUI method handles both pendingMessages and messageStatuses
-        removePendingMessage(messageId);
-        console.log(`[${eventName}] Removed from pending messages via useMessageUI:`, messageId);
+  if (messageIdsToBlock.length > 0) {
+    messageIdsToBlock.forEach(messageId => {
+      if (markMessageBlocked) {
+        // useMessageUI method handles status update
+        markMessageBlocked(messageId);
+        console.log(
+          `[${eventName}] Marked message as blocked via useMessageUI (keeping visible):`,
+          messageId
+        );
       } else {
         // Legacy fallback: use setters directly
-        setPendingMessages(prev => {
-          const next = new Map(prev);
-          next.delete(messageId);
-          return next;
-        });
         setMessageStatuses(prevStatuses => {
           const nextStatuses = new Map(prevStatuses);
-          nextStatuses.delete(messageId);
+          nextStatuses.set(messageId, 'blocked'); // or 'pending_mediation'
           return nextStatuses;
         });
-        console.log(`[${eventName}] Removed from pending messages via legacy setters:`, messageId);
+        // Keep in pending messages so it stays visible
+        console.log(
+          `[${eventName}] Marked message as blocked via legacy setters (keeping visible):`,
+          messageId
+        );
       }
     });
   }

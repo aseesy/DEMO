@@ -79,7 +79,7 @@ export function ChatHeader({
 
   return (
     <div
-      className="sticky top-0 md:hidden z-20 bg-white border-b border-gray-200 px-3 sm:px-4 py-2 flex items-center gap-2"
+      className="sticky top-0 md:hidden z-20 bg-white border-b border-gray-200 px-4 sm:px-6 py-2 flex items-center gap-2"
       style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}
     >
       {/* Search Bar */}
@@ -88,7 +88,7 @@ export function ChatHeader({
         style={{ width: '100%', maxWidth: '100%' }}
       >
         <svg
-          className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -105,17 +105,22 @@ export function ChatHeader({
           value={searchQuery || ''}
           onChange={handleSearchChange}
           placeholder={getPlaceholder()}
-          className="w-full pl-12 pr-10 py-3 border border-gray-200 rounded-full bg-white/90 focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-base text-gray-900 placeholder-gray-400 min-h-[44px] shadow-sm"
+          className="w-full pl-12 pr-12 border border-gray-200 rounded-full bg-white/90 focus:outline-none focus:border-teal-dark focus:ring-1 focus:ring-teal-dark text-base text-gray-900 placeholder-gray-400 min-h-[32px] shadow-sm transition-all"
+          style={{
+            paddingTop: '0.375rem',
+            paddingBottom: '0.375rem',
+            lineHeight: '1.5',
+          }}
         />
         {searchQuery && (
           <button
             type="button"
             onClick={handleClearSearch}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-dark p-1 rounded hover:bg-gray-50"
+            className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-dark p-0.5 rounded hover:bg-gray-50"
             aria-label="Clear search"
           >
             <svg
-              className="w-5 h-5"
+              className="w-3.5 h-3.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

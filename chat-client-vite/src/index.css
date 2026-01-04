@@ -315,6 +315,29 @@ textarea {
   }
 }
 
+/* Responsive design improvements */
+@media (max-width: 640px) {
+  /* Extra small screens: reduce padding */
+  .px-4 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  /* Tablet and up: ensure proper spacing */
+  .max-w-3xl {
+    max-width: 48rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Desktop: larger max-widths for better readability */
+  .max-w-3xl {
+    max-width: 48rem;
+  }
+}
+
 /* Toast Notification Styles (WhatsApp-like) */
 .toast-container {
   position: fixed;

@@ -42,6 +42,10 @@ const promptBuilder = require('./promptBuilder');
 const responseProcessor = require('./responseProcessor');
 const aiService = require('./aiService');
 const { handleAnalysisError, safeExecute } = require('./mediatorErrors');
+const {
+  generateHumanUnderstanding,
+  formatUnderstandingForPrompt,
+} = require('./humanUnderstanding');
 
 /**
  * Create a new conversation context
@@ -63,7 +67,7 @@ function createConversationContext() {
 
 /**
  * AI Mediator Class
- * 
+ *
  * Each instance has its own conversationContext, preventing state leakage between rooms.
  */
 class AIMediator {
@@ -122,7 +126,9 @@ class AIMediator {
     // === CACHE CHECK ===
     const senderId = roleContext?.senderId || message.username;
     const receiverId =
-      roleContext?.receiverId || participantUsernames.find(u => u !== message.username) || 'unknown';
+      roleContext?.receiverId ||
+      participantUsernames.find(u => u !== message.username) ||
+      'unknown';
     const hash = messageCache.generateHash(message.text, senderId, receiverId);
     const cachedResult = messageCache.get(hash);
 
@@ -188,7 +194,9 @@ class AIMediator {
       // === LANGUAGE ANALYSIS ===
       let languageAnalysis = null;
       if (libs.languageAnalyzer) {
-        const childNames = existingContacts.filter(c => c.relationship === 'child').map(c => c.name);
+        const childNames = existingContacts
+          .filter(c => c.relationship === 'child')
+          .map(c => c.name);
 
         languageAnalysis = libs.languageAnalyzer.analyze(message.text, { childNames });
         console.log(`📊 Language Analysis: ${languageAnalysis.summary.length} observations`);
@@ -220,6 +228,39 @@ class AIMediator {
       );
       const insightsString = promptBuilder.formatInsightsForPrompt(insights);
 
+      // === GENERATE HUMAN UNDERSTANDING ===
+      // Generate deep insights about human nature, psychology, and relationships
+      // This creates understanding FIRST, which informs impactful responses
+      // Wrap in timeout to prevent blocking message processing
+      let humanUnderstanding = null;
+      try {
+        const understandingPromise = generateHumanUnderstanding({
+          messageText: message.text,
+          senderDisplayName: contexts.senderDisplayName,
+          receiverDisplayName: contexts.receiverDisplayName,
+          messageHistory: contexts.messageHistory,
+          relationshipContext: contexts.contactContextForAI || '',
+          senderProfile: contexts.profileContext?.sender || null,
+          receiverProfile: contexts.profileContext?.receiver || null,
+          roleContext,
+        });
+
+        // Add timeout: if it takes more than 5 seconds, skip it
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Human understanding timeout')), 5000)
+        );
+
+        humanUnderstanding = await Promise.race([understandingPromise, timeoutPromise]);
+      } catch (error) {
+        // Non-critical: log but continue without understanding
+        console.warn('⚠️ Human Understanding: Skipped due to error or timeout:', error.message);
+        humanUnderstanding = null;
+      }
+
+      const humanUnderstandingString = humanUnderstanding
+        ? formatUnderstandingForPrompt(humanUnderstanding)
+        : '';
+
       // === CHECK COMMENT FREQUENCY ===
       const lastCommentTime = roomId ? this.conversationContext.lastCommentTime.get(roomId) : null;
       const timeSinceLastComment = lastCommentTime ? Date.now() - lastCommentTime : Infinity;
@@ -244,6 +285,7 @@ class AIMediator {
         interventionLearningSection: contexts.interventionLearningSection,
         roleAwarePromptSection: contexts.roleAwarePromptSection,
         insightsString,
+        humanUnderstandingString,
         taskContextForAI: contexts.taskContextForAI,
         flaggedMessagesContext: contexts.flaggedMessagesContext,
       });

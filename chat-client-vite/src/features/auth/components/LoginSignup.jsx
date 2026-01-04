@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 // Direct imports to avoid circular dependency with ../index.js
 import { useAuth } from '../model/useAuth.js';
 import { useAuthRedirect } from '../model/useAuthRedirect.js';
@@ -33,8 +33,14 @@ import {
  * - If user has invite token: redirects to /accept-invite for proper flow
  * - After signup (no invite): redirects to /invite-coparent page
  */
-export function LoginSignup() {
-  const [isLoginMode, setIsLoginMode] = React.useState(true);
+export function LoginSignup({ defaultToSignup = false }) {
+  const location = useLocation();
+  // Default to signup if: prop is true, or route is /signup, or URL has ?mode=signup
+  const shouldDefaultToSignup =
+    defaultToSignup ||
+    location.pathname === '/signup' ||
+    new URLSearchParams(location.search).get('mode') === 'signup';
+  const [isLoginMode, setIsLoginMode] = React.useState(!shouldDefaultToSignup);
   const [isNewSignup, setIsNewSignup] = React.useState(false);
 
   const {
@@ -97,19 +103,23 @@ export function LoginSignup() {
   }, [setError]);
 
   const handleSubmit = async e => {
-    console.log('[LoginSignup] handleSubmit called', { 
-      eventType: e?.type, 
-      isLoginMode, 
-      email: email ? '***' : 'empty', 
+    console.log('[LoginSignup] handleSubmit called', {
+      eventType: e?.type,
+      isLoginMode,
+      email: email ? '***' : 'empty',
       password: password ? '***' : 'empty',
-      isSubmitting 
+      isSubmitting,
     });
-    
+
     e.preventDefault();
     e.stopPropagation();
     setError('');
 
-    console.log('[LoginSignup] Form submitted', { isLoginMode, email: email ? '***' : 'empty', password: password ? '***' : 'empty' });
+    console.log('[LoginSignup] Form submitted', {
+      isLoginMode,
+      email: email ? '***' : 'empty',
+      password: password ? '***' : 'empty',
+    });
 
     // Get honeypot field value for spam protection
     const honeypotValue = e.target.elements.website?.value || '';
@@ -118,12 +128,20 @@ export function LoginSignup() {
       if (isLoginMode) {
         console.log('[LoginSignup] Calling handleLogin');
         const result = await handleLogin(e, { website: honeypotValue });
-        console.log('[LoginSignup] Login result:', result?.success ? 'success' : 'failed', result?.error);
+        console.log(
+          '[LoginSignup] Login result:',
+          result?.success ? 'success' : 'failed',
+          result?.error
+        );
       } else {
         setIsNewSignup(true);
         console.log('[LoginSignup] Calling handleSignup');
         const result = await handleSignup(e, { website: honeypotValue });
-        console.log('[LoginSignup] Signup result:', result?.success ? 'success' : 'failed', result?.error);
+        console.log(
+          '[LoginSignup] Signup result:',
+          result?.success ? 'success' : 'failed',
+          result?.error
+        );
       }
     } catch (err) {
       console.error('[LoginSignup] Error in handleSubmit:', err);
@@ -145,7 +163,16 @@ export function LoginSignup() {
       email: email ? '***' : 'empty',
       password: password ? '***' : 'empty',
     });
-  }, [isCheckingAuth, isAuthenticated, isSubmitting, isLoggingIn, isSigningUp, isGoogleLoggingIn, email, password]);
+  }, [
+    isCheckingAuth,
+    isAuthenticated,
+    isSubmitting,
+    isLoggingIn,
+    isSigningUp,
+    isGoogleLoggingIn,
+    email,
+    password,
+  ]);
 
   // Show loading while checking auth status or after successful auth (before redirect)
   if (isCheckingAuth || isAuthenticated) {
@@ -280,12 +307,12 @@ export function LoginSignup() {
             disabled={isSubmitting}
             loading={isLoggingIn || isSigningUp}
             className="mt-6 transition-all hover:shadow-lg"
-            onClick={(e) => {
-              console.log('[LoginSignup] Button clicked directly', { 
-                type: e.type, 
+            onClick={e => {
+              console.log('[LoginSignup] Button clicked directly', {
+                type: e.type,
                 defaultPrevented: e.defaultPrevented,
                 isSubmitting,
-                disabled: isSubmitting
+                disabled: isSubmitting,
               });
               // Don't prevent default - let form submission work naturally
               // But ensure form is submitted if button click happens

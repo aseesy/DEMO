@@ -52,7 +52,14 @@ fi
 
 cd ..
 
-# 4. Summary
+# 4. Check Railway port configuration reminder
+echo ""
+echo "📋 Step 4: Railway configuration reminder..."
+echo -e "${YELLOW}⚠️  REMINDER: Verify Railway Target Port = 3000${NC}"
+echo "   Railway Dashboard → Settings → Networking → Target Port"
+echo ""
+
+# 5. Summary
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if [ "$FAILED" -eq "0" ]; then
