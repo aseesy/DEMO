@@ -16,14 +16,16 @@ class ThreadService {
   }
 
   setupSubscriptions() {
-    socketService.subscribe('threads', this.handleThreads.bind(this));
+    // Backend emits 'threads_list' for full list, 'thread_created' for delta
+    socketService.subscribe('threads_list', this.handleThreads.bind(this));
     socketService.subscribe('thread_created', this.handleThreadCreated.bind(this));
     socketService.subscribe('thread_messages', this.handleThreadMessages.bind(this));
     socketService.subscribe('disconnect', this.handleDisconnect.bind(this));
   }
 
   handleThreads(data) {
-    this.threads = data.threads || [];
+    // Backend sends threads directly (not wrapped in {threads: []})
+    this.threads = Array.isArray(data) ? data : data.threads || [];
     this.notify();
   }
 
