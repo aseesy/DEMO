@@ -14,25 +14,41 @@ export function generateOAuthState() {
 }
 
 /**
- * Store OAuth state in sessionStorage
+ * Store OAuth state in both sessionStorage and localStorage
+ * Using both provides resilience against Safari ITP clearing sessionStorage
  * @param {string} state - State parameter
  */
 export function storeOAuthState(state) {
+  const timestamp = Date.now().toString();
+  // Store in both for resilience (Safari ITP can clear sessionStorage during redirects)
   sessionStorage.setItem('oauth_state', state);
-  // Store timestamp for expiration check (10 minutes)
-  sessionStorage.setItem('oauth_state_timestamp', Date.now().toString());
+  sessionStorage.setItem('oauth_state_timestamp', timestamp);
+  localStorage.setItem('oauth_state', state);
+  localStorage.setItem('oauth_state_timestamp', timestamp);
 }
 
 /**
  * Validate OAuth state parameter
+ * Checks both sessionStorage and localStorage for resilience
  * @param {string} receivedState - State received from OAuth callback
  * @returns {boolean} True if state is valid
  */
 export function validateOAuthState(receivedState) {
-  const storedState = sessionStorage.getItem('oauth_state');
-  const timestamp = sessionStorage.getItem('oauth_state_timestamp');
+  // Try sessionStorage first, fall back to localStorage (Safari ITP resilience)
+  let storedState = sessionStorage.getItem('oauth_state');
+  let timestamp = sessionStorage.getItem('oauth_state_timestamp');
+
+  // Fall back to localStorage if sessionStorage was cleared
+  if (!storedState || !timestamp) {
+    storedState = localStorage.getItem('oauth_state');
+    timestamp = localStorage.getItem('oauth_state_timestamp');
+    if (storedState && timestamp) {
+      console.log('[OAuth] State recovered from localStorage (sessionStorage was cleared)');
+    }
+  }
 
   if (!storedState || !timestamp) {
+    console.warn('[OAuth] No stored state found in sessionStorage or localStorage');
     return false;
   }
 
@@ -40,6 +56,7 @@ export function validateOAuthState(receivedState) {
   const age = Date.now() - parseInt(timestamp, 10);
   if (age > 10 * 60 * 1000) {
     // State expired
+    console.warn('[OAuth] State expired after', Math.round(age / 1000), 'seconds');
     clearOAuthState();
     return false;
   }
@@ -47,6 +64,12 @@ export function validateOAuthState(receivedState) {
   // Check if states match
   if (storedState !== receivedState) {
     // State mismatch - potential CSRF attack
+    console.warn(
+      '[OAuth] State mismatch - stored:',
+      storedState?.substring(0, 8),
+      'received:',
+      receivedState?.substring(0, 8)
+    );
     clearOAuthState();
     return false;
   }
@@ -55,11 +78,13 @@ export function validateOAuthState(receivedState) {
 }
 
 /**
- * Clear OAuth state from sessionStorage
+ * Clear OAuth state from both sessionStorage and localStorage
  */
 export function clearOAuthState() {
   sessionStorage.removeItem('oauth_state');
   sessionStorage.removeItem('oauth_state_timestamp');
+  localStorage.removeItem('oauth_state');
+  localStorage.removeItem('oauth_state_timestamp');
 }
 
 /**
