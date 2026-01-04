@@ -84,6 +84,7 @@ const FRONTEND_URLS = (
 const PRODUCTION_DOMAINS = [
   'coparentliaizen.com',
   'www.coparentliaizen.com',
+  'app.coparentliaizen.com',
   'vercel.app',
   'railway.app',
 ];

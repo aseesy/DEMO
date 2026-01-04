@@ -45,6 +45,7 @@ function setupGlobalMiddleware(app) {
             '*.vercel.app',
             'https://coparentliaizen.com',
             'https://www.coparentliaizen.com',
+            'https://app.coparentliaizen.com',
           ],
           fontSrc: ["'self'", 'https:'],
           objectSrc: ["'none'"],
