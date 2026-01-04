@@ -3,7 +3,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "chat-client-vite/dist",
   "installCommand": "npm ci",
-  "framework": null,
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/(.*)",
