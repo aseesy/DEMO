@@ -112,11 +112,21 @@ jobs:
       
       - name: Run npm audit (Backend)
         working-directory: ./chat-server
-        run: npm audit --audit-level=moderate || true
+        run: |
+          npm audit --audit-level=moderate || {
+            echo "⚠️ Security vulnerabilities found. Review audit output above."
+            echo "This is a warning, not a failure. Fix high/critical issues before merging."
+          }
+        continue-on-error: true
       
       - name: Run npm audit (Frontend)
         working-directory: ./chat-client-vite
-        run: npm audit --audit-level=moderate || true
+        run: |
+          npm audit --audit-level=moderate || {
+            echo "⚠️ Security vulnerabilities found. Review audit output above."
+            echo "This is a warning, not a failure. Fix high/critical issues before merging."
+          }
+        continue-on-error: true
       
       - name: Check for secrets
         uses: trufflesecurity/trufflehog@main
@@ -147,9 +157,17 @@ jobs:
       - name: Check bundle size
         working-directory: ./chat-client-vite
         run: |
-          SIZE=$(du -sh dist | cut -f1)
-          echo "📦 Bundle size: $SIZE"
-          # Add size check logic here if needed
+          if [ -d "dist" ]; then
+            if command -v du >/dev/null 2>&1; then
+              SIZE=$(du -sh dist | cut -f1)
+              echo "📦 Bundle size: $SIZE"
+            else
+              echo "📦 Bundle size: dist directory exists (size calculation unavailable)"
+            fi
+          else
+            echo "⚠️ dist directory not found"
+            exit 1
+          fi
 
   python-sdd:
     name: Python SDD Quality Checks
