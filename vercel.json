@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "buildCommand": "cd chat-client-vite && npm run build",
-  "installCommand": "cd chat-client-vite && npm ci",
+  "installCommand": "cd chat-client-vite && HUSKY=0 npm ci",
   "outputDirectory": "chat-client-vite/dist",
   "rewrites": [
     {
