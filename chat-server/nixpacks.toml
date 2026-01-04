@@ -5,7 +5,8 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm ci --legacy-peer-deps"]
+# Use npm install instead of npm ci to handle workspace/lock file sync issues
+cmds = ["npm install --legacy-peer-deps"]
 
 [start]
 cmd = "node server.js"

@@ -21,7 +21,6 @@ import {
   storeOAuthState,
   validateOAuthState,
   clearOAuthState,
-  detectPopupBlocker,
 } from '../../../utils/oauthHelper.js';
 import { storage, StorageKeys, authStorage } from '../../../adapters/storage';
 import { tokenManager } from '../../../utils/tokenManager.js';
@@ -31,21 +30,17 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
   const [isGoogleLoggingIn, setIsGoogleLoggingIn] = React.useState(false);
 
   const handleGoogleLogin = React.useCallback(async () => {
+    console.log('[useGoogleAuth] handleGoogleLogin called');
     setError('');
     setIsGoogleLoggingIn(true);
 
     try {
-      const isBlocked = await detectPopupBlocker();
-      if (isBlocked) {
-        const errorInfo = getErrorMessage({ code: 'popup_blocked' });
-        setError(errorInfo.userMessage);
-        setIsGoogleLoggingIn(false);
-        return { success: false, error: errorInfo, action: 'allow_popups' };
-      }
-
+      // Note: We use redirect flow (window.location.href), not popups
+      // Popup blocker check removed as it's not needed for redirects
       const state = generateOAuthState();
       storeOAuthState(state);
 
+      console.log('[useGoogleAuth] Making API call to /api/auth/google');
       const response = await retryWithBackoff(
         () => apiGet(`/api/auth/google?state=${encodeURIComponent(state)}`),
         {
@@ -58,8 +53,10 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
           },
         }
       );
+      console.log('[useGoogleAuth] API response status:', response.status);
 
       const data = await response.json();
+      console.log('[useGoogleAuth] API response data:', data);
 
       if (!response.ok) {
         const errorInfo = getErrorMessage(data, {
@@ -84,6 +81,7 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
         ? data.authUrl
         : `${data.authUrl}&state=${encodeURIComponent(state)}`;
 
+      console.log('[useGoogleAuth] Redirecting to:', authUrlWithState);
       window.location.href = authUrlWithState;
       return { success: true, redirecting: true };
     } catch (err) {

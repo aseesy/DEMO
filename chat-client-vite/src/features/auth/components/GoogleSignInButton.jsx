@@ -38,6 +38,15 @@ function GoogleIcon() {
  * @param {boolean} props.loading - Whether button is loading
  */
 export function GoogleSignInButton({ onClick, disabled = false, loading = false }) {
+  const handleClick = () => {
+    console.log('[GoogleSignInButton] Button clicked, disabled:', disabled, 'loading:', loading);
+    if (onClick) {
+      onClick();
+    } else {
+      console.error('[GoogleSignInButton] onClick handler is undefined!');
+    }
+  };
+
   return (
     <div className="mt-8">
       <div className="relative">
@@ -51,7 +60,7 @@ export function GoogleSignInButton({ onClick, disabled = false, loading = false 
 
       <Button
         type="button"
-        onClick={onClick}
+        onClick={handleClick}
         disabled={disabled}
         loading={loading}
         fullWidth
