@@ -96,14 +96,14 @@ You need to:
    - **Name:** `LiaiZen Google Sign-In` or `LiaiZen OAuth Client`
    - **Authorized JavaScript origins:**
      - `http://localhost:3000` (for local development)
-     - `https://coparentliaizen.com` (for production)
-     - `https://www.coparentliaizen.com` (for www subdomain)
-     - If using Vercel preview deployments, you can add: `https://*.vercel.app` (but individual domains are better)
+     - `https://app.coparentliaizen.com` (for production app)
+     - `https://coparentliaizen.com` (for landing page)
    - **Authorized redirect URIs:**
      - `http://localhost:3000/auth/google/callback` (for local development)
-     - `https://coparentliaizen.com/auth/google/callback` (for production)
-     - `https://www.coparentliaizen.com/auth/google/callback` (for www subdomain)
+     - `https://app.coparentliaizen.com/auth/google/callback` (for production)
    - Click "Create"
+
+   **Note:** The app lives at `app.coparentliaizen.com`, while the landing page is at `coparentliaizen.com`. OAuth redirects go to the app subdomain.
 
 4. **Save Your Credentials:**
    - **⚠️ IMPORTANT:** Copy these values immediately!
@@ -122,8 +122,9 @@ Add these variables to your `chat-server/.env` file:
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 
-# Frontend URL (for OAuth redirect)
-FRONTEND_URL=http://localhost:3000
+# App URL (for OAuth redirect)
+APP_URL=http://localhost:3000
+GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
 ```
 
 ### For Railway (Production Backend):
@@ -142,8 +143,11 @@ FRONTEND_URL=http://localhost:3000
    - **Name:** `GOOGLE_CLIENT_SECRET`
    - **Value:** Your Client Secret from Step 4
    - Click "Add"
-   - **Name:** `FRONTEND_URL`
-   - **Value:** `https://coparentliaizen.com,https://www.coparentliaizen.com`
+   - **Name:** `APP_URL`
+   - **Value:** `https://app.coparentliaizen.com`
+   - Click "Add"
+   - **Name:** `GOOGLE_REDIRECT_URI`
+   - **Value:** `https://app.coparentliaizen.com/auth/google/callback`
    - Click "Add"
 
 3. **Redeploy:**
@@ -179,11 +183,12 @@ FRONTEND_URL=http://localhost:3000
 ### Production Testing:
 
 1. **Make sure your domain is configured:**
-   - `coparentliaizen.com` should point to Vercel
-   - Railway backend should have `FRONTEND_URL` set correctly
+   - `app.coparentliaizen.com` should point to Vercel (the app)
+   - `coparentliaizen.com` should point to Vercel (the landing page)
+   - Railway backend should have `APP_URL` and `GOOGLE_REDIRECT_URI` set correctly
 
 2. **Test on production:**
-   - Visit: https://coparentliaizen.com
+   - Visit: https://app.coparentliaizen.com
    - Click "Sign in with Google"
    - Complete the sign-in flow
 
@@ -199,8 +204,9 @@ FRONTEND_URL=http://localhost:3000
 
 - **Check:** Make sure the redirect URI in Google Cloud Console matches exactly:
   - Local: `http://localhost:3000/auth/google/callback`
-  - Production: `https://coparentliaizen.com/auth/google/callback`
-- **Note:** The redirect URI must match exactly (including `http://` vs `https://`)
+  - Production: `https://app.coparentliaizen.com/auth/google/callback`
+- **Check:** Make sure Railway has `GOOGLE_REDIRECT_URI=https://app.coparentliaizen.com/auth/google/callback`
+- **Note:** The redirect URI must match exactly (including `http://` vs `https://` and the exact subdomain)
 
 ### "Access blocked: This app's request is invalid" Error
 
@@ -222,8 +228,9 @@ FRONTEND_URL=http://localhost:3000
    - If using the same client, make sure all required scopes are added
 
 2. **Redirect URIs:**
-   - Redirect URIs must match your frontend domains (Vercel), not your backend (Railway)
-   - Google redirects users back to your frontend, which then sends the code to your backend
+   - Redirect URIs must match your app domain (`app.coparentliaizen.com`), not the landing page or backend
+   - Google redirects users back to your app, which then completes authentication via the backend
+   - The app and landing page are separate: `app.coparentliaizen.com` vs `coparentliaizen.com`
 
 3. **Environment Variables:**
    - Never commit `.env` files to Git
