@@ -40,6 +40,16 @@ Transform high-tension co-parenting exchanges into respectful, child-centered di
 - **Email**: Nodemailer with Gmail integration
 - **Deployment**: Railway
 
+### **Marketing Site** (`marketing-site/`) - Separate Project
+
+- **Framework**: React 19+ with Vite
+- **Purpose**: Landing page and blog content (SEO, marketing)
+- **Deployment**: Separate Vercel project
+- **Domain**: `www.coparentliaizen.com`
+- **Port**: 5174 (development)
+
+> **Note:** The marketing site is **intentionally excluded** from the monorepo workspace structure. It's a separate project that requires its own `npm install` in the `marketing-site/` directory. This allows independent deployment and development. See `marketing-site/README.md` for setup instructions.
+
 ### **LiaiZen AI System** (`chat-server/src/liaizen/`)
 
 - **Core**: Main mediation pipeline (`core/mediator.js`) and AI client (`core/client.js`)

@@ -42,11 +42,38 @@ This document lists all available commands in the LiaiZen project, organized by 
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 
-### Marketing Site
+### Marketing Site (Separate Project)
 
-- `npm run dev` - Start Vite development server
+> **⚠️ Important:** The marketing site is a **separate project** and is **not** part of the monorepo workspace structure. It requires separate setup.
+
+#### Setup (First Time)
+
+```bash
+cd marketing-site
+npm install
+```
+
+#### Development Commands
+
+Run these commands from the `marketing-site/` directory:
+
+- `npm run dev` - Start Vite development server (port 5174)
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier
+
+#### Deployment
+
+Deployed separately to Vercel as an independent project.  
+See: `docs/deployment/VERCEL_MARKETING_SITE_SETUP.md`
+
+**Why Separate?**
+
+- Independent deployment cycle
+- Different domain (`www.coparentliaizen.com` vs `app.coparentliaizen.com`)
+- No shared dependencies with main app
+- Faster content updates without affecting app
 
 ### Process Management (Advanced)
 
@@ -107,7 +134,7 @@ This document lists all available commands in the LiaiZen project, organized by 
 
 - `npm run test:shutdown` - Test graceful shutdown
 - `npm run test:shutdown:kill` - Test shutdown with kill signal
-- `npm run verify:production` - Verify production deployment
+- `npm run test:production` - Test production deployment
 - `npm run test:deploy` - Test Git/Vercel deployment
 
 ---
@@ -153,12 +180,14 @@ This document lists all available commands in the LiaiZen project, organized by 
 - `npm run validate:env` - Validate environment variables
 - `npm run validate:railway` - Validate Railway environment
 
-### Code Analysis (chat-server)
+### Code Analysis (chat-server workspace)
 
-- `npm run scan:duplication` - Scan for code duplication
-- `npm run scan:dependencies` - Scan for circular dependencies
-- `npm run scan:dependency-graph` - Generate dependency graph
-- `npm run scan:all` - Run all scans
+> **Note:** These commands are in the `chat-server` workspace. Use workspace syntax: `npm run <command> -w chat-server` or run from the `chat-server` directory.
+
+- `npm run scan:duplication -w chat-server` - Scan for code duplication
+- `npm run scan:dependencies -w chat-server` - Scan for circular dependencies
+- `npm run scan:dependency-graph -w chat-server` - Generate dependency graph
+- `npm run scan:all -w chat-server` - Run all scans
 
 ---
 
@@ -327,7 +356,7 @@ npm test                 # Run tests
 npm run preflight        # Preflight checks
 npm run test:coverage    # Full test coverage
 npm run build            # Build everything
-npm run verify:production # Verify production
+npm run test:production # Test production deployment
 ```
 
 ### Database Management
