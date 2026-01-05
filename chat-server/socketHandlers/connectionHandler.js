@@ -51,9 +51,17 @@ function registerConnectionHandlers(socket, io, services) {
       roomMembers: result.roomMembers,
     });
 
-    // Trigger thread analysis (non-blocking)
+    // Note: Thread analysis is now triggered automatically in JoinSocketRoomUseCase
+    // when the room is resolved. This ensures analysis runs even if join event is not explicitly emitted.
+    // Keeping this as a fallback for backwards compatibility, but it should be redundant now.
     if (services.threadManager) {
-      maybeAnalyzeRoomOnJoin(io, result.roomId, services.threadManager);
+      console.log(
+        `[ConnectionHandler] 🔍 DEBUG: Analysis should already be triggered in use case, but keeping fallback for room ${result.roomId}`
+      );
+      // Analysis is now automatic in JoinSocketRoomUseCase - this is just a fallback
+      maybeAnalyzeRoomOnJoin(io, result.roomId, services.threadManager).catch(err => {
+        console.error('[ConnectionHandler] Fallback analysis failed (non-fatal):', err.message);
+      });
     }
   });
 

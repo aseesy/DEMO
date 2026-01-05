@@ -8,7 +8,7 @@
  */
 
 const { BaseService } = require('../BaseService');
-const { NotFoundError, ValidationError, ConflictError } = require('../errors');
+const { NotFoundError, ValidationError } = require('../errors');
 const { PostgresRoomRepository } = require('../../repositories');
 // Note: db is required here for passing to external library (pairingManager)
 const db = require('../../../dbPostgres');
@@ -347,6 +347,8 @@ class RoomService extends BaseService {
     }
 
     // Delegate to use case - all orchestration happens there
+    // Get threadManager from services if available (for automatic analysis)
+    const services = require('../../infrastructure/initialization/serviceLoader').loadServices();
     return joinSocketRoomUseCase({
       userIdentifier,
       socketId,
@@ -355,6 +357,7 @@ class RoomService extends BaseService {
       roomManager: this.roomManager,
       userSessionService: this.userSessionService,
       db: this.db,
+      threadManager: services.threadManager, // Pass threadManager for automatic analysis
     });
   }
 }

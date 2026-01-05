@@ -47,6 +47,7 @@ async function execute({
   roomManager,
   userSessionService,
   db,
+  threadManager, // Optional - for automatic thread analysis
 }) {
   // Validate dependencies
   if (!auth) {
@@ -102,6 +103,18 @@ async function execute({
   const { roomId, roomName } = room;
   user.room = { roomId, roomName };
   user.roomId = roomId;
+
+  // Step 3.5: Trigger thread analysis automatically (non-blocking)
+  // Users stay in their room - analysis should run automatically when room is resolved
+  if (threadManager && io) {
+    const { maybeAnalyzeRoomOnJoin } = require('../../../../socketHandlers/threadHandler');
+    // Run in background - don't block join flow
+    setImmediate(() => {
+      maybeAnalyzeRoomOnJoin(io, roomId, threadManager).catch(err => {
+        console.error('[JoinSocketRoomUseCase] Thread analysis failed (non-fatal):', err.message);
+      });
+    });
+  }
 
   // Step 4: Handle duplicates and register session
   const disconnectedSocketIds = await userSessionService.disconnectDuplicates(
