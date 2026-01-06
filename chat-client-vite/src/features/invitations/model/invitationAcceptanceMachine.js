@@ -54,33 +54,38 @@ export const createInvitationAcceptanceContext = (initial = {}) => ({
 
 /**
  * Invitation Acceptance State Machine (XState v5)
+ *
+ * @typedef {ReturnType<typeof createInvitationAcceptanceContext>} Context
+ * @typedef {(
+ *   | { type: 'CONFIRM_INVITER' }
+ *   | { type: 'REJECT_INVITER' }
+ *   | { type: 'UPDATE_FIELD'; field: string; value: any }
+ *   | { type: 'SUBMIT' }
+ *   | { type: 'GOOGLE_LOGIN' }
+ *   | { type: 'RETRY' }
+ *   | { type: 'GO_TO_SIGNUP' }
+ * )} Events
  */
 export const invitationAcceptanceMachine = setup({
   types: {
-    context: {} as ReturnType<typeof createInvitationAcceptanceContext>,
-    events: {} as
-      | { type: 'CONFIRM_INVITER' }
-      | { type: 'REJECT_INVITER' }
-      | { type: 'UPDATE_FIELD'; field: string; value: any }
-      | { type: 'SUBMIT' }
-      | { type: 'GOOGLE_LOGIN' }
-      | { type: 'RETRY' }
-      | { type: 'GO_TO_SIGNUP' },
+    // JSDoc types defined above - XState v5 will infer from usage
+    context: {},
+    events: {},
   },
   guards: {
-    hasShortCodeAndNotConfirmed: ({ context }) => {
-      return (
-        context.shortCode &&
-        context.validationResult?.valid &&
-        !context.confirmedInviter
-      );
+    hasShortCodeAndNotConfirmed: ({ context, event }) => {
+      // Check event output since guards run before actions set context
+      const result = event.output || event;
+      return context.shortCode && result?.valid === true && !context.confirmedInviter;
     },
     isAuthenticated: ({ context }) => {
       // Check if authenticated from context (set from input)
       return context.isAuthenticated === true;
     },
-    isValidInvitation: ({ context }) => {
-      return context.validationResult?.valid === true;
+    isValidInvitation: ({ event }) => {
+      // Check event output since guards run before actions set context
+      const result = event.output || event;
+      return result?.valid === true;
     },
     isFormValid: ({ context }) => {
       const { firstName, lastName, formEmail, formPassword, confirmPassword, agreeToTerms } =
@@ -103,16 +108,14 @@ export const invitationAcceptanceMachine = setup({
       return event.output?.code === 'ALREADY_CONNECTED';
     },
     isCoparentLimit: ({ event }) => {
-      return (
-        event.output?.code === 'COPARENT_LIMIT' ||
-        event.output?.error?.includes('limit')
-      );
+      return event.output?.code === 'COPARENT_LIMIT' || event.output?.error?.includes('limit');
     },
   },
   actors: {
     validateInvitation: fromPromise(async ({ input }) => {
-      // This will be provided by machine options
-      return input.validateInvitation(input.token, input.shortCode);
+      // Service will be provided via machine.provide()
+      // For now, return a placeholder that will be overridden
+      throw new Error('validateInvitation service not provided');
     }),
     autoAcceptInvitation: fromPromise(async ({ input }) => {
       // This will be provided by machine options
@@ -148,7 +151,6 @@ export const invitationAcceptanceMachine = setup({
         input: ({ context }) => ({
           token: context.token,
           shortCode: context.shortCode,
-          validateInvitation: context.validateInvitation,
         }),
         onDone: [
           {
@@ -258,8 +260,7 @@ export const invitationAcceptanceMachine = setup({
           {
             target: 'error',
             actions: assign({
-              autoAcceptError: ({ event }) =>
-                event.error?.message || 'Failed to accept invitation',
+              autoAcceptError: ({ event }) => event.error?.message || 'Failed to accept invitation',
             }),
           },
         ],
@@ -318,7 +319,8 @@ export const invitationAcceptanceMachine = setup({
               target: '#invitationAcceptance.success',
               actions: [
                 assign({
-                  successMessage: () => 'Account created and connected! Redirecting to your dashboard...',
+                  successMessage: () =>
+                    'Account created and connected! Redirecting to your dashboard...',
                 }),
               ],
             },

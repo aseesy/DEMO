@@ -368,12 +368,6 @@ class AIMediator {
 
       return result;
     } catch (error) {
-      // Log error for debugging (especially in tests)
-      if (process.env.NODE_ENV === 'test' || process.env.DEBUG) {
-        console.error('❌ Mediator Error:', error.message);
-        console.error('Stack:', error.stack);
-      }
-      
       // Delegate to centralized error handler
       const errorContext = {
         messageLength: typeof message === 'string' ? message.length : message?.text?.length,

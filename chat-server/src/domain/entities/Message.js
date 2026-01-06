@@ -45,7 +45,8 @@ class Message {
     if (!type || typeof type !== 'string') {
       throw new Error('Message type is required');
     }
-    if (!text || typeof text !== 'string') {
+    // Allow empty text for system messages
+    if (type !== 'system' && (!text || typeof text !== 'string')) {
       throw new Error('Message text is required');
     }
     if (!username || typeof username !== 'string') {
@@ -65,7 +66,8 @@ class Message {
     this.roomId = roomId instanceof RoomId ? roomId : new RoomId(roomId);
     this.timestamp = timestamp instanceof Date ? timestamp : new Date(timestamp);
     this.threadId = threadId;
-    this.threadSequence = threadSequence !== null && threadSequence !== undefined ? Number(threadSequence) : null;
+    this.threadSequence =
+      threadSequence !== null && threadSequence !== undefined ? Number(threadSequence) : null;
     this.originalContent = originalContent;
     this.wasMediated = wasMediated;
 
@@ -182,7 +184,7 @@ class Message {
   static fromDatabaseRow(row) {
     // Handle both username and user_email fields (migration support)
     const username = row.username || row.user_email || row.userEmail || '';
-    
+
     return new Message({
       id: row.id,
       type: row.type || 'user',
@@ -191,11 +193,12 @@ class Message {
       roomId: row.room_id || row.roomId,
       timestamp: row.timestamp,
       threadId: row.thread_id || row.threadId || null,
-      threadSequence: row.thread_sequence !== null && row.thread_sequence !== undefined 
-        ? Number(row.thread_sequence) 
-        : (row.threadSequence !== null && row.threadSequence !== undefined 
-          ? Number(row.threadSequence) 
-          : null),
+      threadSequence:
+        row.thread_sequence !== null && row.thread_sequence !== undefined
+          ? Number(row.thread_sequence)
+          : row.threadSequence !== null && row.threadSequence !== undefined
+            ? Number(row.threadSequence)
+            : null,
       originalContent: row.original_content || row.originalContent || null,
       wasMediated: row.was_mediated || row.wasMediated || false,
     });
@@ -209,7 +212,7 @@ class Message {
   static fromApiData(data) {
     // Handle both username and user_email fields (migration support)
     const username = data.username || data.user_email || data.userEmail || '';
-    
+
     return new Message({
       id: data.id || data.messageId,
       type: data.type || 'message',
@@ -218,11 +221,12 @@ class Message {
       roomId: data.roomId || data.room_id,
       timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
       threadId: data.threadId || data.thread_id || null,
-      threadSequence: data.threadSequence !== null && data.threadSequence !== undefined
-        ? Number(data.threadSequence)
-        : (data.thread_sequence !== null && data.thread_sequence !== undefined
-          ? Number(data.thread_sequence)
-          : null),
+      threadSequence:
+        data.threadSequence !== null && data.threadSequence !== undefined
+          ? Number(data.threadSequence)
+          : data.thread_sequence !== null && data.thread_sequence !== undefined
+            ? Number(data.thread_sequence)
+            : null,
       originalContent: data.originalContent || data.original_content || null,
       wasMediated: data.wasMediated || data.was_mediated || false,
     });
@@ -230,4 +234,3 @@ class Message {
 }
 
 module.exports = Message;
-

@@ -28,7 +28,7 @@ jest.mock('../preFilters', () => ({
 jest.mock('../messageCache', () => ({
   generateHash: jest.fn((text, sender, receiver) => `hash-${text}-${sender}-${receiver}`),
   get: jest.fn(),
-  set: jest.fn(),
+  set: jest.fn().mockResolvedValue(undefined), // Return a Promise so .catch() works
 }));
 
 jest.mock('../contextBuilder', () => ({
