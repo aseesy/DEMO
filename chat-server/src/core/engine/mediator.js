@@ -126,7 +126,8 @@ class AIMediator {
 
     // === CACHE CHECK ===
     // Use email as identifier (username is deprecated, set to email for backward compatibility)
-    const senderId = roleContext?.senderId || message.sender?.email || message.user_email || message.username;
+    const senderId =
+      roleContext?.senderId || message.sender?.email || message.user_email || message.username;
     const receiverId =
       roleContext?.receiverId ||
       participantUsernames.find(u => {
@@ -382,7 +383,7 @@ class AIMediator {
         throw handling.error;
       }
 
-      // Fail open - allow message through
+      // Fail open - allow message through (handling.shouldFailOpen === true)
       return null;
     }
   }

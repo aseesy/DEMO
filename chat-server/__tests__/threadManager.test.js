@@ -1,7 +1,7 @@
 /**
  * Unit Tests for Thread Manager
  * Tests thread CRUD operations, message associations, and edge cases
- * 
+ *
  * Framework: Jest
  * Coverage: threadManager.js public API
  */
@@ -64,6 +64,9 @@ jest.mock('../src/services/threads/ThreadServiceFactory', () => {
       getAnalyzeConversationUseCase: jest.fn(),
       getSuggestThreadUseCase: jest.fn(),
       getAutoAssignMessageUseCase: jest.fn(),
+      getArchiveThreadUseCase: jest.fn(),
+      getReplyInThreadUseCase: jest.fn(),
+      getMoveMessageToThreadUseCase: jest.fn(),
     },
   };
 });
@@ -80,7 +83,7 @@ describe('ThreadManager', () => {
     dbSafe.safeInsert = jest.fn();
     dbSafe.safeSelect = jest.fn();
     dbSafe.safeUpdate = jest.fn();
-    dbSafe.parseResult = jest.fn((result) => result);
+    dbSafe.parseResult = jest.fn(result => result);
     // Reset dbPostgres mock - ensure it returns a promise
     dbPostgres.query = jest.fn().mockResolvedValue({ rows: [] });
     // Reset repository mocks
@@ -147,9 +150,9 @@ describe('ThreadManager', () => {
 
       mockCreateThreadUseCase.execute.mockRejectedValue(new Error('Database error'));
 
-      await expect(
-        threadManager.createThread(roomId, title, createdBy)
-      ).rejects.toThrow('Database error');
+      await expect(threadManager.createThread(roomId, title, createdBy)).rejects.toThrow(
+        'Database error'
+      );
     });
   });
 
@@ -165,10 +168,10 @@ describe('ThreadManager', () => {
 
       const threads = await threadManager.getThreadsForRoom(roomId);
 
-      expect(mockThreadRepository.findByRoomId).toHaveBeenCalledWith(
-        roomId,
-        { includeArchived: false, limit: 10 }
-      );
+      expect(mockThreadRepository.findByRoomId).toHaveBeenCalledWith(roomId, {
+        includeArchived: false,
+        limit: 10,
+      });
       expect(threads).toEqual(mockThreads);
     });
 
@@ -179,10 +182,10 @@ describe('ThreadManager', () => {
 
       await threadManager.getThreadsForRoom(roomId, true);
 
-      expect(mockThreadRepository.findByRoomId).toHaveBeenCalledWith(
-        roomId,
-        { includeArchived: true, limit: 10 }
-      );
+      expect(mockThreadRepository.findByRoomId).toHaveBeenCalledWith(roomId, {
+        includeArchived: true,
+        limit: 10,
+      });
     });
 
     it('should return empty array on error', async () => {
@@ -418,4 +421,3 @@ describe('ThreadManager', () => {
     });
   });
 });
-

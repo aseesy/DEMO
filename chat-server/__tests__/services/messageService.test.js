@@ -83,13 +83,25 @@ describe('MessageService', () => {
         threadSequence: 1,
       };
 
-      dbPostgres.query.mockResolvedValue({
-        rows: [threadedMessage],
-      });
+      // Mock the thread validation query (first call)
+      // Then mock the message insert query (second call)
+      dbPostgres.query
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'thread-789',
+              room_id: 'room-456', // Must match message roomId
+              is_archived: 0,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [threadedMessage],
+        });
 
       await messageService.createMessage(threadedMessage, testUserEmail);
 
-      expect(dbPostgres.query).toHaveBeenCalled();
+      expect(dbPostgres.query).toHaveBeenCalledTimes(2);
     });
 
     it('should throw error when database fails', async () => {

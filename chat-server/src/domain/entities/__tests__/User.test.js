@@ -4,7 +4,7 @@
  * Tests for User domain entity business rules and methods.
  */
 
-const { User } = require('../User');
+const User = require('../User');
 const { Email } = require('../../valueObjects/Email');
 const { Username } = require('../../valueObjects/Username');
 
@@ -288,4 +288,3 @@ describe('User Entity', () => {
     });
   });
 });
-

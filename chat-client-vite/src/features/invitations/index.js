@@ -22,3 +22,4 @@ export { usePairing } from './model/usePairing.js';
 
 // Components (The UI Details)
 export { InviteTaskModal } from './components/InviteTaskModal.jsx';
+export { InvitationManager } from './components/InvitationManager.jsx';

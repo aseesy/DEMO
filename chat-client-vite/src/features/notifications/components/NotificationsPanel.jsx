@@ -67,7 +67,7 @@ export function NotificationsPanel({ isOpen, onClose, onInvitationAccepted }) {
 
       {/* Panel */}
       <div
-        className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border-2 border-gray-200 z-50 overflow-hidden"
+        className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-sm bg-white rounded-2xl shadow-xl border-2 border-gray-200 z-50 overflow-hidden"
         role="dialog"
         aria-label="Notifications"
       >

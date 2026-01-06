@@ -5,8 +5,6 @@
  * These functions have single responsibilities and are easily testable.
  */
 
-/* global jest, describe, beforeEach, afterEach, it, expect */
-
 const {
   validateMessageText,
   validateActiveUser,
@@ -102,37 +100,37 @@ describe('messageOperations', () => {
   });
 
   describe('validateActiveUser', () => {
-    it('should return valid result when user exists', () => {
+    it('should return valid result when user exists', async () => {
       const user = { username: 'testuser', roomId: 'room1' };
       const userSessionService = {
-        getUserBySocketId: jest.fn().mockReturnValue(user),
+        getUserBySocketId: jest.fn().mockResolvedValue(user),
       };
 
-      const result = validateActiveUser(userSessionService, 'socket123');
+      const result = await validateActiveUser(userSessionService, 'socket123');
       expect(result).toEqual({
         valid: true,
         user,
       });
     });
 
-    it('should return error when user not found', () => {
+    it('should return error when user not found', async () => {
       const userSessionService = {
-        getUserBySocketId: jest.fn().mockReturnValue(null),
+        getUserBySocketId: jest.fn().mockResolvedValue(null),
       };
 
-      const result = validateActiveUser(userSessionService, 'unknown-socket');
+      const result = await validateActiveUser(userSessionService, 'unknown-socket');
       expect(result).toEqual({
         valid: false,
         error: 'You must join before sending messages.',
       });
     });
 
-    it('should return error when userSessionService returns null', () => {
+    it('should return error when userSessionService returns null', async () => {
       const userSessionService = {
-        getUserBySocketId: jest.fn().mockReturnValue(null),
+        getUserBySocketId: jest.fn().mockResolvedValue(null),
       };
 
-      const result = validateActiveUser(userSessionService, 'socket123');
+      const result = await validateActiveUser(userSessionService, 'socket123');
       expect(result).toEqual({
         valid: false,
         error: 'You must join before sending messages.',

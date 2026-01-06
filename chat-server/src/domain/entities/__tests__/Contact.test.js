@@ -4,7 +4,7 @@
  * Tests for Contact domain entity business rules and methods.
  */
 
-const { Contact } = require('../Contact');
+const Contact = require('../Contact');
 
 describe('Contact Entity', () => {
   describe('Constructor', () => {
@@ -315,4 +315,3 @@ describe('Contact Entity', () => {
     });
   });
 });
-

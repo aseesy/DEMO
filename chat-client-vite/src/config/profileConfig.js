@@ -12,6 +12,7 @@ export const PROFILE_TABS = [
   { id: 'personal', label: 'Personal' },
   { id: 'motivations', label: 'Motivations' },
   { id: 'background', label: 'Background' },
+  { id: 'invitations', label: 'Invitations' },
 ];
 
 /**

@@ -1,5 +1,7 @@
 import React from 'react';
 import { Button } from '../../components/ui';
+import { NotificationBell } from '../notifications/components/NotificationBell.jsx';
+import { NotificationsPanel } from '../notifications/components/NotificationsPanel.jsx';
 
 function NavigationComponent({
   currentView,
@@ -50,9 +52,11 @@ function NavigationComponent({
   ];
 
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const menuRefs = React.useRef([]);
   const menuButtonRef = React.useRef(null);
   const menuItemRefs = React.useRef([]);
+  const notificationButtonRef = React.useRef(null);
 
   const menuItems = [
     {
@@ -161,9 +165,20 @@ function NavigationComponent({
     },
   ];
 
-  // Close menu on outside click
+  // Close menu and notifications panel on outside click
   React.useEffect(() => {
     const handleClick = event => {
+      // Handle notifications panel close
+      if (isNotificationsOpen) {
+        const clickedInsideNotifications =
+          notificationButtonRef.current?.contains(event.target) ||
+          event.target.closest('[role="dialog"]');
+
+        if (!clickedInsideNotifications) {
+          setIsNotificationsOpen(false);
+        }
+      }
+
       if (!isMenuOpen) return;
 
       // Check if click is inside menu (including arch menu items)
@@ -189,7 +204,7 @@ function NavigationComponent({
     // Use 'click' instead of 'mousedown' to allow menu item clicks to complete first
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, [isMenuOpen]);
+  }, [isMenuOpen, isNotificationsOpen]);
 
   // Keyboard navigation for menu
   React.useEffect(() => {
@@ -448,8 +463,23 @@ function NavigationComponent({
                 </div>
               )}
 
-              {/* Right side: Navigation Items + LiaiZen Branding with Dropdown Menu */}
+              {/* Right side: Notification Bell + Navigation Items + LiaiZen Branding with Dropdown Menu */}
               <div className="flex items-center gap-1 ml-auto">
+                {/* Notification Bell */}
+                <div className="relative" ref={notificationButtonRef}>
+                  <NotificationBell
+                    unreadCount={notificationCount}
+                    onClick={() => setIsNotificationsOpen(prev => !prev)}
+                    isOpen={isNotificationsOpen}
+                  />
+                  {isNotificationsOpen && (
+                    <NotificationsPanel
+                      isOpen={isNotificationsOpen}
+                      onClose={() => setIsNotificationsOpen(false)}
+                      onInvitationAccepted={onInvitationAccepted}
+                    />
+                  )}
+                </div>
                 {navItems.map(item => {
                   const isActive = currentView === item.id;
                   return (
@@ -620,6 +650,7 @@ function NavigationComponent({
             onClick={e => {
               e.stopPropagation();
               setIsMenuOpen(false);
+              setIsNotificationsOpen(false);
               setCurrentView('dashboard');
             }}
             className={`relative flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-dark focus:ring-offset-2 z-10 ${
@@ -636,12 +667,29 @@ function NavigationComponent({
                   currentView === 'dashboard' ? 'scale-110' : ''
                 }`,
               })}
-              {/* Red dot indicator when notifications are unread */}
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
-              )}
             </span>
           </button>
+
+          {/* Notification Bell - Mobile */}
+          <div className="relative">
+            <NotificationBell
+              unreadCount={notificationCount}
+              onClick={() => {
+                setIsNotificationsOpen(prev => !prev);
+                setIsMenuOpen(false);
+              }}
+              isOpen={isNotificationsOpen}
+            />
+            {isNotificationsOpen && (
+              <div className="absolute bottom-full right-0 mb-2 z-50">
+                <NotificationsPanel
+                  isOpen={isNotificationsOpen}
+                  onClose={() => setIsNotificationsOpen(false)}
+                  onInvitationAccepted={onInvitationAccepted}
+                />
+              </div>
+            )}
+          </div>
 
           {/* LiaiZen Menu button - bigger logo */}
           <button

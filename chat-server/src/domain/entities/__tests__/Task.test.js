@@ -4,7 +4,7 @@
  * Tests for Task domain entity business rules and methods.
  */
 
-const { Task } = require('../Task');
+const Task = require('../Task');
 
 describe('Task Entity', () => {
   describe('Constructor', () => {
@@ -369,4 +369,3 @@ describe('Task Entity', () => {
     });
   });
 });
-

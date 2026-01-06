@@ -58,6 +58,27 @@ jest.mock('../libraryLoader', () => ({
   languageAnalyzer: null,
 }));
 
+jest.mock('../mediatorErrors', () => ({
+  handleAnalysisError: jest.fn((error, context, _logger) => {
+    // Default: fail open (return null) unless it's a rate limit
+    if (error.status === 429) {
+      const { RetryableError } = require('../../../infrastructure/errors/errors');
+      return {
+        shouldFailOpen: false,
+        error: new RetryableError('Rate limit', 'AI_RATE_LIMIT', context),
+      };
+    }
+    return { shouldFailOpen: true };
+  }),
+  safeExecute: jest.fn(async operation => {
+    try {
+      return await operation();
+    } catch (_error) {
+      return null;
+    }
+  }),
+}));
+
 // Note: Optional dependencies are loaded with try/catch in mediator.js
 // We'll test with them available and unavailable scenarios
 
@@ -73,49 +94,49 @@ const promptBuilder = require('../promptBuilder');
 const responseProcessor = require('../responseProcessor');
 const aiService = require('../aiService');
 
-  describe('AI Mediator', () => {
-    beforeEach(() => {
-      jest.clearAllMocks();
+describe('AI Mediator', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
 
-      // Default mocks - allow messages to pass pre-filters unless test overrides
-      preFilters.runPreFilters.mockReturnValue({ shouldSkipAI: false, reason: null });
-      preFilters.detectConflictPatterns.mockReturnValue({});
-      messageCache.get.mockReturnValue(null); // No cache by default
-      contextBuilder.buildAllContexts.mockResolvedValue({
-        senderDisplayName: 'Sender',
-        receiverDisplayName: 'Receiver',
-        messageHistory: '',
-        contactContextForAI: '',
-        graphContextString: '',
-        valuesContextString: '',
-        userIntelligenceContextString: '',
-        receiverIntelligenceContextString: '',
-        profileContext: {},
-        coparentingContextString: '',
-        voiceSignatureSection: '',
-        conversationPatternsSection: '',
-        interventionLearningSection: '',
-        roleAwarePromptSection: '',
-        taskContextForAI: '',
-        flaggedMessagesContext: '',
-      });
-      promptBuilder.buildMediationPrompt.mockReturnValue('Mock prompt');
-      promptBuilder.formatInsightsForPrompt.mockReturnValue('');
-      aiService.getRelationshipInsights.mockResolvedValue([]);
-      responseProcessor.processResponse.mockResolvedValue(null);
-      
-      // Mock stateManager methods
-      jest.spyOn(stateManager, 'updateEscalationScore').mockReturnValue({});
-      jest.spyOn(stateManager, 'initializeEmotionalState').mockReturnValue({});
-      jest.spyOn(stateManager, 'initializePolicyState').mockReturnValue({
-        interventionHistory: [],
-        interventionThreshold: 0.5,
-      });
-
-      // Note: mediator now uses instance-based state, so each test gets a fresh instance
-      // The singleton instance is used for backward compatibility
-      // No need to initialize stateManager anymore - context is passed as parameter
+    // Default mocks - allow messages to pass pre-filters unless test overrides
+    preFilters.runPreFilters.mockReturnValue({ shouldSkipAI: false, reason: null });
+    preFilters.detectConflictPatterns.mockReturnValue({});
+    messageCache.get.mockReturnValue(null); // No cache by default
+    contextBuilder.buildAllContexts.mockResolvedValue({
+      senderDisplayName: 'Sender',
+      receiverDisplayName: 'Receiver',
+      messageHistory: '',
+      contactContextForAI: '',
+      graphContextString: '',
+      valuesContextString: '',
+      userIntelligenceContextString: '',
+      receiverIntelligenceContextString: '',
+      profileContext: {},
+      coparentingContextString: '',
+      voiceSignatureSection: '',
+      conversationPatternsSection: '',
+      interventionLearningSection: '',
+      roleAwarePromptSection: '',
+      taskContextForAI: '',
+      flaggedMessagesContext: '',
     });
+    promptBuilder.buildMediationPrompt.mockReturnValue('Mock prompt');
+    promptBuilder.formatInsightsForPrompt.mockReturnValue('');
+    aiService.getRelationshipInsights.mockResolvedValue([]);
+    responseProcessor.processResponse.mockResolvedValue(null);
+
+    // Mock stateManager methods
+    jest.spyOn(stateManager, 'updateEscalationScore').mockReturnValue({});
+    jest.spyOn(stateManager, 'initializeEmotionalState').mockReturnValue({});
+    jest.spyOn(stateManager, 'initializePolicyState').mockReturnValue({
+      interventionHistory: [],
+      interventionThreshold: 0.5,
+    });
+
+    // Note: mediator now uses instance-based state, so each test gets a fresh instance
+    // The singleton instance is used for backward compatibility
+    // No need to initialize stateManager anymore - context is passed as parameter
+  });
 
   describe('analyzeMessage', () => {
     const mockMessage = {
@@ -162,7 +183,10 @@ const aiService = require('../aiService');
 
     it('should return null for third-party statements', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
-      preFilters.runPreFilters.mockReturnValue({ shouldSkipAI: true, reason: 'third_party_statement' });
+      preFilters.runPreFilters.mockReturnValue({
+        shouldSkipAI: true,
+        reason: 'third_party_statement',
+      });
       const thirdPartyMessage = { ...mockMessage, text: 'My friend told me something' };
 
       const result = await mediator.analyzeMessage(thirdPartyMessage, mockRecentMessages);
@@ -173,7 +197,10 @@ const aiService = require('../aiService');
 
     it('should return null for positive sentiment messages', async () => {
       openaiClient.isConfigured.mockReturnValue(true);
-      preFilters.runPreFilters.mockReturnValue({ shouldSkipAI: true, reason: 'positive_sentiment' });
+      preFilters.runPreFilters.mockReturnValue({
+        shouldSkipAI: true,
+        reason: 'positive_sentiment',
+      });
       const positiveMessage = { ...mockMessage, text: "You're a great parent" };
 
       const result = await mediator.analyzeMessage(positiveMessage, mockRecentMessages);
@@ -217,9 +244,12 @@ const aiService = require('../aiService');
 
       // Mock userContext
       userContext.formatContextForAI.mockResolvedValue('User context');
-      
+
       // Use a message that won't be caught by pre-filters
-      const analysisMessage = { ...mockMessage, text: 'This is a problematic message that needs analysis' };
+      const analysisMessage = {
+        ...mockMessage,
+        text: 'This is a problematic message that needs analysis',
+      };
 
       const result = await mediator.analyzeMessage(
         analysisMessage,
@@ -280,7 +310,7 @@ const aiService = require('../aiService');
           rewrite2: 'Can we discuss the schedule issue?',
         },
       });
-      
+
       openaiClient.createChatCompletion.mockResolvedValue({
         choices: [
           {
@@ -303,7 +333,7 @@ const aiService = require('../aiService');
 
       // Mock userContext
       userContext.formatContextForAI.mockResolvedValue('User context');
-      
+
       // Use a message that won't be caught by pre-filters
       const analysisMessage = { ...mockMessage, text: 'You always forget to pick up the kids!' };
 
@@ -401,7 +431,9 @@ const aiService = require('../aiService');
       // MIN_MESSAGE_LENGTH is 1, so both "John" (4) and "Sarah" (5) should pass
       expect(Array.isArray(result)).toBe(true);
       expect(result).toEqual(['John', 'Sarah']);
-      expect(aiService.detectNamesInMessage).toHaveBeenCalledWith('I talked to John and Sarah today');
+      expect(aiService.detectNamesInMessage).toHaveBeenCalledWith(
+        'I talked to John and Sarah today'
+      );
       // The filter checks: line.length > VALIDATION.MIN_MESSAGE_LENGTH && /^[A-Z]/.test(line)
       // Since MIN_MESSAGE_LENGTH is 1, names with length > 1 that start with capital pass
       if (result.length > 0) {
@@ -428,7 +460,11 @@ const aiService = require('../aiService');
       );
 
       expect(result).toEqual([]);
-      expect(aiService.detectNamesInMessage).toHaveBeenCalledWith('I talked to John', [{ name: 'John' }], ['user1']);
+      expect(aiService.detectNamesInMessage).toHaveBeenCalledWith(
+        'I talked to John',
+        [{ name: 'John' }],
+        ['user1']
+      );
     });
 
     it('should return empty array for NONE response', async () => {
@@ -603,7 +639,7 @@ const aiService = require('../aiService');
   describe('recordInterventionFeedback', () => {
     it('should record helpful feedback', () => {
       const roomId = 'room-123';
-      
+
       // Access mediator's internal conversationContext
       // The mediator uses its own conversationContext internally
       const mockConversationContext = {
@@ -611,10 +647,10 @@ const aiService = require('../aiService');
         emotionalState: new Map(),
         policyState: new Map(),
       };
-      
+
       // Create a new mediator instance with our mock context for testing
       const testMediator = new (require('../mediator').AIMediator)(mockConversationContext);
-      
+
       // First add an intervention using the mock context
       stateManager.updatePolicyState(mockConversationContext, roomId, {
         type: 'intervene',
@@ -631,17 +667,17 @@ const aiService = require('../aiService');
 
     it('should record unhelpful feedback', () => {
       const roomId = 'room-123';
-      
+
       // Access mediator's internal conversationContext
       const mockConversationContext = {
         escalationState: new Map(),
         emotionalState: new Map(),
         policyState: new Map(),
       };
-      
+
       // Create a new mediator instance with our mock context for testing
       const testMediator = new (require('../mediator').AIMediator)(mockConversationContext);
-      
+
       // First add an intervention using the mock context
       stateManager.updatePolicyState(mockConversationContext, roomId, {
         type: 'intervene',

@@ -17,6 +17,7 @@ import { useImageUpload } from '../../../hooks/files/useImageUpload.js';
 import { Button } from '../../../components/ui';
 import { PROFILE_TABS } from '../../../config/profileConfig.js';
 import { PersonalInfoSection, MotivationsSection, BackgroundSection } from './index.js';
+import { InvitationManager } from '../../invitations/components/InvitationManager.jsx';
 
 export function ProfilePanel({ username }) {
   const {
@@ -135,6 +136,8 @@ export function ProfilePanel({ username }) {
         {activeTab === 'background' && (
           <BackgroundSection profileData={profileData} onFieldChange={handleFieldChange} />
         )}
+
+        {activeTab === 'invitations' && <InvitationManager />}
       </div>
     </div>
   );

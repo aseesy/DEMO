@@ -4,7 +4,7 @@
  * Tests for Room domain entity business rules and methods.
  */
 
-const { Room } = require('../Room');
+const Room = require('../Room');
 const { RoomId } = require('../../valueObjects/RoomId');
 
 describe('Room Entity', () => {
@@ -346,4 +346,3 @@ describe('Room Entity', () => {
     });
   });
 });
-
