@@ -596,6 +596,22 @@ export function AuthProvider({ children }) {
   React.useEffect(() => {
     // Load initial state from storage (optimistic - shows logged in state immediately)
     loadAuthState();
+
+    // CRITICAL: Skip session verification on OAuth callback pages
+    // The OAuth callback handler will process the code and set auth state
+    // Calling verifySession here would clear auth before the callback completes
+    const isOAuthCallback =
+      typeof window !== 'undefined' &&
+      (window.location.pathname.includes('/auth/callback') ||
+        window.location.pathname.includes('/auth/google/callback') ||
+        window.location.search.includes('code='));
+
+    if (isOAuthCallback) {
+      console.log('[AuthContext] Skipping verifySession on OAuth callback page');
+      setIsCheckingAuth(false);
+      return;
+    }
+
     // Then verify with server (will confirm or clear if invalid)
     verifySession();
 
