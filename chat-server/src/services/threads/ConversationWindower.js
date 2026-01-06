@@ -20,14 +20,14 @@ const DEFAULT_CONFIG = {
   // Gap threshold: 2 hours in milliseconds
   windowGapMs: 2 * 60 * 60 * 1000,
 
-  // Maximum window duration: 8 hours
-  maxWindowDurationMs: 8 * 60 * 60 * 1000,
+  // Maximum window duration: 4 hours (conversations rarely span longer)
+  maxWindowDurationMs: 4 * 60 * 60 * 1000,
 
   // Minimum messages to form a conversation
   minMessagesPerWindow: 2,
 
-  // Maximum messages per window (for performance)
-  maxMessagesPerWindow: 100,
+  // Maximum messages per window (typical co-parenting exchanges are 10-30 messages)
+  maxMessagesPerWindow: 35,
 };
 
 class ConversationWindower {
@@ -110,8 +110,7 @@ class ConversationWindower {
       const prevMessage = messages[i - 1];
 
       const gap = new Date(message.timestamp) - new Date(prevMessage.timestamp);
-      const windowDuration =
-        new Date(message.timestamp) - new Date(currentWindow.firstMessageAt);
+      const windowDuration = new Date(message.timestamp) - new Date(currentWindow.firstMessageAt);
 
       // Start new window if:
       // 1. Gap exceeds threshold (2 hours default)
@@ -229,8 +228,7 @@ class ConversationWindower {
       messageCount: window.messages.length,
       firstMessageAt: window.firstMessageAt,
       lastMessageAt: window.lastMessageAt,
-      durationMs:
-        new Date(window.lastMessageAt) - new Date(window.firstMessageAt),
+      durationMs: new Date(window.lastMessageAt) - new Date(window.firstMessageAt),
     };
   }
 }
