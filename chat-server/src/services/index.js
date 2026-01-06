@@ -48,6 +48,9 @@ const { userSessionService } = require('./session/userSessionService');
 // Auth services (Phase 2.9) ✅
 const { authService } = require('./auth/authService');
 
+// Permission services (RBAC) ✅
+const { permissionService } = require('./permissions/PermissionService');
+
 // Onboarding services (Phase 4.1) ✅
 const { onboardingService } = require('./onboarding');
 
@@ -92,6 +95,9 @@ module.exports = {
 
   // Auth services ✅
   authService,
+
+  // Permission services (RBAC) ✅
+  permissionService,
 
   // Onboarding services ✅
   onboardingService,

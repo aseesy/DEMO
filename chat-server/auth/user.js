@@ -141,6 +141,15 @@ async function createUser(
   const { context: contextData, room } = await setupUserContextAndRoom(userId, emailLower, context);
   await createWelcomeAndOnboardingTasks(userId, emailLower);
 
+  // Assign default 'user' role for RBAC
+  try {
+    const { permissionService } = require('../src/services');
+    await permissionService.ensureDefaultRole(userId);
+  } catch (error) {
+    // Non-fatal - log but don't fail user creation
+    console.warn(`[createUser] Failed to assign default role to user ${userId}:`, error.message);
+  }
+
   const displayName =
     nameData.displayName ||
     (nameData.firstName && nameData.lastName

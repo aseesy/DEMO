@@ -31,6 +31,14 @@ router.post('/google/callback', async (req, res) => {
       process.env.GOOGLE_REDIRECT_URI ||
       `${process.env.APP_URL || 'https://www.coparentliaizen.com'}/auth/google/callback`;
 
+    console.log('[OAuth] Google callback received:', {
+      hasCode: !!code,
+      codeLength: code?.length,
+      redirectUri,
+      hasClientId: !!clientId,
+      hasClientSecret: !!clientSecret,
+    });
+
     if (!clientId || !clientSecret)
       return res.status(500).json({ error: 'Config error', code: 'OAUTH_CONFIG_ERROR' });
 
@@ -47,13 +55,19 @@ router.post('/google/callback', async (req, res) => {
     });
 
     const tokens = await tokenRes.json();
+    console.log('[OAuth] Token exchange response:', {
+      success: !tokens.error,
+      error: tokens.error,
+      errorDescription: tokens.error_description,
+      hasAccessToken: !!tokens.access_token,
+    });
+
     if (tokens.error)
-      return res
-        .status(tokens.error === 'invalid_client' ? 401 : 400)
-        .json({
-          error: tokens.error,
-          code: tokens.error === 'invalid_client' ? 'OAUTH_INVALID_CLIENT' : tokens.error,
-        });
+      return res.status(tokens.error === 'invalid_client' ? 401 : 400).json({
+        error: tokens.error,
+        error_description: tokens.error_description,
+        code: tokens.error === 'invalid_client' ? 'OAUTH_INVALID_CLIENT' : tokens.error,
+      });
 
     const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${tokens.access_token}` },

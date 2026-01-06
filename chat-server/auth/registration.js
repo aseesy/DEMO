@@ -60,7 +60,7 @@ async function createUserWithEmail(
 /**
  * Create a user with email - NO automatic room creation
  * Use this when accepting invites (a shared room will be created separately)
- * 
+ *
  * @param {string} email - User's email address
  * @param {string} password - User's password (will be hashed)
  * @param {string|null} displayName - Display name (will be parsed into firstName/lastName if possible)
@@ -82,7 +82,7 @@ async function createUserWithEmailNoRoom(email, password, displayName = null, co
   let firstName = null;
   let lastName = null;
   let finalDisplayName = displayName?.trim() || null;
-  
+
   if (finalDisplayName) {
     // Try to split displayName into firstName and lastName
     const parts = finalDisplayName.split(/\s+/).filter(p => p.length > 0);
@@ -112,6 +112,18 @@ async function createUserWithEmailNoRoom(email, password, displayName = null, co
     throw err;
   }
 
+  // Assign default 'user' role for RBAC
+  try {
+    const { permissionService } = require('../src/services');
+    await permissionService.ensureDefaultRole(userId);
+  } catch (error) {
+    // Non-fatal - log but don't fail user creation
+    console.warn(
+      `[createUserWithEmailNoRoom] Failed to assign default role to user ${userId}:`,
+      error.message
+    );
+  }
+
   // Create user context (but NOT a room) - using email instead of username
   try {
     const userContextData = {
@@ -139,9 +151,7 @@ async function createUserWithEmailNoRoom(email, password, displayName = null, co
   }
 
   // Create Neo4j node (using email instead of username)
-  neo4jClient
-    .createUserNode(userId)
-    .catch(() => {});
+  neo4jClient.createUserNode(userId).catch(() => {});
 
   return {
     id: userId,
@@ -200,7 +210,8 @@ async function registerWithInvitation(
       await notificationManager.createInvitationNotification(
         {
           userId: invitationResult.existingUser.id,
-          inviterName: firstName || user.first_name || user.display_name || user.email.split('@')[0],
+          inviterName:
+            firstName || user.first_name || user.display_name || user.email.split('@')[0],
           invitationId: invitationResult.invitation.id,
           invitationToken: invitationResult.token,
         },
@@ -212,11 +223,14 @@ async function registerWithInvitation(
   }
 
   return {
-    user: { 
-      ...user, 
+    user: {
+      ...user,
       firstName: firstName || user.first_name,
       lastName: lastName || user.last_name,
-      displayName: firstName && lastName ? `${firstName} ${lastName}` : firstName || user.first_name || user.display_name || user.email.split('@')[0]
+      displayName:
+        firstName && lastName
+          ? `${firstName} ${lastName}`
+          : firstName || user.first_name || user.display_name || user.email.split('@')[0],
     },
     invitation: {
       id: invitationResult.invitation.id,
@@ -259,15 +273,23 @@ async function registerFromInvitation(params, db) {
     const passwordHash = await hashPassword(password);
 
     // Insert user with email as primary identifier (no username)
-    const displayName = firstName && lastName 
-      ? `${firstName.trim()} ${lastName.trim()}` 
-      : firstName?.trim() || lastName?.trim() || null;
-    
+    const displayName =
+      firstName && lastName
+        ? `${firstName.trim()} ${lastName.trim()}`
+        : firstName?.trim() || lastName?.trim() || null;
+
     let userId;
     try {
       const res = await client.query(
         `INSERT INTO "users" ("email", "password_hash", "first_name", "last_name", "display_name", "created_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"`,
-        [emailLower, passwordHash, firstName?.trim() || null, lastName?.trim() || null, displayName, now]
+        [
+          emailLower,
+          passwordHash,
+          firstName?.trim() || null,
+          lastName?.trim() || null,
+          displayName,
+          now,
+        ]
       );
       userId = res.rows[0].id;
     } catch (err) {
@@ -319,12 +341,12 @@ async function registerFromInvitation(params, db) {
     });
 
     return {
-      user: { 
-        id: userId, 
-        email: emailLower, 
+      user: {
+        id: userId,
+        email: emailLower,
         firstName: firstName?.trim() || null,
         lastName: lastName?.trim() || null,
-        displayName: displayName 
+        displayName: displayName,
       },
       coParent: { id: invitation.inviter_id, displayName: validation.inviterName },
       room: { id: roomId, name: roomName },
