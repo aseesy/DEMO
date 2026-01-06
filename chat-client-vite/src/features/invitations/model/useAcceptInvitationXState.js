@@ -9,7 +9,10 @@ import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMachine } from '@xstate/react';
 import { fromPromise } from 'xstate';
-import { invitationAcceptanceMachine, createInvitationAcceptanceContext } from './invitationAcceptanceMachine.js';
+import {
+  invitationAcceptanceMachine,
+  createInvitationAcceptanceContext,
+} from './invitationAcceptanceMachine.js';
 import { useAuth } from '../../auth';
 import { useInvitations } from './useInvitations.js';
 import { useInvitationContext } from '../../../context/InvitationContext.jsx';
@@ -140,28 +143,34 @@ export function useAcceptInvitationXState() {
   const machineWithServices = React.useMemo(
     () =>
       invitationAcceptanceMachine.provide({
-      actors: {
-        validateInvitation: fromPromise(async ({ input }) => {
-          return validateInvitationService(input.token, input.shortCode);
-        }),
-        autoAcceptInvitation: fromPromise(async ({ input }) => {
-          return autoAcceptInvitationService(input.token, input.shortCode);
-        }),
-        submitSignupWithInvite: fromPromise(async ({ input }) => {
-          return submitSignupService({
-            firstName: input.firstName,
-            lastName: input.lastName,
-            formEmail: input.formEmail,
-            formPassword: input.formPassword,
-            tokenParam: input.token,
-            shortCodeParam: input.shortCode,
-          });
-        }),
-        handleGoogleLogin: fromPromise(async () => {
-          return handleGoogleLoginService();
-        }),
+        actors: {
+          validateInvitation: fromPromise(async ({ input }) => {
+            return validateInvitationService(input.token, input.shortCode);
+          }),
+          autoAcceptInvitation: fromPromise(async ({ input }) => {
+            return autoAcceptInvitationService(input.token, input.shortCode);
+          }),
+          submitSignupWithInvite: fromPromise(async ({ input }) => {
+            return submitSignupService({
+              firstName: input.firstName,
+              lastName: input.lastName,
+              formEmail: input.formEmail,
+              formPassword: input.formPassword,
+              tokenParam: input.token,
+              shortCodeParam: input.shortCode,
+            });
+          }),
+          handleGoogleLogin: fromPromise(async () => {
+            return handleGoogleLoginService();
+          }),
+        },
       }),
-    [validateInvitationService, autoAcceptInvitationService, submitSignupService, handleGoogleLoginService]
+    [
+      validateInvitationService,
+      autoAcceptInvitationService,
+      submitSignupService,
+      handleGoogleLoginService,
+    ]
   );
 
   const [state, send, actor] = useMachine(machineWithServices, {
@@ -249,11 +258,11 @@ export function useAcceptInvitationXState() {
     formError: state.context.formError,
 
     // Form setters
-    setDisplayName: (value) => send({ type: 'UPDATE_FIELD', field: 'firstName', value }),
-    setFormEmail: (value) => send({ type: 'UPDATE_FIELD', field: 'formEmail', value }),
-    setFormPassword: (value) => send({ type: 'UPDATE_FIELD', field: 'formPassword', value }),
-    setConfirmPassword: (value) => send({ type: 'UPDATE_FIELD', field: 'confirmPassword', value }),
-    setAgreeToTerms: (value) => send({ type: 'UPDATE_FIELD', field: 'agreeToTerms', value }),
+    setDisplayName: value => send({ type: 'UPDATE_FIELD', field: 'firstName', value }),
+    setFormEmail: value => send({ type: 'UPDATE_FIELD', field: 'formEmail', value }),
+    setFormPassword: value => send({ type: 'UPDATE_FIELD', field: 'formPassword', value }),
+    setConfirmPassword: value => send({ type: 'UPDATE_FIELD', field: 'confirmPassword', value }),
+    setAgreeToTerms: value => send({ type: 'UPDATE_FIELD', field: 'agreeToTerms', value }),
 
     // Confirmation state
     confirmedInviter: state.context.confirmedInviter,
@@ -265,7 +274,7 @@ export function useAcceptInvitationXState() {
     successMessage: state.context.successMessage,
 
     // Handlers
-    handleSubmit: (e) => {
+    handleSubmit: e => {
       e?.preventDefault();
       send({ type: 'SUBMIT' });
     },
@@ -288,4 +297,3 @@ export function useAcceptInvitationXState() {
 }
 
 export default useAcceptInvitationXState;
-
