@@ -118,8 +118,8 @@ router.post('/register-from-invite', async (req, res) => {
     setAuthCookie(res, token);
     res.json({ success: true, ...result, token });
   } catch (error) {
-    if (error.message === 'Email already exists') {
-      return res.status(409).json({ error: 'Email already exists' });
+    if (error.message === 'Email already exists' || error.code === 'REG_001') {
+      return res.status(409).json({ error: 'Email already exists', code: 'REG_001' });
     }
     res.status(500).json({ error: error.message });
   }
@@ -297,8 +297,8 @@ router.post('/register-with-invite', async (req, res) => {
     console.error('[register-with-invite] Error:', error);
 
     // Handle specific error types
-    if (error.message === 'Email already exists') {
-      return res.status(409).json({ error: 'Email already exists' });
+    if (error.message === 'Email already exists' || error.code === 'REG_001') {
+      return res.status(409).json({ error: 'Email already exists', code: 'REG_001' });
     }
     if (error.message?.includes('expired')) {
       return res.status(400).json({ error: 'This invitation has expired', code: 'EXPIRED' });

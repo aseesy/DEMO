@@ -369,6 +369,22 @@ export function getErrorMessage(error, context = {}) {
     };
   }
 
+  // Check for "Email already exists" message before falling back to generic 409
+  const errorMessageLower = errorMessage?.toLowerCase() || '';
+  if (
+    statusCode === 409 &&
+    (errorMessageLower.includes('email already exists') ||
+      (errorMessageLower.includes('email') &&
+        errorMessageLower.includes('already') &&
+        errorMessageLower.includes('exists')))
+  ) {
+    return {
+      ...REGISTRATION_ERRORS.REG_001,
+      code: 'REG_001',
+      originalMessage: errorMessage,
+    };
+  }
+
   // Check OAuth errors
   if (errorCode && OAUTH_ERRORS[errorCode]) {
     return {
@@ -395,22 +411,24 @@ export function getErrorMessage(error, context = {}) {
     // Only show "offline" if we're certain (check navigator.onLine as a hint, not definitive)
     const isLikelyOffline = typeof navigator !== 'undefined' && !navigator.onLine;
     const isFetchError = error instanceof TypeError && error.message?.includes('fetch');
-    
+
     if (isLikelyOffline && isFetchError) {
       return {
         message: errorMessage,
-        userMessage: 'You appear to be offline. Please check your internet connection and try again.',
+        userMessage:
+          'You appear to be offline. Please check your internet connection and try again.',
         action: 'retry',
         retryable: true,
         code: 'NETWORK_OFFLINE',
         originalMessage: errorMessage,
       };
     }
-    
+
     // Network error but not necessarily offline - could be server issue, CORS, DNS, etc.
     return {
       message: errorMessage,
-      userMessage: 'Unable to connect to the server. Please check your internet connection and try again.',
+      userMessage:
+        'Unable to connect to the server. Please check your internet connection and try again.',
       action: 'retry',
       retryable: true,
       code: 'NETWORK_ERROR',

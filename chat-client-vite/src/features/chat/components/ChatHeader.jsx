@@ -2,12 +2,13 @@ import React from 'react';
 
 /**
  * ChatHeader - Action buttons for chat view
+ *
+ * NOTE: AI Summaries/Topics button was intentionally removed from chat.
+ * Do NOT re-add it here. AI conversation features belong elsewhere in the app.
+ *
  * Note: Search functionality is handled in the desktop Navigation component, not here
  */
 export function ChatHeader({
-  // Topics
-  showTopicsPanel,
-  setShowTopicsPanel,
   // Invite
   isAuthenticated,
   inviteLink,
@@ -17,7 +18,6 @@ export function ChatHeader({
   isLoadingInvite,
   handleLoadInvite,
 }) {
-
   const shouldShowInvite =
     isAuthenticated &&
     !inviteLink &&
@@ -25,40 +25,18 @@ export function ChatHeader({
     !hasPendingInvitation &&
     !hasAcceptedInvitation;
 
+  // If no invite button needed, don't render the header at all
+  if (!shouldShowInvite) {
+    return null;
+  }
+
   return (
     <div
       className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 sm:px-6 py-2 flex items-center justify-end gap-2"
       style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}
     >
-      {/* Right side: AI Summaries and invite actions */}
+      {/* Invite action */}
       <div className="flex items-center gap-1.5">
-        {/* AI Summaries button */}
-        <button
-          type="button"
-          onClick={() => setShowTopicsPanel(!showTopicsPanel)}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 min-h-[44px] ${
-            showTopicsPanel
-              ? 'bg-teal-darkest text-white'
-              : 'bg-teal-dark text-white hover:bg-teal-darkest'
-          }`}
-          title="AI Summaries"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-            />
-          </svg>
-          <span className="hidden sm:inline">AI</span>
-        </button>
-
         {shouldShowInvite && (
           <button
             type="button"

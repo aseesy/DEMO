@@ -158,11 +158,12 @@ const SignupErrorType = {
  * @returns {{ type: string, status: number, body: Object }}
  */
 function classifySignupError(error) {
-  if (error.message === 'Email already exists') {
+  // Check for email exists error - check both message and code
+  if (error.message === 'Email already exists' || error.code === 'REG_001') {
     return {
       type: SignupErrorType.EMAIL_EXISTS,
       status: 409,
-      body: { error: 'Email already exists' },
+      body: { error: 'Email already exists', code: 'REG_001' },
     };
   }
 

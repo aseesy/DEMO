@@ -15,7 +15,7 @@ import {
   MessagesContainer,
   ChatHeader,
   MessageInput,
-  TopicsPanel,
+  // NOTE: TopicsPanel intentionally removed from chat - AI features belong elsewhere
 } from './components';
 import { useChatContext } from './context/ChatContext.jsx';
 import {
@@ -87,7 +87,7 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
   } = useChatContext();
 
   // Local state
-  const [showTopicsPanel, setShowTopicsPanel] = React.useState(false);
+  // NOTE: showTopicsPanel removed - AI features intentionally not in chat
   const [flaggingMessage, setFlaggingMessage] = React.useState(null);
   const [flagReason, setFlagReason] = React.useState('');
   const [feedbackGiven, setFeedbackGiven] = React.useState(new Set());
@@ -302,8 +302,6 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
       }}
     >
       <ChatHeader
-        showTopicsPanel={showTopicsPanel}
-        setShowTopicsPanel={setShowTopicsPanel}
         isAuthenticated={isAuthenticated}
         inviteLink={inviteLink}
         hasCoParentConnected={hasCoParentConnected}
@@ -314,18 +312,8 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
       />
 
       {/* Chat Content */}
+      {/* NOTE: TopicsPanel (AI Summaries) intentionally removed from chat view */}
       <div className="flex flex-1 min-h-0 min-w-0" style={{ width: '100%', maxWidth: '100%' }}>
-        {/* Topics Panel - AI Summaries */}
-        {showTopicsPanel && (
-          <TopicsPanel
-            roomId={room?.roomId}
-            onClose={() => setShowTopicsPanel(false)}
-            onJumpToMessage={jumpToMessage}
-            socket={socket}
-            currentUserEmail={userEmail}
-          />
-        )}
-
         {/* Main Chat Area */}
         <div
           className="flex-1 flex flex-col min-h-0 min-w-0"
