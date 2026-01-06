@@ -102,10 +102,6 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
       try {
         if (state) {
           if (!validateOAuthState(state)) {
-            const errorInfo = getErrorMessage(
-              { code: 'invalid_state' },
-              { endpoint: '/api/auth/google/callback' }
-            );
             logError(new Error('OAuth state mismatch'), {
               endpoint: '/api/auth/google/callback',
               operation: 'oauth_callback',
@@ -135,7 +131,7 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
         let data;
         try {
           data = await response.json();
-        } catch (jsonError) {
+        } catch (_jsonError) {
           const text = await response.text();
           console.error('Invalid JSON response from OAuth callback:', text);
           logError(new Error('Invalid JSON response'), {
@@ -161,6 +157,10 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
           } else if (data.code === 'OAUTH_INVALID_CLIENT') {
             errorInfo.userMessage =
               'OAuth configuration error. Please verify your Google OAuth credentials are correct.';
+          } else if (data.code === 'CODE_ALREADY_USED') {
+            // IDEMPOTENCY: Code was already used and no existing session
+            // This is not retryable - user must start fresh
+            errorInfo.userMessage = 'Sign-in session expired. Please try signing in again.';
           } else if (data.code === 'USER_CREATION_ERROR') {
             errorInfo.userMessage =
               'Failed to create your account. Please try again or contact support.';

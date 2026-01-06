@@ -20,6 +20,17 @@ router.get('/google', (req, res) => {
   res.json({ authUrl });
 });
 
+/**
+ * IDEMPOTENCY: This endpoint handles duplicate requests gracefully.
+ *
+ * Scenarios:
+ * 1. User refreshes the callback page → code already used → return existing session if valid
+ * 2. Network retry → same code sent twice → return existing session if valid
+ * 3. React StrictMode double mount → same code sent twice → return existing session if valid
+ *
+ * If code is already used (invalid_grant) but user has valid session, return that session.
+ * If code is already used and no valid session, return idempotent error.
+ */
 router.post('/google/callback', async (req, res) => {
   try {
     const { code, inviteToken } = req.body;
@@ -62,6 +73,48 @@ router.post('/google/callback', async (req, res) => {
       hasAccessToken: !!tokens.access_token,
     });
 
+    // IDEMPOTENCY: Handle "code already used" gracefully
+    if (tokens.error === 'invalid_grant') {
+      console.log('[OAuth] Code already used (invalid_grant) - checking for existing session');
+
+      // Check if there's a valid auth cookie we can use
+      const existingToken = req.cookies?.auth_token;
+      if (existingToken) {
+        try {
+          const { verifyToken } = require('../../middleware/auth');
+          const decoded = verifyToken(existingToken);
+          if (decoded && decoded.id) {
+            const user = await auth.getUserById(decoded.id);
+            if (user) {
+              console.log('[OAuth] Returning existing session for user:', user.email);
+              return res.json({
+                success: true,
+                idempotent: true, // Signal that this is a cached response
+                user: {
+                  id: user.id,
+                  username: user.username,
+                  email: user.email,
+                  display_name: user.display_name,
+                },
+                token: existingToken,
+              });
+            }
+          }
+        } catch (e) {
+          console.log('[OAuth] Existing token invalid:', e.message);
+        }
+      }
+
+      // No valid existing session - return idempotent error
+      // This tells the client: "code was used, but you're not authenticated"
+      return res.status(400).json({
+        error: 'invalid_grant',
+        error_description: 'Authorization code already used. Please sign in again.',
+        code: 'CODE_ALREADY_USED',
+        idempotent: true, // Signal that retry won't help
+      });
+    }
+
     if (tokens.error)
       return res.status(tokens.error === 'invalid_client' ? 401 : 400).json({
         error: tokens.error,
@@ -97,6 +150,7 @@ router.post('/google/callback', async (req, res) => {
       token,
     });
   } catch (error) {
+    console.error('[OAuth] Error:', error);
     res.status(500).json({ error: error.message, code: 'OAUTH_ERROR' });
   }
 });

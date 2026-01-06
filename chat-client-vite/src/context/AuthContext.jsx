@@ -15,23 +15,32 @@ import { logUserTransform } from '../utils/dataTransformDebug.js';
 /**
  * AuthContext - Centralized authentication state management
  *
+ * ARCHITECTURE: Finite State Machine (FSM) for auth status
+ * States: LOADING -> AUTHENTICATED | ANONYMOUS
+ *
+ * The auth status is deterministic - no timers or "grace periods".
+ * While in LOADING state, the app should show a loading indicator
+ * and not make authenticated API calls.
+ *
  * MIGRATION NOTE: Email is now the primary identifier.
  * The `username` field is kept for backward compatibility but always equals `email`.
  * All new code should use `email` instead of `username`.
- *
- * Provides:
- * - Centralized auth state (isAuthenticated, email, token)
- * - Token management (storage, validation, expiration)
- * - Session verification on mount
- * - State synchronization across tabs
- * - Loading states to prevent race conditions
- * - Auth guards for API calls
  */
 
 const AuthContext = React.createContext(null);
 
 /**
+ * Auth Status FSM States
+ */
+export const AuthStatus = {
+  LOADING: 'loading', // Initial state, verifying session
+  AUTHENTICATED: 'authenticated', // User is logged in
+  ANONYMOUS: 'anonymous', // User is not logged in
+};
+
+/**
  * Check if a JWT token is expired
+ * Abstracted into a function that can be replaced with a TokenService
  */
 function isTokenExpired(token) {
   if (!token) return true;
@@ -122,14 +131,24 @@ export function AuthProvider({ children }) {
     };
   }, []); // Empty deps - only run once on mount
 
-  const [isAuthenticated, setIsAuthenticated] = React.useState(initialAuthState.isAuthenticated);
+  // FSM: Single source of truth for auth status
+  // LOADING: Waiting for session verification
+  // AUTHENTICATED: User is logged in (verified by server)
+  // ANONYMOUS: User is not logged in
+  const [authStatus, setAuthStatus] = React.useState(
+    initialAuthState.isAuthenticated ? AuthStatus.LOADING : AuthStatus.ANONYMOUS
+  );
+
+  // Derived states from FSM
+  const isAuthenticated = authStatus === AuthStatus.AUTHENTICATED;
+  const isCheckingAuth = authStatus === AuthStatus.LOADING;
+
   // MIGRATION: email is the primary identifier, username is kept for backward compatibility
   const [email, setEmail] = React.useState(initialAuthState.email);
   const [token, setToken] = React.useState(initialAuthState.token);
   // username is now an alias for email - kept for backward compatibility with existing components
   const username = email;
   const setUsername = setEmail; // Redirect setUsername calls to setEmail
-  const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
   const [isSigningUp, setIsSigningUp] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -145,20 +164,12 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
-  // Track when login completes to add grace period for 401 errors
-  const loginCompletedAtRef = React.useRef(null);
-
-  // CRITICAL: Track if verifySession has completed at least once
-  // This prevents onAuthFailure from clearing auth during optimistic initialization
-  // until we've verified the token with the server
-  const verifySessionCompletedRef = React.useRef(false);
-  const verifySessionStartedAtRef = React.useRef(null);
   // Track AbortController for cleanup on unmount
   const verifySessionAbortControllerRef = React.useRef(null);
 
   /**
-   * Load auth state from storage
-   * This provides initial state while session verification is in progress
+   * Load auth state from storage (pure function - no side effects)
+   * Returns the stored auth state for use by verifySession and initialization
    */
   const loadAuthState = React.useCallback(() => {
     const storedToken = authStorage.getToken();
@@ -175,111 +186,84 @@ export function AuthProvider({ children }) {
     }
     const storedIsAuthenticated = authStorage.isAuthenticated();
 
-    // CRITICAL: If there's no token, clear all auth state immediately
-    // This prevents stale isAuthenticated flags from causing redirect loops
+    // CRITICAL: If there's no token, auth state is invalid
     if (!storedToken) {
       if (storedIsAuthenticated) {
-        console.log(
-          '[loadAuthState] No token but isAuthenticated flag exists - clearing stale auth'
-        );
+        console.log('[loadAuthState] No token but isAuthenticated flag exists - stale state');
         authStorage.clearAuth();
       }
-      setIsAuthenticated(false);
-      setUsername(null);
-      setEmail(null);
-      setToken(null);
       return { isAuthenticated: false, username: null, email: null, token: null };
     }
 
-    // Validate token if present
+    // Validate token expiration
     if (isTokenExpired(storedToken)) {
-      // Token expired, clear everything
-      console.log('[loadAuthState] Token expired, clearing auth');
+      console.log('[loadAuthState] Token expired');
       authStorage.clearAuth();
-      setIsAuthenticated(false);
-      setUsername(null);
-      setEmail(null);
-      setToken(null);
       return { isAuthenticated: false, username: null, email: null, token: null };
     }
 
-    // If we have a valid token and email, set initial state optimistically
-    // This allows the app to show authenticated UI while verification completes
-    // The verifySession will confirm or clear this state
-    // CRITICAL: Use email as primary identifier (migrated from username)
-    // Username is optional - use email if username not available
+    // CRITICAL: Use email as primary identifier
     const identifier = storedEmail || storedUsername;
     const hasValidStoredAuth = storedToken && identifier && !isTokenExpired(storedToken);
 
-    if (hasValidStoredAuth) {
-      // Set initial state from storage (will be verified by verifySession)
-      // Sync TokenManager with stored token (CRITICAL: ensures apiClient can access token immediately)
-      tokenManager.setToken(storedToken);
-      setIsAuthenticated(true);
-      // Use email as primary identifier, fallback to username for backward compatibility
-      const userIdentifier = storedEmail || storedUsername;
-      setUsername(userIdentifier);
-      setEmail(storedEmail || storedUsername); // Email takes precedence
-      setToken(storedToken);
-    } else {
-      // Invalid state - clear it
+    if (!hasValidStoredAuth) {
       if (storedIsAuthenticated) {
-        console.log('[loadAuthState] Invalid auth state (missing token/identifier), clearing');
+        console.log('[loadAuthState] Invalid auth state (missing token/identifier)');
         authStorage.clearAuth();
       }
-      setIsAuthenticated(false);
-      setUsername(null);
-      setEmail(null);
-      setToken(null);
+      return { isAuthenticated: false, username: null, email: null, token: null };
     }
 
+    // Sync TokenManager with stored token
+    tokenManager.setToken(storedToken);
+
     return {
-      isAuthenticated: hasValidStoredAuth,
-      username: hasValidStoredAuth ? storedEmail || storedUsername : null,
-      email: hasValidStoredAuth ? storedEmail || storedUsername : null,
-      token: hasValidStoredAuth ? storedToken : null,
+      isAuthenticated: true,
+      username: storedEmail || storedUsername,
+      email: storedEmail || storedUsername,
+      token: storedToken,
     };
   }, []);
 
   /**
-   * Clear auth state
+   * Clear auth state - transitions FSM to ANONYMOUS
    */
   const clearAuthState = React.useCallback(() => {
     // CRITICAL: Clear TokenManager FIRST so apiClient immediately knows token is gone
     tokenManager.clearToken();
     authStorage.clearAuth();
-    setIsAuthenticated(false);
+    // FSM transition: -> ANONYMOUS
+    setAuthStatus(AuthStatus.ANONYMOUS);
     setUsername(null);
     setEmail(null);
     setToken(null);
-    loginCompletedAtRef.current = null; // Clear login timestamp
-    verifySessionCompletedRef.current = false; // Reset verification flag
-    verifySessionStartedAtRef.current = null; // Reset verification start time
   }, []);
 
   /**
    * Verify session with server
+   * FSM transitions: LOADING -> AUTHENTICATED | ANONYMOUS
+   *
+   * DETERMINISTIC: No timers, no "optimistic" state keeping.
+   * If verification fails for any reason, transition to ANONYMOUS.
    */
   const verifySession = React.useCallback(async () => {
-    setIsCheckingAuth(true);
+    // FSM: Enter LOADING state
+    setAuthStatus(AuthStatus.LOADING);
     setError(null);
-    verifySessionStartedAtRef.current = Date.now();
 
     try {
       const storedToken = authStorage.getToken();
 
       if (!storedToken) {
-        console.log('[verifySession] No token found, clearing auth');
-        setIsCheckingAuth(false);
+        console.log('[verifySession] No token found -> ANONYMOUS');
         clearAuthState();
         return;
       }
 
-      // Check token expiration first
+      // Check token expiration first (client-side validation)
       if (isTokenExpired(storedToken)) {
-        console.log('[verifySession] Token expired, clearing auth');
+        console.log('[verifySession] Token expired -> ANONYMOUS');
         clearAuthState();
-        setIsCheckingAuth(false);
         return;
       }
 
@@ -290,10 +274,10 @@ export function AuthProvider({ children }) {
         verifySessionAbortControllerRef.current.abort();
       }
 
-      // Add timeout to prevent hanging
+      // Add timeout to prevent hanging (10 second timeout)
       const controller = new AbortController();
       verifySessionAbortControllerRef.current = controller;
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       let response;
       try {
@@ -304,37 +288,19 @@ export function AuthProvider({ children }) {
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
-        verifySessionAbortControllerRef.current = null; // Clear ref on success
+        verifySessionAbortControllerRef.current = null;
       } catch (err) {
         clearTimeout(timeoutId);
-        verifySessionAbortControllerRef.current = null; // Clear ref on error
-        // Handle AbortError gracefully - this happens when:
-        // 1. Request times out (intentional abort)
-        // 2. Component unmounts before request completes (React Strict Mode)
-        // 3. New verifySession call aborts previous one
+        verifySessionAbortControllerRef.current = null;
+
+        // Handle AbortError (timeout or component unmount)
         if (err.name === 'AbortError' || err.message?.includes('aborted')) {
-          console.log(
-            '[verifySession] Request aborted (timeout or component unmount) - using optimistic auth state'
-          );
-          // On abort, keep optimistic state if token exists
-          const storedState = loadAuthState();
-          if (storedState.isAuthenticated && storedState.token) {
-            setIsAuthenticated(storedState.isAuthenticated);
-            setUsername(storedState.username);
-            setEmail(storedState.email);
-            setToken(storedState.token);
-            // Sync TokenManager with stored token
-            tokenManager.setToken(storedState.token);
-            setIsCheckingAuth(false);
-            verifySessionCompletedRef.current = true;
-            return;
-          }
-          // No stored auth, clear state
-          setIsCheckingAuth(false);
-          verifySessionCompletedRef.current = true;
+          console.log('[verifySession] Request aborted -> ANONYMOUS (deterministic)');
+          // DETERMINISTIC: On abort, go to ANONYMOUS, not "optimistic"
+          clearAuthState();
           return;
         }
-        throw err; // Re-throw other errors
+        throw err;
       }
 
       if (response.ok) {
@@ -342,7 +308,7 @@ export function AuthProvider({ children }) {
         const { authenticated, user } = data;
 
         if (authenticated && user) {
-          console.log('[verifySession] ✅ Server confirmed authentication');
+          console.log('[verifySession] ✅ Server confirmed -> AUTHENTICATED');
 
           // Debug logging for user data transformation
           const transformedUser = {
@@ -351,13 +317,11 @@ export function AuthProvider({ children }) {
           };
           logUserTransform(user, transformedUser);
 
-          setIsAuthenticated(true);
+          // Update all auth state
           setToken(storedToken);
-          // Sync TokenManager with verified token
           tokenManager.setToken(storedToken);
           authStorage.setAuthenticated(true);
 
-          // Backend returns email, not username - use email as the identifier
           const userIdentifier = user.email || user.username;
           if (userIdentifier) {
             setUsername(userIdentifier);
@@ -371,46 +335,29 @@ export function AuthProvider({ children }) {
             storage.set(StorageKeys.USER_EMAIL, user.email);
           }
 
-          // Mark verification as completed successfully
-          verifySessionCompletedRef.current = true;
+          // FSM: Transition to AUTHENTICATED
+          setAuthStatus(AuthStatus.AUTHENTICATED);
         } else {
-          console.log('[verifySession] ❌ Server says not authenticated, clearing auth');
-          verifySessionCompletedRef.current = true; // Mark as completed (even if failed)
+          console.log('[verifySession] ❌ Server says not authenticated -> ANONYMOUS');
           clearAuthState();
         }
       } else {
-        console.log('[verifySession] ❌ Server verification failed, clearing auth');
-        verifySessionCompletedRef.current = true; // Mark as completed (even if failed)
+        console.log(
+          '[verifySession] ❌ Server verification failed (status:',
+          response.status,
+          ') -> ANONYMOUS'
+        );
         clearAuthState();
       }
     } catch (err) {
-      // Don't log AbortError as an error - it's expected behavior
+      // Log error (but not AbortError)
       if (err.name !== 'AbortError' && !err.message?.includes('aborted')) {
         console.error('[verifySession] ⚠️ Error verifying session:', err);
       }
-      // CRITICAL: On network errors, keep optimistic auth state
-      // This prevents showing landing page when user has valid stored credentials
-      // but network is temporarily unavailable
-      const storedState = loadAuthState();
-      if (storedState.isAuthenticated && storedState.token) {
-        console.log(
-          '[verifySession] ⚠️ Network error but stored auth exists - keeping optimistic state'
-        );
-        // Keep the optimistic state - don't clear auth on network errors
-        // The user should still be able to use the app if they have valid stored credentials
-        setIsAuthenticated(storedState.isAuthenticated);
-        setUsername(storedState.username);
-        setEmail(storedState.email);
-        setToken(storedState.token);
-        // Mark as completed even on network error (we kept optimistic state)
-        verifySessionCompletedRef.current = true;
-      } else {
-        console.log('[verifySession] ❌ No stored auth, clearing state');
-        verifySessionCompletedRef.current = true; // Mark as completed (even if failed)
-        clearAuthState();
-      }
-    } finally {
-      setIsCheckingAuth(false);
+      // DETERMINISTIC: On any error, go to ANONYMOUS
+      // No "optimistic" state - if we can't verify, user must re-authenticate
+      console.log('[verifySession] ❌ Error occurred -> ANONYMOUS (deterministic)');
+      clearAuthState();
     }
   }, [clearAuthState, loadAuthState]);
 
@@ -456,9 +403,6 @@ export function AuthProvider({ children }) {
       // Success - extract user at boundary, then work with it directly
       const { user, token } = data;
 
-      setIsAuthenticated(true);
-      authStorage.setAuthenticated(true);
-
       // Backend returns email, not username - use email as the identifier
       const userIdentifier = user?.email || user?.username;
       if (userIdentifier) {
@@ -473,7 +417,6 @@ export function AuthProvider({ children }) {
 
       if (token) {
         // CRITICAL: Update TokenManager FIRST (synchronously) so apiClient can access token immediately
-        // This must happen before React state updates to prevent race conditions
         tokenManager.setToken(token);
         console.log('[AuthContext] Token set in TokenManager:', {
           hasToken: !!token,
@@ -482,15 +425,16 @@ export function AuthProvider({ children }) {
         });
 
         setToken(token);
-        // Also update authStorage for compatibility
         authStorage.setToken(token);
-        // Track login completion time for grace period
-        loginCompletedAtRef.current = Date.now();
       }
 
       if (user) {
         storage.set(StorageKeys.CHAT_USER, user);
       }
+
+      // FSM: Transition to AUTHENTICATED
+      authStorage.setAuthenticated(true);
+      setAuthStatus(AuthStatus.AUTHENTICATED);
 
       return { success: true, user };
     } catch (err) {
@@ -531,9 +475,6 @@ export function AuthProvider({ children }) {
       // Success - extract user at boundary, then work with it directly
       const { user, token } = data;
 
-      setIsAuthenticated(true);
-      authStorage.setAuthenticated(true);
-
       // Backend returns email, not username - use email as the identifier
       const userIdentifier = user?.email || user?.username;
       if (userIdentifier) {
@@ -551,14 +492,15 @@ export function AuthProvider({ children }) {
       storage.set(StorageKeys.USER_EMAIL, cleanEmail);
 
       if (token) {
-        setToken(token);
         // CRITICAL: Update TokenManager FIRST (synchronously) so apiClient can access token immediately
         tokenManager.setToken(token);
-        // Also update authStorage for compatibility
+        setToken(token);
         authStorage.setToken(token);
-        // Track signup completion time for grace period
-        loginCompletedAtRef.current = Date.now();
       }
+
+      // FSM: Transition to AUTHENTICATED
+      authStorage.setAuthenticated(true);
+      setAuthStatus(AuthStatus.AUTHENTICATED);
 
       return { success: true, user };
     } catch (err) {
@@ -608,7 +550,8 @@ export function AuthProvider({ children }) {
 
     if (isOAuthCallback) {
       console.log('[AuthContext] Skipping verifySession on OAuth callback page');
-      setIsCheckingAuth(false);
+      // FSM: Keep in LOADING state - OAuth callback handler will set final state
+      // This prevents showing "not authenticated" flash before OAuth completes
       return;
     }
 
@@ -664,123 +607,59 @@ export function AuthProvider({ children }) {
 
   /**
    * Listen for auth failures from API calls (401 errors)
-   * When the token is invalid/expired, clear auth state to trigger re-login
+   * FSM-based: Deterministic, no timers or "grace periods"
    *
-   * CRITICAL: Don't clear auth if verifySession is in progress OR hasn't completed yet
-   * This prevents race conditions where:
-   * 1. Optimistic initialization sets isAuthenticated = true
-   * 2. Component makes API call before verifySession completes
-   * 3. API call gets 401 (token might be invalid)
-   * 4. onAuthFailure clears auth state
-   * 5. verifySession completes successfully, but auth was already cleared
+   * Rules:
+   * 1. Ignore 401s during LOADING state (FSM guards API calls during loading)
+   * 2. Ignore 401s on auth endpoints (expected during login/signup)
+   * 3. On any other 401, transition to ANONYMOUS immediately
    */
   React.useEffect(() => {
     return onAuthFailure(detail => {
-      console.log('[onAuthFailure] Auth failure detected on endpoint:', detail.endpoint, {
-        isCheckingAuth,
-        isAuthenticated,
+      console.log('[onAuthFailure] Auth failure detected:', {
+        endpoint: detail.endpoint,
+        authStatus,
         hasToken: !!token,
-        verifySessionCompleted: verifySessionCompletedRef.current,
       });
 
-      // CRITICAL: Don't clear auth if we're currently verifying the session
-      // This prevents race conditions where API calls happen during verification
-      if (isCheckingAuth) {
-        console.log('[onAuthFailure] Ignoring 401 - session verification in progress');
+      // FSM Guard: Don't process 401s during LOADING state
+      // The app should not be making API calls during LOADING anyway
+      if (authStatus === AuthStatus.LOADING) {
+        console.log('[onAuthFailure] Ignoring 401 - FSM in LOADING state');
         return;
       }
 
-      // CRITICAL: Don't clear auth if verifySession hasn't completed yet
-      // This prevents clearing auth during optimistic initialization phase
-      // Components might make API calls before verifySession completes, causing false 401s
-      if (!verifySessionCompletedRef.current) {
-        console.log(
-          '[onAuthFailure] Ignoring 401 - verifySession has not completed yet (optimistic init phase)'
-        );
-        return;
-      }
-
-      // CRITICAL: Add grace period after verifySession starts (even if not completed)
-      // This handles the case where verifySession is slow and API calls happen during verification
-      if (verifySessionStartedAtRef.current) {
-        const timeSinceVerifyStart = Date.now() - verifySessionStartedAtRef.current;
-        const VERIFY_GRACE_PERIOD_MS = 15000; // 15 seconds (longer than verifySession timeout of 10s)
-        if (timeSinceVerifyStart < VERIFY_GRACE_PERIOD_MS) {
-          console.log(
-            `[onAuthFailure] Ignoring 401 - within ${VERIFY_GRACE_PERIOD_MS}ms grace period after verifySession started (${timeSinceVerifyStart}ms ago)`
-          );
-          return;
-        }
-      }
-
-      // Also ignore 401s on auth endpoints (they're expected during login/signup)
+      // Ignore 401s on auth endpoints (expected during login/signup/verify)
       if (detail.endpoint?.includes('/api/auth/')) {
         console.log('[onAuthFailure] Ignoring 401 - auth endpoint');
         return;
       }
 
-      // CRITICAL: Don't clear auth for /api/room/members/check failures
-      // This endpoint may fail for valid reasons (room not created yet, etc.)
-      // and shouldn't trigger logout. The user is still authenticated.
-      if (detail.endpoint?.includes('/api/room/members/check')) {
-        console.log('[onAuthFailure] Ignoring 401 - room members check endpoint (non-critical)');
-        return;
-      }
-
-      // Grace period: Don't clear auth for 5 seconds after login
-      // This prevents race conditions where API calls happen before token is fully propagated
-      // Increased from 3s to 5s to account for slower networks and multiple API calls
-      if (loginCompletedAtRef.current) {
-        const timeSinceLogin = Date.now() - loginCompletedAtRef.current;
-        const GRACE_PERIOD_MS = 5000; // 5 seconds (increased from 3s)
-        if (timeSinceLogin < GRACE_PERIOD_MS) {
-          console.log(
-            `[onAuthFailure] Ignoring 401 - within ${GRACE_PERIOD_MS}ms grace period after login (${timeSinceLogin}ms ago)`
-          );
-          return;
-        }
-      }
-
-      // Only clear auth if we have a token but it's invalid
-      // CRITICAL: Always check TokenManager (single source of truth) instead of state/authStorage
-      // State might be stale, but TokenManager is always current
-      const currentToken = tokenManager.getToken();
-      if (!currentToken) {
-        console.log('[onAuthFailure] No token present in TokenManager, not clearing auth');
-        return;
-      }
-
-      // CRITICAL: Distinguish between expired token (must logout) and network timeout (stay optimistic)
-      // If token is expired, we must clear auth regardless of network conditions
-      // If token is NOT expired but we got 401, it might be a network timeout/offline issue
-      // In that case, stay optimistic and keep the auth state
-      if (isTokenExpired(currentToken)) {
-        console.log('[onAuthFailure] Token expired - clearing auth state (must logout)');
-        clearAuthState();
-        return;
-      }
-
-      // Token is NOT expired but we got 401 - this might be a network timeout or offline issue
-      // Stay optimistic and keep the auth state rather than logging out
-      // The user might be offline or experiencing network issues, and their token is still valid
-      console.warn(
-        '[onAuthFailure] ⚠️ Token not expired but got 401 - likely network timeout/offline issue. Staying optimistic.'
-      );
-      // Don't clear auth - keep optimistic state
+      // DETERMINISTIC: Any 401 while AUTHENTICATED means token is invalid
+      // Transition to ANONYMOUS immediately - no timers, no "optimistic" guessing
+      console.log('[onAuthFailure] 401 received while AUTHENTICATED -> ANONYMOUS');
+      clearAuthState();
     });
-  }, [clearAuthState, isCheckingAuth, isAuthenticated, token]);
+  }, [clearAuthState, authStatus, token]);
 
   // Memoize context value to prevent unnecessary re-renders
   // Auth state changes infrequently, so this is a good optimization
   const value = React.useMemo(
     () => ({
-      // State
-      isAuthenticated,
+      // FSM State (single source of truth)
+      authStatus, // 'loading' | 'authenticated' | 'anonymous'
+
+      // Derived states (for convenience/backward compatibility)
+      isAuthenticated, // authStatus === 'authenticated'
+      isCheckingAuth, // authStatus === 'loading'
+
+      // User data
       email, // PRIMARY: Use this for user identification
       username, // DEPRECATED: Alias for email, kept for backward compatibility
       userId, // Numeric user ID from JWT (for UUID-based ownership checks)
       token,
-      isCheckingAuth,
+
+      // Action states
       isLoggingIn,
       isSigningUp,
       error,
@@ -797,12 +676,13 @@ export function AuthProvider({ children }) {
       isTokenExpired: () => isTokenExpired(token),
     }),
     [
+      authStatus,
       isAuthenticated,
+      isCheckingAuth,
       email,
       username,
       userId,
       token,
-      isCheckingAuth,
       isLoggingIn,
       isSigningUp,
       error,
