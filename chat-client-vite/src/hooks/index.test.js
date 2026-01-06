@@ -41,19 +41,9 @@ describe('Hooks Infrastructure Exports', () => {
     });
   });
 
-  describe('Async Hooks (hooks/async/)', () => {
-    it('exports useAsyncOperation', async () => {
-      const { useAsyncOperation } = await import('./async/index.js');
-      expect(useAsyncOperation).toBeDefined();
-      expect(typeof useAsyncOperation).toBe('function');
-    });
-
-    it('exports useMultipleAsyncOperations', async () => {
-      const { useMultipleAsyncOperations } = await import('./async/index.js');
-      expect(useMultipleAsyncOperations).toBeDefined();
-      expect(typeof useMultipleAsyncOperations).toBe('function');
-    });
-  });
+  // Async Hooks removed - migrated to TanStack Query
+  // useAsyncOperation and useMultipleAsyncOperations were never used in production
+  // All data fetching now uses @tanstack/react-query for better caching and state management
 
   describe('Integration Hooks (hooks/integrations/)', () => {
     it('exports useGooglePlaces', async () => {
@@ -102,11 +92,7 @@ describe('Hooks Infrastructure Exports', () => {
       expect(hooks.useToast).toBeDefined();
     });
 
-    it('re-exports all async hooks', async () => {
-      const hooks = await import('./index.js');
-      expect(hooks.useAsyncOperation).toBeDefined();
-      expect(hooks.useMultipleAsyncOperations).toBeDefined();
-    });
+    // Async hooks removed - migrated to TanStack Query
 
     it('re-exports all integration hooks', async () => {
       const hooks = await import('./index.js');

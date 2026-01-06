@@ -63,11 +63,13 @@ export function usePWA() {
           }
 
           // Track update found
-          import('../../../utils/pwaObservability.js').then(({ trackServiceWorkerUpdate }) => {
-            trackServiceWorkerUpdate(registration, true, null, 'current', 'new');
-          }).catch(() => {
-            // Silently ignore if module not available
-          });
+          import('../../../utils/pwaObservability.js')
+            .then(({ trackServiceWorkerUpdate }) => {
+              trackServiceWorkerUpdate(registration, true, null, 'current', 'new');
+            })
+            .catch(() => {
+              // Silently ignore if module not available
+            });
 
           try {
             newWorker.addEventListener('statechange', () => {
@@ -79,17 +81,21 @@ export function usePWA() {
                 ) {
                   setUpdateAvailable(true);
                   setWaitingWorker(newWorker);
-                  
+
                   // Track update available
-                  import('../../../utils/pwaObservability.js').then(({ trackServiceWorkerUpdate }) => {
-                    trackServiceWorkerUpdate(registration, true, null, 'current', 'new');
-                  }).catch(() => {});
+                  import('../../../utils/pwaObservability.js')
+                    .then(({ trackServiceWorkerUpdate }) => {
+                      trackServiceWorkerUpdate(registration, true, null, 'current', 'new');
+                    })
+                    .catch(() => {});
                 } else if (newWorker && newWorker.state === 'activated') {
                   // Track activation
-                  import('../../../utils/pwaObservability.js').then(({ trackServiceWorkerActivate }) => {
-                    trackServiceWorkerActivate(registration, true);
-                  }).catch(() => {});
-                  
+                  import('../../../utils/pwaObservability.js')
+                    .then(({ trackServiceWorkerActivate }) => {
+                      trackServiceWorkerActivate(registration, true);
+                    })
+                    .catch(() => {});
+
                   window.location.reload();
                 }
               } catch {
@@ -345,7 +351,7 @@ export function usePWA() {
       waitingWorker.postMessage({ type: 'SKIP_WAITING' });
       setUpdateAvailable(false);
       setWaitingWorker(null);
-      
+
       // Reload page after a short delay to allow service worker to activate
       setTimeout(() => {
         window.location.reload();
@@ -356,10 +362,8 @@ export function usePWA() {
       setTimeout(() => {
         window.location.reload();
       }, 100);
-    } else {
-      // Last resort: just reload (may not work if service worker not ready)
-      window.location.reload();
     }
+    // If no waiting worker, there's nothing to update - don't reload
   }, [waitingWorker, swRegistration]);
 
   // Check for updates manually
@@ -367,17 +371,21 @@ export function usePWA() {
     if (swRegistration) {
       try {
         await swRegistration.update();
-        
+
         // Track update check success
-        import('../../../utils/pwaObservability.js').then(({ trackServiceWorkerEvent }) => {
-          trackServiceWorkerEvent('update_check', { success: true });
-        }).catch(() => {});
+        import('../../../utils/pwaObservability.js')
+          .then(({ trackServiceWorkerEvent }) => {
+            trackServiceWorkerEvent('update_check', { success: true });
+          })
+          .catch(() => {});
       } catch (error) {
         // Track update check failure
-        import('../../../utils/pwaObservability.js').then(({ trackServiceWorkerUpdate, trackServiceWorkerEvent }) => {
-          trackServiceWorkerUpdate(swRegistration, false, error);
-          trackServiceWorkerEvent('update_check', { success: false, error: error.message });
-        }).catch(() => {});
+        import('../../../utils/pwaObservability.js')
+          .then(({ trackServiceWorkerUpdate, trackServiceWorkerEvent }) => {
+            trackServiceWorkerUpdate(swRegistration, false, error);
+            trackServiceWorkerEvent('update_check', { success: false, error: error.message });
+          })
+          .catch(() => {});
       }
     }
   }, [swRegistration]);

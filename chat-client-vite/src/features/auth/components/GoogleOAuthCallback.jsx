@@ -7,7 +7,7 @@ import { NavigationPaths } from '../../../adapters/navigation';
 
 /**
  * OAuth Callback State Machine
- * 
+ *
  * States:
  * - IDLE: Initial state
  * - PROCESSING: Making auth request
@@ -23,14 +23,14 @@ const OAuthState = {
 
 /**
  * GoogleOAuthCallback - Handles Google OAuth callback
- * 
+ *
  * Best Practices Applied:
  * 1. ✅ Idempotent operations (single execution per mount)
  * 2. ✅ Proper useEffect cleanup (AbortController)
  * 3. ✅ Single source of truth (React state, not sessionStorage)
  * 4. ✅ State machine pattern for clear state management
  * 5. ✅ Proper error handling and user feedback
- * 
+ *
  * Google redirects here with a code parameter, which we send to the backend.
  * OAuth codes from Google are single-use by design, so duplicate calls will
  * fail gracefully at the backend level.
@@ -39,14 +39,14 @@ export function GoogleOAuthCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { handleGoogleCallback, error, setError, isAuthenticated } = useAuth();
-  
+
   // State machine for OAuth flow
   const [state, setState] = React.useState(OAuthState.IDLE);
   const [errorMessage, setErrorMessage] = React.useState('');
-  
+
   // AbortController for canceling in-flight requests on unmount
   const abortControllerRef = React.useRef(null);
-  
+
   // Track if we've attempted processing to prevent duplicate executions
   // This handles React StrictMode double mounting correctly
   const hasAttemptedRef = React.useRef(false);
@@ -66,7 +66,7 @@ export function GoogleOAuthCallback() {
     const processCallback = async () => {
       // Mark as attempted to prevent duplicate processing
       hasAttemptedRef.current = true;
-      
+
       // Create AbortController for this request
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
@@ -80,7 +80,7 @@ export function GoogleOAuthCallback() {
         // Handle OAuth error from Google
         if (errorParam) {
           if (signal.aborted) return;
-          
+
           const oauthError = parseOAuthError(errorParam, errorDescription);
           logError(new Error(oauthError.message), {
             endpoint: 'google_oauth_callback',
@@ -98,10 +98,10 @@ export function GoogleOAuthCallback() {
           setState(OAuthState.ERROR);
           setErrorMessage(oauthError.userMessage);
           clearOAuthState();
-          
+
           setTimeout(() => {
             if (!signal.aborted) {
-              navigate(NavigationPaths.SIGN_IN);
+              navigate(NavigationPaths.SIGN_IN, { replace: true });
             }
           }, 3000);
           return;
@@ -110,7 +110,7 @@ export function GoogleOAuthCallback() {
         // Handle missing code
         if (!code) {
           if (signal.aborted) return;
-          
+
           const errorInfo = getErrorMessage(
             { code: 'INVALID_OAUTH_RESPONSE' },
             { endpoint: 'google_oauth_callback' }
@@ -119,14 +119,14 @@ export function GoogleOAuthCallback() {
             endpoint: 'google_oauth_callback',
             operation: 'oauth_callback',
           });
-          
+
           setState(OAuthState.ERROR);
           setErrorMessage(errorInfo.userMessage);
           clearOAuthState();
-          
+
           setTimeout(() => {
             if (!signal.aborted) {
-              navigate(NavigationPaths.SIGN_IN);
+              navigate(NavigationPaths.SIGN_IN, { replace: true });
             }
           }, 3000);
           return;
@@ -156,7 +156,7 @@ export function GoogleOAuthCallback() {
           setState(OAuthState.ERROR);
           setErrorMessage(error || 'Authentication failed. Please try again.');
           clearOAuthState();
-          
+
           setTimeout(() => {
             if (!signal.aborted) {
               navigate(NavigationPaths.SIGN_IN, { replace: true });
@@ -172,7 +172,7 @@ export function GoogleOAuthCallback() {
           setState(OAuthState.ERROR);
           setErrorMessage(errorInfo.userMessage);
           clearOAuthState();
-          
+
           setTimeout(() => {
             if (!signal.aborted) {
               navigate(NavigationPaths.SIGN_IN, { replace: true });

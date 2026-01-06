@@ -23,11 +23,10 @@ import { storage, StorageKeys } from './adapters/storage';
 import { usePWABadge } from './utils/usePWABadge.js';
 
 // Extracted hooks and components
-import { usePWADetector } from './features/shell/hooks/usePWADetector.js';
 import { useNavigationManager } from './features/shell/hooks/useNavigationManager.js';
 import { AuthGuard } from './features/shell/components/AuthGuard.jsx';
-import { ConnectionStatus } from './components/ConnectionStatus.jsx';
-import { useOfflineQueue } from './hooks/useOfflineQueue.js';
+import { ConnectionStatus } from './features/shell/components/ConnectionStatus.jsx';
+import { useOfflineQueue } from './hooks/network/useOfflineQueue.js';
 
 // Lazy-load AccountView for code-splitting
 const AccountView = React.lazy(() => import('./features/profile/components/AccountView.jsx'));
@@ -60,7 +59,7 @@ function ChatRoomContent({
   setCurrentViewFromParent,
 }) {
   // Use navigation adapter instead of direct react-router imports
-  const { navigate, getQueryParam } = useAppNavigation();
+  const { navigate } = useAppNavigation();
 
   // Use auth state from parent (lifted for ChatProvider)
   const username = usernameFromParent;
@@ -84,7 +83,6 @@ function ChatRoomContent({
     exitSearchMode,
     messages,
     isConnected,
-    isJoined,
   } = useChatContext();
 
   // Track offline queue size for ConnectionStatus
@@ -160,7 +158,6 @@ function ChatRoomContent({
     welcomeModal,
     profileTaskModal,
     inviteModal,
-    taskFormModal,
     // Flat handlers (abstracted - no reaching inside)
     taskFormMode,
     setTaskFormMode,
@@ -174,10 +171,7 @@ function ChatRoomContent({
   } = dashboardProps;
 
   // Contacts
-  const { contacts } = useContacts(
-    username,
-    isAuthenticated && !isCheckingAuth
-  );
+  const { contacts } = useContacts(username, isAuthenticated && !isCheckingAuth);
 
   // Notifications
   const notifications = useNotifications({
@@ -228,8 +222,6 @@ function ChatRoomContent({
     setPendingContactSuggestion: () => {},
     setDismissedSuggestions: () => {},
   };
-  const messageFlaggingModal = modalController?.messageFlaggingModal || {};
-
   // Handlers
   const handleNavigateToContacts = React.useCallback(
     memberName => {
@@ -242,9 +234,6 @@ function ChatRoomContent({
   const handleGetStarted = React.useCallback(() => {
     navigate(NavigationPaths.SIGN_IN);
   }, [navigate]);
-
-  // PWA detector - extracted to hook (used for analytics/logging)
-  const isPWA = usePWADetector();
 
   // handleAddContactFromSuggestion is now provided by useModalController
 
@@ -262,30 +251,6 @@ function ChatRoomContent({
     [refreshNotifications, setHasCoParentConnected]
   );
 
-  // New message handler for toast notifications
-  const handleNewMessage = React.useCallback(
-    message => {
-      // Use displayName (first name) if available, fallback to username (email)
-      const senderName = message.displayName || message.username || 'Co-parent';
-
-      toast.show({
-        sender: senderName,
-        message: message.text || message.content || '',
-        timestamp: message.timestamp
-          ? new Date(message.timestamp).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : undefined,
-        username,
-      });
-      if (notifications.permission === 'granted') {
-        notifications.showNotification(message);
-      }
-    },
-    [toast, username, notifications]
-  );
-
   // Debug: Log render state
   console.log('[ChatRoom] Rendering:', {
     isAuthenticated,
@@ -301,10 +266,7 @@ function ChatRoomContent({
       onGetStarted={handleGetStarted}
     >
       <>
-        <ConnectionStatus
-          isSocketConnected={isConnected}
-          queuedMessageCount={queuedMessageCount}
-        />
+        <ConnectionStatus isSocketConnected={isConnected} queuedMessageCount={queuedMessageCount} />
         <Navigation
           currentView={currentView}
           setCurrentView={setCurrentView}

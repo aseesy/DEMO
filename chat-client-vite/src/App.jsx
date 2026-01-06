@@ -1,6 +1,8 @@
 import './index.css';
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient.js';
 import ChatRoom from './ChatRoom.jsx';
 import { AcceptInvitationPage, InviteCoParentPage } from './features/invitations';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
@@ -176,62 +178,67 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div
-        style={{
-          minHeight: '100dvh',
-          height: '100%',
-          backgroundColor: '#ffffff',
-          width: '100%',
-          maxWidth: '100vw',
-          overflowX: 'hidden',
-        }}
-      >
-        <AuthProvider>
-          <AppContent />
-          <InvitationProvider>
-            <MediatorProvider>
-              <BrowserRouter>
-                <Routes>
-                  {/* Root route - redirect to signup for new visitors, dashboard for auth users */}
-                  <Route path="/" element={<ChatRoom />} />
-                  {/* Sign up route - default to signup form (primary CTA) */}
-                  <Route path="/signup" element={<LoginSignup defaultToSignup={true} />} />
-                  {/* Sign in route - for returning users */}
-                  <Route path="/signin" element={<LoginSignup />} />
-                  {/* Accept invitation route - for users accepting co-parent invitations */}
-                  <Route path="/accept-invite" element={<AcceptInvitationPage />} />
-                  {/* Invite co-parent route - shown after signup */}
-                  <Route path="/invite-coparent" element={<InviteCoParentPage />} />
-                  {/* Google OAuth callback route */}
-                  <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
-                  {/* Password reset routes */}
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  {/* UI Component Showcase - Design System Documentation */}
-                  <Route path="/ui-showcase" element={<UIShowcase />} />
-                  {/* Socket Debug Page - TEMPORARY */}
-                  <Route path="/socket-diagnostic" element={<SocketDiagnostic />} />
-                  {/* Socket Test v2 - New Simplified System */}
-                  <Route path="/socket-test-v2" element={<SocketTestV2 />} />
-                  {/* Privacy Policy Page */}
-                  <Route path="/privacy" element={<PrivacyPage />} />
-                  {/* Terms of Service Page */}
-                  <Route path="/terms" element={<TermsPage />} />
-                  {/* Catch-all route for typos - redirect to signin */}
-                  <Route path="/siginin" element={<LoginSignup />} />
-                  <Route path="/sign-in" element={<LoginSignup />} />
-                  {/* Catch-all for unknown routes */}
-                  <Route path="*" element={<ChatRoom />} />
-                  {/* Blog routes moved to marketing site (www.coparentliaizen.com) */}
-                  {/* Quizzes */}
-                  <Route path="/quizzes" element={<QuizzesPage />} />
-                  <Route path="/quizzes/co-parenting-stance" element={<CoParentingStanceQuiz />} />
-                </Routes>
-              </BrowserRouter>
-            </MediatorProvider>
-          </InvitationProvider>
-        </AuthProvider>
-      </div>
+      <QueryClientProvider client={queryClient}>
+        <div
+          style={{
+            minHeight: '100dvh',
+            height: '100%',
+            backgroundColor: '#ffffff',
+            width: '100%',
+            maxWidth: '100vw',
+            overflowX: 'hidden',
+          }}
+        >
+          <AuthProvider>
+            <AppContent />
+            <InvitationProvider>
+              <MediatorProvider>
+                <BrowserRouter>
+                  <Routes>
+                    {/* Root route - redirect to signup for new visitors, dashboard for auth users */}
+                    <Route path="/" element={<ChatRoom />} />
+                    {/* Sign up route - default to signup form (primary CTA) */}
+                    <Route path="/signup" element={<LoginSignup defaultToSignup={true} />} />
+                    {/* Sign in route - for returning users */}
+                    <Route path="/signin" element={<LoginSignup />} />
+                    {/* Accept invitation route - for users accepting co-parent invitations */}
+                    <Route path="/accept-invite" element={<AcceptInvitationPage />} />
+                    {/* Invite co-parent route - shown after signup */}
+                    <Route path="/invite-coparent" element={<InviteCoParentPage />} />
+                    {/* Google OAuth callback route */}
+                    <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
+                    {/* Password reset routes */}
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    {/* UI Component Showcase - Design System Documentation */}
+                    <Route path="/ui-showcase" element={<UIShowcase />} />
+                    {/* Socket Debug Page - TEMPORARY */}
+                    <Route path="/socket-diagnostic" element={<SocketDiagnostic />} />
+                    {/* Socket Test v2 - New Simplified System */}
+                    <Route path="/socket-test-v2" element={<SocketTestV2 />} />
+                    {/* Privacy Policy Page */}
+                    <Route path="/privacy" element={<PrivacyPage />} />
+                    {/* Terms of Service Page */}
+                    <Route path="/terms" element={<TermsPage />} />
+                    {/* Catch-all route for typos - redirect to signin */}
+                    <Route path="/siginin" element={<LoginSignup />} />
+                    <Route path="/sign-in" element={<LoginSignup />} />
+                    {/* Catch-all for unknown routes */}
+                    <Route path="*" element={<ChatRoom />} />
+                    {/* Blog routes moved to marketing site (www.coparentliaizen.com) */}
+                    {/* Quizzes */}
+                    <Route path="/quizzes" element={<QuizzesPage />} />
+                    <Route
+                      path="/quizzes/co-parenting-stance"
+                      element={<CoParentingStanceQuiz />}
+                    />
+                  </Routes>
+                </BrowserRouter>
+              </MediatorProvider>
+            </InvitationProvider>
+          </AuthProvider>
+        </div>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

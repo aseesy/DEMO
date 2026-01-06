@@ -34,7 +34,7 @@ export function useOfflineQueue() {
     updateQueueSize();
 
     // Listen for storage changes (queue updates)
-    const handleStorageChange = (e) => {
+    const handleStorageChange = e => {
       if (e.key === StorageKeys.OFFLINE_QUEUE) {
         updateQueueSize();
       }
@@ -55,4 +55,3 @@ export function useOfflineQueue() {
 }
 
 export default useOfflineQueue;
-

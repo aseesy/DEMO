@@ -37,7 +37,7 @@ export function useNetworkStatus() {
     const handleOnline = () => {
       console.log('[useNetworkStatus] Network came online');
       setIsOnline(true);
-      
+
       // If we were offline, we're now reconnecting
       if (wasOffline) {
         setIsReconnecting(true);
@@ -77,4 +77,3 @@ export function useNetworkStatus() {
 }
 
 export default useNetworkStatus;
-

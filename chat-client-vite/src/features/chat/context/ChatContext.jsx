@@ -1,7 +1,7 @@
 import React from 'react';
 import { socketService as socketServiceV2 } from '../../../services/socket/SocketService.v2.js';
 import { tokenManager } from '../../../utils/tokenManager.js';
-import { unreadService } from '../../../services/chat/index.js';
+// import { unreadService } from '../../../services/chat/index.js'; // Unused
 
 // Independent hooks - each subscribes to its own service
 import { useChatRoom } from '../../../hooks/chat/useChatRoom.js';
@@ -35,10 +35,16 @@ const ChatMessagesContext = React.createContext(null);
  * @param {string} currentView - Current view name
  * @param {Function} onNewMessage - Callback for new messages
  */
-export function ChatProvider({ children, username, isAuthenticated, currentView, onNewMessage }) {
+export function ChatProvider({
+  children,
+  username,
+  isAuthenticated,
+  currentView,
+  onNewMessage: _onNewMessage,
+}) {
   // username prop is actually the user's email (for backward compatibility)
   const userEmail = username;
-  
+
   // DEBUG: Log ChatProvider mount with timestamp
   console.log('[ChatProvider] ========================================');
   console.log('[ChatProvider] MOUNT at', new Date().toISOString());
@@ -65,21 +71,24 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   }, [isAuthenticated]);
   const { isConnected, emit } = useSocket({
     token,
-    enabled: isAuthenticated
+    enabled: isAuthenticated,
   });
   console.log('[ChatProvider] Socket state - isConnected:', isConnected);
 
   // Create socket-compatible object for components that need it
-  const socket = React.useMemo(() => ({
-    connected: isConnected,
-    emit,
-    on: (event, handler) => socketServiceV2.subscribe(event, handler),
-    off: (event, handler) => {
-      // socketServiceV2.subscribe returns unsubscribe, but we need a separate off method
-      // For now, components should store the unsubscribe function from 'on' calls
-      console.warn('[ChatContext] socket.off called - use unsubscribe from socket.on instead');
-    },
-  }), [isConnected, emit]);
+  const socket = React.useMemo(
+    () => ({
+      connected: isConnected,
+      emit,
+      on: (event, handler) => socketServiceV2.subscribe(event, handler),
+      off: (_event, _handler) => {
+        // socketServiceV2.subscribe returns unsubscribe, but we need a separate off method
+        // For now, components should store the unsubscribe function from 'on' calls
+        console.warn('[ChatContext] socket.off called - use unsubscribe from socket.on instead');
+      },
+    }),
+    [isConnected, emit]
+  );
 
   // === INDEPENDENT HOOKS (each subscribes to its own service) ===
   const room = useChatRoom();
@@ -241,13 +250,13 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
 
       // Typing indicator - debounced to reduce socket traffic
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      
+
       // Only emit typing start if not already typing (reduces socket emissions)
       if (!typingDebounceRef.current) {
         typing.startTyping();
         typingDebounceRef.current = true;
       }
-      
+
       typingTimeoutRef.current = setTimeout(() => {
         typing.stopTyping();
         typingDebounceRef.current = null;
@@ -256,7 +265,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     [coaching, typing]
   );
 
-  const removeMessages = React.useCallback(predicate => {
+  const removeMessages = React.useCallback(_predicate => {
     // Messages are managed by service - this would need service method
     console.warn('removeMessages not implemented in new architecture');
   }, []);
@@ -269,18 +278,35 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   // Split into high-frequency (messages, typing, input) and low-frequency (room, threads, search)
   // This prevents components that only need low-frequency state from re-rendering on message updates
 
+  // Optimize message array reference stability
+  // Create a stable reference key based on message count and last message ID
+  // This prevents context value recreation when messages array reference changes but content is the same
+  const messagesStableKey = React.useMemo(() => {
+    if (!messaging.messages || messaging.messages.length === 0) {
+      return 'empty';
+    }
+    const lastMessage = messaging.messages[messaging.messages.length - 1];
+    return `${messaging.messages.length}-${lastMessage?.id || 'none'}`;
+  }, [messaging.messages]);
+
+  // Memoize messages array with stable reference when possible
+  // Only recreate if messages actually changed (count or last message ID)
+  const stableMessages = React.useMemo(() => {
+    return messaging.messages;
+  }, [messagesStableKey, messaging.messages]);
+
   // High-frequency context: messages, typing, input
   // Updates frequently - components using this will re-render often
   const messagesValue = React.useMemo(
     () => ({
-      // Messages
-      messages: messaging.messages,
+      // Messages - use stable reference
+      messages: stableMessages,
       pendingMessages: messaging.pendingMessages,
       messageStatuses: messaging.messageStatuses,
       hasMoreMessages: messaging.hasMore,
       isLoadingOlder: messaging.isLoadingOlder,
       loadOlderMessages: messaging.loadOlder,
-      isInitialLoad: messaging.messages.length === 0,
+      isInitialLoad: stableMessages.length === 0,
 
       // Input
       inputMessage,
@@ -308,7 +334,8 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       messagesContainerRef,
     }),
     [
-      messaging.messages,
+      stableMessages,
+      messagesStableKey,
       messaging.pendingMessages,
       messaging.messageStatuses,
       messaging.hasMore,
@@ -582,7 +609,7 @@ export function useChatLowFrequencyContext() {
     }
     throw new Error('useChatLowFrequencyContext must be used within ChatProvider');
   }
-  
+
   // Return only low-frequency properties (memoized to prevent re-renders)
   return React.useMemo(
     () => ({

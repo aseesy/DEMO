@@ -132,11 +132,21 @@ describe('usePWA', () => {
       expect(typeof result.current.applyUpdate).toBe('function');
     });
 
-    it('should not apply update if no waiting worker', () => {
+    it('should not apply update if no waiting worker', async () => {
       const { result } = renderHook(() => usePWA());
+
+      // Wait for hook to initialize
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      });
 
       act(() => {
         result.current.applyUpdate();
+      });
+
+      // Wait a bit to ensure no async reload happens
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 150));
       });
 
       // Should not reload if no waiting worker

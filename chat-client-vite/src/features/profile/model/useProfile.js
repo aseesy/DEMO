@@ -1,12 +1,31 @@
 import React from 'react';
-import { apiGet, apiPost, apiPut } from '../../../apiClient.js';
-import { transformProfileFromApi } from '../../../services/profile/ProfileTransformService.js';
+import { apiGet, apiPost } from '../../../apiClient.js';
+import {
+  useProfileQuery,
+  useSaveProfileMutation,
+  useSaveProfileSectionMutation,
+  useUpdatePrivacySettingsMutation,
+} from './useProfileQueries.js';
 
 /**
  * Extended useProfile hook - Feature 010: Comprehensive User Profile System
  * Manages all profile data including personal, work, health, financial, and background sections.
+ *
+ * Migrated to TanStack Query for automatic caching, background refetching, and cache invalidation.
  */
 export function useProfile(username) {
+  // TanStack Query hooks
+  const {
+    data: profileQueryData,
+    isLoading: isLoadingProfile,
+    error: profileError,
+  } = useProfileQuery(username, !!username);
+
+  const saveProfileMutation = useSaveProfileMutation();
+  const saveSectionMutation = useSaveProfileSectionMutation();
+  const updatePrivacySettingsMutation = useUpdatePrivacySettingsMutation();
+
+  // Initialize profile data from query result or defaults
   const [profileData, setProfileData] = React.useState({
     // Core fields
     username: '',
@@ -81,6 +100,15 @@ export function useProfile(username) {
     profile_last_updated: null,
   });
 
+  // Sync profile data from query result
+  React.useEffect(() => {
+    if (profileQueryData) {
+      setProfileData(profileQueryData.profileData);
+      setPrivacySettings(profileQueryData.privacySettings);
+      setIsOwnProfile(profileQueryData.isOwnProfile);
+    }
+  }, [profileQueryData]);
+
   const [privacySettings, setPrivacySettings] = React.useState({
     personalVisibility: 'shared',
     workVisibility: 'private',
@@ -90,7 +118,6 @@ export function useProfile(username) {
     fieldOverrides: {},
   });
 
-  const [isLoadingProfile, setIsLoadingProfile] = React.useState(false);
   const [isSavingProfile, setIsSavingProfile] = React.useState(false);
   const [showPasswordChange, setShowPasswordChange] = React.useState(false);
   const [passwordData, setPasswordData] = React.useState({
@@ -102,41 +129,12 @@ export function useProfile(username) {
   const [error, setError] = React.useState('');
   const [isOwnProfile, setIsOwnProfile] = React.useState(true);
 
-  // Load profile data
+  // Derive error from query error
   React.useEffect(() => {
-    const loadProfile = async () => {
-      if (!username) {
-        console.warn('[useProfile] No username provided, cannot load profile');
-        return;
-      }
-      console.log('[useProfile] Loading profile for username:', username);
-      setIsLoadingProfile(true);
-      try {
-        const response = await apiGet('/api/profile/me');
-        if (response.ok) {
-          const data = await response.json();
-
-          // ✅ Delegate transformation to Application layer service
-          // Business rule: How profile fields are mapped from API to UI
-          const profileData = transformProfileFromApi(data, username);
-
-          setProfileData(profileData);
-
-          // Set privacy settings if available
-          if (data.privacySettings) {
-            setPrivacySettings(data.privacySettings);
-          }
-          setIsOwnProfile(data.isOwnProfile !== false);
-        }
-      } catch (err) {
-        console.error('Error loading profile:', err);
-        setError('Failed to load profile');
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    };
-    loadProfile();
-  }, [username]);
+    if (profileError) {
+      setError(profileError.message || 'Failed to load profile');
+    }
+  }, [profileError]);
 
   // Update a single field
   const updateField = (fieldName, value) => {
@@ -154,7 +152,7 @@ export function useProfile(username) {
     }));
   };
 
-  // Save profile
+  // Save profile using TanStack Query mutation
   const saveProfile = async () => {
     if (!username) {
       console.error('[useProfile] saveProfile called but username is missing');
@@ -163,68 +161,34 @@ export function useProfile(username) {
     console.log('[useProfile] saveProfile called for username:', username);
     setIsSavingProfile(true);
     setError('');
+
     try {
       const newUsername = profileData.username?.trim();
       if (newUsername && newUsername !== username) {
         if (newUsername.length < 2 || newUsername.length > 20) {
           setError('Username must be between 2 and 20 characters');
           setIsSavingProfile(false);
-          return;
+          return { success: false, error: 'Username must be between 2 and 20 characters' };
         }
       }
 
-      const { username: newUsernameFromProfile, ...profileDataWithoutUsername } = profileData;
+      const data = await saveProfileMutation.mutateAsync({
+        username,
+        profileData,
+      });
 
-      const requestBody = {
-        currentUsername: username,
-        username: newUsernameFromProfile || username,
-        ...profileDataWithoutUsername,
-      };
-
-      console.log('DEBUG saveProfile - sending request body:', requestBody);
-      console.log('DEBUG saveProfile - request body keys:', Object.keys(requestBody));
-
-      const response = await apiPut('/api/profile/me', requestBody);
-      console.log('DEBUG saveProfile - response status:', response.status);
-      const data = await response.json();
-      console.log('DEBUG saveProfile - response data:', data);
-
-      if (response.ok) {
-        if (data.username && data.username !== username) {
-          const updatedUsername = data.username;
-          localStorage.setItem('username', updatedUsername);
-          setProfileData(prev => ({ ...prev, username: updatedUsername }));
-        }
-
-        // Update completion percentage from response
-        if (data.completionPercentage !== undefined) {
-          setProfileData(prev => ({
-            ...prev,
-            profile_completion_percentage: data.completionPercentage,
-          }));
-        }
-
-        // Reload profile data to ensure UI is in sync
-        const reloadResponse = await apiGet('/api/profile/me');
-        if (reloadResponse.ok) {
-          const reloadData = await reloadResponse.json();
-          setProfileData(prev => ({
-            ...prev,
-            ...reloadData,
-            username: reloadData.username || data.username || username,
-          }));
-        }
-
-        return { success: true, completionPercentage: data.completionPercentage };
-      } else {
-        const errorMessage =
-          data.error || data.message || `Failed to save profile (Status: ${response.status})`;
-        setError(errorMessage);
-        return { success: false, error: errorMessage };
+      // Update completion percentage from response
+      if (data.completionPercentage !== undefined) {
+        setProfileData(prev => ({
+          ...prev,
+          profile_completion_percentage: data.completionPercentage,
+        }));
       }
+
+      // TanStack Query automatically invalidates and refetches, no manual reload needed
+      return { success: true, completionPercentage: data.completionPercentage };
     } catch (err) {
       console.error('Error saving profile - full error:', err);
-      console.error('Error saving profile - stack:', err.stack);
       const errorMessage =
         err.message || 'Failed to save profile. Please check your connection and try again.';
       setError(errorMessage);
@@ -234,43 +198,33 @@ export function useProfile(username) {
     }
   };
 
-  // Save specific section only
+  // Save specific section only using TanStack Query mutation
   const saveSection = async sectionFields => {
-    if (!username) return;
+    if (!username) return { success: false, error: 'Username required' };
     setIsSavingProfile(true);
     setError('');
     try {
-      const requestBody = {
-        currentUsername: username,
-      };
+      const data = await saveSectionMutation.mutateAsync({
+        username,
+        sectionFields,
+        profileData,
+      });
 
-      // Only include the specified fields
-      for (const field of sectionFields) {
-        if (profileData[field] !== undefined) {
-          requestBody[field] = profileData[field];
-        }
+      // Update completion percentage from response
+      if (data.completionPercentage !== undefined) {
+        setProfileData(prev => ({
+          ...prev,
+          profile_completion_percentage: data.completionPercentage,
+        }));
       }
 
-      const response = await apiPut('/api/user/profile', requestBody);
-      const data = await response.json();
-
-      if (response.ok) {
-        if (data.completionPercentage !== undefined) {
-          setProfileData(prev => ({
-            ...prev,
-            profile_completion_percentage: data.completionPercentage,
-          }));
-        }
-        return { success: true, completionPercentage: data.completionPercentage };
-      } else {
-        const errorMessage = data.error || 'Failed to save section';
-        setError(errorMessage);
-        return { success: false, error: errorMessage };
-      }
+      // TanStack Query automatically invalidates and refetches
+      return { success: true, completionPercentage: data.completionPercentage };
     } catch (err) {
       console.error('Error saving section:', err);
-      setError('Failed to save section');
-      return { success: false, error: err.message };
+      const errorMessage = err.message || 'Failed to save section';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setIsSavingProfile(false);
     }
@@ -296,29 +250,21 @@ export function useProfile(username) {
     return null;
   }, [username]);
 
-  // Update privacy settings
+  // Update privacy settings using TanStack Query mutation
   const updatePrivacySettings = React.useCallback(
     async newSettings => {
       if (!username) return { success: false, error: 'Username required' };
       try {
-        // Try the profile route first, fallback to user route
-        let response = await apiPut('/api/profile/privacy/me', newSettings);
-        if (!response.ok) {
-          response = await apiPut('/api/user/profile/privacy', newSettings);
-        }
-        if (response.ok) {
-          setPrivacySettings(prev => ({ ...prev, ...newSettings }));
-          return { success: true };
-        } else {
-          const data = await response.json();
-          return { success: false, error: data.error };
-        }
+        await updatePrivacySettingsMutation.mutateAsync(newSettings);
+        setPrivacySettings(prev => ({ ...prev, ...newSettings }));
+        // TanStack Query automatically invalidates and refetches
+        return { success: true };
       } catch (err) {
         console.error('Error updating privacy settings:', err);
         return { success: false, error: err.message };
       }
     },
-    [username]
+    [username, updatePrivacySettingsMutation]
   );
 
   // Get profile completion status
@@ -450,7 +396,7 @@ export function useProfile(username) {
     };
 
     let totalScore = 0;
-    for (const [sectionName, fields] of Object.entries(sections)) {
+    for (const [, fields] of Object.entries(sections)) {
       const filledFields = fields.filter(field => {
         const value = profileData[field];
         return value && value.toString().trim().length > 0;

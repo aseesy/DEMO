@@ -41,7 +41,7 @@ import {
 function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inviteHandlers }) {
   // username prop is actually the user's email (for backward compatibility)
   const userEmail = username;
-  
+
   // DEBUG: Log userEmail and userId props to diagnose ownership issue (development only)
   React.useEffect(() => {
     if (import.meta.env.DEV) {
@@ -68,7 +68,6 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
     setDraftCoaching,
     isPreApprovedRewrite,
     setIsPreApprovedRewrite,
-    originalRewrite,
     setOriginalRewrite,
     socket,
     loadOlderMessages,
@@ -80,7 +79,6 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
     searchTotal,
     isSearching,
     searchMode,
-    toggleSearchMode,
     exitSearchMode,
     jumpToMessage,
     highlightedMessageId,
@@ -95,8 +93,66 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
   const [feedbackGiven, setFeedbackGiven] = React.useState(new Set());
   const [pendingOriginalMessageToRemove, setPendingOriginalMessageToRemove] = React.useState(null);
 
+  // Memoize props passed to MessagesContainer to ensure memoization works effectively
+  // This prevents MessagesContainer from re-rendering when props haven't actually changed
+  const messagesContainerProps = React.useMemo(
+    () => ({
+      messages,
+      username: userEmail,
+      userId,
+      messagesContainerRef,
+      messagesEndRef,
+      isInitialLoad,
+      hasMoreMessages,
+      isLoadingOlder,
+      loadOlderMessages,
+      highlightedMessageId,
+      feedbackGiven,
+      sendInterventionFeedback,
+      pendingOriginalMessageToRemove,
+      setPendingOriginalMessageToRemove,
+      setFlaggingMessage,
+      draftCoaching,
+      inputMessage,
+      setInputMessage,
+      setIsPreApprovedRewrite,
+      setOriginalRewrite,
+      setDraftCoaching,
+      socket,
+      room,
+    }),
+    [
+      messages,
+      userEmail,
+      userId,
+      messagesContainerRef,
+      messagesEndRef,
+      isInitialLoad,
+      hasMoreMessages,
+      isLoadingOlder,
+      loadOlderMessages,
+      highlightedMessageId,
+      feedbackGiven,
+      sendInterventionFeedback,
+      pendingOriginalMessageToRemove,
+      setPendingOriginalMessageToRemove,
+      setFlaggingMessage,
+      draftCoaching,
+      inputMessage,
+      setInputMessage,
+      setIsPreApprovedRewrite,
+      setOriginalRewrite,
+      setDraftCoaching,
+      socket,
+      room,
+    ]
+  );
+
+  // MessagesContainer is already memoized, so we can use it directly
+  // The memoized props ensure it only re-renders when props actually change
+
   // Detect mobile vs desktop for search header display
-  const [isMobile, setIsMobile] = React.useState(() => {
+  const [_isMobile, setIsMobile] = React.useState(() => {
     if (typeof window !== 'undefined') {
       return window.innerWidth < 768;
     }
@@ -359,31 +415,7 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
                 }
               }}
             >
-              <MessagesContainer
-                messages={messages}
-                username={userEmail}
-                userId={userId}
-                messagesContainerRef={messagesContainerRef}
-                messagesEndRef={messagesEndRef}
-                isInitialLoad={isInitialLoad}
-                hasMoreMessages={hasMoreMessages}
-                isLoadingOlder={isLoadingOlder}
-                loadOlderMessages={loadOlderMessages}
-                highlightedMessageId={highlightedMessageId}
-                feedbackGiven={feedbackGiven}
-                sendInterventionFeedback={sendInterventionFeedback}
-                pendingOriginalMessageToRemove={pendingOriginalMessageToRemove}
-                setPendingOriginalMessageToRemove={setPendingOriginalMessageToRemove}
-                setFlaggingMessage={setFlaggingMessage}
-                draftCoaching={draftCoaching}
-                inputMessage={inputMessage}
-                setInputMessage={setInputMessage}
-                setIsPreApprovedRewrite={setIsPreApprovedRewrite}
-                setOriginalRewrite={setOriginalRewrite}
-                setDraftCoaching={setDraftCoaching}
-                socket={socket}
-                room={room}
-              />
+              <MessagesContainer {...messagesContainerProps} />
             </div>
 
             {/* Input Section - Fixed at bottom */}
@@ -428,9 +460,10 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
  */
 export function ChatViewLegacy({
   username,
+  userId,
   isAuthenticated,
-  currentView,
-  onNewMessage,
+  _currentView,
+  _onNewMessage,
   inviteLink,
   setInviteLink,
   inviteCode,

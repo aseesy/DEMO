@@ -8,19 +8,23 @@ import {
 } from './taskHelpers.js';
 import { isPWAInstallTask } from './taskTypeDetection.js';
 import {
-  queryFetchTasks,
-  commandUpdateTaskStatus,
-  commandSaveTask,
-  commandDeleteTask,
-} from './taskQueries.js';
+  useTasksQuery,
+  useUpdateTaskStatusMutation,
+  useSaveTaskMutation,
+  useDeleteTaskMutation,
+} from './useTaskQueries.js';
 
-// Minimal tasks hook to mirror the existing dashboard task behavior.
-// This focuses on loading tasks, limiting to 5, toggling status,
-// and creating/updating tasks.
-
+/**
+ * useTasks - Task management hook with TanStack Query
+ *
+ * Migrated from manual state management to TanStack Query for:
+ * - Automatic caching and request deduplication
+ * - Background refetching
+ * - Optimistic updates
+ * - Automatic cache invalidation after mutations
+ */
 export function useTasks(username, isAuthenticated = true) {
-  const [tasks, setTasks] = React.useState([]);
-  const [isLoadingTasks, setIsLoadingTasks] = React.useState(false);
+  // UI state (not related to data fetching)
   const [taskSearch, setTaskSearch] = React.useState('');
   const [taskFilter, setTaskFilter] = React.useState('open'); // Default to 'open' tasks
   const [showTaskForm, setShowTaskForm] = React.useState(false);
@@ -28,31 +32,24 @@ export function useTasks(username, isAuthenticated = true) {
   // Use utility function for default form data
   const [taskFormData, setTaskFormData] = React.useState(getDefaultTaskFormData());
 
-  const loadTasks = React.useCallback(async () => {
-    if (!username || !isAuthenticated) {
-      setTasks([]);
-      return;
-    }
+  // TanStack Query hooks
+  const {
+    data: tasksData,
+    isLoading: isLoadingTasks,
+    refetch: refetchTasks,
+  } = useTasksQuery({
+    username,
+    search: taskSearch,
+    filter: taskFilter,
+    enabled: isAuthenticated && !!username,
+  });
 
-    setIsLoadingTasks(true);
-    const result = await queryFetchTasks({
-      username,
-      search: taskSearch,
-      filter: taskFilter,
-    });
-    setTasks(result.tasks);
-    setIsLoadingTasks(false);
-  }, [username, taskFilter, taskSearch, isAuthenticated]);
+  const updateTaskStatusMutation = useUpdateTaskStatusMutation();
+  const saveTaskMutation = useSaveTaskMutation();
+  const deleteTaskMutation = useDeleteTaskMutation();
 
-  React.useEffect(() => {
-    // Only load tasks if authenticated and username is available
-    // This prevents race conditions during auth verification
-    if (isAuthenticated && username) {
-      loadTasks();
-    } else {
-      setTasks([]);
-    }
-  }, [loadTasks, isAuthenticated, username]);
+  // Extract tasks from query result (default to empty array)
+  const tasks = tasksData?.tasks || [];
 
   // Auto-complete PWA install task when app is installed
   // Track if we've already completed the task to avoid duplicate API calls
@@ -84,20 +81,19 @@ export function useTasks(username, isAuthenticated = true) {
     // Skip if already processing or not installed
     if (pwaTaskCompletedRef.current || !isPWAInstalled()) return;
 
-    // Mark it as completed
+    // Mark it as completed using TanStack Query mutation
     const completePWATask = async () => {
       pwaTaskCompletedRef.current = true; // Prevent duplicate calls
 
-      const result = await commandUpdateTaskStatus({
-        taskId: pwaTask.id,
-        username,
-        status: 'completed',
-      });
-
-      if (result.success) {
+      try {
+        await updateTaskStatusMutation.mutateAsync({
+          taskId: pwaTask.id,
+          username,
+          status: 'completed',
+        });
         trackTaskCompleted('pwa_install');
-        loadTasks(); // Refresh to show updated status
-      } else {
+        // TanStack Query automatically invalidates and refetches, no manual loadTasks() needed
+      } catch (_error) {
         pwaTaskCompletedRef.current = false; // Allow retry on failure
       }
     };
@@ -115,7 +111,7 @@ export function useTasks(username, isAuthenticated = true) {
     return () => {
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [tasks, username, isAuthenticated, loadTasks]);
+  }, [tasks, username, isAuthenticated, updateTaskStatusMutation]);
 
   const toggleTaskStatus = async task => {
     if (!task?.id || !username) return;
@@ -123,18 +119,21 @@ export function useTasks(username, isAuthenticated = true) {
     const previousStatus = task.status;
     const newStatus = getNextTaskStatus(previousStatus);
 
-    const result = await commandUpdateTaskStatus({
-      taskId: task.id,
-      username,
-      status: newStatus,
-    });
+    try {
+      await updateTaskStatusMutation.mutateAsync({
+        taskId: task.id,
+        username,
+        status: newStatus,
+      });
 
-    if (result.success) {
       // Track analytics when task is completed
       if (wasTaskCompleted(previousStatus, newStatus)) {
         trackTaskCompleted(task.type || 'general');
       }
-      loadTasks();
+      // TanStack Query automatically invalidates and refetches, no manual loadTasks() needed
+    } catch (error) {
+      // Error is handled by TanStack Query, but we could show a toast here if needed
+      console.error('Failed to update task status:', error);
     }
   };
 
@@ -155,13 +154,13 @@ export function useTasks(username, isAuthenticated = true) {
 
     const taskId = editingTask?.id || dataToSave.id || null;
 
-    const result = await commandSaveTask({
-      username,
-      taskData: dataToSave,
-      taskId,
-    });
+    try {
+      const result = await saveTaskMutation.mutateAsync({
+        username,
+        taskData: dataToSave,
+        taskId,
+      });
 
-    if (result.success) {
       // Track analytics for new task creation
       if (result.isNew) {
         trackTaskCreated(dataToSave.type || 'general', dataToSave.priority || 'medium');
@@ -169,10 +168,11 @@ export function useTasks(username, isAuthenticated = true) {
       setShowTaskForm(false);
       setEditingTask(null);
       setTaskFormData(getDefaultTaskFormData());
-      loadTasks();
+      // TanStack Query automatically invalidates and refetches, no manual loadTasks() needed
       return result.task;
-    } else {
-      alert(result.error || 'Failed to save task');
+    } catch (error) {
+      alert(error.message || 'Failed to save task');
+      throw error; // Re-throw so caller can handle if needed
     }
   };
 
@@ -183,18 +183,18 @@ export function useTasks(username, isAuthenticated = true) {
     const confirmed = window.confirm(`Delete "${task.title}"? This cannot be undone.`);
     if (!confirmed) return;
 
-    const result = await commandDeleteTask({
-      taskId: task.id,
-      username,
-    });
+    try {
+      await deleteTaskMutation.mutateAsync({
+        taskId: task.id,
+        username,
+      });
 
-    if (result.success) {
       setShowTaskForm(false);
       setEditingTask(null);
       setTaskFormData(getDefaultTaskFormData());
-      loadTasks();
-    } else {
-      alert(result.error || 'Failed to delete task');
+      // TanStack Query automatically invalidates and refetches, no manual loadTasks() needed
+    } catch (error) {
+      alert(error.message || 'Failed to delete task');
     }
   };
 
@@ -211,7 +211,7 @@ export function useTasks(username, isAuthenticated = true) {
     setShowTaskForm,
     setEditingTask,
     setTaskFormData,
-    loadTasks,
+    loadTasks: refetchTasks, // Expose refetch for manual refresh if needed
     toggleTaskStatus,
     saveTask,
     deleteTask,

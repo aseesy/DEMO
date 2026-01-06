@@ -1,7 +1,36 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter, MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { GoogleOAuthCallback } from '../GoogleOAuthCallback.jsx';
+
+// Mock navigate before importing
+const mockNavigate = vi.fn();
+
+// Mock react-router-dom with useNavigate
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
+// Mock storage adapter to fix import error
+vi.mock('../../../adapters/storage', () => ({
+  storage: {
+    get: vi.fn(),
+    set: vi.fn(),
+    remove: vi.fn(),
+  },
+  StorageKeys: {
+    OFFLINE_QUEUE: 'offline_queue',
+  },
+  authStorage: {
+    get: vi.fn(),
+    set: vi.fn(),
+    remove: vi.fn(),
+  },
+}));
 
 // Mock dependencies
 vi.mock('../../model/useAuth.js', () => ({
@@ -14,46 +43,49 @@ vi.mock('../../model/useAuth.js', () => ({
 }));
 
 vi.mock('../../../utils/oauthHelper.js', () => ({
-  parseOAuthError: vi.fn((error) => ({ message: error, userMessage: error })),
+  parseOAuthError: vi.fn(error => ({ message: error, userMessage: error })),
   clearOAuthState: vi.fn(),
 }));
 
 vi.mock('../../../utils/errorHandler.jsx', () => ({
-  getErrorMessage: vi.fn((err) => ({
+  getErrorMessage: vi.fn(err => ({
     userMessage: err.code || 'An error occurred',
   })),
   logError: vi.fn(),
 }));
 
 describe('GoogleOAuthCallback', () => {
-  const mockNavigate = vi.fn();
   const mockHandleGoogleCallback = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
-    // Mock useNavigate
-    vi.mock('react-router-dom', async () => {
-      const actual = await vi.importActual('react-router-dom');
-      return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-      };
-    });
+    mockNavigate.mockClear();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('should render loading state initially', () => {
+  it('should render loading state initially', async () => {
+    const { useAuth } = await import('../../model/useAuth.js');
+    useAuth.mockReturnValue({
+      handleGoogleCallback: mockHandleGoogleCallback,
+      error: '',
+      setError: vi.fn(),
+      isAuthenticated: false,
+    });
+
+    // Render with a code parameter to trigger processing state
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/auth/google/callback?code=test_code']}>
         <GoogleOAuthCallback />
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Completing Google login/i)).toBeInTheDocument();
+    // Should show loading state while processing
+    await waitFor(() => {
+      expect(screen.getByText(/Completing Google login/i)).toBeInTheDocument();
+    });
   });
 
   it('should prevent duplicate processing in StrictMode', async () => {
@@ -88,8 +120,8 @@ describe('GoogleOAuthCallback', () => {
     expect(mockHandleGoogleCallback).toHaveBeenCalledTimes(1);
   });
 
-  it('should redirect to home if already authenticated', () => {
-    const { useAuth } = require('../../model/useAuth.js');
+  it('should redirect to home if already authenticated', async () => {
+    const { useAuth } = await import('../../model/useAuth.js');
     useAuth.mockReturnValue({
       handleGoogleCallback: mockHandleGoogleCallback,
       error: '',
@@ -103,12 +135,14 @@ describe('GoogleOAuthCallback', () => {
       </MemoryRouter>
     );
 
-    expect(mockNavigate).toHaveBeenCalledWith('/');
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
+    });
   });
 
   it('should handle missing code parameter', async () => {
     const mockSetError = vi.fn();
-    const { useAuth } = require('../../model/useAuth.js');
+    const { useAuth } = await import('../../model/useAuth.js');
     useAuth.mockReturnValue({
       handleGoogleCallback: mockHandleGoogleCallback,
       error: '',
@@ -122,14 +156,18 @@ describe('GoogleOAuthCallback', () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => {
-      expect(mockSetError).toHaveBeenCalled();
-    });
+    // Component has 3s delay before navigation, wait for it
+    await waitFor(
+      () => {
+        expect(mockNavigate).toHaveBeenCalledWith('/signin', { replace: true });
+      },
+      { timeout: 4000 }
+    );
   });
 
   it('should handle OAuth error from Google', async () => {
     const mockSetError = vi.fn();
-    const { useAuth } = require('../../model/useAuth.js');
+    const { useAuth } = await import('../../model/useAuth.js');
     useAuth.mockReturnValue({
       handleGoogleCallback: mockHandleGoogleCallback,
       error: '',
@@ -143,14 +181,18 @@ describe('GoogleOAuthCallback', () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/sign-in', { replace: true });
-    });
+    // Component has 3s delay before navigation, wait for it
+    await waitFor(
+      () => {
+        expect(mockNavigate).toHaveBeenCalledWith('/signin', { replace: true });
+      },
+      { timeout: 4000 }
+    );
   });
 
   it('should process OAuth callback successfully', async () => {
     mockHandleGoogleCallback.mockResolvedValue(true);
-    const { useAuth } = require('../../model/useAuth.js');
+    const { useAuth } = await import('../../model/useAuth.js');
     useAuth.mockReturnValue({
       handleGoogleCallback: mockHandleGoogleCallback,
       error: '',
@@ -173,7 +215,7 @@ describe('GoogleOAuthCallback', () => {
   it('should handle OAuth callback failure', async () => {
     mockHandleGoogleCallback.mockResolvedValue(false);
     const mockSetError = vi.fn();
-    const { useAuth } = require('../../model/useAuth.js');
+    const { useAuth } = await import('../../model/useAuth.js');
     useAuth.mockReturnValue({
       handleGoogleCallback: mockHandleGoogleCallback,
       error: 'Auth failed',
@@ -187,11 +229,22 @@ describe('GoogleOAuthCallback', () => {
       </MemoryRouter>
     );
 
+    // Wait for callback to be called
     await waitFor(() => {
       expect(mockHandleGoogleCallback).toHaveBeenCalled();
-      // Should show error and eventually redirect
-      expect(screen.getByText(/Authentication failed/i)).toBeInTheDocument();
-    }, { timeout: 4000 });
+    });
+
+    // Wait for error message to appear
+    await waitFor(() => {
+      expect(screen.getByText(/Auth failed/i)).toBeInTheDocument();
+    });
+
+    // Component has 3s delay before navigation, wait for it
+    await waitFor(
+      () => {
+        expect(mockNavigate).toHaveBeenCalledWith('/signin', { replace: true });
+      },
+      { timeout: 4000 }
+    );
   });
 });
-

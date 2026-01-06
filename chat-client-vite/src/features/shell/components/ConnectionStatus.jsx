@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { useNetworkStatus } from '../hooks/useNetworkStatus.js';
+import { useNetworkStatus } from '../../../hooks/network/useNetworkStatus.js';
 
 /**
  * ConnectionStatus - Visual indicator for network connection state
@@ -108,16 +108,13 @@ export function ConnectionStatus({ queuedMessageCount = 0, isSocketConnected = f
           gap: '0.5rem',
         }}
       >
-        <span style={{ fontSize: '1.1rem' }}>
-          {!isOnline || !isSocketConnected ? '📡' : '✓'}
-        </span>
+        <span style={{ fontSize: '1.1rem' }}>{!isOnline || !isSocketConnected ? '📡' : '✓'}</span>
         <span style={{ fontWeight: 500 }}>{statusMessage}</span>
         {queuedMessageCount > 0 && (
           <span
             style={{
-              background: statusClass === 'sending' 
-                ? 'rgba(255, 255, 255, 0.3)' 
-                : 'rgba(255, 255, 255, 0.2)',
+              background:
+                statusClass === 'sending' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)',
               padding: '0.2rem 0.5rem',
               borderRadius: '12px',
               fontSize: '0.85rem',
@@ -133,4 +130,3 @@ export function ConnectionStatus({ queuedMessageCount = 0, isSocketConnected = f
 }
 
 export default ConnectionStatus;
-

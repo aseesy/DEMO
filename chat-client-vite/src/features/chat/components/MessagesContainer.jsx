@@ -1,8 +1,17 @@
 import React from 'react';
 import { ObserverCard } from '../../dashboard/components/ObserverCard.jsx';
+import { MessageItem } from './MessageItem.jsx';
+import { VirtualizedMessagesContainer } from './VirtualizedMessagesContainer.jsx';
+
+// Threshold for switching to virtual scrolling (performance optimization)
+// Use virtual scrolling when message count exceeds this threshold
+const VIRTUAL_SCROLLING_THRESHOLD = 50;
 
 /**
  * MessagesContainer - Renders the scrollable message list with date grouping
+ *
+ * Automatically switches to virtual scrolling for long message lists (50+ messages)
+ * for optimal performance. Regular scrolling is used for shorter lists.
  */
 function MessagesContainerComponent({
   messages,
@@ -31,7 +40,7 @@ function MessagesContainerComponent({
   // Optimized message grouping - memoized with efficient date formatting
   const messageGroups = React.useMemo(() => {
     if (!messages || messages.length === 0) return [];
-    
+
     const groups = [];
     let currentGroup = null;
     let currentDate = null;
@@ -39,7 +48,7 @@ function MessagesContainerComponent({
 
     // Filter out contact_suggestion messages - they only trigger modals, not chat display
     const displayMessages = messages.filter(msg => msg.type !== 'contact_suggestion');
-    
+
     if (displayMessages.length === 0) return [];
 
     // Cache date formatter to avoid creating new formatter for each message
@@ -59,7 +68,7 @@ function MessagesContainerComponent({
       const msg = displayMessages[index];
       const msgDate = new Date(msg.created_at || msg.timestamp);
       const needsYear = msgDate.getFullYear() !== currentYear;
-      const dateLabel = needsYear 
+      const dateLabel = needsYear
         ? dateFormatterWithYear.format(msgDate)
         : dateFormatter.format(msgDate);
 
@@ -95,17 +104,20 @@ function MessagesContainerComponent({
 
   // Throttle scroll handler to prevent excessive calls
   const scrollThrottleRef = React.useRef(null);
-  const handleScroll = React.useCallback((e) => {
-    // Throttle scroll events to prevent performance issues
-    if (scrollThrottleRef.current) return;
-    
-    scrollThrottleRef.current = requestAnimationFrame(() => {
-      scrollThrottleRef.current = null;
-      if (e.target.scrollTop < 100 && hasMoreMessages && !isLoadingOlder) {
-        loadOlderMessages();
-      }
-    });
-  }, [hasMoreMessages, isLoadingOlder, loadOlderMessages]);
+  const handleScroll = React.useCallback(
+    e => {
+      // Throttle scroll events to prevent performance issues
+      if (scrollThrottleRef.current) return;
+
+      scrollThrottleRef.current = requestAnimationFrame(() => {
+        scrollThrottleRef.current = null;
+        if (e.target.scrollTop < 100 && hasMoreMessages && !isLoadingOlder) {
+          loadOlderMessages();
+        }
+      });
+    },
+    [hasMoreMessages, isLoadingOlder, loadOlderMessages]
+  );
 
   // Scroll to bottom when a message is blocked/intervened
   React.useEffect(() => {
@@ -130,7 +142,6 @@ function MessagesContainerComponent({
     }
   }, [draftCoaching, messagesEndRef]);
 
-
   // Responsive padding calculation
   const [isMobile, setIsMobile] = React.useState(() => {
     if (typeof window !== 'undefined') {
@@ -148,6 +159,40 @@ function MessagesContainerComponent({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Use virtual scrolling for long message lists (better performance)
+  const shouldUseVirtualization = messages && messages.length > VIRTUAL_SCROLLING_THRESHOLD;
+
+  // If message count exceeds threshold, use virtualized container
+  if (shouldUseVirtualization) {
+    return (
+      <VirtualizedMessagesContainer
+        messages={messages}
+        username={username}
+        userId={userId}
+        messagesContainerRef={messagesContainerRef}
+        messagesEndRef={messagesEndRef}
+        isInitialLoad={isInitialLoad}
+        hasMoreMessages={hasMoreMessages}
+        isLoadingOlder={isLoadingOlder}
+        loadOlderMessages={loadOlderMessages}
+        highlightedMessageId={highlightedMessageId}
+        feedbackGiven={feedbackGiven}
+        sendInterventionFeedback={sendInterventionFeedback}
+        pendingOriginalMessageToRemove={pendingOriginalMessageToRemove}
+        setFlaggingMessage={setFlaggingMessage}
+        draftCoaching={draftCoaching}
+        inputMessage={inputMessage}
+        setInputMessage={setInputMessage}
+        setIsPreApprovedRewrite={setIsPreApprovedRewrite}
+        setOriginalRewrite={setOriginalRewrite}
+        setDraftCoaching={setDraftCoaching}
+        socket={_socket}
+        room={room}
+      />
+    );
+  }
+
+  // Regular scrolling for shorter lists (simpler, no virtualization overhead)
   return (
     <div
       ref={messagesContainerRef}
@@ -207,9 +252,13 @@ function MessagesContainerComponent({
 
           {/* Messages in this date group */}
           {group.messages.map((msg, msgIndex) => {
+            // Skip if message is pending removal
+            if (pendingOriginalMessageToRemove === msg.id) return null;
+
             // UUID-based ownership detection (primary method)
             // Messages should have sender.uuid or sender_id from the server
-            const messageUserId = msg.sender?.uuid || msg.sender?.id || msg.sender_id || msg.user_id;
+            const messageUserId =
+              msg.sender?.uuid || msg.sender?.id || msg.sender_id || msg.user_id;
 
             // Compare UUIDs/IDs (convert to string for safe comparison)
             const isOwn = userId && messageUserId && String(userId) === String(messageUserId);
@@ -236,128 +285,21 @@ function MessagesContainerComponent({
             const isHighlighted = highlightedMessageId === msg.id;
             const isSending = msg.isOptimistic || msg.status === 'sending';
 
-            if (pendingOriginalMessageToRemove === msg.id) return null;
-
+            // Use memoized MessageItem component - only re-renders when this specific message changes
             return (
-              <div
+              <MessageItem
                 key={msg.id || msgIndex}
-                id={`message-${msg.id}`}
-                className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 ${
-                  isHighlighted ? 'animate-pulse bg-yellow-100 rounded-lg p-2 -mx-2' : ''
-                }`}
-              >
-                <div
-                  className={`${isOwn ? 'order-2' : 'order-1'}`}
-                  style={{
-                    maxWidth: '85%',
-                    width: 'fit-content',
-                  }}
-                >
-                  {/* Message bubble - only text inside */}
-                  <div
-                    className={`px-3 py-2 rounded-2xl ${
-                      isAI
-                        ? 'bg-teal-lightest border border-teal-light text-teal-dark'
-                        : isOwn
-                          ? isSending
-                            ? 'bg-teal-500 text-white' // Slightly lighter while sending
-                            : 'bg-teal-600 text-white'
-                          : 'bg-white border border-gray-200 text-gray-900'
-                    }`}
-                  >
-                    <p
-                      className="text-base sm:text-lg leading-relaxed whitespace-pre-wrap break-words"
-                      style={{
-                        wordBreak: 'break-word',
-                        overflowWrap: 'break-word',
-                        maxWidth: '100%',
-                      }}
-                    >
-                      {msg.text || msg.message}
-                    </p>
-                  </div>
-
-                  {/* Timestamp and indicators - outside bubble */}
-                  <div
-                    className={`text-xs mt-0.5 flex items-center gap-1 ${isOwn ? 'justify-end' : 'justify-start'} ${
-                      isOwn ? 'text-gray-600' : 'text-gray-600'
-                    }`}
-                  >
-                    {new Date(msg.created_at || msg.timestamp).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                    {/* Flag icon - only show for messages from other users (not your own, not AI) */}
-                    {!isOwn && !isAI && (
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          setFlaggingMessage(msg);
-                        }}
-                        className="ml-1 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
-                        title="Flag this message as offensive or inappropriate"
-                        aria-label="Flag message"
-                      >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
-                          />
-                        </svg>
-                      </button>
-                    )}
-                    {/* Show sending/sent indicator for own messages */}
-                    {isOwn && isSending && (
-                      <span className="ml-1" title="Sending...">
-                        ○
-                      </span>
-                    )}
-                    {isOwn && !isSending && !isAI && (
-                      <span className="ml-1" title="Sent">
-                        ✓
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Intervention feedback buttons */}
-                  {msg.intervention_id && !feedbackGiven.has(msg.intervention_id) && (
-                    <div className="flex gap-2 mt-1 justify-end">
-                      <button
-                        onClick={() => sendInterventionFeedback(msg.intervention_id, 'helpful')}
-                        className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200"
-                      >
-                        👍 Helpful
-                      </button>
-                      <button
-                        onClick={() => sendInterventionFeedback(msg.intervention_id, 'not_helpful')}
-                        className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200"
-                      >
-                        👎 Not helpful
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Message actions */}
-                  {!isAI && (
-                    <div className="flex gap-2 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => setFlaggingMessage(msg)}
-                        className="text-xs text-gray-400 hover:text-red-500"
-                        title="Flag message"
-                      >
-                        🚩
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+                message={msg}
+                isOwn={isOwn}
+                senderDisplayName={senderDisplayName}
+                isAI={isAI}
+                isHighlighted={isHighlighted}
+                isSending={isSending}
+                userId={userId}
+                feedbackGiven={feedbackGiven}
+                sendInterventionFeedback={sendInterventionFeedback}
+                onFlag={setFlaggingMessage}
+              />
             );
           })}
         </div>

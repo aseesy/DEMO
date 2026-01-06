@@ -16,8 +16,12 @@
 // UI Infrastructure
 export * from './ui/index.js';
 
-// Async Utilities
-export * from './async/index.js';
+// Async Utilities - REMOVED: Migrated to TanStack Query (@tanstack/react-query)
+// useAsyncOperation and useMultipleAsyncOperations were never used in production code
+// All data fetching now uses TanStack Query for better caching, deduplication, and state management
+
+// Network Status
+export * from './network/index.js';
 
 // Third-party Integrations
 export * from './integrations/index.js';

@@ -6,8 +6,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../context/AuthContext.jsx';
 import { MediatorProvider } from '../context/MediatorContext.jsx';
 import { InvitationProvider } from '../context/InvitationContext.jsx';
@@ -45,22 +46,33 @@ const mockMobileViewport = () => {
 };
 
 describe('PWA Layout Integration', () => {
+  let queryClient;
+
   beforeEach(() => {
     mockMobileViewport();
     vi.clearAllMocks();
+    // Create a new QueryClient for each test to avoid state leakage
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
   });
 
   it('should render without horizontal overflow', () => {
     const { container } = render(
-      <BrowserRouter>
-        <AuthProvider>
-          <InvitationProvider>
-            <MediatorProvider>
-              <ChatRoom />
-            </MediatorProvider>
-          </InvitationProvider>
-        </AuthProvider>
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <InvitationProvider>
+              <MediatorProvider>
+                <ChatRoom />
+              </MediatorProvider>
+            </InvitationProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
     );
 
     // Check that the main content area has proper constraints
@@ -79,15 +91,17 @@ describe('PWA Layout Integration', () => {
 
   it('should have proper width constraints on all containers', () => {
     const { container } = render(
-      <BrowserRouter>
-        <AuthProvider>
-          <InvitationProvider>
-            <MediatorProvider>
-              <ChatRoom />
-            </MediatorProvider>
-          </InvitationProvider>
-        </AuthProvider>
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <InvitationProvider>
+              <MediatorProvider>
+                <ChatRoom />
+              </MediatorProvider>
+            </InvitationProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
     );
 
     // Check that all major containers have width constraints
