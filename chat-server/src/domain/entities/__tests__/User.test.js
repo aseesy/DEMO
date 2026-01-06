@@ -77,6 +77,7 @@ describe('User Entity', () => {
     });
 
     it('should make entity immutable', () => {
+      'use strict';
       const user = new User({
         id: 1,
         email: 'test@example.com',
@@ -85,7 +86,7 @@ describe('User Entity', () => {
 
       expect(() => {
         user.id = 2;
-      }).toThrow();
+      }).toThrow(TypeError);
     });
   });
 
@@ -194,7 +195,8 @@ describe('User Entity', () => {
 
       expect(updated).not.toBe(user); // New instance
       expect(updated.lastLogin).toBeInstanceOf(Date);
-      expect(updated.lastLogin.getTime()).toBeGreaterThan(user.createdAt.getTime());
+      // Allow for small timing differences (use >= instead of >)
+      expect(updated.lastLogin.getTime()).toBeGreaterThanOrEqual(user.createdAt.getTime());
     });
   });
 

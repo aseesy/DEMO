@@ -82,6 +82,7 @@ describe('Message Entity', () => {
     });
 
     it('should make entity immutable', () => {
+      'use strict';
       const message = new Message({
         id: 'msg-123',
         type: 'message',
@@ -93,7 +94,7 @@ describe('Message Entity', () => {
 
       expect(() => {
         message.text = 'New text';
-      }).toThrow();
+      }).toThrow(TypeError);
     });
   });
 

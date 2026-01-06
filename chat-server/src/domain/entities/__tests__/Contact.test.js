@@ -79,6 +79,7 @@ describe('Contact Entity', () => {
     });
 
     it('should make entity immutable', () => {
+      'use strict';
       const contact = new Contact({
         id: 1,
         userId: 1,
@@ -87,7 +88,7 @@ describe('Contact Entity', () => {
 
       expect(() => {
         contact.contactName = 'New Name';
-      }).toThrow();
+      }).toThrow(TypeError);
     });
   });
 

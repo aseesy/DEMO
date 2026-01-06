@@ -116,6 +116,7 @@ describe('Task Entity', () => {
     });
 
     it('should make entity immutable', () => {
+      'use strict';
       const task = new Task({
         id: 1,
         title: 'Test Task',
@@ -124,7 +125,7 @@ describe('Task Entity', () => {
 
       expect(() => {
         task.title = 'New Title';
-      }).toThrow();
+      }).toThrow(TypeError);
     });
   });
 

@@ -87,6 +87,11 @@ jest.mock('../libraryLoader', () => ({
   interventionLearning: null,
 }));
 
+jest.mock('../humanUnderstanding', () => ({
+  generateHumanUnderstanding: jest.fn().mockResolvedValue(null),
+  formatUnderstandingForPrompt: jest.fn().mockReturnValue(''),
+}));
+
 const openaiClient = require('../client');
 const messageCache = require('../messageCache');
 const preFilters = require('../preFilters');
@@ -145,6 +150,11 @@ describe('AI Mediator - Comprehensive Tests', () => {
     promptBuilder.formatInsightsForPrompt.mockReturnValue('Insights');
     promptBuilder.formatProfileContextForPrompt.mockReturnValue('Profile');
     promptBuilder.buildMediationPrompt.mockReturnValue('Full prompt');
+    responseProcessor.processResponse.mockResolvedValue(null);
+
+    // Mock userContext
+    const userContext = require('../../profiles/userContext');
+    userContext.formatContextForAI.mockResolvedValue('User context');
   });
 
   describe('analyzeMessage - Complete Flow', () => {
@@ -365,6 +375,10 @@ describe('AI Mediator - Comprehensive Tests', () => {
         rewrite2: 'Rewrite 2',
       };
 
+      // Ensure code layer doesn't quick-pass (would return null)
+      // libs is already set to null in the mock, but ensure it stays null
+      libs.codeLayerIntegration = null;
+
       openaiClient.createChatCompletion.mockResolvedValue({
         choices: [
           {
@@ -379,6 +393,8 @@ describe('AI Mediator - Comprehensive Tests', () => {
       });
 
       // Mock responseProcessor to return the intervention result
+      // Reset the mock to ensure it returns the intervention
+      responseProcessor.processResponse.mockReset();
       responseProcessor.processResponse.mockResolvedValue(mockIntervention);
 
       // Mock userContext for the mediator

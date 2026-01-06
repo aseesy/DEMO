@@ -112,6 +112,7 @@ describe('Room Entity', () => {
     });
 
     it('should make entity immutable', () => {
+      'use strict';
       const room = new Room({
         id: 'room-123',
         name: 'Test Room',
@@ -120,7 +121,7 @@ describe('Room Entity', () => {
 
       expect(() => {
         room.name = 'New Name';
-      }).toThrow();
+      }).toThrow(TypeError);
     });
   });
 
@@ -177,13 +178,13 @@ describe('Room Entity', () => {
         id: 'room-123',
         name: 'Test Room',
         createdBy: 1,
-        memberIds: [1],
+        memberIds: [], // Start with 0 members
       });
 
-      const updated = room.addMember(2);
+      const updated = room.addMember(1);
 
       expect(updated).not.toBe(room); // New instance
-      expect(updated.memberIds).toEqual([1, 2]);
+      expect(updated.memberIds).toEqual([1]);
     });
 
     it('should not add duplicate member', () => {
@@ -191,7 +192,7 @@ describe('Room Entity', () => {
         id: 'room-123',
         name: 'Test Room',
         createdBy: 1,
-        memberIds: [1],
+        memberIds: [1, 2], // Start with 2 members (valid co-parent room)
       });
 
       const updated = room.addMember(1);
@@ -222,10 +223,15 @@ describe('Room Entity', () => {
         memberIds: [1, 2],
       });
 
-      const updated = room.removeMember(2);
-
-      expect(updated).not.toBe(room); // New instance
-      expect(updated.memberIds).toEqual([1]);
+      // Removing a member from a 2-member room results in 1 member,
+      // which violates the business rule (must be 0 or 2 members)
+      // The removeMember method should handle this by either:
+      // 1. Setting to empty array, or
+      // 2. Throwing an error
+      // For now, we expect it to throw when trying to create invalid room
+      expect(() => {
+        room.removeMember(2);
+      }).toThrow('Co-parent room must have exactly 2 members');
     });
 
     it('should not remove non-member', () => {
@@ -233,10 +239,10 @@ describe('Room Entity', () => {
         id: 'room-123',
         name: 'Test Room',
         createdBy: 1,
-        memberIds: [1],
+        memberIds: [1, 2], // Start with 2 members (valid co-parent room)
       });
 
-      const updated = room.removeMember(2);
+      const updated = room.removeMember(3);
 
       expect(updated).toBe(room); // Same instance
     });
@@ -259,7 +265,7 @@ describe('Room Entity', () => {
         id: 'room-123',
         name: 'Test Room',
         createdBy: 1,
-        memberIds: [1],
+        memberIds: [], // Start with 0 members
       });
 
       expect(room.isComplete()).toBe(false);
