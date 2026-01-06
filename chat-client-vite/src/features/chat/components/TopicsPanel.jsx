@@ -208,8 +208,10 @@ function ThreadCard({ thread, isExpanded, onToggle, onLoadDetails, currentUserEm
               {/* Messages */}
               {details.messages && details.messages.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-2">Conversation</p>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <p className="text-xs font-medium text-gray-500 mb-2">
+                    Conversation ({details.messages.length} messages)
+                  </p>
+                  <div className="space-y-2 max-h-96 overflow-y-auto border border-gray-100 rounded-lg p-2 bg-white">
                     {details.messages.map((msg, i) => (
                       <MessageItem
                         key={msg.id || i}

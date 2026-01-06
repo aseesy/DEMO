@@ -259,14 +259,26 @@ OUTPUT FORMAT (valid JSON only):
       }
     }
 
+    // Try to extract key topic from first few messages
+    const firstMessages = window.messages.slice(0, 5).map(m => m.text).join(' ');
+    // Look for common patterns: names, events, topics
+    const nameMatch = firstMessages.match(/\b(vira|thomas|celine|emma|school|doctor|pickup|dropoff)\b/i);
+    const topicHint = nameMatch ? nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1) : null;
+
     const date = new Date(window.firstMessageAt).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
     });
 
+    // Create a more descriptive title using category and topic hint
+    const categoryLabel = CATEGORY_DESCRIPTIONS[category].split(',')[0].trim();
+    const title = topicHint
+      ? `${topicHint} - ${categoryLabel}`
+      : `${categoryLabel} discussion (${date})`;
+
     return {
       category,
-      title: `Conversation on ${date}`,
+      title,
       summary: `Discussion with ${window.messages.length} messages between ${window.participants.length} participants.`,
       decisions: [],
       openItems: [],
