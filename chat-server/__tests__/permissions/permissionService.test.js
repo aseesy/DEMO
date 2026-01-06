@@ -16,7 +16,7 @@ describe('PermissionService', () => {
     };
 
     // Mock dbPostgres module
-    jest.mock('../../../dbPostgres', () => mockDbPostgres);
+    jest.mock('../../dbPostgres', () => mockDbPostgres);
 
     // Import service after mocking
     PermissionService =
