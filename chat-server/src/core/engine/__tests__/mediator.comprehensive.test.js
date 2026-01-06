@@ -323,6 +323,7 @@ describe('AI Mediator - Comprehensive Tests', () => {
         taskContextForAI: 'Task context',
         flaggedMessagesContext: 'Flagged context',
         roleContext: { senderId: 'user1', receiverId: 'user2' },
+        threadContext: null,
       });
     });
 
@@ -377,7 +378,12 @@ describe('AI Mediator - Comprehensive Tests', () => {
         ],
       });
 
+      // Mock responseProcessor to return the intervention result
       responseProcessor.processResponse.mockResolvedValue(mockIntervention);
+
+      // Mock userContext for the mediator
+      const userContext = require('../../profiles/userContext');
+      userContext.formatContextForAI.mockResolvedValue('User context');
 
       const result = await mediator.analyzeMessage(
         mockMessage,
