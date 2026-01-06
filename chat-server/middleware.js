@@ -17,6 +17,17 @@ const {
   RATE_LIMIT,
 } = require('./config');
 
+// Extract hostnames and suffixes from PRODUCTION_DOMAINS (Single Source of Truth)
+// Hostnames are specific domains (e.g., 'coparentliaizen.com')
+// Suffixes are platform domains (e.g., 'vercel.app', 'railway.app')
+const PLATFORM_SUFFIXES = ['vercel.app', 'railway.app'];
+const ALLOWED_HOSTNAMES = Object.freeze(
+  PRODUCTION_DOMAINS.filter(domain => !PLATFORM_SUFFIXES.includes(domain))
+);
+const ALLOWED_SUFFIXES = Object.freeze(
+  PLATFORM_SUFFIXES.map(suffix => `.${suffix}`)
+);
+
 /**
  * Configure global middleware
  */
@@ -100,19 +111,8 @@ function normalizeOrigin(origin) {
   }
 }
 
-/**
- * Frozen allowlist of production domains (hostnames only, lowercase)
- */
-const ALLOWED_HOSTNAMES = Object.freeze([
-  'coparentliaizen.com',
-  'www.coparentliaizen.com',
-  'app.coparentliaizen.com',
-]);
-
-/**
- * Frozen allowlist of domain suffixes (for platform wildcards)
- */
-const ALLOWED_SUFFIXES = Object.freeze(['.vercel.app', '.railway.app']);
+// ALLOWED_HOSTNAMES and ALLOWED_SUFFIXES are now derived from PRODUCTION_DOMAINS above
+// This ensures a single source of truth in config.js
 
 /**
  * Check if origin is allowed

@@ -3,7 +3,7 @@
  * Usage: node list-users.js
  */
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const dbSafe = require('./dbSafe');
 
 async function listUsers() {

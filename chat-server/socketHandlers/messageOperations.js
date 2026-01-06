@@ -103,7 +103,8 @@ async function createUserMessage(
     // Database field (keep for database column mapping)
     user_email: userEmail,
 
-    // Legacy field (required by AI mediator for profile lookups and caching)
+    // Legacy field: Set to email for backward compatibility during transition
+    // AI mediator and other services will migrate to use sender.email or user_email
     username: userEmail,
 
     // Core fields

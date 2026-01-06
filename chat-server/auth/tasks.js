@@ -3,7 +3,7 @@
  */
 const dbSafe = require('../dbSafe');
 
-async function createWelcomeAndOnboardingTasks(userId, username) {
+async function createWelcomeAndOnboardingTasks(userId, userEmail) {
   const now = new Date().toISOString();
 
   // Welcome task - check for existing task first to prevent duplicates

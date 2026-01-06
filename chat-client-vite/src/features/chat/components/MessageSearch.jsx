@@ -189,7 +189,7 @@ export function MessageSearch({
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="text-sm font-medium text-teal-700 shrink-0">
-                  {result.displayName || result.username}
+                  {result.displayName || result.sender?.first_name || result.sender?.email || 'Unknown'}
                 </span>
                 <span className="text-xs text-gray-400 shrink-0">
                   {formatDate(result.timestamp)}

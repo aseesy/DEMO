@@ -75,28 +75,27 @@ async function executeCypher(query, params = {}) {
  * PRIVACY & ANONYMITY:
  * - Email: NOT stored (data minimization - stored in PostgreSQL only)
  * - DisplayName: NOT stored (anonymity - display names are identifying)
- * - Only stores: userId, username (pseudonymized identifiers)
+ * - Username: NOT stored (removed from system, email is now primary identifier)
+ * - Only stores: userId (internal identifier for linking to PostgreSQL)
  *
- * Display names can be retrieved from PostgreSQL when needed for queries.
+ * All Neo4j queries use userId for lookups, so no email/username needed.
+ * Display names and emails are retrieved from PostgreSQL when needed.
  *
- * @param {number} userId - PostgreSQL user ID
- * @param {string} username - Database username (unique identifier, already pseudonymized)
- * @param {string} email - User email address (not stored in Neo4j for privacy)
- * @param {string} [displayName] - User display name (not stored in Neo4j for anonymity)
+ * @param {number} userId - PostgreSQL user ID (primary identifier)
  * @returns {Promise<Object>} Created node information
  */
-async function createUserNode(userId, username, email, displayName = null) {
+async function createUserNode(userId) {
   if (!isNeo4jConfigured) {
     console.log('⚠️  Neo4j not configured - skipping user node creation');
     return null;
   }
 
   try {
-    // PRIVACY & ANONYMITY: Create User node WITHOUT email and displayName
+    // PRIVACY & ANONYMITY: Create User node with ONLY userId
+    // No email, no username, no displayName - all retrieved from PostgreSQL when needed
     const query = `
       CREATE (u:User {
         userId: $userId,
-        username: $username,
         createdAt: datetime()
       })
       RETURN u
@@ -104,14 +103,13 @@ async function createUserNode(userId, username, email, displayName = null) {
 
     const params = {
       userId: neo4j.int(userId),
-      username: username,
     };
 
     const result = await executeCypher(query, params);
 
     if (result.records.length > 0) {
       const node = result.records[0].get('u').properties;
-      console.log(`✅ Created Neo4j user node for userId: ${userId}, username: ${username}`);
+      console.log(`✅ Created Neo4j user node for userId: ${userId}`);
       return node;
     }
 
@@ -142,38 +140,19 @@ async function createCoParentRelationship(userId1, userId2, roomId, roomName = n
   }
 
   try {
-    // First, ensure user nodes exist with proper data
-    // Fetch usernames from PostgreSQL to ensure complete nodes
-    const dbPostgres = require('../../../dbPostgres');
-    const usersResult = await dbPostgres.query(
-      'SELECT id, username FROM users WHERE id = $1 OR id = $2',
-      [userId1, userId2]
-    );
-
-    const userMap = new Map();
-    usersResult.rows.forEach(row => {
-      userMap.set(row.id, row.username);
-    });
-
-    const username1 = userMap.get(userId1) || `user_${userId1}`;
-    const username2 = userMap.get(userId2) || `user_${userId2}`;
-
-    // MERGE user nodes with username (required for queries and privacy model)
+    // First, ensure user nodes exist (only userId needed for privacy)
+    // All queries use userId for lookups, so no email/username needed
     const ensureUsersQuery = `
       MERGE (u1:User {userId: $userId1})
-      ON CREATE SET u1.username = $username1, u1.createdAt = datetime()
-      ON MATCH SET u1.username = COALESCE(u1.username, $username1)
+      ON CREATE SET u1.createdAt = datetime()
       MERGE (u2:User {userId: $userId2})
-      ON CREATE SET u2.username = $username2, u2.createdAt = datetime()
-      ON MATCH SET u2.username = COALESCE(u2.username, $username2)
+      ON CREATE SET u2.createdAt = datetime()
       RETURN u1, u2
     `;
 
     await executeCypher(ensureUsersQuery, {
       userId1: neo4j.int(userId1),
       userId2: neo4j.int(userId2),
-      username1: username1,
-      username2: username2,
     });
 
     // Now create the relationship (user nodes are guaranteed to exist)

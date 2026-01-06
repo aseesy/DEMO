@@ -81,20 +81,49 @@ Complete guide to deploy LiaiZen to production using Railway (backend) and Verce
 
 ### Step 3: Custom Domain Setup
 
+#### Domain Routing Strategy
+
+**Important**: The following domain routing strategy ensures clear separation between marketing and application:
+
+- **`coparentliaizen.com`** (apex domain) → **Redirects to** `www.coparentliaizen.com` (marketing site)
+- **`www.coparentliaizen.com`** → Marketing site (landing page, waitlist, etc.)
+- **`app.coparentliaizen.com`** → Application (PWA, chat interface)
+
+**Why this separation?**
+- Marketing cycles and application release cycles are rarely synchronous
+- Clear user experience: marketing content vs. application access
+- SEO benefits: www subdomain is standard for marketing sites
+
+#### Vercel Domain Configuration
+
+1. **Marketing Site Project** (`marketing-site`):
+   - Add `www.coparentliaizen.com` as primary domain
+   - Add `coparentliaizen.com` and configure **307 redirect** to `www.coparentliaizen.com`
+   - This redirect is configured in Vercel Dashboard → Settings → Domains
+
+2. **Application Project** (`chat-client-vite`):
+   - Add `app.coparentliaizen.com` as primary domain
+   - Ensure Root Directory is set to `chat-client-vite` (not root of monorepo)
+
+3. **DNS Configuration** (in Hostinger or your DNS provider):
+   - **A Record** for `@` (apex) → Points to Vercel IP (provided by Vercel)
+   - **CNAME Record** for `www` → Points to Vercel CNAME (provided by Vercel)
+   - **CNAME Record** for `app` → Points to Vercel CNAME (provided by Vercel)
+
+**Note**: The apex domain redirect (`coparentliaizen.com` → `www.coparentliaizen.com`) is handled at the Vercel level, not in DNS. Do not split traffic at the DNS level without a redirect; it confuses users and SEO.
+
+#### Railway Domain (Backend)
+
 1. **In Railway Dashboard:**
    - Service → **Settings** → **Networking**
-   - Click **"Custom Domain"** → Add `coparentliaizen.com`
-   - Railway will provide DNS records
+   - Railway provides a default domain: `your-app.up.railway.app`
+   - **No custom domain needed** - the Railway domain works perfectly for API access
+   - The frontend connects to this Railway domain via environment variables
 
-2. **Configure DNS in Hostinger:**
-   - Go to DNS Zone Editor
-   - Add records provided by Railway:
-     - A record for root domain (@)
-     - CNAME for www subdomain
-
-3. **SSL Certificate:**
-   - Railway automatically provisions SSL via Let's Encrypt
-   - Wait 5-15 minutes after adding domain
+2. **SSL Certificate:**
+   - Railway automatically provisions SSL for Railway domains
+   - Vercel automatically provisions SSL for custom domains
+   - Both are handled automatically - no manual SSL configuration needed
 
 ### Step 4: Deploy
 

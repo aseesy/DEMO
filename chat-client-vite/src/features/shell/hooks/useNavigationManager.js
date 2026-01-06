@@ -111,6 +111,15 @@ export function useNavigationManager({
     // Redirect to sign-in (only if not already there and haven't redirected)
     if (!isOnSignIn) {
       console.log('[NavigationManager] Redirecting to sign-in');
+      
+      // Store current URL as return URL for deep linking
+      // Preserve full pathname + search params (e.g., /?view=chat&threadId=123)
+      const returnUrl = currentPath + (window.location.search || '');
+      if (returnUrl && returnUrl !== '/' && returnUrl !== NavigationPaths.SIGN_IN) {
+        storage.set(StorageKeys.RETURN_URL, returnUrl, { ttl: 60 * 60 * 1000 }); // 1 hour TTL
+        console.log('[NavigationManager] Stored return URL:', returnUrl);
+      }
+      
       hasRedirectedRef.current = true;
       lastPathRef.current = NavigationPaths.SIGN_IN;
 

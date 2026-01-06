@@ -5,13 +5,13 @@
  *
  * Why this exists:
  * - Separates queue management from UI state and transport
- * - Handles localStorage persistence
+ * - Handles localStorage persistence via StorageAdapter
  * - Can be tested independently
  *
  * Single Responsibility: Queue management only
  */
 
-const OFFLINE_QUEUE_KEY = 'liaizen_offline_queue';
+import { storage, StorageKeys } from '../../adapters/storage';
 
 /**
  * MessageQueueService
@@ -24,13 +24,13 @@ export class MessageQueueService {
   }
 
   /**
-   * Load queue from localStorage
+   * Load queue from storage via StorageAdapter
    * @private
    */
   _loadQueue() {
     try {
-      const stored = localStorage.getItem(OFFLINE_QUEUE_KEY);
-      return stored ? JSON.parse(stored) : [];
+      const stored = storage.get(StorageKeys.OFFLINE_QUEUE);
+      return Array.isArray(stored) ? stored : [];
     } catch (error) {
       console.warn('[MessageQueueService] Failed to load queue:', error);
       return [];
@@ -38,12 +38,12 @@ export class MessageQueueService {
   }
 
   /**
-   * Save queue to localStorage
+   * Save queue to storage via StorageAdapter
    * @private
    */
   _saveQueue() {
     try {
-      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(this._queue));
+      storage.set(StorageKeys.OFFLINE_QUEUE, this._queue);
     } catch (error) {
       console.warn('[MessageQueueService] Failed to save queue:', error);
     }

@@ -3,7 +3,7 @@
  * Usage: node find-user.js yashir91lora@gmail.com
  */
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const dbSafe = require('./dbSafe');
 
 async function findUser(emailOrUsername) {

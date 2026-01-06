@@ -20,7 +20,7 @@
 import React from 'react';
 import { createMessageTransportService } from '../../../services/message/MessageTransportService.js';
 import { createMessageQueueService } from '../../../services/message/MessageQueueService.js';
-import { createMessagePayload, saveOfflineQueue } from '../../../utils/messageBuilder.js';
+import { createMessagePayload } from '../../../utils/messageBuilder.js';
 
 /**
  * useMessageTransport - Manages network transport for messages
@@ -100,14 +100,17 @@ export function useMessageTransport({ socketRef, offlineQueueRef, setError } = {
         const sent = await transportService.sendMessage(payload);
         if (sent) {
           // Remove from queue on success
-          if (offlineQueueRef?.current) {
+          if (queueService) {
+            queueService.dequeue(msg.id);
+          } else if (offlineQueueRef?.current) {
+            // Legacy fallback: update ref and save via adapter
             const index = offlineQueueRef.current.findIndex(m => m.id === msg.id);
             if (index !== -1) {
               offlineQueueRef.current.splice(index, 1);
-              saveOfflineQueue(offlineQueueRef.current);
+              // Save via StorageAdapter (saveOfflineQueue is now async and deprecated)
+              const { storage, StorageKeys } = await import('../../../adapters/storage');
+              storage.set(StorageKeys.OFFLINE_QUEUE, offlineQueueRef.current);
             }
-          } else if (queueService) {
-            queueService.dequeue(msg.id);
           }
           console.log(`[useMessageTransport] Successfully sent queued message: ${msg.id}`);
         } else {
@@ -236,14 +239,15 @@ export function useMessageTransport({ socketRef, offlineQueueRef, setError } = {
         originalRewrite,
       };
 
-      // Use legacy offlineQueueRef for now (backward compatibility)
-      // TODO: Phase 3+ will migrate to queueService fully
-      if (offlineQueueRef?.current) {
-        offlineQueueRef.current.push(pendingMessage);
-        saveOfflineQueue(offlineQueueRef.current);
-      } else if (queueService) {
-        // Fallback to queue service if ref not available
+      // Use MessageQueueService as single source of truth
+      if (queueService) {
         queueService.enqueue(pendingMessage);
+      } else if (offlineQueueRef?.current) {
+        // Legacy fallback: update ref and save via adapter
+        offlineQueueRef.current.push(pendingMessage);
+        // Use StorageAdapter directly (saveOfflineQueue is now async and deprecated)
+        const { storage, StorageKeys } = await import('../../../adapters/storage');
+        storage.set(StorageKeys.OFFLINE_QUEUE, offlineQueueRef.current);
       }
 
       setError?.('Not connected. Message will be sent when connection is restored.');
@@ -254,10 +258,12 @@ export function useMessageTransport({ socketRef, offlineQueueRef, setError } = {
 
   // Expose queue size for UI
   const getQueueSize = React.useCallback(() => {
-    if (offlineQueueRef?.current && Array.isArray(offlineQueueRef.current)) {
-      return offlineQueueRef.current.length;
-    } else if (queueService) {
+    // Prefer MessageQueueService as single source of truth
+    if (queueService) {
       return queueService.size();
+    } else if (offlineQueueRef?.current && Array.isArray(offlineQueueRef.current)) {
+      // Legacy fallback
+      return offlineQueueRef.current.length;
     }
     return 0;
   }, [queueService, offlineQueueRef]);

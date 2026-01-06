@@ -5,6 +5,7 @@ import {
   retryWithBackoff,
   isRetryableError,
 } from '../utils/errorHandler.jsx';
+import { sessionStorage as sessionStorageAdapter, StorageKeys } from '../adapters/storage';
 
 /**
  * InvitationContext - Centralized invitation state management
@@ -32,12 +33,12 @@ export function InvitationProvider({ children }) {
    * Load invitation state from sessionStorage
    */
   const loadInvitationState = React.useCallback(() => {
-    const storedToken = sessionStorage.getItem('invitation_token');
-    const storedCode = sessionStorage.getItem('invitation_code');
+    const storedToken = sessionStorageAdapter.getString(StorageKeys.INVITATION_TOKEN);
+    const storedCode = sessionStorageAdapter.getString(StorageKeys.INVITATION_CODE);
 
     return {
-      token: storedToken,
-      shortCode: storedCode,
+      token: storedToken || null,
+      shortCode: storedCode || null,
     };
   }, []);
 
@@ -46,18 +47,18 @@ export function InvitationProvider({ children }) {
    */
   const saveInvitationState = React.useCallback((newToken, newCode) => {
     if (newToken) {
-      sessionStorage.setItem('invitation_token', newToken);
+      sessionStorageAdapter.set(StorageKeys.INVITATION_TOKEN, newToken);
       setToken(newToken);
     } else {
-      sessionStorage.removeItem('invitation_token');
+      sessionStorageAdapter.remove(StorageKeys.INVITATION_TOKEN);
       setToken(null);
     }
 
     if (newCode) {
-      sessionStorage.setItem('invitation_code', newCode);
+      sessionStorageAdapter.set(StorageKeys.INVITATION_CODE, newCode);
       setShortCode(newCode);
     } else {
-      sessionStorage.removeItem('invitation_code');
+      sessionStorageAdapter.remove(StorageKeys.INVITATION_CODE);
       setShortCode(null);
     }
   }, []);
@@ -66,8 +67,7 @@ export function InvitationProvider({ children }) {
    * Clear invitation state
    */
   const clearInvitationState = React.useCallback(() => {
-    sessionStorage.removeItem('invitation_token');
-    sessionStorage.removeItem('invitation_code');
+    sessionStorageAdapter.removeMany([StorageKeys.INVITATION_TOKEN, StorageKeys.INVITATION_CODE]);
     setToken(null);
     setShortCode(null);
     setValidationResult(null);
@@ -95,17 +95,15 @@ export function InvitationProvider({ children }) {
 
       // CRITICAL FIX: Clear stale sessionStorage if we're validating a new token/code
       // This ensures URL parameters always take priority over cached values
-      const currentStoredToken = sessionStorage.getItem('invitation_token');
-      const currentStoredCode = sessionStorage.getItem('invitation_code');
+      const currentStoredToken = sessionStorageAdapter.getString(StorageKeys.INVITATION_TOKEN);
+      const currentStoredCode = sessionStorageAdapter.getString(StorageKeys.INVITATION_CODE);
 
       if (inviteToken && currentStoredToken && currentStoredToken !== inviteToken) {
         // New token from URL is different from cached token - clear the cache
-        sessionStorage.removeItem('invitation_token');
-        sessionStorage.removeItem('invitation_code');
+        sessionStorageAdapter.removeMany([StorageKeys.INVITATION_TOKEN, StorageKeys.INVITATION_CODE]);
       } else if (inviteCode && currentStoredCode && currentStoredCode !== inviteCode) {
         // New code from URL is different from cached code - clear the cache
-        sessionStorage.removeItem('invitation_token');
-        sessionStorage.removeItem('invitation_code');
+        sessionStorageAdapter.removeMany([StorageKeys.INVITATION_TOKEN, StorageKeys.INVITATION_CODE]);
       }
 
       // Save the current token/code to sessionStorage

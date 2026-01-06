@@ -60,8 +60,13 @@ async function createUserWithEmail(
 /**
  * Create a user with email - NO automatic room creation
  * Use this when accepting invites (a shared room will be created separately)
+ * 
+ * @param {string} email - User's email address
+ * @param {string} password - User's password (will be hashed)
+ * @param {string|null} displayName - Display name (will be parsed into firstName/lastName if possible)
+ * @param {Object} context - User context data
  */
-async function createUserWithEmailNoRoom(email, password, firstName = null, lastName = null, context = {}) {
+async function createUserWithEmailNoRoom(email, password, displayName = null, context = {}) {
   const emailLower = email.trim().toLowerCase();
 
   // Check if email already exists
@@ -73,16 +78,26 @@ async function createUserWithEmailNoRoom(email, password, firstName = null, last
   const hashedPassword = password ? await hashPassword(password) : null;
   const now = new Date().toISOString();
 
-  const displayName = firstName && lastName 
-    ? `${firstName.trim()} ${lastName.trim()}` 
-    : firstName?.trim() || lastName?.trim() || null;
+  // Parse displayName into firstName and lastName if possible
+  let firstName = null;
+  let lastName = null;
+  let finalDisplayName = displayName?.trim() || null;
+  
+  if (finalDisplayName) {
+    // Try to split displayName into firstName and lastName
+    const parts = finalDisplayName.split(/\s+/).filter(p => p.length > 0);
+    if (parts.length > 0) {
+      firstName = parts[0];
+      lastName = parts.length > 1 ? parts.slice(1).join(' ') : null;
+    }
+  }
 
   const userData = {
     password_hash: hashedPassword,
     email: emailLower,
-    first_name: firstName?.trim() || null,
-    last_name: lastName?.trim() || null,
-    display_name: displayName,
+    first_name: firstName || null,
+    last_name: lastName || null,
+    display_name: finalDisplayName,
     created_at: now,
   };
 
@@ -125,15 +140,17 @@ async function createUserWithEmailNoRoom(email, password, firstName = null, last
 
   // Create Neo4j node (using email instead of username)
   neo4jClient
-    .createUserNode(userId, emailLower, emailLower, displayName || emailLower)
+    .createUserNode(userId)
     .catch(() => {});
 
   return {
     id: userId,
     email: emailLower,
-    displayName: displayName || emailLower,
-    firstName: userData.first_name,
-    lastName: userData.last_name,
+    first_name: firstName,
+    last_name: lastName,
+    displayName: finalDisplayName || emailLower,
+    firstName: firstName,
+    lastName: lastName,
     room: null, // No room created
   };
 }
@@ -319,14 +336,7 @@ async function registerFromInvitation(params, db) {
   });
 
   await createWelcomeAndOnboardingTasks(result.user.id, result.user.email);
-  neo4jClient
-    .createUserNode(
-      result.user.id,
-      result.user.email,
-      result.user.email,
-      result.user.displayName
-    )
-    .catch(() => {});
+  neo4jClient.createUserNode(result.user.id).catch(() => {});
   if (result.room && result.coParent)
     neo4jClient
       .createCoParentRelationship(

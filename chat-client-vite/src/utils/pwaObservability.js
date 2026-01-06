@@ -248,15 +248,29 @@ export function classifyErrorType(error) {
     'timeout',
   ];
 
-  // Check for offline
-  if (
-    !navigator.onLine ||
-    offlineIndicators.some(indicator => errorMessage.includes(indicator)) ||
-    errorName === 'NetworkError' ||
-    errorName === 'TypeError' // fetch() throws TypeError when offline
-  ) {
+  // Check for offline - but be more conservative
+  // navigator.onLine is unreliable, so only use it as a hint
+  // Don't classify as offline just because of TypeError - could be CORS, DNS, etc.
+  const isDefinitelyOffline = 
+    !navigator.onLine && 
+    (offlineIndicators.some(indicator => errorMessage.includes(indicator)) || errorName === 'NetworkError');
+  
+  if (isDefinitelyOffline) {
     return {
       type: 'offline',
+      details: {
+        navigator_online: navigator.onLine,
+        error_message: errorMessage,
+        error_name: errorName,
+      },
+    };
+  }
+  
+  // If navigator.onLine is false but error doesn't clearly indicate offline,
+  // classify as network error (not offline) - could be server issue, CORS, DNS, etc.
+  if (!navigator.onLine && (errorName === 'TypeError' || errorMessage.includes('fetch'))) {
+    return {
+      type: 'network', // Not offline, but network issue
       details: {
         navigator_online: navigator.onLine,
         error_message: errorMessage,

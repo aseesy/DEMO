@@ -16,23 +16,59 @@ import {
   parseOAuthError,
 } from './oauthHelper.js';
 
-// Mock sessionStorage
-const mockSessionStorage = (() => {
-  let store = {};
+// Mock StorageAdapter - define stores outside mock factory
+let mockStorageStore = {};
+let mockSessionStorageStore = {};
+
+// Mock the StorageAdapter module
+vi.mock('../adapters/storage', () => {
+  const mockStorageStore = {};
+  const mockSessionStorageStore = {};
+  
   return {
-    getItem: vi.fn(key => store[key] || null),
-    setItem: vi.fn((key, value) => {
-      store[key] = value.toString();
-    }),
-    removeItem: vi.fn(key => {
-      delete store[key];
-    }),
-    clear: vi.fn(() => {
-      store = {};
-    }),
-    _getStore: () => store,
+    storage: {
+      get: vi.fn((key) => mockStorageStore[key] || null),
+      getString: vi.fn((key) => mockStorageStore[key] || ''),
+      set: vi.fn((key, value) => {
+        mockStorageStore[key] = value;
+        return true;
+      }),
+      remove: vi.fn((key) => {
+        delete mockStorageStore[key];
+        return true;
+      }),
+      removeMany: vi.fn((keys) => {
+        keys.forEach(key => delete mockStorageStore[key]);
+        return true;
+      }),
+      _getStore: () => mockStorageStore,
+    },
+    sessionStorage: {
+      get: vi.fn((key) => mockSessionStorageStore[key] || null),
+      getString: vi.fn((key) => mockSessionStorageStore[key] || ''),
+      set: vi.fn((key, value) => {
+        mockSessionStorageStore[key] = value;
+        return true;
+      }),
+      remove: vi.fn((key) => {
+        delete mockSessionStorageStore[key];
+        return true;
+      }),
+      removeMany: vi.fn((keys) => {
+        keys.forEach(key => delete mockSessionStorageStore[key]);
+        return true;
+      }),
+      _getStore: () => mockSessionStorageStore,
+    },
+    StorageKeys: {
+      OAUTH_STATE: 'oauth_state',
+      OAUTH_STATE_TIMESTAMP: 'oauth_state_timestamp',
+    },
   };
-})();
+});
+
+// Import mocked modules
+import { storage as mockStorage, sessionStorage as mockSessionStorageAdapter, StorageKeys as mockStorageKeys } from '../adapters/storage';
 
 // Mock crypto.getRandomValues
 const mockCrypto = {
@@ -46,9 +82,10 @@ const mockCrypto = {
 
 describe('OAuth Helper', () => {
   beforeEach(() => {
-    vi.stubGlobal('sessionStorage', mockSessionStorage);
     vi.stubGlobal('crypto', mockCrypto);
-    mockSessionStorage.clear();
+    // Clear storage mocks
+    Object.keys(mockStorage._getStore()).forEach(key => delete mockStorage._getStore()[key]);
+    Object.keys(mockSessionStorageAdapter._getStore()).forEach(key => delete mockSessionStorageAdapter._getStore()[key]);
     vi.clearAllMocks();
   });
 
@@ -85,7 +122,8 @@ describe('OAuth Helper', () => {
 
       storeOAuthState(state);
 
-      expect(mockSessionStorage.setItem).toHaveBeenCalledWith('oauth_state', state);
+      expect(mockSessionStorageAdapter.set).toHaveBeenCalledWith('oauth_state', state);
+      expect(mockStorage.set).toHaveBeenCalledWith('oauth_state', state);
     });
 
     it('should store timestamp in sessionStorage', () => {
@@ -94,12 +132,12 @@ describe('OAuth Helper', () => {
 
       storeOAuthState(state);
 
-      expect(mockSessionStorage.setItem).toHaveBeenCalledWith(
+      expect(mockSessionStorageAdapter.set).toHaveBeenCalledWith(
         'oauth_state_timestamp',
         expect.any(String)
       );
 
-      const storedTimestamp = parseInt(mockSessionStorage._getStore()['oauth_state_timestamp'], 10);
+      const storedTimestamp = parseInt(mockSessionStorageAdapter._getStore()['oauth_state_timestamp'], 10);
       expect(storedTimestamp).toBeGreaterThanOrEqual(beforeTime);
       expect(storedTimestamp).toBeLessThanOrEqual(Date.now());
     });
@@ -108,8 +146,12 @@ describe('OAuth Helper', () => {
   describe('validateOAuthState', () => {
     it('should return true for valid state within time limit', () => {
       const state = 'valid-state';
-      mockSessionStorage._getStore()['oauth_state'] = state;
-      mockSessionStorage._getStore()['oauth_state_timestamp'] = Date.now().toString();
+      const store = mockSessionStorageAdapter._getStore();
+      store['oauth_state'] = state;
+      store['oauth_state_timestamp'] = Date.now().toString();
+      mockSessionStorageAdapter.getString.mockImplementation((key) => {
+        return store[key] || '';
+      });
 
       const result = validateOAuthState(state);
 
@@ -117,12 +159,18 @@ describe('OAuth Helper', () => {
     });
 
     it('should return false when no stored state exists', () => {
+      mockSessionStorageAdapter.getString.mockReturnValue('');
+      mockStorage.getString.mockReturnValue('');
       const result = validateOAuthState('any-state');
       expect(result).toBe(false);
     });
 
     it('should return false when stored state is missing', () => {
-      mockSessionStorage._getStore()['oauth_state_timestamp'] = Date.now().toString();
+      mockSessionStorageAdapter.getString.mockImplementation((key) => {
+        if (key === 'oauth_state_timestamp') return Date.now().toString();
+        return '';
+      });
+      mockStorage.getString.mockReturnValue('');
 
       const result = validateOAuthState('any-state');
 
@@ -130,7 +178,11 @@ describe('OAuth Helper', () => {
     });
 
     it('should return false when timestamp is missing', () => {
-      mockSessionStorage._getStore()['oauth_state'] = 'stored-state';
+      mockSessionStorageAdapter.getString.mockImplementation((key) => {
+        if (key === 'oauth_state') return 'stored-state';
+        return '';
+      });
+      mockStorage.getString.mockReturnValue('');
 
       const result = validateOAuthState('stored-state');
 
@@ -139,10 +191,12 @@ describe('OAuth Helper', () => {
 
     it('should return false when state has expired (> 10 minutes)', () => {
       const state = 'expired-state';
-      mockSessionStorage._getStore()['oauth_state'] = state;
-      // Set timestamp to 11 minutes ago
       const expiredTime = Date.now() - 11 * 60 * 1000;
-      mockSessionStorage._getStore()['oauth_state_timestamp'] = expiredTime.toString();
+      mockSessionStorageAdapter.getString.mockImplementation((key) => {
+        if (key === 'oauth_state') return state;
+        if (key === 'oauth_state_timestamp') return expiredTime.toString();
+        return '';
+      });
 
       const result = validateOAuthState(state);
 
@@ -151,10 +205,12 @@ describe('OAuth Helper', () => {
 
     it('should return true when state is exactly at 10 minute limit', () => {
       const state = 'edge-state';
-      mockSessionStorage._getStore()['oauth_state'] = state;
-      // Set timestamp to exactly 10 minutes ago minus 1ms
       const edgeTime = Date.now() - (10 * 60 * 1000 - 1);
-      mockSessionStorage._getStore()['oauth_state_timestamp'] = edgeTime.toString();
+      mockSessionStorageAdapter.getString.mockImplementation((key) => {
+        if (key === 'oauth_state') return state;
+        if (key === 'oauth_state_timestamp') return edgeTime.toString();
+        return '';
+      });
 
       const result = validateOAuthState(state);
 
@@ -162,8 +218,11 @@ describe('OAuth Helper', () => {
     });
 
     it('should return false when states do not match', () => {
-      mockSessionStorage._getStore()['oauth_state'] = 'stored-state';
-      mockSessionStorage._getStore()['oauth_state_timestamp'] = Date.now().toString();
+      mockSessionStorageAdapter.getString.mockImplementation((key) => {
+        if (key === 'oauth_state') return 'stored-state';
+        if (key === 'oauth_state_timestamp') return Date.now().toString();
+        return '';
+      });
 
       const result = validateOAuthState('different-state');
 
@@ -172,37 +231,48 @@ describe('OAuth Helper', () => {
 
     it('should clear state on expiration', () => {
       const state = 'expired-state';
-      mockSessionStorage._getStore()['oauth_state'] = state;
-      mockSessionStorage._getStore()['oauth_state_timestamp'] = (
-        Date.now() -
-        11 * 60 * 1000
-      ).toString();
+      const expiredTime = Date.now() - 11 * 60 * 1000;
+      mockSessionStorageAdapter.getString.mockImplementation((key) => {
+        if (key === 'oauth_state') return state;
+        if (key === 'oauth_state_timestamp') return expiredTime.toString();
+        return '';
+      });
 
       validateOAuthState(state);
 
-      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('oauth_state');
-      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('oauth_state_timestamp');
+      expect(mockSessionStorageAdapter.removeMany).toHaveBeenCalled();
     });
 
     it('should clear state on mismatch', () => {
-      mockSessionStorage._getStore()['oauth_state'] = 'stored-state';
-      mockSessionStorage._getStore()['oauth_state_timestamp'] = Date.now().toString();
+      mockSessionStorageAdapter.getString.mockImplementation((key) => {
+        if (key === 'oauth_state') return 'stored-state';
+        if (key === 'oauth_state_timestamp') return Date.now().toString();
+        return '';
+      });
 
       validateOAuthState('different-state');
 
-      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('oauth_state');
+      expect(mockSessionStorageAdapter.removeMany).toHaveBeenCalled();
     });
   });
 
   describe('clearOAuthState', () => {
     it('should remove oauth_state from sessionStorage', () => {
       clearOAuthState();
-      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('oauth_state');
+      expect(mockSessionStorageAdapter.removeMany).toHaveBeenCalledWith([
+        'oauth_state',
+        'oauth_state_timestamp',
+      ]);
+      expect(mockStorage.removeMany).toHaveBeenCalledWith([
+        'oauth_state',
+        'oauth_state_timestamp',
+      ]);
     });
 
     it('should remove oauth_state_timestamp from sessionStorage', () => {
       clearOAuthState();
-      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('oauth_state_timestamp');
+      expect(mockSessionStorageAdapter.removeMany).toHaveBeenCalled();
+      expect(mockStorage.removeMany).toHaveBeenCalled();
     });
   });
 

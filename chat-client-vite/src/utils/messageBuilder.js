@@ -141,16 +141,18 @@ export function createQueueMessage(pendingMessage) {
 }
 
 /**
- * Parse offline queue from localStorage
- * @param {string} storageKey - localStorage key
+ * Parse offline queue from storage via StorageAdapter
+ * @deprecated Use MessageQueueService instead. This function is kept for backward compatibility.
+ * @param {string} storageKey - Storage key (defaults to StorageKeys.OFFLINE_QUEUE)
  * @returns {Array} Array of queued messages
  */
-export function loadOfflineQueue(storageKey = 'liaizen_offline_queue') {
+export async function loadOfflineQueue(storageKey) {
   try {
-    const stored = localStorage.getItem(storageKey);
-    if (!stored) return [];
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : [];
+    // Import dynamically to avoid circular dependencies
+    const { storage, StorageKeys } = await import('../adapters/storage');
+    const key = storageKey || StorageKeys.OFFLINE_QUEUE;
+    const stored = storage.get(key);
+    return Array.isArray(stored) ? stored : [];
   } catch (e) {
     console.warn('Failed to load offline queue:', e);
     return [];
@@ -158,14 +160,18 @@ export function loadOfflineQueue(storageKey = 'liaizen_offline_queue') {
 }
 
 /**
- * Save offline queue to localStorage
+ * Save offline queue to storage via StorageAdapter
+ * @deprecated Use MessageQueueService instead. This function is kept for backward compatibility.
  * @param {Array} queue - Array of queued messages
- * @param {string} storageKey - localStorage key
+ * @param {string} storageKey - Storage key (defaults to StorageKeys.OFFLINE_QUEUE)
  * @returns {boolean} Success status
  */
-export function saveOfflineQueue(queue, storageKey = 'liaizen_offline_queue') {
+export async function saveOfflineQueue(queue, storageKey) {
   try {
-    localStorage.setItem(storageKey, JSON.stringify(queue));
+    // Import dynamically to avoid circular dependencies
+    const { storage, StorageKeys } = await import('../adapters/storage');
+    const key = storageKey || StorageKeys.OFFLINE_QUEUE;
+    storage.set(key, queue);
     return true;
   } catch (e) {
     console.warn('Failed to save offline queue:', e);
@@ -174,13 +180,17 @@ export function saveOfflineQueue(queue, storageKey = 'liaizen_offline_queue') {
 }
 
 /**
- * Clear offline queue from localStorage
- * @param {string} storageKey - localStorage key
+ * Clear offline queue from storage via StorageAdapter
+ * @deprecated Use MessageQueueService instead. This function is kept for backward compatibility.
+ * @param {string} storageKey - Storage key (defaults to StorageKeys.OFFLINE_QUEUE)
  * @returns {boolean} Success status
  */
-export function clearOfflineQueue(storageKey = 'liaizen_offline_queue') {
+export async function clearOfflineQueue(storageKey) {
   try {
-    localStorage.removeItem(storageKey);
+    // Import dynamically to avoid circular dependencies
+    const { storage, StorageKeys } = await import('../adapters/storage');
+    const key = storageKey || StorageKeys.OFFLINE_QUEUE;
+    storage.remove(key);
     return true;
   } catch (e) {
     console.warn('Failed to clear offline queue:', e);

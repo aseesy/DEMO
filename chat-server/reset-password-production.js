@@ -9,7 +9,7 @@
  * 4. Copy the Connection URL (public URL, not internal)
  */
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const bcrypt = require('bcrypt');
 const { Pool } = require('pg');
 

@@ -3,7 +3,7 @@
  * Usage: node check-password.js mom@test.com 123123
  */
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const bcrypt = require('bcrypt');
 const dbSafe = require('./dbSafe');
 

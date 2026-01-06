@@ -61,8 +61,9 @@ function getClient() {
 
   if (!redisClient) {
     try {
+      // ioredis accepts URL as first argument, or options object
       const options = effectiveRedisUrl
-        ? { connectionString: effectiveRedisUrl }
+        ? effectiveRedisUrl // Pass URL directly as first argument
         : {
             host: REDIS_HOST,
             port: REDIS_PORT,
@@ -476,16 +477,50 @@ function createSubscriber() {
   }
 
   try {
+    // ioredis accepts URL as first argument, or options object
     const options = effectiveRedisUrl
-      ? { connectionString: effectiveRedisUrl }
+      ? effectiveRedisUrl // Pass URL directly as first argument
       : {
           host: REDIS_HOST,
           port: REDIS_PORT,
           username: REDIS_USER,
           password: REDIS_PASSWORD,
+          retryStrategy: times => {
+            // Exponential backoff: 50ms, 100ms, 200ms, 400ms, max 3s
+            const delay = Math.min(times * 50, 3000);
+            return delay;
+          },
+          maxRetriesPerRequest: 3,
+          enableReadyCheck: true,
+          lazyConnect: true,
         };
 
-    return new Redis(options);
+    const subscriber = new Redis(options);
+
+    // Add error handlers to prevent unhandled error warnings
+    subscriber.on('error', err => {
+      console.error('❌ Redis: Subscriber connection error:', err.message);
+      // Don't crash - Redis is optional for graceful degradation
+    });
+
+    subscriber.on('close', () => {
+      console.log('⚠️  Redis: Subscriber connection closed');
+    });
+
+    subscriber.on('reconnecting', () => {
+      console.log('🔄 Redis: Subscriber reconnecting...');
+    });
+
+    subscriber.on('ready', () => {
+      console.log('✅ Redis: Subscriber connected and ready');
+    });
+
+    // Attempt to connect (non-blocking)
+    subscriber.connect().catch(err => {
+      console.warn('⚠️  Redis: Subscriber failed to connect (will retry):', err.message);
+    });
+
+    return subscriber;
   } catch (error) {
     console.error('❌ Redis: Failed to create subscriber:', error.message);
     return null;

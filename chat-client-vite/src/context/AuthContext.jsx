@@ -754,29 +754,50 @@ export function AuthProvider({ children }) {
     });
   }, [clearAuthState, isCheckingAuth, isAuthenticated, token]);
 
-  const value = {
-    // State
-    isAuthenticated,
-    email, // PRIMARY: Use this for user identification
-    username, // DEPRECATED: Alias for email, kept for backward compatibility
-    userId, // Numeric user ID from JWT (for UUID-based ownership checks)
-    token,
-    isCheckingAuth,
-    isLoggingIn,
-    isSigningUp,
-    error,
+  // Memoize context value to prevent unnecessary re-renders
+  // Auth state changes infrequently, so this is a good optimization
+  const value = React.useMemo(
+    () => ({
+      // State
+      isAuthenticated,
+      email, // PRIMARY: Use this for user identification
+      username, // DEPRECATED: Alias for email, kept for backward compatibility
+      userId, // Numeric user ID from JWT (for UUID-based ownership checks)
+      token,
+      isCheckingAuth,
+      isLoggingIn,
+      isSigningUp,
+      error,
 
-    // Actions
-    login,
-    signup,
-    logout,
-    verifySession,
-    clearAuthState,
-    setError,
+      // Actions
+      login,
+      signup,
+      logout,
+      verifySession,
+      clearAuthState,
+      setError,
 
-    // Helpers
-    isTokenExpired: () => isTokenExpired(token),
-  };
+      // Helpers
+      isTokenExpired: () => isTokenExpired(token),
+    }),
+    [
+      isAuthenticated,
+      email,
+      username,
+      userId,
+      token,
+      isCheckingAuth,
+      isLoggingIn,
+      isSigningUp,
+      error,
+      login,
+      signup,
+      logout,
+      verifySession,
+      clearAuthState,
+      setError,
+    ]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

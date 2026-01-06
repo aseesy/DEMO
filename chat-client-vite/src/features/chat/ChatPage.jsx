@@ -32,22 +32,26 @@ import {
  * - inviteHandlers: All invite-related handlers
  *
  * @param {Object} props
- * @param {string} props.username - Current user's username
+ * @param {string} props.username - Current user's email (deprecated name, kept for backward compatibility)
+ * @param {number} props.userId - Current user's numeric ID
  * @param {boolean} props.isAuthenticated - Whether user is authenticated
  * @param {Object} props.inviteState - Grouped invite state
  * @param {Object} props.inviteHandlers - Grouped invite handlers
  */
-export function ChatPage({ username, userId, isAuthenticated, inviteState, inviteHandlers }) {
-  // DEBUG: Log username and userId props to diagnose ownership issue (development only)
+function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inviteHandlers }) {
+  // username prop is actually the user's email (for backward compatibility)
+  const userEmail = username;
+  
+  // DEBUG: Log userEmail and userId props to diagnose ownership issue (development only)
   React.useEffect(() => {
     if (import.meta.env.DEV) {
       console.log('[ChatPage] Auth props:', {
-        username,
+        userEmail,
         userId,
-        isEmail: username?.includes('@'),
+        isEmail: userEmail?.includes('@'),
       });
     }
-  }, [username, userId]);
+  }, [userEmail, userId]);
 
   // Get all chat state from context (socket persists across view changes)
   const {
@@ -262,7 +266,7 @@ export function ChatPage({ username, userId, isAuthenticated, inviteState, invit
             onClose={() => setShowTopicsPanel(false)}
             onJumpToMessage={jumpToMessage}
             socket={socket}
-            currentUserEmail={username}
+            currentUserEmail={userEmail}
           />
         )}
 
@@ -357,7 +361,7 @@ export function ChatPage({ username, userId, isAuthenticated, inviteState, invit
             >
               <MessagesContainer
                 messages={messages}
-                username={username}
+                username={userEmail}
                 userId={userId}
                 messagesContainerRef={messagesContainerRef}
                 messagesEndRef={messagesEndRef}
@@ -481,13 +485,17 @@ export function ChatViewLegacy({
   };
 
   return (
-    <ChatPage
+    <ChatPageComponent
       username={username}
+      userId={userId}
       isAuthenticated={isAuthenticated}
       inviteState={inviteState}
       inviteHandlers={inviteHandlers}
     />
   );
 }
+
+// Memoize ChatPage to prevent re-renders when context updates but props haven't changed
+export const ChatPage = React.memo(ChatPageComponent);
 
 export default ChatViewLegacy;

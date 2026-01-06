@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const auth = require('./auth');
 const db = require('./dbPostgres');
 

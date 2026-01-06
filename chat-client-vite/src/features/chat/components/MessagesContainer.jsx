@@ -4,7 +4,7 @@ import { ObserverCard } from '../../dashboard/components/ObserverCard.jsx';
 /**
  * MessagesContainer - Renders the scrollable message list with date grouping
  */
-export function MessagesContainer({
+function MessagesContainerComponent({
   messages,
   username,
   userId,
@@ -72,7 +72,8 @@ export function MessagesContainer({
       currentGroup.messages.push({
         id: msg.id,
         text: msg.text,
-        username: msg.username,
+        // username field is deprecated (set to email for backward compatibility)
+        username: msg.username, // Keep for backward compatibility, but prefer sender.email
         timestamp: msg.timestamp || msg.created_at,
         type: msg.type,
         originalIndex: index,
@@ -213,8 +214,9 @@ export function MessagesContainer({
             // Compare UUIDs/IDs (convert to string for safe comparison)
             const isOwn = userId && messageUserId && String(userId) === String(messageUserId);
 
-            // Get display name - prefer first_name, fallback to email/username
-            const senderDisplayName = msg.sender?.first_name || msg.sender?.email || msg.username || 'Unknown';
+            // Get display name - prefer first_name, fallback to email
+            // username field is deprecated (set to email for backward compatibility)
+            const senderDisplayName = msg.sender?.first_name || msg.sender?.email || 'Unknown';
 
             // DEBUG: Log first few messages to diagnose ownership issue
             if (msgIndex < 3) {
@@ -230,7 +232,7 @@ export function MessagesContainer({
               });
             }
 
-            const isAI = msg.isAI || msg.sender?.email === 'LiaiZen' || msg.username === 'LiaiZen';
+            const isAI = msg.isAI || msg.sender?.email === 'LiaiZen';
             const isHighlighted = highlightedMessageId === msg.id;
             const isSending = msg.isOptimistic || msg.status === 'sending';
 
@@ -394,5 +396,8 @@ export function MessagesContainer({
     </div>
   );
 }
+
+// Memoize MessagesContainer to prevent re-renders when parent updates but props haven't changed
+export const MessagesContainer = React.memo(MessagesContainerComponent);
 
 export default MessagesContainer;

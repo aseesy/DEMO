@@ -35,11 +35,16 @@ export const StorageKeys = {
   INVITATION_TOKEN: 'invitationToken',
   INVITATION_CODE: 'invitationCode',
   PENDING_SENT_INVITATION: 'pendingSentInvitation',
+  
+  // OAuth state (stored in both localStorage and sessionStorage for ITP resilience)
+  OAUTH_STATE: 'oauth_state',
+  OAUTH_STATE_TIMESTAMP: 'oauth_state_timestamp',
 
   // Application state
   SMART_TASK: 'liaizenSmartTask',
   ADD_CONTACT: 'liaizenAddContact',
   CURRENT_VIEW: 'currentView',
+  RETURN_URL: 'returnUrl', // For deep linking - stores URL to redirect to after login
 
   // Preferences
   NOTIFICATION_PREFERENCES: 'notificationPreferences',
@@ -80,6 +85,43 @@ const createLocalStorageProvider = () => ({
   clear: () => {
     try {
       localStorage.clear();
+      return true;
+    } catch {
+      return false;
+    }
+  },
+});
+
+/**
+ * SessionStorage provider (for temporary data that should not persist across tabs)
+ */
+const createSessionStorageProvider = () => ({
+  get: key => {
+    try {
+      return sessionStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set: (key, value) => {
+    try {
+      sessionStorage.setItem(key, value);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  remove: key => {
+    try {
+      sessionStorage.removeItem(key);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  clear: () => {
+    try {
+      sessionStorage.clear();
       return true;
     } catch {
       return false;
@@ -266,8 +308,9 @@ class StorageAdapter {
   }
 }
 
-// Create and export singleton instance
+// Create and export singleton instances
 export const storage = new StorageAdapter();
+export const sessionStorage = new StorageAdapter(createSessionStorageProvider());
 
 // Export class for testing or custom instances
 export { StorageAdapter };

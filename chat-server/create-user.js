@@ -3,7 +3,7 @@
  * Usage: node create-user.js yashir91lora@gmail.com 1234512345
  */
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const bcrypt = require('bcrypt');
 const dbSafe = require('./dbSafe');
 const { generateUniqueUsername } = require('./auth/user');

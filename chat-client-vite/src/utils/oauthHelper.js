@@ -3,6 +3,8 @@
  * Provides popup blocker detection, state parameter generation/validation, and OAuth error handling
  */
 
+import { storage, sessionStorage as sessionStorageAdapter, StorageKeys } from '../adapters/storage';
+
 /**
  * Generate a random state parameter for CSRF protection
  * @returns {string} Random state string
@@ -21,10 +23,10 @@ export function generateOAuthState() {
 export function storeOAuthState(state) {
   const timestamp = Date.now().toString();
   // Store in both for resilience (Safari ITP can clear sessionStorage during redirects)
-  sessionStorage.setItem('oauth_state', state);
-  sessionStorage.setItem('oauth_state_timestamp', timestamp);
-  localStorage.setItem('oauth_state', state);
-  localStorage.setItem('oauth_state_timestamp', timestamp);
+  sessionStorageAdapter.set(StorageKeys.OAUTH_STATE, state);
+  sessionStorageAdapter.set(StorageKeys.OAUTH_STATE_TIMESTAMP, timestamp);
+  storage.set(StorageKeys.OAUTH_STATE, state);
+  storage.set(StorageKeys.OAUTH_STATE_TIMESTAMP, timestamp);
 }
 
 /**
@@ -35,13 +37,13 @@ export function storeOAuthState(state) {
  */
 export function validateOAuthState(receivedState) {
   // Try sessionStorage first, fall back to localStorage (Safari ITP resilience)
-  let storedState = sessionStorage.getItem('oauth_state');
-  let timestamp = sessionStorage.getItem('oauth_state_timestamp');
+  let storedState = sessionStorageAdapter.getString(StorageKeys.OAUTH_STATE);
+  let timestamp = sessionStorageAdapter.getString(StorageKeys.OAUTH_STATE_TIMESTAMP);
 
   // Fall back to localStorage if sessionStorage was cleared
   if (!storedState || !timestamp) {
-    storedState = localStorage.getItem('oauth_state');
-    timestamp = localStorage.getItem('oauth_state_timestamp');
+    storedState = storage.getString(StorageKeys.OAUTH_STATE);
+    timestamp = storage.getString(StorageKeys.OAUTH_STATE_TIMESTAMP);
     if (storedState && timestamp) {
       console.log('[OAuth] State recovered from localStorage (sessionStorage was cleared)');
     }
@@ -81,10 +83,8 @@ export function validateOAuthState(receivedState) {
  * Clear OAuth state from both sessionStorage and localStorage
  */
 export function clearOAuthState() {
-  sessionStorage.removeItem('oauth_state');
-  sessionStorage.removeItem('oauth_state_timestamp');
-  localStorage.removeItem('oauth_state');
-  localStorage.removeItem('oauth_state_timestamp');
+  sessionStorageAdapter.removeMany([StorageKeys.OAUTH_STATE, StorageKeys.OAUTH_STATE_TIMESTAMP]);
+  storage.removeMany([StorageKeys.OAUTH_STATE, StorageKeys.OAUTH_STATE_TIMESTAMP]);
 }
 
 /**

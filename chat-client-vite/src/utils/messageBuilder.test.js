@@ -24,7 +24,46 @@ import {
   OFFLINE_QUEUE_KEY,
 } from './messageBuilder.js';
 
-// Mock localStorage
+// Mock StorageAdapter - must be defined inside vi.mock factory
+vi.mock('../adapters/storage', () => {
+  const mockStorageStore = {};
+  return {
+    storage: {
+      get: vi.fn((key) => {
+        const value = mockStorageStore[key];
+        if (value === undefined) return null;
+        // StorageAdapter.get() parses JSON automatically
+        try {
+          return typeof value === 'string' ? JSON.parse(value) : value;
+        } catch {
+          return value;
+        }
+      }),
+      set: vi.fn((key, value) => {
+        try {
+          // StorageAdapter.set() stringifies objects automatically
+          mockStorageStore[key] = typeof value === 'object' ? JSON.stringify(value) : value;
+          return true;
+        } catch {
+          return false;
+        }
+      }),
+      remove: vi.fn((key) => {
+        delete mockStorageStore[key];
+        return true;
+      }),
+      _getStore: () => mockStorageStore,
+    },
+    StorageKeys: {
+      OFFLINE_QUEUE: 'liaizen_offline_queue',
+    },
+  };
+});
+
+// Import mocked modules after vi.mock
+import { storage as mockStorage, StorageKeys as mockStorageKeys } from '../adapters/storage';
+
+// Mock localStorage (for backward compatibility with other tests)
 const mockLocalStorage = (() => {
   let store = {};
   return {
@@ -43,6 +82,14 @@ const mockLocalStorage = (() => {
 })();
 
 describe('Message Builder', () => {
+  beforeEach(() => {
+    // Clear storage mocks
+    if (mockStorage && mockStorage._getStore) {
+      Object.keys(mockStorage._getStore()).forEach(key => delete mockStorage._getStore()[key]);
+    }
+    Object.keys(mockLocalStorage._getStore()).forEach(key => delete mockLocalStorage._getStore()[key]);
+    vi.clearAllMocks();
+  });
   describe('generateMessageId', () => {
     it('should generate ID with timestamp and socket ID', () => {
       const id = generateMessageId('socket123');
@@ -396,99 +443,109 @@ describe('Message Builder', () => {
     });
 
     describe('loadOfflineQueue', () => {
-      it('should return empty array when nothing stored', () => {
-        const queue = loadOfflineQueue();
+      it('should return empty array when nothing stored', async () => {
+        mockStorage.get.mockReturnValueOnce(null);
+        const queue = await loadOfflineQueue();
         expect(queue).toEqual([]);
+        expect(mockStorage.get).toHaveBeenCalledWith(mockStorageKeys.OFFLINE_QUEUE);
       });
 
-      it('should parse stored queue', () => {
+      it('should parse stored queue', async () => {
         const stored = [{ id: '1', text: 'Hello' }];
-        mockLocalStorage._getStore()[OFFLINE_QUEUE_KEY] = JSON.stringify(stored);
+        mockStorage.get.mockReturnValueOnce(stored);
 
-        const queue = loadOfflineQueue();
+        const queue = await loadOfflineQueue();
 
         expect(queue).toEqual(stored);
+        expect(mockStorage.get).toHaveBeenCalledWith(mockStorageKeys.OFFLINE_QUEUE);
       });
 
-      it('should return empty array for invalid JSON', () => {
-        mockLocalStorage._getStore()[OFFLINE_QUEUE_KEY] = 'invalid json';
+      it('should return empty array for invalid JSON', async () => {
+        // StorageAdapter.get() already parses JSON, so if it returns a string, it's already parsed
+        // But if it's not an array, we return empty array
+        mockStorage.get.mockReturnValueOnce('invalid json');
 
-        const queue = loadOfflineQueue();
+        const queue = await loadOfflineQueue();
 
         expect(queue).toEqual([]);
       });
 
-      it('should return empty array if stored value is not an array', () => {
-        mockLocalStorage._getStore()[OFFLINE_QUEUE_KEY] = JSON.stringify({ not: 'array' });
+      it('should return empty array if stored value is not an array', async () => {
+        mockStorage.get.mockReturnValueOnce({ not: 'array' });
 
-        const queue = loadOfflineQueue();
+        const queue = await loadOfflineQueue();
 
         expect(queue).toEqual([]);
       });
 
-      it('should use custom storage key', () => {
+      it('should use custom storage key', async () => {
         const stored = [{ id: '1', text: 'Hello' }];
-        mockLocalStorage._getStore()['custom_key'] = JSON.stringify(stored);
+        mockStorage.get.mockReturnValueOnce(stored);
 
-        const queue = loadOfflineQueue('custom_key');
+        const queue = await loadOfflineQueue('custom_key');
 
         expect(queue).toEqual(stored);
+        expect(mockStorage.get).toHaveBeenCalledWith('custom_key');
       });
     });
 
     describe('saveOfflineQueue', () => {
-      it('should save queue to localStorage', () => {
+      it('should save queue to storage', async () => {
         const queue = [{ id: '1', text: 'Hello' }];
 
-        const result = saveOfflineQueue(queue);
+        const result = await saveOfflineQueue(queue);
 
         expect(result).toBe(true);
-        expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-          OFFLINE_QUEUE_KEY,
-          JSON.stringify(queue)
+        expect(mockStorage.set).toHaveBeenCalledWith(
+          mockStorageKeys.OFFLINE_QUEUE,
+          queue
         );
       });
 
-      it('should use custom storage key', () => {
+      it('should use custom storage key', async () => {
         const queue = [{ id: '1', text: 'Hello' }];
 
-        saveOfflineQueue(queue, 'custom_key');
+        await saveOfflineQueue(queue, 'custom_key');
 
-        expect(mockLocalStorage.setItem).toHaveBeenCalledWith('custom_key', JSON.stringify(queue));
+        expect(mockStorage.set).toHaveBeenCalledWith('custom_key', queue);
       });
 
-      it('should return false on error', () => {
-        mockLocalStorage.setItem.mockImplementationOnce(() => {
+      it('should return false on error', async () => {
+        // Mock StorageAdapter.set to throw an error
+        mockStorage.set.mockImplementationOnce(() => {
           throw new Error('Storage full');
         });
 
-        const result = saveOfflineQueue([{ id: '1' }]);
+        const result = await saveOfflineQueue([{ id: '1' }]);
 
+        // Function catches error and returns false
         expect(result).toBe(false);
       });
     });
 
     describe('clearOfflineQueue', () => {
-      it('should remove queue from localStorage', () => {
-        const result = clearOfflineQueue();
+      it('should remove queue from storage', async () => {
+        const result = await clearOfflineQueue();
 
         expect(result).toBe(true);
-        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(OFFLINE_QUEUE_KEY);
+        expect(mockStorage.remove).toHaveBeenCalledWith(mockStorageKeys.OFFLINE_QUEUE);
       });
 
-      it('should use custom storage key', () => {
-        clearOfflineQueue('custom_key');
+      it('should use custom storage key', async () => {
+        await clearOfflineQueue('custom_key');
 
-        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('custom_key');
+        expect(mockStorage.remove).toHaveBeenCalledWith('custom_key');
       });
 
-      it('should return false on error', () => {
-        mockLocalStorage.removeItem.mockImplementationOnce(() => {
+      it('should return false on error', async () => {
+        // Mock StorageAdapter.remove to throw an error
+        mockStorage.remove.mockImplementationOnce(() => {
           throw new Error('Error');
         });
 
-        const result = clearOfflineQueue();
+        const result = await clearOfflineQueue();
 
+        // Function catches error and returns false
         expect(result).toBe(false);
       });
     });

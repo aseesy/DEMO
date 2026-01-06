@@ -14,14 +14,14 @@ import React from 'react';
 import { useMessageUI } from './useMessageUI.js';
 import { useMessageTransport } from './useMessageTransport.js';
 import { useMessageMediation } from './useMessageMediation.js';
-import { saveOfflineQueue } from '../../../utils/messageBuilder.js';
+// Note: saveOfflineQueue is deprecated - use StorageAdapter directly
 
 /**
  * Hook for handling message sending
  * @param {Object} params
  * @param {Object} params.socketRef - Socket ref
  * @param {string} params.inputMessage - Current input message
- * @param {string} params.username - Current username
+ * @param {string} params.username - Current user's email (parameter name kept for backward compatibility)
  * @param {boolean} params.isPreApprovedRewrite - Whether message is AI rewrite
  * @param {string} params.originalRewrite - Original rewrite text
  * @param {Object} params.draftCoaching - Draft coaching state
@@ -131,7 +131,12 @@ export function useMessageSending({
           // Also add to legacy offline queue ref for backward compatibility
           if (offlineQueueRef?.current) {
             offlineQueueRef.current.push(optimisticMessage);
-            saveOfflineQueue(offlineQueueRef.current);
+            // Use StorageAdapter directly (saveOfflineQueue is deprecated and async)
+            import('../../../adapters/storage').then(({ storage, StorageKeys }) => {
+              storage.set(StorageKeys.OFFLINE_QUEUE, offlineQueueRef.current);
+            }).catch(err => {
+              console.warn('[useMessageSending] Failed to save offline queue:', err);
+            });
           }
           // Mark as queued in UI state
           ui.markMessageQueued(messageId);

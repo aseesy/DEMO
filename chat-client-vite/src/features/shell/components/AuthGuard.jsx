@@ -66,6 +66,20 @@ export function AuthGuard({ isAuthenticated, isCheckingAuth, onGetStarted, child
   if (!isAuthenticated) {
     if (typeof window !== 'undefined') {
       const currentPath = window.location.pathname;
+      const returnUrl = currentPath + (window.location.search || '');
+
+      // Store return URL for deep linking (if not already on auth pages)
+      if (
+        returnUrl &&
+        returnUrl !== '/' &&
+        returnUrl !== '/signin' &&
+        returnUrl !== '/sign-in' &&
+        returnUrl !== '/signup' &&
+        returnUrl !== '/siginin'
+      ) {
+        storage.set(StorageKeys.RETURN_URL, returnUrl, { ttl: 60 * 60 * 1000 }); // 1 hour TTL
+        console.log('[AuthGuard] Stored return URL:', returnUrl);
+      }
 
       // If on signin page, show login form
       if (currentPath === '/signin' || currentPath === '/sign-in' || currentPath === '/siginin') {

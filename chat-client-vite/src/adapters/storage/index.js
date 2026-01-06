@@ -3,6 +3,7 @@
  */
 export {
   storage,
+  sessionStorage,
   StorageAdapter,
   StorageKeys,
   authStorage,

@@ -125,10 +125,14 @@ class AIMediator {
     }
 
     // === CACHE CHECK ===
-    const senderId = roleContext?.senderId || message.username;
+    // Use email as identifier (username is deprecated, set to email for backward compatibility)
+    const senderId = roleContext?.senderId || message.sender?.email || message.user_email || message.username;
     const receiverId =
       roleContext?.receiverId ||
-      participantUsernames.find(u => u !== message.username) ||
+      participantUsernames.find(u => {
+        const msgEmail = message.sender?.email || message.user_email || message.username;
+        return u !== msgEmail;
+      }) ||
       'unknown';
     const hash = messageCache.generateHash(message.text, senderId, receiverId);
     const cachedResult = await messageCache.get(hash);
@@ -190,7 +194,8 @@ class AIMediator {
     }
 
     try {
-      console.log('🤖 AI Mediator: Analyzing message from', message.username);
+      const msgEmail = message.sender?.email || message.user_email || message.username;
+      console.log('🤖 AI Mediator: Analyzing message from', msgEmail);
 
       // === LANGUAGE ANALYSIS ===
       let languageAnalysis = null;
@@ -341,7 +346,7 @@ class AIMediator {
           stateManager.updateEmotionalState(
             this.conversationContext,
             roomId,
-            message.username,
+            message.sender?.email || message.user_email || message.username,
             parsed.emotion
           );
         }
@@ -386,8 +391,10 @@ class AIMediator {
    * Update conversation context with new message
    */
   updateContext(message) {
+    // Extract email identifier (username is deprecated, set to email for backward compatibility)
+    const messageEmail = message.sender?.email || message.user_email || message.username;
     this.conversationContext.recentMessages.push({
-      username: message.username,
+      username: messageEmail, // Store email as username for backward compatibility
       text: message.text,
       timestamp: message.timestamp,
     });

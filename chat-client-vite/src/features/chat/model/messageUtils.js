@@ -16,7 +16,7 @@
  * Check if a message is from the current user
  * Uses new sender structure (sender.email) with fallback to legacy fields
  * @param {Object} message - Message object
- * @param {string} currentUserEmail - Current user's email (or username for legacy)
+ * @param {string} currentUserEmail - Current user's email
  * @returns {boolean}
  */
 export function isOwnMessage(message, currentUserEmail) {
@@ -27,7 +27,7 @@ export function isOwnMessage(message, currentUserEmail) {
     return message.sender.email.toLowerCase() === currentUserEmail.toLowerCase();
   }
   
-  // Fallback to legacy fields
+  // Fallback to legacy fields (username is deprecated, set to email for backward compatibility)
   const messageEmail = message.user_email || message.email || message.username;
   if (!messageEmail) return false;
   
@@ -77,6 +77,7 @@ export function messageExistsByContent(messages, message, timeWindowMs = 5000) {
 
   const normalizedText = (message.text || '').trim().toLowerCase();
   // Use new sender structure (sender.email) with fallback to legacy fields
+  // username is deprecated (set to email for backward compatibility)
   const messageEmail = message.sender?.email || message.user_email || message.email || message.username || '';
   const normalizedEmail = messageEmail.toLowerCase();
   const messageTime = new Date(message.timestamp || message.created_at || 0).getTime();
@@ -108,7 +109,7 @@ export function messageExistsByContent(messages, message, timeWindowMs = 5000) {
  *
  * @param {Array} messages - List of messages
  * @param {Object} serverMessage - Server message to match
- * @param {string} currentUsername - Current user's username
+ * @param {string} currentUsername - Current user's email (parameter name kept for backward compatibility)
  * @param {number} [timeWindowMs=10000] - Time window for fallback matching
  * @returns {number} Index of matching message, or -1 if not found
  */
@@ -183,7 +184,7 @@ export function findMatchingOptimisticIndex(
  *
  * @param {Array} messages - Current messages list
  * @param {Object} serverMessage - New message from server
- * @param {string} currentUsername - Current user's username
+ * @param {string} currentUsername - Current user's email (parameter name kept for backward compatibility)
  * @returns {Object} Action to take
  */
 export function determineMessageAction(messages, serverMessage, currentUsername) {

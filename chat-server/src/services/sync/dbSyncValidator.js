@@ -229,12 +229,7 @@ async function fixMissingRelationships(discrepancies) {
         // Create user nodes if they don't exist
         for (const user of users) {
           try {
-            await neo4jClient.createUserNode(
-              user.id,
-              user.username,
-              user.email,
-              user.display_name
-            );
+            await neo4jClient.createUserNode(user.id);
           } catch (error) {
             // User node might already exist, which is fine
             if (!error.message.includes('already exists')) {

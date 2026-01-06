@@ -24,12 +24,25 @@ import { useMediationContext } from '../hooks/useMediationContext.js';
  * No God Hook orchestrating everything.
  */
 const ChatContext = React.createContext(null);
+// Separate context for high-frequency updates (messages, typing, input)
+// This prevents re-renders of components that only need low-frequency state
+const ChatMessagesContext = React.createContext(null);
 
+/**
+ * ChatProvider - Provides chat state and socket connection
+ * @param {string} username - User's email (deprecated prop name, kept for backward compatibility)
+ * @param {boolean} isAuthenticated - Whether user is authenticated
+ * @param {string} currentView - Current view name
+ * @param {Function} onNewMessage - Callback for new messages
+ */
 export function ChatProvider({ children, username, isAuthenticated, currentView, onNewMessage }) {
+  // username prop is actually the user's email (for backward compatibility)
+  const userEmail = username;
+  
   // DEBUG: Log ChatProvider mount with timestamp
   console.log('[ChatProvider] ========================================');
   console.log('[ChatProvider] MOUNT at', new Date().toISOString());
-  console.log('[ChatProvider] Props:', { username, isAuthenticated, currentView });
+  console.log('[ChatProvider] Props:', { userEmail, isAuthenticated, currentView });
   console.log('[ChatProvider] ========================================');
 
   // === SOCKET CONNECTION (infrastructure) - v2 Simplified System ===
@@ -46,19 +59,8 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   // Include isAuthenticated in deps to update when auth state changes
   const token = React.useMemo(() => {
     if (!isAuthenticated) return null;
+    // Always use tokenManager as single source of truth
     const retrievedToken = tokenManager.getToken();
-    if (!retrievedToken) {
-      // Fallback: check localStorage directly if tokenManager hasn't initialized yet
-      const fallbackToken = typeof window !== 'undefined' 
-        ? localStorage.getItem('auth_token_backup') || sessionStorage.getItem('auth_token_backup')
-        : null;
-      if (fallbackToken) {
-        console.log('[ChatProvider] Using fallback token from storage');
-        // Set it in tokenManager for future use
-        tokenManager.setToken(fallbackToken);
-        return fallbackToken;
-      }
-    }
     return retrievedToken;
   }, [isAuthenticated]);
   const { isConnected, emit } = useSocket({
@@ -89,9 +91,10 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
 
   // Configure unread service with current user info
   // Note: unread.setUsername is stable (useCallback in hook)
+  // username is actually userEmail (for backward compatibility)
   React.useEffect(() => {
-    unread.setUsername(username);
-  }, [username, unread.setUsername]);
+    unread.setUsername(userEmail);
+  }, [userEmail, unread.setUsername]);
 
   React.useEffect(() => {
     unread.setViewingChat(currentView === 'chat');
@@ -100,10 +103,11 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   // === AUTO-JOIN (when connected + authenticated) ===
   // Note: room.join is stable (useCallback in hook)
   React.useEffect(() => {
-    if (isConnected && isAuthenticated && username && !room.isJoined) {
-      room.join(username);
+    // username is actually userEmail (for backward compatibility)
+    if (isConnected && isAuthenticated && userEmail && !room.isJoined) {
+      room.join(userEmail);
     }
-  }, [isConnected, isAuthenticated, username, room.isJoined, room.join]);
+  }, [isConnected, isAuthenticated, userEmail, room.isJoined, room.join]);
 
   // Load threads when room is joined
   // Note: threads.loadThreads is stable (useCallback in hook)
@@ -147,7 +151,8 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   }, [searchHook.handleSearchResults, searchHook.handleJumpToMessageResult]);
 
   // === MEDIATION CONTEXT ===
-  const { senderProfile, receiverProfile } = useMediationContext(username, isAuthenticated);
+  // username is actually userEmail (for backward compatibility)
+  const { senderProfile, receiverProfile } = useMediationContext(userEmail, isAuthenticated);
 
   // === SCROLL HELPERS ===
   const scrollToBottom = React.useCallback((instant = false) => {
@@ -188,7 +193,8 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   }, [currentView, messaging.messages.length, scrollToBottom]);
 
   // === DERIVED STATE ===
-  const { hasMeanMessage } = useDerivedState(messaging.messages, username);
+  // username is actually userEmail (for backward compatibility)
+  const { hasMeanMessage } = useDerivedState(messaging.messages, userEmail);
 
   // === ACTIONS ===
   const sendMessage = React.useCallback(() => {
@@ -259,16 +265,14 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     socketServiceV2.emit('flag_message', { messageId, reason });
   }, []);
 
-  // === CONTEXT VALUE ===
-  const value = React.useMemo(
-    () => ({
-      // Connection
-      isConnected,
-      isJoined: room.isJoined,
-      error: error || room.error,
-      room, // Room object with roomId for TopicsPanel
-      socket, // Socket-compatible interface for TopicsPanel
+  // === CONTEXT SPLITTING ===
+  // Split into high-frequency (messages, typing, input) and low-frequency (room, threads, search)
+  // This prevents components that only need low-frequency state from re-rendering on message updates
 
+  // High-frequency context: messages, typing, input
+  // Updates frequently - components using this will re-render often
+  const messagesValue = React.useMemo(
+    () => ({
       // Messages
       messages: messaging.messages,
       pendingMessages: messaging.pendingMessages,
@@ -276,6 +280,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       hasMoreMessages: messaging.hasMore,
       isLoadingOlder: messaging.isLoadingOlder,
       loadOlderMessages: messaging.loadOlder,
+      isInitialLoad: messaging.messages.length === 0,
 
       // Input
       inputMessage,
@@ -293,6 +298,47 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
 
       // Typing
       typingUsers: typing.typingUsers,
+
+      // Message actions
+      removeMessages,
+      flagMessage,
+
+      // UI Refs
+      messagesEndRef,
+      messagesContainerRef,
+    }),
+    [
+      messaging.messages,
+      messaging.pendingMessages,
+      messaging.messageStatuses,
+      messaging.hasMore,
+      messaging.isLoadingOlder,
+      messaging.loadOlder,
+      inputMessage,
+      setInputMessage,
+      sendMessage,
+      handleInputChange,
+      isPreApprovedRewrite,
+      setIsPreApprovedRewrite,
+      originalRewrite,
+      setOriginalRewrite,
+      coaching.coaching,
+      typing.typingUsers,
+      removeMessages,
+      flagMessage,
+    ]
+  );
+
+  // Low-frequency context: room, threads, search, connection
+  // Updates infrequently - components using this won't re-render on message updates
+  const lowFrequencyValue = React.useMemo(
+    () => ({
+      // Connection
+      isConnected,
+      isJoined: room.isJoined,
+      error: error || room.error,
+      room, // Room object with roomId for TopicsPanel
+      socket, // Socket-compatible interface for TopicsPanel
 
       // Threads
       threads: threads.threads,
@@ -321,14 +367,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       jumpToMessage: searchHook.jumpToMessage,
       highlightedMessageId: searchHook.highlightedMessageId,
 
-      // UI Refs
-      messagesEndRef,
-      messagesContainerRef,
-
       // Other
-      removeMessages,
-      flagMessage,
-      isInitialLoad: messaging.messages.length === 0,
       unreadCount: unread.count,
       setUnreadCount: () => {}, // Managed by service
       hasMeanMessage,
@@ -338,25 +377,48 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       room,
       socket,
       error,
-      messaging,
-      inputMessage,
-      sendMessage,
-      handleInputChange,
-      isPreApprovedRewrite,
-      originalRewrite,
-      coaching,
-      typing,
-      threads,
+      threads.threads,
+      threads.threadMessages,
+      threads.isLoading,
+      threads.isAnalysisComplete,
       selectedThreadId,
-      searchHook,
-      removeMessages,
-      flagMessage,
-      unread,
+      threads.create,
+      threads.loadThreads,
+      threads.loadThreadMessages,
+      threads.addToThread,
+      threads.replyInThread,
+      threads.moveMessageToThread,
+      threads.archiveThread,
+      searchHook.searchMessages,
+      searchHook.searchQuery,
+      searchHook.searchResults,
+      searchHook.searchTotal,
+      searchHook.isSearching,
+      searchHook.searchMode,
+      searchHook.toggleSearchMode,
+      searchHook.exitSearchMode,
+      searchHook.jumpToMessage,
+      searchHook.highlightedMessageId,
+      unread.count,
       hasMeanMessage,
     ]
   );
 
-  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
+  // Combined value for backward compatibility (components can still use useChatContext)
+  // This will still cause re-renders, but components can opt into messagesValue or lowFrequencyValue
+  const combinedValue = React.useMemo(
+    () => ({
+      ...messagesValue,
+      ...lowFrequencyValue,
+    }),
+    [messagesValue, lowFrequencyValue]
+  );
+
+  return (
+    <ChatMessagesContext.Provider value={messagesValue}>
+      <ChatContext.Provider value={combinedValue}>{children}</ChatContext.Provider>
+    </ChatMessagesContext.Provider>
+  );
 }
 
 // Default context for when provider isn't ready
@@ -433,4 +495,161 @@ export function useChatContext() {
     throw new Error('useChatContext must be used within a ChatProvider');
   }
   return context;
+}
+
+/**
+ * Hook to use high-frequency chat state (messages, typing, input)
+ * Use this for components that need message updates but don't need room/threads/search
+ * This prevents re-renders when low-frequency state changes
+ */
+export function useChatMessagesContext() {
+  const context = React.useContext(ChatMessagesContext);
+  if (!context) {
+    if (import.meta.env.DEV) {
+      return {
+        messages: [],
+        pendingMessages: [],
+        messageStatuses: {},
+        hasMoreMessages: true,
+        isLoadingOlder: false,
+        loadOlderMessages: () => {},
+        isInitialLoad: true,
+        inputMessage: '',
+        setInputMessage: () => {},
+        sendMessage: () => {},
+        handleInputChange: () => {},
+        isPreApprovedRewrite: false,
+        setIsPreApprovedRewrite: () => {},
+        originalRewrite: '',
+        setOriginalRewrite: () => {},
+        draftCoaching: null,
+        setDraftCoaching: () => {},
+        typingUsers: [],
+        removeMessages: () => {},
+        flagMessage: () => {},
+        messagesEndRef: { current: null },
+        messagesContainerRef: { current: null },
+      };
+    }
+    throw new Error('useChatMessagesContext must be used within ChatProvider');
+  }
+  return context;
+}
+
+/**
+ * Hook to use low-frequency chat state (room, threads, search)
+ * Use this for components that need room/threads/search but don't need message updates
+ * This prevents re-renders when messages update
+ */
+export function useChatLowFrequencyContext() {
+  // Extract low-frequency state from combined context
+  const context = React.useContext(ChatContext);
+  if (!context) {
+    if (import.meta.env.DEV) {
+      return {
+        isConnected: false,
+        isJoined: false,
+        error: '',
+        room: { roomId: null, isJoined: false, error: null },
+        socket: { connected: false, emit: () => {}, on: () => () => {}, off: () => {} },
+        threads: [],
+        threadMessages: {},
+        isLoadingThreadMessages: false,
+        isAnalysisComplete: false,
+        selectedThreadId: null,
+        setSelectedThreadId: () => {},
+        createThread: () => {},
+        getThreads: () => {},
+        getThreadMessages: () => {},
+        addToThread: () => {},
+        replyInThread: () => {},
+        moveMessageToThread: () => {},
+        archiveThread: () => {},
+        searchMessages: () => {},
+        searchQuery: '',
+        searchResults: [],
+        searchTotal: 0,
+        isSearching: false,
+        searchMode: false,
+        toggleSearchMode: () => {},
+        exitSearchMode: () => {},
+        jumpToMessage: () => {},
+        highlightedMessageId: null,
+        unreadCount: 0,
+        setUnreadCount: () => {},
+        hasMeanMessage: false,
+      };
+    }
+    throw new Error('useChatLowFrequencyContext must be used within ChatProvider');
+  }
+  
+  // Return only low-frequency properties (memoized to prevent re-renders)
+  return React.useMemo(
+    () => ({
+      isConnected: context.isConnected,
+      isJoined: context.isJoined,
+      error: context.error,
+      room: context.room,
+      socket: context.socket,
+      threads: context.threads,
+      threadMessages: context.threadMessages,
+      isLoadingThreadMessages: context.isLoadingThreadMessages,
+      isAnalysisComplete: context.isAnalysisComplete,
+      selectedThreadId: context.selectedThreadId,
+      setSelectedThreadId: context.setSelectedThreadId,
+      createThread: context.createThread,
+      getThreads: context.getThreads,
+      getThreadMessages: context.getThreadMessages,
+      addToThread: context.addToThread,
+      replyInThread: context.replyInThread,
+      moveMessageToThread: context.moveMessageToThread,
+      archiveThread: context.archiveThread,
+      searchMessages: context.searchMessages,
+      searchQuery: context.searchQuery,
+      searchResults: context.searchResults,
+      searchTotal: context.searchTotal,
+      isSearching: context.isSearching,
+      searchMode: context.searchMode,
+      toggleSearchMode: context.toggleSearchMode,
+      exitSearchMode: context.exitSearchMode,
+      jumpToMessage: context.jumpToMessage,
+      highlightedMessageId: context.highlightedMessageId,
+      unreadCount: context.unreadCount,
+      setUnreadCount: context.setUnreadCount,
+      hasMeanMessage: context.hasMeanMessage,
+    }),
+    [
+      context.isConnected,
+      context.isJoined,
+      context.error,
+      context.room,
+      context.socket,
+      context.threads,
+      context.threadMessages,
+      context.isLoadingThreadMessages,
+      context.isAnalysisComplete,
+      context.selectedThreadId,
+      context.setSelectedThreadId,
+      context.createThread,
+      context.getThreads,
+      context.getThreadMessages,
+      context.addToThread,
+      context.replyInThread,
+      context.moveMessageToThread,
+      context.archiveThread,
+      context.searchMessages,
+      context.searchQuery,
+      context.searchResults,
+      context.searchTotal,
+      context.isSearching,
+      context.searchMode,
+      context.toggleSearchMode,
+      context.exitSearchMode,
+      context.jumpToMessage,
+      context.highlightedMessageId,
+      context.unreadCount,
+      context.setUnreadCount,
+      context.hasMeanMessage,
+    ]
+  );
 }

@@ -64,8 +64,8 @@ export function useNewMessageHandler({ username, currentView, notifications, toa
           }
           return msg.sender.first_name || msg.sender.email || 'Co-parent';
         }
-        // Fallback to legacy structure
-        return msg.displayName || msg.username || 'Co-parent';
+        // Fallback to legacy structure (username is deprecated, set to email)
+        return msg.displayName || msg.sender?.email || msg.user_email || 'Co-parent';
       };
       const senderName = getSenderDisplayName(message);
 

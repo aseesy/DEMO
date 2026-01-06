@@ -147,7 +147,7 @@ async function createUser(
       ? `${nameData.firstName} ${nameData.lastName}`
       : nameData.firstName || emailLower);
 
-  neo4jClient.createUserNode(userId, emailLower, emailLower, displayName).catch(() => {});
+  neo4jClient.createUserNode(userId).catch(() => {});
 
   return {
     id: userId,

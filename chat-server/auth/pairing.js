@@ -63,8 +63,8 @@ async function registerFromShortCode(params, db) {
         const sharedRoom = await roomManager.createCoParentRoom(
           acceptResult.inviterId,
           user.id,
-          inviterUser.displayName || inviterUser.username,
-          displayName || user.username
+          inviterUser.displayName || inviterUser.first_name || inviterUser.email,
+          displayName || user.first_name || user.email
         );
         targetRoomId = sharedRoom.roomId;
       }
@@ -112,7 +112,7 @@ async function registerFromShortCode(params, db) {
       [user.id]
     );
     const newUser = newUserResult.rows[0];
-    const contactName = newUser?.first_name || displayName || user.username;
+    const contactName = newUser?.first_name || displayName || user.email;
 
     await dbSafe.safeInsert('contacts', {
       user_id: acceptResult.inviterId,
@@ -132,7 +132,7 @@ async function registerFromShortCode(params, db) {
     await notificationManager.createInvitationAcceptedNotification(
       {
         userId: acceptResult.inviterId,
-        inviteeName: displayName || user.username,
+        inviteeName: displayName || user.first_name || user.email,
         invitationId: validation.invitation.id,
         roomId: targetRoomId,
       },
@@ -143,10 +143,10 @@ async function registerFromShortCode(params, db) {
   }
 
   // Create onboarding tasks
-  await createWelcomeAndOnboardingTasks(user.id, user.username);
+  await createWelcomeAndOnboardingTasks(user.id, user.email);
 
   return {
-    user: { ...user, displayName: displayName || user.username },
+    user: { ...user, displayName: displayName || user.first_name || user.email },
     coParent: { id: acceptResult.inviterId, name: validation.inviterName },
     sharedRoom: sharedRoom
       ? { id: sharedRoom.roomId || sharedRoom.id, name: sharedRoom.roomName || sharedRoom.name }
@@ -192,16 +192,16 @@ async function registerFromPairing(params, db) {
   const acceptResult = await pairingManager.acceptByToken(token, user.id, db, roomManager);
 
   // Create onboarding tasks
-  await createWelcomeAndOnboardingTasks(user.id, user.username);
+  await createWelcomeAndOnboardingTasks(user.id, user.email);
 
   return {
     success: true,
-    user: { ...user, displayName: displayName || user.username },
+    user: { ...user, displayName: displayName || user.first_name || user.email },
     coParent: { id: acceptResult.initiatorId, displayName: validation.initiatorName },
     sharedRoom: acceptResult.sharedRoomId
       ? {
           id: acceptResult.sharedRoomId,
-          name: `${validation.initiatorName} & ${displayName || user.username}`,
+          name: `${validation.initiatorName} & ${displayName || user.first_name || user.email}`,
         }
       : null,
   };
@@ -245,16 +245,16 @@ async function registerFromPairingCode(params, db) {
   const acceptResult = await pairingManager.acceptByCode(code, user.id, db, roomManager);
 
   // Create onboarding tasks
-  await createWelcomeAndOnboardingTasks(user.id, user.username);
+  await createWelcomeAndOnboardingTasks(user.id, user.email);
 
   return {
     success: true,
-    user: { ...user, displayName: displayName || user.username },
+    user: { ...user, displayName: displayName || user.first_name || user.email },
     coParent: { id: acceptResult.initiatorId, displayName: validation.initiatorName },
     sharedRoom: acceptResult.sharedRoomId
       ? {
           id: acceptResult.sharedRoomId,
-          name: `${validation.initiatorName} & ${displayName || user.username}`,
+          name: `${validation.initiatorName} & ${displayName || user.first_name || user.email}`,
         }
       : null,
   };

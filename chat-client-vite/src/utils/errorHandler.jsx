@@ -387,6 +387,37 @@ export function getErrorMessage(error, context = {}) {
     };
   }
 
+  // Handle network errors (fetch failures) - don't assume offline
+  const category = categorizeError(error, statusCode);
+  if (category === ErrorCategory.NETWORK) {
+    // Network errors can be due to various reasons (CORS, DNS, server unreachable, etc.)
+    // Don't assume user is offline - navigator.onLine is unreliable
+    // Only show "offline" if we're certain (check navigator.onLine as a hint, not definitive)
+    const isLikelyOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+    const isFetchError = error instanceof TypeError && error.message?.includes('fetch');
+    
+    if (isLikelyOffline && isFetchError) {
+      return {
+        message: errorMessage,
+        userMessage: 'You appear to be offline. Please check your internet connection and try again.',
+        action: 'retry',
+        retryable: true,
+        code: 'NETWORK_OFFLINE',
+        originalMessage: errorMessage,
+      };
+    }
+    
+    // Network error but not necessarily offline - could be server issue, CORS, DNS, etc.
+    return {
+      message: errorMessage,
+      userMessage: 'Unable to connect to the server. Please check your internet connection and try again.',
+      action: 'retry',
+      retryable: true,
+      code: 'NETWORK_ERROR',
+      originalMessage: errorMessage,
+    };
+  }
+
   // Default error message
   return {
     message: errorMessage,

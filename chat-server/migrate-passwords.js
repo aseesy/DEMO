@@ -18,7 +18,7 @@
  * Usage: node migrate-passwords.js
  */
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const db = require('./dbPostgres');
 const auth = require('./auth');
 const dbSafe = require('./dbSafe');

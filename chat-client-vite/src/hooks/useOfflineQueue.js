@@ -9,8 +9,7 @@
  */
 
 import { useState, useEffect } from 'react';
-
-const OFFLINE_QUEUE_KEY = 'liaizen_offline_queue';
+import { storage, StorageKeys } from '../adapters/storage';
 
 /**
  * Hook to track offline message queue size
@@ -24,13 +23,8 @@ export function useOfflineQueue() {
     // Initial load
     const updateQueueSize = () => {
       try {
-        const stored = localStorage.getItem(OFFLINE_QUEUE_KEY);
-        if (stored) {
-          const queue = JSON.parse(stored);
-          setQueueSize(Array.isArray(queue) ? queue.length : 0);
-        } else {
-          setQueueSize(0);
-        }
+        const queue = storage.get(StorageKeys.OFFLINE_QUEUE);
+        setQueueSize(Array.isArray(queue) ? queue.length : 0);
       } catch (error) {
         console.warn('[useOfflineQueue] Error reading queue:', error);
         setQueueSize(0);
@@ -41,7 +35,7 @@ export function useOfflineQueue() {
 
     // Listen for storage changes (queue updates)
     const handleStorageChange = (e) => {
-      if (e.key === OFFLINE_QUEUE_KEY) {
+      if (e.key === StorageKeys.OFFLINE_QUEUE) {
         updateQueueSize();
       }
     };
