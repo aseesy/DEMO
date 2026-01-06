@@ -20,7 +20,7 @@ describe('PermissionService', () => {
 
     // Import service after mocking
     PermissionService =
-      require('../../../src/services/permissions/PermissionService').PermissionService;
+      require('../../src/services/permissions/PermissionService').PermissionService;
     permissionService = new PermissionService();
   });
 
