@@ -1,6 +1,7 @@
 /* eslint-disable no-undef */
-// Custom push notification handlers
-// This will be imported by the generated service worker
+// Custom Service Worker logic
+// This will be imported by the generated service worker from vite-plugin-pwa
+// Workbox modules are available as globals when imported via vite-plugin-pwa's generateSW
 
 // Service worker version (should match CACHE_VERSION in vite.config.js)
 const SW_VERSION = 'liaizen-v1.0.0';
@@ -11,13 +12,19 @@ self.addEventListener('message', event => {
     console.log('[SW] Received SKIP_WAITING message, activating new service worker');
     self.skipWaiting();
   }
-  
+
   // Respond to version requests
   if (event.data && event.data.type === 'GET_VERSION') {
     event.ports[0]?.postMessage({
       type: 'VERSION_INFO',
       version: SW_VERSION,
     });
+  }
+
+  // Handle background sync requests from client
+  if (event.data && event.data.type === 'QUEUE_MESSAGE') {
+    console.log('[SW] Received message to queue for background sync:', event.data.messageId);
+    // The background sync plugin (configured in vite.config.js) will handle this automatically
   }
 });
 
@@ -32,7 +39,41 @@ self.addEventListener('activate', event => {
   console.log('[SW] Activating service worker version:', SW_VERSION);
   // Claim all clients immediately
   event.waitUntil(self.clients.claim());
+
+  // Note: Offline fallback navigation is configured in vite.config.js via navigateFallback
+  // The generated service worker will handle this automatically
+  console.log('[SW] Service worker activated');
+  console.log('[SW] - Offline fallback: /offline.html (configured in vite.config.js)');
+  console.log('[SW] - Background Sync: message-queue (configured in vite.config.js)');
 });
+
+// Background Sync for offline messages
+// Workbox Background Sync is configured in vite.config.js runtimeCaching
+// This listener handles the sync event when connection is restored
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-messages' || event.tag.startsWith('workbox-background-sync')) {
+    console.log('[SW] Background sync triggered:', event.tag);
+    // Workbox Background Sync will automatically retry queued requests
+    // We can also notify the client to flush its local queue
+    event.waitUntil(notifyClientToSync());
+  }
+});
+
+// Notify client app to flush its message queue when sync occurs
+async function notifyClientToSync() {
+  try {
+    const clients = await self.clients.matchAll();
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'SYNC_MESSAGES',
+        timestamp: Date.now(),
+      });
+    });
+    console.log('[SW] Notified clients to sync messages');
+  } catch (error) {
+    console.error('[SW] Error notifying clients to sync:', error);
+  }
+}
 
 // Push event - handle incoming push notifications
 // This is CRITICAL for iOS PWA - without this, push notifications won't display

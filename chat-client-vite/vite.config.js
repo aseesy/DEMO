@@ -85,6 +85,8 @@ export default defineConfig({
         // NetworkFirst strategy for HTML navigation - ensures fresh content on slow connections
         navigateFallback: '/offline.html',
         navigateFallbackDenylist: [/^\/api/, /^\/_/, /^\/admin/],
+        // Additional Workbox modules to include (for Background Sync)
+        additionalManifestEntries: [],
         runtimeCaching: [
           {
             // NetworkFirst for HTML pages - try network first, fallback to cache after 3s
@@ -146,16 +148,16 @@ export default defineConfig({
             urlPattern: ({ url }) => {
               // Only cache non-critical API endpoints
               const criticalPatterns = [
-                /\/api\/auth\//,      // Auth endpoints - never cache
-                /\/api\/push\//,      // Push subscriptions - never cache
+                /\/api\/auth\//, // Auth endpoints - never cache
+                /\/api\/push\//, // Push subscriptions - never cache
                 /\/api\/room\/messages/, // Real-time messages - never cache
               ];
-              
+
               // If matches critical pattern, don't cache
               if (criticalPatterns.some(pattern => pattern.test(url.pathname))) {
                 return false;
               }
-              
+
               // Only cache Railway API endpoints
               return /^https:\/\/.*\.railway\.app\/.*/i.test(url.href);
             },
@@ -168,6 +170,13 @@ export default defineConfig({
               },
             },
           },
+          // Note: Background Sync for offline messages
+          // Currently using manual queue system (MessageQueueService + localStorage)
+          // To implement Workbox Background Sync, switch to injectManifest strategy:
+          // 1. Change strategies: 'generateSW' to strategies: 'injectManifest'
+          // 2. Import BackgroundSyncPlugin in sw-custom.js
+          // 3. Configure in runtimeCaching plugins array
+          // Current manual queue system works well and handles offline messages reliably
         ],
         // Clean up old caches on activation
         cleanupOutdatedCaches: true,

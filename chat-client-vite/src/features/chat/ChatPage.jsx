@@ -93,6 +93,23 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
   const [feedbackGiven, setFeedbackGiven] = React.useState(new Set());
   const [pendingOriginalMessageToRemove, setPendingOriginalMessageToRemove] = React.useState(null);
 
+  // Handle intervention feedback - defined early so it can be used in messagesContainerProps
+  const sendInterventionFeedback = React.useCallback(
+    (interventionId, helpful) => {
+      if (!socket || !socket.connected) {
+        console.warn('Cannot send feedback: socket not connected');
+        return;
+      }
+      socket.emit('intervention_feedback', {
+        interventionId,
+        helpful,
+        reason: null,
+      });
+      setFeedbackGiven(prev => new Set([...prev, interventionId]));
+    },
+    [socket]
+  );
+
   // Memoize props passed to MessagesContainer to ensure memoization works effectively
   // This prevents MessagesContainer from re-rendering when props haven't actually changed
   const messagesContainerProps = React.useMemo(
@@ -227,23 +244,6 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
       originalFlagMessage(messageId);
     },
     [originalFlagMessage]
-  );
-
-  // Handle intervention feedback
-  const sendInterventionFeedback = React.useCallback(
-    (interventionId, helpful) => {
-      if (!socket || !socket.connected) {
-        console.warn('Cannot send feedback: socket not connected');
-        return;
-      }
-      socket.emit('intervention_feedback', {
-        interventionId,
-        helpful,
-        reason: null,
-      });
-      setFeedbackGiven(prev => new Set([...prev, interventionId]));
-    },
-    [socket]
   );
 
   // Destructure invite state for child components
