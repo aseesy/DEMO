@@ -16,6 +16,14 @@
 const { AIMediator } = require('../mediator');
 const stateManager = require('../stateManager');
 
+// Mock stateManager methods to prevent errors
+jest.spyOn(stateManager, 'updateEscalationScore').mockReturnValue({});
+jest.spyOn(stateManager, 'initializeEmotionalState').mockReturnValue({});
+jest.spyOn(stateManager, 'initializePolicyState').mockReturnValue({
+  interventionHistory: [],
+  interventionThreshold: 0.5,
+});
+
 // Mock all dependencies
 jest.mock('../client', () => ({
   isConfigured: jest.fn(),
@@ -29,7 +37,7 @@ jest.mock('../../profiles/userContext', () => ({
 jest.mock('../messageCache', () => ({
   generateHash: jest.fn((text, sender, receiver) => `hash-${text}-${sender}-${receiver}`),
   get: jest.fn(),
-  set: jest.fn(),
+  set: jest.fn().mockResolvedValue(undefined), // Return a Promise so .catch() works
 }));
 
 jest.mock('../preFilters', () => ({
@@ -74,7 +82,7 @@ jest.mock('../mediatorErrors', () => ({
   safeExecute: jest.fn(async operation => {
     try {
       return await operation();
-    } catch (_error) {
+    } catch {
       return null;
     }
   }),
@@ -88,7 +96,10 @@ jest.mock('../libraryLoader', () => ({
 }));
 
 jest.mock('../humanUnderstanding', () => ({
-  generateHumanUnderstanding: jest.fn().mockResolvedValue(null),
+  generateHumanUnderstanding: jest.fn().mockImplementation(() => {
+    // Return a promise that resolves quickly to avoid timeout
+    return Promise.resolve(null);
+  }),
   formatUnderstandingForPrompt: jest.fn().mockReturnValue(''),
 }));
 
@@ -410,8 +421,8 @@ describe('AI Mediator - Comprehensive Tests', () => {
         'room-123'
       );
 
-      expect(result).toEqual(mockIntervention);
       expect(responseProcessor.processResponse).toHaveBeenCalled();
+      expect(result).toEqual(mockIntervention);
       expect(messageCache.set).toHaveBeenCalled();
     });
 

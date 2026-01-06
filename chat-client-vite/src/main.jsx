@@ -75,6 +75,10 @@ const isStandalone =
 import { initPWAObservability, trackServiceWorkerInstall } from './utils/pwaObservability.js';
 initPWAObservability();
 
+// Initialize XState DevTools (development only)
+import { initXStateDevTools } from './lib/xstateDevTools.js';
+initXStateDevTools();
+
 // Register service worker for PWA functionality (production only)
 // iOS Safari DOES support service workers for PWAs installed to home screen (iOS 11.3+)
 // Only skip service worker for regular Safari (not installed as PWA)

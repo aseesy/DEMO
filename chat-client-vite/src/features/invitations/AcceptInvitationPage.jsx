@@ -13,7 +13,7 @@
  */
 
 import React from 'react';
-import { useAcceptInvitation } from './model/useAcceptInvitation.js';
+import { useAcceptInvitationXState } from './model/useAcceptInvitationXState.js';
 import {
   LoadingView,
   InvalidLinkView,
@@ -74,7 +74,7 @@ export function AcceptInvitationPage() {
 
     // Loading states
     isLoading,
-  } = useAcceptInvitation();
+  } = useAcceptInvitationXState();
 
   // Loading state
   if (isLoading) {
