@@ -11,28 +11,48 @@
 /**
  * Get profiles for all conversation participants
  *
- * @param {Array<string>} usernames - Participant usernames
- * @returns {Promise<Map>} Map of username -> profile
+ * @param {Array<string>} identifiers - Participant usernames or emails
+ * @returns {Promise<Map>} Map of identifier -> profile
  */
-async function getParticipantProfiles(usernames) {
+async function getParticipantProfiles(identifiers) {
   const profiles = new Map();
 
   try {
     const dbSafe = require('../../../../dbSafe');
 
-    for (const username of usernames) {
+    for (const identifier of identifiers) {
+      if (!identifier) continue;
+      const normalized = identifier.toLowerCase();
+
       try {
-        const userResult = await dbSafe.safeSelect(
+        // Try email first (most common case - identifiers are usually emails)
+        let userResult = await dbSafe.safeSelect(
           'users',
-          { username: username.toLowerCase() },
+          { email: normalized },
           { limit: 1 }
         );
-        const users = dbSafe.parseResult(userResult);
+        let users = dbSafe.parseResult(userResult);
+
+        // Fall back to username if not found by email
+        if (users.length === 0) {
+          userResult = await dbSafe.safeSelect(
+            'users',
+            { username: normalized },
+            { limit: 1 }
+          );
+          users = dbSafe.parseResult(userResult);
+        }
+
         if (users.length > 0) {
-          profiles.set(username.toLowerCase(), users[0]);
+          // Normalize first_name to remove trailing whitespace
+          const user = users[0];
+          if (user.first_name) {
+            user.first_name = user.first_name.trim();
+          }
+          profiles.set(normalized, user);
         }
       } catch (err) {
-        console.error(`Error getting profile for ${username}:`, err.message);
+        console.error(`Error getting profile for ${identifier}:`, err.message);
       }
     }
   } catch (err) {

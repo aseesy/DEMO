@@ -8,7 +8,7 @@ function registerCoachingHandlers(socket, io, services) {
   // analyze_draft handler
   socket.on('analyze_draft', async ({ draftText }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before analyzing drafts.' });
         return;

@@ -355,46 +355,39 @@ function getDominantValue(signals) {
 // ============================================================
 
 /**
- * Initialize the values profile table
+ * Verify that the values profile table exists
+ * 
+ * @deprecated Schema changes must be done via migrations, not runtime creation.
+ * Table is created by migration 041_user_values_profile.sql
+ * This function now only validates the table exists (throws if missing)
+ * 
+ * @returns {Promise<boolean>} True if table exists
+ * @throws {Error} If table does not exist (migration needs to be run)
  */
 async function initializeTable() {
   try {
-    await dbPostgres.query(`
-      CREATE TABLE IF NOT EXISTS user_values_profile (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-
-        -- Learned values with confidence scores (0-100)
-        values_scores JSONB DEFAULT '{}',
-
-        -- Specific stances on topics
-        stances JSONB DEFAULT '[]',
-
-        -- Self-image keywords
-        self_image JSONB DEFAULT '[]',
-
-        -- Non-negotiables (explicitly stated or strongly inferred)
-        non_negotiables JSONB DEFAULT '[]',
-
-        -- Motivations (why they care about things)
-        motivations JSONB DEFAULT '[]',
-
-        -- Message count used for learning
-        messages_analyzed INTEGER DEFAULT 0,
-
-        -- Timestamps
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW(),
-
-        UNIQUE(user_id)
-      )
+    // Verify table exists by querying information_schema
+    const result = await dbPostgres.query(`
+      SELECT 1 
+      FROM information_schema.tables 
+      WHERE table_name = 'user_values_profile'
     `);
 
-    console.log('✅ Values profile table initialized');
+    if (result.rows.length === 0) {
+      throw new Error(
+        'user_values_profile table does not exist. ' +
+        'Please run migration 041_user_values_profile.sql. ' +
+        'Command: npm run migrate (from chat-server directory)'
+      );
+    }
+
     return true;
   } catch (error) {
-    console.error('❌ Failed to initialize values profile table:', error.message);
-    return false;
+    if (error.message.includes('does not exist')) {
+      throw error;
+    }
+    console.error('❌ Error verifying values profile table:', error.message);
+    throw error;
   }
 }
 

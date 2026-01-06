@@ -92,6 +92,17 @@ export function trackSectionView(sectionName) {
   console.log('Analytics: Section viewed', sectionName);
 }
 
+// Track custom event
+export function trackEvent(eventName, eventParams = {}) {
+  if (!window.gtag) {
+    console.log('Analytics: trackEvent - gtag not initialized');
+    return;
+  }
+
+  window.gtag('event', eventName, eventParams);
+  console.log('Analytics: Event tracked', { eventName, eventParams });
+}
+
 // Track conversion (sign-up)
 export function trackConversion(source, method = 'signup') {
   if (!window.gtag) {

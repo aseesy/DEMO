@@ -9,19 +9,24 @@ const { registerNavigationHandlers } = require('./socketHandlers/navigationHandl
 const { registerContactHandlers } = require('./socketHandlers/contactHandler');
 const { registerConnectionHandlers } = require('./socketHandlers/connectionHandler');
 const { registerCoachingHandlers } = require('./socketHandlers/coachingHandler');
+const { setupTopicsHandler } = require('./socketHandlers/topicsHandler');
 const { authMiddleware, rateLimitMiddleware } = require('./socketHandlers/socketMiddleware');
 
 /**
  * Initialize Socket.io handlers
  */
 function setupSockets(io, services) {
-  const { messageStore, auth, roomManager, userSessionService } = services;
+  const { messageStore, auth, roomManager, userSessionService, threadManager } = services;
 
   // Configure RoomService for socket join operations
   const { roomService } = require('./src/services');
   roomService.setAuth(auth);
   roomService.setRoomManager(roomManager);
   roomService.setUserSessionService(userSessionService);
+  // Pass threadManager so it can be used for automatic analysis
+  if (threadManager) {
+    roomService.setThreadManager(threadManager);
+  }
 
   // SINGLE SOURCE OF TRUTH: Authentication happens ONLY in middleware
   // Middleware runs during handshake processing, before 'connection' event fires
@@ -74,6 +79,7 @@ function setupSockets(io, services) {
     registerNavigationHandlers(socket, io, services);
     registerContactHandlers(socket, io, services);
     registerCoachingHandlers(socket, io, services);
+    setupTopicsHandler(socket, io);
 
     // Global error handler
     socket.on('error', error => {

@@ -7,7 +7,7 @@ function registerNavigationHandlers(socket, io, services) {
 
   // load_older_messages handler
   socket.on('load_older_messages', async ({ beforeTimestamp, limit = 50 }) => {
-    const user = userSessionService.getUserBySocketId(socket.id);
+    const user = await userSessionService.getUserBySocketId(socket.id);
     if (!user) {
       socket.emit('error', { message: 'You must join before loading messages.' });
       return;
@@ -18,7 +18,7 @@ function registerNavigationHandlers(socket, io, services) {
       const query = `
         SELECT m.*, u.display_name, u.first_name
         FROM messages m
-        LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
+        LEFT JOIN users u ON LOWER(m.user_email) = LOWER(u.email) OR LOWER(m.username) = LOWER(u.email)
         WHERE m.room_id = $1
           AND m.timestamp < $2
           AND (m.type IS NULL OR m.type != 'system')
@@ -61,7 +61,7 @@ function registerNavigationHandlers(socket, io, services) {
 
   // search_messages handler
   socket.on('search_messages', async ({ query, limit = 50, offset = 0 }) => {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
     if (!user) {
       socket.emit('error', { message: 'You must join before searching.' });
       return;
@@ -80,7 +80,7 @@ function registerNavigationHandlers(socket, io, services) {
       const searchQuery = `
         SELECT m.*, u.display_name, u.first_name
         FROM messages m
-        LEFT JOIN users u ON LOWER(m.username) = LOWER(u.username)
+        LEFT JOIN users u ON LOWER(m.user_email) = LOWER(u.email) OR LOWER(m.username) = LOWER(u.email)
         WHERE m.room_id = $1 AND m.type IN ('message', 'user') AND text ILIKE $2
         ORDER BY m.timestamp DESC
         LIMIT $3 OFFSET $4
@@ -119,7 +119,7 @@ function registerNavigationHandlers(socket, io, services) {
 
   // jump_to_message handler
   socket.on('jump_to_message', async ({ messageId }) => {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
     if (!user) return;
 
     try {

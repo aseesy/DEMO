@@ -19,6 +19,7 @@
 const { BaseService } = require('../BaseService');
 const { NotFoundError, ValidationError } = require('../errors');
 const dbPostgres = require('../../../dbPostgres');
+const { getSession, setSession, deleteSession } = require('../../infrastructure/cache/sessionCache');
 
 class UserSessionService extends BaseService {
   constructor() {
@@ -93,10 +94,11 @@ class UserSessionService extends BaseService {
    * @param {string} socketId - Socket ID
    * @param {string} email - User email (primary identifier)
    * @param {string} roomId - Room ID
+   * @param {Object} [userInfo] - Optional additional user info (id, first_name, last_name)
    * @returns {Promise<Object>} User data object
    * @throws {ValidationError} If required parameters missing
    */
-  async registerUser(socketId, email, roomId) {
+  async registerUser(socketId, email, roomId, userInfo = {}) {
     if (!socketId) {
       throw new ValidationError('Socket ID is required', 'socketId');
     }
@@ -111,15 +113,23 @@ class UserSessionService extends BaseService {
     const emailLower = email.toLowerCase().trim();
 
     const userData = {
+      id: userInfo.id || null, // User ID for ownership detection
       email: emailLower,
       roomId: roomId,
       joinedAt: now,
       lastActivity: now,
       socketId: socketId,
+      first_name: userInfo.first_name || userInfo.firstName || null,
+      last_name: userInfo.last_name || userInfo.lastName || null,
     };
 
     // Update in-memory cache immediately
     this._activeUsers.set(socketId, userData);
+
+    // Cache in Redis for fast lookups (non-blocking)
+    setSession(socketId, userData, 300).catch(err => {
+      console.warn('[UserSessionService] Failed to cache session in Redis:', err.message);
+    });
 
     // Persist to database (non-blocking, fail-open)
     if (this._dbAvailable) {
@@ -144,6 +154,8 @@ class UserSessionService extends BaseService {
       socketId: socketId.substring(0, 20) + '...',
       email: email,
       roomId: roomId,
+      userId: userData.id,
+      first_name: userData.first_name,
     });
 
     return userData;
@@ -151,14 +163,60 @@ class UserSessionService extends BaseService {
 
   /**
    * Get user by socket ID
+   * Checks Redis cache first, then in-memory, then database
    * @param {string} socketId - Socket ID
-   * @returns {Object|null} User data or null if not found
+   * @returns {Promise<Object|null>} User data or null if not found
    */
-  getUserBySocketId(socketId) {
+  async getUserBySocketId(socketId) {
     if (!socketId) {
       return null;
     }
-    return this._activeUsers.get(socketId) || null;
+
+    // Check in-memory cache first (fastest)
+    const cached = this._activeUsers.get(socketId);
+    if (cached) {
+      return cached;
+    }
+
+    // Check Redis cache (fast)
+    try {
+      const redisSession = await getSession(socketId);
+      if (redisSession) {
+        // Update in-memory cache for faster subsequent access
+        this._activeUsers.set(socketId, redisSession);
+        return redisSession;
+      }
+    } catch (error) {
+      console.warn('[UserSessionService] Redis cache lookup failed:', error.message);
+    }
+
+    // Fallback to database if needed (slower, but comprehensive)
+    if (this._dbAvailable) {
+      try {
+        const result = await dbPostgres.query(
+          'SELECT * FROM active_sessions WHERE socket_id = $1 LIMIT 1',
+          [socketId]
+        );
+        if (result.rows.length > 0) {
+          const session = result.rows[0];
+          const userData = {
+            email: session.user_email,
+            roomId: session.room_id,
+            joinedAt: session.joined_at,
+            lastActivity: session.last_activity,
+            socketId: session.socket_id,
+          };
+          // Update both caches
+          this._activeUsers.set(socketId, userData);
+          setSession(socketId, userData, 300).catch(() => {});
+          return userData;
+        }
+      } catch (error) {
+        console.warn('[UserSessionService] Database lookup failed:', error.message);
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -185,6 +243,11 @@ class UserSessionService extends BaseService {
     if (user) {
       // Remove from in-memory cache
       this._activeUsers.delete(socketId);
+
+      // Remove from Redis cache (non-blocking)
+      deleteSession(socketId).catch(err => {
+        console.warn('[UserSessionService] Failed to delete session from Redis:', err.message);
+      });
 
       // Remove from database (non-blocking, fail-open)
       if (this._dbAvailable) {

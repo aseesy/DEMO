@@ -42,10 +42,10 @@ function validateMessageText(text) {
  * Validate that user is active
  * @param {Object} userSessionService - User session service
  * @param {string} socketId - Socket ID
- * @returns {{ valid: boolean, user?: Object, error?: string }}
+ * @returns {Promise<{ valid: boolean, user?: Object, error?: string }>}
  */
-function validateActiveUser(userSessionService, socketId) {
-  const user = userSessionService.getUserBySocketId(socketId);
+async function validateActiveUser(userSessionService, socketId) {
+  const user = await userSessionService.getUserBySocketId(socketId);
 
   if (!user) {
     return {
@@ -102,6 +102,9 @@ async function createUserMessage(
 
     // Database field (keep for database column mapping)
     user_email: userEmail,
+
+    // Legacy field (required by AI mediator for profile lookups and caching)
+    username: userEmail,
 
     // Core fields
     text: cleanText,

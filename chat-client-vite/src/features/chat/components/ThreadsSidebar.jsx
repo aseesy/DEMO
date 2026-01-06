@@ -56,17 +56,27 @@ export function ThreadsSidebar({
   setSelectedThreadId,
   setShowThreadsPanel,
   getThreadMessages,
+  archiveThread,
 }) {
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [showArchived, setShowArchived] = useState(false);
 
   // Filter and organize threads
   const displayThreads = useMemo(() => {
     let filtered = threads;
-    if (categoryFilter !== 'all') {
-      filtered = threads.filter(t => t.category === categoryFilter);
+    
+    // Filter by archive status
+    if (!showArchived) {
+      filtered = filtered.filter(t => !t.is_archived || t.is_archived === 0);
     }
+    
+    // Filter by category
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(t => t.category === categoryFilter);
+    }
+    
     return organizeThreadHierarchy(filtered);
-  }, [threads, categoryFilter]);
+  }, [threads, categoryFilter, showArchived]);
 
   // Get unique categories from threads
   const availableCategories = useMemo(() => {
@@ -102,7 +112,7 @@ export function ThreadsSidebar({
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-teal-medium"
+            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-teal-medium mb-2"
           >
             <option value="all">All Categories</option>
             {availableCategories.map(cat => {
@@ -115,6 +125,17 @@ export function ThreadsSidebar({
             })}
           </select>
         )}
+        
+        {/* Archive filter toggle */}
+        <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+            className="rounded border-gray-300 text-teal-medium focus:ring-teal-medium"
+          />
+          <span>Show archived threads</span>
+        </label>
       </div>
 
       {/* Thread list */}
@@ -145,7 +166,10 @@ export function ThreadsSidebar({
               <button
                 key={thread.id}
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  // Prevent thread selection when clicking archive button
+                  if (e.target.closest('.archive-button')) return;
+                  
                   setSelectedThreadId(thread.id === selectedThreadId ? null : thread.id);
                   if (thread.id !== selectedThreadId) getThreadMessages(thread.id);
                 }}
@@ -153,7 +177,7 @@ export function ThreadsSidebar({
                   selectedThreadId === thread.id
                     ? 'bg-teal-lightest border-l-4 border-l-teal-medium'
                     : ''
-                }`}
+                } ${thread.is_archived ? 'opacity-60' : ''}`}
               >
                 {/* Sub-thread indicator */}
                 {isSubThread && (
@@ -168,11 +192,31 @@ export function ThreadsSidebar({
                 {/* Thread title */}
                 <div className="font-semibold text-sm text-teal-dark mb-2">{thread.title}</div>
 
-                {/* Category badge and message count */}
-                <div className="flex items-center justify-between gap-2">
-                  {thread.category && <CategoryBadge category={thread.category} />}
-                  <div className="text-xs text-gray-500 font-medium">
-                    {thread.message_count || 0} msgs
+                {/* Category badge, archive status, message count, and archive button */}
+                <div className="flex items-center justify-between gap-2 mt-2">
+                  <div className="flex items-center gap-2">
+                    {thread.category && <CategoryBadge category={thread.category} />}
+                    {thread.is_archived && (
+                      <span className="text-xs text-gray-400">📦 Archived</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-gray-500 font-medium">
+                      {thread.message_count || 0} msgs
+                    </div>
+                    {archiveThread && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          archiveThread(thread.id, !thread.is_archived, true);
+                        }}
+                        className="archive-button text-xs text-gray-400 hover:text-teal-500 p-1 transition-colors"
+                        title={thread.is_archived ? 'Unarchive thread' : 'Archive thread'}
+                        type="button"
+                      >
+                        {thread.is_archived ? '📦' : '📦'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </button>

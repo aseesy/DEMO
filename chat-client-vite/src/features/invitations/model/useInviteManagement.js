@@ -368,14 +368,15 @@ export function useInviteManagement({
     }
   }, [messages.length, isAuthenticated, hasCoParentConnected, checkRoomMembers]);
 
-  // Check invitations periodically
+  // Check invitations periodically (only if not already paired)
   React.useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !hasCoParentConnected) {
       checkInvitations();
-      const interval = setInterval(checkInvitations, 5000);
+      // Poll every 30 seconds instead of 5 - invitations aren't that time-critical
+      const interval = setInterval(checkInvitations, 30000);
       return () => clearInterval(interval);
     }
-  }, [isAuthenticated, checkInvitations]);
+  }, [isAuthenticated, hasCoParentConnected, checkInvitations]);
 
   return {
     // Invite link state

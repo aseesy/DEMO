@@ -13,51 +13,67 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
     }
   };
 
-  // Auto-resize textarea to fit content
+  // Auto-resize textarea to fit content - optimized to prevent forced reflows
   const adjustTextareaHeight = React.useCallback(() => {
-    if (textareaRef.current) {
-      // Preserve cursor position before adjusting height
+    if (!textareaRef.current) return;
+    
+    // Use requestAnimationFrame to batch DOM reads/writes and prevent forced reflows
+    requestAnimationFrame(() => {
+      if (!textareaRef.current) return;
+      
       const textarea = textareaRef.current;
       const selectionStart = textarea.selectionStart;
       const selectionEnd = textarea.selectionEnd;
       const isFocused = document.activeElement === textarea;
 
-      // Reset height to auto to get accurate scrollHeight
-      textarea.style.height = 'auto';
-      // Get the scroll height (content height)
+      // Batch DOM reads (get computed values)
+      const currentHeight = textarea.offsetHeight;
       const scrollHeight = textarea.scrollHeight;
-      // Max height is 8rem (128px) - matches max-h-32
       const maxHeight = 128;
-      // Set height to scrollHeight, but cap at maxHeight
       const newHeight = Math.min(scrollHeight, maxHeight);
-      textarea.style.height = `${newHeight}px`;
-      // Enable scrolling if content exceeds max height
-      textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
 
-      // Restore cursor position after height adjustment
-      if (isFocused && selectionStart !== null && selectionEnd !== null) {
-        // Use requestAnimationFrame to ensure DOM has updated
-        requestAnimationFrame(() => {
-          if (textareaRef.current) {
-            textareaRef.current.setSelectionRange(selectionStart, selectionEnd);
-          }
-        });
-      }
+      // Only update if height actually changed (prevents unnecessary reflows)
+      if (Math.abs(currentHeight - newHeight) > 1) {
+        // Batch DOM writes (set styles together)
+        textarea.style.height = `${newHeight}px`;
+        textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
 
-      // Scroll textarea into view if it expanded significantly
-      // This ensures the full message is visible when AI rewrite is selected
-      if (newHeight > 60) {
-        // Small delay to ensure DOM has updated
-        setTimeout(() => {
-          textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 100);
+        // Restore cursor position in next frame to avoid blocking
+        if (isFocused && selectionStart !== null && selectionEnd !== null) {
+          requestAnimationFrame(() => {
+            if (textareaRef.current) {
+              textareaRef.current.setSelectionRange(selectionStart, selectionEnd);
+            }
+          });
+        }
+
+        // Scroll into view only if significant expansion (debounced)
+        if (newHeight > 60 && newHeight > currentHeight + 20) {
+          requestAnimationFrame(() => {
+            textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          });
+        }
       }
-    }
+    });
   }, []);
 
-  // Adjust height when input message changes (especially when AI rewrite is selected)
+  // Adjust height when input message changes - debounced to prevent excessive reflows
+  const adjustHeightTimeoutRef = React.useRef(null);
   React.useEffect(() => {
-    adjustTextareaHeight();
+    // Clear any pending adjustment
+    if (adjustHeightTimeoutRef.current) {
+      clearTimeout(adjustHeightTimeoutRef.current);
+    }
+    // Debounce height adjustment to prevent excessive reflows during rapid typing
+    adjustHeightTimeoutRef.current = setTimeout(() => {
+      adjustTextareaHeight();
+    }, 0); // Use 0ms timeout to batch with other DOM updates
+    
+    return () => {
+      if (adjustHeightTimeoutRef.current) {
+        clearTimeout(adjustHeightTimeoutRef.current);
+      }
+    };
   }, [inputMessage, adjustTextareaHeight]);
 
   // Set readonly on mount to prevent iOS keyboard accessory bar
@@ -91,18 +107,17 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
   const handlePointerDown = e => {
     // Remove readonly immediately, before focus event fires
     removeReadonly();
-    // Adjust height after readonly is removed
-    setTimeout(adjustTextareaHeight, 0);
+    // Height adjustment handled by useEffect
   };
 
   const handleMouseDown = e => {
     removeReadonly();
-    setTimeout(adjustTextareaHeight, 0);
+    // Height adjustment handled by useEffect
   };
 
   const handleTouchStart = e => {
     removeReadonly();
-    setTimeout(adjustTextareaHeight, 0);
+    // Height adjustment handled by useEffect
   };
 
   // Handle blur - set readonly back after delay
@@ -137,8 +152,13 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
 
   return (
     <div
-      className="px-4 sm:px-6 md:px-8 safe-area-inset-bottom"
+      className="safe-area-inset-bottom"
       style={{
+        // Responsive padding that scales with viewport width - matches MessagesContainer
+        // Mobile: 1rem (16px), scales up to 2rem (32px) on larger screens
+        // On very large screens: uses viewport-based units for better scaling
+        paddingLeft: isMobile ? '1rem' : 'clamp(1.5rem, 4vw, 3rem)',
+        paddingRight: isMobile ? '1rem' : 'clamp(1.5rem, 4vw, 3rem)',
         paddingBottom: '0px',
         paddingTop: '0px',
         position: isMobile ? 'fixed' : 'relative',
@@ -166,8 +186,8 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
             value={inputMessage}
             onChange={e => {
               handleInputChange(e);
-              // Adjust height after value changes
-              setTimeout(adjustTextareaHeight, 0);
+              // Height adjustment is handled by useEffect with debouncing
+              // No need to call here to avoid double execution
             }}
             placeholder="Send message..."
             rows={1}

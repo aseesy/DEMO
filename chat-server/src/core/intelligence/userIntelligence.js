@@ -42,27 +42,37 @@ const dbPostgres = require('../../../dbPostgres');
 // ============================================================
 
 /**
- * Initialize PostgreSQL intelligence table
+ * Verify that the user_intelligence table exists
+ * 
+ * @deprecated Schema changes must be done via migrations, not runtime creation.
+ * Table is created by migration 042_user_intelligence.sql
+ * This function now only validates the table exists (throws if missing)
+ * 
+ * @returns {Promise<void>}
+ * @throws {Error} If table does not exist (migration needs to be run)
  */
 async function initializeIntelligenceTable() {
   try {
-    await dbPostgres.query(`
-      CREATE TABLE IF NOT EXISTS user_intelligence (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
-        messages_analyzed INTEGER DEFAULT 0,
-        communication_styles JSONB DEFAULT '{}',
-        triggers JSONB DEFAULT '{}',
-        emotional_patterns JSONB DEFAULT '{}',
-        values JSONB DEFAULT '{}',
-        last_analyzed TIMESTAMP DEFAULT NOW(),
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      )
+    // Verify table exists by querying information_schema
+    const result = await dbPostgres.query(`
+      SELECT 1 
+      FROM information_schema.tables 
+      WHERE table_name = 'user_intelligence'
     `);
-    console.log('✅ UserIntelligence: PostgreSQL intelligence table initialized');
+
+    if (result.rows.length === 0) {
+      throw new Error(
+        'user_intelligence table does not exist. ' +
+        'Please run migration 042_user_intelligence.sql. ' +
+        'Command: npm run migrate (from chat-server directory)'
+      );
+    }
   } catch (error) {
-    console.error('❌ UserIntelligence: Failed to initialize PostgreSQL table:', error.message);
+    if (error.message.includes('does not exist')) {
+      throw error;
+    }
+    console.error('❌ UserIntelligence: Error verifying PostgreSQL table:', error.message);
+    throw error;
   }
 }
 
@@ -508,30 +518,42 @@ async function storeInsight(userId, insight, roomId = null) {
 }
 
 /**
- * Initialize all PostgreSQL tables for user intelligence
+ * Verify that all PostgreSQL tables for user intelligence exist
+ * 
+ * @deprecated Schema changes must be done via migrations, not runtime creation.
+ * Tables are created by migrations:
+ *   - 042_user_intelligence.sql (user_intelligence table)
+ *   - 043_user_insights.sql (user_insights table)
+ * This function now only validates tables exist (throws if missing)
+ * 
+ * @returns {Promise<void>}
+ * @throws {Error} If tables do not exist (migrations need to be run)
  */
 async function initializeInsightsTable() {
   try {
-    // Initialize insights table
-    await dbPostgres.query(`
-      CREATE TABLE IF NOT EXISTS user_insights (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        room_id TEXT,
-        insight_type TEXT,
-        observation TEXT,
-        suggestion TEXT,
-        shown_to_user BOOLEAN DEFAULT FALSE,
-        user_found_helpful BOOLEAN,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
+    // Verify user_insights table exists
+    const insightsResult = await dbPostgres.query(`
+      SELECT 1 
+      FROM information_schema.tables 
+      WHERE table_name = 'user_insights'
     `);
-    console.log('✅ UserIntelligence: Insights table initialized');
 
-    // Also initialize intelligence table (for PostgreSQL fallback)
+    if (insightsResult.rows.length === 0) {
+      throw new Error(
+        'user_insights table does not exist. ' +
+        'Please run migration 043_user_insights.sql. ' +
+        'Command: npm run migrate (from chat-server directory)'
+      );
+    }
+
+    // Also verify intelligence table (for PostgreSQL fallback)
     await initializeIntelligenceTable();
   } catch (error) {
-    console.error('❌ UserIntelligence: Failed to initialize insights table:', error.message);
+    if (error.message.includes('does not exist')) {
+      throw error;
+    }
+    console.error('❌ UserIntelligence: Error verifying insights table:', error.message);
+    throw error;
   }
 }
 

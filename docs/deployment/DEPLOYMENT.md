@@ -47,6 +47,11 @@ Complete guide to deploy LiaiZen to production using Railway (backend) and Verce
    - Click **"+ New"** → **"Database"** → **"Add PostgreSQL"**
    - Railway automatically injects `DATABASE_URL` environment variable
 
+3. **Add Redis (Optional but Recommended):**
+   - Click **"+ New"** → **"Database"** → **"Add Redis"**
+   - Railway automatically injects `REDIS_URL` environment variable
+   - **Note**: Redis is optional - the app works without it, but it's recommended for production to prevent duplicate processing across instances
+
 3. **Add Environment Variables:**
    Go to **Variables** tab and add:
 

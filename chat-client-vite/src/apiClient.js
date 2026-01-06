@@ -197,10 +197,20 @@ export async function apiGet(path, options = {}) {
 
     return response;
   } catch (error) {
-    // Track network errors
+    // Track network errors with offline/server classification
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
     trackAPIError(endpoint, 0, error.message || 'Network error');
+    
+    // Classify error type (offline vs server) for observability
+    if (typeof window !== 'undefined') {
+      import('./utils/pwaObservability.js').then(({ trackErrorWithClassification }) => {
+        trackErrorWithClassification(error, `api_get_${endpoint}`);
+      }).catch(() => {
+        // Silently ignore if module not available
+      });
+    }
+    
     throw error;
   }
 }

@@ -107,7 +107,8 @@ class AIMediator {
     roomId = null,
     taskContextForAI = null,
     flaggedMessagesContext = null,
-    roleContext = null
+    roleContext = null,
+    threadContext = null
   ) {
     const logger = defaultLogger.child({
       operation: 'analyzeMessage',
@@ -130,7 +131,7 @@ class AIMediator {
       participantUsernames.find(u => u !== message.username) ||
       'unknown';
     const hash = messageCache.generateHash(message.text, senderId, receiverId);
-    const cachedResult = messageCache.get(hash);
+    const cachedResult = await messageCache.get(hash);
 
     if (cachedResult) {
       console.log('✅ AI Mediator: Using cached analysis (cache hit)');
@@ -219,6 +220,7 @@ class AIMediator {
         taskContextForAI,
         flaggedMessagesContext,
         roleContext,
+        threadContext, // Pass thread context from analyzeMessage
       });
 
       // === GET RELATIONSHIP INSIGHTS ===
@@ -231,29 +233,42 @@ class AIMediator {
       // === GENERATE HUMAN UNDERSTANDING ===
       // Generate deep insights about human nature, psychology, and relationships
       // This creates understanding FIRST, which informs impactful responses
-      // Wrap in timeout to prevent blocking message processing
+      // CRITICAL: This understanding is essential for contextual, situation-aware responses
+      // Increased timeout to 10 seconds to ensure completion
       let humanUnderstanding = null;
       try {
+        // Build enriched relationship context that includes situation details
+        const enrichedRelationshipContext = [
+          contexts.contactContextForAI || '',
+          contexts.coparentingContextString || '',
+          contexts.taskContextForAI || '',
+          contexts.flaggedMessagesContext || '',
+        ]
+          .filter(Boolean)
+          .join('\n\n');
+
         const understandingPromise = generateHumanUnderstanding({
           messageText: message.text,
           senderDisplayName: contexts.senderDisplayName,
           receiverDisplayName: contexts.receiverDisplayName,
           messageHistory: contexts.messageHistory,
-          relationshipContext: contexts.contactContextForAI || '',
+          relationshipContext: enrichedRelationshipContext,
           senderProfile: contexts.profileContext?.sender || null,
           receiverProfile: contexts.profileContext?.receiver || null,
           roleContext,
         });
 
-        // Add timeout: if it takes more than 5 seconds, skip it
+        // Increased timeout to 10 seconds - this understanding is critical for quality responses
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Human understanding timeout')), 5000)
+          setTimeout(() => reject(new Error('Human understanding timeout')), 10000)
         );
 
         humanUnderstanding = await Promise.race([understandingPromise, timeoutPromise]);
+        console.log('✅ Human Understanding: Generated successfully');
       } catch (error) {
-        // Non-critical: log but continue without understanding
+        // Log warning but continue - system can still function, just with less context
         console.warn('⚠️ Human Understanding: Skipped due to error or timeout:', error.message);
+        // Continue without understanding, but responses may be less contextual
         humanUnderstanding = null;
       }
 
@@ -283,11 +298,13 @@ class AIMediator {
         voiceSignatureSection: contexts.voiceSignatureSection,
         conversationPatternsSection: contexts.conversationPatternsSection,
         interventionLearningSection: contexts.interventionLearningSection,
+        threadContext, // Add thread context to prompt
         roleAwarePromptSection: contexts.roleAwarePromptSection,
         insightsString,
         humanUnderstandingString,
         taskContextForAI: contexts.taskContextForAI,
         flaggedMessagesContext: contexts.flaggedMessagesContext,
+        dualBrainContextString: contexts.dualBrainContextString,
       });
 
       // === MAKE AI CALL ===
@@ -338,7 +355,10 @@ class AIMediator {
       }
 
       // === CACHE RESULT ===
-      messageCache.set(hash, result);
+      // Cache asynchronously (don't block response)
+      messageCache.set(hash, result).catch(err => {
+        console.warn('[AI Mediator] Failed to cache result:', err.message);
+      });
 
       return result;
     } catch (error) {

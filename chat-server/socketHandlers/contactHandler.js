@@ -8,7 +8,7 @@ function registerContactHandlers(socket, io, services) {
   // contact_suggestion_response handler
   socket.on('contact_suggestion_response', async ({ response, detectedName, relationship }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user || !socket.data || !socket.data.pendingContactSuggestion) return;
 
       const pending = socket.data.pendingContactSuggestion;
@@ -62,7 +62,7 @@ function registerContactHandlers(socket, io, services) {
   // contact_relationship handler
   socket.on('contact_relationship', async ({ detectedName, relationship }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user || !socket.data || !socket.data.pendingContactSuggestion) return;
 
       // Look up by email (more reliable than username for case normalization)
@@ -101,7 +101,7 @@ function registerContactHandlers(socket, io, services) {
   // flag_message handler
   socket.on('flag_message', async ({ messageId, reason }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) return;
 
       const messageResult = await services.dbPostgres.query(

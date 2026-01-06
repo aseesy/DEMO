@@ -69,42 +69,89 @@ setupRateLimiting(app);
 // Register API and Static Routes
 setupRoutes(app, services);
 
-// Setup Socket.io
-const io = new Server(server, {
-  cors: {
-    origin: (origin, callback) => {
-      const result = isOriginAllowed(origin, allowedOrigins);
-      if (result.allowed) {
-        callback(null, true);
-      } else {
-        console.warn(`[Socket.io CORS] ❌ BLOCKED: ${origin}`);
-        console.warn(`[Socket.io CORS] Reason: ${result.reason}`);
-        callback(new Error('Not allowed by CORS'));
-      }
+// Setup Socket.io with Redis adapter (if available)
+let io;
+try {
+  const { createAdapter } = require('@socket.io/redis-adapter');
+  const { getClient } = require('./src/infrastructure/database/redisClient');
+  const redisClient = getClient();
+  
+  if (redisClient) {
+    // Create Redis adapter for multi-instance support
+    const pubClient = redisClient;
+    const subClient = redisClient.duplicate();
+    
+    io = new Server(server, {
+      adapter: createAdapter(pubClient, subClient),
+      cors: {
+        origin: (origin, callback) => {
+          const result = isOriginAllowed(origin, allowedOrigins);
+          if (result.allowed) {
+            callback(null, true);
+          } else {
+            console.warn(`[Socket.io CORS] ❌ BLOCKED: ${origin}`);
+            console.warn(`[Socket.io CORS] Reason: ${result.reason}`);
+            callback(new Error('Not allowed by CORS'));
+          }
+        },
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        credentials: true,
+        allowedHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Requested-With',
+          'Accept',
+          'Origin',
+          'Access-Control-Request-Method',
+          'Access-Control-Request-Headers',
+        ],
+      },
+      pingTimeout: 60000,
+      pingInterval: 25000,
+      maxHttpBufferSize: 1e6,
+      transports: process.env.SOCKET_FORCE_POLLING === 'true' ? ['polling'] : ['websocket', 'polling'],
+      allowEIO3: true,
+      allowUpgrades: process.env.SOCKET_FORCE_POLLING !== 'true',
+    });
+    console.log('✅ Socket.io Redis adapter enabled (multi-instance support)');
+  } else {
+    throw new Error('Redis client not available');
+  }
+} catch (error) {
+  // Fallback to default Socket.io (single instance)
+  console.warn('⚠️  Socket.io Redis adapter not available, using default (single instance):', error.message);
+  io = new Server(server, {
+    cors: {
+      origin: (origin, callback) => {
+        const result = isOriginAllowed(origin, allowedOrigins);
+        if (result.allowed) {
+          callback(null, true);
+        } else {
+          console.warn(`[Socket.io CORS] ❌ BLOCKED: ${origin}`);
+          console.warn(`[Socket.io CORS] Reason: ${result.reason}`);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      credentials: true,
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'Accept',
+        'Origin',
+        'Access-Control-Request-Method',
+        'Access-Control-Request-Headers',
+      ],
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: true,
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Requested-With',
-      'Accept',
-      'Origin',
-      'Access-Control-Request-Method',
-      'Access-Control-Request-Headers',
-    ],
-  },
-  pingTimeout: 60000,
-  pingInterval: 25000,
-  maxHttpBufferSize: 1e6,
-  // Transport configuration: Use feature flag for consistency between dev and prod
-  // Set SOCKET_FORCE_POLLING=true to force polling-only (useful for debugging)
-  // Default: websocket first (more efficient), polling as fallback
-  transports: process.env.SOCKET_FORCE_POLLING === 'true' ? ['polling'] : ['websocket', 'polling'],
-  allowEIO3: true,
-  // Allow upgrades unless forced to polling-only
-  allowUpgrades: process.env.SOCKET_FORCE_POLLING !== 'true',
-});
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    maxHttpBufferSize: 1e6,
+    transports: process.env.SOCKET_FORCE_POLLING === 'true' ? ['polling'] : ['websocket', 'polling'],
+    allowEIO3: true,
+    allowUpgrades: process.env.SOCKET_FORCE_POLLING !== 'true',
+  });
+}
 
 // Initialize Socket Handlers
 console.log('[Server] Socket.io path:', io.path());

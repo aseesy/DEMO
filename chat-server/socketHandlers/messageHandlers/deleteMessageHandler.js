@@ -29,7 +29,7 @@ function registerDeleteMessageHandler(socket, io, services) {
     wrapSocketHandler(
       async ({ messageId }) => {
         // Step 1: Validate user is active
-        const userValidation = validateActiveUser(userSessionService, socket.id);
+        const userValidation = await validateActiveUser(userSessionService, socket.id);
         if (!userValidation.valid) {
           emitError(socket, 'You must join before deleting messages.');
           return;

@@ -1,5 +1,5 @@
 /**
- * ChatPage - Main chat interface with messages, input, and threads
+ * ChatPage - Main chat interface with messages and input
  *
  * Consumes chat state from ChatContext. Socket connection persists across view changes.
  * Refactored to use grouped props for invite state management.
@@ -9,13 +9,13 @@ import React from 'react';
 import { MessageSearch } from './components/MessageSearch.jsx';
 import { FlaggingModal } from './components/FlaggingModal.jsx';
 import {
-  ThreadsSidebar,
   ManualInvitePanel,
   InviteErrorPanel,
   InviteLinkPanel,
   MessagesContainer,
   ChatHeader,
   MessageInput,
+  TopicsPanel,
 } from './components';
 import { useChatContext } from './context/ChatContext.jsx';
 import {
@@ -37,17 +37,17 @@ import {
  * @param {Object} props.inviteState - Grouped invite state
  * @param {Object} props.inviteHandlers - Grouped invite handlers
  */
-export function ChatPage({ username, isAuthenticated, inviteState, inviteHandlers }) {
-  // DEBUG: Log username prop to diagnose ownership issue (development only)
+export function ChatPage({ username, userId, isAuthenticated, inviteState, inviteHandlers }) {
+  // DEBUG: Log username and userId props to diagnose ownership issue (development only)
   React.useEffect(() => {
     if (import.meta.env.DEV) {
-      console.log('[ChatPage] username prop:', username, {
-        type: typeof username,
+      console.log('[ChatPage] Auth props:', {
+        username,
+        userId,
         isEmail: username?.includes('@'),
-        length: username?.length,
       });
     }
-  }, [username]);
+  }, [username, userId]);
 
   // Get all chat state from context (socket persists across view changes)
   const {
@@ -66,12 +66,6 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
     setIsPreApprovedRewrite,
     originalRewrite,
     setOriginalRewrite,
-    threads,
-    threadMessages,
-    selectedThreadId,
-    setSelectedThreadId,
-    getThreadMessages,
-    addToThread,
     socket,
     loadOlderMessages,
     isLoadingOlder,
@@ -87,18 +81,11 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
     jumpToMessage,
     highlightedMessageId,
     isInitialLoad,
+    room,
   } = useChatContext();
 
-  // Determine which messages to display: thread messages if thread selected, otherwise all messages
-  const displayMessages = React.useMemo(() => {
-    if (selectedThreadId && threadMessages[selectedThreadId]) {
-      return threadMessages[selectedThreadId];
-    }
-    return messages;
-  }, [selectedThreadId, threadMessages, messages]);
-
   // Local state
-  const [showThreadsPanel, setShowThreadsPanel] = React.useState(false);
+  const [showTopicsPanel, setShowTopicsPanel] = React.useState(false);
   const [flaggingMessage, setFlaggingMessage] = React.useState(null);
   const [flagReason, setFlagReason] = React.useState('');
   const [feedbackGiven, setFeedbackGiven] = React.useState(new Set());
@@ -255,16 +242,8 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
       }}
     >
       <ChatHeader
-        searchQuery={searchQuery}
-        searchMode={searchMode}
-        searchMessages={searchMessages}
-        toggleSearchMode={toggleSearchMode}
-        exitSearchMode={exitSearchMode}
-        messages={messages}
-        username={username}
-        threads={threads}
-        showThreadsPanel={showThreadsPanel}
-        setShowThreadsPanel={setShowThreadsPanel}
+        showTopicsPanel={showTopicsPanel}
+        setShowTopicsPanel={setShowTopicsPanel}
         isAuthenticated={isAuthenticated}
         inviteLink={inviteLink}
         hasCoParentConnected={hasCoParentConnected}
@@ -276,14 +255,14 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
 
       {/* Chat Content */}
       <div className="flex flex-1 min-h-0 min-w-0" style={{ width: '100%', maxWidth: '100%' }}>
-        {/* Threads Sidebar */}
-        {showThreadsPanel && (
-          <ThreadsSidebar
-            threads={threads}
-            selectedThreadId={selectedThreadId}
-            setSelectedThreadId={setSelectedThreadId}
-            setShowThreadsPanel={setShowThreadsPanel}
-            getThreadMessages={getThreadMessages}
+        {/* Topics Panel - AI Summaries */}
+        {showTopicsPanel && (
+          <TopicsPanel
+            roomId={room?.roomId}
+            onClose={() => setShowTopicsPanel(false)}
+            onJumpToMessage={jumpToMessage}
+            socket={socket}
+            currentUserEmail={username}
           />
         )}
 
@@ -352,7 +331,7 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
                 onSearch={searchMessages}
                 onJumpToMessage={jumpToMessage}
                 onClose={exitSearchMode}
-                hideHeader={!isMobile}
+                hideHeader={true}
               />
             )}
 
@@ -377,8 +356,9 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
               }}
             >
               <MessagesContainer
-                messages={displayMessages}
+                messages={messages}
                 username={username}
+                userId={userId}
                 messagesContainerRef={messagesContainerRef}
                 messagesEndRef={messagesEndRef}
                 isInitialLoad={isInitialLoad}
@@ -391,10 +371,6 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
                 pendingOriginalMessageToRemove={pendingOriginalMessageToRemove}
                 setPendingOriginalMessageToRemove={setPendingOriginalMessageToRemove}
                 setFlaggingMessage={setFlaggingMessage}
-                addToThread={addToThread}
-                threads={threads}
-                selectedThreadId={selectedThreadId}
-                setSelectedThreadId={setSelectedThreadId}
                 draftCoaching={draftCoaching}
                 inputMessage={inputMessage}
                 setInputMessage={setInputMessage}
@@ -402,6 +378,7 @@ export function ChatPage({ username, isAuthenticated, inviteState, inviteHandler
                 setOriginalRewrite={setOriginalRewrite}
                 setDraftCoaching={setDraftCoaching}
                 socket={socket}
+                room={room}
               />
             </div>
 

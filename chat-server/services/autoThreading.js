@@ -166,7 +166,17 @@ async function processMessageForThreading(message, options = {}) {
 
     // Fallback to fast keyword-based matching (works without Neo4j)
     console.log('[AutoThreading] Using keyword matching fallback');
-    const keywordResult = await threadManager.autoAssignMessageToThread(message);
+    let keywordResult;
+    try {
+      keywordResult = await threadManager.autoAssignMessageToThread(message);
+    } catch (error) {
+      // Log error but don't fail - auto-threading is non-critical
+      console.error('[AutoThreading] Error in autoAssignMessageToThread:', {
+        messageId: message.id,
+        error: error.message,
+      });
+      return null;
+    }
 
     if (keywordResult) {
       console.log(`[AutoThreading] ✅ Keyword match: assigned to "${keywordResult.threadTitle}" (score: ${keywordResult.score})`);

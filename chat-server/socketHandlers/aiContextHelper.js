@@ -112,6 +112,57 @@ async function getFlaggedContext(services, user) {
   return null;
 }
 
+/**
+ * Get thread context for a message
+ * Returns thread metadata if message belongs to a thread
+ * @param {Object} services - Service container
+ * @param {Object} message - Message object with threadId or thread_id
+ * @returns {Promise<Object|null>} Thread context or null
+ */
+async function getThreadContext(services, message) {
+  const threadId = message.threadId || message.thread_id;
+  if (!threadId) {
+    return null;
+  }
+
+  try {
+    const { dbSafe } = services;
+    const threadResult = await dbSafe.safeSelect('threads', { id: threadId }, { limit: 1 });
+    
+    if (threadResult.length === 0) {
+      return null;
+    }
+
+    const thread = threadResult[0];
+    
+    // Map category to description for better AI context
+    const categoryDescriptions = {
+      safety: 'Safety and well-being concerns',
+      medical: 'Medical appointments and health matters',
+      education: 'School and educational topics',
+      schedule: 'Scheduling and time coordination',
+      finances: 'Financial discussions and expenses',
+      activities: 'Extracurricular activities and events',
+      travel: 'Travel plans and logistics',
+      'co-parenting': 'Co-parenting relationship matters',
+      logistics: 'General coordination and logistics',
+    };
+
+    return {
+      threadId: thread.id,
+      threadTitle: thread.title,
+      threadCategory: thread.category,
+      threadCategoryDescription: categoryDescriptions[thread.category] || thread.category,
+      threadDepth: thread.depth || 0,
+      isSubThread: (thread.depth || 0) > 0,
+      parentThreadId: thread.parent_thread_id,
+    };
+  } catch (error) {
+    console.warn('[getThreadContext] Error getting thread context:', error.message);
+    return null;
+  }
+}
+
 module.exports = {
   getRecentMessages,
   // Deprecated alias - use getRecentMessages instead
@@ -120,4 +171,5 @@ module.exports = {
   getContactContext,
   getTaskContext,
   getFlaggedContext,
+  getThreadContext,
 };

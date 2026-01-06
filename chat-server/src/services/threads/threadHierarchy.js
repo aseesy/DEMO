@@ -49,9 +49,16 @@ async function createSubThread(
     }
 
     const parentThread = parentResult.rows[0];
+    const parentDepth = parentThread.depth || 0;
+    
+    // Validate depth limit (max depth is 3)
+    if (parentDepth >= 3) {
+      throw new Error('Maximum thread depth (3) reached. Cannot create sub-thread.');
+    }
+    
     // Root is always the top-level ancestor (parent's root, or parent itself if parent is top-level)
     const rootThreadId = parentThread.root_thread_id || parentThreadId;
-    const depth = (parentThread.depth || 0) + 1;
+    const depth = parentDepth + 1;
     // Inherit category from parent if not specified
     const normalizedCategory = category
       ? normalizeCategory(category)
@@ -84,6 +91,17 @@ async function createSubThread(
         console.warn('⚠️  Failed to index sub-thread (non-fatal):', err.message);
       }
     }
+
+    // Emit domain event (fire and forget - decouples from side effects like embedding generation)
+    eventEmitter.emit(SUB_THREAD_CREATED, {
+      threadId,
+      roomId,
+      title,
+      createdBy,
+      parentThreadId,
+      parentMessageId,
+      category: normalizedCategory,
+    });
 
     console.log(
       `[threadManager] Created sub-thread: ${threadId} (parent: ${parentThreadId}, root: ${rootThreadId}, depth: ${depth})`

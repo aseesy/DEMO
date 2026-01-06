@@ -30,14 +30,21 @@ class PostgresCommunicationRepository {
   }
 
   /**
-   * Get numeric user ID from username
+   * Get numeric user ID from username or email
    * @private
    */
-  async _getUserId(username) {
-    if (!username) return null;
-    const user = await this.users.findOne({
-      username: username.toLowerCase(),
-    });
+  async _getUserId(identifier) {
+    if (!identifier) return null;
+    const normalized = identifier.toLowerCase();
+
+    // Try email first (most common case - identifiers are usually emails)
+    let user = await this.users.findOne({ email: normalized });
+
+    // Fall back to username if not found by email
+    if (!user) {
+      user = await this.users.findOne({ username: normalized });
+    }
+
     return user ? user.id : null;
   }
 
@@ -45,7 +52,7 @@ class PostgresCommunicationRepository {
    * Get complete communication profile for a user
    * Aggregates data from all AI-related normalized tables
    *
-   * @param {string} username - Username
+   * @param {string} username - Username (email)
    * @returns {Promise<Object>} Complete AI profile
    */
   async getCommunicationProfile(username) {
@@ -54,7 +61,8 @@ class PostgresCommunicationRepository {
       return this._defaultProfile(username);
     }
 
-    const [profile, triggers, rewrites, statistics] = await Promise.all([
+    const [user, profile, triggers, rewrites, statistics] = await Promise.all([
+      this.users.findOne({ id: userId }),
       this.profiles.findOne({ user_id: userId }),
       this.triggers.find({ user_id: userId }, { limit: 20 }),
       // Only fetch accepted rewrites for successful_rewrites
@@ -62,8 +70,12 @@ class PostgresCommunicationRepository {
       this.statistics.findOne({ user_id: userId }),
     ]);
 
+    // Get display name from user record (prefer first_name for natural conversation)
+    const displayName = user?.first_name?.trim() || user?.display_name || username;
+
     return {
       user_id: username.toLowerCase(),
+      display_name: displayName,
       communication_patterns: profile
         ? {
             tone_tendencies: profile.tone_tendencies || [],
@@ -349,6 +361,7 @@ class PostgresCommunicationRepository {
   _defaultProfile(username = null) {
     return {
       user_id: username ? username.toLowerCase() : null,
+      display_name: username, // Falls back to username/email if no user record
       communication_patterns: {
         tone_tendencies: [],
         common_phrases: [],

@@ -4,14 +4,9 @@
  * Tests for the Dual-Brain AI Mediator narrative memory functionality.
  */
 
-const narrativeMemory = require('../../src/core/memory/narrativeMemory');
-
-// Mock the database
-jest.mock('../../dbSafe', () => ({
+// Mock the database pool - must be before requiring the module
+jest.mock('../../dbPostgres', () => ({
   query: jest.fn(),
-  pool: {
-    query: jest.fn(),
-  },
 }));
 
 // Mock the OpenAI client
@@ -20,8 +15,12 @@ jest.mock('../../src/core/engine/client', () => ({
   isConfigured: jest.fn(() => true),
 }));
 
-const { query } = require('../../dbSafe');
+const narrativeMemory = require('../../src/core/memory/narrativeMemory');
+const pool = require('../../dbPostgres');
 const openaiClient = require('../../src/core/engine/client');
+
+// Alias for easier use in tests
+const query = pool.query;
 
 describe('NarrativeMemory', () => {
   beforeEach(() => {

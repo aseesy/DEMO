@@ -25,7 +25,7 @@ const {
  * REFACTORED: Delegates to focused modules
  */
 async function initDatabase() {
-  const { dbConnected, dbError } = await initDatabaseConnection();
+  const { dbConnected, dbError, redisConnected, redisError } = await initDatabaseConnection();
 
   // Schedule background tasks if connected
   if (dbConnected) {
@@ -33,7 +33,7 @@ async function initDatabase() {
     scheduleBackgroundTasks(taskManager, dbConnected);
   }
 
-  return { dbConnected, dbError };
+  return { dbConnected, dbError, redisConnected, redisError };
 }
 
 /**

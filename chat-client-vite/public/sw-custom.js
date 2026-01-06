@@ -2,6 +2,38 @@
 // Custom push notification handlers
 // This will be imported by the generated service worker
 
+// Service worker version (should match CACHE_VERSION in vite.config.js)
+const SW_VERSION = 'liaizen-v1.0.0';
+
+// Listen for messages from client
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[SW] Received SKIP_WAITING message, activating new service worker');
+    self.skipWaiting();
+  }
+  
+  // Respond to version requests
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.ports[0]?.postMessage({
+      type: 'VERSION_INFO',
+      version: SW_VERSION,
+    });
+  }
+});
+
+// Track service worker lifecycle events
+self.addEventListener('install', event => {
+  console.log('[SW] Installing service worker version:', SW_VERSION);
+  // Don't wait - activate immediately if no clients
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+  console.log('[SW] Activating service worker version:', SW_VERSION);
+  // Claim all clients immediately
+  event.waitUntil(self.clients.claim());
+});
+
 // Push event - handle incoming push notifications
 // This is CRITICAL for iOS PWA - without this, push notifications won't display
 self.addEventListener('push', event => {

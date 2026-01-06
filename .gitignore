@@ -7,8 +7,10 @@ node_modules
 .env.*.local
 !.env.example
 
-# Claude Code settings (may contain approved command patterns)
-.claude/settings.local.json
+# AI Metadata directories (move to docs/archived-ai-logs/ if needed)
+.claude/
+.cursor/
+.specify/
 .claude.backup/
 
 # MCP Configuration (contains sensitive tokens)
@@ -33,3 +35,8 @@ npm-debug.log*
 .DS_Store
 .env*.local
 __pycache__/
+
+# Build artifacts
+coverage/
+dist/
+*.egg-info/

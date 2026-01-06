@@ -15,7 +15,8 @@ const {
   PostgresProfileRepository,
   PostgresGenericRepository,
 } = require('../../repositories');
-const { ensureProfileColumnsExist } = require('../../infrastructure/database/schema');
+// Schema validation removed - all schema changes must be done via migrations
+// Migration 007_add_profile_columns.sql ensures all required columns exist
 const { withRetry } = require('../../../utils/dbRetry');
 
 /**
@@ -119,8 +120,9 @@ class ProfileService extends BaseService {
       throw new ValidationError('Profile data is required', 'profileData');
     }
 
-    // Ensure schema has all profile columns
-    await ensureProfileColumnsExist();
+    // Schema changes are handled by migrations, not runtime creation
+    // Migration 007_add_profile_columns.sql ensures all required columns exist
+    // If columns are missing, the migration should be run explicitly
 
     const updateData = formatProfileForUpdate(profileData);
 

@@ -413,6 +413,196 @@ get_thread_ancestors:
 
 ---
 
+reply_in_thread:
+  description: Send a message directly in a thread (creates message and adds to thread atomically)
+  direction: client_to_server
+  payload:
+    type: object
+    required:
+      - threadId
+      - text
+    properties:
+      threadId:
+        type: string
+        description: Thread ID to reply in
+        example: "thread-789"
+      text:
+        type: string
+        description: Message text
+        example: "I'll pick her up at 3pm"
+      messageData:
+        type: object
+        description: Optional additional message data
+        nullable: true
+
+  responses:
+    success:
+      event: reply_in_thread_success
+      payload:
+        type: object
+        properties:
+          threadId:
+            type: string
+          messageId:
+            type: string
+
+    error:
+      event: error
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            examples:
+              - "Failed to reply in thread."
+              - "Thread not found."
+              - "Cannot reply to archived thread."
+
+  authorization: User must be room member
+  validation:
+    - Thread must exist
+    - Thread must belong to same room as user
+    - Thread must not be archived
+
+  side_effects:
+    - Message created with thread_id set
+    - Message added to thread (sequence assigned, count incremented)
+    - thread_message_count_changed event broadcast (delta update)
+    - new_message event broadcast to room
+
+---
+
+move_message_to_thread:
+  description: Move a message from one thread to another (or from main chat to thread)
+  direction: client_to_server
+  payload:
+    type: object
+    required:
+      - messageId
+      - roomId
+    properties:
+      messageId:
+        type: string
+        description: Message ID to move
+        example: "msg-456"
+      targetThreadId:
+        type: string
+        nullable: true
+        description: Target thread ID (null to move to main chat)
+        example: "thread-789"
+      roomId:
+        type: string
+        description: Room ID (for validation)
+        example: "room-123"
+
+  responses:
+    success:
+      event: message_moved_to_thread_success
+      payload:
+        type: object
+        properties:
+          messageId:
+            type: string
+          oldThreadId:
+            type: string
+            nullable: true
+          newThreadId:
+            type: string
+            nullable: true
+          affectedThreads:
+            type: array
+            description: All threads affected (old and new)
+            items:
+              type: object
+              properties:
+                threadId:
+                  type: string
+                messageCount:
+                  type: integer
+                action:
+                  type: string
+                  enum: [added, removed]
+
+    error:
+      event: error
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            examples:
+              - "Failed to move message to thread."
+              - "Message not found."
+              - "Target thread belongs to different room."
+
+  authorization: User must be room member
+  validation:
+    - Message must exist
+    - Message and target thread must belong to same room
+    - Uses database transaction for atomicity
+
+  side_effects:
+    - Message removed from old thread (count decremented)
+    - Message added to new thread (count incremented)
+    - thread_message_count_changed events broadcast for all affected threads
+
+---
+
+archive_thread:
+  description: Archive or unarchive a thread (with optional cascade to sub-threads)
+  direction: client_to_server
+  payload:
+    type: object
+    required:
+      - threadId
+    properties:
+      threadId:
+        type: string
+        description: Thread ID to archive
+        example: "thread-789"
+      archived:
+        type: boolean
+        default: true
+        description: Archive status (true = archive, false = unarchive)
+      cascade:
+        type: boolean
+        default: true
+        description: Whether to cascade archive to all sub-threads
+
+  responses:
+    success:
+      event: thread_archived_success
+      payload:
+        type: object
+        properties:
+          threadId:
+            type: string
+          archived:
+            type: boolean
+
+    error:
+      event: error
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            examples:
+              - "Failed to archive thread."
+              - "Thread not found."
+
+  authorization: User must be room member
+  validation:
+    - Thread must exist
+    - Thread must belong to user's room
+
+  side_effects:
+    - Thread is_archived flag updated
+    - If cascade=true, all sub-threads archived recursively
+    - thread_archived event broadcast to all room members (delta update)
+
+---
+
 # ============================================================================
 # SERVER → CLIENT EVENTS (Real-Time Updates)
 # ============================================================================
@@ -499,7 +689,7 @@ threads_list:
 ---
 
 thread_messages:
-  description: Thread message history response
+  description: Thread message history response (supports pagination)
   direction: server_to_client
   broadcast: Individual socket only
   payload:
@@ -511,8 +701,47 @@ thread_messages:
         type: array
         items:
           $ref: '#/components/schemas/Message'
+      limit:
+        type: integer
+        description: Number of messages returned
+        example: 50
+      offset:
+        type: integer
+        description: Pagination offset
+        example: 0
 
-  client_action: Set thread messages in local state
+  client_action: Set thread messages in local state (append if paginating)
+
+---
+
+thread_archived:
+  description: Thread archived/unarchived (delta update)
+  direction: server_to_client
+  broadcast: All room members
+  payload:
+    type: object
+    required:
+      - threadId
+      - archived
+    properties:
+      threadId:
+        type: string
+        description: Thread ID
+      archived:
+        type: boolean
+        description: Archive status (true = archived, false = unarchived)
+      cascade:
+        type: boolean
+        description: Whether sub-threads were also archived
+      affectedThreadIds:
+        type: array
+        description: All thread IDs affected (including sub-threads if cascaded)
+        items:
+          type: string
+
+  client_action: |
+    Update thread in local state:
+    threads.map(t => affectedThreadIds.includes(t.id) ? { ...t, is_archived: archived ? 1 : 0 } : t)
 
 ---
 

@@ -22,11 +22,14 @@
  *   --delay=<ms>      Delay between batches in milliseconds (default: 1000)
  */
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 
-const { query, pool } = require('../dbSafe');
+const pool = require('../dbPostgres');
 const narrativeMemory = require('../src/core/memory/narrativeMemory');
 const profileAnalyzer = require('../src/core/profiles/profileAnalyzer');
+
+// Helper to run queries
+const query = (sql, params) => pool.query(sql, params);
 
 // Parse command line arguments
 function parseArgs() {
@@ -78,7 +81,7 @@ async function getAllRooms() {
 async function getRoomMessages(roomId) {
   const result = await query(
     `
-    SELECT id, text, timestamp, username
+    SELECT id, text, timestamp, username, user_email
     FROM messages
     WHERE room_id = $1
       AND text IS NOT NULL

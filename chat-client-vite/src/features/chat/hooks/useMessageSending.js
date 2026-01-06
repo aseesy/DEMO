@@ -202,12 +202,15 @@ export function useMessageSending({
 
       // PHASE 4: Frontend pre-check (hybrid analysis)
       // This provides instant feedback before sending
-      const validation = await mediation.validateMessage(clean);
+      // Run validation without blocking - use microtask to yield to UI
+      const validation = await Promise.resolve().then(() => mediation.validateMessage(clean));
 
       if (!validation.shouldSend) {
         // Frontend pre-check blocked the message
         // Draft coaching state already set by useMessageMediation
-        console.log('[useMessageSending] Message blocked by frontend pre-check:', validation.reason);
+        if (import.meta.env.DEV) {
+          console.log('[useMessageSending] Message blocked by frontend pre-check:', validation.reason);
+        }
         return;
       }
 

@@ -26,6 +26,8 @@ import { usePWABadge } from './utils/usePWABadge.js';
 import { usePWADetector } from './features/shell/hooks/usePWADetector.js';
 import { useNavigationManager } from './features/shell/hooks/useNavigationManager.js';
 import { AuthGuard } from './features/shell/components/AuthGuard.jsx';
+import { ConnectionStatus } from './components/ConnectionStatus.jsx';
+import { useOfflineQueue } from './hooks/useOfflineQueue.js';
 
 // Lazy-load AccountView for code-splitting
 const AccountView = React.lazy(() => import('./features/profile/components/AccountView.jsx'));
@@ -51,6 +53,7 @@ const AVAILABLE_VIEWS = ['dashboard', 'chat', 'contacts', 'profile', 'settings',
 function ChatRoomContent({
   usernameFromParent,
   emailFromParent,
+  userIdFromParent,
   isAuthenticatedFromParent,
   isCheckingAuthFromParent,
   currentViewFromParent,
@@ -62,6 +65,7 @@ function ChatRoomContent({
   // Use auth state from parent (lifted for ChatProvider)
   const username = usernameFromParent;
   const email = emailFromParent;
+  const userId = userIdFromParent;
   const isAuthenticated = isAuthenticatedFromParent;
   const isCheckingAuth = isCheckingAuthFromParent;
   const currentView = currentViewFromParent;
@@ -82,6 +86,9 @@ function ChatRoomContent({
     isConnected,
     isJoined,
   } = useChatContext();
+
+  // Track offline queue size for ConnectionStatus
+  const queuedMessageCount = useOfflineQueue();
 
   // No landing page - marketing site handles that
 
@@ -294,6 +301,10 @@ function ChatRoomContent({
       onGetStarted={handleGetStarted}
     >
       <>
+        <ConnectionStatus
+          isSocketConnected={isConnected}
+          queuedMessageCount={queuedMessageCount}
+        />
         <Navigation
           currentView={currentView}
           setCurrentView={setCurrentView}
@@ -373,6 +384,7 @@ function ChatRoomContent({
               {currentView === 'chat' && (
                 <ChatView
                   username={email || username}
+                  userId={userId}
                   isAuthenticated={isAuthenticated}
                   inviteState={{
                     inviteLink,
@@ -526,6 +538,7 @@ function ChatRoom() {
   const {
     username,
     email: userEmail,
+    userId,
     isAuthenticated,
     isCheckingAuth,
     verifySession,
@@ -567,6 +580,7 @@ function ChatRoom() {
       <ChatRoomContent
         usernameFromParent={username}
         emailFromParent={userEmail}
+        userIdFromParent={userId}
         isAuthenticatedFromParent={isAuthenticated}
         isCheckingAuthFromParent={isCheckingAuth}
         currentViewFromParent={currentView}

@@ -55,8 +55,8 @@ Your insights will inform a communication coach who helps people express themsel
 
 CONTEXT:
 - Message from ${senderDisplayName} to ${receiverDisplayName}: "${messageText}"
-${relationshipContext ? `\n${relationshipContext}` : ''}
-${messageHistory ? `\nRecent messages:\n${messageHistory}` : ''}
+${relationshipContext ? `\n\nRELATIONSHIP & SITUATION CONTEXT:\n${relationshipContext}` : ''}
+${messageHistory ? `\n\nCONVERSATION HISTORY:\n${messageHistory}\n\n⚠️ ANALYZE THIS HISTORY: What specific situation, events, or issues are being discussed? What child names, dates, or concrete details are mentioned? What pattern has emerged in the conversation?` : ''}
 
 GENERATE INSIGHTS ABOUT:
 

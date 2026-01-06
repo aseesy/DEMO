@@ -26,6 +26,10 @@ const {
   buildConversationPatternsSection,
   buildInterventionLearningSection,
 } = require('./intelligenceContext');
+const {
+  buildDualBrainContext,
+  updateDualBrainFromMessage,
+} = require('./dualBrainContext');
 
 /**
  * Build all contexts for AI mediation
@@ -50,11 +54,26 @@ async function buildAllContexts({
   // Get participant profiles
   const participantProfiles = await getParticipantProfiles(allParticipants);
 
-  // Build message history
+  // Build enriched message history with situation awareness
+  // Include timestamps and extract key situational details for better context
   const messageHistory = recentMessages
     .slice(-MESSAGE.RECENT_MESSAGES_COUNT)
-    .map(msg => `${msg.username}: ${msg.text}`)
+    .map((msg, index) => {
+      // Add sequence markers for flow awareness
+      const sequence = index === 0 ? '[Most Recent]' : index === recentMessages.length - 1 ? '[Earlier]' : '';
+      const timestamp = msg.timestamp 
+        ? new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        : '';
+      const timePrefix = timestamp ? `[${timestamp}]` : '';
+      return `${timePrefix} ${sequence} ${msg.username}: ${msg.text}`.trim();
+    })
     .join('\n');
+
+  // Get sender and receiver user IDs for dual-brain context
+  const senderProfile = participantProfiles.get(roleContext?.senderId?.toLowerCase());
+  const receiverProfileForIds = participantProfiles.get(roleContext?.receiverId?.toLowerCase());
+  const senderUserId = senderProfile?.id;
+  const receiverUserId = receiverProfileForIds?.id;
 
   // Build all contexts in parallel where possible
   const [
@@ -64,6 +83,7 @@ async function buildAllContexts({
     userIntelligence,
     voiceSignatureSection,
     interventionLearningSection,
+    dualBrainContext,
   ] = await Promise.all([
     buildRoleAwareContext(roleContext, recentMessages, message.text),
     buildGraphContext(roleContext, participantProfiles, roomId),
@@ -71,6 +91,7 @@ async function buildAllContexts({
     buildUserIntelligenceContext(roleContext, participantProfiles, message.text, roomId),
     buildVoiceSignatureSection(roleContext, recentMessages),
     buildInterventionLearningSection(roleContext),
+    senderUserId ? buildDualBrainContext(message.text, senderUserId, receiverUserId, roomId) : null,
   ]);
 
   // Build synchronous contexts
@@ -84,7 +105,8 @@ async function buildAllContexts({
 
   // Get display names - prefer contact_name from contacts, then first_name from profile, fallback to username
   // Contacts may have relationship names like "Dad" or "Mom" which are preferred
-  const senderProfile = participantProfiles.get(message.username?.toLowerCase());
+  // Note: senderProfile and receiverProfileForIds already defined above for dual-brain context
+  const senderProfileForDisplay = participantProfiles.get(message.username?.toLowerCase());
   const receiverProfile = participantProfiles.get(roleContext?.receiverId?.toLowerCase());
 
   // Try to get display name from contacts first (contact_name might be "Dad" or "Mom")
@@ -92,7 +114,7 @@ async function buildAllContexts({
   let receiverContactName = null;
   if (existingContacts && roleContext?.receiverId) {
     // Get receiver user ID if available from profile (for linked_user_id matching)
-    const receiverUserId = receiverProfile?.id;
+    const receiverUserIdForContact = receiverProfile?.id;
     const receiverIdLower = roleContext.receiverId.toString().toLowerCase();
 
     // Find the contact where receiver is the co-parent
@@ -107,7 +129,7 @@ async function buildAllContexts({
 
       // Match by linked_user_id if available (links to user ID)
       // Check against receiver user ID from profile
-      if (c.linked_user_id && receiverUserId && c.linked_user_id === receiverUserId) {
+      if (c.linked_user_id && receiverUserIdForContact && c.linked_user_id === receiverUserIdForContact) {
         return true;
       }
 
@@ -129,7 +151,7 @@ async function buildAllContexts({
   }
 
   // Fallback chain: contact_name > first_name > username
-  const senderFirstName = senderProfile?.first_name?.split(' ')[0];
+  const senderFirstName = senderProfileForDisplay?.first_name?.split(' ')[0];
   const receiverFirstName = receiverProfile?.first_name?.split(' ')[0];
   const senderFallback = senderFirstName || message.username;
   const receiverFallback = receiverContactName || receiverFirstName || roleContext?.receiverId;
@@ -163,6 +185,9 @@ async function buildAllContexts({
     contactContextForAI,
     taskContextForAI,
     flaggedMessagesContext,
+    // Dual-Brain AI Mediator context
+    dualBrainContext,
+    dualBrainContextString: dualBrainContext?.synthesis?.promptSection || '',
   };
 }
 
@@ -184,4 +209,7 @@ module.exports = {
   buildVoiceSignatureSection,
   buildConversationPatternsSection,
   buildInterventionLearningSection,
+  // Dual-Brain AI Mediator
+  buildDualBrainContext,
+  updateDualBrainFromMessage,
 };

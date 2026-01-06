@@ -47,11 +47,18 @@ function buildMediationPrompt({
   humanUnderstandingString,
   taskContextForAI,
   flaggedMessagesContext,
+  dualBrainContextString,
+  threadContext = null,
 }) {
+  // Build thread context section if message is in a thread
+  const threadContextSection = threadContext
+    ? `\n\nTHREAD CONTEXT:\nThis message is being sent in the thread "${threadContext}". Threads help organize conversations by topic (medical, education, schedule, etc.). When providing coaching, acknowledge that this is part of an ongoing thread discussion. If the thread category is relevant (e.g., medical, safety), consider that context when crafting your response.`
+    : '';
+
   // Build relationship context
   const relationshipContext = contactContextForAI
-    ? `\n\nRELATIONSHIP CONTEXT:\n${contactContextForAI}\n\nIMPORTANT: ${senderDisplayName} is messaging ${receiverDisplayName} (their co-parent). Only reference contacts that are RELEVANT to the current message. If a contact wasn't involved in the situation being discussed, don't mention them. These two people share children but are no longer together.${insightsString || ''}${taskContextForAI ? `\n\nACTIVE PARENTING TASKS:\n${taskContextForAI}` : ''}${flaggedMessagesContext || ''}`
-    : `\n\nRELATIONSHIP CONTEXT:\n${senderDisplayName} is messaging ${receiverDisplayName}. These are co-parents sharing children but no longer together.${insightsString || ''}${taskContextForAI ? `\n\nACTIVE PARENTING TASKS:\n${taskContextForAI}` : ''}${flaggedMessagesContext || ''}`;
+    ? `\n\nRELATIONSHIP CONTEXT:\n${contactContextForAI}\n\nIMPORTANT: ${senderDisplayName} is messaging ${receiverDisplayName} (their co-parent). Only reference contacts that are RELEVANT to the current message. If a contact wasn't involved in the situation being discussed, don't mention them. These two people share children but are no longer together.${insightsString || ''}${taskContextForAI ? `\n\nACTIVE PARENTING TASKS:\n${taskContextForAI}` : ''}${flaggedMessagesContext || ''}${threadContextSection}`
+    : `\n\nRELATIONSHIP CONTEXT:\n${senderDisplayName} is messaging ${receiverDisplayName}. These are co-parents sharing children but no longer together.${insightsString || ''}${taskContextForAI ? `\n\nACTIVE PARENTING TASKS:\n${taskContextForAI}` : ''}${flaggedMessagesContext || ''}${threadContextSection}`;
 
   return `Analyze this co-parenting message. Decide: STAY_SILENT, INTERVENE, or COMMENT.
 
@@ -69,7 +76,7 @@ When in doubt, STAY_SILENT. A polite request should NEVER trigger intervention.
 MESSAGE FROM ${senderDisplayName}: "${messageText}"
 
 ${humanUnderstandingString ? `\n${humanUnderstandingString}\n` : ''}
-
+${dualBrainContextString ? `\n=== DUAL-BRAIN CONTEXT (Narrative Memory + Social Map) ===\n${dualBrainContextString}\n` : ''}
 ${relationshipContext}
 ${graphContextString || ''}
 ${valuesContextString || ''}
@@ -77,7 +84,18 @@ ${userIntelligenceContextString || ''}
 ${receiverIntelligenceContextString || ''}
 ${profileContextString || ''}
 ${coparentingContextString || ''}
-${messageHistory ? `Recent messages:\n${messageHistory}\n` : ''}
+${messageHistory ? `\n=== CONVERSATION HISTORY (READ CAREFULLY FOR SITUATION CONTEXT) ===
+${messageHistory}
+
+⚠️ CRITICAL: Extract SPECIFIC situational details from this conversation history:
+- What specific event or situation is being discussed? (e.g., "late pickup last Tuesday", "doctor appointment for Emma", "missed soccer practice")
+- What child names are mentioned? Use these EXACT names in your validation and rewrites
+- What specific dates, times, or events occurred? Reference these concretely
+- What has been the back-and-forth pattern? What responses have already been given?
+- What underlying issue is being discussed? (scheduling, health, school, behavior, etc.)
+
+Your validation and rewrites MUST reference these SPECIFIC details from the conversation - don't use generic placeholders.
+\n` : ''}
 ${codeLayerPromptSection || ''}
 ${voiceSignatureSection ? `\n${voiceSignatureSection}\n` : ''}
 ${conversationPatternsSection ? `\n${conversationPatternsSection}\n` : ''}

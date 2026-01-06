@@ -13,6 +13,16 @@ function registerConnectionHandlers(socket, io, services) {
   // Phase 2: No longer receives activeUsers/messageHistory
   // Services manage their own state via UserSessionService
   const { userSessionService } = services;
+  
+  // Initialize presence service if available
+  let presenceService = null;
+  try {
+    const { PresenceService } = require('../src/services/presence/presenceService');
+    presenceService = new PresenceService();
+  } catch (error) {
+    // Presence service is optional - graceful degradation
+    console.warn('[ConnectionHandler] Presence service not available:', error.message);
+  }
 
   socket.on('join', async ({ email, username }) => {
     const userIdentifier = email || username;
@@ -32,6 +42,16 @@ function registerConnectionHandlers(socket, io, services) {
     socket.join(result.roomId);
 
     // Emit events
+    // DEBUG: Log first message format to diagnose ownership issue
+    if (result.messages?.length > 0) {
+      const firstMsg = result.messages[0];
+      console.log('[ConnectionHandler] DEBUG: First message format:', {
+        id: firstMsg.id,
+        sender: firstMsg.sender, // Full sender object with uuid, first_name
+        user_email: firstMsg.user_email,
+        hasReceiver: !!firstMsg.receiver,
+      });
+    }
     socket.emit('message_history', {
       messages: result.messages,
       hasMore: result.hasMore,
@@ -51,6 +71,13 @@ function registerConnectionHandlers(socket, io, services) {
       roomMembers: result.roomMembers,
     });
 
+    // Update presence (non-blocking)
+    if (presenceService && result.email) {
+      presenceService.setOnline(result.email, socket.id, result.roomId).catch(err => {
+        console.warn('[ConnectionHandler] Failed to set presence:', err.message);
+      });
+    }
+
     // Note: Thread analysis is now triggered automatically in JoinSocketRoomUseCase
     // when the room is resolved. This ensures analysis runs even if join event is not explicitly emitted.
     // Keeping this as a fallback for backwards compatibility, but it should be redundant now.
@@ -65,8 +92,8 @@ function registerConnectionHandlers(socket, io, services) {
     }
   });
 
-  socket.on('typing', ({ isTyping }) => {
-    const user = userSessionService.getUserBySocketId(socket.id);
+  socket.on('typing', async ({ isTyping }) => {
+    const user = await userSessionService.getUserBySocketId(socket.id);
     if (user?.roomId) {
       socket.to(user.roomId).emit('user_typing', {
         email: user.email || user.username,
@@ -77,10 +104,18 @@ function registerConnectionHandlers(socket, io, services) {
   });
 
   socket.on('disconnect', async () => {
-    const user = userSessionService.getUserBySocketId(socket.id);
+    const user = await userSessionService.getUserBySocketId(socket.id);
     if (!user) return;
 
-    const { roomId } = user;
+    const { roomId, email } = user;
+    
+    // Update presence (non-blocking)
+    if (presenceService && email) {
+      presenceService.setOffline(email, socket.id).catch(err => {
+        console.warn('[ConnectionHandler] Failed to remove presence:', err.message);
+      });
+    }
+    
     await userSessionService.disconnectUser(socket.id);
 
     const roomUsers = getRoomUsers(userSessionService, roomId);

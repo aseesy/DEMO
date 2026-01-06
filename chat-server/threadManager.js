@@ -38,6 +38,9 @@ const createThreadUseCase = factory.getCreateThreadUseCase();
 const analyzeConversationUseCase = factory.getAnalyzeConversationUseCase();
 const suggestThreadUseCase = factory.getSuggestThreadUseCase();
 const autoAssignMessageUseCase = factory.getAutoAssignMessageUseCase();
+const archiveThreadUseCase = factory.getArchiveThreadUseCase();
+const replyInThreadUseCase = factory.getReplyInThreadUseCase();
+const moveMessageToThreadUseCase = factory.getMoveMessageToThreadUseCase();
 
 // Use Case: Create Thread
 const createThread = async (roomId, title, createdBy, initialMessageId = null, category = 'logistics') => {
@@ -59,9 +62,9 @@ const getThreadsForRoom = async (roomId, includeArchived = false, limit = 10) =>
   }
 };
 
-// Repository: Get Thread Messages
-const getThreadMessages = async (threadId, limit = 50) => {
-  return threadRepository.getMessages(threadId, limit);
+// Repository: Get Thread Messages (with pagination)
+const getThreadMessages = async (threadId, limit = 50, offset = 0) => {
+  return threadRepository.getMessages(threadId, limit, offset);
 };
 
 // Repository: Update Thread Title
@@ -79,9 +82,9 @@ const getThreadsByCategory = async (roomId, category, limit = 10) => {
   return threadRepository.findByCategory(roomId, category, limit);
 };
 
-// Repository: Archive Thread
-const archiveThread = async (threadId, archived = true) => {
-  return threadRepository.archive(threadId, archived);
+// Use Case: Archive Thread
+const archiveThread = async (threadId, archived = true, cascade = true) => {
+  return archiveThreadUseCase.execute({ threadId, archived, cascade });
 };
 
 // Re-export hierarchy operations
@@ -103,7 +106,18 @@ const removeMessageFromThread = async (messageId) => {
 
 // Use Case: Auto Assign Message to Thread
 const autoAssignMessageToThread = async (message) => {
-  return autoAssignMessageUseCase.execute({ message });
+  try {
+    return await autoAssignMessageUseCase.execute({ message });
+  } catch (error) {
+    // Log error with context
+    console.error('[threadManager] Error in autoAssignMessageToThread:', {
+      messageId: message?.id,
+      roomId: message?.roomId,
+      error: error.message,
+    });
+    // Re-throw to let caller handle (autoThreading.js will catch and log)
+    throw error;
+  }
 };
 
 // Use Case: Suggest Thread for Message
@@ -114,6 +128,16 @@ const suggestThreadForMessage = async (message, recentMessages, roomId) => {
 // Use Case: Analyze Conversation History
 const analyzeConversationHistory = async (roomId, limit = 100) => {
   return analyzeConversationUseCase.execute({ roomId, limit });
+};
+
+// Use Case: Reply in Thread
+const replyInThread = async (threadId, messageText, userEmail, roomId, messageData = {}) => {
+  return replyInThreadUseCase.execute({ threadId, messageText, userEmail, roomId, messageData });
+};
+
+// Use Case: Move Message to Thread
+const moveMessageToThread = async (messageId, targetThreadId, roomId) => {
+  return moveMessageToThreadUseCase.execute({ messageId, targetThreadId, roomId });
 };
 
 const generateEmbeddingForText = threadEmbeddings.generateEmbeddingForText;
@@ -135,6 +159,8 @@ module.exports = {
   suggestThreadForMessage,
   getThread,
   analyzeConversationHistory,
+  replyInThread,
+  moveMessageToThread,
   // Hierarchical thread operations
   createSubThread,
   getThreadAncestors,

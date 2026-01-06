@@ -27,7 +27,7 @@ try {
  * @param {string} createdBy - Username who created
  * @param {string|null} initialMessageId - Optional initial message to add
  * @param {string} category - Thread category (defaults to 'logistics')
- * @param {Function} addMessageToThread - Function to add message to thread (from threadMessages)
+ * @param {Function} addMessageToThread - Function to add message to thread (deprecated - use repository directly)
  */
 async function createThread(
   roomId,

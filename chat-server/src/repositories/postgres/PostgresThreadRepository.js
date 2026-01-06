@@ -32,15 +32,31 @@ class PostgresThreadRepository extends PostgresGenericRepository {
    */
   async findByRoomId(roomId, options = {}) {
     const { includeArchived = false, limit = 10 } = options;
+    
+    // Check query cache first
+    const queryCache = require('../../infrastructure/cache/queryCache');
+    const cacheKey = { roomId, includeArchived, limit };
+    const cached = await queryCache.get('threads:room', cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const whereClause = includeArchived ? { room_id: roomId } : { room_id: roomId, is_archived: 0 };
 
     // PERFORMANCE: Uses idx_threads_room_archived_updated or idx_threads_room_active_updated
     //              (created in migration 034) for optimal query performance
-    return this.find(whereClause, {
+    const result = await this.find(whereClause, {
       orderBy: 'updated_at',
       orderDirection: 'DESC',
       limit: limit,
     });
+
+    // Cache result for 5 minutes
+    await queryCache.set('threads:room', cacheKey, result, 300).catch(err => {
+      console.warn('[PostgresThreadRepository] Failed to cache threads:', err.message);
+    });
+
+    return result;
   }
 
   /**
@@ -99,6 +115,12 @@ class PostgresThreadRepository extends PostgresGenericRepository {
     const dbSafe = require('../../../dbSafe');
     await dbSafe.safeInsert('threads', threadRecord);
 
+    // Invalidate query cache for this room
+    const queryCache = require('../../infrastructure/cache/queryCache');
+    await queryCache.invalidateRoom(threadData.roomId).catch(err => {
+      console.warn('[PostgresThreadRepository] Failed to invalidate cache:', err.message);
+    });
+
     // Index thread for semantic search (fail-open: errors are non-fatal)
     if (this.semanticIndex) {
       try {
@@ -120,10 +142,23 @@ class PostgresThreadRepository extends PostgresGenericRepository {
    */
   async updateTitle(threadId, newTitle) {
     try {
+      // Get roomId before update for cache invalidation
+      const thread = await this.findById(threadId);
+      const roomId = thread?.room_id;
+
       await this.update(
         { title: newTitle, updated_at: new Date().toISOString() },
         { id: threadId }
       );
+
+      // Invalidate query cache for this room
+      if (roomId) {
+        const queryCache = require('../../infrastructure/cache/queryCache');
+        await queryCache.invalidateRoom(roomId).catch(err => {
+          console.warn('[PostgresThreadRepository] Failed to invalidate cache:', err.message);
+        });
+      }
+
       return true;
     } catch (error) {
       console.error('Error updating thread title:', error);
@@ -139,11 +174,24 @@ class PostgresThreadRepository extends PostgresGenericRepository {
    */
   async updateCategory(threadId, newCategory) {
     try {
+      // Get roomId before update for cache invalidation
+      const thread = await this.findById(threadId);
+      const roomId = thread?.room_id;
+
       const normalizedCategory = normalizeCategory(newCategory);
       await this.update(
         { category: normalizedCategory, updated_at: new Date().toISOString() },
         { id: threadId }
       );
+
+      // Invalidate query cache for this room
+      if (roomId) {
+        const queryCache = require('../../infrastructure/cache/queryCache');
+        await queryCache.invalidateRoom(roomId).catch(err => {
+          console.warn('[PostgresThreadRepository] Failed to invalidate cache:', err.message);
+        });
+      }
+
       return true;
     } catch (error) {
       console.error('Error updating thread category:', error);
@@ -159,10 +207,23 @@ class PostgresThreadRepository extends PostgresGenericRepository {
    */
   async archive(threadId, archived = true) {
     try {
+      // Get roomId before update for cache invalidation
+      const thread = await this.findById(threadId);
+      const roomId = thread?.room_id;
+
       await this.update(
         { is_archived: archived ? 1 : 0, updated_at: new Date().toISOString() },
         { id: threadId }
       );
+
+      // Invalidate query cache for this room
+      if (roomId) {
+        const queryCache = require('../../infrastructure/cache/queryCache');
+        await queryCache.invalidateRoom(roomId).catch(err => {
+          console.warn('[PostgresThreadRepository] Failed to invalidate cache:', err.message);
+        });
+      }
+
       return true;
     } catch (error) {
       console.error('Error archiving thread:', error);

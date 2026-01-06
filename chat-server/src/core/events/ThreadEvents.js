@@ -40,9 +40,22 @@ const THREAD_MESSAGE_ADDED = 'ThreadMessageAdded';
  */
 const SUB_THREAD_CREATED = 'SubThreadCreated';
 
+/**
+ * ThreadArchived event
+ * Emitted when a thread is archived or unarchived
+ * @typedef {Object} ThreadArchivedEvent
+ * @property {string} threadId - Thread ID
+ * @property {string} roomId - Room ID
+ * @property {boolean} archived - Archive status (true = archived, false = unarchived)
+ * @property {boolean} cascade - Whether sub-threads were also archived
+ * @property {Array<string>} affectedThreadIds - All thread IDs affected (including sub-threads)
+ */
+const THREAD_ARCHIVED = 'ThreadArchived';
+
 module.exports = {
   THREAD_CREATED,
   THREAD_MESSAGE_ADDED,
   SUB_THREAD_CREATED,
+  THREAD_ARCHIVED,
 };
 

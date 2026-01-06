@@ -21,11 +21,25 @@ export function useThreads() {
   );
   const loadThreads = useCallback(roomId => threadService.loadThreads(roomId), []);
   const loadThreadMessages = useCallback(
-    threadId => threadService.loadThreadMessages(threadId),
+    (threadId, limit, offset) => threadService.loadThreadMessages(threadId, limit, offset),
     []
   );
   const addToThread = useCallback(
     (messageId, threadId) => threadService.addToThread(messageId, threadId),
+    []
+  );
+  const replyInThread = useCallback(
+    (threadId, text, messageData) => threadService.replyInThread(threadId, text, messageData),
+    []
+  );
+  const moveMessageToThread = useCallback(
+    (messageId, targetThreadId, roomId) => 
+      threadService.moveMessageToThread(messageId, targetThreadId, roomId),
+    []
+  );
+  const archiveThread = useCallback(
+    (threadId, archived, cascade) => 
+      threadService.archiveThread(threadId, archived, cascade),
     []
   );
   const clear = useCallback(() => threadService.clear(), []);
@@ -36,6 +50,9 @@ export function useThreads() {
     loadThreads,
     loadThreadMessages,
     addToThread,
+    replyInThread,
+    moveMessageToThread,
+    archiveThread,
     clear,
   };
 }

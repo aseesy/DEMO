@@ -71,6 +71,10 @@ const isStandalone =
   window.navigator.standalone ||
   document.referrer.includes('android-app://');
 
+// Initialize PWA observability (tracking, logging, version tracking)
+import { initPWAObservability, trackServiceWorkerInstall } from './utils/pwaObservability.js';
+initPWAObservability();
+
 // Register service worker for PWA functionality (production only)
 // iOS Safari DOES support service workers for PWAs installed to home screen (iOS 11.3+)
 // Only skip service worker for regular Safari (not installed as PWA)
@@ -84,9 +88,31 @@ if (shouldRegisterServiceWorker) {
         .register('/sw.js', { scope: '/' })
         .then(registration => {
           console.log('Service Worker registered with scope:', registration.scope);
+          trackServiceWorkerInstall(registration, true);
+
+          // Listen for updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New version available
+                  import('./utils/pwaObservability.js').then(({ trackServiceWorkerUpdate }) => {
+                    trackServiceWorkerUpdate(registration, true, null, 'unknown', 'new');
+                  });
+                } else if (newWorker.state === 'activated') {
+                  // New version activated
+                  import('./utils/pwaObservability.js').then(({ trackServiceWorkerActivate }) => {
+                    trackServiceWorkerActivate(registration, true);
+                  });
+                }
+              });
+            }
+          });
         })
         .catch(error => {
           console.error('Service Worker registration failed:', error);
+          trackServiceWorkerInstall(null, false, error);
         });
     }
   });

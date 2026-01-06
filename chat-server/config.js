@@ -44,7 +44,8 @@ function parseEnv(name, options = {}) {
   value = value.replace(/[\r\n]+/g, '').trim();
 
   // Validate URL format if specified
-  if (options.isUrl && value) {
+  // Skip validation if value contains Railway template syntax (e.g., ${{VAR}}) - those are for Railway only
+  if (options.isUrl && value && !value.includes('${{')) {
     try {
       new URL(value);
     } catch {
@@ -121,6 +122,14 @@ const NEO4J_CONFIG = {
   password: parseEnv('NEO4J_PASSWORD'),
 };
 
+// Redis (optional - for distributed locking and rate limiting)
+const REDIS_CONFIG = {
+  url: parseEnv('REDIS_URL', { isUrl: true }),
+  host: parseEnv('REDIS_HOST'),
+  port: parseEnv('REDIS_PORT'),
+  password: parseEnv('REDIS_PASSWORD'),
+};
+
 // Rate Limiting
 const RATE_LIMIT = {
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -185,6 +194,9 @@ module.exports = {
 
   // Neo4j
   NEO4J_CONFIG,
+
+  // Redis
+  REDIS_CONFIG,
 
   // Rate Limiting
   RATE_LIMIT,

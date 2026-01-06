@@ -90,6 +90,81 @@ async function addToHistory(message, roomId, options = {}) {
           .catch(err => console.error('[AutoThreading] Background error:', err.message));
       });
     }
+
+    // Topic Detection: Assign message to topics for AI summaries (non-blocking)
+    // Only process regular user messages with sufficient text content
+    // Note: Runs in background after embedding generation
+    if (
+      message.type !== 'system' &&
+      message.type !== 'ai_intervention' &&
+      messageToSave.text &&
+      messageToSave.text.length > 10 &&
+      options.io
+    ) {
+      setImmediate(async () => {
+        try {
+          // Step 1: Generate and store embedding for this message
+          // Required for topic similarity matching
+          const { storeMessageEmbedding } = require('../../src/core/memory/narrativeMemory');
+          const embeddingStored = await storeMessageEmbedding(messageToSave.id, messageToSave.text);
+
+          if (!embeddingStored) {
+            // Can't do topic detection without embedding - exit silently
+            return;
+          }
+
+          // Step 2: Try to assign to existing topic
+          const { getTopicService } = require('../../src/services/topics');
+          const { broadcastMessageAddedToTopic } = require('../topicsHandler');
+
+          const topicService = getTopicService();
+          const topicId = await topicService.detector.assignMessageToTopic(
+            { id: messageToSave.id, text: messageToSave.text },
+            messageToSave.roomId
+          );
+
+          if (topicId) {
+            // Add message to existing topic
+            await topicService.addMessageToTopic(messageToSave.id, topicId);
+
+            // Broadcast to subscribers
+            broadcastMessageAddedToTopic(options.io, messageToSave.roomId, topicId, messageToSave.id);
+
+            console.log('[TopicDetection] Message assigned to topic:', {
+              messageId: messageToSave.id,
+              topicId,
+              roomId: messageToSave.roomId,
+            });
+          }
+          // If no matching topic, message will be picked up by next manual/scheduled detection
+        } catch (err) {
+          // Topic detection is non-critical - log and continue
+          console.error('[TopicDetection] Background error:', err.message);
+        }
+      });
+    }
+
+    // Conversation Threading: Queue room for thread processing (debounced)
+    // Uses new conversation-based threading that groups messages by time windows
+    if (
+      message.type !== 'system' &&
+      message.type !== 'ai_intervention' &&
+      messageToSave.text &&
+      messageToSave.text.length > 0
+    ) {
+      setImmediate(() => {
+        try {
+          const { getThreadService } = require('../../src/services/threads');
+          const threadService = getThreadService();
+          // Queue processing with 30-second debounce per room
+          threadService.queueProcessing(messageToSave.roomId);
+        } catch (err) {
+          // Thread processing is non-critical - log and continue
+          console.error('[ThreadProcessing] Queue error:', err.message);
+        }
+      });
+    }
+
     return true; // Success
   } catch (err) {
     // MessageService handles retries internally, so if we get here, it's a persistent error

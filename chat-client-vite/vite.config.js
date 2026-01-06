@@ -4,6 +4,13 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
+// Cache version - increment this to force cache invalidation on all clients
+// Format: liaizen-v{major}.{minor}.{patch}
+// Example: liaizen-v1.0.0 -> liaizen-v1.0.1 (patch update)
+// Example: liaizen-v1.0.0 -> liaizen-v1.1.0 (minor update)
+// Example: liaizen-v1.0.0 -> liaizen-v2.0.0 (major update)
+const CACHE_VERSION = 'liaizen-v1.0.0';
+
 // List of large third‑party packages you want to separate
 const VENDOR_LIBS = [
   'react',
@@ -21,7 +28,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // User-prompted updates: Users control when to update (prevents unexpected reloads)
+      registerType: 'promptUpdate',
       includeAssets: [
         'favicon-32.png',
         'favicon-16.png',
@@ -74,12 +82,31 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
         // Import custom push notification handlers
         importScripts: ['/sw-custom.js'],
+        // NetworkFirst strategy for HTML navigation - ensures fresh content on slow connections
+        navigateFallback: '/offline.html',
+        navigateFallbackDenylist: [/^\/api/, /^\/_/, /^\/admin/],
         runtimeCaching: [
+          {
+            // NetworkFirst for HTML pages - try network first, fallback to cache after 3s
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: `html-cache-${CACHE_VERSION}`,
+              networkTimeoutSeconds: 3, // Fallback to cache if network takes > 3s
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24, // 1 day
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'google-fonts-cache',
+              cacheName: `google-fonts-cache-${CACHE_VERSION}`,
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -93,7 +120,7 @@ export default defineConfig({
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'google-fonts-static-cache',
+              cacheName: `google-fonts-static-cache-${CACHE_VERSION}`,
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -107,7 +134,7 @@ export default defineConfig({
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'images-cache',
+              cacheName: `images-cache-${CACHE_VERSION}`,
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
@@ -115,10 +142,26 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /^https:\/\/.*\.railway\.app\/.*/i,
+            // API cache - EXCLUDE critical endpoints that must never be cached
+            urlPattern: ({ url }) => {
+              // Only cache non-critical API endpoints
+              const criticalPatterns = [
+                /\/api\/auth\//,      // Auth endpoints - never cache
+                /\/api\/push\//,      // Push subscriptions - never cache
+                /\/api\/room\/messages/, // Real-time messages - never cache
+              ];
+              
+              // If matches critical pattern, don't cache
+              if (criticalPatterns.some(pattern => pattern.test(url.pathname))) {
+                return false;
+              }
+              
+              // Only cache Railway API endpoints
+              return /^https:\/\/.*\.railway\.app\/.*/i.test(url.href);
+            },
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'api-cache',
+              cacheName: `api-cache-${CACHE_VERSION}`,
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24, // Cache for a day
@@ -128,9 +171,9 @@ export default defineConfig({
         ],
         // Clean up old caches on activation
         cleanupOutdatedCaches: true,
-        // Skip waiting and claim clients immediately
-        skipWaiting: true,
-        clientsClaim: true,
+        // User-controlled updates: Don't skip waiting, let user decide when to update
+        skipWaiting: false,
+        clientsClaim: false,
       },
       // Use generateSW strategy - vite-plugin-pwa will generate the service worker
       // and we'll add our custom push handlers via workbox's additionalManifestEntries
@@ -182,5 +225,9 @@ export default defineConfig({
         },
       },
     },
+  },
+  // Inject app version into build for runtime access
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(CACHE_VERSION),
   },
 });

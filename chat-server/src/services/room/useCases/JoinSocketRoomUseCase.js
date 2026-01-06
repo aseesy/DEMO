@@ -134,8 +134,12 @@ async function execute({
     }
   }
 
-  // Register new session
-  await userSessionService.registerUser(socketId, cleanEmail, roomId);
+  // Register new session with user info (id, name) for message ownership detection
+  await userSessionService.registerUser(socketId, cleanEmail, roomId, {
+    id: user.id,
+    first_name: user.firstName || user.first_name,
+    last_name: user.lastName || user.last_name,
+  });
 
   // Step 5: Ensure contacts (non-fatal)
   let roomMembers = [];

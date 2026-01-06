@@ -15,6 +15,12 @@ These are required for the server to start:
    - Format: `postgresql://user:password@host:port/database`
    - **Action**: None needed - Railway handles this
 
+2. **`REDIS_URL`** ✅ Auto-provided (if Redis is added)
+   - Automatically injected by Railway when Redis service is connected
+   - Format: `redis://user:password@host:port` or `rediss://...` (SSL)
+   - **Action**: Add Redis service in Railway dashboard (optional but recommended)
+   - **Why**: Prevents duplicate message processing across multiple server instances
+
 2. **`JWT_SECRET`** ❌ Must set manually
    - Secret key for JWT token signing
    - Must be at least 32 characters

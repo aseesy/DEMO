@@ -73,10 +73,9 @@ function loadServices() {
 
   // Add specific utility functions
   const { isValidEmail } = require('../validation/validators');
-  const { ensureProfileColumnsExist } = require('../database/schema');
 
   services.isValidEmail = isValidEmail;
-  services.ensureProfileColumnsExist = ensureProfileColumnsExist;
+  // Note: ensureProfileColumnsExist removed - schema changes must be done via migrations
 
   // Add proactive coach and feedback learner
   services.proactiveCoach = require('../../../proactiveCoach');

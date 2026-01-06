@@ -25,6 +25,7 @@ class RoomService extends BaseService {
     this.roomManager = null; // Injected via setRoomManager
     this.auth = null; // Injected via setAuth
     this.userSessionService = null; // Injected via setUserSessionService
+    this.threadManager = null; // Injected via setThreadManager
     this.db = db; // Cache db reference for external library calls
   }
 
@@ -47,6 +48,13 @@ class RoomService extends BaseService {
    */
   setUserSessionService(userSessionService) {
     this.userSessionService = userSessionService;
+  }
+
+  /**
+   * Set the thread manager instance (injected from server.js)
+   */
+  setThreadManager(threadManager) {
+    this.threadManager = threadManager;
   }
 
   /**
@@ -347,8 +355,7 @@ class RoomService extends BaseService {
     }
 
     // Delegate to use case - all orchestration happens there
-    // Get threadManager from services if available (for automatic analysis)
-    const services = require('../../infrastructure/initialization/serviceLoader').loadServices();
+    // Use threadManager from injected instance (set via setThreadManager in setupSockets)
     return joinSocketRoomUseCase({
       userIdentifier,
       socketId,
@@ -357,7 +364,7 @@ class RoomService extends BaseService {
       roomManager: this.roomManager,
       userSessionService: this.userSessionService,
       db: this.db,
-      threadManager: services.threadManager, // Pass threadManager for automatic analysis
+      threadManager: this.threadManager, // Pass threadManager for automatic analysis
     });
   }
 }

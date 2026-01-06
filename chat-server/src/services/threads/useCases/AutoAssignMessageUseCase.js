@@ -5,22 +5,28 @@
  * Depends on abstractions (IConversationAnalyzer, IThreadRepository), not concrete implementations.
  *
  * SAFEGUARDS AGAINST INFINITE LOOPS:
- * - Prevents concurrent execution for the same message
+ * - Prevents concurrent execution using Redis distributed locks (prevents "split brain" problem)
+ * - Rate limiting using Redis with TTL (persists across restarts)
  * - Limits thread query depth to prevent deep hierarchy traversal
  * - Limits maximum threads queried to prevent performance issues
- * - Rate limiting to prevent high-traffic bursts from overwhelming the system
- * - Checks if message is already assigned before processing
+ * - Checks if message is already assigned before processing (database-backed)
+ *
+ * ARCHITECTURE: Distributed state using Redis
+ * - Distributed locking prevents concurrent processing across multiple server instances
+ * - Rate limiting persists across server restarts (Redis TTL)
+ * - Graceful fallback if Redis is unavailable (fail-open)
+ * - Works across server restarts and multiple server instances
+ * - Suitable for serverless environments
  */
 
-// In-memory tracking to prevent concurrent execution
-const processingMessages = new Set();
-const recentAssignments = new Map(); // messageId -> timestamp for rate limiting
+const { acquireLock, releaseLock, checkRateLimit } = require('../../../infrastructure/database/redisClient');
 
 // Configuration constants
 const MAX_THREAD_DEPTH = 3; // Maximum depth to query (0 = top-level only, 3 = up to 3 levels deep)
 const MAX_THREADS_TO_QUERY = 50; // Maximum number of threads to query (prevents performance issues)
-const RATE_LIMIT_WINDOW_MS = 1000; // 1 second window for rate limiting
-const MAX_ASSIGNMENTS_PER_WINDOW = 10; // Maximum assignments per rate limit window per room
+const LOCK_TTL_SECONDS = 30; // Lock expiration time (prevents deadlocks if process crashes)
+const RATE_LIMIT_WINDOW_SECONDS = 60; // Rate limit window (1 minute)
+const MAX_ASSIGNMENTS_PER_WINDOW = 10; // Maximum assignments per room per window
 
 /**
  * Auto Assign Message Use Case
@@ -73,33 +79,32 @@ class AutoAssignMessageUseCase {
   }
 
   /**
-   * Check rate limit for room
-   * @param {string} roomId - Room ID
-   * @returns {boolean} True if within rate limit
+   * Acquire distributed lock for message processing
+   * Prevents "split brain" problem where multiple servers process the same message
+   * @param {string} messageId - Message ID
+   * @returns {Promise<boolean>} True if lock was acquired, false if already locked
    */
-  checkRateLimit(roomId) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:65',message:'checkRateLimit entry',data:{roomId,recentAssignmentsSize:recentAssignments.size},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
-    const now = Date.now();
-    const windowStart = now - RATE_LIMIT_WINDOW_MS;
+  async acquireProcessingLock(messageId) {
+    return acquireLock(`message:${messageId}`, LOCK_TTL_SECONDS);
+  }
 
-    // Clean up old entries
-    for (const [msgId, timestamp] of recentAssignments.entries()) {
-      if (timestamp < windowStart) {
-        recentAssignments.delete(msgId);
-      }
-    }
+  /**
+   * Release distributed lock for message processing
+   * @param {string} messageId - Message ID
+   * @returns {Promise<void>}
+   */
+  async releaseProcessingLock(messageId) {
+    return releaseLock(`message:${messageId}`);
+  }
 
-    // Count assignments in current window for this room
-    const assignmentsInWindow = Array.from(recentAssignments.values()).filter(
-      ts => ts >= windowStart
-    ).length;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:81',message:'checkRateLimit result',data:{assignmentsInWindow,limit:MAX_ASSIGNMENTS_PER_WINDOW,withinLimit:assignmentsInWindow<MAX_ASSIGNMENTS_PER_WINDOW},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
-
-    return assignmentsInWindow < MAX_ASSIGNMENTS_PER_WINDOW;
+  /**
+   * Check rate limit for room using Redis
+   * Persists across server restarts (unlike in-memory state)
+   * @param {string} roomId - Room ID
+   * @returns {Promise<{allowed: boolean, remaining: number, resetAt: number}>}
+   */
+  async checkRoomRateLimit(roomId) {
+    return checkRateLimit(`room:${roomId}`, MAX_ASSIGNMENTS_PER_WINDOW, RATE_LIMIT_WINDOW_SECONDS);
   }
 
   /**
@@ -155,49 +160,64 @@ class AutoAssignMessageUseCase {
    * Execute the use case
    * @param {Object} params - Use case parameters
    * @param {Object} params.message - Message object with id, text, roomId
-   * @returns {Promise<Object|null>} Assignment result or null
+   * @returns {Promise<Object>} Assignment result
+   * @throws {Error} If message is invalid or processing fails
    */
   async execute({ message }) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:125',message:'execute entry',data:{hasMessage:!!message,hasId:!!message?.id,hasRoomId:!!message?.roomId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
     // Validate input
     if (!message || !message.id || !message.roomId) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:128',message:'Invalid message object warning',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
-      console.warn('[AutoAssignMessageUseCase] Invalid message object');
-      return null;
+      const error = new Error('[AutoAssignMessageUseCase] Invalid message object: missing id or roomId');
+      console.warn(error.message, { message: message ? { id: message.id, roomId: message.roomId } : null });
+      throw error;
     }
 
     const messageId = message.id;
     const roomId = message.roomId;
 
-    // SAFEGUARD 1: Prevent concurrent execution for the same message
-    if (processingMessages.has(messageId)) {
+    // SAFEGUARD 1: Acquire distributed lock (prevents "split brain" problem)
+    // If another server instance is processing this message, we'll skip it
+    const lockAcquired = await this.acquireProcessingLock(messageId);
+    if (!lockAcquired) {
       console.log(
-        `[AutoAssignMessageUseCase] Message ${messageId} already being processed, skipping`
+        `[AutoAssignMessageUseCase] Message ${messageId} is being processed by another instance, skipping`
       );
-      return null;
+      return {
+        success: true,
+        alreadyProcessing: true,
+        message: `Message ${messageId} is being processed by another instance`,
+      };
     }
 
-    // SAFEGUARD 2: Check if message is already assigned (prevent recursive calls)
+    // SAFEGUARD 2: Check if message is already assigned (database-backed, works across instances)
+    // This prevents recursive calls and duplicate processing
     const alreadyAssigned = await this.isMessageAlreadyAssigned(messageId);
     if (alreadyAssigned) {
-      console.log(`[AutoAssignMessageUseCase] Message ${messageId} already assigned to thread`);
-      return null;
+      // Release lock before returning
+      await this.releaseProcessingLock(messageId);
+      // Return success result indicating message was already assigned (idempotent)
+      return {
+        success: true,
+        alreadyAssigned: true,
+        message: `Message ${messageId} already assigned to thread`,
+      };
     }
 
-    // SAFEGUARD 3: Rate limiting for high-traffic bursts
-    if (!this.checkRateLimit(roomId)) {
+    // SAFEGUARD 3: Rate limiting using Redis (persists across restarts)
+    const rateLimitResult = await this.checkRoomRateLimit(roomId);
+    if (!rateLimitResult.allowed) {
+      // Release lock before returning
+      await this.releaseProcessingLock(messageId);
       console.warn(
-        `[AutoAssignMessageUseCase] Rate limit exceeded for room ${roomId}, skipping auto-assignment`
+        `[AutoAssignMessageUseCase] Rate limit exceeded for room ${roomId} (${rateLimitResult.count}/${MAX_ASSIGNMENTS_PER_WINDOW}), skipping auto-assignment. Resets at ${new Date(rateLimitResult.resetAt).toISOString()}`
       );
-      return null;
+      return {
+        success: false,
+        rateLimited: true,
+        message: `Rate limit exceeded for room ${roomId}`,
+        remaining: rateLimitResult.remaining,
+        resetAt: rateLimitResult.resetAt,
+      };
     }
-
-    // Mark message as processing
-    processingMessages.add(messageId);
 
     try {
       // Get threads for room with depth and count limits (used by analyzer)
@@ -206,19 +226,24 @@ class AutoAssignMessageUseCase {
       };
 
       // Add message to thread function (used by analyzer)
+      // Uses database transaction for atomicity - prevents race conditions
       const addMessageToThread = async (messageIdParam, threadId) => {
-        // SAFEGUARD 4: Double-check message isn't already assigned before adding
+        // SAFEGUARD 2: Double-check message isn't already assigned before adding
+        // This is a critical check - another instance might have assigned it
         const stillUnassigned = !(await this.isMessageAlreadyAssigned(messageIdParam));
         if (!stillUnassigned) {
           console.log(
-            `[AutoAssignMessageUseCase] Message ${messageIdParam} was assigned concurrently, skipping`
+            `[AutoAssignMessageUseCase] Message ${messageIdParam} was assigned concurrently by another instance, skipping`
           );
-          return null;
+          // Return success but indicate it was already assigned (idempotent)
+          return {
+            success: true,
+            alreadyAssigned: true,
+            message: `Message ${messageIdParam} was assigned concurrently`,
+          };
         }
 
-        // Record assignment for rate limiting
-        recentAssignments.set(messageIdParam, Date.now());
-
+        // Add message atomically - database handles concurrency
         return this.threadRepository.addMessage(messageIdParam, threadId);
       };
 
@@ -229,24 +254,31 @@ class AutoAssignMessageUseCase {
         addMessageToThread
       );
 
+      if (!result) {
+        // Analyzer returned null - no thread match found (not an error)
+        return {
+          success: true,
+          assigned: false,
+          message: `No suitable thread found for message ${messageId}`,
+        };
+      }
+
       return result;
     } catch (error) {
-      console.error('[AutoAssignMessageUseCase] Error executing auto-assignment:', error);
-      return null;
+      // Log error with context for debugging
+      console.error('[AutoAssignMessageUseCase] Error executing auto-assignment:', {
+        messageId,
+        roomId,
+        error: error.message,
+        stack: error.stack,
+      });
+      // Re-throw with context
+      throw new Error(
+        `[AutoAssignMessageUseCase] Failed to auto-assign message ${messageId}: ${error.message}`
+      );
     } finally {
-      // Always remove from processing set, even on error
-      processingMessages.delete(messageId);
-
-      // Clean up old rate limit entries periodically (every 100 calls)
-      if (processingMessages.size === 0 && recentAssignments.size > 1000) {
-        const now = Date.now();
-        const windowStart = now - RATE_LIMIT_WINDOW_MS * 10; // Keep 10x window for cleanup
-        for (const [msgId, timestamp] of recentAssignments.entries()) {
-          if (timestamp < windowStart) {
-            recentAssignments.delete(msgId);
-          }
-        }
-      }
+      // Always release lock, even on error (prevents deadlocks)
+      await this.releaseProcessingLock(messageId);
     }
   }
 }

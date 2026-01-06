@@ -5,6 +5,11 @@
  * - Emits delta updates (not full lists) to reduce bandwidth
  * - Server decides when to analyze (not client)
  * - Message counts use atomic database increments
+ *
+ * New Conversation-Based Threading:
+ * - get_conversation_threads: Get threads grouped by category
+ * - get_thread_details: Get full thread with messages, decisions, open items
+ * - process_room_threads: Trigger thread processing manually
  */
 
 // Note: autoThreading is no longer imported here to break dependency cycle
@@ -18,7 +23,7 @@ function registerThreadHandlers(socket, io, services) {
   // create_thread handler - emits delta (new thread only)
   socket.on('create_thread', async ({ roomId, title, messageId, category }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before creating threads.' });
         return;
@@ -78,7 +83,7 @@ function registerThreadHandlers(socket, io, services) {
   // get_threads handler - only time we fetch full list
   socket.on('get_threads', async ({ roomId }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before getting threads.' });
         return;
@@ -95,7 +100,7 @@ function registerThreadHandlers(socket, io, services) {
   // get_thread_messages handler - supports pagination
   socket.on('get_thread_messages', async ({ threadId, limit = 50, offset = 0 }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before getting thread messages.' });
         return;
@@ -121,7 +126,7 @@ function registerThreadHandlers(socket, io, services) {
   // add_to_thread handler - emits delta (count change only)
   socket.on('add_to_thread', async ({ messageId, threadId }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before adding to thread.' });
         return;
@@ -149,7 +154,7 @@ function registerThreadHandlers(socket, io, services) {
   // remove_from_thread handler - emits delta (count change only)
   socket.on('remove_from_thread', async ({ messageId }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before removing from thread.' });
         return;
@@ -179,7 +184,7 @@ function registerThreadHandlers(socket, io, services) {
   // create_sub_thread handler - create a sub-thread spawned from a message
   socket.on('create_sub_thread', async ({ roomId, title, parentThreadId, parentMessageId }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before creating sub-threads.' });
         return;
@@ -249,7 +254,7 @@ function registerThreadHandlers(socket, io, services) {
   // get_thread_ancestors handler - get parent chain up to root
   socket.on('get_thread_ancestors', async ({ threadId }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before getting thread ancestors.' });
         return;
@@ -266,7 +271,7 @@ function registerThreadHandlers(socket, io, services) {
   // get_sub_threads handler - get direct child threads
   socket.on('get_sub_threads', async ({ threadId }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before getting sub-threads.' });
         return;
@@ -283,7 +288,7 @@ function registerThreadHandlers(socket, io, services) {
   // get_thread_hierarchy handler - get full tree of descendants
   socket.on('get_thread_hierarchy', async ({ threadId }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before getting thread hierarchy.' });
         return;
@@ -300,7 +305,7 @@ function registerThreadHandlers(socket, io, services) {
   // reply_in_thread handler - send a message directly in a thread
   socket.on('reply_in_thread', async ({ threadId, text, messageData = {} }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before replying in threads.' });
         return;
@@ -354,7 +359,7 @@ function registerThreadHandlers(socket, io, services) {
   // move_message_to_thread handler - move a message between threads
   socket.on('move_message_to_thread', async ({ messageId, targetThreadId, roomId }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before moving messages.' });
         return;
@@ -410,7 +415,7 @@ function registerThreadHandlers(socket, io, services) {
   // archive_thread handler - archive or unarchive a thread
   socket.on('archive_thread', async ({ threadId, archived = true, cascade = true }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before archiving threads.' });
         return;
@@ -455,7 +460,7 @@ function registerThreadHandlers(socket, io, services) {
   // NOTE: This should primarily be triggered by server on join, not client
   socket.on('analyze_conversation_history', async ({ roomId, limit }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before analyzing conversation history.' });
         return;
@@ -480,6 +485,143 @@ function registerThreadHandlers(socket, io, services) {
     } catch (error) {
       console.error('Error analyzing conversation history:', error);
       socket.emit('error', { message: 'Failed to analyze conversation history.' });
+    }
+  });
+
+  // ============================================================================
+  // CONVERSATION-BASED THREAD HANDLERS (New System)
+  // ============================================================================
+
+  // get_conversation_threads - Get threads grouped by category
+  socket.on('get_conversation_threads', async ({ roomId, limitPerCategory, includeDetails }) => {
+    try {
+      const user = await userSessionService.getUserBySocketId(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before getting conversation threads.' });
+        return;
+      }
+
+      const { getThreadService } = require('../src/services/threads');
+      const threadService = getThreadService();
+
+      const threads = await threadService.getThreadsByCategory(roomId, {
+        limitPerCategory: limitPerCategory || 5,
+        includeDetails: includeDetails || false,
+      });
+
+      const totalCount = Object.values(threads).reduce(
+        (sum, categoryThreads) => sum + categoryThreads.length,
+        0
+      );
+
+      socket.emit('conversation_threads', {
+        roomId,
+        threads,
+        categories: Object.keys(threads),
+        totalCount,
+      });
+    } catch (error) {
+      console.error('Error getting conversation threads:', error);
+      socket.emit('error', { message: 'Failed to get conversation threads.' });
+    }
+  });
+
+  // get_thread_details - Get full thread with messages, decisions, open items
+  socket.on('get_thread_details', async ({ threadId }) => {
+    try {
+      const user = await userSessionService.getUserBySocketId(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before getting thread details.' });
+        return;
+      }
+
+      const { getThreadService } = require('../src/services/threads');
+      const threadService = getThreadService();
+
+      const thread = await threadService.getThreadWithDetails(threadId);
+
+      if (!thread) {
+        socket.emit('error', { message: 'Thread not found.' });
+        return;
+      }
+
+      socket.emit('thread_details', { thread });
+    } catch (error) {
+      console.error('Error getting thread details:', error);
+      socket.emit('error', { message: 'Failed to get thread details.' });
+    }
+  });
+
+  // process_room_threads - Trigger thread processing manually
+  socket.on('process_room_threads', async ({ roomId }) => {
+    try {
+      const user = await userSessionService.getUserBySocketId(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before processing threads.' });
+        return;
+      }
+
+      const { getThreadService } = require('../src/services/threads');
+      const threadService = getThreadService();
+
+      console.log(`[ThreadHandler] Processing threads for room ${roomId} (manual trigger)`);
+      const result = await threadService.processRoom(roomId);
+
+      // Emit threads_updated event to all room members
+      io.to(roomId).emit('threads_updated', {
+        roomId,
+        created: result.created,
+        updated: result.updated,
+        skipped: result.skipped || false,
+      });
+
+      socket.emit('process_room_threads_complete', {
+        roomId,
+        ...result,
+        message: result.skipped
+          ? 'AI not available, processing skipped'
+          : `Processed: ${result.created} created, ${result.updated} updated`,
+      });
+    } catch (error) {
+      console.error('Error processing room threads:', error);
+      socket.emit('error', { message: 'Failed to process room threads.' });
+    }
+  });
+
+  // backfill_room_threads - Backfill all historical threads
+  socket.on('backfill_room_threads', async ({ roomId, limit, batchSize }) => {
+    try {
+      const user = await userSessionService.getUserBySocketId(socket.id);
+      if (!user) {
+        socket.emit('error', { message: 'You must join before backfilling threads.' });
+        return;
+      }
+
+      const { getThreadService } = require('../src/services/threads');
+      const threadService = getThreadService();
+
+      console.log(`[ThreadHandler] Backfilling threads for room ${roomId}`);
+      const result = await threadService.backfillRoom(roomId, {
+        limit: limit || 500,
+        batchSize: batchSize || 10,
+      });
+
+      // Emit threads_updated event to all room members
+      io.to(roomId).emit('threads_updated', {
+        roomId,
+        created: result.created,
+        updated: 0,
+        backfill: true,
+      });
+
+      socket.emit('backfill_room_threads_complete', {
+        roomId,
+        ...result,
+        message: `Backfill complete: ${result.created} threads created from ${result.processed} windows`,
+      });
+    } catch (error) {
+      console.error('Error backfilling room threads:', error);
+      socket.emit('error', { message: 'Failed to backfill room threads.' });
     }
   });
 }

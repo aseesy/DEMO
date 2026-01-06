@@ -1,6 +1,5 @@
 import React from 'react';
 import { ObserverCard } from '../../dashboard/components/ObserverCard.jsx';
-import { getCategoryConfig } from '../../../config/threadCategories.js';
 
 /**
  * MessagesContainer - Renders the scrollable message list with date grouping
@@ -8,6 +7,7 @@ import { getCategoryConfig } from '../../../config/threadCategories.js';
 export function MessagesContainer({
   messages,
   username,
+  userId,
   messagesContainerRef,
   messagesEndRef,
   isInitialLoad,
@@ -19,10 +19,6 @@ export function MessagesContainer({
   sendInterventionFeedback,
   pendingOriginalMessageToRemove,
   setFlaggingMessage,
-  addToThread,
-  threads,
-  selectedThreadId,
-  setSelectedThreadId,
   draftCoaching,
   inputMessage,
   setInputMessage,
@@ -30,41 +26,85 @@ export function MessagesContainer({
   setOriginalRewrite,
   setDraftCoaching,
   socket: _socket, // Unused but kept for API compatibility
+  room,
 }) {
+  // Optimized message grouping - memoized with efficient date formatting
   const messageGroups = React.useMemo(() => {
+    if (!messages || messages.length === 0) return [];
+    
     const groups = [];
     let currentGroup = null;
     let currentDate = null;
+    const currentYear = new Date().getFullYear();
 
     // Filter out contact_suggestion messages - they only trigger modals, not chat display
     const displayMessages = messages.filter(msg => msg.type !== 'contact_suggestion');
+    
+    if (displayMessages.length === 0) return [];
 
-    displayMessages.forEach((msg, index) => {
+    // Cache date formatter to avoid creating new formatter for each message
+    const dateFormatter = new Intl.DateTimeFormat('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
+    const dateFormatterWithYear = new Intl.DateTimeFormat('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    for (let index = 0; index < displayMessages.length; index++) {
+      const msg = displayMessages[index];
       const msgDate = new Date(msg.created_at || msg.timestamp);
-      const dateLabel = msgDate.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: msgDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
-      });
+      const needsYear = msgDate.getFullYear() !== currentYear;
+      const dateLabel = needsYear 
+        ? dateFormatterWithYear.format(msgDate)
+        : dateFormatter.format(msgDate);
 
       if (dateLabel !== currentDate) {
         if (currentGroup) groups.push(currentGroup);
         currentGroup = { date: dateLabel, messages: [] };
         currentDate = dateLabel;
       }
-      currentGroup.messages.push({ ...msg, originalIndex: index });
-    });
+      // Include needed fields plus sender object for ownership detection
+      currentGroup.messages.push({
+        id: msg.id,
+        text: msg.text,
+        username: msg.username,
+        timestamp: msg.timestamp || msg.created_at,
+        type: msg.type,
+        originalIndex: index,
+        // Include sender object for UUID-based ownership and display name
+        sender: msg.sender,
+        sender_id: msg.sender_id,
+        user_id: msg.user_id,
+        // Include other needed fields
+        ...(msg.intervention_id && { intervention_id: msg.intervention_id }),
+        ...(msg.isOptimistic && { isOptimistic: msg.isOptimistic }),
+        ...(msg.status && { status: msg.status }),
+        ...(msg.isAI && { isAI: msg.isAI }),
+      });
+    }
 
     if (currentGroup) groups.push(currentGroup);
     return groups;
   }, [messages]);
 
-  const handleScroll = e => {
-    if (e.target.scrollTop < 100 && hasMoreMessages && !isLoadingOlder) {
-      loadOlderMessages();
-    }
-  };
+  // Throttle scroll handler to prevent excessive calls
+  const scrollThrottleRef = React.useRef(null);
+  const handleScroll = React.useCallback((e) => {
+    // Throttle scroll events to prevent performance issues
+    if (scrollThrottleRef.current) return;
+    
+    scrollThrottleRef.current = requestAnimationFrame(() => {
+      scrollThrottleRef.current = null;
+      if (e.target.scrollTop < 100 && hasMoreMessages && !isLoadingOlder) {
+        loadOlderMessages();
+      }
+    });
+  }, [hasMoreMessages, isLoadingOlder, loadOlderMessages]);
 
   // Scroll to bottom when a message is blocked/intervened
   React.useEffect(() => {
@@ -89,8 +129,6 @@ export function MessagesContainer({
     }
   }, [draftCoaching, messagesEndRef]);
 
-  // Find the selected thread to show its title
-  const selectedThread = selectedThreadId ? threads.find(t => t.id === selectedThreadId) : null;
 
   // Responsive padding calculation
   const [isMobile, setIsMobile] = React.useState(() => {
@@ -136,76 +174,6 @@ export function MessagesContainer({
       onScroll={handleScroll}
     >
       {/* Thread Header - Show when viewing a thread */}
-      {selectedThread && (
-        <div
-          className="sticky top-0 z-10 bg-white border-b-2 border-teal-light mb-2 py-3 flex items-center justify-between"
-          style={{
-            marginLeft: '-0.5rem',
-            marginRight: '-0.5rem',
-            paddingLeft: '0.5rem',
-            paddingRight: '0.5rem',
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <svg
-              className="w-5 h-5 text-teal-medium"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
-            <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <h3 className="font-semibold text-sm text-teal-dark">{selectedThread.title}</h3>
-                {selectedThread.category &&
-                  (() => {
-                    const config = getCategoryConfig(selectedThread.category);
-                    return (
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}
-                      >
-                        <span>{config.icon}</span>
-                        <span>{config.label}</span>
-                      </span>
-                    );
-                  })()}
-              </div>
-              <p className="text-xs text-gray-500">
-                {selectedThread.message_count || 0} message
-                {selectedThread.message_count !== 1 ? 's' : ''}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              // Clear thread selection to return to all messages
-              if (setSelectedThreadId) {
-                setSelectedThreadId(null);
-              }
-            }}
-            className="text-sm text-teal-medium hover:text-teal-dark font-medium px-3 py-1.5 rounded-lg hover:bg-teal-lightest transition-colors flex items-center gap-1"
-            title="View all messages"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <span className="hidden sm:inline">All Messages</span>
-          </button>
-        </div>
-      )}
 
       {hasMoreMessages && (
         <div className="flex justify-center py-2">
@@ -238,43 +206,27 @@ export function MessagesContainer({
 
           {/* Messages in this date group */}
           {group.messages.map((msg, msgIndex) => {
-            // Use new sender structure (sender.email) with fallback to legacy fields
-            const messageEmail = msg.sender?.email || msg.user_email || msg.email || msg.username;
+            // UUID-based ownership detection (primary method)
+            // Messages should have sender.uuid or sender_id from the server
+            const messageUserId = msg.sender?.uuid || msg.sender?.id || msg.sender_id || msg.user_id;
 
-            // Get current user email from multiple sources for robustness
-            // 1. username prop (primary - passed from ChatRoom)
-            // 2. localStorage (fallback - in case prop is missing)
-            // 3. sender.email from socket join (if available in context)
-            const currentUserEmail =
-              username ||
-              (typeof localStorage !== 'undefined' ? localStorage.getItem('userEmail') : null) ||
-              (typeof localStorage !== 'undefined' ? localStorage.getItem('username') : null);
+            // Compare UUIDs/IDs (convert to string for safe comparison)
+            const isOwn = userId && messageUserId && String(userId) === String(messageUserId);
 
-            // Normalize both emails for comparison (trim, lowercase)
-            const normalizedMessageEmail = messageEmail?.trim()?.toLowerCase() || '';
-            const normalizedCurrentEmail = currentUserEmail?.trim()?.toLowerCase() || '';
-
-            const isOwn =
-              normalizedMessageEmail &&
-              normalizedCurrentEmail &&
-              normalizedMessageEmail === normalizedCurrentEmail;
+            // Get display name - prefer first_name, fallback to email/username
+            const senderDisplayName = msg.sender?.first_name || msg.sender?.email || msg.username || 'Unknown';
 
             // DEBUG: Log first few messages to diagnose ownership issue
             if (msgIndex < 3) {
               console.log('[MessagesContainer] Message ownership check:', {
                 messageId: msg.id,
                 messageText: msg.text?.substring(0, 30),
-                messageEmail,
-                normalizedMessageEmail,
-                username,
-                currentUserEmail,
-                normalizedCurrentEmail,
+                messageUserId,
+                currentUserId: userId,
                 senderObject: msg.sender,
-                user_email: msg.user_email,
-                email: msg.email,
-                username_field: msg.username,
+                senderDisplayName,
                 isOwn,
-                comparison: normalizedMessageEmail === normalizedCurrentEmail,
+                comparison: `${userId} === ${messageUserId}`,
               });
             }
 
@@ -400,15 +352,6 @@ export function MessagesContainer({
                       >
                         🚩
                       </button>
-                      {threads.length > 0 && (
-                        <button
-                          onClick={() => addToThread(msg)}
-                          className="text-xs text-gray-400 hover:text-teal-500"
-                          title="Add to thread"
-                        >
-                          💬
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>

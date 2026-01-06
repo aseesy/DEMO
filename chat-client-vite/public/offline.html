@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#00908B">
+  <title>LiaiZen - Offline</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #00908B 0%, #007a75 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    
+    .container {
+      max-width: 500px;
+      width: 100%;
+    }
+    
+    .offline-icon {
+      font-size: 5rem;
+      margin-bottom: 2rem;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+      }
+    }
+    
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    
+    p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      opacity: 0.9;
+    }
+    
+    .queue-info {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      backdrop-filter: blur(10px);
+    }
+    
+    .queue-count {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0.5rem 0;
+    }
+    
+    button {
+      background: #fff;
+      color: #00908B;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 1.5rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    .features {
+      margin-top: 2rem;
+      text-align: left;
+    }
+    
+    .features h2 {
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    
+    .features ul {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .features li {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+    }
+    
+    .features li:before {
+      content: "✓";
+      margin-right: 1rem;
+      font-size: 1.5rem;
+      color: #4ade80;
+    }
+    
+    .features li:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="offline-icon">📡</div>
+    <h1>You're Offline</h1>
+    <p>LiaiZen needs an internet connection to work properly.</p>
+    
+    <div class="queue-info" id="queueInfo" style="display: none;">
+      <p>You have <span class="queue-count" id="queueCount">0</span> message(s) queued</p>
+      <p style="font-size: 0.9rem; margin-top: 0.5rem;">They will be sent automatically when you're back online.</p>
+    </div>
+    
+    <button onclick="window.location.reload()">Try Again</button>
+    
+    <div class="features">
+      <h2>What works offline:</h2>
+      <ul>
+        <li>Viewing cached messages</li>
+        <li>Composing messages (queued for sending)</li>
+        <li>App shell and navigation</li>
+      </ul>
+    </div>
+  </div>
+  
+  <script>
+    // Check for queued messages in localStorage
+    try {
+      const queue = localStorage.getItem('liaizen_offline_queue');
+      if (queue) {
+        const messages = JSON.parse(queue);
+        if (messages && messages.length > 0) {
+          document.getElementById('queueInfo').style.display = 'block';
+          document.getElementById('queueCount').textContent = messages.length;
+        }
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    
+    // Auto-reload when back online
+    window.addEventListener('online', () => {
+      window.location.reload();
+    });
+    
+    // Check connection status periodically
+    setInterval(() => {
+      if (navigator.onLine) {
+        window.location.reload();
+      }
+    }, 3000);
+  </script>
+</body>
+</html>
+

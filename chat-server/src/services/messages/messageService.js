@@ -111,6 +111,33 @@ class MessageService {
     // Generate ID if not provided
     const id = messageData.id || this._generateMessageId(userEmail);
 
+    // Validate thread_id if provided
+    if (messageData.threadId || messageData.thread_id) {
+      const threadId = messageData.threadId || messageData.thread_id;
+      const roomId = messageData.roomId || messageData.room_id;
+      
+      if (roomId) {
+        // Verify thread exists and belongs to same room
+        const threadResult = await dbPostgres.query(
+          'SELECT id, room_id, is_archived FROM threads WHERE id = $1',
+          [threadId]
+        );
+        
+        if (threadResult.rows.length === 0) {
+          throw new Error(`Thread not found: ${threadId}`);
+        }
+        
+        const thread = threadResult.rows[0];
+        if (thread.room_id !== roomId) {
+          throw new Error(`Thread belongs to different room. Thread room: ${thread.room_id}, Message room: ${roomId}`);
+        }
+        
+        if (thread.is_archived === 1) {
+          throw new Error('Cannot send message to archived thread. Please reopen the thread first.');
+        }
+      }
+    }
+
     // Prepare data
     const data = {
       id,

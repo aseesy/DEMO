@@ -109,9 +109,10 @@ async function sendMessageDirectly(message, roomId, io, addToHistory, options = 
  * @param {Object} services - Service container
  * @param {Object} user - User object
  * @param {string} roomId - Room ID
+ * @param {Object} message - Optional message object (for thread context)
  * @returns {Promise<Object>} Context object with all gathered data
  */
-async function gatherAnalysisContext(services, user, roomId) {
+async function gatherAnalysisContext(services, user, roomId, message = null) {
   // Import helpers here to avoid circular dependency
   const {
     getRecentMessages,
@@ -119,16 +120,18 @@ async function gatherAnalysisContext(services, user, roomId) {
     getContactContext,
     getTaskContext,
     getFlaggedContext,
+    getThreadContext,
   } = require('./aiContextHelper');
 
   const { dbPostgres, dbSafe, userSessionService } = services;
 
   // Gather all context in parallel for better performance
-  const [recentMessages, participantUsernames, taskContext, flaggedContext] = await Promise.all([
+  const [recentMessages, participantUsernames, taskContext, flaggedContext, threadContext] = await Promise.all([
     getRecentMessages(dbPostgres, roomId),
     getParticipantUsernames(dbSafe, roomId, userSessionService),
     getTaskContext(services, user),
     getFlaggedContext(services, user),
+    message ? getThreadContext(services, message) : Promise.resolve(null),
   ]);
 
   // Get contact context with actual participants (needs participants first)
@@ -151,6 +154,7 @@ async function gatherAnalysisContext(services, user, roomId) {
     taskContext,
     flaggedContext,
     roleContext,
+    threadContext, // Add thread context
   };
 }
 

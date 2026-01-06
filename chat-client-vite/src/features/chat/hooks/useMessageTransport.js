@@ -52,6 +52,74 @@ export function useMessageTransport({ socketRef, offlineQueueRef, setError } = {
     lastDisconnected: null,
   });
 
+  // Check if connected (computed from state)
+  const isConnected = React.useMemo(() => {
+    return connectionState.isConnected || (socketRef?.current?.connected ?? false);
+  }, [connectionState.isConnected, socketRef?.current?.connected]);
+
+  /**
+   * Flush queued messages when connection is restored
+   * @private
+   */
+  const flushQueuedMessages = React.useCallback(async () => {
+    // Check connection directly from socket ref to avoid stale closure
+    const socketConnected = socketRef?.current?.connected ?? false;
+    if (!socketConnected || !transportService || !socketRef?.current) {
+      return;
+    }
+
+    // Get queued messages from both sources (legacy ref and service)
+    let queuedMessages = [];
+
+    // Check legacy offlineQueueRef first
+    if (offlineQueueRef?.current && Array.isArray(offlineQueueRef.current)) {
+      queuedMessages = [...offlineQueueRef.current];
+    } else if (queueService) {
+      // Fallback to queue service
+      queuedMessages = queueService.getQueue();
+    }
+
+    if (queuedMessages.length === 0) {
+      return;
+    }
+
+    console.log(`[useMessageTransport] Flushing ${queuedMessages.length} queued message(s)`);
+
+    // Send each queued message
+    for (const msg of queuedMessages) {
+      try {
+        const payload = {
+          ...createMessagePayload({
+            text: msg.text,
+            isPreApprovedRewrite: msg.isPreApprovedRewrite,
+            originalRewrite: msg.originalRewrite,
+          }),
+          ...(msg.optimisticId && { optimisticId: msg.optimisticId }),
+        };
+
+        const sent = await transportService.sendMessage(payload);
+        if (sent) {
+          // Remove from queue on success
+          if (offlineQueueRef?.current) {
+            const index = offlineQueueRef.current.findIndex(m => m.id === msg.id);
+            if (index !== -1) {
+              offlineQueueRef.current.splice(index, 1);
+              saveOfflineQueue(offlineQueueRef.current);
+            }
+          } else if (queueService) {
+            queueService.dequeue(msg.id);
+          }
+          console.log(`[useMessageTransport] Successfully sent queued message: ${msg.id}`);
+        } else {
+          console.warn(`[useMessageTransport] Failed to send queued message: ${msg.id}`);
+        }
+      } catch (error) {
+        console.error(`[useMessageTransport] Error sending queued message ${msg.id}:`, error);
+        // Don't remove from queue on error - will retry on next reconnect
+      }
+    }
+  }, [transportService, socketRef, queueService, offlineQueueRef]);
+
   // Update connection state when socket connection changes
   React.useEffect(() => {
     if (!socketRef?.current) return;
@@ -63,6 +131,12 @@ export function useMessageTransport({ socketRef, offlineQueueRef, setError } = {
         lastConnected: new Date().toISOString(),
         lastDisconnected: prev.lastDisconnected,
       }));
+
+      // Auto-flush queued messages when reconnecting
+      // Use setTimeout to ensure state has updated
+      setTimeout(() => {
+        flushQueuedMessages();
+      }, 100);
     };
 
     const handleDisconnect = () => {
@@ -82,16 +156,18 @@ export function useMessageTransport({ socketRef, offlineQueueRef, setError } = {
       isConnected: socket.connected,
     }));
 
+    // If already connected, try to flush any existing queue
+    if (socket.connected) {
+      setTimeout(() => {
+        flushQueuedMessages();
+      }, 100);
+    }
+
     return () => {
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
     };
-  }, [socketRef]);
-
-  // Check if connected (computed from state)
-  const isConnected = React.useMemo(() => {
-    return connectionState.isConnected || (socketRef?.current?.connected ?? false);
-  }, [connectionState.isConnected, socketRef?.current?.connected]);
+  }, [socketRef, flushQueuedMessages]);
 
   // Get connection ID
   const getConnectionId = React.useCallback(() => {
@@ -176,11 +252,23 @@ export function useMessageTransport({ socketRef, offlineQueueRef, setError } = {
     [queueService, offlineQueueRef, setError]
   );
 
+  // Expose queue size for UI
+  const getQueueSize = React.useCallback(() => {
+    if (offlineQueueRef?.current && Array.isArray(offlineQueueRef.current)) {
+      return offlineQueueRef.current.length;
+    } else if (queueService) {
+      return queueService.size();
+    }
+    return 0;
+  }, [queueService, offlineQueueRef]);
+
   return {
     sendMessage,
     isConnected,
     getConnectionId,
     connectionState,
+    getQueueSize,
+    flushQueuedMessages,
   };
 }
 

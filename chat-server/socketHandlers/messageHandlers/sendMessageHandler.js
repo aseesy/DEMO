@@ -36,7 +36,7 @@ function registerSendMessageHandler(socket, io, services) {
     wrapSocketHandler(
       async data => {
         // Step 1: Validate user is active
-        const userValidation = validateActiveUser(userSessionService, socket.id);
+        const userValidation = await validateActiveUser(userSessionService, socket.id);
         if (!userValidation.valid) {
           emitError(socket, userValidation.error);
           return;
@@ -47,10 +47,11 @@ function registerSendMessageHandler(socket, io, services) {
         // This ensures messages are saved to the same room that will be loaded on refresh
         if (!user.roomId) {
           const userEmail = user.email || user.username;
+          const activeUserData = await userSessionService.getUserBySocketId(socket.id);
           console.error('[send_message] ERROR: user.roomId is missing!', {
             socketId: socket.id,
             email: userEmail,
-            activeUserData: userSessionService.getUserBySocketId(socket.id),
+            activeUserData,
           });
           emitError(socket, 'Room not available. Please rejoin the chat.');
           return;

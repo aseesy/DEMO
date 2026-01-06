@@ -100,6 +100,7 @@ function setupRoutes(app, services) {
   app.use('/api', connectionsRoutes);
   app.use('/api/blog/images', blogImagesRoutes);
   app.use('/api/push', require('./routes/pushNotifications'));
+  app.use('/api', require('./routes/topics'));
 
   // ========================================
   // Admin & Import Routes (Extracted)

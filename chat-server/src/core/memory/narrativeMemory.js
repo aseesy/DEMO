@@ -11,8 +11,11 @@
  * Railway's base PostgreSQL (which doesn't have pgvector extension).
  */
 
-const { query } = require('../../../dbSafe');
+const pool = require('../../../dbPostgres');
 const openaiClient = require('../engine/client');
+
+// Helper to run queries
+const query = (sql, params) => pool.query(sql, params);
 
 // Embedding model configuration
 const EMBEDDING_MODEL = 'text-embedding-3-small';

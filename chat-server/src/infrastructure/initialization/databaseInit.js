@@ -5,9 +5,54 @@
  *
  * Handles:
  * - PostgreSQL connection initialization
+ * - Redis connection initialization (optional)
  * - Connection status reporting
  * - Error handling (non-blocking)
  */
+
+/**
+ * Initialize Redis connection (optional)
+ *
+ * @returns {Promise<Object>} { redisConnected: boolean, redisError: string|null }
+ */
+async function initRedis() {
+  let redisConnected = false;
+  let redisError = null;
+
+  try {
+    const { getClient, isRedisAvailable } = require('../../database/redisClient');
+    const client = getClient();
+
+    if (!client) {
+      // Redis not configured - this is OK, it's optional
+      console.log('ℹ️  Redis: Not configured (optional for distributed locking and rate limiting)');
+      return { redisConnected: false, redisError: null };
+    }
+
+    // Try to connect and verify
+    if (client.status === 'ready') {
+      redisConnected = true;
+      console.log('✅ Redis: Connected and ready');
+    } else {
+      // Client exists but not ready - will connect asynchronously
+      // Wait a moment to see if connection succeeds
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (isRedisAvailable()) {
+        redisConnected = true;
+        console.log('✅ Redis: Connected and ready');
+      } else {
+        console.log('⚠️  Redis: Connection in progress (will be available when ready)');
+        // Don't mark as error - connection might succeed later
+      }
+    }
+  } catch (err) {
+    redisError = err.message;
+    console.warn('⚠️  Redis: Initialization warning (non-fatal):', err.message);
+    // Don't throw - Redis is optional
+  }
+
+  return { redisConnected, redisError };
+}
 
 /**
  * Initialize PostgreSQL connection
@@ -45,7 +90,15 @@ async function initDatabase() {
     // Health check will report database status but server stays up
   }
 
-  return { dbConnected, dbError };
+  // Initialize Redis (optional, non-blocking)
+  const { redisConnected, redisError } = await initRedis();
+
+  return {
+    dbConnected,
+    dbError,
+    redisConnected,
+    redisError,
+  };
 }
 
 module.exports = {

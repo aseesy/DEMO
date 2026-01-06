@@ -134,6 +134,17 @@ export function AuthProvider({ children }) {
   const [isSigningUp, setIsSigningUp] = React.useState(false);
   const [error, setError] = React.useState(null);
 
+  // Derive userId from JWT token for UUID-based ownership checks
+  const userId = React.useMemo(() => {
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.id || payload.userId || null;
+    } catch {
+      return null;
+    }
+  }, [token]);
+
   // Track when login completes to add grace period for 401 errors
   const loginCompletedAtRef = React.useRef(null);
 
@@ -748,6 +759,7 @@ export function AuthProvider({ children }) {
     isAuthenticated,
     email, // PRIMARY: Use this for user identification
     username, // DEPRECATED: Alias for email, kept for backward compatibility
+    userId, // Numeric user ID from JWT (for UUID-based ownership checks)
     token,
     isCheckingAuth,
     isLoggingIn,

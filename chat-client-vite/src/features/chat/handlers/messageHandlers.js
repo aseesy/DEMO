@@ -78,29 +78,53 @@ export function setupMessageHandlers(socket, handlers) {
       }
     });
 
+    // Optimize message filtering and merging - use efficient Set operations
     setMessages(prev => {
-      // Filter out messages that match optimistic messages
-      const newMessages = messages.filter(msg => {
-        if (!msg.text || !msg.timestamp) return true;
+      // Early return if no new messages
+      if (messages.length === 0) return prev;
+      
+      // Filter out messages that match optimistic messages - optimized
+      const newMessages = [];
+      const prevMessageIds = new Set(prev.map(m => m.id));
+      
+      for (const msg of messages) {
+        // Skip if already in prev (deduplication)
+        if (prevMessageIds.has(msg.id)) continue;
+        
+        // Skip if missing required fields
+        if (!msg.text || !msg.timestamp) {
+          newMessages.push(msg);
+          continue;
+        }
 
         const msgEmail = getMessageEmail(msg);
-        if (!msgEmail) return true; // Keep messages without email (shouldn't happen, but defensive)
+        if (!msgEmail) {
+          newMessages.push(msg);
+          continue;
+        }
 
+        // Check optimistic keys
         const msgTimeWindow = Math.floor(new Date(msg.timestamp).getTime() / 5000);
         const key = `${msg.text}_${msgEmail}_${msgTimeWindow}`;
 
         if (optimisticKeys.has(key)) {
-          console.log('[message_history] Skipping message that matches optimistic:', {
-            msgId: msg.id,
-            key: key,
-          });
-          return false;
+          if (import.meta.env.DEV) {
+            console.log('[message_history] Skipping message that matches optimistic:', {
+              msgId: msg.id,
+              key: key,
+            });
+          }
+          continue;
         }
 
-        return true;
-      });
+        newMessages.push(msg);
+      }
+
+      // Early return if no new messages after filtering
+      if (newMessages.length === 0) return prev;
 
       // Combine existing messages with new ones, sorted by timestamp (stable sort with ID tiebreaker)
+      // Use efficient merge - prev is already sorted, newMessages just need to be inserted
       const merged = [...prev, ...newMessages].sort((a, b) => {
         const timeA = new Date(a.timestamp || a.created_at || 0).getTime();
         const timeB = new Date(b.timestamp || b.created_at || 0).getTime();
@@ -111,10 +135,12 @@ export function setupMessageHandlers(socket, handlers) {
         return timeA - timeB;
       });
 
-      console.log('[message_history] Merge complete:', {
-        newMessagesCount: newMessages.length,
-        finalCount: merged.length,
-      });
+      if (import.meta.env.DEV) {
+        console.log('[message_history] Merge complete:', {
+          newMessagesCount: newMessages.length,
+          finalCount: merged.length,
+        });
+      }
 
       return merged;
     });
@@ -195,16 +221,21 @@ export function setupMessageHandlers(socket, handlers) {
     // to avoid calling state setters inside another state setter's callback
     let removedMsgId = null;
 
+    // Batch state updates to prevent multiple re-renders
+    // Use functional update to ensure we're working with latest state
     setMessages(prev => {
       const action = determineMessageAction(prev, message, usernameRef.current);
 
-      console.log('[new_message] Action determined:', {
-        action: action.action,
-        reason: action.reason || action.matchedBy,
-        messageId: message.id,
-        optimisticId: message.optimisticId,
-        text: message.text?.substring(0, 30),
-      });
+      // Only log in dev mode to avoid performance impact in production
+      if (import.meta.env.DEV) {
+        console.log('[new_message] Action determined:', {
+          action: action.action,
+          reason: action.reason || action.matchedBy,
+          messageId: message.id,
+          optimisticId: message.optimisticId,
+          text: message.text?.substring(0, 30),
+        });
+      }
 
       // Capture ID for cleanup (will be processed after this callback)
       if (action.action === 'replace' && action.removeIndex >= 0) {

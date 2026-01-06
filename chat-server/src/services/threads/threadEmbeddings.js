@@ -17,7 +17,7 @@ async function generateEmbeddingForText(text) {
 
   try {
     // Use the OpenAI client from core/engine/client
-    const coreOpenaiClient = require('../../../core/engine/client');
+    const coreOpenaiClient = require('../../core/engine/client');
     const client = coreOpenaiClient.getClient();
 
     if (!client) {

@@ -33,17 +33,51 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
   console.log('[ChatProvider] ========================================');
 
   // === SOCKET CONNECTION (infrastructure) - v2 Simplified System ===
+  // Ensure tokenManager is initialized before getting token
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      tokenManager.initialize().catch(err => {
+        console.warn('[ChatProvider] TokenManager initialization failed:', err);
+      });
+    }
+  }, [isAuthenticated]);
+
   // Memoize token to prevent unnecessary re-connections
   // Include isAuthenticated in deps to update when auth state changes
   const token = React.useMemo(() => {
     if (!isAuthenticated) return null;
-    return tokenManager.getToken();
+    const retrievedToken = tokenManager.getToken();
+    if (!retrievedToken) {
+      // Fallback: check localStorage directly if tokenManager hasn't initialized yet
+      const fallbackToken = typeof window !== 'undefined' 
+        ? localStorage.getItem('auth_token_backup') || sessionStorage.getItem('auth_token_backup')
+        : null;
+      if (fallbackToken) {
+        console.log('[ChatProvider] Using fallback token from storage');
+        // Set it in tokenManager for future use
+        tokenManager.setToken(fallbackToken);
+        return fallbackToken;
+      }
+    }
+    return retrievedToken;
   }, [isAuthenticated]);
-  const { isConnected } = useSocket({ 
-    token, 
-    enabled: isAuthenticated 
+  const { isConnected, emit } = useSocket({
+    token,
+    enabled: isAuthenticated
   });
   console.log('[ChatProvider] Socket state - isConnected:', isConnected);
+
+  // Create socket-compatible object for components that need it
+  const socket = React.useMemo(() => ({
+    connected: isConnected,
+    emit,
+    on: (event, handler) => socketServiceV2.subscribe(event, handler),
+    off: (event, handler) => {
+      // socketServiceV2.subscribe returns unsubscribe, but we need a separate off method
+      // For now, components should store the unsubscribe function from 'on' calls
+      console.warn('[ChatContext] socket.off called - use unsubscribe from socket.on instead');
+    },
+  }), [isConnected, emit]);
 
   // === INDEPENDENT HOOKS (each subscribes to its own service) ===
   const room = useChatRoom();
@@ -191,17 +225,26 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     scrollToBottom,
   ]);
 
+  // Debounce typing indicator to reduce socket emissions
+  const typingDebounceRef = React.useRef(null);
   const handleInputChange = React.useCallback(
     e => {
       const value = e.target.value;
       setInputMessage(value);
       coaching.dismiss();
 
-      // Typing indicator
+      // Typing indicator - debounced to reduce socket traffic
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      typing.startTyping();
+      
+      // Only emit typing start if not already typing (reduces socket emissions)
+      if (!typingDebounceRef.current) {
+        typing.startTyping();
+        typingDebounceRef.current = true;
+      }
+      
       typingTimeoutRef.current = setTimeout(() => {
         typing.stopTyping();
+        typingDebounceRef.current = null;
       }, 2000);
     },
     [coaching, typing]
@@ -223,6 +266,8 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       isConnected,
       isJoined: room.isJoined,
       error: error || room.error,
+      room, // Room object with roomId for TopicsPanel
+      socket, // Socket-compatible interface for TopicsPanel
 
       // Messages
       messages: messaging.messages,
@@ -253,12 +298,16 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
       threads: threads.threads,
       threadMessages: threads.threadMessages,
       isLoadingThreadMessages: threads.isLoading,
+      isAnalysisComplete: threads.isAnalysisComplete,
       selectedThreadId,
       setSelectedThreadId,
       createThread: threads.create,
       getThreads: threads.loadThreads,
       getThreadMessages: threads.loadThreadMessages,
       addToThread: threads.addToThread,
+      replyInThread: threads.replyInThread,
+      moveMessageToThread: threads.moveMessageToThread,
+      archiveThread: threads.archiveThread,
 
       // Search
       searchMessages: searchHook.searchMessages,
@@ -287,6 +336,7 @@ export function ChatProvider({ children, username, isAuthenticated, currentView,
     [
       isConnected,
       room,
+      socket,
       error,
       messaging,
       inputMessage,
@@ -314,6 +364,8 @@ const defaultContext = {
   isConnected: false,
   isJoined: false,
   error: '',
+  room: { roomId: null, isJoined: false, error: null },
+  socket: { connected: false, emit: () => {}, on: () => () => {}, off: () => {} },
   messages: [],
   inputMessage: '',
   setInputMessage: () => {},
@@ -334,6 +386,7 @@ const defaultContext = {
   threads: [],
   threadMessages: {},
   isLoadingThreadMessages: false,
+  isAnalysisComplete: false,
   selectedThreadId: null,
   setSelectedThreadId: () => {},
   createThread: () => {},

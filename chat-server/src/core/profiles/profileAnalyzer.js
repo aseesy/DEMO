@@ -164,7 +164,8 @@ async function analyzeUserPerspective(userId, roomId, messages) {
   }
 
   // Get user's email to filter messages
-  const { query } = require('../../../dbSafe');
+  const pool = require('../../../dbPostgres');
+  const query = (sql, params) => pool.query(sql, params);
   let userEmail;
 
   try {
@@ -181,8 +182,10 @@ async function analyzeUserPerspective(userId, roomId, messages) {
       userResult.rows[0].display_name || userResult.rows[0].first_name || userEmail;
 
     // Filter to only this user's messages
+    // Check both username and user_email fields since username may be short form (e.g., "mom1")
+    // while user_email has the full email (e.g., "mom1@test.com")
     const userMessages = messages
-      .filter(m => m.username === userEmail && m.text && m.text.trim())
+      .filter(m => (m.username === userEmail || m.user_email === userEmail) && m.text && m.text.trim())
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Most recent first
 
     if (userMessages.length < 5) {
@@ -257,7 +260,8 @@ async function analyzeRoomParticipants(roomId, messages) {
     return {};
   }
 
-  const { query } = require('../../../dbSafe');
+  const pool = require('../../../dbPostgres');
+  const query = (sql, params) => pool.query(sql, params);
 
   try {
     // Get all users in the room

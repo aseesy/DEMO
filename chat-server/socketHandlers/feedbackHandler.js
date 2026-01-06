@@ -8,7 +8,7 @@ function registerFeedbackHandlers(socket, io, services) {
   // intervention_feedback handler
   socket.on('intervention_feedback', async ({ interventionId, helpful, reason }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before providing feedback.' });
         return;
@@ -32,7 +32,7 @@ function registerFeedbackHandlers(socket, io, services) {
   // accept_rewrite handler
   socket.on('accept_rewrite', async ({ original, rewrite, tip }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) return;
 
       await aiMediator.recordAcceptedRewrite(user.username, { original, rewrite, tip });
@@ -45,7 +45,7 @@ function registerFeedbackHandlers(socket, io, services) {
   // override_intervention handler
   socket.on('override_intervention', async ({ messageId, overrideAction }) => {
     try {
-      const user = userSessionService.getUserBySocketId(socket.id);
+      const user = await userSessionService.getUserBySocketId(socket.id);
       if (!user) {
         socket.emit('error', { message: 'You must join before overriding.' });
         return;

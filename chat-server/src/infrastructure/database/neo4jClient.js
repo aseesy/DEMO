@@ -959,6 +959,282 @@ function isAvailable() {
   return isNeo4jConfigured;
 }
 
+// ============================================================================
+// DUAL-BRAIN SOCIAL MAP FUNCTIONS
+// Part of the Dual-Brain AI Mediator architecture
+// ============================================================================
+
+/**
+ * Create or update a Person node (mentioned person, not a user)
+ * @param {string} name - Person's name/role (e.g., "Grandma", "Teacher")
+ * @param {string} roomId - Room where this person is mentioned
+ * @param {Object} metadata - Additional metadata
+ * @returns {Promise<Object|null>} Created/updated node
+ */
+async function createOrUpdatePersonNode(name, roomId, metadata = {}) {
+  if (!isNeo4jConfigured || !name || !roomId) {
+    return null;
+  }
+
+  try {
+    const query = `
+      MERGE (p:Person {name: $name, roomId: $roomId})
+      ON CREATE SET
+        p.createdAt = datetime(),
+        p.mentionCount = 1
+      ON MATCH SET
+        p.mentionCount = COALESCE(p.mentionCount, 0) + 1,
+        p.lastMentioned = datetime()
+      SET p.updatedAt = datetime()
+      RETURN p
+    `;
+
+    const params = {
+      name: name.trim(),
+      roomId,
+    };
+
+    const result = await executeCypher(query, params);
+
+    if (result.records.length > 0) {
+      return result.records[0].get('p').properties;
+    }
+    return null;
+  } catch (error) {
+    console.error(`❌ Failed to create/update Person node for "${name}":`, error.message);
+    return null;
+  }
+}
+
+/**
+ * Create a MENTIONS relationship between a User and a Person
+ * @param {number} userId - User's PostgreSQL ID
+ * @param {string} personName - Person's name
+ * @param {string} roomId - Room ID
+ * @param {string} sentiment - positive, negative, neutral, mixed
+ * @param {number} count - Mention count
+ * @returns {Promise<boolean>} Success status
+ */
+async function createMentionsRelationship(userId, personName, roomId, sentiment = 'neutral', count = 1) {
+  if (!isNeo4jConfigured || !userId || !personName || !roomId) {
+    return false;
+  }
+
+  try {
+    const query = `
+      MATCH (u:User {userId: $userId})
+      MERGE (p:Person {name: $personName, roomId: $roomId})
+      ON CREATE SET p.createdAt = datetime(), p.mentionCount = 1
+
+      MERGE (u)-[r:MENTIONS]->(p)
+      ON CREATE SET
+        r.count = $count,
+        r.sentiment = $sentiment,
+        r.firstMentioned = datetime()
+      ON MATCH SET
+        r.count = COALESCE(r.count, 0) + $count,
+        r.sentiment = $sentiment
+      SET r.lastMentioned = datetime()
+      RETURN r
+    `;
+
+    const params = {
+      userId: neo4j.int(userId),
+      personName: personName.trim(),
+      roomId,
+      sentiment,
+      count: neo4j.int(count),
+    };
+
+    const result = await executeCypher(query, params);
+    return result.records.length > 0;
+  } catch (error) {
+    console.error(`❌ Failed to create MENTIONS relationship:`, error.message);
+    return false;
+  }
+}
+
+/**
+ * Create a sentiment relationship (TRUSTS, DISLIKES, or NEUTRAL_TOWARD)
+ * @param {number} userId - User's PostgreSQL ID
+ * @param {string} personName - Person's name
+ * @param {string} roomId - Room ID
+ * @param {string} type - TRUSTS, DISLIKES, or NEUTRAL_TOWARD
+ * @param {number} strength - Sentiment strength (0-1)
+ * @param {string} reason - Brief explanation
+ * @returns {Promise<boolean>} Success status
+ */
+async function createSentimentRelationship(userId, personName, roomId, type, strength = 0.5, reason = '') {
+  if (!isNeo4jConfigured || !userId || !personName || !roomId || !type) {
+    return false;
+  }
+
+  // Validate type
+  const validTypes = ['TRUSTS', 'DISLIKES', 'NEUTRAL_TOWARD'];
+  if (!validTypes.includes(type)) {
+    console.warn(`⚠️ Invalid sentiment type: ${type}. Using NEUTRAL_TOWARD.`);
+    type = 'NEUTRAL_TOWARD';
+  }
+
+  try {
+    // First, remove any existing sentiment relationships
+    await executeCypher(
+      `
+      MATCH (u:User {userId: $userId})-[r:TRUSTS|DISLIKES|NEUTRAL_TOWARD]->(p:Person {name: $personName, roomId: $roomId})
+      DELETE r
+      `,
+      { userId: neo4j.int(userId), personName: personName.trim(), roomId }
+    );
+
+    // Create the new sentiment relationship
+    const query = `
+      MATCH (u:User {userId: $userId})
+      MERGE (p:Person {name: $personName, roomId: $roomId})
+      ON CREATE SET p.createdAt = datetime()
+
+      CREATE (u)-[r:${type} {
+        strength: $strength,
+        reason: $reason,
+        createdAt: datetime()
+      }]->(p)
+      RETURN r
+    `;
+
+    const params = {
+      userId: neo4j.int(userId),
+      personName: personName.trim(),
+      roomId,
+      strength: Math.max(0, Math.min(1, strength)),
+      reason: reason.slice(0, 200), // Limit reason length
+    };
+
+    const result = await executeCypher(query, params);
+    return result.records.length > 0;
+  } catch (error) {
+    console.error(`❌ Failed to create ${type} relationship:`, error.message);
+    return false;
+  }
+}
+
+/**
+ * Get relationship context for people mentioned in a message
+ * Used during real-time mediation to understand sensitivity
+ * @param {number} senderUserId - Sender's user ID
+ * @param {number} receiverUserId - Receiver's user ID
+ * @param {string[]} personNames - Names of people mentioned
+ * @param {string} roomId - Room ID
+ * @returns {Promise<Object>} Relationship context
+ */
+async function getRelationshipContext(senderUserId, receiverUserId, personNames, roomId) {
+  if (!isNeo4jConfigured || !personNames || personNames.length === 0) {
+    return { senderSentiment: {}, receiverSentiment: {}, isSensitive: false };
+  }
+
+  try {
+    const query = `
+      UNWIND $personNames as personName
+      OPTIONAL MATCH (sender:User {userId: $senderUserId})-[sr:TRUSTS|DISLIKES|NEUTRAL_TOWARD]->(p:Person {name: personName, roomId: $roomId})
+      OPTIONAL MATCH (receiver:User {userId: $receiverUserId})-[rr:TRUSTS|DISLIKES|NEUTRAL_TOWARD]->(p)
+      RETURN personName,
+             type(sr) as senderRelType,
+             sr.strength as senderStrength,
+             sr.reason as senderReason,
+             type(rr) as receiverRelType,
+             rr.strength as receiverStrength,
+             rr.reason as receiverReason
+    `;
+
+    const params = {
+      senderUserId: neo4j.int(senderUserId),
+      receiverUserId: neo4j.int(receiverUserId),
+      personNames: personNames.map(n => n.trim()),
+      roomId,
+    };
+
+    const result = await executeCypher(query, params);
+
+    const senderSentiment = {};
+    const receiverSentiment = {};
+    let isSensitive = false;
+
+    result.records.forEach(record => {
+      const name = record.get('personName');
+      const senderType = record.get('senderRelType');
+      const receiverType = record.get('receiverRelType');
+
+      if (senderType) {
+        senderSentiment[name] = {
+          type: senderType,
+          strength: record.get('senderStrength') || 0.5,
+          reason: record.get('senderReason') || '',
+        };
+      }
+
+      if (receiverType) {
+        receiverSentiment[name] = {
+          type: receiverType,
+          strength: record.get('receiverStrength') || 0.5,
+          reason: record.get('receiverReason') || '',
+        };
+
+        // Mark as sensitive if receiver dislikes this person
+        if (receiverType === 'DISLIKES') {
+          isSensitive = true;
+        }
+      }
+
+      // Also sensitive if sender/receiver have opposite sentiments
+      if (senderType === 'TRUSTS' && receiverType === 'DISLIKES') {
+        isSensitive = true;
+      }
+    });
+
+    return { senderSentiment, receiverSentiment, isSensitive };
+  } catch (error) {
+    console.error(`❌ Failed to get relationship context:`, error.message);
+    return { senderSentiment: {}, receiverSentiment: {}, isSensitive: false };
+  }
+}
+
+/**
+ * Get all people mentioned in a room with sentiment summary
+ * @param {string} roomId - Room ID
+ * @returns {Promise<Array>} Array of person info with sentiment
+ */
+async function getRoomPeople(roomId) {
+  if (!isNeo4jConfigured || !roomId) {
+    return [];
+  }
+
+  try {
+    const query = `
+      MATCH (p:Person {roomId: $roomId})
+      OPTIONAL MATCH (u:User)-[r:TRUSTS|DISLIKES|NEUTRAL_TOWARD]->(p)
+      WITH p, collect({userId: u.userId, type: type(r), strength: r.strength}) as sentiments
+      RETURN p.name as name,
+             p.mentionCount as mentionCount,
+             p.createdAt as firstMentioned,
+             p.lastMentioned as lastMentioned,
+             sentiments
+      ORDER BY p.mentionCount DESC
+    `;
+
+    const params = { roomId };
+    const result = await executeCypher(query, params);
+
+    return result.records.map(record => ({
+      name: record.get('name'),
+      mentionCount: record.get('mentionCount') || 0,
+      firstMentioned: record.get('firstMentioned'),
+      lastMentioned: record.get('lastMentioned'),
+      sentiments: record.get('sentiments') || [],
+    }));
+  } catch (error) {
+    console.error(`❌ Failed to get room people:`, error.message);
+    return [];
+  }
+}
+
 module.exports = {
   createUserNode,
   createCoParentRelationship,
@@ -980,6 +1256,12 @@ module.exports = {
   linkMessageToThread,
   findSimilarMessages,
   findSimilarThreads,
+  // Dual-Brain Social Map functions
+  createOrUpdatePersonNode,
+  createMentionsRelationship,
+  createSentimentRelationship,
+  getRelationshipContext,
+  getRoomPeople,
   // Internal - exported for testing only
   _executeCypher: executeCypher,
 };

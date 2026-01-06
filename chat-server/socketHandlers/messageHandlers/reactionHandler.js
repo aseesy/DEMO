@@ -29,7 +29,7 @@ function registerReactionHandler(socket, io, services) {
     wrapSocketHandler(
       async ({ messageId, emoji }) => {
         // Step 1: Validate user and emoji
-        const userValidation = validateActiveUser(userSessionService, socket.id);
+        const userValidation = await validateActiveUser(userSessionService, socket.id);
         if (!userValidation.valid || !emoji) return;
         const { user } = userValidation;
 

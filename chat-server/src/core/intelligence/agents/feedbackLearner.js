@@ -53,24 +53,9 @@ async function recordExplicitFeedback(username, feedbackType, context, reason = 
 
     const userId = users[0].id;
 
-    // Check if feedback table exists, create if not
-    try {
-      await dbSafe.safeSelect('user_feedback', { user_id: userId }, { limit: 1 });
-    } catch (e) {
-      // Table doesn't exist or other error, try to create it
-      logger.info('Ensuring user_feedback table exists', { userId });
-      await db.query(`
-        CREATE TABLE IF NOT EXISTS user_feedback (
-          id SERIAL PRIMARY KEY,
-          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          feedback_type TEXT NOT NULL,
-          context_json TEXT,
-          reason TEXT,
-          created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-      `);
-      await db.query(`CREATE INDEX IF NOT EXISTS idx_feedback_user ON user_feedback(user_id)`);
-    }
+    // Schema changes must be done via migrations, not runtime creation
+    // user_feedback table is created by migration 001_initial_schema.sql
+    // If table is missing, migration needs to be run explicitly
 
     // Record feedback
     await dbSafe.safeInsert('user_feedback', {

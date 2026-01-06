@@ -121,7 +121,7 @@ Respond in JSON:
    */
   async analyzeConversationHistory(roomId, limit = 100, dependencies = {}) {
     if (!process.env.OPENAI_API_KEY) {
-      console.warn('OpenAI API key not configured, skipping conversation analysis');
+      console.warn('[AIThreadAnalyzer] ⚠️  OpenAI API key not configured, skipping conversation analysis');
       return {
         suggestions: [],
         createdThreads: [],
@@ -138,16 +138,18 @@ Respond in JSON:
 
     try {
       console.log(
-        `[AIThreadAnalyzer] Starting conversation analysis for room: ${roomId}, limit: ${limit}`
+        `[AIThreadAnalyzer] 🔍 DEBUG: Starting conversation analysis for room: ${roomId}, limit: ${limit}`
       );
       const messageStore = require('../../../../messageStore');
 
       // Get recent messages for the room (excluding system messages)
       const messages = await messageStore.getMessagesByRoom(roomId, limit);
+      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Retrieved ${messages.length} messages from messageStore`);
 
       // Only analyze messages from the last 30 days to avoid old historical data
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Filtering messages after ${thirtyDaysAgo.toISOString()}`);
 
       // Filter out system messages, private messages, flagged messages, messages without text,
       // and messages older than 30 days
@@ -160,10 +162,12 @@ Respond in JSON:
         return msgDate >= thirtyDaysAgo;
       });
 
+      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: After filtering: ${filteredMessages.length} messages (removed ${messages.length - filteredMessages.length})`);
+
       if (filteredMessages.length < 5) {
         // Not enough messages to analyze
         console.log(
-          `[AIThreadAnalyzer] Not enough messages to analyze (${filteredMessages.length} < 5)`
+          `[AIThreadAnalyzer] ⚠️  Not enough messages to analyze (${filteredMessages.length} < 5)`
         );
         return {
           suggestions: [],
@@ -242,6 +246,7 @@ Respond in JSON array format:
 
 Only include conversations with confidence >= 60 and at least 3 related messages.`;
 
+      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Calling OpenAI API with ${filteredMessages.length} messages`);
       const completion = await openaiClient.createChatCompletion({
         model: 'gpt-3.5-turbo',
         messages: [
@@ -260,24 +265,53 @@ Only include conversations with confidence >= 60 and at least 3 related messages
       });
 
       const response = completion.choices[0].message.content.trim();
+      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: OpenAI response length: ${response.length} chars`);
       // Remove markdown code blocks if present
       const cleanResponse = response.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-      const suggestions = JSON.parse(cleanResponse);
+      let suggestions;
+      try {
+        suggestions = JSON.parse(cleanResponse);
+        console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Parsed ${suggestions.length} suggestions from OpenAI`);
+      } catch (parseError) {
+        console.error(`[AIThreadAnalyzer] ❌ Failed to parse OpenAI response:`, parseError.message);
+        console.error(`[AIThreadAnalyzer] 🔍 DEBUG: Response was:`, cleanResponse.substring(0, 500));
+        return {
+          suggestions: [],
+          createdThreads: [],
+        };
+      }
 
       // Filter and validate suggestions
+      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Filtering ${suggestions.length} suggestions`);
       const validSuggestions = suggestions
-        .filter(s => s.confidence >= 60 && s.messageCount >= 3)
+        .filter(s => {
+          const hasConfidence = s.confidence >= 60;
+          const hasMessages = s.messageCount >= 3;
+          if (!hasConfidence) {
+            console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Suggestion "${s.title}" filtered out: confidence ${s.confidence} < 60`);
+          }
+          if (!hasMessages) {
+            console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Suggestion "${s.title}" filtered out: messageCount ${s.messageCount} < 3`);
+          }
+          return hasConfidence && hasMessages;
+        })
         .filter(s => {
           // Check if similar thread already exists
           const titleLower = s.title.toLowerCase();
-          return !existingThreads.some(
+          const isDuplicate = existingThreads.some(
             t =>
               t.title.toLowerCase().includes(titleLower) || titleLower.includes(t.title.toLowerCase())
           );
+          if (isDuplicate) {
+            console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Suggestion "${s.title}" filtered out: duplicate of existing thread`);
+          }
+          return !isDuplicate;
         })
         .sort((a, b) => b.messageCount - a.messageCount) // Sort by message count
         .slice(0, 5); // Limit to top 5 suggestions
 
+      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: ${validSuggestions.length} valid suggestions after filtering`);
+      
       // Automatically create threads from suggestions using semantic search
       const createdThreads = [];
       console.log(`[AIThreadAnalyzer] Processing ${validSuggestions.length} valid suggestions`);
@@ -310,9 +344,27 @@ Only include conversations with confidence >= 60 and at least 3 related messages
                 );
                 // Map semantic search results to message objects
                 const messageIds = similarMessages.map(m => m.messageId);
+                // Filter to only unthreaded messages - check both msg.threadId and msg.thread_id
+                // Also need to verify in database since messageStore may not include thread_id
                 matchingMessages = filteredMessages.filter(
-                  msg => messageIds.includes(msg.id) && !msg.threadId
+                  msg => messageIds.includes(msg.id) && !msg.threadId && !msg.thread_id
                 );
+                
+                // Double-check in database to ensure messages aren't already threaded
+                // This prevents the "Messages already assigned to threads" issue
+                if (matchingMessages.length > 0) {
+                  const db = require('../../../../dbPostgres');
+                  const messageIdsToCheck = matchingMessages.map(m => m.id);
+                  const dbCheck = await db.query(
+                    'SELECT id FROM messages WHERE id = ANY($1) AND thread_id IS NOT NULL',
+                    [messageIdsToCheck]
+                  );
+                  const alreadyThreadedIds = new Set(dbCheck.rows.map(r => r.id));
+                  matchingMessages = matchingMessages.filter(m => !alreadyThreadedIds.has(m.id));
+                  if (alreadyThreadedIds.size > 0) {
+                    console.log(`[AIThreadAnalyzer] Filtered out ${alreadyThreadedIds.size} messages already in threads`);
+                  }
+                }
               } else {
                 console.warn(
                   `[AIThreadAnalyzer] Failed to generate embedding for "${suggestion.title}", using keyword fallback`
@@ -355,7 +407,8 @@ Only include conversations with confidence >= 60 and at least 3 related messages
             }
 
             matchingMessages = filteredMessages.filter(msg => {
-              if (!msg.id || msg.threadId) {
+              // Check both threadId and thread_id (messageStore may use either)
+              if (!msg.id || msg.threadId || msg.thread_id) {
                 return false;
               }
               // Extract distinctive keywords from message
@@ -397,9 +450,29 @@ Only include conversations with confidence >= 60 and at least 3 related messages
               .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) // Most recent first
               .slice(0, Math.min(suggestion.messageCount || 20, matchingMessages.length));
 
+            // Final database check: verify messages aren't already threaded before adding
+            // This prevents the "Messages already assigned to threads" issue
+            const db = require('../../../../dbPostgres');
+            const messageIdsToCheck = messagesToAdd.map(m => m.id);
+            let unthreadedMessages = messagesToAdd;
+            
+            if (messageIdsToCheck.length > 0) {
+              const dbCheck = await db.query(
+                'SELECT id, thread_id FROM messages WHERE id = ANY($1)',
+                [messageIdsToCheck]
+              );
+              const alreadyThreadedIds = new Set(
+                dbCheck.rows.filter(r => r.thread_id).map(r => r.id)
+              );
+              if (alreadyThreadedIds.size > 0) {
+                console.log(`[AIThreadAnalyzer] Filtering out ${alreadyThreadedIds.size} messages already in threads`);
+                unthreadedMessages = messagesToAdd.filter(m => !alreadyThreadedIds.has(m.id));
+              }
+            }
+
             let addedCount = 0;
-            for (const msg of messagesToAdd) {
-              if (msg.id && !msg.threadId) {
+            for (const msg of unthreadedMessages) {
+              if (msg.id && !msg.threadId && !msg.thread_id) {
                 // Only add messages that aren't already in a thread
                 await addMessageToThread(msg.id, threadId);
                 addedCount++;
@@ -433,7 +506,14 @@ Only include conversations with confidence >= 60 and at least 3 related messages
         }
       }
 
-      console.log(`[AIThreadAnalyzer] Analysis complete: ${createdThreads.length} threads created`);
+      console.log(`[AIThreadAnalyzer] ✅ Analysis complete: ${createdThreads.length} threads created`);
+      if (createdThreads.length === 0 && validSuggestions.length > 0) {
+        console.log(`[AIThreadAnalyzer] ⚠️  WARNING: ${validSuggestions.length} suggestions were generated but no threads were created`);
+        console.log(`[AIThreadAnalyzer] 🔍 DEBUG: This could mean:`);
+        console.log(`[AIThreadAnalyzer]    - Not enough matching messages found (need 3+)`);
+        console.log(`[AIThreadAnalyzer]    - Messages already assigned to threads`);
+        console.log(`[AIThreadAnalyzer]    - Thread creation failed`);
+      }
 
       return {
         suggestions: validSuggestions,

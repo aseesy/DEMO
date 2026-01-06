@@ -93,13 +93,22 @@ export function useDashboard({ username, isAuthenticated, messages = [], setCurr
   const setSelectedThreadId = chatContext?.setSelectedThreadId || (() => {});
   const getThreadMessages = chatContext?.getThreadMessages || (() => {});
 
-  // Loading state - ChatContext doesn't expose loading state directly
-  // We infer it from context: if connected but no threads, might be loading
-  // This is a simple heuristic - ChatContext manages actual loading internally
+  // Loading state - Check if threads are still being loaded/analyzed
+  // We now track analysis completion state to avoid infinite "analyzing" message
   const isLoadingThreads = React.useMemo(() => {
     if (!chatContext) return false;
-    // If we have a connection but no threads yet, we might be loading
-    return chatContext.isConnected && threads.length === 0;
+    
+    // If we have threads, we're definitely not loading
+    if (threads.length > 0) return false;
+    
+    // If analysis is complete, we're not loading (even if no threads were found)
+    if (chatContext.isAnalysisComplete === true) {
+      return false;
+    }
+    
+    // If connected but no threads and analysis not complete, we might be loading
+    // But only if we're actually connected (not still connecting)
+    return chatContext.isConnected && chatContext.isAnalysisComplete !== true;
   }, [chatContext, threads]);
 
   // Analyze conversation function

@@ -62,6 +62,13 @@ export function usePWA() {
             return;
           }
 
+          // Track update found
+          import('../../../utils/pwaObservability.js').then(({ trackServiceWorkerUpdate }) => {
+            trackServiceWorkerUpdate(registration, true, null, 'current', 'new');
+          }).catch(() => {
+            // Silently ignore if module not available
+          });
+
           try {
             newWorker.addEventListener('statechange', () => {
               try {
@@ -72,7 +79,17 @@ export function usePWA() {
                 ) {
                   setUpdateAvailable(true);
                   setWaitingWorker(newWorker);
+                  
+                  // Track update available
+                  import('../../../utils/pwaObservability.js').then(({ trackServiceWorkerUpdate }) => {
+                    trackServiceWorkerUpdate(registration, true, null, 'current', 'new');
+                  }).catch(() => {});
                 } else if (newWorker && newWorker.state === 'activated') {
+                  // Track activation
+                  import('../../../utils/pwaObservability.js').then(({ trackServiceWorkerActivate }) => {
+                    trackServiceWorkerActivate(registration, true);
+                  }).catch(() => {});
+                  
                   window.location.reload();
                 }
               } catch {
@@ -319,23 +336,48 @@ export function usePWA() {
     [swRegistration]
   );
 
-  // Apply update - skip waiting and reload
+  // Apply update when user clicks "Update Now"
+  // With promptUpdate strategy, service worker waits for user action
+  // We send SKIP_WAITING message to activate the waiting service worker
   const applyUpdate = React.useCallback(() => {
     if (waitingWorker) {
+      // Tell waiting service worker to skip waiting and activate
       waitingWorker.postMessage({ type: 'SKIP_WAITING' });
       setUpdateAvailable(false);
       setWaitingWorker(null);
+      
+      // Reload page after a short delay to allow service worker to activate
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    } else if (swRegistration && swRegistration.waiting) {
+      // Fallback: if waitingWorker not set, try registration.waiting
+      swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    } else {
+      // Last resort: just reload (may not work if service worker not ready)
       window.location.reload();
     }
-  }, [waitingWorker]);
+  }, [waitingWorker, swRegistration]);
 
   // Check for updates manually
   const checkForUpdates = React.useCallback(async () => {
     if (swRegistration) {
       try {
         await swRegistration.update();
-      } catch {
-        // Silently ignore update check errors
+        
+        // Track update check success
+        import('../../../utils/pwaObservability.js').then(({ trackServiceWorkerEvent }) => {
+          trackServiceWorkerEvent('update_check', { success: true });
+        }).catch(() => {});
+      } catch (error) {
+        // Track update check failure
+        import('../../../utils/pwaObservability.js').then(({ trackServiceWorkerUpdate, trackServiceWorkerEvent }) => {
+          trackServiceWorkerUpdate(swRegistration, false, error);
+          trackServiceWorkerEvent('update_check', { success: false, error: error.message });
+        }).catch(() => {});
       }
     }
   }, [swRegistration]);

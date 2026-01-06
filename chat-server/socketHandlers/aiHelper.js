@@ -161,12 +161,25 @@ async function processAiAnalysis(socket, io, services, context) {
       text: message.text?.substring(0, 50),
     });
 
-    // Gather all context needed for analysis
-    const analysisContext = await gatherAnalysisContext(services, user, user.roomId);
+    // Gather all context needed for analysis (include message for thread context)
+    const analysisContext = await gatherAnalysisContext(services, user, user.roomId, message);
     console.log('[aiHelper] Context gathered:', {
       recentMessages: analysisContext.recentMessages.length,
       participants: analysisContext.participantUsernames.length,
+      hasThreadContext: !!analysisContext.threadContext,
+      threadTitle: analysisContext.threadContext?.threadTitle,
     });
+
+    // Build thread context string for AI prompt if thread exists
+    let threadContextString = null;
+    if (analysisContext.threadContext) {
+      const tc = analysisContext.threadContext;
+      threadContextString = `This message is in the thread "${tc.threadTitle}" (${tc.threadCategoryDescription}). `;
+      if (tc.isSubThread) {
+        threadContextString += `This is a sub-thread (depth ${tc.threadDepth}). `;
+      }
+      threadContextString += `Thread category: ${tc.threadCategory}.`;
+    }
 
     // Call AI mediator with timeout protection
     const intervention = await withTimeout(
@@ -179,7 +192,8 @@ async function processAiAnalysis(socket, io, services, context) {
         user.roomId,
         analysisContext.taskContext,
         analysisContext.flaggedContext,
-        analysisContext.roleContext
+        analysisContext.roleContext,
+        threadContextString // Pass thread context as additional parameter
       ),
       AI_ANALYSIS_TIMEOUT_MS,
       'AI analysis'

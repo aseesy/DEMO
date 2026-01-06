@@ -28,6 +28,18 @@ class MessageRepository extends PostgresGenericRepository {
   async findByRoomId(roomId, options = {}) {
     const { limit = 50, offset = 0, before = null, after = null, threadId = null } = options;
 
+    // Only cache basic queries (no pagination, no thread filter)
+    const isBasicQuery = !before && !after && !threadId && offset === 0;
+    
+    if (isBasicQuery) {
+      const queryCache = require('../../infrastructure/cache/queryCache');
+      const cacheKey = { roomId, limit };
+      const cached = await queryCache.get('messages:room', cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
     // Build WHERE clause
     let whereConditions = ['m.room_id = $1'];
     let params = [roomId];
@@ -96,13 +108,23 @@ class MessageRepository extends PostgresGenericRepository {
     const result = await dbPostgres.query(messagesQuery, params);
     const messages = this._formatMessages(result.rows, roomId);
 
-    return {
+    const response = {
       messages: messages.reverse(), // Return in chronological order
       total,
       hasMore: offset + messages.length < total,
       limit,
       offset,
     };
+
+    // Cache basic queries for 2 minutes (shorter than threads since messages change more frequently)
+    if (isBasicQuery) {
+      const queryCache = require('../../infrastructure/cache/queryCache');
+      await queryCache.set('messages:room', { roomId, limit }, response, 120).catch(err => {
+        console.warn('[MessageRepository] Failed to cache messages:', err.message);
+      });
+    }
+
+    return response;
   }
 
   /**
@@ -247,7 +269,17 @@ class MessageRepository extends PostgresGenericRepository {
 
     const result = await dbPostgres.query(insertQuery, params);
     const messages = this._formatMessages(result.rows);
-    return messages[0];
+    const createdMessage = messages[0];
+
+    // Invalidate query cache for this room
+    if (room_id) {
+      const queryCache = require('../../infrastructure/cache/queryCache');
+      await queryCache.invalidateRoom(room_id).catch(err => {
+        console.warn('[MessageRepository] Failed to invalidate cache:', err.message);
+      });
+    }
+
+    return createdMessage;
   }
 
   /**
@@ -315,7 +347,17 @@ class MessageRepository extends PostgresGenericRepository {
     }
 
     const messages = this._formatMessages(result.rows);
-    return messages[0];
+    const updatedMessage = messages[0];
+
+    // Invalidate query cache for this room
+    if (updatedMessage?.roomId) {
+      const queryCache = require('../../infrastructure/cache/queryCache');
+      await queryCache.invalidateRoom(updatedMessage.roomId).catch(err => {
+        console.warn('[MessageRepository] Failed to invalidate cache:', err.message);
+      });
+    }
+
+    return updatedMessage;
   }
 
   /**
@@ -324,12 +366,25 @@ class MessageRepository extends PostgresGenericRepository {
    * @returns {Promise<boolean>} Success
    */
   async delete(messageId) {
+    // Get roomId before delete for cache invalidation
+    const message = await this.findById(messageId);
+    const roomId = message?.roomId;
+
     const query = `
       UPDATE messages
       SET private = 1
       WHERE id = $1
     `;
     const result = await dbPostgres.query(query, [messageId]);
+
+    // Invalidate query cache for this room
+    if (roomId) {
+      const queryCache = require('../../infrastructure/cache/queryCache');
+      await queryCache.invalidateRoom(roomId).catch(err => {
+        console.warn('[MessageRepository] Failed to invalidate cache:', err.message);
+      });
+    }
+
     return result.rowCount > 0;
   }
 

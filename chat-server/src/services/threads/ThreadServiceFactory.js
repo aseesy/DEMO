@@ -11,6 +11,9 @@ const { CreateThreadUseCase } = require('./useCases/CreateThreadUseCase');
 const { AnalyzeConversationUseCase } = require('./useCases/AnalyzeConversationUseCase');
 const { SuggestThreadUseCase } = require('./useCases/SuggestThreadUseCase');
 const { AutoAssignMessageUseCase } = require('./useCases/AutoAssignMessageUseCase');
+const { ArchiveThreadUseCase } = require('./useCases/ArchiveThreadUseCase');
+const { ReplyInThreadUseCase } = require('./useCases/ReplyInThreadUseCase');
+const { MoveMessageToThreadUseCase } = require('./useCases/MoveMessageToThreadUseCase');
 const { factory: semanticIndexFactory } = require('../../infrastructure/semantic/SemanticIndexFactory');
 
 /**
@@ -26,6 +29,9 @@ class ThreadServiceFactory {
     this._analyzeConversationUseCase = null;
     this._suggestThreadUseCase = null;
     this._autoAssignMessageUseCase = null;
+    this._archiveThreadUseCase = null;
+    this._replyInThreadUseCase = null;
+    this._moveMessageToThreadUseCase = null;
   }
 
   /**
@@ -117,6 +123,44 @@ class ThreadServiceFactory {
       );
     }
     return this._autoAssignMessageUseCase;
+  }
+
+  /**
+   * Get archive thread use case instance
+   * @returns {ArchiveThreadUseCase} Archive thread use case
+   */
+  getArchiveThreadUseCase() {
+    if (!this._archiveThreadUseCase) {
+      this._archiveThreadUseCase = new ArchiveThreadUseCase(this.getThreadRepository());
+    }
+    return this._archiveThreadUseCase;
+  }
+
+  /**
+   * Get reply in thread use case instance
+   * @returns {ReplyInThreadUseCase} Reply in thread use case
+   */
+  getReplyInThreadUseCase() {
+    if (!this._replyInThreadUseCase) {
+      const MessageService = require('../../services/messages/messageService');
+      const messageService = new MessageService();
+      this._replyInThreadUseCase = new ReplyInThreadUseCase(
+        this.getThreadRepository(),
+        messageService
+      );
+    }
+    return this._replyInThreadUseCase;
+  }
+
+  /**
+   * Get move message to thread use case instance
+   * @returns {MoveMessageToThreadUseCase} Move message to thread use case
+   */
+  getMoveMessageToThreadUseCase() {
+    if (!this._moveMessageToThreadUseCase) {
+      this._moveMessageToThreadUseCase = new MoveMessageToThreadUseCase(this.getThreadRepository());
+    }
+    return this._moveMessageToThreadUseCase;
   }
 }
 

@@ -1,6 +1,14 @@
 /**
  * Thread Messages Module
  *
+ * @deprecated This module is deprecated. Use PostgresThreadRepository methods instead:
+ * - addMessageToThread() → repository.addMessage()
+ * - removeMessageFromThread() → repository.removeMessage()
+ * - getThreadMessages() → repository.getMessages()
+ *
+ * This file is kept for backward compatibility but should not be used in new code.
+ * All functionality has been migrated to the repository pattern.
+ *
  * Handles message-thread operations:
  * - Add message to thread
  * - Remove message from thread
