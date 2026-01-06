@@ -169,17 +169,23 @@
       // Ignore errors
     }
     
-    // Auto-reload when back online
+    // Auto-reload when back online (only once, not in a loop)
+    let hasReloaded = false;
     window.addEventListener('online', () => {
-      window.location.reload();
-    });
-    
-    // Check connection status periodically
-    setInterval(() => {
-      if (navigator.onLine) {
-        window.location.reload();
+      if (!hasReloaded) {
+        hasReloaded = true;
+        window.location.href = '/';
       }
-    }, 3000);
+    });
+
+    // If already online when page loads, redirect to home (not reload - prevents loop)
+    if (navigator.onLine && !hasReloaded) {
+      hasReloaded = true;
+      // Small delay to prevent immediate redirect loop
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
+    }
   </script>
 </body>
 </html>

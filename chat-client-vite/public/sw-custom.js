@@ -4,7 +4,7 @@
 // Workbox modules are available as globals when imported via vite-plugin-pwa's generateSW
 
 // Service worker version (should match CACHE_VERSION in vite.config.js)
-const SW_VERSION = 'liaizen-v1.0.0';
+const SW_VERSION = 'liaizen-v1.0.1';
 
 // Listen for messages from client
 self.addEventListener('message', event => {

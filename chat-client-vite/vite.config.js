@@ -9,7 +9,7 @@ import path from 'path';
 // Example: liaizen-v1.0.0 -> liaizen-v1.0.1 (patch update)
 // Example: liaizen-v1.0.0 -> liaizen-v1.1.0 (minor update)
 // Example: liaizen-v1.0.0 -> liaizen-v2.0.0 (major update)
-const CACHE_VERSION = 'liaizen-v1.0.0';
+const CACHE_VERSION = 'liaizen-v1.0.1';
 
 // List of large third‑party packages you want to separate
 const VENDOR_LIBS = [
@@ -82,19 +82,21 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
         // Import custom push notification handlers
         importScripts: ['/sw-custom.js'],
-        // NetworkFirst strategy for HTML navigation - ensures fresh content on slow connections
-        navigateFallback: '/offline.html',
-        navigateFallbackDenylist: [/^\/api/, /^\/_/, /^\/admin/],
+        // SPA fallback - serve index.html for navigation requests when offline
+        // Note: offline.html is only for truly offline scenarios, handled by the app itself
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/, /^\/_/, /^\/admin/, /^\/offline\.html/],
         // Additional Workbox modules to include (for Background Sync)
         additionalManifestEntries: [],
         runtimeCaching: [
           {
-            // NetworkFirst for HTML pages - try network first, fallback to cache after 3s
+            // NetworkFirst for HTML pages - try network first, fallback to cache after 10s
+            // 10s timeout prevents offline fallback on slow mobile connections
             urlPattern: ({ request }) => request.mode === 'navigate',
             handler: 'NetworkFirst',
             options: {
               cacheName: `html-cache-${CACHE_VERSION}`,
-              networkTimeoutSeconds: 3, // Fallback to cache if network takes > 3s
+              networkTimeoutSeconds: 10, // Fallback to cache if network takes > 10s (was 3s)
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24, // 1 day
