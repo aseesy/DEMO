@@ -6,12 +6,7 @@
  */
 
 import { apiGet, apiPost, apiDelete } from '../apiClient.js';
-import {
-  getErrorMessage,
-  logError,
-  retryWithBackoff,
-  isRetryableError,
-} from './errorHandler.jsx';
+import { getErrorMessage, logError, retryWithBackoff, isRetryableError } from './errorHandler.jsx';
 
 /**
  * Retry configuration for validation requests
@@ -238,10 +233,20 @@ export async function queryFetchInvitations(options = {}) {
       return { success: false, error: errorMsg, invitations: [] };
     }
 
-    return { success: true, invitations: data.invitations || [] };
+    // API returns { sent: [...], received: [...] }, but we only care about sent invitations for this component
+    // Flatten sent and received into a single array, prioritizing sent invitations
+    const sentInvitations = data.sent || [];
+    const receivedInvitations = data.received || [];
+    const allInvitations = [...sentInvitations, ...receivedInvitations];
+
+    return { success: true, invitations: allInvitations };
   } catch (err) {
     console.error('Error fetching invitations:', err);
-    return { success: false, error: 'Unable to load invitations. Please try again.', invitations: [] };
+    return {
+      success: false,
+      error: 'Unable to load invitations. Please try again.',
+      invitations: [],
+    };
   }
 }
 

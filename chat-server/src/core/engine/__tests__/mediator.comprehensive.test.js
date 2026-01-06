@@ -60,8 +60,24 @@ jest.mock('../aiService', () => ({
 }));
 
 jest.mock('../mediatorErrors', () => ({
-  handleAnalysisError: jest.fn(),
-  safeExecute: jest.fn((fn, name, defaultValue) => Promise.resolve(fn())),
+  handleAnalysisError: jest.fn((error, context, _logger) => {
+    // Default: fail open (return null) unless it's a rate limit
+    if (error.status === 429) {
+      const { RetryableError } = require('../../../infrastructure/errors/errors');
+      return {
+        shouldFailOpen: false,
+        error: new RetryableError('Rate limit', 'AI_RATE_LIMIT', context),
+      };
+    }
+    return { shouldFailOpen: true };
+  }),
+  safeExecute: jest.fn(async operation => {
+    try {
+      return await operation();
+    } catch (_error) {
+      return null;
+    }
+  }),
 }));
 
 jest.mock('../libraryLoader', () => ({
@@ -487,14 +503,7 @@ describe('AI Mediator - Comprehensive Tests', () => {
         error: null, // Fail open
       });
 
-      const result = await mediator.analyzeMessage(
-        mockMessage,
-        [],
-        [],
-        [],
-        null,
-        'room-123'
-      );
+      const result = await mediator.analyzeMessage(mockMessage, [], [], [], null, 'room-123');
 
       expect(result).toBeNull();
       expect(handleAnalysisError).toHaveBeenCalled();
@@ -522,14 +531,7 @@ describe('AI Mediator - Comprehensive Tests', () => {
         error: null,
       });
 
-      const result = await mediator.analyzeMessage(
-        mockMessage,
-        [],
-        [],
-        [],
-        null,
-        'room-123'
-      );
+      const result = await mediator.analyzeMessage(mockMessage, [], [], [], null, 'room-123');
 
       expect(result).toBeNull();
     });
@@ -556,14 +558,7 @@ describe('AI Mediator - Comprehensive Tests', () => {
 
       responseProcessor.processResponse.mockResolvedValue(null);
 
-      const result = await mediator.analyzeMessage(
-        mockMessage,
-        [],
-        [],
-        [],
-        null,
-        'room-123'
-      );
+      const result = await mediator.analyzeMessage(mockMessage, [], [], [], null, 'room-123');
 
       // Should continue even if code layer fails
       expect(openaiClient.createChatCompletion).toHaveBeenCalled();
@@ -578,14 +573,7 @@ describe('AI Mediator - Comprehensive Tests', () => {
         error: null,
       });
 
-      const result = await mediator.analyzeMessage(
-        mockMessage,
-        [],
-        [],
-        [],
-        null,
-        'room-123'
-      );
+      const result = await mediator.analyzeMessage(mockMessage, [], [], [], null, 'room-123');
 
       expect(result).toBeNull();
     });
@@ -599,14 +587,7 @@ describe('AI Mediator - Comprehensive Tests', () => {
         error: null,
       });
 
-      const result = await mediator.analyzeMessage(
-        mockMessage,
-        [],
-        [],
-        [],
-        null,
-        'room-123'
-      );
+      const result = await mediator.analyzeMessage(mockMessage, [], [], [], null, 'room-123');
 
       expect(result).toBeNull();
     });
@@ -666,11 +647,7 @@ describe('AI Mediator - Comprehensive Tests', () => {
 
       await mediator.analyzeMessage(message, [], [], [], null, 'room-123', null, null, roleContext);
 
-      expect(messageCache.generateHash).toHaveBeenCalledWith(
-        'Test',
-        'sender-123',
-        'receiver-456'
-      );
+      expect(messageCache.generateHash).toHaveBeenCalledWith('Test', 'sender-123', 'receiver-456');
     });
 
     it('should handle empty participant usernames', async () => {
@@ -823,4 +800,3 @@ describe('AI Mediator - Comprehensive Tests', () => {
     });
   });
 });
-

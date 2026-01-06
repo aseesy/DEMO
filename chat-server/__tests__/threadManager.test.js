@@ -55,6 +55,17 @@ const mockCreateThreadUseCase = {
   execute: jest.fn(),
 };
 
+// Create mock use cases that will be returned by factory methods
+const mockArchiveThreadUseCase = {
+  execute: jest.fn(),
+};
+const mockReplyInThreadUseCase = {
+  execute: jest.fn(),
+};
+const mockMoveMessageToThreadUseCase = {
+  execute: jest.fn(),
+};
+
 jest.mock('../src/services/threads/ThreadServiceFactory', () => {
   return {
     factory: {
@@ -64,9 +75,9 @@ jest.mock('../src/services/threads/ThreadServiceFactory', () => {
       getAnalyzeConversationUseCase: jest.fn(),
       getSuggestThreadUseCase: jest.fn(),
       getAutoAssignMessageUseCase: jest.fn(),
-      getArchiveThreadUseCase: jest.fn(),
-      getReplyInThreadUseCase: jest.fn(),
-      getMoveMessageToThreadUseCase: jest.fn(),
+      getArchiveThreadUseCase: () => mockArchiveThreadUseCase,
+      getReplyInThreadUseCase: () => mockReplyInThreadUseCase,
+      getMoveMessageToThreadUseCase: () => mockMoveMessageToThreadUseCase,
     },
   };
 });
@@ -308,23 +319,31 @@ describe('ThreadManager', () => {
     it('should archive a thread', async () => {
       const threadId = 'thread_123';
 
-      mockThreadRepository.archive.mockResolvedValue(true);
+      mockArchiveThreadUseCase.execute.mockResolvedValue(true);
 
       const result = await threadManager.archiveThread(threadId, true);
 
-      expect(mockThreadRepository.archive).toHaveBeenCalledWith(threadId, true);
+      expect(mockArchiveThreadUseCase.execute).toHaveBeenCalledWith({
+        threadId,
+        archived: true,
+        cascade: true,
+      });
       expect(result).toBe(true);
     });
 
     it('should unarchive a thread', async () => {
       const threadId = 'thread_123';
 
-      mockThreadRepository.archive.mockResolvedValue(true);
+      mockArchiveThreadUseCase.execute.mockResolvedValue(false);
 
       const result = await threadManager.archiveThread(threadId, false);
 
-      expect(mockThreadRepository.archive).toHaveBeenCalledWith(threadId, false);
-      expect(result).toBe(true);
+      expect(mockArchiveThreadUseCase.execute).toHaveBeenCalledWith({
+        threadId,
+        archived: false,
+        cascade: true,
+      });
+      expect(result).toBe(false);
     });
   });
 
@@ -389,7 +408,7 @@ describe('ThreadManager', () => {
 
       const messages = await threadManager.getThreadMessages(threadId);
 
-      expect(mockThreadRepository.getMessages).toHaveBeenCalledWith(threadId, 50);
+      expect(mockThreadRepository.getMessages).toHaveBeenCalledWith(threadId, 50, 0);
       expect(messages).toHaveLength(2);
       expect(messages[0]).toHaveProperty('threadId', threadId);
       expect(messages[0]).toHaveProperty('id', 'msg_1');
@@ -404,7 +423,7 @@ describe('ThreadManager', () => {
 
       await threadManager.getThreadMessages(threadId, limit);
 
-      expect(mockThreadRepository.getMessages).toHaveBeenCalledWith(threadId, limit);
+      expect(mockThreadRepository.getMessages).toHaveBeenCalledWith(threadId, limit, 0);
     });
 
     it('should filter out system, private, and flagged messages', async () => {
@@ -416,7 +435,7 @@ describe('ThreadManager', () => {
 
       await threadManager.getThreadMessages(threadId);
 
-      expect(mockThreadRepository.getMessages).toHaveBeenCalledWith(threadId, 50);
+      expect(mockThreadRepository.getMessages).toHaveBeenCalledWith(threadId, 50, 0);
       // The actual SQL filtering is tested in repository tests
     });
   });

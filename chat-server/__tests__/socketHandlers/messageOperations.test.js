@@ -163,8 +163,9 @@ describe('messageOperations', () => {
       expect(message.sender).toBeDefined();
       expect(message.sender.uuid).toBe(123);
       expect(message.sender.email).toBe('testuser@test.com');
-      // Legacy fields should not be present
-      expect(message).not.toHaveProperty('username');
+      // Legacy field username is present for backward compatibility (transition period)
+      expect(message.username).toBe('testuser@test.com');
+      // Other legacy fields should not be present
       expect(message).not.toHaveProperty('email');
       expect(message).not.toHaveProperty('displayName');
       expect(message.id).toContain('socket123');

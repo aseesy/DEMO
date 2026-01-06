@@ -5,8 +5,8 @@
  */
 
 const User = require('../User');
-const { Email } = require('../../valueObjects/Email');
-const { Username } = require('../../valueObjects/Username');
+const Email = require('../../valueObjects/Email');
+const Username = require('../../valueObjects/Username');
 
 describe('User Entity', () => {
   describe('Constructor', () => {

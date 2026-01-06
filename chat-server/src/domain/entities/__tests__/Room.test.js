@@ -5,7 +5,7 @@
  */
 
 const Room = require('../Room');
-const { RoomId } = require('../../valueObjects/RoomId');
+const RoomId = require('../../valueObjects/RoomId');
 
 describe('Room Entity', () => {
   describe('Constructor', () => {

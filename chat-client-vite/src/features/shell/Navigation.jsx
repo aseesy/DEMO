@@ -681,7 +681,7 @@ function NavigationComponent({
               isOpen={isNotificationsOpen}
             />
             {isNotificationsOpen && (
-              <div className="absolute bottom-full right-0 mb-2 z-50">
+              <div className="fixed bottom-[calc(2.5rem+env(safe-area-inset-bottom)+0.5rem)] left-4 right-4 z-50 md:hidden">
                 <NotificationsPanel
                   isOpen={isNotificationsOpen}
                   onClose={() => setIsNotificationsOpen(false)}

@@ -4,9 +4,9 @@
  * Tests for Message domain entity business rules and methods.
  */
 
-const { Message } = require('../Message');
-const { MessageId } = require('../../valueObjects/MessageId');
-const { RoomId } = require('../../valueObjects/RoomId');
+const Message = require('../Message');
+const MessageId = require('../../valueObjects/MessageId');
+const RoomId = require('../../valueObjects/RoomId');
 
 describe('Message Entity', () => {
   describe('Constructor', () => {
@@ -459,4 +459,3 @@ describe('Message Entity', () => {
     });
   });
 });
-

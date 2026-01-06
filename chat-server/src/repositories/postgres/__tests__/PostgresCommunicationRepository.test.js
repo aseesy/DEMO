@@ -93,9 +93,13 @@ describe('PostgresCommunicationRepository', () => {
     });
 
     it('should return user id when user exists', async () => {
-      mockRepos.users.findOne.mockResolvedValue({ id: 123, username: 'testuser' });
+      // _getUserId tries email first, then username
+      mockRepos.users.findOne
+        .mockResolvedValueOnce(null) // Email lookup returns null
+        .mockResolvedValueOnce({ id: 123, username: 'testuser' }); // Username lookup succeeds
       const result = await repo._getUserId('TestUser');
       expect(result).toBe(123);
+      expect(mockRepos.users.findOne).toHaveBeenCalledWith({ email: 'testuser' });
       expect(mockRepos.users.findOne).toHaveBeenCalledWith({ username: 'testuser' });
     });
 

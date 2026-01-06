@@ -282,7 +282,8 @@ describe('aiHelper - handleAiMediation', () => {
       expect(aiHelperUtils.gatherAnalysisContext).toHaveBeenCalledWith(
         mockServices,
         mockContext.user,
-        'room-123'
+        'room-123',
+        mockContext.message
       );
       expect(mockServices.aiMediator.analyzeMessage).toHaveBeenCalledWith(
         mockContext.message,
