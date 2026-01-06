@@ -102,6 +102,8 @@ export function LoginSignup({ defaultToSignup = false }) {
     setIsLoginMode(prev => !prev);
   }, [setError]);
 
+  const isSubmitting = isLoggingIn || isSigningUp || isGoogleLoggingIn;
+
   const handleSubmit = async e => {
     console.log('[LoginSignup] handleSubmit called', {
       eventType: e?.type,
@@ -148,8 +150,6 @@ export function LoginSignup({ defaultToSignup = false }) {
       setError(err.message || 'An error occurred. Please try again.');
     }
   };
-
-  const isSubmitting = isLoggingIn || isSigningUp || isGoogleLoggingIn;
 
   // Debug: Log state values
   React.useEffect(() => {

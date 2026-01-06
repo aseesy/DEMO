@@ -193,6 +193,24 @@ export function useAcceptInvitationXState() {
     },
   });
 
+  // Log state transitions for debugging (dev only)
+  React.useEffect(() => {
+    if (import.meta.env.DEV) {
+      const stateValue =
+        typeof state.value === 'object' ? JSON.stringify(state.value) : state.value;
+      console.log(`[XState] State transition: ${stateValue}`, {
+        context: {
+          hasToken: !!state.context.token,
+          hasShortCode: !!state.context.shortCode,
+          isAuthenticated: state.context.isAuthenticated,
+          validationResult: state.context.validationResult?.valid,
+          formError: state.context.formError,
+          autoAcceptError: state.context.autoAcceptError,
+        },
+      });
+    }
+  }, [state.value, state.context]);
+
   // Update machine when auth state changes - restart if needed for proper guard evaluation
   React.useEffect(() => {
     // If we're in validating state and auth state changed, the guard will evaluate correctly
@@ -258,15 +276,32 @@ export function useAcceptInvitationXState() {
     formError: state.context.formError,
 
     // Form setters
-    setDisplayName: value => send({ type: 'UPDATE_FIELD', field: 'firstName', value }),
-    setFormEmail: value => send({ type: 'UPDATE_FIELD', field: 'formEmail', value }),
-    setFormPassword: value => send({ type: 'UPDATE_FIELD', field: 'formPassword', value }),
-    setConfirmPassword: value => send({ type: 'UPDATE_FIELD', field: 'confirmPassword', value }),
-    setAgreeToTerms: value => send({ type: 'UPDATE_FIELD', field: 'agreeToTerms', value }),
+    setDisplayName: React.useCallback(
+      value => send({ type: 'UPDATE_FIELD', field: 'firstName', value }),
+      [send]
+    ),
+    setFormEmail: React.useCallback(
+      value => send({ type: 'UPDATE_FIELD', field: 'formEmail', value }),
+      [send]
+    ),
+    setFormPassword: React.useCallback(
+      value => send({ type: 'UPDATE_FIELD', field: 'formPassword', value }),
+      [send]
+    ),
+    setConfirmPassword: React.useCallback(
+      value => send({ type: 'UPDATE_FIELD', field: 'confirmPassword', value }),
+      [send]
+    ),
+    setAgreeToTerms: React.useCallback(
+      value => send({ type: 'UPDATE_FIELD', field: 'agreeToTerms', value }),
+      [send]
+    ),
 
     // Confirmation state
     confirmedInviter: state.context.confirmedInviter,
-    setConfirmedInviter: () => send({ type: 'CONFIRM_INVITER' }),
+    setConfirmedInviter: React.useCallback(() => {
+      send({ type: 'CONFIRM_INVITER' });
+    }, [send]),
 
     // Auto-accept state
     isAutoAccepting: state.value === 'authenticated',
@@ -274,11 +309,16 @@ export function useAcceptInvitationXState() {
     successMessage: state.context.successMessage,
 
     // Handlers
-    handleSubmit: e => {
-      e?.preventDefault();
-      send({ type: 'SUBMIT' });
-    },
-    handleGoogleLogin: () => send({ type: 'GOOGLE_LOGIN' }),
+    handleSubmit: React.useCallback(
+      e => {
+        e?.preventDefault();
+        send({ type: 'SUBMIT' });
+      },
+      [send]
+    ),
+    handleGoogleLogin: React.useCallback(() => {
+      send({ type: 'GOOGLE_LOGIN' });
+    }, [send]),
     handleNavigateToSignIn: React.useCallback(() => {
       const inviteKey = token || shortCode;
       const paramName = shortCode ? 'code' : 'invite';
