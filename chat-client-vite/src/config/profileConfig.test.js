@@ -18,8 +18,8 @@ import {
 
 describe('Profile Configuration', () => {
   describe('PROFILE_TABS', () => {
-    it('should have three tabs', () => {
-      expect(PROFILE_TABS).toHaveLength(3);
+    it('should have four tabs', () => {
+      expect(PROFILE_TABS).toHaveLength(4);
     });
 
     it('should have personal tab', () => {

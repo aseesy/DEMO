@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { storage, StorageKeys } from '../adapters/storage';
+import { storage, StorageKeys } from '../../adapters/storage';
 
 /**
  * Hook to track offline message queue size
