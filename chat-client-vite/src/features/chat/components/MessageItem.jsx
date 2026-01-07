@@ -62,10 +62,15 @@ function MessageItemComponent({
             isOwn ? 'text-gray-600' : 'text-gray-600'
           }`}
         >
-          {new Date(message.timestamp || message.created_at).toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-          })}
+          {(() => {
+            const date = new Date(message.timestamp || message.created_at || Date.now());
+            return isNaN(date.getTime())
+              ? ''
+              : date.toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                });
+          })()}
           {/* Flag icon - only show for messages from other users (not your own, not AI) */}
           {!isOwn && !isAI && (
             <button

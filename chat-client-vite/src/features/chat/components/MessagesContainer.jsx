@@ -66,11 +66,15 @@ function MessagesContainerComponent({
 
     for (let index = 0; index < displayMessages.length; index++) {
       const msg = displayMessages[index];
-      const msgDate = new Date(msg.created_at || msg.timestamp);
-      const needsYear = msgDate.getFullYear() !== currentYear;
-      const dateLabel = needsYear
-        ? dateFormatterWithYear.format(msgDate)
-        : dateFormatter.format(msgDate);
+      const msgDate = new Date(msg.created_at || msg.timestamp || Date.now());
+      // Guard against invalid dates
+      const isValidDate = !isNaN(msgDate.getTime());
+      const needsYear = isValidDate && msgDate.getFullYear() !== currentYear;
+      const dateLabel = isValidDate
+        ? needsYear
+          ? dateFormatterWithYear.format(msgDate)
+          : dateFormatter.format(msgDate)
+        : 'Unknown Date';
 
       if (dateLabel !== currentDate) {
         if (currentGroup) groups.push(currentGroup);
