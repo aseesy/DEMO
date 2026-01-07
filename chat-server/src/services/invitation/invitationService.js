@@ -16,6 +16,7 @@ const pairingManager = require('../../../libs/pairing-manager');
 // Note: db is required here for passing to external libraries (invitationManager, pairingManager)
 // These libraries haven't been refactored to use repositories yet
 const db = require('../../../dbPostgres');
+const { createContactIfNotExists } = require('../../../connectionManager/connectionAcceptance');
 
 // Lazy load invitationEmailService to avoid circular dependency
 let invitationEmailService = null;
@@ -157,6 +158,9 @@ class InvitationService extends BaseService {
         sharedRoom = await this._createSharedRoom(result.inviterId, userId);
       }
 
+      // Create co-parent contacts for both users
+      await this._createCoParentContacts(result.inviterId, userId);
+
       return {
         success: true,
         invitation: result.invitation,
@@ -194,6 +198,9 @@ class InvitationService extends BaseService {
       } else {
         sharedRoom = await this._createSharedRoom(result.inviterId, userId);
       }
+
+      // Create co-parent contacts for both users
+      await this._createCoParentContacts(result.inviterId, userId);
 
       return {
         success: true,
@@ -477,6 +484,43 @@ class InvitationService extends BaseService {
     );
 
     return { id: roomId, name: 'Co-Parent Chat' };
+  }
+
+  /**
+   * Create co-parent contacts for both users after invitation acceptance
+   */
+  async _createCoParentContacts(inviterId, inviteeId) {
+    try {
+      const now = new Date().toISOString();
+
+      // Get both users' info
+      const inviter = await this.userRepository.getProfile(inviterId);
+      const invitee = await this.userRepository.getProfile(inviteeId);
+
+      if (!inviter || !invitee) {
+        console.error('[InvitationService] Could not find user profiles for contact creation');
+        return;
+      }
+
+      // Get display names
+      const inviterName =
+        inviter.first_name || inviter.display_name || inviter.email?.split('@')[0] || 'Co-Parent';
+      const inviteeName =
+        invitee.first_name || invitee.display_name || invitee.email?.split('@')[0] || 'Co-Parent';
+
+      // Create contact for inviter (invitee is their co-parent)
+      await createContactIfNotExists(inviterId, inviteeId, inviteeName, invitee.email, now);
+
+      // Create contact for invitee (inviter is their co-parent)
+      await createContactIfNotExists(inviteeId, inviterId, inviterName, inviter.email, now);
+
+      console.log(
+        `[InvitationService] Created co-parent contacts between user ${inviterId} and ${inviteeId}`
+      );
+    } catch (error) {
+      // Log error but don't fail the invitation acceptance
+      console.error('[InvitationService] Error creating co-parent contacts:', error);
+    }
   }
 }
 
