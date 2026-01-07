@@ -66,17 +66,11 @@ export function useNavigationManager({
       return;
     }
 
-    // If authenticated, ensure we're not on sign-in page (redirect to home)
+    // If authenticated, don't redirect from auth pages - let useAuthRedirect handle it
+    // This prevents race conditions where NavigationManager redirects before
+    // useAuthRedirect can send new signups to /invite-coparent
     if (isAuthenticated) {
-      console.log('[NavigationManager] User is authenticated, ensuring correct route');
-      const isOnSignIn = currentPath === '/signin' || currentPath === '/sign-in';
-      if (isOnSignIn && !hasRedirectedRef.current) {
-        console.log('[NavigationManager] Redirecting authenticated user from sign-in to home');
-        hasRedirectedRef.current = true;
-        lastPathRef.current = '/';
-        navigate('/', { replace: true });
-        return;
-      }
+      console.log('[NavigationManager] User is authenticated - deferring to useAuthRedirect');
       return;
     }
 
@@ -95,10 +89,24 @@ export function useNavigationManager({
 
     // Definitely not authenticated and no stored auth
     const isOnSignIn = currentPath === '/signin' || currentPath === '/sign-in';
-    const isOnRoot = currentPath === '/';
+    const isOnSignup = currentPath === '/signup';
+    const isOnAcceptInvite = currentPath === '/accept-invite';
+    const isOnInviteCoparent = currentPath === '/invite-coparent';
+    const isOnForgotPassword = currentPath === '/forgot-password';
+    const isOnResetPassword = currentPath === '/reset-password';
 
-    // Don't redirect if already on sign-in
-    if (isOnSignIn) {
+    // Don't redirect if on public pages that don't require auth
+    // These pages handle their own authentication flows
+    const isOnPublicPage =
+      isOnSignIn ||
+      isOnSignup ||
+      isOnAcceptInvite ||
+      isOnInviteCoparent ||
+      isOnForgotPassword ||
+      isOnResetPassword;
+
+    if (isOnPublicPage) {
+      console.log(`[NavigationManager] On public page (${currentPath}), not redirecting`);
       return;
     }
 
@@ -108,29 +116,29 @@ export function useNavigationManager({
       return;
     }
 
-    // Redirect to sign-in (only if not already there and haven't redirected)
-    if (!isOnSignIn) {
-      console.log('[NavigationManager] Redirecting to sign-in');
-      
+    // Redirect to sign-up (primary CTA for new users)
+    if (!isOnSignup && !isOnSignIn) {
+      console.log('[NavigationManager] Redirecting to sign-up');
+
       // Store current URL as return URL for deep linking
       // Preserve full pathname + search params (e.g., /?view=chat&threadId=123)
       const returnUrl = currentPath + (window.location.search || '');
-      if (returnUrl && returnUrl !== '/' && returnUrl !== NavigationPaths.SIGN_IN) {
+      if (returnUrl && returnUrl !== '/' && returnUrl !== NavigationPaths.SIGN_UP) {
         storage.set(StorageKeys.RETURN_URL, returnUrl, { ttl: 60 * 60 * 1000 }); // 1 hour TTL
         console.log('[NavigationManager] Stored return URL:', returnUrl);
       }
-      
+
       hasRedirectedRef.current = true;
-      lastPathRef.current = NavigationPaths.SIGN_IN;
+      lastPathRef.current = NavigationPaths.SIGN_UP;
 
       // But preserve invite codes and other query params
       const inviteCode = getQueryParam('invite');
       if (inviteCode) {
-        navigate(NavigationPaths.withQuery(NavigationPaths.SIGN_IN, { invite: inviteCode }), {
+        navigate(NavigationPaths.withQuery(NavigationPaths.SIGN_UP, { invite: inviteCode }), {
           replace: true,
         });
       } else {
-        navigate(NavigationPaths.SIGN_IN, { replace: true });
+        navigate(NavigationPaths.SIGN_UP, { replace: true });
       }
     }
   }, [isCheckingAuth, isAuthenticated, navigate, getQueryParam]);
@@ -183,16 +191,17 @@ export function useNavigationManager({
     }
   }, [isAuthenticated, isCheckingAuth, getQueryParam, currentView, setCurrentView]);
 
-  // Redirect to sign-in if not authenticated (with timeout)
-  // Landing page is now on marketing site (www.coparentliaizen.com)
+  // Redirect to sign-up if not authenticated (with timeout)
+  // Primary CTA is signup for new users
   useEffect(() => {
     if (!isAuthenticated && !isCheckingAuth) {
       const timer = setTimeout(() => {
-        console.log('[NavigationManager] Not authenticated after timeout, redirecting to sign-in');
+        console.log('[NavigationManager] Not authenticated after timeout, redirecting to sign-up');
         const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-        // Only redirect if not already on signin page
-        if (currentPath !== '/signin' && currentPath !== '/sign-in' && currentPath !== '/siginin') {
-          navigate('/signin');
+        // Only redirect if not already on auth pages
+        const isOnAuthPage = ['/signin', '/sign-in', '/siginin', '/signup'].includes(currentPath);
+        if (!isOnAuthPage) {
+          navigate('/signup');
         }
       }, 2000); // 2 second timeout
       return () => clearTimeout(timer);

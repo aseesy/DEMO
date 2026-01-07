@@ -9,7 +9,7 @@
  */
 
 const { BaseService } = require('../BaseService');
-const { NotFoundError, ValidationError, ConflictError, ExpiredError } = require('../errors');
+const { ValidationError, ConflictError, ExpiredError } = require('../errors');
 const { PostgresUserRepository } = require('../../repositories');
 const invitationManager = require('../../../libs/invitation-manager');
 const pairingManager = require('../../../libs/pairing-manager');
@@ -146,7 +146,6 @@ class InvitationService extends BaseService {
       throw new ValidationError('User ID is required', 'userId');
     }
 
-
     try {
       const result = await this.invitationManager.acceptByShortCode(code, userId, this.db);
 
@@ -155,7 +154,7 @@ class InvitationService extends BaseService {
       if (result.roomId) {
         sharedRoom = { id: result.roomId };
       } else {
-        sharedRoom = await this._createSharedRoom(result.inviterId, userId, this.db);
+        sharedRoom = await this._createSharedRoom(result.inviterId, userId);
       }
 
       return {
@@ -193,7 +192,7 @@ class InvitationService extends BaseService {
       if (result.roomId) {
         sharedRoom = { id: result.roomId };
       } else {
-        sharedRoom = await this._createSharedRoom(result.inviterId, userId, this.db);
+        sharedRoom = await this._createSharedRoom(result.inviterId, userId);
       }
 
       return {
@@ -225,16 +224,12 @@ class InvitationService extends BaseService {
       throw new ValidationError('User ID is required', 'userId');
     }
 
-    try {
-      const result = await this.invitationManager.declineInvitation(token, userId, this.db);
-      return {
-        success: true,
-        invitation: result.invitation,
-        inviterId: result.inviterId,
-      };
-    } catch (error) {
-      throw error;
-    }
+    const result = await this.invitationManager.declineInvitation(token, userId, this.db);
+    return {
+      success: true,
+      invitation: result.invitation,
+      inviterId: result.inviterId,
+    };
   }
 
   /**
@@ -467,7 +462,7 @@ class InvitationService extends BaseService {
   /**
    * Create a shared room for co-parents
    */
-  async _createSharedRoom(inviterId, inviteeId, db) {
+  async _createSharedRoom(inviterId, inviteeId) {
     const roomId = `room_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
     await this.db.query(
@@ -475,9 +470,10 @@ class InvitationService extends BaseService {
       [roomId, 'Co-Parent Chat', inviterId]
     );
 
+    // Both co-parents get 'member' role (valid: owner, member, readonly)
     await this.db.query(
       'INSERT INTO room_members (room_id, user_id, role) VALUES ($1, $2, $3), ($1, $4, $3)',
-      [roomId, inviterId, 'coparent', inviteeId]
+      [roomId, inviterId, 'member', inviteeId]
     );
 
     return { id: roomId, name: 'Co-Parent Chat' };

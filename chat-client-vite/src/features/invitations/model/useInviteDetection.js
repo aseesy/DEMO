@@ -20,19 +20,16 @@ import { storage, StorageKeys } from '../../../adapters/storage';
  * @param {boolean} options.autoRedirect - Whether to auto-redirect signup with invite code
  * @returns {Object} { pendingInviteCode, hasInvite, clearInviteCode, redirectToAcceptInvite }
  */
-export function useInviteDetection({
-  isLoginMode = true,
-  autoRedirect = true,
-} = {}) {
+export function useInviteDetection({ isLoginMode = true, autoRedirect = true } = {}) {
   const { navigate, getQueryParam } = useAppNavigation();
 
-  // Get invite code from URL
-  const inviteCodeFromUrl = getQueryParam('invite');
+  // Get invite code from URL (supports both ?invite= and ?code= params)
+  const inviteCodeFromUrl = getQueryParam('invite') || getQueryParam('code');
 
   // Store invite code when detected in URL
   React.useEffect(() => {
     if (inviteCodeFromUrl) {
-      storage.set(StorageKeys.PENDING_INVITE_CODE, inviteCodeFromUrl);
+      storage.set(StorageKeys.PENDING_INVITE_CODE, inviteCodeFromUrl.toUpperCase());
     }
   }, [inviteCodeFromUrl]);
 
@@ -42,8 +39,10 @@ export function useInviteDetection({
   }, [inviteCodeFromUrl]);
 
   // Redirect users with invite token to dedicated accept-invite page
+  // But NOT for short codes (LZ-XXXXX) - those are handled on /invite-coparent after signup
   React.useEffect(() => {
-    if (autoRedirect && pendingInviteCode && !isLoginMode) {
+    const isShortCode = pendingInviteCode?.startsWith('LZ-');
+    if (autoRedirect && pendingInviteCode && !isLoginMode && !isShortCode) {
       navigate(
         NavigationPaths.withQuery(NavigationPaths.ACCEPT_INVITE, { token: pendingInviteCode }),
         { replace: true }

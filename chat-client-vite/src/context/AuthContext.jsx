@@ -295,9 +295,11 @@ export function AuthProvider({ children }) {
 
         // Handle AbortError (timeout or component unmount)
         if (err.name === 'AbortError' || err.message?.includes('aborted')) {
-          console.log('[verifySession] Request aborted -> ANONYMOUS (deterministic)');
-          // DETERMINISTIC: On abort, go to ANONYMOUS, not "optimistic"
-          clearAuthState();
+          console.log(
+            '[verifySession] Request aborted - keeping current state (new request will handle)'
+          );
+          // DON'T clear auth state on abort - a new verification request is taking over
+          // Clearing here would remove the token before the new request can verify it
           return;
         }
         throw err;
@@ -450,7 +452,7 @@ export function AuthProvider({ children }) {
   /**
    * Signup with email/password
    */
-  const signup = React.useCallback(async (email, password, _username = null) => {
+  const signup = React.useCallback(async (email, password, firstName = '', lastName = '') => {
     setIsSigningUp(true);
     setError(null);
 
@@ -461,6 +463,8 @@ export function AuthProvider({ children }) {
       const response = await apiPost('/api/auth/signup', {
         email: cleanEmail,
         password: cleanPassword,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         context: {},
       });
 
@@ -542,11 +546,11 @@ export function AuthProvider({ children }) {
     // CRITICAL: Skip session verification on OAuth callback pages
     // The OAuth callback handler will process the code and set auth state
     // Calling verifySession here would clear auth before the callback completes
+    // NOTE: Only check pathname, NOT query params - ?code= is also used for invite codes
     const isOAuthCallback =
       typeof window !== 'undefined' &&
       (window.location.pathname.includes('/auth/callback') ||
-        window.location.pathname.includes('/auth/google/callback') ||
-        window.location.search.includes('code='));
+        window.location.pathname.includes('/auth/google/callback'));
 
     if (isOAuthCallback) {
       console.log('[AuthContext] Skipping verifySession on OAuth callback page');

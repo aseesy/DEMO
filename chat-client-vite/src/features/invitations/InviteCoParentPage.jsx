@@ -1,116 +1,199 @@
 /**
- * InviteCoParentPage - Post-signup screen for inviting co-parent
- *
- * Refactored to use useInviteCoParent hook and presentational components.
- *
- * User can:
- * 1. Send invitation via email (7-day expiration)
- * 2. Generate a shareable link (7-day expiration)
- * 3. Generate a quick code for existing users (15-minute expiration)
- * 4. Enter a code they received from their co-parent
+ * InviteCoParentPage - Connect with co-parent via simple codes
  */
 
 import React from 'react';
-import { useInviteCoParent } from './model/useInviteCoParent.js';
-import { InvitePreGenerationView, InviteGeneratedView } from './components/invite';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { apiPost } from '../../apiClient.js';
+import { storage, StorageKeys } from '../../adapters/storage/index.js';
 
 export function InviteCoParentPage() {
-  const {
-    // State
-    inviteeEmail,
-    inviteMethod,
-    error,
-    enteredCode,
-    codeValidation,
-    inviteData,
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [generatedCode, setGeneratedCode] = React.useState('');
+  const [enteredCode, setEnteredCode] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
 
-    // Copy states
-    copied,
-    copiedCode,
-    copiedMessage,
+  // Pre-fill code from URL param or storage
+  React.useEffect(() => {
+    const codeFromUrl = searchParams.get('code');
+    const codeFromStorage = storage.getString(StorageKeys.PENDING_INVITE_CODE);
 
-    // Loading states
-    isLoading,
-    isCreating,
-    isAccepting,
-    isValidating,
+    if (codeFromUrl) {
+      setEnteredCode(codeFromUrl.toUpperCase());
+      // Clear from storage after using
+      storage.remove(StorageKeys.PENDING_INVITE_CODE);
+    } else if (codeFromStorage) {
+      setEnteredCode(codeFromStorage.toUpperCase());
+      storage.remove(StorageKeys.PENDING_INVITE_CODE);
+    }
+  }, [searchParams]);
 
-    // Setters
-    setInviteeEmail,
-    setInviteMethod,
-    setEnteredCode,
+  const handleGenerateCode = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await apiPost('/api/invitations/generate-code');
+      const data = await response.json();
+      if (response.ok && data.shortCode) {
+        setGeneratedCode(data.shortCode);
+      } else {
+        setError(data.error || 'Failed to generate code');
+      }
+    } catch {
+      setError('Failed to generate code. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    // Handlers
-    handleGenerateInvite,
-    handleCopyLink,
-    handleCopyCode,
-    handleCopyMessage,
-    handleShare,
-    handleSkip,
-    handleContinue,
-    handleGenerateNew,
-    handleValidateCode,
-    handleAcceptCode,
+  const handleCopyCode = async () => {
+    try {
+      const inviteLink = `https://app.coparentliaizen.com/signup?code=${generatedCode}`;
+      const message = `I'd like us to use LiaiZen to communicate better as co-parents. Click here to sign up and connect with me: ${inviteLink}`;
+      await navigator.clipboard.writeText(message);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError('Failed to copy');
+    }
+  };
 
-    // Helpers
-    getExpirationText,
-  } = useInviteCoParent();
+  const handleContinueToDashboard = () => {
+    navigate('/dashboard');
+  };
+
+  const handleAcceptCode = async () => {
+    if (!enteredCode.trim()) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await apiPost('/api/invitations/accept-code', {
+        code: enteredCode.trim().toUpperCase(),
+      });
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        navigate('/chat');
+      } else {
+        setError(data.error || 'Invalid or expired code');
+      }
+    } catch {
+      setError('Failed to connect. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="h-dvh bg-gradient-to-b from-[#E8F5F5] to-white flex flex-col pt-nav-mobile pb-nav-mobile overflow-y-auto">
+    <div className="min-h-dvh bg-gradient-to-b from-[#E8F5F5] to-white flex flex-col">
       {/* Header */}
-      <div className="p-4 sm:p-6">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <img src="/assets/Logo.svg" alt="LiaiZen Logo" className="h-8 sm:h-10 w-auto" />
-          <img src="/assets/wordmark.svg" alt="LiaiZen" className="h-9 sm:h-11 w-auto" />
+      <div className="p-4">
+        <div className="flex items-center gap-2">
+          <img src="/assets/Logo.svg" alt="" className="h-8 w-auto" />
+          <img src="/assets/wordmark.svg" alt="LiaiZen" className="h-9 w-auto" />
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main */}
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Card */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 sm:p-8">
-            {!inviteData ? (
-              <InvitePreGenerationView
-                error={error}
-                inviteMethod={inviteMethod}
-                inviteeEmail={inviteeEmail}
-                enteredCode={enteredCode}
-                codeValidation={codeValidation}
-                isLoading={isLoading}
-                isCreating={isCreating}
-                isAccepting={isAccepting}
-                isValidating={isValidating}
-                onMethodChange={setInviteMethod}
-                onEmailChange={setInviteeEmail}
-                onCodeChange={setEnteredCode}
-                onValidateCode={handleValidateCode}
-                onAcceptCode={handleAcceptCode}
-                onGenerateInvite={handleGenerateInvite}
-                onSkip={handleSkip}
-              />
+        <div className="w-full max-w-sm">
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h1 className="text-xl font-bold text-teal-700 text-center mb-6">Invite Co-Parent</h1>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                {error}
+              </div>
+            )}
+
+            {generatedCode ? (
+              /* After code is generated - show code, copy, and continue */
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">Send this code to your co-parent:</p>
+
+                <div className="flex gap-2">
+                  <div className="flex-1 p-3 bg-gray-50 rounded-lg text-center">
+                    <span className="text-xl font-mono font-bold text-teal-700">
+                      {generatedCode}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleCopyCode}
+                    className="px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                  >
+                    {copied ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+
+                <p className="text-xs text-gray-500 text-center">
+                  Copy button includes a message to send to your co-parent
+                </p>
+
+                <button
+                  onClick={handleContinueToDashboard}
+                  className="w-full py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                  Continue to Dashboard
+                </button>
+
+                <p className="text-xs text-gray-500 text-center">
+                  You'll be notified when your co-parent joins
+                </p>
+              </div>
             ) : (
-              <InviteGeneratedView
-                inviteData={inviteData}
-                copied={copied}
-                copiedCode={copiedCode}
-                copiedMessage={copiedMessage}
-                onCopyLink={handleCopyLink}
-                onCopyCode={handleCopyCode}
-                onCopyMessage={handleCopyMessage}
-                onShare={handleShare}
-                onGenerateNew={handleGenerateNew}
-                onContinue={handleContinue}
-                expirationText={getExpirationText()}
-              />
+              /* Initial state - generate or enter code */
+              <>
+                {/* Generate Code Section */}
+                <div className="mb-6">
+                  <p className="text-sm text-gray-600 mb-3">Generate a code to share:</p>
+                  <button
+                    onClick={handleGenerateCode}
+                    disabled={isLoading}
+                    className="w-full py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors"
+                  >
+                    {isLoading ? 'Generating...' : 'Generate Code'}
+                  </button>
+                </div>
+
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="px-2 bg-white text-gray-400 text-sm">or</span>
+                  </div>
+                </div>
+
+                {/* Enter Code Section */}
+                <div>
+                  <p className="text-sm text-gray-600 mb-3">Enter a code you received:</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={enteredCode}
+                      onChange={e => setEnteredCode(e.target.value.toUpperCase())}
+                      onKeyDown={e => e.key === 'Enter' && handleAcceptCode()}
+                      placeholder="Enter code"
+                      maxLength={10}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-center font-mono uppercase focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    />
+                    <button
+                      onClick={handleAcceptCode}
+                      disabled={isLoading || !enteredCode.trim()}
+                      className="px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors"
+                    >
+                      {isLoading ? '...' : 'Join'}
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
-
-          {/* Help text */}
-          <p className="text-center text-sm text-gray-500 mt-4">
-            You can always invite your co-parent later from Settings
-          </p>
         </div>
       </div>
     </div>
