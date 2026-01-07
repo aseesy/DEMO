@@ -17,6 +17,7 @@ const pairingManager = require('../../../libs/pairing-manager');
 // These libraries haven't been refactored to use repositories yet
 const db = require('../../../dbPostgres');
 const { createContactIfNotExists } = require('../../../connectionManager/connectionAcceptance');
+const { sendWelcomeMessage } = require('../../../roomManager/roomLifecycle');
 
 // Lazy load invitationEmailService to avoid circular dependency
 let invitationEmailService = null;
@@ -482,6 +483,9 @@ class InvitationService extends BaseService {
       'INSERT INTO room_members (room_id, user_id, role) VALUES ($1, $2, $3), ($1, $4, $3)',
       [roomId, inviterId, 'member', inviteeId]
     );
+
+    // Send LiaiZen welcome message to the new room
+    await sendWelcomeMessage(roomId);
 
     return { id: roomId, name: 'Co-Parent Chat' };
   }
