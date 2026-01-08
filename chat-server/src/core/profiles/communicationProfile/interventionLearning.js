@@ -13,7 +13,7 @@
  * Feature: Contextual Awareness Improvements - Phase 2
  */
 
-const { defaultLogger } = require('../../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'interventionLearning',
