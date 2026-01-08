@@ -30,16 +30,19 @@ const REDIS_PASSWORD = process.env.REDISPASSWORD || process.env.REDIS_PASSWORD;
 let effectiveRedisUrl = REDIS_URL;
 if (effectiveRedisUrl && effectiveRedisUrl.includes('${{')) {
   // Railway template syntax detected - ignore REDIS_URL and use individual variables instead
-  console.log('⚠️  Redis: REDIS_URL contains Railway template syntax, using individual variables for local dev');
+  console.log(
+    '⚠️  Redis: REDIS_URL contains Railway template syntax, using individual variables for local dev'
+  );
   effectiveRedisUrl = null;
 }
 if (!effectiveRedisUrl && REDIS_HOST && REDIS_PORT) {
   // Construct Redis URL from individual components
-  const auth = REDIS_USER && REDIS_PASSWORD 
-    ? `${REDIS_USER}:${REDIS_PASSWORD}@`
-    : REDIS_PASSWORD 
-      ? `:${REDIS_PASSWORD}@`
-      : '';
+  const auth =
+    REDIS_USER && REDIS_PASSWORD
+      ? `${REDIS_USER}:${REDIS_PASSWORD}@`
+      : REDIS_PASSWORD
+        ? `:${REDIS_PASSWORD}@`
+        : '';
   effectiveRedisUrl = `redis://${auth}${REDIS_HOST}:${REDIS_PORT}`;
 }
 
@@ -61,27 +64,47 @@ function getClient() {
 
   if (!redisClient) {
     try {
-      // ioredis accepts URL as first argument, or options object
-      const options = effectiveRedisUrl
-        ? effectiveRedisUrl // Pass URL directly as first argument
-        : {
-            host: REDIS_HOST,
-            port: REDIS_PORT,
-            username: REDIS_USER,
-            password: REDIS_PASSWORD,
-            retryStrategy: times => {
-              // Exponential backoff: 50ms, 100ms, 200ms, 400ms, max 3s
-              const delay = Math.min(times * 50, 3000);
-              return delay;
-            },
-            maxRetriesPerRequest: 3,
-            enableReadyCheck: true,
-            lazyConnect: true, // Don't connect immediately
-          };
+      // Build options object with lazyConnect to prevent auto-connection
+      // This ensures error handlers are attached before connection attempts
+      const baseOptions = {
+        lazyConnect: true, // CRITICAL: Don't connect immediately
+        retryStrategy: times => {
+          // Exponential backoff: 50ms, 100ms, 200ms, 400ms, max 3s
+          const delay = Math.min(times * 50, 3000);
+          return delay;
+        },
+        maxRetriesPerRequest: 3,
+        enableReadyCheck: true,
+        connectionName: 'main-redis-client',
+      };
 
-      redisClient = new Redis(options);
+      // If we have a URL, pass it as first arg with options as second
+      // If no URL, use options object with host/port/etc
+      if (effectiveRedisUrl) {
+        // ioredis accepts: new Redis(url, options)
+        redisClient = new Redis(effectiveRedisUrl, baseOptions);
+      } else {
+        // Use individual connection parameters
+        redisClient = new Redis({
+          ...baseOptions,
+          host: REDIS_HOST,
+          port: REDIS_PORT,
+          username: REDIS_USER,
+          password: REDIS_PASSWORD,
+        });
+      }
 
-      // Connection event handlers
+      // CRITICAL: Attach error handlers IMMEDIATELY after creation
+      // This must happen before any connection attempt
+      redisClient.on('error', err => {
+        isAvailable = false;
+        // Only log if error message exists (prevents empty error logs)
+        if (err && err.message) {
+          console.error('❌ Redis: Connection error:', err.message);
+        }
+        // Don't crash - Redis is optional for graceful degradation
+      });
+
       redisClient.on('connect', () => {
         console.log('🔄 Redis: Connecting...');
       });
@@ -89,12 +112,6 @@ function getClient() {
       redisClient.on('ready', () => {
         isAvailable = true;
         console.log('✅ Redis: Connected and ready');
-      });
-
-      redisClient.on('error', err => {
-        isAvailable = false;
-        console.error('❌ Redis: Connection error:', err.message);
-        // Don't crash - Redis is optional for graceful degradation
       });
 
       redisClient.on('close', () => {
@@ -108,7 +125,7 @@ function getClient() {
 
       // Attempt to connect (non-blocking)
       redisClient.connect().catch(err => {
-        console.warn('⚠️  Redis: Failed to connect (will retry):', err.message);
+        console.warn('⚠️  Redis: Failed to connect (will retry):', err.message || 'Unknown error');
         isAvailable = false;
       });
     } catch (error) {
@@ -477,29 +494,43 @@ function createSubscriber() {
   }
 
   try {
-    // ioredis accepts URL as first argument, or options object
-    const options = effectiveRedisUrl
-      ? effectiveRedisUrl // Pass URL directly as first argument
-      : {
-          host: REDIS_HOST,
-          port: REDIS_PORT,
-          username: REDIS_USER,
-          password: REDIS_PASSWORD,
-          retryStrategy: times => {
-            // Exponential backoff: 50ms, 100ms, 200ms, 400ms, max 3s
-            const delay = Math.min(times * 50, 3000);
-            return delay;
-          },
-          maxRetriesPerRequest: 3,
-          enableReadyCheck: true,
-          lazyConnect: true,
-        };
+    // Build options object with lazyConnect to prevent auto-connection
+    const baseOptions = {
+      lazyConnect: true, // CRITICAL: Don't connect immediately
+      retryStrategy: times => {
+        // Exponential backoff: 50ms, 100ms, 200ms, 400ms, max 3s
+        const delay = Math.min(times * 50, 3000);
+        return delay;
+      },
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: true,
+      connectionName: 'redis-subscriber',
+    };
 
-    const subscriber = new Redis(options);
+    // If we have a URL, pass it as first arg with options as second
+    // If no URL, use options object with host/port/etc
+    let subscriber;
+    if (effectiveRedisUrl) {
+      // ioredis accepts: new Redis(url, options)
+      subscriber = new Redis(effectiveRedisUrl, baseOptions);
+    } else {
+      // Use individual connection parameters
+      subscriber = new Redis({
+        ...baseOptions,
+        host: REDIS_HOST,
+        port: REDIS_PORT,
+        username: REDIS_USER,
+        password: REDIS_PASSWORD,
+      });
+    }
 
-    // Add error handlers to prevent unhandled error warnings
+    // CRITICAL: Attach error handlers IMMEDIATELY after creation
+    // This must happen before any connection attempt
     subscriber.on('error', err => {
-      console.error('❌ Redis: Subscriber connection error:', err.message);
+      // Only log if error message exists (prevents empty error logs)
+      if (err && err.message) {
+        console.error('❌ Redis: Subscriber connection error:', err.message);
+      }
       // Don't crash - Redis is optional for graceful degradation
     });
 
@@ -517,7 +548,10 @@ function createSubscriber() {
 
     // Attempt to connect (non-blocking)
     subscriber.connect().catch(err => {
-      console.warn('⚠️  Redis: Subscriber failed to connect (will retry):', err.message);
+      console.warn(
+        '⚠️  Redis: Subscriber failed to connect (will retry):',
+        err.message || 'Unknown error'
+      );
     });
 
     return subscriber;
@@ -585,4 +619,3 @@ module.exports = {
   publish,
   close,
 };
-
