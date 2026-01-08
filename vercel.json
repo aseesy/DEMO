@@ -4,8 +4,8 @@
     "submodules": false
   },
   "buildCommand": "cd chat-client-vite && npm install && npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
+  "outputDirectory": "chat-client-vite/dist",
+  "installCommand": "cd chat-client-vite && npm install",
   "framework": null,
   "rewrites": [
     {
