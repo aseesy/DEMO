@@ -32,6 +32,12 @@ const {
   rejectDisposableEmail,
 } = require('../middleware/spamProtection');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'connections',
+});
+
 // Helper references - set from server.js
 let auth;
 let autoCompleteOnboardingTasks;
@@ -98,14 +104,18 @@ router.post('/contact', contactFormProtection, async (req, res) => {
       message: message.trim(),
     });
 
-    console.log(`📧 Contact form submitted by ${name} <${email}>: ${subject}`);
+    logger.debug('Log message', {
+      value: `📧 Contact form submitted by ${name} <${email}>: ${subject}`,
+    });
 
     res.json({
       success: true,
       message: "Your message has been sent successfully. We'll get back to you within 24-48 hours.",
     });
   } catch (error) {
-    console.error('Error processing contact form:', error);
+    logger.error('Error processing contact form', {
+      error: error,
+    });
     res.status(500).json({
       error: 'Failed to send message. Please try emailing us directly at info@liaizen.com',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined,
@@ -177,7 +187,9 @@ router.post('/invite', async (req, res) => {
       isExistingUser: emailExistsResult,
     });
   } catch (error) {
-    console.error('Error sending invitation:', error);
+    logger.error('Error sending invitation', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -213,7 +225,9 @@ router.get('/join', async (req, res) => {
       expiresAt: connection.expiresAt,
     });
   } catch (error) {
-    console.error('Error validating token:', error);
+    logger.error('Error validating token', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -268,7 +282,9 @@ router.post('/join/accept', async (req, res) => {
           await autoCompleteOnboardingTasks(connectionRefetch.inviterId);
         }
       } catch (error) {
-        console.error('Error auto-completing onboarding tasks after invite acceptance:', error);
+        logger.error('Error auto-completing onboarding tasks after invite acceptance', {
+          error: error,
+        });
         // Don't fail the request if this fails
       }
     }
@@ -279,7 +295,9 @@ router.post('/join/accept', async (req, res) => {
       roomId: result.inviterRoom,
     });
   } catch (error) {
-    console.error('Error accepting invitation:', error);
+    logger.error('Error accepting invitation', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });

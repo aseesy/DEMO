@@ -1,6 +1,6 @@
 /**
  * Refresh Token Routes
- * 
+ *
  * Handles refresh token rotation and access token renewal.
  * Part of Phase 2: Data Model & Session Management
  */
@@ -16,15 +16,21 @@ const {
 } = require('../../middleware/authEnhanced');
 const dbPostgres = require('../../dbPostgres');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'refresh',
+});
+
 /**
  * POST /api/auth/refresh
- * 
+ *
  * Refresh access token using refresh token.
  * Implements token rotation for security.
- * 
+ *
  * Body:
  * - refreshToken: (optional) Refresh token (can also be in cookie)
- * 
+ *
  * Returns:
  * - accessToken: New short-lived access token
  * - refreshToken: New rotated refresh token
@@ -93,7 +99,9 @@ router.post('/refresh', async (req, res) => {
       try {
         await sessionService.updateLastSeen(tokenRecord.session_id);
       } catch (err) {
-        console.warn('[Refresh] Failed to update session:', err.message);
+        logger.warn('[Refresh] Failed to update session', {
+          message: err.message,
+        });
       }
     }
 
@@ -101,9 +109,11 @@ router.post('/refresh', async (req, res) => {
     setAuthCookies(res, newAccessToken, newRefreshToken);
 
     // Structured logging
-    console.log('[Auth] Token refreshed', {
-      userId: user.id,
-      sessionId: tokenRecord.session_id,
+    logger.debug('[Auth] Token refreshed', {
+      ...{
+        userId: user.id,
+        sessionId: tokenRecord.session_id,
+      },
     });
 
     res.json({
@@ -112,9 +122,11 @@ router.post('/refresh', async (req, res) => {
       refreshToken: newRefreshToken,
     });
   } catch (error) {
-    console.error('[Auth] Refresh error:', {
-      message: error.message,
-      stack: error.stack,
+    logger.error('[Auth] Refresh error', {
+      ...{
+        message: error.message,
+        stack: error.stack,
+      },
     });
 
     clearAuthCookies(res);
@@ -127,4 +139,3 @@ router.post('/refresh', async (req, res) => {
 });
 
 module.exports = router;
-

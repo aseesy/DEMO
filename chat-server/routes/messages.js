@@ -12,6 +12,12 @@ const { verifyRoomMembership } = require('../socketHandlers/socketMiddleware/roo
 const MessageService = require('../src/services/messages/messageService');
 const dbSafe = require('../dbSafe');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'messages',
+});
+
 const messageService = new MessageService();
 
 /**
@@ -49,10 +55,12 @@ router.get(
     const isMember = await verifyRoomMembership(userId, roomId, dbSafe);
     if (!isMember) {
       if (process.env.NODE_ENV !== 'production') {
-        console.warn('[messages] Room membership check failed:', {
-          userId,
-          roomId,
-          userEmail,
+        logger.warn('[messages] Room membership check failed', {
+          ...{
+            userId,
+            roomId,
+            userEmail,
+          },
         });
       }
       return res.status(403).json({

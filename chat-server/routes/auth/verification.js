@@ -15,6 +15,12 @@ const { getPasswordError, getPasswordRequirements } = require('../../libs/passwo
 const invitationManager = require('../../libs/invitation-manager');
 const pairingManager = require('../../libs/pairing-manager');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'verification',
+});
+
 /**
  * GET /api/auth/user
  * Get current authenticated user info
@@ -70,7 +76,9 @@ router.get('/verify', verifyAuth, async (req, res) => {
     } = require('../../src/utils/databaseErrorClassifier');
 
     if (isDatabaseConnectionError(error)) {
-      console.warn('[verify] Database connection error:', error.code || error.message);
+      logger.warn('[verify] Database connection error', {
+        arg0: error.code || error.message,
+      });
       const errorResponse = getDatabaseErrorResponse(error);
       const statusCode = getDatabaseErrorStatusCode(error);
       return res.status(statusCode).json(errorResponse);
@@ -180,13 +188,15 @@ router.post('/register-with-invite', async (req, res) => {
     // Route to the correct registration function based on what's provided
     if (inviteCode) {
       // Short code provided - try invitation system first, then pairing
-      console.log(`[register-with-invite] Attempting registration with code: ${inviteCode}`);
+      logger.debug('Log message', {
+        value: `[register-with-invite] Attempting registration with code: ${inviteCode}`,
+      });
 
       // Check if it's a valid invitation code (invitations table)
       const inviteValidation = await invitationManager.validateByShortCode(inviteCode, db);
 
       if (inviteValidation.valid) {
-        console.log('[register-with-invite] Valid invitation code, using registerFromShortCode');
+        logger.debug('[register-with-invite] Valid invitation code, using registerFromShortCode');
         result = await auth.registerFromShortCode(
           {
             shortCode: inviteCode,
@@ -200,11 +210,11 @@ router.post('/register-with-invite', async (req, res) => {
         );
       } else {
         // Try pairing system (pairing_sessions table)
-        console.log('[register-with-invite] Checking pairing system for code...');
+        logger.debug('[register-with-invite] Checking pairing system for code...');
         const pairingValidation = await pairingManager.validateCode(inviteCode, db);
 
         if (pairingValidation.valid) {
-          console.log('[register-with-invite] Valid pairing code, using registerFromPairingCode');
+          logger.debug('[register-with-invite] Valid pairing code, using registerFromPairingCode');
           result = await auth.registerFromPairingCode(
             {
               code: inviteCode,
@@ -226,13 +236,13 @@ router.post('/register-with-invite', async (req, res) => {
       }
     } else if (inviteToken) {
       // Long token provided - try invitation system first, then pairing
-      console.log('[register-with-invite] Attempting registration with token');
+      logger.debug('[register-with-invite] Attempting registration with token');
 
       // Check if it's a valid invitation token (invitations table)
       const inviteValidation = await invitationManager.validateToken(inviteToken, db);
 
       if (inviteValidation.valid) {
-        console.log('[register-with-invite] Valid invitation token, using registerFromInvitation');
+        logger.debug('[register-with-invite] Valid invitation token, using registerFromInvitation');
         result = await auth.registerFromInvitation(
           {
             token: inviteToken,
@@ -246,11 +256,11 @@ router.post('/register-with-invite', async (req, res) => {
         );
       } else {
         // Try pairing system (pairing_sessions table)
-        console.log('[register-with-invite] Checking pairing system for token...');
+        logger.debug('[register-with-invite] Checking pairing system for token...');
         const pairingValidation = await pairingManager.validateToken(inviteToken, db);
 
         if (pairingValidation.valid) {
-          console.log('[register-with-invite] Valid pairing token, using registerFromPairing');
+          logger.debug('[register-with-invite] Valid pairing token, using registerFromPairing');
           result = await auth.registerFromPairing(
             {
               token: inviteToken,
@@ -284,7 +294,9 @@ router.post('/register-with-invite', async (req, res) => {
     const token = generateToken(result.user);
     setAuthCookie(res, token);
 
-    console.log(`[register-with-invite] Successfully registered user: ${result.user.email}`);
+    logger.debug('Log message', {
+      value: `[register-with-invite] Successfully registered user: ${result.user.email}`,
+    });
 
     res.json({
       success: true,
@@ -294,7 +306,9 @@ router.post('/register-with-invite', async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error('[register-with-invite] Error:', error);
+    logger.error('[register-with-invite] Error', {
+      error: error,
+    });
 
     // Handle specific error types
     if (error.message === 'Email already exists' || error.code === 'REG_001') {

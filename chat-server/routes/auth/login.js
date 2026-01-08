@@ -10,6 +10,12 @@ const { honeypotCheck } = require('../../middleware/spamProtection');
 const { loginRateLimit } = require('./utils');
 const { LOGIN_RESULT_TYPES } = require('../../src/services/auth/authService');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'login',
+});
+
 // AuthService will be injected via routeManager
 let authService;
 
@@ -19,7 +25,7 @@ router.setService = function (service) {
 
 router.post('/login', loginRateLimit, honeypotCheck('website'), async (req, res) => {
   if (!authService) {
-    console.error('❌ AuthService is not initialized!');
+    logger.error('❌ AuthService is not initialized!');
     return res.status(500).json({ error: 'Authentication service not available' });
   }
 
@@ -69,7 +75,9 @@ router.post('/login', loginRateLimit, honeypotCheck('website'), async (req, res)
         return res.status(500).json({ error: 'Unexpected login result' });
     }
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error', {
+      error: error,
+    });
 
     // CRITICAL: Check for database connection errors using centralized classifier
     // These should return 503 Service Unavailable, not 500 or authentication errors
@@ -80,7 +88,9 @@ router.post('/login', loginRateLimit, honeypotCheck('website'), async (req, res)
     } = require('../../src/utils/databaseErrorClassifier');
 
     if (isDatabaseConnectionError(error)) {
-      console.warn('[login] Database connection error during login:', error.code || error.message);
+      logger.warn('[login] Database connection error during login', {
+        arg0: error.code || error.message,
+      });
       const errorResponse = getDatabaseErrorResponse(error);
       const statusCode = getDatabaseErrorStatusCode(error);
       return res.status(statusCode).json(errorResponse);

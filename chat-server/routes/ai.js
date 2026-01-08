@@ -19,6 +19,12 @@ const router = express.Router();
 const { verifyAuth } = require('../middleware/auth');
 const { handleServiceError } = require('../middleware/errorHandlers');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'ai',
+});
+
 // Service references - set from server.js
 let aiMediator;
 let mediationService;
@@ -99,8 +105,12 @@ Respond in JSON format only with this structure:
         taskData = JSON.parse(response);
       }
     } catch (parseError) {
-      console.error('Error parsing AI response:', parseError);
-      console.error('AI response was:', response);
+      logger.error('Error parsing AI response', {
+        parseError: parseError,
+      });
+      logger.error('AI response was', {
+        response: response,
+      });
       return res.status(500).json({ error: 'Failed to parse AI response. Please try again.' });
     }
 
@@ -120,7 +130,9 @@ Respond in JSON format only with this structure:
       task: generatedTask,
     });
   } catch (error) {
-    console.error('Error generating task with AI:', error);
+    logger.error('Error generating task with AI', {
+      error: error,
+    });
     res.status(500).json({ error: error.message || 'Failed to generate task' });
   }
 });
@@ -150,16 +162,18 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
     }
 
     if (!mediationService) {
-      console.error('❌ mediationService is not initialized!');
+      logger.error('❌ mediationService is not initialized!');
       return res.status(500).json({ error: 'Mediation service not available' });
     }
 
     const user = req.user;
     // Use email as primary identifier (migrated from username)
     const userIdentifier = user?.email || user?.username;
-    console.log('🔍 /api/mediate/analyze called:', {
-      text: text.substring(0, 50),
-      identifier: userIdentifier,
+    logger.debug('🔍 /api/mediate/analyze called', {
+      ...{
+        text: text.substring(0, 50),
+        identifier: userIdentifier,
+      },
     });
 
     // 2. Call service (all business logic is in the service)
@@ -170,16 +184,22 @@ router.post('/mediate/analyze', verifyAuth, async (req, res) => {
       receiverProfile,
     });
 
-    console.log('📤 Sending response:', {
-      action: result.action,
-      hasIntervention: !!result.intervention,
+    logger.debug('📤 Sending response', {
+      ...{
+        action: result.action,
+        hasIntervention: !!result.intervention,
+      },
     });
 
     // 3. Return result
     res.json(result);
   } catch (error) {
-    console.error('❌ Error analyzing message:', error);
-    console.error('Error stack:', error.stack);
+    logger.error('❌ Error analyzing message', {
+      error: error,
+    });
+    logger.error('Error stack', {
+      stack: error.stack,
+    });
 
     // Use service error handler for proper error formatting
     return handleServiceError(error, res, {

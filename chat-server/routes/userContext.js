@@ -8,6 +8,12 @@
 const express = require('express');
 const userContext = require('../userContext');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'userContext',
+});
+
 const router = express.Router();
 
 // Get user context
@@ -34,7 +40,9 @@ router.get('/', async (req, res) => {
       contacts: context.contacts || [],
     });
   } catch (err) {
-    console.error('Error getting user context:', err);
+    logger.error('Error getting user context', {
+      err: err,
+    });
     // Make sure we always return JSON, not HTML
     res.status(500).json({
       error: 'internal server error',
@@ -55,7 +63,9 @@ router.post('/', async (req, res) => {
     });
     res.json({ success: true });
   } catch (err) {
-    console.error('Error upserting user context', err);
+    logger.error('Error upserting user context', {
+      err: err,
+    });
     res.status(500).json({ error: 'internal server error' });
   }
 });

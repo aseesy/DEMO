@@ -24,6 +24,12 @@ const { verifyAuth } = require('../middleware/auth');
 const { getTopicService } = require('../src/services/topics');
 const { getThreadService } = require('../src/services/threads');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'topics',
+});
+
 /**
  * GET /api/rooms/:roomId/topics
  * Get all topics for a room with summary previews
@@ -36,20 +42,21 @@ router.get('/rooms/:roomId/topics', verifyAuth, async (req, res) => {
     const topicService = getTopicService();
     const topics = await topicService.getTopicsForRoom(roomId, {
       includeArchived: includeArchived === 'true',
-      limit: limit ? parseInt(limit, 10) : 20
+      limit: limit ? parseInt(limit, 10) : 20,
     });
 
     res.json({
       success: true,
       topics,
-      count: topics.length
+      count: topics.length,
     });
-
   } catch (error) {
-    console.error('[Topics API] Error getting topics:', error);
+    logger.error('[Topics API] Error getting topics', {
+      error: error,
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to get topics'
+      error: 'Failed to get topics',
     });
   }
 });
@@ -68,20 +75,21 @@ router.get('/topics/:topicId', verifyAuth, async (req, res) => {
     if (!topic) {
       return res.status(404).json({
         success: false,
-        error: 'Topic not found'
+        error: 'Topic not found',
       });
     }
 
     res.json({
       success: true,
-      topic
+      topic,
     });
-
   } catch (error) {
-    console.error('[Topics API] Error getting topic:', error);
+    logger.error('[Topics API] Error getting topic', {
+      error: error,
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to get topic'
+      error: 'Failed to get topic',
     });
   }
 });
@@ -100,14 +108,15 @@ router.post('/topics/:topicId/regenerate', verifyAuth, async (req, res) => {
     res.json({
       success: true,
       summary: result.summary,
-      citations: result.citations
+      citations: result.citations,
     });
-
   } catch (error) {
-    console.error('[Topics API] Error regenerating summary:', error);
+    logger.error('[Topics API] Error regenerating summary', {
+      error: error,
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to regenerate summary'
+      error: 'Failed to regenerate summary',
     });
   }
 });
@@ -124,21 +133,22 @@ router.post('/rooms/:roomId/topics/detect', verifyAuth, async (req, res) => {
     const topicService = getTopicService();
     const topics = await topicService.detectAndCreateTopics(roomId, {
       since: since ? new Date(since) : undefined,
-      limit: limit || 200
+      limit: limit || 200,
     });
 
     res.json({
       success: true,
       topics,
       count: topics.length,
-      message: `Detected ${topics.length} topic(s)`
+      message: `Detected ${topics.length} topic(s)`,
     });
-
   } catch (error) {
-    console.error('[Topics API] Error detecting topics:', error);
+    logger.error('[Topics API] Error detecting topics', {
+      error: error,
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to detect topics'
+      error: 'Failed to detect topics',
     });
   }
 });
@@ -158,14 +168,15 @@ router.post('/topics/:topicId/report', verifyAuth, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Report received, summary will be regenerated'
+      message: 'Report received, summary will be regenerated',
     });
-
   } catch (error) {
-    console.error('[Topics API] Error reporting summary:', error);
+    logger.error('[Topics API] Error reporting summary', {
+      error: error,
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to report summary'
+      error: 'Failed to report summary',
     });
   }
 });
@@ -188,20 +199,21 @@ router.get('/topics/:topicId/messages/:messageId/context', verifyAuth, async (re
     if (!context) {
       return res.status(404).json({
         success: false,
-        error: 'Message not found'
+        error: 'Message not found',
       });
     }
 
     res.json({
       success: true,
-      ...context
+      ...context,
     });
-
   } catch (error) {
-    console.error('[Topics API] Error getting message context:', error);
+    logger.error('[Topics API] Error getting message context', {
+      error: error,
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to get message context'
+      error: 'Failed to get message context',
     });
   }
 });
@@ -222,7 +234,7 @@ router.get('/rooms/:roomId/threads', verifyAuth, async (req, res) => {
     const threadService = getThreadService();
     const threads = await threadService.getThreadsByCategory(roomId, {
       limitPerCategory: limitPerCategory ? parseInt(limitPerCategory, 10) : 5,
-      includeDetails: includeDetails === 'true'
+      includeDetails: includeDetails === 'true',
     });
 
     // Count total threads
@@ -235,14 +247,15 @@ router.get('/rooms/:roomId/threads', verifyAuth, async (req, res) => {
       success: true,
       threads,
       categories: Object.keys(threads),
-      totalCount
+      totalCount,
     });
-
   } catch (error) {
-    console.error('[Topics API] Error getting threads:', error);
+    logger.error('[Topics API] Error getting threads', {
+      error: error,
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to get threads'
+      error: 'Failed to get threads',
     });
   }
 });
@@ -261,20 +274,21 @@ router.get('/threads/:threadId', verifyAuth, async (req, res) => {
     if (!thread) {
       return res.status(404).json({
         success: false,
-        error: 'Thread not found'
+        error: 'Thread not found',
       });
     }
 
     res.json({
       success: true,
-      thread
+      thread,
     });
-
   } catch (error) {
-    console.error('[Topics API] Error getting thread:', error);
+    logger.error('[Topics API] Error getting thread', {
+      error: error,
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to get thread'
+      error: 'Failed to get thread',
     });
   }
 });
@@ -295,14 +309,15 @@ router.post('/rooms/:roomId/threads/process', verifyAuth, async (req, res) => {
       ...result,
       message: result.skipped
         ? 'AI not available, processing skipped'
-        : `Processed: ${result.created} created, ${result.updated} updated`
+        : `Processed: ${result.created} created, ${result.updated} updated`,
     });
-
   } catch (error) {
-    console.error('[Topics API] Error processing threads:', error);
+    logger.error('[Topics API] Error processing threads', {
+      error: error,
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to process threads'
+      error: 'Failed to process threads',
     });
   }
 });
@@ -319,20 +334,21 @@ router.post('/rooms/:roomId/threads/backfill', verifyAuth, async (req, res) => {
     const threadService = getThreadService();
     const result = await threadService.backfillRoom(roomId, {
       limit: limit || 500,
-      batchSize: batchSize || 10
+      batchSize: batchSize || 10,
     });
 
     res.json({
       success: true,
       ...result,
-      message: `Backfill complete: ${result.created} threads created from ${result.processed} windows`
+      message: `Backfill complete: ${result.created} threads created from ${result.processed} windows`,
     });
-
   } catch (error) {
-    console.error('[Topics API] Error backfilling threads:', error);
+    logger.error('[Topics API] Error backfilling threads', {
+      error: error,
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to backfill threads'
+      error: 'Failed to backfill threads',
     });
   }
 });

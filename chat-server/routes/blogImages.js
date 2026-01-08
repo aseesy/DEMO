@@ -11,10 +11,16 @@ const router = express.Router();
 const { verifyAuth } = require('../middleware/auth');
 const blogImageGenerator = require('../src/services/blog/blogImageGenerator');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'blogImages',
+});
+
 /**
  * POST /api/blog/images/generate-header
  * Generate a blog header image
- * 
+ *
  * Body: {
  *   title: string,
  *   subtitle: string,
@@ -51,7 +57,9 @@ router.post('/generate-header', verifyAuth, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[blogImages] Error generating header image:', error);
+    logger.error('[blogImages] Error generating header image', {
+      error: error,
+    });
     res.status(500).json({
       error: error.message || 'Failed to generate header image',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
@@ -62,7 +70,7 @@ router.post('/generate-header', verifyAuth, async (req, res) => {
 /**
  * POST /api/blog/images/generate-social
  * Generate a social media graphic
- * 
+ *
  * Body: {
  *   title: string,
  *   subtitle: string,
@@ -86,7 +94,9 @@ router.post('/generate-social', verifyAuth, async (req, res) => {
     }
 
     if (!['instagram', 'twitter', 'facebook'].includes(platform)) {
-      return res.status(400).json({ error: 'Invalid platform. Use: instagram, twitter, or facebook' });
+      return res
+        .status(400)
+        .json({ error: 'Invalid platform. Use: instagram, twitter, or facebook' });
     }
 
     const articleMeta = {
@@ -114,7 +124,9 @@ router.post('/generate-social', verifyAuth, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[blogImages] Error generating social media graphic:', error);
+    logger.error('[blogImages] Error generating social media graphic', {
+      error: error,
+    });
     res.status(500).json({
       error: error.message || 'Failed to generate social media graphic',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
@@ -125,7 +137,7 @@ router.post('/generate-social', verifyAuth, async (req, res) => {
 /**
  * POST /api/blog/images/generate-all
  * Generate all images for a blog article (header + all social media)
- * 
+ *
  * Body: {
  *   title: string,
  *   subtitle: string,
@@ -180,7 +192,9 @@ router.post('/generate-all', verifyAuth, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[blogImages] Error generating all images:', error);
+    logger.error('[blogImages] Error generating all images', {
+      error: error,
+    });
     res.status(500).json({
       error: error.message || 'Failed to generate images',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
@@ -189,4 +203,3 @@ router.post('/generate-all', verifyAuth, async (req, res) => {
 });
 
 module.exports = router;
-

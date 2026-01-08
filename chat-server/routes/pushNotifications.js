@@ -10,6 +10,12 @@ const router = express.Router();
 const pushNotificationService = require('../services/pushNotificationService');
 const { verifyAuth } = require('../middleware/auth');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'pushNotifications',
+});
+
 /**
  * POST /api/push/subscribe
  * Save a push subscription for the authenticated user
@@ -36,7 +42,9 @@ router.post('/subscribe', verifyAuth, async (req, res) => {
 
     res.json({ success: true, subscription: saved });
   } catch (error) {
-    console.error('[PushNotifications] Error saving subscription:', error);
+    logger.error('[PushNotifications] Error saving subscription', {
+      error: error,
+    });
     res.status(500).json({ error: 'Failed to save subscription' });
   }
 });
@@ -57,7 +65,9 @@ router.delete('/unsubscribe', async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('[PushNotifications] Error deleting subscription:', error);
+    logger.error('[PushNotifications] Error deleting subscription', {
+      error: error,
+    });
     res.status(500).json({ error: 'Failed to delete subscription' });
   }
 });
@@ -99,7 +109,9 @@ router.get('/status', verifyAuth, async (req, res) => {
           : 'No active subscriptions found. Please subscribe to push notifications in PWA settings.',
     });
   } catch (error) {
-    console.error('[PushNotifications] Error getting subscription status:', error);
+    logger.error('[PushNotifications] Error getting subscription status', {
+      error: error,
+    });
     res.status(500).json({ error: 'Failed to get subscription status' });
   }
 });
@@ -117,7 +129,9 @@ router.post('/test', verifyAuth, async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    console.log('[PushNotifications] Sending test notification to user:', userId);
+    logger.debug('[PushNotifications] Sending test notification to user', {
+      userId: userId,
+    });
 
     const result = await pushNotificationService.sendNotificationToUser(userId, {
       title: 'LiaiZen Test',
@@ -126,7 +140,9 @@ router.post('/test', verifyAuth, async (req, res) => {
       url: '/?view=dashboard',
     });
 
-    console.log('[PushNotifications] Test notification result:', result);
+    logger.debug('[PushNotifications] Test notification result', {
+      result: result,
+    });
 
     res.json({
       success: true,
@@ -138,7 +154,9 @@ router.post('/test', verifyAuth, async (req, res) => {
           : 'No active subscriptions found or all failed',
     });
   } catch (error) {
-    console.error('[PushNotifications] Error sending test notification:', error);
+    logger.error('[PushNotifications] Error sending test notification', {
+      error: error,
+    });
     res.status(500).json({ error: 'Failed to send test notification' });
   }
 });

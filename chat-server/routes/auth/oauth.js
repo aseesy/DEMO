@@ -1,6 +1,6 @@
 /**
  * Auth OAuth Routes
- * 
+ *
  * Security features:
  * - PKCE (Proof Key for Code Exchange) for SPA security
  * - State parameter validation for CSRF protection
@@ -19,12 +19,18 @@ const {
   validateGoogleIdToken,
 } = require('../../auth/oauthSecurity');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'oauth',
+});
+
 /**
  * GET /auth/google/start
- * 
+ *
  * Generates OAuth authorization URL with PKCE and state.
  * Client must send code_challenge and state.
- * 
+ *
  * Query params:
  * - state: (optional) Client-generated state parameter
  * - code_challenge: (optional) PKCE code challenge (if not provided, server generates)
@@ -38,7 +44,9 @@ router.get('/google', (req, res) => {
       `${process.env.APP_URL || 'https://www.coparentliaizen.com'}/auth/google/callback`;
 
     if (!clientId) {
-      return res.status(500).json({ error: 'OAuth configuration error', code: 'OAUTH_CONFIG_ERROR' });
+      return res
+        .status(500)
+        .json({ error: 'OAuth configuration error', code: 'OAUTH_CONFIG_ERROR' });
     }
 
     // Get or generate state parameter
@@ -74,15 +82,19 @@ router.get('/google', (req, res) => {
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
     // Structured logging
-    console.log('[OAuth] Authorization URL generated', {
-      hasState: !!state,
-      hasCodeChallenge: !!codeChallenge,
-      hasReturnTo: !!returnTo,
+    logger.debug('[OAuth] Authorization URL generated', {
+      ...{
+        hasState: !!state,
+        hasCodeChallenge: !!codeChallenge,
+        hasReturnTo: !!returnTo,
+      },
     });
 
     res.json({ authUrl, state: codeChallenge ? undefined : state }); // Only return state if server generated
   } catch (error) {
-    console.error('[OAuth] Error generating authorization URL:', error);
+    logger.error('[OAuth] Error generating authorization URL', {
+      error: error,
+    });
     res.status(500).json({ error: 'Failed to generate authorization URL', code: 'OAUTH_ERROR' });
   }
 });
@@ -96,14 +108,14 @@ function generateOAuthState() {
 
 /**
  * POST /auth/google/callback
- * 
+ *
  * Handles OAuth callback with security validations:
  * - Validates state parameter (CSRF protection)
  * - Validates PKCE code verifier
  * - Validates ID token (instead of userinfo endpoint)
  * - Checks email verification status
  * - Idempotent: handles duplicate requests gracefully
- * 
+ *
  * Body:
  * - code: Authorization code from Google
  * - state: State parameter for CSRF protection
@@ -125,11 +137,13 @@ router.post('/google/callback', async (req, res) => {
       `${process.env.APP_URL || 'https://www.coparentliaizen.com'}/auth/google/callback`;
 
     // Structured logging
-    console.log('[OAuth] Callback received', {
-      hasCode: !!code,
-      hasState: !!state,
-      hasCodeVerifier: !!code_verifier,
-      hasInviteToken: !!inviteToken,
+    logger.debug('[OAuth] Callback received', {
+      ...{
+        hasCode: !!code,
+        hasState: !!state,
+        hasCodeVerifier: !!code_verifier,
+        hasInviteToken: !!inviteToken,
+      },
     });
 
     if (!clientId || !clientSecret) {
@@ -141,7 +155,9 @@ router.post('/google/callback', async (req, res) => {
     if (state) {
       const storedState = stateStore.get(state);
       if (!storedState) {
-        console.warn('[OAuth] State validation failed', { state: state?.substring(0, 8) });
+        logger.warn('[OAuth] State validation failed', {
+          ...{ state: state?.substring(0, 8) },
+        });
         return res.status(400).json({
           error: 'Invalid or expired state parameter',
           code: 'INVALID_STATE',
@@ -152,7 +168,7 @@ router.post('/google/callback', async (req, res) => {
       if (code_verifier && storedState.codeChallenge) {
         const isValidPKCE = verifyPKCE(code_verifier, storedState.codeChallenge);
         if (!isValidPKCE) {
-          console.warn('[OAuth] PKCE validation failed');
+          logger.warn('[OAuth] PKCE validation failed');
           return res.status(400).json({
             error: 'PKCE validation failed',
             code: 'INVALID_PKCE',
@@ -164,7 +180,7 @@ router.post('/google/callback', async (req, res) => {
       returnTo = storedState.returnTo;
     } else {
       // Log warning but allow for backwards compatibility
-      console.warn('[OAuth] No state parameter provided');
+      logger.warn('[OAuth] No state parameter provided');
     }
 
     // Exchange authorization code for tokens (with PKCE if provided)
@@ -187,16 +203,18 @@ router.post('/google/callback', async (req, res) => {
     });
 
     const tokens = await tokenRes.json();
-    console.log('[OAuth] Token exchange response', {
-      success: !tokens.error,
-      error: tokens.error,
-      hasAccessToken: !!tokens.access_token,
-      hasIdToken: !!tokens.id_token,
+    logger.debug('[OAuth] Token exchange response', {
+      ...{
+        success: !tokens.error,
+        error: tokens.error,
+        hasAccessToken: !!tokens.access_token,
+        hasIdToken: !!tokens.id_token,
+      },
     });
 
     // IDEMPOTENCY: Handle "code already used" gracefully
     if (tokens.error === 'invalid_grant') {
-      console.log('[OAuth] Code already used - checking for existing session');
+      logger.debug('[OAuth] Code already used - checking for existing session');
 
       // Check if there's a valid auth cookie we can use
       const existingToken = req.cookies?.auth_token;
@@ -208,7 +226,9 @@ router.post('/google/callback', async (req, res) => {
           if (decoded && decoded.id) {
             const user = await auth.getUserById(decoded.id);
             if (user) {
-              console.log('[OAuth] Returning existing session', { userId: user.id, email: user.email });
+              logger.debug('[OAuth] Returning existing session', {
+                ...{ userId: user.id, email: user.email },
+              });
               return res.json({
                 success: true,
                 idempotent: true,
@@ -223,7 +243,9 @@ router.post('/google/callback', async (req, res) => {
             }
           }
         } catch (e) {
-          console.log('[OAuth] Existing token invalid:', e.message);
+          logger.debug('[OAuth] Existing token invalid', {
+            message: e.message,
+          });
         }
       }
 
@@ -246,7 +268,7 @@ router.post('/google/callback', async (req, res) => {
 
     // Validate ID token (more secure than userinfo endpoint)
     if (!tokens.id_token) {
-      console.error('[OAuth] No ID token in response');
+      logger.error('[OAuth] No ID token in response');
       return res.status(400).json({
         error: 'No ID token received from Google',
         code: 'MISSING_ID_TOKEN',
@@ -256,13 +278,17 @@ router.post('/google/callback', async (req, res) => {
     let googleUser;
     try {
       googleUser = await validateGoogleIdToken(tokens.id_token, clientId);
-      console.log('[OAuth] ID token validated', {
-        sub: googleUser.sub,
-        email: googleUser.email,
-        emailVerified: googleUser.email_verified,
+      logger.debug('[OAuth] ID token validated', {
+        ...{
+          sub: googleUser.sub,
+          email: googleUser.email,
+          emailVerified: googleUser.email_verified,
+        },
       });
     } catch (idTokenError) {
-      console.error('[OAuth] ID token validation failed:', idTokenError.message);
+      logger.error('[OAuth] ID token validation failed', {
+        message: idTokenError.message,
+      });
       return res.status(400).json({
         error: idTokenError.message,
         code: 'INVALID_ID_TOKEN',
@@ -289,17 +315,21 @@ router.post('/google/callback', async (req, res) => {
 
     if (inviteToken) {
       await invitationManager.acceptInvitation(inviteToken, user.id).catch(err => {
-        console.warn('[OAuth] Failed to accept invitation:', err.message);
+        logger.warn('[OAuth] Failed to accept invitation', {
+          message: err.message,
+        });
       });
     }
 
     const token = generateToken(user);
     setAuthCookie(res, token);
 
-    console.log('[OAuth] Authentication successful', {
-      userId: user.id,
-      email: user.email,
-      hasReturnTo: !!returnTo,
+    logger.debug('[OAuth] Authentication successful', {
+      ...{
+        userId: user.id,
+        email: user.email,
+        hasReturnTo: !!returnTo,
+      },
     });
 
     res.json({
@@ -314,9 +344,11 @@ router.post('/google/callback', async (req, res) => {
       returnTo, // Return returnTo to client for redirect
     });
   } catch (error) {
-    console.error('[OAuth] Error:', {
-      message: error.message,
-      stack: error.stack,
+    logger.error('[OAuth] Error', {
+      ...{
+        message: error.message,
+        stack: error.stack,
+      },
     });
     res.status(500).json({
       error: error.message || 'OAuth authentication failed',

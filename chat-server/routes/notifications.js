@@ -13,6 +13,12 @@ const dbSafe = require('../dbSafe');
 const db = require('../dbPostgres');
 const { verifyAuth, optionalAuth } = require('../middleware/auth');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'notifications',
+});
+
 /**
  * GET /api/notifications
  * Get all notifications for authenticated user
@@ -33,7 +39,9 @@ router.get('/', verifyAuth, async (req, res) => {
 
     res.json({ notifications });
   } catch (error) {
-    console.error('Error getting notifications:', error);
+    logger.error('Error getting notifications', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -57,7 +65,9 @@ router.get('/unread-count', optionalAuth, async (req, res) => {
 
     res.json({ count: unreadNotifications.length });
   } catch (error) {
-    console.error('Error getting unread count:', error);
+    logger.error('Error getting unread count', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -82,7 +92,9 @@ router.patch('/:id/read', verifyAuth, async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error marking notification read:', error);
+    logger.error('Error marking notification read', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -99,7 +111,9 @@ router.post('/mark-all-read', verifyAuth, async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error marking all notifications read:', error);
+    logger.error('Error marking all notifications read', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -139,7 +153,9 @@ router.post('/:id/action', verifyAuth, async (req, res) => {
       message: `Action '${action}' handled for notification`,
     });
   } catch (error) {
-    console.error('Error handling notification action:', error);
+    logger.error('Error handling notification action', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });

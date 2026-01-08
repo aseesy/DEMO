@@ -12,6 +12,12 @@ const router = express.Router();
 const dbSafe = require('../dbSafe');
 const db = require('../dbPostgres');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'activities',
+});
+
 /**
  * GET /api/activities/:contactId
  * Get all activities for a child contact
@@ -76,7 +82,9 @@ router.get('/:contactId', async (req, res) => {
 
     res.json({ activities });
   } catch (error) {
-    console.error('Error getting activities:', error);
+    logger.error('Error getting activities', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -182,7 +190,9 @@ router.post('/', async (req, res) => {
       message: 'Activity created successfully',
     });
   } catch (error) {
-    console.error('Error creating activity:', error);
+    logger.error('Error creating activity', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -280,7 +290,9 @@ router.put('/:activityId', async (req, res) => {
       message: 'Activity updated successfully',
     });
   } catch (error) {
-    console.error('Error updating activity:', error);
+    logger.error('Error updating activity', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -334,7 +346,9 @@ router.delete('/:activityId', async (req, res) => {
       message: 'Activity deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting activity:', error);
+    logger.error('Error deleting activity', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });

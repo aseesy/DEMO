@@ -16,6 +16,12 @@ const { handleServiceError } = require('../middleware/errorHandlers');
 const { pairingService } = require('../src/services');
 const { ValidationError, ConflictError, ForbiddenError } = require('../src/services/errors');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'invites',
+});
+
 router.setHelpers = function (helpers) {
   if (helpers.roomManager) {
     pairingService.setRoomManager(helpers.roomManager);
@@ -60,7 +66,9 @@ router.post('/accept', verifyAuth, async (req, res) => {
 
     // Validate token is provided
     if (!token || token.trim().length === 0) {
-      console.warn(`[Invites] Accept failed: token missing (userId: ${userId})`);
+      logger.warn('Log message', {
+        value: `[Invites] Accept failed: token missing (userId: ${userId})`,
+      });
       return res.status(400).json({
         success: false,
         error: 'Token is required',
@@ -69,15 +77,19 @@ router.post('/accept', verifyAuth, async (req, res) => {
     }
 
     // Log acceptance attempt (without full token for security)
-    console.log(`[Invites] Accept attempt (userId: ${userId}, token length: ${token.length})`);
+    logger.debug('Log message', {
+      value: `[Invites] Accept attempt (userId: ${userId}, token length: ${token.length})`,
+    });
 
     // Validate token first to get pairing info
     const validation = await pairingService.validateToken(token);
 
     if (!validation.valid) {
       const duration = Date.now() - startTime;
-      console.warn(`[Invites] Accept failed: ${validation.code || 'INVALID'} (${duration}ms, userId: ${userId})`);
-      
+      logger.warn('Log message', {
+        value: `[Invites] Accept failed: ${validation.code || 'INVALID'} (${duration}ms, userId: ${userId})`,
+      });
+
       // Map validation codes to HTTP status codes
       let statusCode = 400;
       if (validation.code === 'ALREADY_ACCEPTED' || validation.code === 'ALREADY_PAIRED') {
@@ -100,8 +112,10 @@ router.post('/accept', verifyAuth, async (req, res) => {
 
       if (actualEmail !== expectedEmail) {
         const duration = Date.now() - startTime;
-        console.warn(`[Invites] Email mismatch (${duration}ms, userId: ${userId}, expected: ${expectedEmail}, actual: ${actualEmail})`);
-        
+        logger.warn('Log message', {
+          value: `[Invites] Email mismatch (${duration}ms, userId: ${userId}, expected: ${expectedEmail}, actual: ${actualEmail})`,
+        });
+
         return res.status(403).json({
           success: false,
           error: `This invitation was sent to ${validation.parentBEmail}. You're logged in as ${userEmail || 'a different account'}.`,
@@ -116,7 +130,9 @@ router.post('/accept', verifyAuth, async (req, res) => {
     const result = await pairingService.acceptPairing(userId, { token });
 
     const duration = Date.now() - startTime;
-    console.log(`[Invites] Accept success (${duration}ms, userId: ${userId}, pairingId: ${result.pairing?.id})`);
+    logger.debug('Log message', {
+      value: `[Invites] Accept success (${duration}ms, userId: ${userId}, pairingId: ${result.pairing?.id})`,
+    });
 
     res.json({
       success: true,
@@ -126,9 +142,13 @@ router.post('/accept', verifyAuth, async (req, res) => {
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`[Invites] Accept error (${duration}ms, userId: ${userId}):`, {
-      message: error.message,
-      code: error.code,
+    logger.error('Log message', {
+      arg0: `[Invites] Accept error (${duration}ms, userId: ${userId}):`,
+
+      ...{
+        message: error.message,
+        code: error.code,
+      },
     });
 
     // Handle specific error types
@@ -166,7 +186,11 @@ router.post('/accept', verifyAuth, async (req, res) => {
     }
 
     // Check for already paired/accepted errors
-    if (error.message && (error.message.includes('already have an active') || error.message.includes('already been accepted'))) {
+    if (
+      error.message &&
+      (error.message.includes('already have an active') ||
+        error.message.includes('already been accepted'))
+    ) {
       return res.status(409).json({
         success: false,
         error: error.message,
@@ -180,5 +204,3 @@ router.post('/accept', verifyAuth, async (req, res) => {
 });
 
 module.exports = router;
-
-

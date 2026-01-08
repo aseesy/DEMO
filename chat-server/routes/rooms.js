@@ -16,6 +16,12 @@ const { handleServiceError } = require('../middleware/errorHandlers');
 const { roomService } = require('../src/services');
 const { NotFoundError } = require('../src/services/errors');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'rooms',
+});
+
 // Helper references - set from server.js
 let autoCompleteOnboardingTasks;
 
@@ -167,7 +173,9 @@ router.get('/members/check', verifyAuth, async (req, res) => {
     const result = await roomService.checkRoomMembers(userId, email);
     res.json(result);
   } catch (error) {
-    console.error('[room/members/check] Unexpected error:', error);
+    logger.error('[room/members/check] Unexpected error', {
+      error: error,
+    });
     // Return safe default instead of 500 error
     res.json({ hasMultipleMembers: false, memberCount: 0 });
   }

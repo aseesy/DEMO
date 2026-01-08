@@ -1,9 +1,9 @@
 /**
  * DEV-ONLY Testing Routes
- * 
+ *
  * ⚠️ CRITICAL: These routes are ONLY available in development mode
  * ⚠️ They are DISABLED in production for security
- * 
+ *
  * Provides fast authentication testing without email/OAuth flows.
  * Useful for testing auth guards, redirects, and session management.
  */
@@ -15,6 +15,12 @@ const { generateToken } = require('../middleware/auth');
 const dbSafe = require('../dbSafe');
 const { createUser } = require('../auth/user');
 const { getUser } = require('../auth/user');
+
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'dev',
+});
 
 /**
  * Check if dev routes should be enabled
@@ -29,9 +35,9 @@ function isDevModeAllowed(req) {
   // Check if request is from localhost or internal IP
   const ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
   const hostname = req.get('host') || '';
-  
+
   // Allow localhost, 127.0.0.1, ::1, and internal IPs (10.x, 172.16-31.x, 192.168.x)
-  const isLocalhost = 
+  const isLocalhost =
     ip === '127.0.0.1' ||
     ip === '::1' ||
     ip === '::ffff:127.0.0.1' ||
@@ -49,10 +55,12 @@ function isDevModeAllowed(req) {
  */
 function devOnlyMiddleware(req, res, next) {
   if (!isDevModeAllowed(req)) {
-    console.warn('[DEV] Blocked dev route access', {
-      ip: req.ip,
-      hostname: req.get('host'),
-      env: process.env.NODE_ENV,
+    logger.warn('[DEV] Blocked dev route access', {
+      ...{
+        ip: req.ip,
+        hostname: req.get('host'),
+        env: process.env.NODE_ENV,
+      },
     });
     return res.status(403).json({
       error: 'Dev routes are only available in development mode on localhost',
@@ -66,10 +74,12 @@ function devOnlyMiddleware(req, res, next) {
  * Log dev route usage for audit
  */
 function logDevUsage(action, details) {
-  console.log('[DEV] Dev route used:', {
-    action,
-    timestamp: new Date().toISOString(),
-    ...details,
+  logger.debug('[DEV] Dev route used', {
+    ...{
+      action,
+      timestamp: new Date().toISOString(),
+      ...details,
+    },
   });
 }
 
@@ -78,21 +88,21 @@ router.use(devOnlyMiddleware);
 
 /**
  * POST /__dev/login
- * 
+ *
  * Impersonate/create session for a user by email
- * 
+ *
  * Request:
  * {
  *   "email": "test@example.com",
  *   "firstName": "Test",  // Optional
  *   "lastName": "User"    // Optional
  * }
- * 
+ *
  * Behavior:
  * - Finds user by email, or creates if doesn't exist
  * - Creates a normal JWT session cookie (same as real login)
  * - Returns user object and token
- * 
+ *
  * This allows testing 80% of auth flows without signup/login UI.
  */
 router.post('/login', async (req, res) => {
@@ -129,8 +139,10 @@ router.post('/login', async (req, res) => {
 
     if (!user) {
       // User doesn't exist - create it
-      console.log(`[DEV] Creating new user: ${emailLower}`);
-      
+      logger.debug('Log message', {
+        value: `[DEV] Creating new user: ${emailLower}`,
+      });
+
       user = await createUser(
         emailLower,
         null, // No password for dev users
@@ -140,7 +152,10 @@ router.post('/login', async (req, res) => {
         {
           firstName: firstName || 'Test',
           lastName: lastName || 'User',
-          displayName: firstName && lastName ? `${firstName} ${lastName}` : firstName || emailLower.split('@')[0],
+          displayName:
+            firstName && lastName
+              ? `${firstName} ${lastName}`
+              : firstName || emailLower.split('@')[0],
         }
       );
 
@@ -153,7 +168,7 @@ router.post('/login', async (req, res) => {
     } else {
       // Update last_login for existing user
       await dbSafe.safeUpdate('users', { last_login: new Date().toISOString() }, { id: user.id });
-      
+
       logDevUsage('user_found', {
         userId: user.id,
         email: emailLower,
@@ -181,7 +196,9 @@ router.post('/login', async (req, res) => {
       dev: true, // Flag to indicate this is a dev session
     });
   } catch (error) {
-    console.error('[DEV] Login error:', error);
+    logger.error('[DEV] Login error', {
+      error: error,
+    });
     logDevUsage('login_error', {
       error: error.message,
       stack: error.stack,
@@ -196,7 +213,7 @@ router.post('/login', async (req, res) => {
 
 /**
  * POST /__dev/logout
- * 
+ *
  * Clear dev session (same as real logout)
  */
 router.post('/logout', async (req, res) => {
@@ -220,13 +237,14 @@ router.post('/logout', async (req, res) => {
 
 /**
  * GET /__dev/me
- * 
+ *
  * Get current user info (requires authentication)
  * Useful for testing auth guards
  */
 router.get('/me', async (req, res) => {
   // Check for token
-  const token = req.cookies.auth_token || 
+  const token =
+    req.cookies.auth_token ||
     (req.headers.authorization && req.headers.authorization.replace('Bearer ', ''));
 
   if (!token) {
@@ -273,7 +291,9 @@ router.get('/me', async (req, res) => {
       });
     }
 
-    console.error('[DEV] Me error:', error);
+    logger.error('[DEV] Me error', {
+      error: error,
+    });
     res.status(500).json({
       error: error.message || 'Failed to get user info',
       code: 'DEV_ME_ERROR',
@@ -283,7 +303,7 @@ router.get('/me', async (req, res) => {
 
 /**
  * GET /__dev/status
- * 
+ *
  * Check if dev routes are enabled and accessible
  */
 router.get('/status', (req, res) => {
@@ -296,4 +316,3 @@ router.get('/status', (req, res) => {
 });
 
 module.exports = router;
-

@@ -14,6 +14,12 @@ const db = require('../dbPostgres');
 const roomManager = require('../roomManager');
 const communicationStats = require('../communicationStats');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'dashboard',
+});
+
 /**
  * GET /api/dashboard/updates
  * Get dashboard updates (aggregated activity: expenses, agreements, invites)
@@ -93,7 +99,9 @@ router.get('/updates', async (req, res) => {
         };
       });
     } catch (err) {
-      console.warn('Could not get expenses:', err.message);
+      logger.warn('Could not get expenses', {
+        message: err.message,
+      });
     }
 
     // Get recent agreements (limit 3)
@@ -138,7 +146,9 @@ router.get('/updates', async (req, res) => {
         };
       });
     } catch (err) {
-      console.warn('Could not fetch agreements:', err.message);
+      logger.warn('Could not fetch agreements', {
+        message: err.message,
+      });
     }
 
     // Aggregate all updates
@@ -152,7 +162,9 @@ router.get('/updates', async (req, res) => {
 
     res.json({ updates: limitedUpdates });
   } catch (error) {
-    console.error('Error getting dashboard updates:', error);
+    logger.error('Error getting dashboard updates', {
+      error: error,
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -169,15 +181,17 @@ router.get('/communication-stats', async (req, res) => {
       email = req.query.username;
     }
 
-    console.log('[dashboard] /communication-stats called:', {
-      email: email,
-      queryEmail: req.query.email,
-      queryUsername: req.query.username,
-      allQueryParams: req.query,
+    logger.debug('[dashboard] /communication-stats called', {
+      ...{
+        email: email,
+        queryEmail: req.query.email,
+        queryUsername: req.query.username,
+        allQueryParams: req.query,
+      },
     });
 
     if (!email) {
-      console.warn('[dashboard] /communication-stats: Email is required');
+      logger.warn('[dashboard] /communication-stats: Email is required');
       return res.status(400).json({ error: 'Email is required' });
     }
 
@@ -186,26 +200,26 @@ router.get('/communication-stats', async (req, res) => {
     try {
       userResult = await dbSafe.safeSelect('users', { email: email.toLowerCase() }, { limit: 1 });
     } catch (dbError) {
-      console.error(
-        '[dashboard] /communication-stats: Database error during user lookup:',
-        dbError
-      );
+      logger.error('[dashboard] /communication-stats: Database error during user lookup', {
+        dbError: dbError,
+      });
       throw dbError;
     }
 
     const users = dbSafe.parseResult(userResult);
 
-    console.log('[dashboard] /communication-stats: User lookup result:', {
-      email: email.toLowerCase(),
-      found: users.length > 0,
-      userId: users.length > 0 ? users[0].id : null,
+    logger.debug('[dashboard] /communication-stats: User lookup result', {
+      ...{
+        email: email.toLowerCase(),
+        found: users.length > 0,
+        userId: users.length > 0 ? users[0].id : null,
+      },
     });
 
     if (users.length === 0) {
-      console.warn(
-        '[dashboard] /communication-stats: User not found for email:',
-        email.toLowerCase()
-      );
+      logger.warn('[dashboard] /communication-stats: User not found for email', {
+        email_toLowerCase: email.toLowerCase(),
+      });
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -216,17 +230,23 @@ router.get('/communication-stats', async (req, res) => {
     try {
       stats = await communicationStats.getUserStats(userId);
     } catch (statsError) {
-      console.error('[dashboard] /communication-stats: Error getting stats:', statsError, {
-        userId,
-        errorMessage: statsError.message,
-        errorStack: statsError.stack,
+      logger.error('[dashboard] /communication-stats: Error getting stats', {
+        statsError: statsError,
+
+        ...{
+          userId,
+          errorMessage: statsError.message,
+          errorStack: statsError.stack,
+        },
       });
       throw statsError;
     }
 
-    console.log('[dashboard] /communication-stats: Stats retrieved:', {
-      userId,
-      stats: stats,
+    logger.debug('[dashboard] /communication-stats: Stats retrieved', {
+      ...{
+        userId,
+        stats: stats,
+      },
     });
 
     res.json({
@@ -234,23 +254,29 @@ router.get('/communication-stats', async (req, res) => {
       stats: stats,
     });
   } catch (error) {
-    console.error('[dashboard] Error getting communication stats:', error, {
-      message: error.message,
-      stack: error.stack,
-      query: req.query,
-      errorName: error.name,
-      errorType: error.constructor.name,
+    logger.error('[dashboard] Error getting communication stats', {
+      error: error,
+
+      ...{
+        message: error.message,
+        stack: error.stack,
+        query: req.query,
+        errorName: error.name,
+        errorType: error.constructor.name,
+      },
     });
 
     // If error message contains "Username is required", it's coming from a service that still expects username
     // Convert it to a more helpful error message
     let errorMessage = error.message;
     if (errorMessage && errorMessage.includes('Username is required')) {
-      console.error(
+      logger.error(
         '[dashboard] /communication-stats: ERROR - Service is throwing "Username is required"',
         {
-          errorStack: error.stack,
-          query: req.query,
+          ...{
+            errorStack: error.stack,
+            query: req.query,
+          },
         }
       );
       errorMessage = 'Email is required. Please ensure you are passing the email parameter.';

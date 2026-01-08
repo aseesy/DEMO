@@ -312,41 +312,68 @@ module.exports = function transformer(file, api) {
   if (!hasLoggerImport) {
     const loggerImportPath = getLoggerImportPath();
 
-    // Find the last require statement
-    const requires = root.find(j.VariableDeclaration, {
-      declarations: [
-        {
-          init: { callee: { name: 'require' } },
-        },
-      ],
-    });
+    // Find the last require statement at module level
+    const requires = root
+      .find(j.VariableDeclaration, {
+        declarations: [
+          {
+            init: { callee: { name: 'require' } },
+          },
+        ],
+      })
+      .filter(path => {
+        // Only include top-level requires (not inside functions)
+        let parent = path.parent;
+        let depth = 0;
+        while (parent && depth < 10) {
+          if (
+            parent.value.type === 'FunctionDeclaration' ||
+            parent.value.type === 'FunctionExpression' ||
+            parent.value.type === 'ArrowFunctionExpression'
+          ) {
+            return false; // Inside a function, skip
+          }
+          parent = parent.parent;
+          depth++;
+        }
+        return true; // Top-level
+      });
+
+    const loggerImport = j.variableDeclaration('const', [
+      j.variableDeclarator(
+        j.objectPattern([
+          j.property('init', j.identifier('defaultLogger'), j.identifier('defaultLogger')),
+        ]),
+        j.callExpression(j.identifier('require'), [j.literal(loggerImportPath)])
+      ),
+    ]);
 
     if (requires.size() > 0) {
-      // Insert after last require
+      // Insert after last top-level require
       const lastRequire = requires.at(requires.size() - 1);
-      lastRequire.insertAfter(
-        j.variableDeclaration('const', [
-          j.variableDeclarator(
-            j.objectPattern([
-              j.property('init', j.identifier('defaultLogger'), j.identifier('defaultLogger')),
-            ]),
-            j.callExpression(j.identifier('require'), [j.literal(loggerImportPath)])
-          ),
-        ])
-      );
+      lastRequire.insertAfter(loggerImport);
     } else {
-      // No requires found, add at top
-      const program = root.get().value;
-      program.body.unshift(
-        j.variableDeclaration('const', [
-          j.variableDeclarator(
-            j.objectPattern([
-              j.property('init', j.identifier('defaultLogger'), j.identifier('defaultLogger')),
-            ]),
-            j.callExpression(j.identifier('require'), [j.literal(loggerImportPath)])
-          ),
-        ])
-      );
+      // No requires found, add after express/router setup
+      const expressRouter = root.find(j.VariableDeclaration, {
+        declarations: [
+          {
+            id: {
+              type: 'Identifier',
+              name: name => name === 'router' || name === 'express',
+            },
+          },
+        ],
+      });
+
+      if (expressRouter.size() > 0) {
+        expressRouter.at(expressRouter.size() - 1).insertAfter(loggerImport);
+      } else {
+        // Last resort: add at top
+        const program = root.get().value;
+        if (program.body && Array.isArray(program.body)) {
+          program.body.unshift(loggerImport);
+        }
+      }
     }
   }
 
@@ -354,18 +381,36 @@ module.exports = function transformer(file, api) {
   if (!hasLoggerInstance) {
     const moduleName = getModuleName();
 
-    // Find where to insert (after logger import)
-    const loggerImport = root.find(j.VariableDeclarator, {
-      init: {
-        callee: { name: 'require' },
-        arguments: [
-          {
-            value: val =>
-              (val && val.includes('logging/logger')) || (val && val.includes('utils/logger')),
-          },
-        ],
-      },
-    });
+    // Find logger import at module level
+    const loggerImport = root
+      .find(j.VariableDeclarator, {
+        init: {
+          callee: { name: 'require' },
+          arguments: [
+            {
+              value: val =>
+                (val && val.includes('logging/logger')) || (val && val.includes('utils/logger')),
+            },
+          ],
+        },
+      })
+      .filter(path => {
+        // Only include top-level (not inside functions)
+        let parent = path.parent;
+        let depth = 0;
+        while (parent && depth < 10) {
+          if (
+            parent.value.type === 'FunctionDeclaration' ||
+            parent.value.type === 'FunctionExpression' ||
+            parent.value.type === 'ArrowFunctionExpression'
+          ) {
+            return false;
+          }
+          parent = parent.parent;
+          depth++;
+        }
+        return true;
+      });
 
     if (loggerImport.size() > 0) {
       const importPath = loggerImport.paths()[0];

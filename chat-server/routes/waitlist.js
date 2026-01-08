@@ -10,6 +10,12 @@ const express = require('express');
 const router = express.Router();
 const db = require('../dbPostgres');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'waitlist',
+});
+
 /**
  * POST /api/waitlist
  * Add email to waitlist
@@ -65,7 +71,9 @@ router.post('/', async (req, res) => {
     const countResult = await db.query('SELECT COUNT(*) as total FROM waitlist');
     const position = parseInt(countResult.rows[0].total, 10);
 
-    console.log(`✅ Waitlist signup: ${cleanEmail} (position #${position})`);
+    logger.debug('Log message', {
+      value: `✅ Waitlist signup: ${cleanEmail} (position #${position})`,
+    });
 
     res.status(201).json({
       success: true,
@@ -73,7 +81,9 @@ router.post('/', async (req, res) => {
       message: "You're on the list!",
     });
   } catch (error) {
-    console.error('Waitlist signup error:', error);
+    logger.error('Waitlist signup error', {
+      error: error,
+    });
 
     // Handle unique constraint violation (duplicate email)
     if (error.code === '23505') {
@@ -99,7 +109,9 @@ router.get('/count', async (req, res) => {
 
     res.json({ count });
   } catch (error) {
-    console.error('Waitlist count error:', error);
+    logger.error('Waitlist count error', {
+      error: error,
+    });
     res.status(500).json({ error: 'Unable to fetch count' });
   }
 });
@@ -127,7 +139,9 @@ router.get('/position/:email', async (req, res) => {
       email: email,
     });
   } catch (error) {
-    console.error('Waitlist position error:', error);
+    logger.error('Waitlist position error', {
+      error: error,
+    });
     res.status(500).json({ error: 'Unable to check position' });
   }
 });
