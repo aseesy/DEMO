@@ -5,7 +5,7 @@
  * and notifying users of the issue.
  */
 
-const { defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger } = require('../../src/infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'aiFailure',

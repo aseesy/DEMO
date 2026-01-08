@@ -4,7 +4,7 @@
  * Verifies user is a member of a room.
  */
 
-const { defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger } = require('../../src/infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'roomMembership',

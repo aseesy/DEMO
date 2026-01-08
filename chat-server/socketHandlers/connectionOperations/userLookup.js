@@ -4,7 +4,7 @@
  * Handles user validation and lookup by email/username.
  */
 
-const { defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger } = require('../../src/infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'userLookup',
