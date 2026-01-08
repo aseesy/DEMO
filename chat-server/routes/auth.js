@@ -11,6 +11,7 @@ const loginRoutes = require('./auth/login');
 const oauthRoutes = require('./auth/oauth');
 const passwordRoutes = require('./auth/password');
 const verificationRoutes = require('./auth/verification');
+const refreshRoutes = require('./auth/refresh');
 
 // CRITICAL: Require database to be ready before processing auth requests
 // This prevents "Account Not Found" errors when database is still connecting
@@ -22,5 +23,6 @@ router.use('/', loginRoutes);
 router.use('/', oauthRoutes);
 router.use('/', passwordRoutes);
 router.use('/', verificationRoutes);
+router.use('/', refreshRoutes);
 
 module.exports = router;

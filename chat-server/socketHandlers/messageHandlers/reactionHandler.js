@@ -13,6 +13,7 @@
 const { validateActiveUser } = require('../messageOperations');
 const { parseReactions, toggleReaction } = require('../messageOperations');
 const { wrapSocketHandler } = require('../errorBoundary');
+const { defaultLogger } = require('../../src/infrastructure/logging/logger');
 
 /**
  * Register add_reaction handler
@@ -23,6 +24,7 @@ const { wrapSocketHandler } = require('../errorBoundary');
  */
 function registerReactionHandler(socket, io, services) {
   const { dbSafe, userSessionService } = services;
+  const logger = defaultLogger.child({ handler: 'add_reaction' });
 
   socket.on(
     'add_reaction',
@@ -50,10 +52,12 @@ function registerReactionHandler(socket, io, services) {
             });
           }
         } catch (error) {
-          console.error(
-            '[add_reaction] MessageService failed, falling back to manual update:',
-            error.message
-          );
+          logger.warn('MessageService failed, falling back to manual update', {
+            error: error.message,
+            errorCode: error.code,
+            messageId,
+            emoji,
+          });
           // Fallback to manual reaction handling
           try {
             // Get current reactions
@@ -85,7 +89,11 @@ function registerReactionHandler(socket, io, services) {
               roomId: user.roomId,
             });
           } catch (fallbackError) {
-            console.error('Error in fallback reaction handling:', fallbackError);
+            logger.error('Error in fallback reaction handling', fallbackError, {
+              errorCode: fallbackError.code,
+              messageId,
+              emoji,
+            });
           }
         }
       },

@@ -2,8 +2,12 @@
  * Socket Coaching Handlers
  */
 
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
+const { emitError } = require('./utils');
+
 function registerCoachingHandlers(socket, io, services) {
   const { proactiveCoach, dbSafe, dbPostgres, userSessionService } = services;
+  const logger = defaultLogger.child({ handler: 'coaching' });
 
   // analyze_draft handler
   socket.on('analyze_draft', async ({ draftText }) => {
@@ -55,8 +59,12 @@ function registerCoachingHandlers(socket, io, services) {
         socket.emit('draft_analysis', coaching);
       }
     } catch (error) {
-      console.error('Error analyzing draft:', error);
-      socket.emit('error', { message: 'Failed to analyze draft message.' });
+      logger.error('Error analyzing draft', error, {
+        errorCode: error.code,
+        hasUser: !!user,
+        roomId: user?.roomId,
+      });
+      emitError(socket, 'Failed to analyze draft message.', error, 'analyze_draft');
     }
   });
 }

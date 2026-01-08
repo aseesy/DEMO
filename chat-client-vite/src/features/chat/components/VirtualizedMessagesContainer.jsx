@@ -2,6 +2,7 @@ import React from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { MessageItem } from './MessageItem.jsx';
 import { ObserverCard } from '../../dashboard/components/ObserverCard.jsx';
+import { formatMessageDate, detectMessageOwnership, isAIMessage, createDateFormatterCache } from '../../../utils/messageDisplayUtils.js';
 
 /**
  * VirtualizedMessagesContainer - Renders messages with virtual scrolling
@@ -41,40 +42,30 @@ function VirtualizedMessagesContainerComponent({
   socket: _socket,
   _room,
 }) {
+  // Create date formatter cache once (reused across renders)
+  const dateFormatterCache = React.useMemo(() => createDateFormatterCache(), []);
+
   // Flatten message groups into a single list with date separators
   // Format: [{ type: 'date', date: '...' }, { type: 'message', message: {...}, groupIndex, msgIndex }, ...]
   const flattenedItems = React.useMemo(() => {
     if (!messages || messages.length === 0) return [];
 
     const items = [];
-    const currentYear = new Date().getFullYear();
 
     // Filter out contact_suggestion messages
     const displayMessages = messages.filter(msg => msg.type !== 'contact_suggestion');
     if (displayMessages.length === 0) return [];
 
-    // Cache date formatters
-    const dateFormatter = new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-    });
-    const dateFormatterWithYear = new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
     let currentDate = null;
 
     for (let index = 0; index < displayMessages.length; index++) {
       const msg = displayMessages[index];
-      const msgDate = new Date(msg.created_at || msg.timestamp);
-      const needsYear = msgDate.getFullYear() !== currentYear;
-      const dateLabel = needsYear
-        ? dateFormatterWithYear.format(msgDate)
-        : dateFormatter.format(msgDate);
+      
+      // Use utility function for date formatting
+      const dateLabel = formatMessageDate(
+        msg.created_at || msg.timestamp || Date.now(),
+        dateFormatterCache
+      );
 
       // Add date separator if date changed
       if (dateLabel !== currentDate) {
@@ -86,29 +77,19 @@ function VirtualizedMessagesContainerComponent({
         currentDate = dateLabel;
       }
 
-      // Add message item
+      // Add message item (preserve all fields)
       items.push({
         type: 'message',
         message: {
-          id: msg.id,
-          text: msg.text,
-          username: msg.username,
+          ...msg,
           timestamp: msg.timestamp || msg.created_at,
-          type: msg.type,
-          sender: msg.sender,
-          sender_id: msg.sender_id,
-          user_id: msg.user_id,
-          intervention_id: msg.intervention_id,
-          isOptimistic: msg.isOptimistic,
-          status: msg.status,
-          isAI: msg.isAI,
         },
         id: msg.id || `msg-${index}`,
       });
     }
 
     return items;
-  }, [messages]);
+  }, [messages, dateFormatterCache]);
 
   // Responsive padding calculation
   const [isMobile, setIsMobile] = React.useState(() => {
@@ -170,11 +151,9 @@ function VirtualizedMessagesContainerComponent({
       const msg = item.message;
       if (pendingOriginalMessageToRemove === msg.id) return null;
 
-      // UUID-based ownership detection
-      const messageUserId = msg.sender?.uuid || msg.sender?.id || msg.sender_id || msg.user_id;
-      const isOwn = userId && messageUserId && String(userId) === String(messageUserId);
-      const senderDisplayName = msg.sender?.first_name || msg.sender?.email || 'Unknown';
-      const isAI = msg.isAI || msg.sender?.email === 'LiaiZen';
+      // Use utility functions for ownership detection and AI detection
+      const { isOwn, senderDisplayName } = detectMessageOwnership(msg, userId);
+      const isAI = isAIMessage(msg);
       const isHighlighted = highlightedMessageId === msg.id;
       const isSending = msg.isOptimistic || msg.status === 'sending';
 

@@ -46,6 +46,13 @@ router.post('/create', verifyAuth, asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
+// Generate a simple invite code (no email required)
+router.post('/generate-code', verifyAuth, asyncHandler(async (req, res) => {
+  const userId = req.user.userId;
+  const result = await invitationService.createInvitation(userId, null);
+  res.json(result);
+}));
+
 router.post('/resend/:id', verifyAuth, asyncHandler(async (req, res) => {
   const invitationId = parseInt(req.params.id, 10);
   const userId = req.user.userId;

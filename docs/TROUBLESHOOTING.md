@@ -113,7 +113,7 @@ npm run dev
 **Common Errors**:
 
 - `DATABASE_URL not set` → Add to `.env`
-- `Port 3001 already in use` → Kill existing process
+- `Port 3000 already in use` → Kill existing process or change PORT in .env
 - `Cannot find module` → Run `npm install`
 
 **Solution**:

@@ -13,6 +13,7 @@ const RATE_LIMIT_EVENT = 'liaizen:rate-limit';
 // Rate limit state - prevent excessive retries
 // Persisted to sessionStorage to survive page refreshes
 const RATE_LIMIT_STORAGE_KEY = 'liaizen:rate-limit-until';
+const SERVER_DOWN_STORAGE_KEY = 'liaizen:server-down-until';
 
 function getRateLimitUntil() {
   if (typeof window === 'undefined') return 0;
@@ -33,7 +34,67 @@ function setRateLimitUntil(timestamp) {
   }
 }
 
+function getServerDownUntil() {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const stored = sessionStorage.getItem(SERVER_DOWN_STORAGE_KEY);
+    return stored ? parseInt(stored, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function setServerDownUntil(timestamp) {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(SERVER_DOWN_STORAGE_KEY, timestamp.toString());
+  } catch {
+    // Ignore storage errors (e.g., private browsing mode)
+  }
+}
+
 let rateLimitUntil = getRateLimitUntil();
+let serverDownUntil = getServerDownUntil();
+let connectionRefusedCount = 0;
+let lastConnectionRefusedLog = 0;
+
+/**
+ * Check if server is down based on recent connection refused errors
+ */
+function isServerDown() {
+  const stored = getServerDownUntil();
+  if (stored > serverDownUntil) {
+    serverDownUntil = stored;
+  }
+  return Date.now() < serverDownUntil;
+}
+
+/**
+ * Export isServerDown for hooks to check before making requests
+ * This prevents excessive API calls when the server is down
+ */
+export function checkServerStatus() {
+  return isServerDown();
+}
+
+/**
+ * Mark server as down for a cooldown period to suppress excessive errors
+ */
+function markServerDown(durationMs = 30000) {
+  serverDownUntil = Date.now() + durationMs;
+  setServerDownUntil(serverDownUntil);
+}
+
+/**
+ * Mark server as up (called on successful connection)
+ */
+function markServerUp() {
+  if (serverDownUntil > 0) {
+    serverDownUntil = 0;
+    setServerDownUntil(0);
+    connectionRefusedCount = 0;
+  }
+}
 
 /**
  * Dispatch auth failure event for global handling
@@ -177,6 +238,9 @@ export async function apiGet(path, options = {}) {
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
 
+    // Server is up - mark it as such
+    markServerUp();
+
     // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
       trackAPIError(endpoint, response.status, response.statusText);
@@ -200,7 +264,41 @@ export async function apiGet(path, options = {}) {
     // Track network errors with offline/server classification
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
+    
+    // Check if this is a connection refused error
+    const isConnectionRefused = 
+      error.message?.includes('ERR_CONNECTION_REFUSED') ||
+      error.message?.includes('Failed to fetch') ||
+      error.message?.includes('NetworkError') ||
+      error.name === 'TypeError' && error.message?.includes('fetch');
+    
+    if (isConnectionRefused) {
+      connectionRefusedCount++;
+      
+      // Mark server as down for 30 seconds to suppress excessive errors
+      markServerDown(30000);
+      
+      // Only log connection refused errors occasionally to avoid spam
+      const now = Date.now();
+      const timeSinceLastLog = now - lastConnectionRefusedLog;
+      
+      if (timeSinceLastLog > 10000 || connectionRefusedCount === 1) {
+        // Log first error or if 10+ seconds have passed
+        console.warn(
+          `[apiClient] Server appears to be down (connection refused). ` +
+          `Suppressing similar errors for 30s. Count: ${connectionRefusedCount}`
+        );
+        lastConnectionRefusedLog = now;
+      }
+      
+      // Don't track connection refused errors excessively
+      if (connectionRefusedCount <= 3) {
+        trackAPIError(endpoint, 0, 'Connection refused - server may be down');
+      }
+    } else {
+      // Not connection refused - track normally
     trackAPIError(endpoint, 0, error.message || 'Network error');
+    }
     
     // Classify error type (offline vs server) for observability
     if (typeof window !== 'undefined') {
@@ -260,6 +358,9 @@ export async function apiPost(path, body, options = {}) {
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
 
+    // Server is up - mark it as such
+    markServerUp();
+
     // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
       trackAPIError(endpoint, response.status, response.statusText);
@@ -270,10 +371,23 @@ export async function apiPost(path, body, options = {}) {
 
     return response;
   } catch (error) {
-    // Track network errors
+    // Track network errors with connection refused handling
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
+    
+    const isConnectionRefused = 
+      error.message?.includes('ERR_CONNECTION_REFUSED') ||
+      error.message?.includes('Failed to fetch') ||
+      error.message?.includes('NetworkError');
+    
+    if (isConnectionRefused) {
+      markServerDown(30000);
+      if (connectionRefusedCount <= 3) {
+        trackAPIError(endpoint, 0, 'Connection refused - server may be down');
+      }
+    } else {
     trackAPIError(endpoint, 0, error.message || 'Network error');
+    }
     throw error;
   }
 }
@@ -301,6 +415,9 @@ export async function apiPut(path, body, options = {}) {
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
 
+    // Server is up - mark it as such
+    markServerUp();
+
     // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
       trackAPIError(endpoint, response.status, response.statusText);
@@ -311,10 +428,23 @@ export async function apiPut(path, body, options = {}) {
 
     return response;
   } catch (error) {
-    // Track network errors
+    // Track network errors with connection refused handling
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
+    
+    const isConnectionRefused = 
+      error.message?.includes('ERR_CONNECTION_REFUSED') ||
+      error.message?.includes('Failed to fetch') ||
+      error.message?.includes('NetworkError');
+    
+    if (isConnectionRefused) {
+      markServerDown(30000);
+      if (connectionRefusedCount <= 3) {
+        trackAPIError(endpoint, 0, 'Connection refused - server may be down');
+      }
+    } else {
     trackAPIError(endpoint, 0, error.message || 'Network error');
+    }
     throw error;
   }
 }
@@ -340,6 +470,9 @@ export async function apiDelete(path, params = {}) {
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
 
+    // Server is up - mark it as such
+    markServerUp();
+
     // Track API errors (don't consume body - let caller handle it)
     if (!response.ok) {
       trackAPIError(endpoint, response.status, response.statusText);
@@ -350,10 +483,23 @@ export async function apiDelete(path, params = {}) {
 
     return response;
   } catch (error) {
-    // Track network errors
+    // Track network errors with connection refused handling
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
+    
+    const isConnectionRefused = 
+      error.message?.includes('ERR_CONNECTION_REFUSED') ||
+      error.message?.includes('Failed to fetch') ||
+      error.message?.includes('NetworkError');
+    
+    if (isConnectionRefused) {
+      markServerDown(30000);
+      if (connectionRefusedCount <= 3) {
+        trackAPIError(endpoint, 0, 'Connection refused - server may be down');
+      }
+    } else {
     trackAPIError(endpoint, 0, error.message || 'Network error');
+    }
     throw error;
   }
 }

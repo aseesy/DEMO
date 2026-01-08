@@ -1,8 +1,24 @@
 /**
+ * 🔒 SEALED FILE - DO NOT MODIFY WITHOUT APPROVAL
+ * 
  * Pure Query/Command Functions for Authentication
  *
+ * ⚠️ CRITICAL: This file is SEALED and SET IN STONE.
+ * These command functions are the single source of truth for auth API calls.
+ * 
+ * RULES FOR AI ASSISTANTS:
+ * - ❌ DO NOT modify function signatures (used by AuthContext)
+ * - ❌ DO NOT change API endpoint URLs
+ * - ❌ DO NOT alter request/response payload structure
+ * - ✅ CAN modify retry configuration (count, delays)
+ * - ✅ CAN update error message formatting
+ * 
+ * Before modifying: Check docs/AUTH_FLOW_SEALED.md for approval process.
+ * 
  * These functions handle API calls without managing React state.
  * Use these for CQS-compliant code where queries are separated from state management.
+ * 
+ * See: docs/AUTH_FLOW_SEALED.md for complete sealing documentation.
  */
 
 import { apiPost } from '../apiClient.js';

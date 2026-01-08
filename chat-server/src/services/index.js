@@ -47,6 +47,9 @@ const { userSessionService } = require('./session/userSessionService');
 
 // Auth services (Phase 2.9) ✅
 const { authService } = require('./auth/authService');
+const { AuthIdentityService } = require('./auth/authIdentityService');
+const { SessionService } = require('./auth/sessionService');
+const { RefreshTokenService } = require('./auth/refreshTokenService');
 
 // Permission services (RBAC) ✅
 const { permissionService } = require('./permissions/PermissionService');
@@ -95,6 +98,9 @@ module.exports = {
 
   // Auth services ✅
   authService,
+  AuthIdentityService,
+  SessionService,
+  RefreshTokenService,
 
   // Permission services (RBAC) ✅
   permissionService,

@@ -301,9 +301,9 @@ export function createSocketConnection(url, options = {}) {
       : ['websocket', 'polling'],
     auth,
     reconnection = true,
-    reconnectionDelay = 1000,
-    reconnectionDelayMax = 5000,
-    reconnectionAttempts = Infinity,
+    reconnectionDelay = 2000, // Increased from 1s to 2s to reduce CPU load
+    reconnectionDelayMax = 10000, // Increased from 5s to 10s for better backoff
+    reconnectionAttempts = 10, // Limited from Infinity to prevent infinite reconnection loops
     timeout = 20000,
     ...restOptions
   } = options;

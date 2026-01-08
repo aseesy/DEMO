@@ -2,18 +2,70 @@
  * Shared Socket Helper Functions
  */
 
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
+
 /**
- * Emit error to socket with consistent logging
+ * Emit error to socket with consistent logging and standardized format
  * @param {Object} socket - Socket.io socket instance
- * @param {string} message - User-facing error message
- * @param {Error|null} error - Optional error for logging
+ * @param {string} message - User-facing error message (never includes internal details)
+ * @param {Error|null} error - Optional error for logging (internal details hidden from client)
  * @param {string} context - Context string for logging
  */
 function emitError(socket, message, error = null, context = '') {
+  const logger = defaultLogger.child({ function: 'emitError', context: context || 'SocketHandler' });
+  
+  // Log error details server-side (never log PII or internal details to client)
   if (error) {
-    console.error(`Error in ${context}:`, error);
+    logger.error('Socket error occurred', error, {
+      errorCode: error.code || 'UNKNOWN',
+      context,
+      // Never log: email, userId, socketId, internal error messages
+    });
+  } else {
+    logger.warn('Socket error (no error object)', {
+      message,
+      context,
+    });
   }
-  socket.emit('error', { message });
+  
+  // Emit standardized error format to client
+  // NEVER leak: error.message (may contain DB details), stack traces, internal codes
+  const errorCode = error?.code || 'GENERIC_ERROR';
+  
+  // Map internal error codes to user-friendly codes
+  const clientCode = mapErrorCodeToClient(errorCode);
+  
+  socket.emit('error', {
+    code: clientCode,
+    message: message, // User-friendly message only (already sanitized by caller)
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * Map internal error codes to client-safe error codes
+ * Prevents leaking internal database error codes (e.g., 23505) to clients
+ * @param {string} internalCode - Internal error code
+ * @returns {string} Client-safe error code
+ */
+function mapErrorCodeToClient(internalCode) {
+  // Map PostgreSQL error codes to generic client codes
+  const errorCodeMap = {
+    // Database errors
+    '23505': 'DUPLICATE_ERROR', // Unique constraint violation
+    '23503': 'REFERENCE_ERROR', // Foreign key violation
+    '23502': 'REQUIRED_FIELD_ERROR', // Not null violation
+    '42P01': 'DATABASE_ERROR', // Table does not exist
+    '08P01': 'DATABASE_ERROR', // Protocol violation
+    
+    // Custom error codes
+    'EMAIL_EXISTS': 'REG_001',
+    'ROOM_NOT_AVAILABLE': 'ROOM_ERROR',
+    'AUTH_REQUIRED': 'AUTH_REQUIRED',
+    'AUTH_INVALID': 'AUTH_INVALID',
+  };
+  
+  return errorCodeMap[internalCode] || 'GENERIC_ERROR';
 }
 
 /**
@@ -44,7 +96,12 @@ async function getUserDisplayName(emailOrUser, dbSafe = null) {
         return user.first_name || user.display_name || emailOrUser;
       }
     } catch (err) {
-      console.error(`Error getting display name for ${emailOrUser}:`, err);
+      const logger = defaultLogger.child({ function: 'getUserDisplayName' });
+      logger.warn('Error getting display name', {
+        error: err.message,
+        errorCode: err.code,
+        // Don't log email - PII
+      });
     }
     return emailOrUser;
   }
@@ -129,7 +186,12 @@ async function getReceiverForMessage(senderEmail, roomId, dbSafe) {
 
     return buildUserObject(otherUser);
   } catch (err) {
-    console.warn('[getReceiverForMessage] Error getting receiver:', err);
+    const logger = defaultLogger.child({ function: 'getReceiverForMessage' });
+    logger.warn('Error getting receiver', {
+      error: err.message,
+      errorCode: err.code,
+      // Don't log senderEmail - PII
+    });
     return null;
   }
 }

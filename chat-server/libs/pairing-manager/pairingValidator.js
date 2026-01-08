@@ -68,6 +68,8 @@ const VALIDATION_CODE = {
   EXPIRED: 'EXPIRED',
   ALREADY_ACCEPTED: 'ALREADY_ACCEPTED',
   CANCELED: 'CANCELED',
+  REVOKED: 'REVOKED', // NEW: Token has been revoked
+  MAX_USES_EXCEEDED: 'MAX_USES_EXCEEDED', // NEW: Invitation used too many times
   ALREADY_PAIRED: 'ALREADY_PAIRED',
   SELF_PAIRING: 'SELF_PAIRING',
   DB_REQUIRED: 'DB_REQUIRED',
@@ -141,6 +143,28 @@ async function validateToken(token, db) {
   }
 
   const pairing = result.rows[0];
+
+  // Check if revoked (NEW: Check revoked_at field)
+  if (pairing.revoked_at) {
+    return {
+      valid: false,
+      error: 'This invitation has been cancelled',
+      code: VALIDATION_CODE.REVOKED,
+      pairing,
+    };
+  }
+
+  // Check usage count (NEW: Check if max_uses exceeded)
+  const maxUses = pairing.max_uses || 1; // Default to 1 if null
+  const useCount = pairing.use_count || 0; // Default to 0 if null
+  if (useCount >= maxUses) {
+    return {
+      valid: false,
+      error: 'This invitation has already been used',
+      code: VALIDATION_CODE.MAX_USES_EXCEEDED,
+      pairing,
+    };
+  }
 
   // Check status
   if (pairing.status === PAIRING_STATUS.ACTIVE) {
@@ -267,6 +291,28 @@ async function validateCode(code, db) {
   }
 
   const pairing = result.rows[0];
+
+  // Check if revoked (NEW: Check revoked_at field)
+  if (pairing.revoked_at) {
+    return {
+      valid: false,
+      error: 'This pairing code has been cancelled',
+      code: VALIDATION_CODE.REVOKED,
+      pairing,
+    };
+  }
+
+  // Check usage count (NEW: Check if max_uses exceeded)
+  const maxUses = pairing.max_uses || 1; // Default to 1 if null
+  const useCount = pairing.use_count || 0; // Default to 0 if null
+  if (useCount >= maxUses) {
+    return {
+      valid: false,
+      error: 'This pairing code has already been used',
+      code: VALIDATION_CODE.MAX_USES_EXCEEDED,
+      pairing,
+    };
+  }
 
   // Check status
   if (pairing.status === PAIRING_STATUS.ACTIVE) {
@@ -417,6 +463,16 @@ async function acceptPairing(params, db, roomManager) {
 
   const acceptor = acceptorResult.rows[0];
 
+  // Email enforcement: If parent_b_email is set, logged-in user's email must match (case-insensitive)
+  if (pairing.parent_b_email) {
+    const expectedEmail = pairing.parent_b_email.toLowerCase().trim();
+    const actualEmail = (acceptor.email || '').toLowerCase().trim();
+    
+    if (actualEmail !== expectedEmail) {
+      throw new Error(`This invitation was sent to ${pairing.parent_b_email}. You're logged in as ${acceptor.email || 'a different account'}.`);
+    }
+  }
+
   // Create shared room using createCoParentRoom which properly adds both members
   let sharedRoomId = null;
   if (roomManager && roomManager.createCoParentRoom) {
@@ -437,10 +493,10 @@ async function acceptPairing(params, db, roomManager) {
     console.warn('⚠️ roomManager.createCoParentRoom not available, skipping room creation');
   }
 
-  // Update pairing to active
+  // Update pairing to active and increment use_count
   const updateResult = await db.query(
     `UPDATE pairing_sessions
-     SET status = $1, parent_b_id = $2, accepted_at = CURRENT_TIMESTAMP, shared_room_id = $3
+     SET status = $1, parent_b_id = $2, accepted_at = CURRENT_TIMESTAMP, shared_room_id = $3, use_count = COALESCE(use_count, 0) + 1
      WHERE id = $4
      RETURNING *`,
     [PAIRING_STATUS.ACTIVE, acceptorId, sharedRoomId, pairingId]

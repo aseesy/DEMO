@@ -22,4 +22,11 @@ export { usePairing } from './model/usePairing.js';
 
 // Components (The UI Details)
 export { InviteTaskModal } from './components/InviteTaskModal.jsx';
+export { InviteCodeForm } from './components/InviteCodeForm.jsx';
 export { InvitationManager } from './components/InvitationManager.jsx';
+
+// Shared hooks
+export { useInviteCode } from './model/useInviteCode.js';
+
+// Constants
+export { INVITE_COPY_MESSAGE_TEMPLATE } from './constants.js';

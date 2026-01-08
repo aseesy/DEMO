@@ -1,5 +1,5 @@
 import React from 'react';
-import { apiGet } from '../../../apiClient.js';
+import { apiGet, checkServerStatus } from '../../../apiClient.js';
 
 /**
  * Hook for managing in-app notifications (invitations, system messages, etc.)
@@ -18,6 +18,11 @@ export function useInAppNotifications({ enabled = true } = {}) {
    */
   const fetchUnreadCount = React.useCallback(async () => {
     if (!enabled) return;
+
+    // Check if server is down to avoid unnecessary requests
+    if (checkServerStatus()) {
+      return;
+    }
 
     try {
       const response = await apiGet('/api/notifications/unread-count');
@@ -53,8 +58,13 @@ export function useInAppNotifications({ enabled = true } = {}) {
 
     fetchUnreadCount();
 
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
+    // Poll for new notifications every 60 seconds (reduced from 30s to save CPU)
+    // Only poll when page is visible
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchUnreadCount();
+      }
+    }, 60000);
     return () => clearInterval(interval);
   }, [fetchUnreadCount, enabled]);
 

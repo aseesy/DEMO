@@ -20,7 +20,7 @@ The SDD Agentic Framework v2.0.0 has been successfully integrated into your proj
 - **Location**: `src/sdd/`
 - **Status**: Active (if Python available) or gracefully degraded
 
-### 3. Specialized Agents (13 Total)
+### 3. Specialized Agents
 
 - **Departments**: Architecture, Engineering, Quality, Data, Product, Operations
 - **Location**: `.claude/agents/`
@@ -164,10 +164,10 @@ Adjust quality thresholds:
 
 ### Essential Reading
 
-1. `START_HERE.md` - Framework overview and setup
-2. `FRAMEWORK_README.md` - Detailed framework documentation
-3. `AGENTS.md` - Agent reference guide
-4. `FRAMEWORK_CHANGELOG.md` - Version history
+1. `docs/sdd-framework.md` - Framework overview and setup
+2. `docs/AGENTS.md` - Agent reference guide
+3. `.specify/memory/constitution.md` - Development principles
+4. Framework source: [kelleysd-apps/sdd-agentic-framework](https://github.com/kelleysd-apps/sdd-agentic-framework)
 
 ### Domain-Specific
 
@@ -260,9 +260,9 @@ cat .specify/memory/constitution.md
 
 For issues or questions:
 
-- Review framework documentation
+- Review framework documentation in `docs/sdd-framework.md`
 - Check `.docs/policies/` for operational guidance
-- Consult `FRAMEWORK_CHANGELOG.md` for recent changes
+- Review framework source repository for latest changes
 - Use `/create-agent` to add specialized expertise
 
 ---

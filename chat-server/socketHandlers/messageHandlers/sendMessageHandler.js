@@ -20,6 +20,7 @@ const {
 const { verifyRoomMembership, emitSocketError, SocketErrorCodes } = require('../socketMiddleware');
 const { wrapSocketHandler } = require('../errorBoundary');
 const { addToHistory } = require('./messagePersistence');
+const { defaultLogger } = require('../../src/infrastructure/logging/logger');
 
 /**
  * Register send_message handler
@@ -30,6 +31,7 @@ const { addToHistory } = require('./messagePersistence');
  */
 function registerSendMessageHandler(socket, io, services) {
   const { dbSafe, userSessionService } = services;
+  const logger = defaultLogger.child({ handler: 'send_message' });
 
   socket.on(
     'send_message',
@@ -48,10 +50,11 @@ function registerSendMessageHandler(socket, io, services) {
         if (!user.roomId) {
           const userEmail = user.email || user.username;
           const activeUserData = await userSessionService.getUserBySocketId(socket.id);
-          console.error('[send_message] ERROR: user.roomId is missing!', {
-            socketId: socket.id,
-            email: userEmail,
-            activeUserData,
+          logger.error('user.roomId is missing', {
+            socketId: socket.id.substring(0, 20) + '...',
+            hasEmail: !!userEmail,
+            hasActiveUserData: !!activeUserData,
+            // Don't log email or socket ID - PII
           });
           emitError(socket, 'Room not available. Please rejoin the chat.');
           return;
@@ -63,10 +66,10 @@ function registerSendMessageHandler(socket, io, services) {
         if (socket.user?.id && dbSafe) {
           const isMember = await verifyRoomMembership(socket.user.id, user.roomId, dbSafe);
           if (!isMember) {
-            console.warn('[send_message] Room membership verification failed:', {
+            logger.warn('Room membership verification failed', {
               userId: socket.user.id,
               roomId: user.roomId,
-              socketId: socket.id,
+              socketId: socket.id.substring(0, 20) + '...',
             });
             emitSocketError(
               socket,
@@ -78,10 +81,10 @@ function registerSendMessageHandler(socket, io, services) {
         }
 
         const userEmail = user.email || user.username;
-        console.log('[send_message] User sending message:', {
-          email: userEmail,
+        logger.debug('User sending message', {
+          hasEmail: !!userEmail,
           roomId: user.roomId,
-          socketId: socket.id.substring(0, 20) + '...',
+          // Don't log email - PII
         });
 
         // Step 2: Validate message text
@@ -123,7 +126,10 @@ function registerSendMessageHandler(socket, io, services) {
             addToHistory: (msg, roomId, opts) => addToHistory(msg, roomId, { ...opts, socket, io }),
           });
         } catch (error) {
-          console.error('[send_message] AI mediation error:', error.message);
+          logger.error('AI mediation error', error, {
+            errorCode: error.code,
+            handler: 'send_message:aiMediation',
+          });
           emitError(socket, 'Failed to send message.', error, 'send_message:aiMediation');
 
           // Emit message_error for client reconciliation (Invariant I-15)

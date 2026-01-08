@@ -13,6 +13,7 @@
 const { emitError } = require('../utils');
 const { validateActiveUser, verifyMessageOwnership } = require('../messageOperations');
 const { wrapSocketHandler } = require('../errorBoundary');
+const { defaultLogger } = require('../../src/infrastructure/logging/logger');
 
 /**
  * Register delete_message handler
@@ -23,6 +24,7 @@ const { wrapSocketHandler } = require('../errorBoundary');
  */
 function registerDeleteMessageHandler(socket, io, services) {
   const { dbSafe, dbPostgres, userSessionService } = services;
+  const logger = defaultLogger.child({ handler: 'delete_message' });
 
   socket.on(
     'delete_message',
@@ -62,10 +64,12 @@ function registerDeleteMessageHandler(socket, io, services) {
 
           await messageService.deleteMessage(messageId, userEmail);
         } catch (error) {
-          console.error(
-            '[delete_message] MessageService failed, falling back to dbSafe:',
-            error.message
-          );
+          logger.warn('MessageService failed, falling back to dbSafe', {
+            error: error.message,
+            errorCode: error.code,
+            messageId,
+            // Don't log userEmail - PII
+          });
           // Fallback to direct database update (soft delete)
           try {
             await dbSafe.safeUpdate(

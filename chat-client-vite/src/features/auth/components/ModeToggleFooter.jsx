@@ -18,6 +18,7 @@ export function ModeToggleFooter({ isLoginMode, onToggle }) {
             Don&apos;t have an account?{' '}
             <button
               type="button"
+              tabIndex={-1}
               className="text-teal-medium font-semibold hover:text-teal-dark transition-colors"
               onClick={onToggle}
             >
@@ -29,6 +30,7 @@ export function ModeToggleFooter({ isLoginMode, onToggle }) {
             Already have an account?{' '}
             <button
               type="button"
+              tabIndex={-1}
               className="text-teal-medium font-semibold hover:text-teal-dark transition-colors"
               onClick={onToggle}
             >

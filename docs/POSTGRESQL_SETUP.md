@@ -4,7 +4,7 @@ Complete guide for setting up PostgreSQL in development and production.
 
 ## 📋 Overview
 
-LiaiZen uses **PostgreSQL-only** in production. SQLite is available as a dev-only fallback when `DATABASE_URL` is not set.
+LiaiZen uses **PostgreSQL-only** in all environments. PostgreSQL is required - the application will not start without a valid `DATABASE_URL`.
 
 ---
 
@@ -106,14 +106,9 @@ createdb liaizen_dev
 # postgresql://postgres@localhost:5432/liaizen_dev
 ```
 
-### Option C: Use SQLite for Local Dev (No PostgreSQL needed)
+### Option C: Not Available
 
-If you don't want to run PostgreSQL locally:
-
-1. **Don't set `DATABASE_URL`** in your local `.env` file
-2. The app will automatically use SQLite (`chat.db`)
-3. SQLite is fine for local development
-4. **Note**: Production requires PostgreSQL
+**PostgreSQL is required in all environments**, including local development. The application requires a valid `DATABASE_URL` to start. See Option A or B above for local PostgreSQL setup.
 
 ### Setting DATABASE_URL Locally
 
@@ -126,7 +121,7 @@ DATABASE_URL=postgresql://postgres:devpass@localhost:5432/liaizen_dev
 # For Homebrew PostgreSQL
 DATABASE_URL=postgresql://postgres@localhost:5432/liaizen_dev
 
-# Or leave unset to use SQLite (dev only)
+# Note: DATABASE_URL is required - the application will not start without it
 ```
 
 ---
@@ -199,7 +194,7 @@ The app automatically runs migrations on startup. Check logs for:
 **Solution:**
 
 - **Production**: Verify PostgreSQL service is connected to chat-server in Railway
-- **Development**: Either set `DATABASE_URL` or leave unset to use SQLite
+- **Development**: `DATABASE_URL` is required (see Option A or B for local setup)
 
 ### Connection Fails
 

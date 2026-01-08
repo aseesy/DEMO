@@ -38,13 +38,13 @@ export function InviteGeneratedView({
     <>
       {/* Success Header */}
       <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-[#E8F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 bg-[#E6F7F5] rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckIcon className="w-8 h-8 text-[#46BD92]" />
         </div>
-        <h1 className="text-2xl font-bold text-teal-medium mb-2">
+        <h1 className="text-2xl font-serif font-semibold text-[#275559] mb-2">
           {inviteData.inviteType === 'email' ? 'Invite Sent!' : 'Invite Ready!'}
         </h1>
-        <p className="text-gray-600">
+        <p className="text-[#4b5563]">
           {inviteData.inviteType === 'email'
             ? 'An email has been sent to your co-parent'
             : 'Share this with your co-parent'}
@@ -69,7 +69,7 @@ export function InviteGeneratedView({
         {canShare && (
           <button
             onClick={onShare}
-            className="w-full py-3 px-4 bg-[#46BD92] text-white font-medium rounded-lg hover:bg-[#3da87f] transition-all duration-200 flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-[#46BD92] text-white font-semibold rounded-lg hover:bg-[#3da87f] transition-all duration-200 flex items-center justify-center gap-2 min-h-[44px] shadow-sm hover:shadow-md"
           >
             <ShareIcon className="w-5 h-5" />
             <span>Share Invite</span>
@@ -78,7 +78,7 @@ export function InviteGeneratedView({
 
         <button
           onClick={onCopyMessage}
-          className="w-full py-3 px-4 bg-teal-medium text-white font-medium rounded-lg hover:bg-teal-dark transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 bg-[#275559] text-white font-semibold rounded-lg hover:bg-[#1f4447] transition-all duration-200 flex items-center justify-center gap-2 min-h-[44px] shadow-sm hover:shadow-md"
         >
           {copiedMessage ? (
             <>
@@ -95,21 +95,21 @@ export function InviteGeneratedView({
 
         <button
           onClick={onGenerateNew}
-          className="w-full py-3 px-4 border-2 border-gray-300 text-gray-600 font-medium rounded-lg hover:bg-gray-50 transition-all duration-200"
+          className="w-full py-3 px-4 border-2 border-[#E5E7EB] text-[#4b5563] font-semibold rounded-lg hover:bg-[#F9FAFB] transition-all duration-200 min-h-[44px] bg-white"
         >
           Generate New Invite
         </button>
 
         <button
           onClick={onContinue}
-          className="w-full py-3 px-4 border-2 border-teal-medium text-teal-medium font-medium rounded-lg hover:bg-[#E8F5F5] transition-all duration-200"
+          className="w-full py-3 px-4 border-2 border-[#C5E8E4] text-[#00908B] font-semibold rounded-lg hover:bg-[#E6F7F5] transition-all duration-200 min-h-[44px] bg-white"
         >
           Continue to App
         </button>
       </div>
 
       {/* Expiration notice */}
-      <p className="text-xs text-center text-gray-500 mt-4">{expirationText}</p>
+      <p className="text-xs text-center text-[#9ca3af] mt-4">{expirationText}</p>
     </>
   );
 }
@@ -120,22 +120,22 @@ export function InviteGeneratedView({
 function PairingCodeDisplay({ code, inviteType, copied, onCopy }) {
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">Pairing Code</label>
+      <label className="block text-sm font-medium text-[#00908B] mb-1">Pairing Code</label>
       <div className="flex items-center gap-2">
-        <div className="flex-1 bg-[#E8F5F5] border-2 border-[#4DA8B0] rounded-lg p-3 text-center">
-          <span className="text-2xl font-mono font-bold text-teal-medium tracking-wider">
+        <div className="flex-1 bg-white border-2 border-[#C5E8E4] rounded-lg p-3 text-center">
+          <span className="text-2xl font-mono font-bold text-[#275559] tracking-wider">
             {code}
           </span>
         </div>
         <button
           onClick={onCopy}
-          className="p-3 bg-teal-medium text-white rounded-lg hover:bg-teal-dark transition-colors"
+          className="p-3 bg-[#275559] text-white rounded-lg hover:bg-[#1f4447] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           title="Copy code"
         >
           {copied ? <CheckIcon className="w-5 h-5" /> : <CopyIcon className="w-5 h-5" />}
         </button>
       </div>
-      <p className="text-xs text-gray-500 mt-1">
+      <p className="text-xs text-[#4b5563] mt-1">
         {inviteType === 'code'
           ? 'For existing LiaiZen users (expires in 15 min)'
           : 'For existing LiaiZen users'}
@@ -150,23 +150,20 @@ function PairingCodeDisplay({ code, inviteType, copied, onCopy }) {
 function InviteLinkDisplay({ url, copied, onCopy }) {
   return (
     <div className="mb-6">
-      <label className="block text-sm font-medium text-gray-700 mb-1">Invite Link</label>
+      <label className="block text-sm font-medium text-[#00908B] mb-1">Invite Link</label>
       <div className="flex items-center gap-2">
-        <input
-          type="text"
-          readOnly
-          value={url}
-          className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-600 truncate"
-        />
+        <div className="flex-1 bg-white border-2 border-[#C5E8E4] rounded-lg p-3 text-sm text-[#111827] font-mono break-all">
+          {url}
+        </div>
         <button
           onClick={onCopy}
-          className="p-3 bg-teal-medium text-white rounded-lg hover:bg-teal-dark transition-colors"
+          className="p-3 bg-[#275559] text-white rounded-lg hover:bg-[#1f4447] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           title="Copy link"
         >
           {copied ? <CheckIcon className="w-5 h-5" /> : <CopyIcon className="w-5 h-5" />}
         </button>
       </div>
-      <p className="text-xs text-gray-500 mt-1">For new users - they'll create an account</p>
+      <p className="text-xs text-[#4b5563] mt-1">For new users - they'll create an account</p>
     </div>
   );
 }

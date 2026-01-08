@@ -13,6 +13,8 @@ const {
 } = require('./utils');
 const { createUser, generateUniqueUsername } = require('./user');
 const { createWelcomeAndOnboardingTasks } = require('./tasks');
+const { createCoParentRoom } = require('../roomManager/coParent');
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
 
 /**
  * Create a user with email - includes automatic private room creation
@@ -46,7 +48,9 @@ async function createUserWithEmail(
       oauthProvider,
       nameData
     );
-    console.log(`Created user: ${user.id} (${emailLower})`);
+    // Don't log email (PII) - log user creation only
+    const logger = defaultLogger.child({ function: 'createUserWithEmail', userId: user.id });
+    logger.info('User created successfully');
     return user;
   } catch (err) {
     // If email conflict (race condition), throw error
@@ -113,15 +117,13 @@ async function createUserWithEmailNoRoom(email, password, displayName = null, co
   }
 
   // Assign default 'user' role for RBAC
+  const logger = defaultLogger.child({ function: 'createUserWithEmailNoRoom', userId });
   try {
     const { permissionService } = require('../src/services');
     await permissionService.ensureDefaultRole(userId);
   } catch (error) {
     // Non-fatal - log but don't fail user creation
-    console.warn(
-      `[createUserWithEmailNoRoom] Failed to assign default role to user ${userId}:`,
-      error.message
-    );
+    logger.warn('Failed to assign default role', { error: error.message, errorCode: error.code });
   }
 
   // Create user context (but NOT a room) - using email instead of username
@@ -147,11 +149,13 @@ async function createUserWithEmailNoRoom(email, password, displayName = null, co
       await dbSafe.safeUpdate('users', userUpdates, { id: userId });
     }
   } catch (err) {
-    console.warn('Could not create user context:', err.message);
+    logger.warn('Could not create user context', { error: err.message, errorCode: err.code });
   }
 
-  // Create Neo4j node (using email instead of username)
-  neo4jClient.createUserNode(userId).catch(() => {});
+  // Create Neo4j node (using email instead of username) - log errors instead of swallowing
+  neo4jClient.createUserNode(userId).catch(err => {
+    logger.warn('Neo4j createUserNode failed', { error: err.message, errorCode: err.code });
+  });
 
   return {
     id: userId,
@@ -218,7 +222,12 @@ async function registerWithInvitation(
         db
       );
     } catch (err) {
-      console.error('Notification error:', err);
+      const logger = defaultLogger.child({ function: 'registerWithInvitation', userId: user.id });
+      logger.warn('Failed to create invitation notification', { 
+        error: err.message, 
+        errorCode: err.code,
+        invitationId: invitationResult.invitation.id,
+      });
     }
   }
 
@@ -246,9 +255,11 @@ async function registerFromInvitation(params, db) {
   const { token, email, password, firstName, lastName } = params;
   const emailLower = email.trim().toLowerCase();
 
+  // Check if email already exists
   const existingEmail = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
   if (existingEmail.length > 0) throw createRegistrationError(RegistrationError.EMAIL_EXISTS);
 
+  // Validate invitation token
   const validation = await invitationManager.validateToken(token, db);
   if (!validation.valid) {
     if (validation.code === 'EXPIRED') throw createRegistrationError(RegistrationError.EXPIRED);
@@ -261,6 +272,7 @@ async function registerFromInvitation(params, db) {
   if (invitation.invitee_email.toLowerCase() !== emailLower)
     throw createRegistrationError(RegistrationError.INVALID_TOKEN, 'Email mismatch');
 
+  // Check inviter still exists
   const inviterCheck = await dbSafe.safeSelect(
     'users',
     { id: invitation.inviter_id },
@@ -268,108 +280,54 @@ async function registerFromInvitation(params, db) {
   );
   if (inviterCheck.length === 0) throw createRegistrationError(RegistrationError.INVITER_GONE);
 
-  const result = await dbSafe.withTransaction(async client => {
-    const now = new Date().toISOString();
-    const passwordHash = await hashPassword(password);
+  // Build display name
+  const displayName =
+    firstName && lastName
+      ? `${firstName.trim()} ${lastName.trim()}`
+      : firstName?.trim() || lastName?.trim() || null;
 
-    // Insert user with email as primary identifier (no username)
-    const displayName =
-      firstName && lastName
-        ? `${firstName.trim()} ${lastName.trim()}`
-        : firstName?.trim() || lastName?.trim() || null;
+  // Step 1: Create user using canonical function (no room - room created separately)
+  // This handles: user record, context, Neo4j node, default role
+  const user = await createUserWithEmailNoRoom(emailLower, password, displayName, {});
 
-    let userId;
-    try {
-      const res = await client.query(
-        `INSERT INTO "users" ("email", "password_hash", "first_name", "last_name", "display_name", "created_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"`,
-        [
-          emailLower,
-          passwordHash,
-          firstName?.trim() || null,
-          lastName?.trim() || null,
-          displayName,
-          now,
-        ]
-      );
-      userId = res.rows[0].id;
-    } catch (err) {
-      if (err.code === '23505' && err.constraint?.includes('email')) {
-        throw createRegistrationError(RegistrationError.EMAIL_EXISTS);
-      }
-      throw err;
-    }
+  // Step 2: Update invitation status
+  const now = new Date().toISOString();
+  await dbSafe.safeUpdate(
+    'invitations',
+    { status: 'accepted', invitee_id: user.id, accepted_at: now },
+    { id: invitation.id }
+  );
 
-    await client.query(
-      `UPDATE "invitations" SET "status" = 'accepted', "invitee_id" = $1, "accepted_at" = $2 WHERE "id" = $3`,
-      [userId, now, invitation.id]
-    );
+  // Step 3: Create co-parent room using canonical function
+  // This handles: room creation, welcome message, contacts, Neo4j relationship, child contact sync
+  const inviterName = validation.inviterName || 'Co-Parent';
+  const inviteeName = displayName || emailLower.split('@')[0];
 
-    const roomId = `room_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-    const roomName = `${validation.inviterName || 'Co-Parent'} & ${displayName}`;
+  const roomResult = await createCoParentRoom(
+    invitation.inviter_id,
+    user.id,
+    inviterName,
+    inviteeName
+  );
 
-    await client.query(
-      `INSERT INTO "rooms" ("id", "name", "created_by", "is_private", "created_at") VALUES ($1, $2, $3, $4, $5)`,
-      [roomId, roomName, invitation.inviter_id, 1, now]
-    );
-    await client.query(
-      `INSERT INTO "room_members" ("room_id", "user_id", "role", "joined_at") VALUES ($1, $2, 'owner', $3)`,
-      [roomId, invitation.inviter_id, now]
-    );
-    await client.query(
-      `INSERT INTO "room_members" ("room_id", "user_id", "role", "joined_at") VALUES ($1, $2, 'member', $3)`,
-      [roomId, userId, now]
-    );
+  // Step 4: Create welcome and onboarding tasks
+  await createWelcomeAndOnboardingTasks(user.id, user.email);
 
-    await dbSafe.safeInsertTx(client, 'contacts', {
-      user_id: userId,
-      contact_name: validation.inviterName || 'Co-Parent',
-      contact_email: validation.inviterEmail || null,
-      relationship: 'co-parent',
-      linked_user_id: invitation.inviter_id,
-      created_at: now,
-    });
-    // Use first_name for contact name (prefer first_name, fallback to displayName)
-    const contactName = firstName?.trim() || displayName || emailLower.split('@')[0];
-
-    await dbSafe.safeInsertTx(client, 'contacts', {
-      user_id: invitation.inviter_id,
-      contact_name: contactName,
-      contact_email: emailLower,
-      relationship: 'co-parent',
-      linked_user_id: userId,
-      created_at: now,
-    });
-
-    return {
-      user: {
-        id: userId,
-        email: emailLower,
-        firstName: firstName?.trim() || null,
-        lastName: lastName?.trim() || null,
-        displayName: displayName,
-      },
-      coParent: { id: invitation.inviter_id, displayName: validation.inviterName },
-      room: { id: roomId, name: roomName },
-      sync: {
-        contactsCreated: true,
-        roomJoined: true,
-      },
-    };
-  });
-
-  await createWelcomeAndOnboardingTasks(result.user.id, result.user.email);
-  neo4jClient.createUserNode(result.user.id).catch(() => {});
-  if (result.room && result.coParent)
-    neo4jClient
-      .createCoParentRelationship(
-        result.coParent.id,
-        result.user.id,
-        result.room.id,
-        result.room.name
-      )
-      .catch(() => {});
-
-  return result;
+  return {
+    user: {
+      id: user.id,
+      email: emailLower,
+      firstName: firstName?.trim() || null,
+      lastName: lastName?.trim() || null,
+      displayName: displayName,
+    },
+    coParent: { id: invitation.inviter_id, displayName: inviterName },
+    room: { id: roomResult.roomId, name: roomResult.roomName },
+    sync: {
+      contactsCreated: true,
+      roomJoined: true,
+    },
+  };
 }
 
 module.exports = {

@@ -2,6 +2,8 @@
  * AI Context Helpers for Socket Messages
  */
 
+const { defaultLogger } = require('../../src/infrastructure/logging/logger');
+
 /**
  * Get recent messages from a room
  *
@@ -14,6 +16,8 @@ async function getRecentMessages(dbPostgres, roomId) {
 }
 
 async function getParticipantUsernames(dbSafe, roomId, userSessionService) {
+  const logger = defaultLogger.child({ function: 'getParticipantUsernames' });
+  
   // Try database first (most reliable)
   try {
     const roomMembers = await dbSafe.safeSelect('room_members', { room_id: roomId });
@@ -25,10 +29,11 @@ async function getParticipantUsernames(dbSafe, roomId, userSessionService) {
       }
     }
   } catch (dbError) {
-    console.warn(
-      '[getParticipantUsernames] Database query failed, falling back to session service:',
-      dbError.message
-    );
+    logger.warn('Database query failed, falling back to session service', {
+      error: dbError.message,
+      errorCode: dbError.code,
+      roomId,
+    });
   }
 
   // Fallback to active users in the room from userSessionService
@@ -37,7 +42,11 @@ async function getParticipantUsernames(dbSafe, roomId, userSessionService) {
       const activeUsers = userSessionService.getUsersInRoom(roomId);
       return activeUsers.map(u => u.username);
     } catch (sessionError) {
-      console.warn('[getParticipantUsernames] Session service failed:', sessionError.message);
+      logger.warn('Session service failed', {
+        error: sessionError.message,
+        errorCode: sessionError.code,
+        roomId,
+      });
     }
   }
 
@@ -65,7 +74,12 @@ async function getContactContext(services, user, participantUsernames) {
       aiContext = `Contacts: ${existingContacts.join(', ')}`; // Simplified for now to stay under limit
     }
   } catch (err) {
-    console.error('Error getting contacts:', err);
+    const logger = defaultLogger.child({ function: 'getContactContext' });
+    logger.error('Error getting contacts', err, {
+      errorCode: err.code,
+      hasUserId: !!user?.id,
+      // Don't log username/email - PII
+    });
   }
 
   return { existingContacts, aiContext };
@@ -158,7 +172,12 @@ async function getThreadContext(services, message) {
       parentThreadId: thread.parent_thread_id,
     };
   } catch (error) {
-    console.warn('[getThreadContext] Error getting thread context:', error.message);
+    const logger = defaultLogger.child({ function: 'getThreadContext' });
+    logger.warn('Error getting thread context', {
+      error: error.message,
+      errorCode: error.code,
+      messageId: message?.id,
+    });
     return null;
   }
 }

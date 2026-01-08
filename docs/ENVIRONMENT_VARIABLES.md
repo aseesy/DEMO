@@ -43,7 +43,7 @@ node scripts/validate-railway-env.js
 
 #### Optional (Recommended)
 
-- **`PORT`** - Server port (defaults to 3001)
+- **`PORT`** - Server port (defaults to 3000)
   - Example: `3000`
   - **Status**: ✅ Set to `3000`
 
@@ -52,7 +52,7 @@ node scripts/validate-railway-env.js
   - **Status**: ✅ Set to `development`
 
 - **`FRONTEND_URL`** - Comma-separated allowed frontend URLs for CORS
-  - Example: `http://localhost:5173,http://localhost:3000`
+  - Example: `http://localhost:5173,http://localhost:5174`
   - **Status**: ✅ Set
 
 ### Client (`chat-client-vite/.env` or `.env.local`)
@@ -173,8 +173,11 @@ npm run validate:railway
 
 ## Port Configuration
 
-- **Server Port**: `PORT` env var (default: 3001, but set to 3000)
+- **Server Port**: `PORT` env var (default: 3000)
 - **Client Dev Port**: Vite default (5173)
 - **Client API URL**: `VITE_API_URL` (default: `http://localhost:3000`)
 
-**Important**: Both server and client should use the same port (3000) for development.
+**Important**: 
+- Backend runs on port **3000** (default)
+- Frontend (Vite) runs on port **5173** (Vite default)
+- Frontend connects to backend at `http://localhost:3000`

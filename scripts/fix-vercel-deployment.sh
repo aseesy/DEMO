@@ -109,9 +109,27 @@ fi
 echo -e "${GREEN}✓ Build successful${NC}"
 echo ""
 
-echo -e "${YELLOW}Step 7: Deploy to Vercel${NC}"
+echo -e "${YELLOW}Step 7: Validate Vercel Project${NC}"
 cd ..
-echo "Deploying to production..."
+# Run validation script to ensure we're deploying to the correct project
+if [ -f "scripts/validate-vercel-project.sh" ]; then
+    bash scripts/validate-vercel-project.sh
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ Project validation failed! Deployment aborted.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}⚠ Validation script not found - skipping validation${NC}"
+fi
+
+echo -e "${YELLOW}Step 8: Deploy to Vercel${NC}"
+# CRITICAL: Must deploy from chat-client-vite directory
+cd chat-client-vite
+echo "Deploying to production from chat-client-vite/..."
+echo -e "${YELLOW}⚠ VERIFY: Deploying from correct directory${NC}"
+pwd
+cat .vercel/project.json
+echo ""
 vercel --prod --yes
 
 echo ""

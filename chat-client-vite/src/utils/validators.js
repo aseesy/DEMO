@@ -1,7 +1,24 @@
 /**
+ * 🔒 SEALED FILE - DO NOT MODIFY WITHOUT APPROVAL
+ * 
  * validators.js
+ * 
+ * ⚠️ CRITICAL: This file is PARTIALLY SEALED - must match server-side validation.
+ * Validation rules are shared between client and server for security.
+ * 
+ * RULES FOR AI ASSISTANTS:
+ * - ❌ DO NOT change validation rules without coordinating with backend
+ * - ❌ DO NOT modify password requirements without server update
+ * - ❌ DO NOT alter email format rules without server update
+ * - ✅ CAN add new validation functions (if needed)
+ * - ✅ CAN update error messages (user-facing text)
+ * 
+ * Before modifying: Check docs/AUTH_FLOW_SEALED.md and coordinate with backend team.
+ * 
  * Pure validation functions with no React/DOM dependencies.
  * All business rules for form validation extracted from hooks.
+ * 
+ * See: docs/AUTH_FLOW_SEALED.md for complete sealing documentation.
  */
 
 // Email validation regex

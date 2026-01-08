@@ -1,4 +1,5 @@
 import React from 'react';
+import { createLogger } from '../../../utils/logger.js';
 import {
   trackMessageSent,
   trackAIIntervention,
@@ -128,8 +129,9 @@ export function useMessageHandlers({
   // Handle intervention feedback (thumbs up/down)
   const sendInterventionFeedback = React.useCallback(
     (interventionId, helpful) => {
+      const logger = createLogger('useMessageHandlers');
       if (!socket || !socket.connected) {
-        console.warn('Cannot send feedback: socket not connected');
+        logger.warn('Cannot send feedback: socket not connected');
         return;
       }
       socket.emit('intervention_feedback', {

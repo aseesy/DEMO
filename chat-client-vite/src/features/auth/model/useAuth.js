@@ -1,12 +1,27 @@
 /**
+ * 🔒 SEALED FILE - DO NOT MODIFY WITHOUT APPROVAL
+ * 
  * useAuth Hook
  *
+ * ⚠️ CRITICAL: This file is SEALED and SET IN STONE.
+ * This hook provides the interface between UI and AuthContext.
+ * 
+ * RULES FOR AI ASSISTANTS:
+ * - ❌ DO NOT modify AuthContext delegation pattern
+ * - ❌ DO NOT change return value API (used by components)
+ * - ✅ CAN modify UI-facing error messages
+ * - ✅ CAN update form field handling (if UI changes)
+ * 
+ * Before modifying: Check docs/AUTH_FLOW_SEALED.md for approval process.
+ * 
  * ARCHITECTURE: This hook is a pure interface to AuthContext.
  * It provides a unified API for authentication operations.
  *
  * CRITICAL: AuthContext is the SINGLE SOURCE OF TRUTH for auth state.
  * This hook MUST be used within AuthProvider - no fallbacks.
  * If AuthProvider is missing, it throws immediately (fail fast).
+ * 
+ * See: docs/AUTH_FLOW_SEALED.md for complete sealing documentation.
  */
 
 import React from 'react';
@@ -60,14 +75,20 @@ export function useAuth() {
 
   // handleLogin delegates to AuthContext's login (single source of truth)
   const handleLogin = React.useCallback(
-    async (e, _spamFields = {}) => {
+    async (e, spamFields = {}) => {
       if (e?.preventDefault) e.preventDefault();
       setError('');
 
-      console.log('[useAuth] Calling authContext.login');
+      if (import.meta.env.DEV) {
+        console.log('[useAuth] Calling authContext.login');
+      }
       try {
-        const result = await authContext.login(email, password);
-        console.log('[useAuth] authContext.login result:', result?.success ? 'success' : 'failed');
+        const result = await authContext.login(email, password, {
+          honeypotValue: spamFields.website || '',
+        });
+        if (import.meta.env.DEV) {
+          console.log('[useAuth] authContext.login result:', result?.success ? 'success' : 'failed');
+        }
         if (result.success) {
           return { success: true, user: result.user };
         } else {
@@ -84,14 +105,48 @@ export function useAuth() {
     [email, password, authContext, setError]
   );
 
-  const { isLoggingIn, isSigningUp, handleSignup, handleRegister } = emailAuthResult;
+  const { isLoggingIn, isSigningUp, handleRegister } = emailAuthResult;
+
+  // handleSignup delegates to AuthContext's signup (single source of truth)
+  const handleSignup = React.useCallback(
+    async (e, spamFields = {}) => {
+      if (e?.preventDefault) e.preventDefault();
+      setError('');
+
+      if (import.meta.env.DEV) {
+        console.log('[useAuth] Calling authContext.signup');
+      }
+      try {
+        const result = await authContext.signup(email, password, firstName, lastName, {
+          honeypotValue: spamFields.website || '',
+        });
+        if (import.meta.env.DEV) {
+          console.log('[useAuth] authContext.signup result:', result?.success ? 'success' : 'failed');
+        }
+        if (result.success) {
+          return { success: true, user: result.user };
+        } else {
+          const errorMsg = result.error?.userMessage || result.error || 'Signup failed';
+          setError(errorMsg);
+          return { success: false, error: result.error };
+        }
+      } catch (err) {
+        const errorMsg = err.message || 'Signup failed';
+        setError(errorMsg);
+        return { success: false, error: err };
+      }
+    },
+    [email, password, firstName, lastName, authContext, setError]
+  );
 
   // handleLogout delegates to AuthContext (single source of truth)
   const handleLogout = React.useCallback(async () => {
     try {
       await authContext.logout();
     } catch (err) {
-      console.error('Logout error:', err);
+      if (import.meta.env.DEV) {
+        console.error('Logout error:', err);
+      }
     } finally {
       setUserID(null);
       setUserProperties({});

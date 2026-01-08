@@ -21,6 +21,8 @@ import {
   storeOAuthState,
   validateOAuthState,
   clearOAuthState,
+  generatePKCEAsync,
+  getStoredCodeVerifier,
 } from '../../../utils/oauthHelper.js';
 import { storage, StorageKeys, authStorage } from '../../../adapters/storage';
 import { tokenManager } from '../../../utils/tokenManager.js';
@@ -35,14 +37,30 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
     setIsGoogleLoggingIn(true);
 
     try {
-      // Note: We use redirect flow (window.location.href), not popups
-      // Popup blocker check removed as it's not needed for redirects
+      // Generate PKCE code verifier and challenge (required for SPA security)
+      const pkce = await generatePKCEAsync();
+      
+      // Generate state parameter for CSRF protection
       const state = generateOAuthState();
-      storeOAuthState(state);
+      
+      // Store state and PKCE code verifier for callback validation
+      storeOAuthState(state, pkce);
+
+      // Get returnTo URL if available
+      const returnTo = storage.getString(StorageKeys.RETURN_URL);
+
+      // Build query parameters for OAuth start
+      const params = new URLSearchParams({
+        state: state,
+        code_challenge: pkce.codeChallenge,
+      });
+      if (returnTo) {
+        params.append('returnTo', returnTo);
+      }
 
       console.log('[useGoogleAuth] Making API call to /api/auth/google');
       const response = await retryWithBackoff(
-        () => apiGet(`/api/auth/google?state=${encodeURIComponent(state)}`),
+        () => apiGet(`/api/auth/google?${params.toString()}`),
         {
           maxRetries: 2,
           shouldRetry: (error, statusCode) => {
@@ -77,12 +95,13 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
         return { success: false, error: errorInfo };
       }
 
-      const authUrlWithState = data.authUrl.includes('state=')
+      // Server should include state in authUrl, but ensure it's there
+      const authUrl = data.authUrl.includes('state=')
         ? data.authUrl
         : `${data.authUrl}&state=${encodeURIComponent(state)}`;
 
-      console.log('[useGoogleAuth] Redirecting to:', authUrlWithState);
-      window.location.href = authUrlWithState;
+      console.log('[useGoogleAuth] Redirecting to:', authUrl);
+      window.location.href = authUrl;
       return { success: true, redirecting: true };
     } catch (err) {
       const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/auth/google' });
@@ -100,6 +119,7 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
       setError('');
 
       try {
+        // Validate state parameter (client-side CSRF check)
         if (state) {
           if (!validateOAuthState(state)) {
             logError(new Error('OAuth state mismatch'), {
@@ -112,11 +132,28 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
             setIsGoogleLoggingIn(false);
             return false;
           }
-          clearOAuthState();
+        }
+
+        // Get stored PKCE code verifier
+        const codeVerifier = getStoredCodeVerifier();
+
+        // Prepare callback payload
+        const payload = { code };
+        if (state) {
+          payload.state = state;
+        }
+        if (codeVerifier) {
+          payload.code_verifier = codeVerifier;
+        }
+
+        // Get invite token if available
+        const inviteToken = storage.getString(StorageKeys.INVITATION_TOKEN);
+        if (inviteToken) {
+          payload.inviteToken = inviteToken;
         }
 
         const response = await retryWithBackoff(
-          () => apiPost('/api/auth/google/callback', { code }),
+          () => apiPost('/api/auth/google/callback', payload),
           {
             maxRetries: 2,
             shouldRetry: (error, statusCode) => {
@@ -127,6 +164,9 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
             },
           }
         );
+
+        // Clear OAuth state and PKCE after successful request
+        clearOAuthState();
 
         let data;
         try {
@@ -157,6 +197,14 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
           } else if (data.code === 'OAUTH_INVALID_CLIENT') {
             errorInfo.userMessage =
               'OAuth configuration error. Please verify your Google OAuth credentials are correct.';
+          } else if (data.code === 'INVALID_STATE') {
+            errorInfo.userMessage = 'Security validation failed. Please try signing in again.';
+          } else if (data.code === 'INVALID_PKCE') {
+            errorInfo.userMessage = 'Security validation failed. Please try signing in again.';
+          } else if (data.code === 'INVALID_ID_TOKEN') {
+            errorInfo.userMessage = 'Authentication failed. Please try signing in again.';
+          } else if (data.code === 'EMAIL_NOT_VERIFIED') {
+            errorInfo.userMessage = 'Your Google email is not verified. Please verify your email and try again.';
           } else if (data.code === 'CODE_ALREADY_USED') {
             // IDEMPOTENCY: Code was already used and no existing session
             // This is not retryable - user must start fresh
@@ -168,10 +216,8 @@ export function useGoogleAuth({ setIsAuthenticated, setError }) {
             errorInfo.userMessage = 'Account creation issue. Please try again or contact support.';
           } else if (data.code === 'TOKEN_GENERATION_ERROR') {
             errorInfo.userMessage = 'Authentication failed. Please try signing in again.';
-          } else if (data.code === 'GOOGLE_USERINFO_ERROR') {
-            errorInfo.userMessage = 'Failed to get your information from Google. Please try again.';
-          } else if (data.code === 'INVALID_GOOGLE_USER') {
-            errorInfo.userMessage = 'Invalid account information from Google. Please try again.';
+          } else if (data.code === 'MISSING_ID_TOKEN') {
+            errorInfo.userMessage = 'Authentication failed. Please try signing in again.';
           } else if (data.error?.includes('already used')) {
             errorInfo.userMessage =
               'This sign-in link has already been used. Please try signing in again.';

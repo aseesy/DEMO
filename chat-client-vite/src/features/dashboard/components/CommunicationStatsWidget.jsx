@@ -70,13 +70,14 @@ export function CommunicationStatsWidget({ username, email, isCheckingAuth = fal
 
     loadStats();
 
-    // Refresh stats every 30 seconds when user sends messages
+    // Refresh stats every 60 seconds (reduced from 30s to save CPU)
+    // Only refresh when page is visible
     const interval = setInterval(() => {
-      // Only refresh if not checking auth
-      if (!isCheckingAuth) {
+      // Only refresh if not checking auth and page is visible
+      if (!isCheckingAuth && document.visibilityState === 'visible') {
         loadStats();
       }
-    }, 30000);
+    }, 60000);
     return () => clearInterval(interval);
   }, [loadStats, isCheckingAuth]);
 

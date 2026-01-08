@@ -51,7 +51,7 @@ npm run monitor:events
 1. Start server: `npm run dev`
 2. In another terminal, find the process:
    ```bash
-   lsof -ti:3001
+   lsof -ti:3000
    ```
 3. Send SIGTERM:
    ```bash
@@ -102,7 +102,7 @@ npm run test:shutdown:kill
 
 **Check Pool Stats:**
 ```bash
-curl http://localhost:3001/health | jq .database.pool
+curl http://localhost:3000/health | jq .database.pool
 ```
 
 **Expected Output:**

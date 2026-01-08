@@ -26,11 +26,12 @@ async function sendWelcomeMessage(roomId) {
 
   try {
     await dbPostgres.query(
-      `INSERT INTO messages (id, type, username, text, timestamp, room_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+      `INSERT INTO messages (id, type, username, user_email, text, timestamp, room_id) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         messageId,
         WELCOME_MESSAGE.type,
         SYSTEM_IDENTITY.username,
+        SYSTEM_IDENTITY.email,
         WELCOME_MESSAGE.text,
         backdatedTime,
         roomId,

@@ -1,453 +1,266 @@
 # LiaiZen Co-Parenting Platform
 
-**Better Co-Parenting Through Better Communication**
+> AI Powered Collaborative Co-Parenting Platform
 
-LiaiZen is a real-time communication platform designed to help separated parents communicate effectively for their children's wellbeing. The platform combines AI-powered message mediation, task management, and secure contact sharing to reduce conflict and improve co-parenting collaboration.
+LiaiZen is a PWA platform designed to reduce conflict between separated parents using AI to improve communication and assist with  task management.
 
-🌐 **Live Platform**: [coparentliaizen.com](https://coparentliaizen.com)
 
----
-
-## 🎯 **Mission**
-
-Transform high-tension co-parenting exchanges into respectful, child-centered dialogue through intelligent mediation technology.
-
-### **Core Focus**
-
-- **Child-Centered Outcomes**: Every feature prioritizes children's wellbeing
-- **Conflict Reduction**: AI-powered mediation reduces misunderstandings
-- **Privacy & Security**: SOC 2 Type II compliant, COPPA/GDPR adherent
-- **Accessibility**: Mobile-first design for parents of all technical skill levels
+🌐 **Live Platform**: https://app.coparentliaizen.com
+**Marketing & Blog**: https://www.coparentliaizen.com
 
 ---
 
-## 🏗️ **Architecture**
+## Key Features
 
-### **Frontend** (`chat-client-vite/`)
+### Real-Time Communication
+- Instant Message & Communication Alerts
+- Search Message History
+- Conversation Organization
+- Smart Task and Contact Creation
 
-- **Framework**: React 18+ with Vite
-- **Styling**: Tailwind CSS (mobile-first)
-- **Real-time**: Socket.io-client for WebSocket communication
-- **State**: React hooks and context
-- **Deployment**: Vercel
-
-### **Backend** (`chat-server/`)
-
-- **Framework**: Node.js 18+ with Express.js
-- **Real-time**: Socket.io for WebSocket server
-- **Database**: SQLite (local) / PostgreSQL (production migration path)
-- **AI Services**: OpenAI API for message mediation
-- **Email**: Nodemailer with Gmail integration
-- **Deployment**: Railway
-
-### **Marketing Site** (`marketing-site/`) - Separate Project
-
-- **Framework**: React 19+ with Vite
-- **Purpose**: Landing page and blog content (SEO, marketing)
-- **Deployment**: Separate Vercel project
-- **Domain**: `www.coparentliaizen.com`
-- **Port**: 5174 (development)
-
-> **Note:** The marketing site is **intentionally excluded** from the monorepo workspace structure. It's a separate project that requires its own `npm install` in the `marketing-site/` directory. This allows independent deployment and development. See `marketing-site/README.md` for setup instructions.
-
-### **LiaiZen AI System** (`chat-server/src/liaizen/`)
-
-- **Core**: Main mediation pipeline (`core/mediator.js`) and AI client (`core/client.js`)
-- **Agents**: Specialized AI agents for proactive coaching and feedback learning
-- **Policies**: Constitution rules and safety controls
-- **Context**: Communication profiles and user context management
-- **Analysis**: Language analysis and rewrite validation
-- **Intelligence**: Contact detection and relationship insights
-- **Metrics**: Communication statistics and tracking
-
-### **Development Framework** (NEW)
-
-- **SDD Agentic Framework v2.0.0**: Specification-driven development with constitutional AI
-- **DS-STAR Multi-Agent System**: Quality gates, intelligent routing, self-healing
-- **14 Specialized Agents**: Automatic delegation across 6 departments
-- **17 Constitutional Principles**: Enforceable development standards
-
----
-
-## ✨ **Key Features**
-
-### **Real-Time Communication**
-
-- Private room-based messaging between co-parents
-- WebSocket-powered instant message delivery
-- Message history and search
-- Typing indicators (no read receipts to prevent conflict)
-
-### **AI-Powered Message Mediation**
-
-- Real-time message blocking prevents hostile communication
-- AI conversationally explains why you wouldn't want to send that message
-- Provides 1 personalized communication tip relative to your situation
-- Offers 2 rewrite options preserving your core message
-- Users can select a rewrite or write a new message from scratch
+### AI-Powered Message Mediation
+- Blocks hostile or escalatory messages in real-time
+- Explains why a message may escalate conflict
+- Provides personalized communication insights
+- Offers rewritten alternatives that preserve the core message
 - Adaptive learning personalizes to each user's communication style
-- Feels like a supportive friend, not clinical therapy
 
-### **Contact Management**
+### Shared Coordination Tools
+- **Tasks & Responsibilities**: Shared to-do lists with due dates and assignments
+- **Contact Management**: Shared contacts for schools, doctors, and caregivers
+- **Room Management**: Secure invitation system with member status tracking
 
-- Shared contact lists for co-parents, children, and professionals
-- Comprehensive relationship context tracking for AI personalization
-- Role-based contact types (teacher, doctor, family, partner)
-- Emergency contact protocols
-
-### **Task Management**
-
-- Shared to-do lists for parenting responsibilities
-- Task assignments with due dates
-- Completion tracking and notifications
-- Recurring task support
-
-### **Room Management**
-
-- Secure invitation system for co-parents
-- Member status tracking (pending, accepted, rejected)
-- Privacy controls and access management
-- Message history maintained for reference and accountability
+### Design Principles
+- **Conflict Reduction**: Reduce misunderstandings and tensions
+- **Privacy-First**: Architecture designed for sensitive family communication
+- **Mobile-First**: Accessible design for parents of all technical skill levels
 
 ---
 
-## 🚀 **Quick Start**
+## Repository Structure
 
-### **Prerequisites**
+```
+.
+├── chat-client-vite/    # Frontend (React + Vite)
+├── chat-server/         # Backend (Node.js, Express, Socket.io)
+├── marketing-site/      # Marketing & blog site (separate project)
+├── docs/                # Project documentation
+├── .specify/            # Specification-driven development framework
+└── scripts/             # Development and deployment scripts
+```
 
-- Node.js 18+
-- Python 3.9+ (for DS-STAR features)
-- SQLite (included) or PostgreSQL
+### Components
 
-### **Installation**
+**Frontend** (`chat-client-vite/`)
+- React 19, Vite, Tailwind CSS
+- Socket.io client for real-time communication
+- Deployed on Vercel
+
+**Backend** (`chat-server/`)
+- Node.js 20+, Express.js
+- Socket.io for WebSocket server
+- PostgreSQL (required in all environments)
+- OpenAI API for AI mediation
+- Deployed on Railway
+
+**Marketing Site** (`marketing-site/`)
+> **Note:** Intentionally excluded from the monorepo workspace. Requires separate `npm install` in `marketing-site/` directory. See `marketing-site/README.md` for setup.
+
+- React 19+ with Vite
+- Separate Vercel project
+- Domain: `www.coparentliaizen.com`
+
+**AI System** (`chat-server/src/liaizen/`)
+- Mediation pipeline and AI client
+- Communication analysis and rewriting
+- User context and relationship insights
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 20+ (required)
+- npm
+- PostgreSQL
+- (Optional) Python 3.9+ for advanced framework tooling
+
+### Installation
 
 ```bash
-# Clone repository
-git clone https://github.com/yourusername/chat.git
+# Clone the repository (replace with actual repository URL)
+git clone <repository-url>
 cd chat
-
-# Install dependencies
 npm install
-
-# Initialize SDD framework (optional)
-# See INTEGRATION_GUIDE.md for full framework setup
 ```
 
-### **Development**
+### Environment Variables
 
-```bash
-# Start all development servers (frontend + backend)
-npm run dev
-
-# Start specific servers
-npm run dev:backend      # Backend only (port 3000)
-npm run dev:frontend     # Frontend only (port 5173)
-
-# Stop servers
-npm stop
-
-# Restart servers
-npm run restart
-
-# Get help with commands
-npm run help
-
-# Validate your setup
-npm run doctor
-```
-
-### **Production**
-
-```bash
-# Start production server (for Railway/Vercel)
-npm start
-# This delegates to chat-server workspace which runs: node server.js
-```
-
-### **Development Scripts**
-
-LiaiZen includes development scripts for maintaining code quality:
-
-```bash
-# Database & Data Hygiene
-npm run migrate          # Run database migrations
-npm run db:validate      # Validate database schema (from chat-server)
-npm run db:backup        # Backup database
-
-# AI Pipeline Quality
-npm run prompts:lint     # Validate mediation prompts
-npm run ai:test          # AI regression tests
-
-# Developer Productivity
-npm run lint:fix         # Auto-fix code quality issues
-npm run format           # Format code with Prettier
-```
-
-See `chat-server/scripts/README.md` for detailed documentation.
-
-### **Environment Variables**
-
-Create `.env` files:
+Create `.env` files in the respective directories:
 
 **Backend** (`chat-server/.env`):
 
 ```env
-PORT=8080
+PORT=3000
 JWT_SECRET=your_jwt_secret_here
 OPENAI_API_KEY=your_openai_key_here
 GMAIL_USER=your_gmail@gmail.com
 GMAIL_APP_PASSWORD=your_app_password
-DATABASE_URL=sqlite:./chat.db
+DATABASE_URL=postgresql://user:password@localhost:5432/liaizen_dev
 ```
 
 **Frontend** (`chat-client-vite/.env`):
 
 ```env
-VITE_API_URL=http://localhost:8080
-VITE_WS_URL=ws://localhost:8080
+VITE_API_URL=http://localhost:3000
+VITE_WS_URL=ws://localhost:3000
 ```
 
----
-
-## 📚 **Documentation**
-
-### **Project Documentation**
-
-- **CLAUDE.md**: AI assistant instructions and project guidelines
-- **INTEGRATION_GUIDE.md**: SDD framework integration guide
-- **START_HERE.md**: Framework overview and quick start
-- **AGENTS.md**: Agent reference and capabilities
-
-### **Framework Documentation**
-
-- **.specify/memory/constitution.md**: 14 development principles
-- **.docs/policies/**: Governance policies (testing, security, deployment)
-- **FRAMEWORK_CHANGELOG.md**: Framework version history
-
-### **API Documentation**
-
-See `chat-server/README.md` for API endpoints and WebSocket events.
-
----
-
-## 🛠️ **Development Workflow**
-
-### **Standard Development**
-
-1. Make changes to code
-2. Test locally
-3. Commit and push
-4. Deploy via Vercel (frontend) and Railway (backend)
-
-### **Specification-Driven Development** (NEW)
-
-Using the SDD Agentic Framework:
+### Run
 
 ```bash
-# 1. Create feature specification with auto-refinement
-/specify "Feature description"
+# Start frontend + backend
+npm run dev
 
-# 2. Generate implementation plan with quality gates
-/plan
+# Or individually
+npm run dev:backend    # Backend only (port 3000)
+npm run dev:frontend   # Frontend only (port 5173)
 
-# 3. Break into atomic tasks with dependencies
-/tasks
-
-# 4. Validate co-parenting domain requirements
-/validate-domain --spec specs/###-feature-name/spec.md
-
-# 5. Implement with specialized agent support
-# (Agents auto-delegate based on task domain)
-
-# 6. Pre-commit compliance validation
-/finalize
+# Other useful commands
+npm run help           # Get help with commands
+npm run doctor         # Validate your setup
+npm stop               # Stop all servers
+npm run restart        # Restart servers
 ```
 
-See `INTEGRATION_GUIDE.md` for complete framework usage.
+### Development Scripts
+
+```bash
+# Database (run from chat-server directory)
+cd chat-server && npm run migrate        # Run database migrations
+cd chat-server && npm run db:validate    # Validate database schema
+
+# Code quality (run from root)
+npm run lint:fix       # Auto-fix code quality issues
+npm run format         # Format code with Prettier
+npm test               # Run all tests
+```
+
+See `chat-server/scripts/README.md` for detailed documentation on database scripts.
 
 ---
 
-## 🧪 **Testing**
-
-### **Backend Tests**
+## Testing
 
 ```bash
-cd chat-server
+# Run all tests
 npm test
-```
 
-### **Frontend Tests**
+# Backend tests only
+npm run test:backend
 
-```bash
-cd chat-client-vite
-npm test
-```
+# Frontend tests only
+npm run test:frontend
 
-### **Constitutional Compliance Check**
-
-```bash
-./.specify/scripts/bash/constitutional-check.sh
-```
-
-### **Framework Integrity Audit**
-
-```bash
-./.specify/scripts/bash/sanitization-audit.sh
+# Test with coverage
+npm run test:coverage
 ```
 
 ---
 
-## 🚢 **Deployment**
+## Documentation
 
-### **Frontend (Vercel)**
+Extended documentation lives in `/docs`:
 
-- **URL**: https://coparentliaizen.com
-- **Deployment**: Automatic on push to `main`
-- **Config**: `vercel.json`
+**Start here:**
+- `docs/architecture.md` — System overview & AI mediation flow
+- `docs/auth-flow.md` — Authentication lifecycle (signup → login → WebSocket)
+- `docs/deployment.md` — Vercel & Railway deployment guides
+- `docs/security.md` — Security measures & privacy compliance
+- `docs/sdd-framework.md` — SDD framework integration (optional)
 
-### **Backend (Railway)**
-
-- **Project**: LiaiZen Demo
-- **Service**: positive-recreation
-- **URL**: https://demo-production-6dcd.up.railway.app
-- **Deployment**: Automatic on push to `main`
-- **Config**: Railway dashboard
-
-### **Database**
-
-- **Development**: SQLite (`chat-server/chat.db`)
-- **Production**: PostgreSQL (migration in progress)
+**Additional references:**
+- `chat-server/README.md` — API & WebSocket events
+- `marketing-site/README.md` — Marketing site setup
+- `CLAUDE.md` — AI assistant instructions and project guidelines
+- `docs/deployment/` — Detailed deployment guides
 
 ---
 
-## 🔐 **Security & Privacy**
+## Deployment
 
-### **Data Protection**
+**Main App (Vercel) - chat-client-vite ONLY**
+- ⚠️ **CRITICAL**: Only deploy from `chat-client-vite/` directory
+- ⚠️ **NEVER** deploy main app to any other Vercel project
+- URL: https://chat-client-vite-a3vgwwysr-aseesys-projects.vercel.app
+- Production URL: https://app.coparentliaizen.com
+- Automatic deployment on push to `main` (if Vercel is connected)
+- Config: `chat-client-vite/vercel.json`
+- **Safe deployment**: `./scripts/deploy-chat-client-vite.sh` or `cd chat-client-vite && npm run deploy`
+- **See `DEPLOYMENT.md` for critical deployment instructions**
 
-- All passwords hashed with bcrypt
-- JWT-based authentication
-- Secure WebSocket connections
-- Environment variable secret management
+**Marketing Site (Vercel)**
+- URL: https://www.coparentliaizen.com
+- Automatic deployment on push to `main`
+- **Separate Vercel project** - Never deploy main app here!
 
-### **Privacy Compliance**
+**Backend (Railway)**
+- URL: https://demo-production-6dcd.up.railway.app
+- Automatic deployment on push to `main`
 
-- COPPA compliant (children's data protection)
-- GDPR adherent (EU privacy regulations)
-- Communication history for accountability and reference
-- Selective information sharing controls
-
-### **Best Practices**
-
-- Input validation on all user inputs
-- Output sanitization for XSS prevention
-- Rate limiting on API endpoints
-- CORS properly configured
-
----
-
-## 🧑‍💻 **Tech Stack**
-
-### **Frontend**
-
-- React 18+ (functional components, hooks)
-- Vite (build tool)
-- Tailwind CSS (styling)
-- Socket.io-client (WebSocket)
-- React Router (routing)
-
-### **Backend**
-
-- Node.js 18+
-- Express.js (REST API)
-- Socket.io (WebSocket server)
-- SQLite/PostgreSQL (database)
-- bcrypt (password hashing)
-- jsonwebtoken (JWT auth)
-- OpenAI API (AI mediation)
-- Nodemailer (email)
-
-### **Development**
-
-- SDD Agentic Framework v2.0.0
-- DS-STAR Multi-Agent System
-- Python 3.13 (for DS-STAR)
-- Constitutional AI governance
+**Database**
+- PostgreSQL (required in all environments)
+- Production: Managed PostgreSQL on Railway
+- Development: Local PostgreSQL or Docker (see `docs/POSTGRESQL_SETUP.md`)
 
 ---
 
-## 🤝 **Contributing**
+## Security & Privacy
 
-### **Development Principles**
-
-This project follows **17 constitutional principles** enforced by the SDD framework:
-
-1. **Library-First Architecture**: Features as standalone libraries
-2. **Test-First Development**: TDD with >80% coverage
-3. **Contract-First Design**: API contracts before implementation
-4. **Idempotent Operations**: Repeatable without side effects
-5. **Progressive Enhancement**: Gradual feature rollout
-6. **Git Operation Approval**: No automatic git commands
-7. **Observability**: Structured logging for debugging
-8. **Documentation Sync**: Docs stay current with code
-9. **Dependency Management**: Careful external dependency control
-10. **Agent Delegation**: Specialized work to specialized agents
-11. **Input Validation**: All inputs/outputs validated
-12. **Design System**: Consistent design patterns
-13. **Access Control**: Role-based permissions
-14. **AI Model Selection**: Appropriate model for task
-
-### **Co-Parenting Domain Principles** (Additional)
-
-15. **Child-Centered Outcomes**: Features benefit children's wellbeing
-16. **Conflict Reduction First**: Reduce misunderstandings and tensions
-17. **Privacy by Default**: Family data protection at every layer
-
-### **Contribution Workflow**
-
-1. Fork the repository
-2. Create feature branch: `git checkout -b feature/your-feature`
-3. Use SDD workflow: `/specify` → `/plan` → `/tasks`
-4. Follow constitutional principles (run `./.specify/scripts/bash/constitutional-check.sh`)
-5. Write tests (TDD with >80% coverage)
-6. Validate domain requirements (run `/validate-domain`)
-7. Commit with conventional commits: `feat:`, `fix:`, `docs:`, etc.
-8. Push to branch: `git push origin feature/your-feature`
-9. Create Pull Request
+- **Data Protection**: Passwords hashed with bcrypt, JWT authentication, secure connections (HTTPS/WSS)
+- **Privacy Compliance**: COPPA and GDPR compliance planned (see `docs/prd/prd.md`)
+- **Best Practices**: Input validation, XSS prevention (DOMPurify), rate limiting, CORS configured, security headers (Helmet.js)
 
 ---
 
-## 📊 **Project Status**
+## Specification-Driven Development (Optional)
 
-### **Current Version**: 1.0.0
+This repository includes an agentic, specification-driven development framework used to:
+- Define features before implementation
+- Enforce architectural and domain constraints
+- Maintain consistency in AI-mediated behavior
 
-### **Framework Version**: SDD v2.0.0 with DS-STAR
+Framework usage is optional for contributors.
 
-### **Features**
+See `docs/INTEGRATION_GUIDE.md` for details.
 
+---
+
+## Project Status
+
+**Version:** 1.0.0
+
+**Features:**
 - ✅ Real-time messaging with WebSocket
 - ✅ AI-powered message mediation
-- ✅ Contact management
-- ✅ Task management
+- ✅ Tasks & contacts
 - ✅ Room invitations and member management
-- ✅ JWT authentication
-- ✅ Google OAuth integration
+- ✅ JWT authentication & Google OAuth
 - ✅ Email notifications
 - ✅ Mobile-responsive UI
-- ✅ SDD framework with 14 specialized agents
-- 🚧 PostgreSQL migration (in progress)
+- ✅ PostgreSQL database
 - 🚧 Calendar integration (planned)
 - 🚧 Document storage (planned)
 - 🚧 Expense tracking (planned)
 
 ---
 
-## 📝 **License**
+## License
 
 Copyright © 2024 LiaiZen. All rights reserved.
 
----
-
-## 🙏 **Acknowledgments**
+## Acknowledgments
 
 - **SDD Agentic Framework**: [kelleysd-apps/sdd-agentic-framework](https://github.com/kelleysd-apps/sdd-agentic-framework)
 - **OpenAI**: AI-powered message mediation
@@ -455,14 +268,11 @@ Copyright © 2024 LiaiZen. All rights reserved.
 - **Vercel**: Frontend hosting
 - **Railway**: Backend hosting
 
----
-
-## 📧 **Contact**
+## Contact
 
 - **Website**: [coparentliaizen.com](https://coparentliaizen.com)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/chat/issues)
-- **Email**: support@coparentliaizen.com
+- **Email**: info@liaizen.com
 
 ---
 
-**For Better Co-Parenting. For Better Outcomes. For The Kids.**
+**For Mature Co-Parenting. For Easier Interactions. For The Sake Of The Kids.**

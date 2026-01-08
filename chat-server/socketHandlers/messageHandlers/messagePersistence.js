@@ -9,6 +9,8 @@
  * - Error handling and retries
  */
 
+const { defaultLogger } = require('../../src/infrastructure/logging/logger');
+
 /**
  * Add message to history
  * Uses MessageService with built-in retry logic - single source of truth for persistence
@@ -21,11 +23,18 @@
 async function addToHistory(message, roomId, options = {}) {
   const MessageService = require('../../src/services/messages/messageService');
   const messageService = new MessageService();
+  const logger = defaultLogger.child({ function: 'addToHistory' });
 
   const userEmail =
     message.sender?.email || message.user_email || message.email || message.username;
   if (!userEmail) {
-    console.error('[addToHistory] No user email found in message:', message);
+    logger.error('No user email found in message', {
+      messageId: message.id,
+      hasSender: !!message.sender,
+      hasUserEmail: !!message.user_email,
+      hasEmail: !!message.email,
+      hasUsername: !!message.username,
+    });
     return false;
   }
 
@@ -52,22 +61,20 @@ async function addToHistory(message, roomId, options = {}) {
   };
 
   try {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[addToHistory] Saving message via MessageService:', {
-        id: messageToSave.id,
-        userEmail,
-        text: messageToSave.text?.substring(0, 50),
-        type: messageToSave.type,
-        roomId: messageToSave.roomId,
-      });
-    }
+    logger.debug('Saving message via MessageService', {
+      messageId: messageToSave.id,
+      text: messageToSave.text?.substring(0, 50),
+      type: messageToSave.type,
+      roomId: messageToSave.roomId,
+      // Don't log userEmail - PII
+    });
 
     // MessageService has built-in retry logic for transient database errors
     await messageService.createMessage(messageToSave, userEmail, { retry: true, maxRetries: 3 });
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[addToHistory] Message saved successfully via MessageService');
-    }
+    logger.debug('Message saved successfully via MessageService', {
+      messageId: messageToSave.id,
+    });
 
     // Auto-threading: Process message in background (non-blocking)
     // Only process regular user messages, not system/AI messages
@@ -87,7 +94,13 @@ async function addToHistory(message, roomId, options = {}) {
       setImmediate(() => {
         autoThreading
           .processMessageForThreading(messageToSave, { io: options.io })
-          .catch(err => console.error('[AutoThreading] Background error:', err.message));
+          .catch(err => {
+            logger.warn('AutoThreading background error', {
+              error: err.message,
+              errorCode: err.code,
+              messageId: messageToSave.id,
+            });
+          });
       });
     }
 
@@ -130,7 +143,7 @@ async function addToHistory(message, roomId, options = {}) {
             // Broadcast to subscribers
             broadcastMessageAddedToTopic(options.io, messageToSave.roomId, topicId, messageToSave.id);
 
-            console.log('[TopicDetection] Message assigned to topic:', {
+            logger.info('Message assigned to topic', {
               messageId: messageToSave.id,
               topicId,
               roomId: messageToSave.roomId,
@@ -139,7 +152,11 @@ async function addToHistory(message, roomId, options = {}) {
           // If no matching topic, message will be picked up by next manual/scheduled detection
         } catch (err) {
           // Topic detection is non-critical - log and continue
-          console.error('[TopicDetection] Background error:', err.message);
+          logger.warn('TopicDetection background error', {
+            error: err.message,
+            errorCode: err.code,
+            messageId: messageToSave.id,
+          });
         }
       });
     }
@@ -160,7 +177,11 @@ async function addToHistory(message, roomId, options = {}) {
           threadService.queueProcessing(messageToSave.roomId);
         } catch (err) {
           // Thread processing is non-critical - log and continue
-          console.error('[ThreadProcessing] Queue error:', err.message);
+          logger.warn('ThreadProcessing queue error', {
+            error: err.message,
+            errorCode: err.code,
+            roomId: messageToSave.roomId,
+          });
         }
       });
     }
@@ -168,15 +189,13 @@ async function addToHistory(message, roomId, options = {}) {
     return true; // Success
   } catch (err) {
     // MessageService handles retries internally, so if we get here, it's a persistent error
-    console.error('❌ Error saving message (after retries):', {
-      error: err.message,
-      code: err.code,
+    logger.error('Error saving message (after retries)', err, {
+      errorCode: err.code,
       messageId: messageToSave.id,
       roomId: messageToSave.roomId,
-      userEmail,
+      messageType: messageToSave.type,
+      // Don't log userEmail or message text - PII
     });
-    // Log full message data for debugging
-    console.error('Message data:', JSON.stringify(messageToSave, null, 2));
 
     // Notify client of persistent save failure if socket provided
     if (options.socket && options.socket.connected) {

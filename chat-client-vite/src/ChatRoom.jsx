@@ -83,6 +83,7 @@ function ChatRoomContent({
     exitSearchMode,
     messages,
     isConnected,
+    room,
   } = useChatContext();
 
   // Track offline queue size for ConnectionStatus
@@ -355,6 +356,7 @@ function ChatRoomContent({
                     inviteError,
                     isLoadingInvite,
                     hasCoParentConnected,
+                    isCheckingCoParent,
                     hasPendingInvitation,
                     hasAcceptedInvitation,
                     showManualInvite,
@@ -479,6 +481,10 @@ function ChatRoomContent({
                   setShowInviteModal(false);
                   if (loadTasks) loadTasks();
                   setHasCoParentConnected(true);
+                  // Trigger socket re-join to connect to newly created room
+                  if (room?.join && username) {
+                    room.join(username);
+                  }
                 }}
                 pendingContactSuggestion={contactSuggestionModal.pendingContactSuggestion}
                 onAddContact={contactSuggestionModal.handleAddContactFromSuggestion}
@@ -516,10 +522,10 @@ function ChatRoom() {
 
   // Debug logging
   React.useEffect(() => {
-    console.log('[ChatRoom] Auth state:', {
-      username,
-      email: userEmail,
-      socketUsername,
+    logger.debug('Auth state changed', {
+      hasUsername: !!username,
+      hasEmail: !!userEmail,
+      hasSocketUsername: !!socketUsername,
       isAuthenticated,
       isCheckingAuth,
     });
@@ -528,10 +534,10 @@ function ChatRoom() {
   // If authenticated but no email, trigger re-verification to fetch it
   React.useEffect(() => {
     if (isAuthenticated && !userEmail && !isCheckingAuth && verifySession) {
-      console.log('[ChatRoom] Authenticated but no email, triggering re-verification');
+      logger.warn('Authenticated but no email, triggering re-verification');
       verifySession();
     }
-  }, [isAuthenticated, userEmail, isCheckingAuth, verifySession]);
+  }, [isAuthenticated, userEmail, isCheckingAuth, verifySession, logger]);
 
   return (
     <ChatProvider

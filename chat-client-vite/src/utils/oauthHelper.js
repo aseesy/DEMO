@@ -1,6 +1,7 @@
 /**
  * OAuth Helper Utilities
- * Provides popup blocker detection, state parameter generation/validation, and OAuth error handling
+ * Provides PKCE, state parameter generation/validation, and OAuth error handling
+ * Single source of truth for OAuth client-side security - no duplicates.
  */
 
 import { storage, sessionStorage as sessionStorageAdapter, StorageKeys } from '../adapters/storage';
@@ -16,17 +17,72 @@ export function generateOAuthState() {
 }
 
 /**
- * Store OAuth state in both sessionStorage and localStorage
+ * Generate PKCE code verifier and challenge
+ * @returns {Object} { codeVerifier, codeChallenge, codeChallengeMethod }
+ */
+export function generatePKCE() {
+  // Generate 128 character code verifier (base64url encoded)
+  const array = new Uint8Array(64);
+  crypto.getRandomValues(array);
+  const codeVerifier = btoa(String.fromCharCode.apply(null, array))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+  
+  // Generate SHA256 hash of code verifier (code challenge)
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier)).then(hashBuffer => {
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashBase64 = btoa(String.fromCharCode.apply(null, hashArray));
+    const codeChallenge = hashBase64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    
+    return {
+      codeVerifier,
+      codeChallenge,
+      codeChallengeMethod: 'S256',
+    };
+  });
+}
+
+/**
+ * Generate PKCE synchronously (for compatibility)
+ * Note: This uses a slightly different approach to ensure consistency
+ */
+export async function generatePKCEAsync() {
+  return generatePKCE();
+}
+
+/**
+ * Store OAuth state and PKCE data in both sessionStorage and localStorage
  * Using both provides resilience against Safari ITP clearing sessionStorage
  * @param {string} state - State parameter
+ * @param {Object} pkceData - PKCE data { codeVerifier, codeChallenge, codeChallengeMethod }
  */
-export function storeOAuthState(state) {
+export function storeOAuthState(state, pkceData = null) {
   const timestamp = Date.now().toString();
   // Store in both for resilience (Safari ITP can clear sessionStorage during redirects)
   sessionStorageAdapter.set(StorageKeys.OAUTH_STATE, state);
   sessionStorageAdapter.set(StorageKeys.OAUTH_STATE_TIMESTAMP, timestamp);
   storage.set(StorageKeys.OAUTH_STATE, state);
   storage.set(StorageKeys.OAUTH_STATE_TIMESTAMP, timestamp);
+  
+  // Store PKCE data if provided
+  if (pkceData) {
+    sessionStorageAdapter.set(StorageKeys.OAUTH_CODE_VERIFIER, pkceData.codeVerifier);
+    storage.set(StorageKeys.OAUTH_CODE_VERIFIER, pkceData.codeVerifier);
+  }
+}
+
+/**
+ * Get stored PKCE code verifier
+ * @returns {string|null} Code verifier or null if not found
+ */
+export function getStoredCodeVerifier() {
+  // Try sessionStorage first, fall back to localStorage
+  let codeVerifier = sessionStorageAdapter.getString(StorageKeys.OAUTH_CODE_VERIFIER);
+  if (!codeVerifier) {
+    codeVerifier = storage.getString(StorageKeys.OAUTH_CODE_VERIFIER);
+  }
+  return codeVerifier;
 }
 
 /**
@@ -80,11 +136,19 @@ export function validateOAuthState(receivedState) {
 }
 
 /**
- * Clear OAuth state from both sessionStorage and localStorage
+ * Clear OAuth state and PKCE data from both sessionStorage and localStorage
  */
 export function clearOAuthState() {
-  sessionStorageAdapter.removeMany([StorageKeys.OAUTH_STATE, StorageKeys.OAUTH_STATE_TIMESTAMP]);
-  storage.removeMany([StorageKeys.OAUTH_STATE, StorageKeys.OAUTH_STATE_TIMESTAMP]);
+  sessionStorageAdapter.removeMany([
+    StorageKeys.OAUTH_STATE,
+    StorageKeys.OAUTH_STATE_TIMESTAMP,
+    StorageKeys.OAUTH_CODE_VERIFIER,
+  ]);
+  storage.removeMany([
+    StorageKeys.OAUTH_STATE,
+    StorageKeys.OAUTH_STATE_TIMESTAMP,
+    StorageKeys.OAUTH_CODE_VERIFIER,
+  ]);
 }
 
 /**

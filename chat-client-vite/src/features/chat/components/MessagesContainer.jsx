@@ -2,6 +2,8 @@ import React from 'react';
 import { ObserverCard } from '../../dashboard/components/ObserverCard.jsx';
 import { MessageItem } from './MessageItem.jsx';
 import { VirtualizedMessagesContainer } from './VirtualizedMessagesContainer.jsx';
+import { createLogger } from '../../../utils/logger.js';
+import { groupMessagesByDate, detectMessageOwnership, isAIMessage, createDateFormatterCache } from '../../../utils/messageDisplayUtils.js';
 
 // Threshold for switching to virtual scrolling (performance optimization)
 // Use virtual scrolling when message count exceeds this threshold
@@ -37,74 +39,25 @@ function MessagesContainerComponent({
   socket: _socket, // Unused but kept for API compatibility
   room,
 }) {
+  // Create date formatter cache once (reused across renders)
+  const dateFormatterCache = React.useMemo(() => createDateFormatterCache(), []);
+
   // Optimized message grouping - memoized with efficient date formatting
   const messageGroups = React.useMemo(() => {
     if (!messages || messages.length === 0) return [];
 
-    const groups = [];
-    let currentGroup = null;
-    let currentDate = null;
-    const currentYear = new Date().getFullYear();
+    // Use utility function for date grouping
+    const groups = groupMessagesByDate(messages, dateFormatterCache);
 
-    // Filter out contact_suggestion messages - they only trigger modals, not chat display
-    const displayMessages = messages.filter(msg => msg.type !== 'contact_suggestion');
-
-    if (displayMessages.length === 0) return [];
-
-    // Cache date formatter to avoid creating new formatter for each message
-    const dateFormatter = new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-    });
-    const dateFormatterWithYear = new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
-    for (let index = 0; index < displayMessages.length; index++) {
-      const msg = displayMessages[index];
-      const msgDate = new Date(msg.created_at || msg.timestamp || Date.now());
-      // Guard against invalid dates
-      const isValidDate = !isNaN(msgDate.getTime());
-      const needsYear = isValidDate && msgDate.getFullYear() !== currentYear;
-      const dateLabel = isValidDate
-        ? needsYear
-          ? dateFormatterWithYear.format(msgDate)
-          : dateFormatter.format(msgDate)
-        : 'Unknown Date';
-
-      if (dateLabel !== currentDate) {
-        if (currentGroup) groups.push(currentGroup);
-        currentGroup = { date: dateLabel, messages: [] };
-        currentDate = dateLabel;
-      }
-      // Include needed fields plus sender object for ownership detection
-      currentGroup.messages.push({
-        id: msg.id,
-        text: msg.text,
-        // username field is deprecated (set to email for backward compatibility)
-        username: msg.username, // Keep for backward compatibility, but prefer sender.email
-        timestamp: msg.timestamp || msg.created_at,
-        type: msg.type,
+    // Add originalIndex and preserve all message fields
+    return groups.map(group => ({
+      ...group,
+      messages: group.messages.map((msg, index) => ({
+        ...msg,
         originalIndex: index,
-        // Include sender object for UUID-based ownership and display name
-        sender: msg.sender,
-        sender_id: msg.sender_id,
-        user_id: msg.user_id,
-        // Include other needed fields
-        ...(msg.intervention_id && { intervention_id: msg.intervention_id }),
-        ...(msg.isOptimistic && { isOptimistic: msg.isOptimistic }),
-        ...(msg.status && { status: msg.status }),
-        ...(msg.isAI && { isAI: msg.isAI }),
-      });
-    }
-
-    if (currentGroup) groups.push(currentGroup);
-    return groups;
-  }, [messages]);
+      })),
+    }));
+  }, [messages, dateFormatterCache]);
 
   // Throttle scroll handler to prevent excessive calls
   const scrollThrottleRef = React.useRef(null);
@@ -259,33 +212,25 @@ function MessagesContainerComponent({
             // Skip if message is pending removal
             if (pendingOriginalMessageToRemove === msg.id) return null;
 
-            // UUID-based ownership detection (primary method)
-            // Messages should have sender.uuid or sender_id from the server
-            const messageUserId =
-              msg.sender?.uuid || msg.sender?.id || msg.sender_id || msg.user_id;
+            // Use utility function for ownership detection
+            const { isOwn, messageUserId, senderDisplayName } = detectMessageOwnership(msg, userId);
 
-            // Compare UUIDs/IDs (convert to string for safe comparison)
-            const isOwn = userId && messageUserId && String(userId) === String(messageUserId);
-
-            // Get display name - prefer first_name, fallback to email
-            // username field is deprecated (set to email for backward compatibility)
-            const senderDisplayName = msg.sender?.first_name || msg.sender?.email || 'Unknown';
-
-            // DEBUG: Log first few messages to diagnose ownership issue
+            // DEBUG: Log first few messages to diagnose ownership issue (dev only)
+            // Only log in development and limit to first 3 messages to avoid spam
             if (msgIndex < 3) {
-              console.log('[MessagesContainer] Message ownership check:', {
+              const logger = createLogger('MessagesContainer');
+              logger.debug('Message ownership check', {
                 messageId: msg.id,
                 messageText: msg.text?.substring(0, 30),
-                messageUserId,
-                currentUserId: userId,
-                senderObject: msg.sender,
+                messageUserId: messageUserId ? String(messageUserId) : null,
+                currentUserId: userId ? String(userId) : null,
                 senderDisplayName,
                 isOwn,
-                comparison: `${userId} === ${messageUserId}`,
               });
             }
 
-            const isAI = msg.isAI || msg.sender?.email === 'LiaiZen';
+            // Use utility function for AI detection
+            const isAI = isAIMessage(msg);
             const isHighlighted = highlightedMessageId === msg.id;
             const isSending = msg.isOptimistic || msg.status === 'sending';
 

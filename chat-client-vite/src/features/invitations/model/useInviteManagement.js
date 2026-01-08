@@ -322,14 +322,21 @@ export function useInviteManagement({
   // ============================================
 
   // Periodic room member checking
+  // Reduced polling frequency to prevent CPU overheating
   React.useEffect(() => {
     if (currentView === 'chat' && isAuthenticated && !hasCoParentConnected) {
       checkRoomMembers();
     }
     let interval;
     if (currentView === 'chat' && isAuthenticated) {
-      const pollInterval = hasCoParentConnected ? 60000 : 5000;
-      interval = setInterval(checkRoomMembers, pollInterval);
+      // Increased intervals: 30s when waiting, 2min when connected (was 5s/60s)
+      const pollInterval = hasCoParentConnected ? 120000 : 30000;
+      interval = setInterval(() => {
+        // Only poll if page is visible to save CPU
+        if (document.visibilityState === 'visible') {
+          checkRoomMembers();
+        }
+      }, pollInterval);
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -369,11 +376,17 @@ export function useInviteManagement({
   }, [messages.length, isAuthenticated, hasCoParentConnected, checkRoomMembers]);
 
   // Check invitations periodically (only if not already paired)
+  // Reduced frequency to prevent CPU overheating
   React.useEffect(() => {
     if (isAuthenticated && !hasCoParentConnected) {
       checkInvitations();
-      // Poll every 30 seconds instead of 5 - invitations aren't that time-critical
-      const interval = setInterval(checkInvitations, 30000);
+      // Poll every 60 seconds (reduced from 30s) - invitations aren't time-critical
+      // Only poll when page is visible to save CPU
+      const interval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          checkInvitations();
+        }
+      }, 60000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated, hasCoParentConnected, checkInvitations]);

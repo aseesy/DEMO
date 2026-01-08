@@ -162,8 +162,9 @@ export async function commandAcceptByToken(token) {
   }
 
   try {
+    // Use new production-grade endpoint
     const response = await retryWithBackoff(
-      () => apiPost('/api/pairing/accept', { token }),
+      () => apiPost('/api/invites/accept', { token }),
       VALIDATION_RETRY_CONFIG
     );
 
@@ -172,16 +173,23 @@ export async function commandAcceptByToken(token) {
     if (!response.ok) {
       const errorInfo = getErrorMessage(data, {
         statusCode: response.status,
-        endpoint: '/api/pairing/accept',
+        endpoint: '/api/invites/accept',
       });
-      logError(data, { endpoint: '/api/pairing/accept', operation: 'accept_invitation', token });
-      return { success: false, error: errorInfo.userMessage, errorInfo, code: data.code };
+      logError(data, { endpoint: '/api/invites/accept', operation: 'accept_invitation', token });
+      return { 
+        success: false, 
+        error: errorInfo.userMessage, 
+        errorInfo, 
+        code: data.code,
+        expectedEmail: data.expectedEmail,
+        actualEmail: data.actualEmail,
+      };
     }
 
     return { success: true, ...data };
   } catch (err) {
-    const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/accept' });
-    logError(err, { endpoint: '/api/pairing/accept', operation: 'accept_invitation', token });
+    const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/invites/accept' });
+    logError(err, { endpoint: '/api/invites/accept', operation: 'accept_invitation', token });
     return { success: false, error: errorInfo.userMessage, errorInfo };
   }
 }

@@ -197,7 +197,7 @@ SELECT COUNT(*) FROM messages WHERE room_id = '<roomId>' AND type != 'system';
 
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  http://localhost:3001/api/messages/room/<roomId>
+  http://localhost:3000/api/messages/room/<roomId>
 ```
 
 Expected response:

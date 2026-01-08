@@ -137,7 +137,7 @@ class SocketService {
         reconnection: true,
         reconnectionDelay: 2000,
         reconnectionDelayMax: 10000,
-        reconnectionAttempts: 5,
+        reconnectionAttempts: 10, // Limited to prevent infinite reconnection loops
         timeout: 20000,
         forceNew: true, // Force new connection to avoid stale socket issues
         autoConnect: true,

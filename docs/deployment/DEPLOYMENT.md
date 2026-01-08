@@ -57,8 +57,8 @@ Complete guide to deploy LiaiZen to production using Railway (backend) and Verce
 
    ```env
    NODE_ENV=production
-   PORT=3001
-   FRONTEND_URL=https://coparentliaizen.com,https://www.coparentliaizen.com,https://*.vercel.app
+   PORT=3000
+   FRONTEND_URL=https://app.coparentliaizen.com,https://www.coparentliaizen.com,https://*.vercel.app
 
    # Email Configuration
    EMAIL_SERVICE=gmail

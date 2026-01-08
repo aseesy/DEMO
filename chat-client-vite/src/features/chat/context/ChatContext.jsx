@@ -1,6 +1,8 @@
 import React from 'react';
 import { socketService as socketServiceV2 } from '../../../services/socket/SocketService.v2.js';
 import { tokenManager } from '../../../utils/tokenManager.js';
+import { messageService } from '../../../services/chat/MessageService.js';
+import { createLogger } from '../../../utils/logger.js';
 // import { unreadService } from '../../../services/chat/index.js'; // Unused
 
 // Independent hooks - each subscribes to its own service
@@ -44,22 +46,27 @@ export function ChatProvider({
 }) {
   // username prop is actually the user's email (for backward compatibility)
   const userEmail = username;
+  const logger = createLogger('ChatProvider');
 
-  // DEBUG: Log ChatProvider mount with timestamp
-  console.log('[ChatProvider] ========================================');
-  console.log('[ChatProvider] MOUNT at', new Date().toISOString());
-  console.log('[ChatProvider] Props:', { userEmail, isAuthenticated, currentView });
-  console.log('[ChatProvider] ========================================');
+  // DEBUG: Log ChatProvider mount with timestamp (dev only)
+  React.useEffect(() => {
+    logger.debug('ChatProvider mounted', {
+      timestamp: new Date().toISOString(),
+      isAuthenticated,
+      currentView,
+      // Email is already sanitized by logger
+    });
+  }, []);
 
   // === SOCKET CONNECTION (infrastructure) - v2 Simplified System ===
   // Ensure tokenManager is initialized before getting token
   React.useEffect(() => {
     if (isAuthenticated) {
       tokenManager.initialize().catch(err => {
-        console.warn('[ChatProvider] TokenManager initialization failed:', err);
+        logger.warn('TokenManager initialization failed', { error: err.message });
       });
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, logger]);
 
   // Memoize token to prevent unnecessary re-connections
   // Include isAuthenticated in deps to update when auth state changes
@@ -73,7 +80,11 @@ export function ChatProvider({
     token,
     enabled: isAuthenticated,
   });
-  console.log('[ChatProvider] Socket state - isConnected:', isConnected);
+
+  // Log socket connection state changes
+  React.useEffect(() => {
+    logger.debug('Socket connection state changed', { isConnected });
+  }, [isConnected, logger]);
 
   // Create socket-compatible object for components that need it
   const socket = React.useMemo(
@@ -84,7 +95,7 @@ export function ChatProvider({
       off: (_event, _handler) => {
         // socketServiceV2.subscribe returns unsubscribe, but we need a separate off method
         // For now, components should store the unsubscribe function from 'on' calls
-        console.warn('[ChatContext] socket.off called - use unsubscribe from socket.on instead');
+        logger.warn('socket.off called - use unsubscribe from socket.on instead');
       },
     }),
     [isConnected, emit]
@@ -265,9 +276,9 @@ export function ChatProvider({
     [coaching, typing]
   );
 
-  const removeMessages = React.useCallback(_predicate => {
-    // Messages are managed by service - this would need service method
-    console.warn('removeMessages not implemented in new architecture');
+  const removeMessages = React.useCallback(predicate => {
+    // Delegate to MessageService - messages are managed by service
+    messageService.removeMessages(predicate);
   }, []);
 
   const flagMessage = React.useCallback((messageId, reason = null) => {
@@ -507,11 +518,12 @@ let warningTimeout = null;
 
 export function useChatContext() {
   const context = React.useContext(ChatContext);
+  const logger = createLogger('useChatContext');
   if (!context) {
     if (import.meta.env.DEV) {
       if (!hasWarned) {
         hasWarned = true;
-        console.warn('[useChatContext] Context not available - using default.');
+        logger.warn('Context not available - using default');
         if (warningTimeout) clearTimeout(warningTimeout);
         warningTimeout = setTimeout(() => {
           hasWarned = false;

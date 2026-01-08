@@ -12,6 +12,7 @@ const {
   handleAiFailure,
 } = require('./aiActionHelper');
 const { updateUserStats, sendMessageDirectly, gatherAnalysisContext } = require('./aiHelperUtils');
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
 
 // AI analysis timeout (30 seconds) - prevents indefinite hangs
 const AI_ANALYSIS_TIMEOUT_MS = 30000;
@@ -50,22 +51,25 @@ async function handleAiMediation(socket, io, services, context) {
   const { user, message, data, addToHistory } = context;
   const { aiMediator, dbSafe, dbPostgres, communicationStats, userSessionService } = services;
   const { isPreApprovedRewrite, originalRewrite, bypassMediation } = data;
+  const logger = defaultLogger.child({ function: 'handleAiMediation', messageId: message.id });
 
   // 1. IF THIS IS A PRE-APPROVED REWRITE AND NOT EDITED, SKIP AI ANALYSIS
   // Only bypass if the message closely matches the original rewrite (>= 95% similar)
   if (isPreApprovedRewrite && originalRewrite) {
     const similarity = stringSimilarity.compareTwoStrings(message.text, originalRewrite);
     if (similarity >= 0.95) {
-      console.log(
-        '[aiHelper] Skipping AI analysis for unedited rewrite (similarity:',
-        similarity,
-        ')'
-      );
+      logger.debug('Skipping AI analysis for unedited rewrite', {
+        similarity: similarity.toFixed(3),
+        messageId: message.id,
+      });
       await updateUserStats(services, user, user.roomId, false);
       await sendMessageDirectly(message, user.roomId, io, addToHistory, { isRevision: true });
       return;
     }
-    console.log('[aiHelper] Rewrite was edited (similarity:', similarity, '), running AI analysis');
+    logger.debug('Rewrite was edited, running AI analysis', {
+      similarity: similarity.toFixed(3),
+      messageId: message.id,
+    });
   }
 
   // 2. User chose "Send Original Anyway" - bypass mediation
@@ -76,10 +80,10 @@ async function handleAiMediation(socket, io, services, context) {
     const hasDirectInsult = hasDirectHostility(message.text);
 
     if (hasDirectInsult) {
-      console.warn('[aiHelper] BLOCKED bypass attempt for direct hostility:', {
+      logger.warn('BLOCKED bypass attempt for direct hostility', {
         messageId: message.id,
-        email: user.email || user.username,
-        text: message.text.substring(0, 50),
+        textPreview: message.text.substring(0, 50),
+        // Don't log email - PII
       });
       // Emit error to client - direct insults cannot be bypassed
       const { emitError } = require('./utils');
@@ -100,9 +104,10 @@ async function handleAiMediation(socket, io, services, context) {
   // 3. Validate required services - if missing, send message anyway
   if (!aiMediator || !userSessionService) {
     const missingService = !aiMediator ? 'aiMediator' : 'userSessionService';
-    console.error(
-      `[aiHelper] ERROR: ${missingService} not available in services - sending message without analysis`
-    );
+    logger.error('Required service not available, sending message without analysis', {
+      missingService,
+      messageId: message.id,
+    });
     await sendMessageDirectly(message, user.roomId, io, addToHistory);
     return;
   }
@@ -120,11 +125,11 @@ async function handleAiMediation(socket, io, services, context) {
     // RACE CONDITION FIX: Check if socket is still connected before processing
     // The user may have disconnected or the room state may have changed
     if (!socket.connected) {
-      const userEmail = user.email || user.username; // Fallback for backward compatibility
-      console.warn('[aiHelper] Socket disconnected before AI analysis - skipping', {
-        socketId,
-        email: userEmail,
+      const analysisLogger = defaultLogger.child({ function: 'handleAiMediation' });
+      analysisLogger.warn('Socket disconnected before AI analysis - skipping', {
+        socketId: socketId.substring(0, 20) + '...',
         messageId: message.id,
+        // Don't log email - PII
       });
       return;
     }
@@ -134,7 +139,11 @@ async function handleAiMediation(socket, io, services, context) {
       message,
       addToHistory,
     }).catch(error => {
-      console.error('[aiHelper] Unhandled error in AI analysis:', error);
+      const analysisLogger = defaultLogger.child({ function: 'handleAiMediation' });
+      analysisLogger.error('Unhandled error in AI analysis', error, {
+        errorCode: error.code,
+        messageId: message.id,
+      });
       // Error is already handled in processAiAnalysis, but catch here as safety net
     });
   });
@@ -152,18 +161,19 @@ async function handleAiMediation(socket, io, services, context) {
 async function processAiAnalysis(socket, io, services, context) {
   const { user, message, addToHistory } = context;
   const { aiMediator } = services;
+  const logger = defaultLogger.child({ function: 'processAiAnalysis', messageId: message.id });
 
   try {
-    console.log('[aiHelper] Starting AI analysis for message:', {
+    logger.debug('Starting AI analysis for message', {
       messageId: message.id,
-      email: user.email || user.username,
       roomId: user.roomId,
-      text: message.text?.substring(0, 50),
+      textPreview: message.text?.substring(0, 50),
+      // Don't log email - PII
     });
 
     // Gather all context needed for analysis (include message for thread context)
     const analysisContext = await gatherAnalysisContext(services, user, user.roomId, message);
-    console.log('[aiHelper] Context gathered:', {
+    logger.debug('Context gathered for analysis', {
       recentMessages: analysisContext.recentMessages.length,
       participants: analysisContext.participantUsernames.length,
       hasThreadContext: !!analysisContext.threadContext,
@@ -202,29 +212,27 @@ async function processAiAnalysis(socket, io, services, context) {
     // Handle contact detection if no intervention
     let contactSuggestion = null;
     if (!intervention) {
-      console.log(
-        '[NameDetection] Running contact mention detection for:',
-        message.text.substring(0, 50)
-      );
+      logger.debug('Running contact mention detection', {
+        textPreview: message.text.substring(0, 50),
+      });
       contactSuggestion = await handleNameDetection(socket, aiMediator, {
         text: message.text,
         existingContacts: analysisContext.contactContext.existingContacts,
         participantUsernames: analysisContext.participantUsernames,
         recentMessages: analysisContext.recentMessages,
       });
-      console.log(
-        '[NameDetection] Result:',
-        contactSuggestion
-          ? `Found: ${contactSuggestion.detectedName} (relationship: ${contactSuggestion.detectedRelationship || 'none'})`
-          : 'No contacts detected'
-      );
+      logger.debug('Contact detection result', {
+        found: !!contactSuggestion,
+        detectedName: contactSuggestion?.detectedName,
+        relationship: contactSuggestion?.detectedRelationship || 'none',
+      });
     } else {
-      console.log('[NameDetection] Skipped - message triggered intervention');
+      logger.debug('Contact detection skipped - message triggered intervention');
     }
 
     // Process result
     if (intervention) {
-      console.log('[aiHelper] Processing intervention:', {
+      logger.debug('Processing intervention', {
         type: intervention.type,
         shouldIntervene: intervention.shouldIntervene,
       });
@@ -235,7 +243,7 @@ async function processAiAnalysis(socket, io, services, context) {
         addToHistory,
       });
     } else {
-      console.log('[aiHelper] Processing approved message');
+      logger.debug('Processing approved message');
       await processApprovedMessage(socket, io, services, {
         user,
         message,
@@ -243,13 +251,12 @@ async function processAiAnalysis(socket, io, services, context) {
         addToHistory,
       });
     }
-    console.log('[aiHelper] AI analysis completed successfully');
+    logger.debug('AI analysis completed successfully');
   } catch (aiError) {
-    console.error('[aiHelper] ERROR in AI analysis:', {
-      error: aiError.message,
-      stack: aiError.stack,
+    logger.error('ERROR in AI analysis', aiError, {
+      errorCode: aiError.code,
       messageId: message.id,
-      email: user.email || user.username,
+      // Don't log email - PII
     });
     await handleAiFailure(socket, io, {
       user,

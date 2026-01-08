@@ -19,6 +19,7 @@ const {
   createEditedMessage,
 } = require('../messageOperations');
 const { wrapSocketHandler } = require('../errorBoundary');
+const { defaultLogger } = require('../../src/infrastructure/logging/logger');
 
 /**
  * Register edit_message handler
@@ -29,6 +30,7 @@ const { wrapSocketHandler } = require('../errorBoundary');
  */
 function registerEditMessageHandler(socket, io, services) {
   const { dbSafe, dbPostgres, userSessionService } = services;
+  const logger = defaultLogger.child({ handler: 'edit_message' });
 
   socket.on(
     'edit_message',
@@ -87,10 +89,12 @@ function registerEditMessageHandler(socket, io, services) {
             userEmail
           );
         } catch (error) {
-          console.error(
-            '[edit_message] MessageService failed, falling back to dbSafe:',
-            error.message
-          );
+          logger.warn('MessageService failed, falling back to dbSafe', {
+            error: error.message,
+            errorCode: error.code,
+            messageId,
+            // Don't log userEmail - PII
+          });
           // Fallback to direct database update
           try {
             await dbSafe.safeUpdate(

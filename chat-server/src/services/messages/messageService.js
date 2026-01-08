@@ -398,10 +398,18 @@ class MessageService {
 
   /**
    * Generate a unique message ID
+   * Uses crypto.randomUUID() for secure uniqueness under load
    * @private
    */
   _generateMessageId(userEmail) {
-    return `${Date.now()}-${userEmail.split('@')[0]}-${Math.random().toString(36).substr(2, 9)}`;
+    const crypto = require('crypto');
+    // Use crypto.randomUUID() for secure, collision-resistant IDs
+    // Node.js 18+ has native support, fallback to randomBytes if needed
+    if (crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    // Fallback for older Node.js versions
+    return crypto.randomBytes(16).toString('hex');
   }
 }
 

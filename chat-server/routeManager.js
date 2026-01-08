@@ -42,6 +42,7 @@ function setupRoutes(app, services) {
   const dashboardRoutes = require('./routes/dashboard');
   const invitationsRoutes = require('./routes/invitations');
   const pairingRoutes = require('./routes/pairing');
+  const invitesRoutes = require('./routes/invites');
   const contactsRoutes = require('./routes/contacts');
   const activitiesRoutes = require('./routes/activities');
   const userRoutes = require('./routes/user');
@@ -55,6 +56,7 @@ function setupRoutes(app, services) {
 
   tasksRoutes.setHelpers({ autoCompleteOnboardingTasks, backfillOnboardingTasks });
   pairingRoutes.setHelpers({ roomManager });
+  invitesRoutes.setHelpers({ roomManager });
   roomsRoutes.setHelpers({ auth, roomManager, autoCompleteOnboardingTasks });
   adminRoutes.setHelpers({ roomManager });
   // Load mediation service and inject dependencies
@@ -90,6 +92,7 @@ function setupRoutes(app, services) {
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/invitations', invitationsRoutes);
   app.use('/api/pairing', pairingRoutes);
+  app.use('/api/invites', invitesRoutes);
   app.use('/api/contacts', contactsRoutes);
   app.use('/api/activities', activitiesRoutes);
   app.use('/api/user', userRoutes);
@@ -109,6 +112,15 @@ function setupRoutes(app, services) {
   const adminAdminRoutes = require('./routes/admin/adminRoutes');
   app.use('/api', adminImportRoutes);
   app.use('/', adminAdminRoutes);
+
+  // ========================================
+  // DEV-ONLY Routes (Development Testing)
+  // ========================================
+  if (process.env.NODE_ENV !== 'production') {
+    const devRoutes = require('./routes/dev');
+    app.use('/__dev', devRoutes);
+    console.log('✅ Dev routes enabled at /__dev (development only)');
+  }
 
   // ========================================
   // Static Assets (Extracted)

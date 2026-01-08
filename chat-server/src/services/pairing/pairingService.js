@@ -143,20 +143,58 @@ class PairingService extends BaseService {
   /**
    * Validate a pairing token
    * @param {string} token - Pairing token
-   * @returns {Promise<Object>} Validation result
+   * @returns {Promise<Object>} Validation result (includes error info if invalid)
    */
   async validateToken(token) {
-    if (!token) {
-      throw new ValidationError('Pairing token is required', 'token');
+    if (!token || token.trim().length === 0) {
+      return {
+        valid: false,
+        error: 'Pairing token is required',
+        code: 'TOKEN_REQUIRED',
+      };
     }
 
-    const result = await pairingManager.validateToken(token, this.db);
+    try {
+      const result = await pairingManager.validateToken(token, this.db);
 
-    if (!result.valid) {
-      throw new ValidationError(result.error || 'Invalid pairing token', 'token');
+      if (!result.valid) {
+        // Preserve error code and details from validator
+        return {
+          valid: false,
+          error: result.error || 'Invalid pairing token',
+          code: result.code || 'INVALID_TOKEN',
+          pairing: result.pairing, // Include pairing info if available for debugging
+          needsExpiration: result.needsExpiration, // Flag if token needs to be marked expired
+        };
+      }
+
+      // Mark expired if needed (side effect)
+      if (result.needsExpiration && result.pairing) {
+        try {
+          const { markSessionExpired } = require('../../../libs/pairing-manager/pairingValidator');
+          await markSessionExpired(this.db, result.pairing.id);
+          console.log(`[PairingService] Marked expired pairing session ${result.pairing.id}`);
+        } catch (expireError) {
+          console.error('[PairingService] Failed to mark session as expired:', expireError);
+          // Continue - validation result is still correct
+        }
+      }
+
+      return this._formatValidationResult(result);
+    } catch (error) {
+      // Handle database errors
+      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        console.error('[PairingService] Database connection error during token validation:', error);
+        return {
+          valid: false,
+          error: 'Database connection failed',
+          code: 'DATABASE_ERROR',
+        };
+      }
+      
+      // Re-throw unexpected errors
+      throw error;
     }
-
-    return this._formatValidationResult(result);
   }
 
   /**
@@ -287,6 +325,7 @@ class PairingService extends BaseService {
 
     return {
       valid: true,
+      code: result.code || 'VALID', // Include the validation code
       inviterName:
         result.initiatorName ||
         result.pairing.invited_by_username ||
@@ -295,6 +334,7 @@ class PairingService extends BaseService {
       inviterEmailDomain,
       inviteType: result.pairing.invite_type,
       expiresAt: result.pairing.expires_at,
+      parentBEmail: result.pairing.parent_b_email || null, // Include email restriction if set
     };
   }
 }

@@ -265,6 +265,53 @@ export function ConfirmInviterView({ validationResult, onConfirm, onReject }) {
 }
 
 /**
+ * Wrong account view - logged in with different email than invitation
+ */
+export function WrongAccountView({ expectedEmail, actualEmail, onSwitchAccount, onCancel }) {
+  return (
+    <div className="h-dvh bg-linear-to-b from-white via-teal-lightest/30 to-white flex items-center justify-center px-4">
+      <div className="max-w-md w-full text-center">
+        <div className="bg-white rounded-2xl border-2 border-amber-200 p-8 shadow-sm">
+          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-amber-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+          </div>
+          <h1 className="font-serif text-2xl font-bold text-teal-dark mb-2">Wrong Account</h1>
+          <p className="text-gray-600 mb-4">
+            This invitation was sent to <span className="font-semibold">{expectedEmail}</span>.
+          </p>
+          <p className="text-gray-600 mb-6">
+            You're logged in as <span className="font-semibold">{actualEmail || 'a different account'}</span>.
+          </p>
+          <div className="space-y-3">
+            <Button onClick={onSwitchAccount} fullWidth size="large">
+              Switch Account
+            </Button>
+            <Button onClick={onCancel} variant="tertiary" fullWidth size="medium">
+              Cancel
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500 mt-4">
+            Click "Switch Account" to log out and sign in with the correct email address.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Invitation info banner
  */
 export function InvitationBanner({ validationResult, shortCode }) {
@@ -307,7 +354,8 @@ export function InvitationBanner({ validationResult, shortCode }) {
  */
 export function SignupForm({
   formEmail,
-  displayName,
+  firstName,
+  lastName,
   formPassword,
   confirmPassword,
   agreeToTerms,
@@ -316,7 +364,8 @@ export function SignupForm({
   isSigningUp,
   isGoogleLoggingIn,
   onEmailChange,
-  onDisplayNameChange,
+  onFirstNameChange,
+  onLastNameChange,
   onPasswordChange,
   onConfirmPasswordChange,
   onAgreeChange,
@@ -350,17 +399,30 @@ export function SignupForm({
           data-form-type="other"
         />
 
-        <Input
-          label="Your Name"
-          type="text"
-          value={displayName}
-          onChange={onDisplayNameChange}
-          placeholder="Enter your name"
-          required
-          autoComplete="off"
-          data-lpignore="true"
-          data-form-type="other"
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="First Name"
+            type="text"
+            value={firstName}
+            onChange={onFirstNameChange}
+            placeholder="John"
+            required
+            autoComplete="given-name"
+            data-lpignore="true"
+            data-form-type="other"
+          />
+          <Input
+            label="Last Name"
+            type="text"
+            value={lastName}
+            onChange={onLastNameChange}
+            placeholder="Doe"
+            required
+            autoComplete="family-name"
+            data-lpignore="true"
+            data-form-type="other"
+          />
+        </div>
 
         <Input
           label="Password"

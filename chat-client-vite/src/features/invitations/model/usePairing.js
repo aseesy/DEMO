@@ -195,6 +195,7 @@ export function usePairing() {
         inviterUsername: data.inviterUsername,
         inviteType: data.inviteType,
         expiresAt: data.expiresAt,
+        parentBEmail: data.parentBEmail || null, // Include email restriction if set
       };
     } catch (err) {
       const errorInfo = getErrorMessage(err, { statusCode: 0, endpoint: '/api/pairing/validate' });
@@ -210,8 +211,13 @@ export function usePairing() {
    * @returns {Promise<Object>} Validation result
    */
   const validateToken = React.useCallback(async token => {
-    if (!token) {
-      return { valid: false, code: 'TOKEN_REQUIRED', error: 'Invitation token is required' };
+    if (!token || token.trim().length === 0) {
+      return { 
+        valid: false, 
+        code: 'TOKEN_REQUIRED', 
+        error: 'Invitation token is required',
+        userMessage: 'This invitation link is invalid. Please request a new invitation.',
+      };
     }
 
     setIsValidating(true);
@@ -223,9 +229,11 @@ export function usePairing() {
         {
           maxRetries: 3,
           shouldRetry: (error, statusCode) => {
+            // Don't retry client errors (4xx) except 429 (rate limit)
             if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
               return false;
             }
+            // Retry server errors (5xx) and network errors
             return isRetryableError(error, statusCode);
           },
         }
@@ -233,31 +241,62 @@ export function usePairing() {
 
       const data = await response.json();
 
-      if (!response.ok) {
+      // Handle both success and error responses
+      if (!data.valid) {
+        // Use userMessage from API if available, otherwise fall back to error handler
+        const errorMessage = data.userMessage || data.error || 'Invalid invitation token';
         const errorInfo = getErrorMessage(data, {
           statusCode: response.status,
           endpoint: '/api/pairing/validate-token',
         });
+        
         return {
           valid: false,
           code: data.code || 'INVALID_TOKEN',
-          error: errorInfo.userMessage,
-          errorInfo,
+          error: errorMessage,
+          userMessage: errorMessage, // Ensure userMessage is always set
+          errorInfo: {
+            ...errorInfo,
+            userMessage: errorMessage, // Prefer API userMessage
+          },
         };
       }
 
+      // Success response
       return {
         valid: true,
         inviterUsername: data.inviterUsername,
+        inviterName: data.inviterName,
         inviteType: data.inviteType,
         expiresAt: data.expiresAt,
+        pairingCode: data.pairingCode,
+        parentBEmail: data.parentBEmail || null, // Include email restriction if set
       };
     } catch (err) {
+      // Network or unexpected errors
       const errorInfo = getErrorMessage(err, {
-        statusCode: 0,
+        statusCode: err.status || 0,
         endpoint: '/api/pairing/validate-token',
       });
-      return { valid: false, code: 'NETWORK_ERROR', error: errorInfo.userMessage, errorInfo };
+      
+      // Check if it's a database connection error
+      if (err.message?.includes('Database') || err.message?.includes('connection')) {
+        return { 
+          valid: false, 
+          code: 'DATABASE_ERROR', 
+          error: 'Unable to validate invitation. Please try again in a moment.',
+          userMessage: 'Unable to validate invitation. Please try again in a moment.',
+          errorInfo,
+        };
+      }
+      
+      return { 
+        valid: false, 
+        code: 'NETWORK_ERROR', 
+        error: errorInfo.userMessage,
+        userMessage: errorInfo.userMessage,
+        errorInfo,
+      };
     } finally {
       setIsValidating(false);
     }

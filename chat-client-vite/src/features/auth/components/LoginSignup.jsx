@@ -18,6 +18,10 @@ import { useAuthRedirect } from '../model/useAuthRedirect.js';
 import { useInviteDetection } from '../../invitations/model/useInviteDetection.js';
 import { Button, Input } from '../../../components/ui';
 import {
+  validateLoginCredentials,
+  validateSignupCredentials,
+} from '../../../utils/validators.js';
+import {
   AuthHeader,
   InviteNotificationBanner,
   ErrorAlertBox,
@@ -42,6 +46,9 @@ export function LoginSignup({ defaultToSignup = false }) {
     new URLSearchParams(location.search).get('mode') === 'signup';
   const [isLoginMode, setIsLoginMode] = React.useState(!shouldDefaultToSignup);
   const [isNewSignup, setIsNewSignup] = React.useState(false);
+  
+  // Field-level validation errors
+  const [fieldErrors, setFieldErrors] = React.useState({});
 
   const {
     email,
@@ -71,10 +78,18 @@ export function LoginSignup({ defaultToSignup = false }) {
   });
 
   // Handle post-auth redirect - immediate redirect for already-authenticated users
+  // Note: Don't clear invite code for new signups - they need it on /invite-coparent page
+  if (import.meta.env.DEV) {
+    console.log('[LoginSignup] Calling useAuthRedirect with:', {
+      isAuthenticated,
+      isNewSignup,
+      delay: isNewSignup ? 100 : 0,
+    });
+  }
   useAuthRedirect({
     isAuthenticated,
     isNewSignup,
-    clearInviteCode: true,
+    clearInviteCode: !isNewSignup, // Keep invite code for new signups going to /invite-coparent
     delay: isNewSignup ? 100 : 0, // 100ms delay for signup, immediate for login
   });
 
@@ -88,91 +103,120 @@ export function LoginSignup({ defaultToSignup = false }) {
     }
   }, [isAuthenticated, isNewSignup]);
 
-  // Clear form when mode changes
+  // Clear form and errors when mode changes
   React.useEffect(() => {
     setEmail('');
     setPassword('');
     setFirstName('');
     setLastName('');
     setError('');
+    setFieldErrors({});
   }, [isLoginMode, setEmail, setPassword, setFirstName, setLastName, setError]);
 
   const handleModeToggle = React.useCallback(() => {
     setError('');
+    setFieldErrors({});
     setIsLoginMode(prev => !prev);
   }, [setError]);
 
   const isSubmitting = isLoggingIn || isSigningUp || isGoogleLoggingIn;
 
   const handleSubmit = async e => {
-    console.log('[LoginSignup] handleSubmit called', {
-      eventType: e?.type,
-      isLoginMode,
-      email: email ? '***' : 'empty',
-      password: password ? '***' : 'empty',
-      isSubmitting,
-    });
+    if (import.meta.env.DEV) {
+      console.log('[LoginSignup] handleSubmit called', {
+        eventType: e?.type,
+        isLoginMode,
+        email: email ? '***' : 'empty',
+        password: password ? '***' : 'empty',
+        isSubmitting,
+      });
+    }
 
     e.preventDefault();
     e.stopPropagation();
     setError('');
 
-    console.log('[LoginSignup] Form submitted', {
-      isLoginMode,
-      email: email ? '***' : 'empty',
-      password: password ? '***' : 'empty',
-    });
+    // CRITICAL: Validate input at submit time before attempting auth
+    let validation;
+    if (isLoginMode) {
+      validation = validateLoginCredentials(email, password);
+    } else {
+      validation = validateSignupCredentials(email, password, firstName, lastName);
+    }
+
+    // If validation fails, show field-level errors and prevent submission
+    if (!validation.valid) {
+      if (import.meta.env.DEV) {
+        console.log('[LoginSignup] Validation failed:', validation.errors);
+      }
+      setFieldErrors(validation.errors || {});
+      // Focus first error field
+      const firstErrorField = Object.keys(validation.errors || {})[0];
+      if (firstErrorField && typeof document !== 'undefined') {
+        const field = document.querySelector(`[name="${firstErrorField}"]`);
+        if (field) {
+          field.focus();
+        }
+      }
+      return;
+    }
+
+    // Clear field errors on valid submission
+    setFieldErrors({});
+
+    if (import.meta.env.DEV) {
+      console.log('[LoginSignup] Form submitted', {
+        isLoginMode,
+        email: email ? '***' : 'empty',
+        password: password ? '***' : 'empty',
+      });
+    }
 
     // Get honeypot field value for spam protection
     const honeypotValue = e.target.elements.website?.value || '';
 
     try {
       if (isLoginMode) {
-        console.log('[LoginSignup] Calling handleLogin');
+        if (import.meta.env.DEV) {
+          console.log('[LoginSignup] Calling handleLogin');
+        }
         const result = await handleLogin(e, { website: honeypotValue });
-        console.log(
-          '[LoginSignup] Login result:',
-          result?.success ? 'success' : 'failed',
-          result?.error
-        );
+        if (import.meta.env.DEV) {
+          console.log(
+            '[LoginSignup] Login result:',
+            result?.success ? 'success' : 'failed',
+            result?.error
+          );
+        }
       } else {
         setIsNewSignup(true);
-        console.log('[LoginSignup] Calling handleSignup');
+        if (import.meta.env.DEV) {
+          console.log('[LoginSignup] Calling handleSignup');
+        }
         const result = await handleSignup(e, { website: honeypotValue });
-        console.log(
-          '[LoginSignup] Signup result:',
-          result?.success ? 'success' : 'failed',
-          result?.error
-        );
+        if (import.meta.env.DEV) {
+          console.log(
+            '[LoginSignup] Signup result:',
+            result?.success ? 'success' : 'failed',
+            result?.error
+          );
+        }
+        // CRITICAL: Reset isNewSignup if signup fails
+        // Otherwise, it stays true and could cause wrong redirect on next login
+        if (!result?.success) {
+          setIsNewSignup(false);
+        }
       }
     } catch (err) {
       console.error('[LoginSignup] Error in handleSubmit:', err);
       setError(err.message || 'An error occurred. Please try again.');
+      // Also reset on exception
+      if (!isLoginMode) {
+        setIsNewSignup(false);
+      }
     }
   };
 
-  // Debug: Log state values
-  React.useEffect(() => {
-    console.log('[LoginSignup] State:', {
-      isCheckingAuth,
-      isAuthenticated,
-      isSubmitting,
-      isLoggingIn,
-      isSigningUp,
-      isGoogleLoggingIn,
-      email: email ? '***' : 'empty',
-      password: password ? '***' : 'empty',
-    });
-  }, [
-    isCheckingAuth,
-    isAuthenticated,
-    isSubmitting,
-    isLoggingIn,
-    isSigningUp,
-    isGoogleLoggingIn,
-    email,
-    password,
-  ]);
 
   // Show loading while checking auth status or after successful auth (before redirect)
   if (isCheckingAuth || isAuthenticated) {
@@ -241,6 +285,7 @@ export function LoginSignup({ defaultToSignup = false }) {
               <Input
                 label="First Name"
                 type="text"
+                name="firstName"
                 value={firstName}
                 onChange={setFirstName}
                 placeholder="John"
@@ -248,10 +293,18 @@ export function LoginSignup({ defaultToSignup = false }) {
                 autoComplete="given-name"
                 data-lpignore="true"
                 data-form-type="other"
+                error={fieldErrors.firstName}
+                onFocus={() => {
+                  // Clear error when user starts typing
+                  if (fieldErrors.firstName) {
+                    setFieldErrors(prev => ({ ...prev, firstName: undefined }));
+                  }
+                }}
               />
               <Input
                 label="Last Name"
                 type="text"
+                name="lastName"
                 value={lastName}
                 onChange={setLastName}
                 placeholder="Doe"
@@ -259,6 +312,13 @@ export function LoginSignup({ defaultToSignup = false }) {
                 autoComplete="family-name"
                 data-lpignore="true"
                 data-form-type="other"
+                error={fieldErrors.lastName}
+                onFocus={() => {
+                  // Clear error when user starts typing
+                  if (fieldErrors.lastName) {
+                    setFieldErrors(prev => ({ ...prev, lastName: undefined }));
+                  }
+                }}
               />
             </div>
           )}
@@ -266,6 +326,7 @@ export function LoginSignup({ defaultToSignup = false }) {
           <Input
             label="Email"
             type="email"
+            name="email"
             value={email}
             onChange={setEmail}
             placeholder="you@example.com"
@@ -273,11 +334,19 @@ export function LoginSignup({ defaultToSignup = false }) {
             autoComplete="off"
             data-lpignore="true"
             data-form-type="other"
+            error={fieldErrors.email}
+            onFocus={() => {
+              // Clear error when user starts typing
+              if (fieldErrors.email) {
+                setFieldErrors(prev => ({ ...prev, email: undefined }));
+              }
+            }}
           />
 
           <Input
             label="Password"
             type="password"
+            name="password"
             value={password}
             onChange={setPassword}
             placeholder="••••••••"
@@ -286,6 +355,13 @@ export function LoginSignup({ defaultToSignup = false }) {
             data-lpignore="true"
             data-form-type="other"
             helperText={!isLoginMode ? 'At least 10 characters' : undefined}
+            error={fieldErrors.password}
+            onFocus={() => {
+              // Clear error when user starts typing
+              if (fieldErrors.password) {
+                setFieldErrors(prev => ({ ...prev, password: undefined }));
+              }
+            }}
           />
 
           {isLoginMode && (
@@ -307,25 +383,6 @@ export function LoginSignup({ defaultToSignup = false }) {
             disabled={isSubmitting}
             loading={isLoggingIn || isSigningUp}
             className="mt-6 transition-all hover:shadow-lg"
-            onClick={e => {
-              console.log('[LoginSignup] Button clicked directly', {
-                type: e.type,
-                defaultPrevented: e.defaultPrevented,
-                isSubmitting,
-                disabled: isSubmitting,
-              });
-              // Don't prevent default - let form submission work naturally
-              // But ensure form is submitted if button click happens
-              if (e.type === 'click' && !isSubmitting) {
-                const form = e.target.closest('form');
-                if (form && !form.querySelector(':invalid')) {
-                  console.log('[LoginSignup] Form is valid, submitting...');
-                  // Form will submit naturally via type="submit"
-                } else if (form) {
-                  console.log('[LoginSignup] Form has validation errors');
-                }
-              }
-            }}
           >
             {isLoginMode ? 'Log in' : 'Create Account'}
           </Button>

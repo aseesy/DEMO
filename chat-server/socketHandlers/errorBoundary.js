@@ -15,6 +15,7 @@ const {
   isDatabaseConnectionError,
   getDatabaseErrorResponse,
 } = require('../src/utils/databaseErrorClassifier');
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
 
 /**
  * Wrap a socket handler with error boundary
@@ -37,6 +38,7 @@ const {
  */
 function wrapSocketHandler(handler, handlerName, options = {}) {
   const { retry = false, maxRetries = 3 } = options;
+  const logger = defaultLogger.child({ function: 'wrapSocketHandler', handlerName });
 
   return async data => {
     try {
@@ -51,11 +53,11 @@ function wrapSocketHandler(handler, handlerName, options = {}) {
         await handler(data);
       }
     } catch (error) {
-      // Log error with context
-      console.error(`[Socket Handler Error] ${handlerName}:`, {
-        error: error.message,
-        code: error.code,
-        stack: error.stack?.split('\n').slice(0, 5).join('\n'), // First 5 lines
+      // Log error with context (structured, no PII)
+      logger.error('Socket handler error', error, {
+        errorCode: error.code || 'UNKNOWN',
+        handlerName,
+        // Never log: email, userId, socketId, internal error messages
       });
 
       // CRITICAL: Do NOT re-throw - this prevents unhandled promise rejections
@@ -68,9 +70,9 @@ function wrapSocketHandler(handler, handlerName, options = {}) {
 
       // If this is a database connection error, log it specially
       if (isDatabaseConnectionError(error)) {
-        console.warn(`[Socket Handler] Database connection error in ${handlerName}:`, {
-          code: error.code,
-          message: error.message,
+        logger.warn('Database connection error in socket handler', {
+          errorCode: error.code,
+          handlerName,
         });
         // Database errors are transient - don't emit to client as they should retry
         // The handler should have already handled this appropriately

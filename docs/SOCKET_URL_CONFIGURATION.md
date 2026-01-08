@@ -83,13 +83,13 @@ getSocketUrl() {
 
 ```javascript
 export function getSocketUrl() {
-  return import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  return import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000';
 }
 ```
 
 **Status**: This function exists but is **NOT used** by the main socket service. It's exported but `SocketService.v2.js` uses `SOCKET_URL` from `config.js` instead.
 
-**Note**: The fallback to `localhost:8080` is incorrect (should be `3000`).
+**Note**: The fallback to `localhost:3000` is correct (standardized port).
 
 ---
 
@@ -144,7 +144,7 @@ VITE_API_URL=http://localhost:3000
 
 1. **Duplicate `getSocketUrl()` in SocketAdapter.js**
    - Not used by main service
-   - Has incorrect fallback (`localhost:8080` instead of `3000`)
+   - Uses correct fallback (`localhost:3000`)
    - **Recommendation**: Remove or update to match `config.js` logic
 
 2. **Build-time vs Runtime Resolution**

@@ -6,7 +6,7 @@
  */
 
 import { API_BASE_URL } from '../config.js';
-import { apiGet, apiPost } from '../apiClient.js';
+import { apiGet, apiPost, checkServerStatus } from '../apiClient.js';
 import { tokenManager } from './tokenManager.js';
 import { logger } from './logger.js';
 
@@ -17,6 +17,11 @@ import { logger } from './logger.js';
  */
 export async function queryRoomMembers() {
   try {
+    // Check if server is down to avoid unnecessary requests
+    if (checkServerStatus()) {
+      return { success: false, networkError: true };
+    }
+
     // Verify token exists before making request (use TokenManager for instant access)
     const token = tokenManager.getToken();
     if (!token) {
@@ -98,6 +103,11 @@ export function queryCoParentFromMessages(messages, username) {
  */
 export async function queryInvitationsStatus() {
   try {
+    // Check if server is down to avoid unnecessary requests
+    if (checkServerStatus()) {
+      return { success: false, networkError: true };
+    }
+
     const response = await apiGet('/api/invitations');
 
     if (response.ok) {

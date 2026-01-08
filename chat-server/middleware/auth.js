@@ -102,10 +102,11 @@ function optionalAuth(req, res, next) {
 /**
  * Generate JWT token for a user
  * @param {Object} user - User object with id, username, email
- * @param {string} expiresIn - Token expiration (default: '30d')
+ * @param {string} expiresIn - Token expiration (default: '30d' for legacy, '15m' for new)
+ * @param {boolean} useShortLived - If true, use short-lived token (15m) for Phase 2
  * @returns {string} JWT token
  */
-function generateToken(user, expiresIn = '30d') {
+function generateToken(user, expiresIn = '30d', useShortLived = false) {
   // Use email as primary identifier (migrated from username)
   // Username is optional - only include if present
   const payload = {
@@ -118,8 +119,11 @@ function generateToken(user, expiresIn = '30d') {
   if (user.username) {
     payload.username = user.username;
   }
+
+  // Phase 2: Use short-lived tokens by default when useShortLived is true
+  const tokenExpiry = useShortLived ? '15m' : expiresIn;
   
-  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: tokenExpiry });
 }
 
 /**
@@ -127,14 +131,28 @@ function generateToken(user, expiresIn = '30d') {
  * @param {Object} res - Express response object
  * @param {string} token - JWT token
  * @param {number} maxAgeDays - Cookie max age in days (default: 30)
+ * 
+ * Security settings:
+ * - httpOnly: true (prevents XSS)
+ * - secure: true in production (HTTPS only)
+ * - sameSite: 'lax' (CSRF protection, allows top-level navigation)
+ * - path: '/' (available site-wide)
+ * - __Host- prefix: not used (requires exact domain match, may break subdomains)
  */
 function setAuthCookie(res, token, maxAgeDays = 30) {
-  res.cookie('auth_token', token, {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     sameSite: 'lax',
+    path: '/',
     maxAge: maxAgeDays * 24 * 60 * 60 * 1000,
-  });
+  };
+
+  // Note: __Host- prefix requires Secure=true, Path=/, and no Domain
+  // We could use it if we want strict domain isolation, but it may break subdomain usage
+  // For now, use standard cookie name for compatibility
+  res.cookie('auth_token', token, cookieOptions);
 }
 
 /**
@@ -142,10 +160,12 @@ function setAuthCookie(res, token, maxAgeDays = 30) {
  * @param {Object} res - Express response object
  */
 function clearAuthCookie(res) {
+  const isProduction = process.env.NODE_ENV === 'production';
   res.clearCookie('auth_token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     sameSite: 'lax',
+    path: '/',
   });
 }
 

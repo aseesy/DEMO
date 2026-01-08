@@ -58,15 +58,21 @@ async function registerFromShortCode(params, db) {
   // If no room was created during acceptance, create one now
   if (!targetRoomId) {
     try {
-      const inviterUser = await getUser(acceptResult.inviterId);
-      if (inviterUser) {
-        const sharedRoom = await roomManager.createCoParentRoom(
-          acceptResult.inviterId,
-          user.id,
-          inviterUser.displayName || inviterUser.first_name || inviterUser.email,
-          displayName || user.first_name || user.email
-        );
-        targetRoomId = sharedRoom.roomId;
+      // Get inviter email by ID (getUser requires email, not ID)
+      const inviterResult = await dbPostgres.query('SELECT email FROM users WHERE id = $1', [
+        acceptResult.inviterId,
+      ]);
+      if (inviterResult.rows.length > 0 && inviterResult.rows[0].email) {
+        const inviterUser = await getUser(inviterResult.rows[0].email);
+        if (inviterUser) {
+          const sharedRoom = await roomManager.createCoParentRoom(
+            acceptResult.inviterId,
+            user.id,
+            inviterUser.displayName || inviterUser.first_name || inviterUser.email,
+            displayName || user.first_name || user.email
+          );
+          targetRoomId = sharedRoom.roomId;
+        }
       }
     } catch (err) {
       console.error('Error creating shared room:', err);

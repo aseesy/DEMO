@@ -63,17 +63,17 @@ function InviteDisplay({ inviteLink, inviteCode, inviteCopied, onCopyLink, onCop
     <div className="space-y-3">
       {inviteCode && (
         <div>
-          <label className="block text-xs font-medium text-emerald-800 mb-1">Invite Code</label>
+          <label className="block text-xs font-medium text-[#00908B] mb-1">Invite Code</label>
           <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0 bg-white border-2 border-emerald-200 rounded-lg p-2 sm:p-3 text-center">
-              <span className="text-lg sm:text-xl font-mono font-bold text-emerald-800 tracking-wider break-all">
+            <div className="flex-1 min-w-0 bg-white border-2 border-[#C5E8E4] rounded-lg p-2 sm:p-3 text-center">
+              <span className="text-lg sm:text-xl font-mono font-bold text-[#275559] tracking-wider break-all">
                 {inviteCode}
               </span>
             </div>
             <button
               type="button"
               onClick={onCopyCode}
-              className="p-2 sm:p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2 sm:p-3 bg-[#275559] text-white rounded-lg hover:bg-[#1f4447] transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               {inviteCopied ? '✓' : 'Copy'}
             </button>
@@ -81,8 +81,8 @@ function InviteDisplay({ inviteLink, inviteCode, inviteCopied, onCopyLink, onCop
         </div>
       )}
       <div>
-        <label className="block text-xs font-medium text-emerald-800 mb-1">Invite Link</label>
-        <div className="p-2 sm:p-3 bg-white rounded-lg border-2 border-emerald-200 break-all text-emerald-800 font-mono text-[10px] sm:text-xs overflow-hidden">
+        <label className="block text-xs font-medium text-[#00908B] mb-1">Invite Link</label>
+        <div className="p-2 sm:p-3 bg-white rounded-lg border-2 border-[#C5E8E4] break-all text-[#111827] font-mono text-[10px] sm:text-xs overflow-hidden">
           {inviteLink}
         </div>
       </div>
@@ -90,14 +90,14 @@ function InviteDisplay({ inviteLink, inviteCode, inviteCopied, onCopyLink, onCop
         <button
           type="button"
           onClick={onCopyLink}
-          className="flex-1 px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-all min-h-[44px]"
+          className="flex-1 px-4 py-3 rounded-lg bg-[#275559] text-white font-semibold hover:bg-[#1f4447] transition-all min-h-[44px] shadow-sm hover:shadow-md"
         >
           {inviteCopied ? 'Copied!' : 'Copy Link'}
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-3 rounded-lg border-2 border-emerald-300 text-emerald-700 font-semibold hover:bg-emerald-100 transition-colors min-h-[44px]"
+          className="px-4 py-3 rounded-lg border-2 border-[#C5E8E4] text-[#00908B] font-semibold hover:bg-[#E6F7F5] transition-colors min-h-[44px] bg-white"
         >
           Close
         </button>
@@ -115,7 +115,7 @@ function GenerateButton({ isLoading, onClick }) {
       type="button"
       onClick={onClick}
       disabled={isLoading}
-      className="w-full px-5 py-3 rounded-lg bg-emerald-600 text-white text-base font-semibold hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 min-h-[44px] shadow-sm hover:shadow-md"
+      className="w-full px-5 py-3 rounded-lg bg-[#275559] text-white text-base font-semibold hover:bg-[#1f4447] disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 min-h-[44px] shadow-sm hover:shadow-md"
     >
       {isLoading ? (
         <>

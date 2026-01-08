@@ -157,12 +157,12 @@ export function MessageInput({ inputMessage, handleInputChange, sendMessage, has
         // Responsive padding that scales with viewport width - matches MessagesContainer
         // Mobile: 1rem (16px), scales up to 2rem (32px) on larger screens
         // On very large screens: uses viewport-based units for better scaling
-        paddingLeft: isMobile ? '1rem' : 'clamp(1.5rem, 4vw, 3rem)',
-        paddingRight: isMobile ? '1rem' : 'clamp(1.5rem, 4vw, 3rem)',
-        paddingBottom: '0px',
-        paddingTop: '0px',
+        paddingLeft: '1rem',
+        paddingRight: '1rem',
+        paddingBottom: '0.5rem',
+        paddingTop: '0.5rem',
         position: isMobile ? 'fixed' : 'relative',
-        bottom: isMobile ? 'calc(2.5rem + 0.5rem)' : 'auto',
+        bottom: isMobile ? '3rem' : 0,
         left: 0,
         right: 0,
         width: '100%',

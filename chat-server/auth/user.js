@@ -6,15 +6,17 @@ const neo4jClient = require('../src/infrastructure/database/neo4jClient');
 const { generateUsernameSuffix, createRegistrationError, RegistrationError } = require('./utils');
 const { setupUserContextAndRoom } = require('./context');
 const { createWelcomeAndOnboardingTasks } = require('./tasks');
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
 
 async function getUser(email) {
+  const logger = defaultLogger.child({ function: 'getUser' });
   try {
     const emailLower = email.trim().toLowerCase();
-    console.log('[getUser] Looking up user by email:', emailLower);
+    // Don't log email (PII) - log operation only
+    logger.debug('Looking up user by email');
     const userResult = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
-    console.log('[getUser] Query result:', userResult);
     const users = dbSafe.parseResult(userResult);
-    console.log('[getUser] Parsed users:', users.length > 0 ? 'found' : 'NOT FOUND');
+    logger.debug('User lookup completed', { found: users.length > 0 });
     if (users.length === 0) return null;
 
     const user = users[0];
@@ -46,7 +48,7 @@ async function getUser(email) {
           newPartner: { name: '', livesWith: false },
         };
       } catch (err) {
-        console.error('Error parsing user context:', err);
+        logger.warn('Error parsing user context', { error: err.message, errorCode: err.code });
         user.context = defaultContext;
       }
     } else {
@@ -70,7 +72,7 @@ async function getUser(email) {
     }
     return user;
   } catch (error) {
-    console.error('Error getting user:', error);
+    logger.error('Error getting user', error, { errorCode: error.code });
     return null;
   }
 }
@@ -142,12 +144,13 @@ async function createUser(
   await createWelcomeAndOnboardingTasks(userId, emailLower);
 
   // Assign default 'user' role for RBAC
+  const logger = defaultLogger.child({ function: 'createUser', userId });
   try {
     const { permissionService } = require('../src/services');
     await permissionService.ensureDefaultRole(userId);
   } catch (error) {
     // Non-fatal - log but don't fail user creation
-    console.warn(`[createUser] Failed to assign default role to user ${userId}:`, error.message);
+    logger.warn('Failed to assign default role', { error: error.message, errorCode: error.code });
   }
 
   const displayName =
@@ -156,7 +159,10 @@ async function createUser(
       ? `${nameData.firstName} ${nameData.lastName}`
       : nameData.firstName || emailLower);
 
-  neo4jClient.createUserNode(userId).catch(() => {});
+  // Background Neo4j sync - log errors instead of swallowing
+  neo4jClient.createUserNode(userId).catch(err => {
+    logger.warn('Neo4j createUserNode failed', { error: err.message, errorCode: err.code });
+  });
 
   return {
     id: userId,

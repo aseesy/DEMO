@@ -49,10 +49,15 @@ function SocketDiagnostic() {
     }));
   };
 
-  // Auto-refresh every second
+  // Auto-refresh every 2 seconds (reduced from 1s to save CPU)
+  // Only refresh when page is visible
   useEffect(() => {
     refresh();
-    const interval = setInterval(refresh, 1000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refresh();
+      }
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 

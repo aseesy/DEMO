@@ -1,5 +1,20 @@
 /**
+ * 🔒 SEALED FILE - DO NOT MODIFY WITHOUT APPROVAL
+ * 
  * TokenManager - Centralized token management singleton
+ * 
+ * ⚠️ CRITICAL: This file is SEALED and SET IN STONE.
+ * This is the SINGLE SOURCE OF TRUTH for token storage.
+ * AuthContext and apiClient depend on this exact interface.
+ * 
+ * RULES FOR AI ASSISTANTS:
+ * - ❌ DO NOT modify subscription pattern (used by AuthContext)
+ * - ❌ DO NOT change token get/set API contract
+ * - ❌ DO NOT alter storage backends without migration plan
+ * - ✅ CAN add new storage backends (if needed for new browser APIs)
+ * - ✅ CAN modify cache strategies (with testing)
+ * 
+ * Before modifying: Check docs/AUTH_FLOW_SEALED.md for approval process.
  * 
  * Expert Solution: Single source of truth for authentication tokens
  * 
@@ -18,6 +33,8 @@
  * - Event emitter for React state synchronization
  * - Thread-safe token updates
  * - ITP detection and auto-recovery
+ * 
+ * See: docs/AUTH_FLOW_SEALED.md for complete sealing documentation.
  */
 
 // In-memory token cache for instant access

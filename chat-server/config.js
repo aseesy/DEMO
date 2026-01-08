@@ -76,7 +76,7 @@ const IS_DEVELOPMENT = NODE_ENV === 'development';
 // Includes both chat app (5173) and marketing site (5174) for local development
 const FRONTEND_URLS = (
   parseEnv('FRONTEND_URL') ||
-  `http://localhost:${DEFAULT_FRONTEND_PORT},http://localhost:5174,http://localhost:${DEFAULT_BACKEND_PORT}`
+  `http://localhost:${DEFAULT_FRONTEND_PORT},http://localhost:5174`
 )
   .split(',')
   .map(url => url.trim())

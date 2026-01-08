@@ -5,6 +5,8 @@
  * Extracted to reduce duplication and improve maintainability.
  */
 
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
+
 /**
  * Update communication stats for a user
  * @param {Object} services - Service container
@@ -15,37 +17,35 @@
  */
 async function updateUserStats(services, user, roomId, intervened) {
   const { dbSafe, communicationStats } = services;
+  const logger = defaultLogger.child({ function: 'updateUserStats' });
+  
   try {
     // Validate user object
     if (!user) {
-      console.warn('[aiHelper] Cannot update stats: user object is null/undefined');
+      logger.warn('Cannot update stats: user object is null/undefined');
       return;
     }
-
-    // Log user object structure for debugging
-    console.log('[aiHelper] updateUserStats called:', {
-      userKeys: Object.keys(user),
-      hasEmail: !!user.email,
-      hasUsername: !!user.username,
-      email: user.email,
-      username: user.username,
-      roomId,
-      intervened,
-    });
 
     // Use email if available, fallback to username for backward compatibility
     // Note: In the session service, username is actually the email
     const userIdentifier = user.email || user.username;
     if (!userIdentifier) {
-      console.warn('[aiHelper] Cannot update stats: user has no email or username', {
+      logger.warn('Cannot update stats: user has no email or username', {
         userKeys: Object.keys(user || {}),
         roomId,
-        userObject: user,
+        hasRoomId: !!user?.roomId,
       });
       return;
     }
 
-    console.log('[aiHelper] Looking up user by email:', userIdentifier.toLowerCase());
+    logger.debug('Looking up user for stats update', {
+      hasEmail: !!user.email,
+      hasUsername: !!user.username,
+      roomId,
+      intervened,
+      // Don't log email - PII
+    });
+
     const userResult = await dbSafe.safeSelect(
       'users',
       { email: userIdentifier.toLowerCase() },
@@ -53,28 +53,34 @@ async function updateUserStats(services, user, roomId, intervened) {
     );
     const users = dbSafe.parseResult(userResult);
     
-    console.log('[aiHelper] User lookup result:', {
+    logger.debug('User lookup result for stats', {
       found: users.length > 0,
       userId: users.length > 0 ? users[0].id : null,
-      email: userIdentifier.toLowerCase(),
+      // Don't log email - PII
     });
     
     if (users.length > 0) {
       await communicationStats.updateCommunicationStats(users[0].id, roomId, intervened);
-      console.log(`[aiHelper] ✅ Updated stats for user ${users[0].id} in room ${roomId}, intervention: ${intervened}`);
+      logger.debug('Updated communication stats', {
+        userId: users[0].id,
+        roomId,
+        intervened,
+      });
     } else {
-      console.warn(`[aiHelper] ❌ User not found for stats update: ${userIdentifier}`, {
-        userObject: { email: user.email, username: user.username, roomId: user.roomId },
-        searchedEmail: userIdentifier.toLowerCase(),
+      logger.warn('User not found for stats update', {
+        hasEmail: !!user.email,
+        hasUsername: !!user.username,
+        roomId: user.roomId,
+        // Don't log email - PII
       });
     }
   } catch (err) {
-    console.error('[aiHelper] ❌ Error updating stats:', err, {
-      user: user ? { email: user.email, username: user.username, roomId: user.roomId } : null,
-      roomId,
+    logger.error('Error updating stats', err, {
+      hasEmail: !!user?.email,
+      hasUsername: !!user?.username,
+      roomId: user?.roomId,
       intervened,
-      errorMessage: err.message,
-      errorStack: err.stack,
+      errorCode: err.code,
     });
     // Non-fatal - continue even if stats update fails
   }

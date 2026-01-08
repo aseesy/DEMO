@@ -77,7 +77,7 @@ router.post('/login', loginRateLimit, honeypotCheck('website'), async (req, res)
       isDatabaseConnectionError,
       getDatabaseErrorResponse,
       getDatabaseErrorStatusCode,
-    } = require('../src/utils/databaseErrorClassifier');
+    } = require('../../src/utils/databaseErrorClassifier');
 
     if (isDatabaseConnectionError(error)) {
       console.warn('[login] Database connection error during login:', error.code || error.message);

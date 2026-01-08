@@ -24,8 +24,10 @@ const app = express();
 const server = http.createServer(app);
 
 // Server constants
-const PORT = process.env.PORT || 3000;
-const HOST = '0.0.0.0';
+// Use config.js for default port to maintain consistency
+const { SERVER_PORT, SERVER_HOST } = require('./config');
+const PORT = process.env.PORT || SERVER_PORT;
+const HOST = SERVER_HOST;
 
 // Global variables for status
 let dbConnected = false;

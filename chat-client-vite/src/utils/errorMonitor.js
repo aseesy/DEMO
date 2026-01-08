@@ -76,8 +76,32 @@ console.warn = function (...args) {
       warningMessage.includes('closed before the connection is established'));
 
   if (isSocketIOReconnectionWarning) {
+    // Check if server is marked as down - if so, suppress these warnings
+    try {
+      const serverDownUntil = sessionStorage.getItem('liaizen:server-down-until');
+      if (serverDownUntil && parseInt(serverDownUntil, 10) > Date.now()) {
+        // Server is marked as down - suppress these warnings to avoid spam
+        return;
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    
     // Suppress these warnings - they're handled by our connect_error handler
     return; // Don't log these warnings
+  }
+  
+  // Suppress "Unexpected disconnect: transport close" warnings when server is down
+  if (warningMessage.includes('Unexpected disconnect') && warningMessage.includes('transport close')) {
+    try {
+      const serverDownUntil = sessionStorage.getItem('liaizen:server-down-until');
+      if (serverDownUntil && parseInt(serverDownUntil, 10) > Date.now()) {
+        // Server is marked as down - suppress disconnect warnings
+        return;
+      }
+    } catch {
+      // Ignore storage errors
+    }
   }
 
   // Call original console.warn

@@ -18,6 +18,7 @@ export function useContactsApi(username, isAuthenticated = true) {
   const [isLoadingContacts, setIsLoadingContacts] = React.useState(false);
   const [isSavingContact, setIsSavingContact] = React.useState(false);
   const [error, setError] = React.useState('');
+  const isLoadingRef = React.useRef(false);
 
   const loadContacts = React.useCallback(
     async (authOverride = isAuthenticated) => {
@@ -25,6 +26,11 @@ export function useContactsApi(username, isAuthenticated = true) {
         setContacts([]);
         return;
       }
+      // Prevent concurrent loads
+      if (isLoadingRef.current) {
+        return;
+      }
+      isLoadingRef.current = true;
       setIsLoadingContacts(true);
       try {
         // Backend uses authenticated user's ID from JWT token, not username query param
@@ -47,6 +53,7 @@ export function useContactsApi(username, isAuthenticated = true) {
         console.error('Error loading contacts:', err);
         setError('Failed to load contacts');
       } finally {
+        isLoadingRef.current = false;
         setIsLoadingContacts(false);
       }
     },
@@ -93,7 +100,6 @@ export function useContactsApi(username, isAuthenticated = true) {
         if (response.ok) {
           // Reload contacts after save
           await loadContacts();
-          setTimeout(() => loadContacts(), 500);
           return data;
         } else {
           const errorMessage =

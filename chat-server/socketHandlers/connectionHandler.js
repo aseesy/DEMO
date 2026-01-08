@@ -8,11 +8,13 @@ const { emitError } = require('./utils');
 const { joinRoom } = require('./connectionOperations/joinRoom');
 const { getRoomUsers } = require('./connectionOperations/sessionManagement');
 const { maybeAnalyzeRoomOnJoin } = require('./threadHandler');
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
 
 function registerConnectionHandlers(socket, io, services) {
   // Phase 2: No longer receives activeUsers/messageHistory
   // Services manage their own state via UserSessionService
   const { userSessionService } = services;
+  const logger = defaultLogger.child({ handler: 'connection' });
   
   // Initialize presence service if available
   let presenceService = null;
@@ -21,7 +23,7 @@ function registerConnectionHandlers(socket, io, services) {
     presenceService = new PresenceService();
   } catch (error) {
     // Presence service is optional - graceful degradation
-    console.warn('[ConnectionHandler] Presence service not available:', error.message);
+    logger.warn('Presence service not available', { error: error.message });
   }
 
   socket.on('join', async ({ email, username }) => {
@@ -42,14 +44,15 @@ function registerConnectionHandlers(socket, io, services) {
     socket.join(result.roomId);
 
     // Emit events
-    // DEBUG: Log first message format to diagnose ownership issue
+    // DEBUG: Log first message format to diagnose ownership issue (dev only)
     if (result.messages?.length > 0) {
       const firstMsg = result.messages[0];
-      console.log('[ConnectionHandler] DEBUG: First message format:', {
-        id: firstMsg.id,
-        sender: firstMsg.sender, // Full sender object with uuid, first_name
-        user_email: firstMsg.user_email,
+      logger.debug('First message format in history', {
+        messageId: firstMsg.id,
+        hasSender: !!firstMsg.sender,
+        hasUserEmail: !!firstMsg.user_email,
         hasReceiver: !!firstMsg.receiver,
+        // Don't log email or sender details - PII
       });
     }
     socket.emit('message_history', {
@@ -74,7 +77,12 @@ function registerConnectionHandlers(socket, io, services) {
     // Update presence (non-blocking)
     if (presenceService && result.email) {
       presenceService.setOnline(result.email, socket.id, result.roomId).catch(err => {
-        console.warn('[ConnectionHandler] Failed to set presence:', err.message);
+        logger.warn('Failed to set presence', {
+          error: err.message,
+          errorCode: err.code,
+          roomId: result.roomId,
+          // Don't log email - PII
+        });
       });
     }
 
@@ -82,12 +90,16 @@ function registerConnectionHandlers(socket, io, services) {
     // when the room is resolved. This ensures analysis runs even if join event is not explicitly emitted.
     // Keeping this as a fallback for backwards compatibility, but it should be redundant now.
     if (services.threadManager) {
-      console.log(
-        `[ConnectionHandler] 🔍 DEBUG: Analysis should already be triggered in use case, but keeping fallback for room ${result.roomId}`
-      );
+      logger.debug('Analysis should already be triggered in use case, keeping fallback', {
+        roomId: result.roomId,
+      });
       // Analysis is now automatic in JoinSocketRoomUseCase - this is just a fallback
       maybeAnalyzeRoomOnJoin(io, result.roomId, services.threadManager).catch(err => {
-        console.error('[ConnectionHandler] Fallback analysis failed (non-fatal):', err.message);
+        logger.warn('Fallback analysis failed (non-fatal)', {
+          error: err.message,
+          errorCode: err.code,
+          roomId: result.roomId,
+        });
       });
     }
   });
@@ -112,7 +124,11 @@ function registerConnectionHandlers(socket, io, services) {
     // Update presence (non-blocking)
     if (presenceService && email) {
       presenceService.setOffline(email, socket.id).catch(err => {
-        console.warn('[ConnectionHandler] Failed to remove presence:', err.message);
+        logger.warn('Failed to remove presence', {
+          error: err.message,
+          errorCode: err.code,
+          // Don't log email - PII
+        });
       });
     }
     

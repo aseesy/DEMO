@@ -14,6 +14,8 @@
 
 import React from 'react';
 import { useAcceptInvitationXState } from './model/useAcceptInvitationXState.js';
+import { storage, StorageKeys, authStorage } from '../../adapters/storage';
+import { buildInviteUrl } from '../../utils/inviteTokenParser';
 import {
   LoadingView,
   InvalidLinkView,
@@ -23,6 +25,7 @@ import {
   ConfirmInviterView,
   InvitationBanner,
   SignupForm,
+  WrongAccountView,
 } from './components/invite';
 
 export function AcceptInvitationPage() {
@@ -42,7 +45,8 @@ export function AcceptInvitationPage() {
     isGoogleLoggingIn,
 
     // Form state
-    displayName,
+    firstName,
+    lastName,
     formEmail,
     formPassword,
     confirmPassword,
@@ -50,7 +54,8 @@ export function AcceptInvitationPage() {
     formError,
 
     // Form setters
-    setDisplayName,
+    setFirstName,
+    setLastName,
     setFormEmail,
     setFormPassword,
     setConfirmPassword,
@@ -76,7 +81,19 @@ export function AcceptInvitationPage() {
     isLoading,
   } = useAcceptInvitationXState();
 
-  // Loading state
+  // Store returnTo when user is not authenticated (for when they navigate to sign in)
+  React.useEffect(() => {
+    if (token || shortCode) {
+      const returnTo = buildInviteUrl('/accept-invite', token, shortCode);
+      storage.set(StorageKeys.RETURN_URL, returnTo, { ttl: 60 * 60 * 1000 }); // 1 hour TTL
+      
+      if (import.meta.env.DEV) {
+        console.log('[AcceptInvitationPage] Stored returnTo:', returnTo);
+      }
+    }
+  }, [token, shortCode]);
+
+  // Loading state - show loading while validating
   if (isLoading) {
     return <LoadingView />;
   }
@@ -86,11 +103,48 @@ export function AcceptInvitationPage() {
     return <InvalidLinkView onNavigateSignIn={handleNavigateSignIn} />;
   }
 
+  // Check for wrong account state (State 3: Logged in + wrong account)
+  // This happens when parentBEmail is set and doesn't match logged-in user's email
+  const currentUserEmail = storage.get(StorageKeys.USER_EMAIL) || '';
+  const expectedEmail = validationResult?.parentBEmail;
+  const isWrongAccount = 
+    isAuthenticated && 
+    expectedEmail && 
+    currentUserEmail.toLowerCase().trim() !== expectedEmail.toLowerCase().trim();
+
+  // Also check if auto-accept returned WRONG_ACCOUNT error
+  const wrongAccountError = autoAcceptError && (
+    autoAcceptError.includes('invitation was sent to') || 
+    autoAcceptError.includes('wrong account') ||
+    autoAcceptError.includes('WRONG_ACCOUNT')
+  );
+
+  if (isWrongAccount || wrongAccountError) {
+    // Try to extract email from error message if available
+    const errorMatch = autoAcceptError?.match(/invitation was sent to ([^\s]+)/i);
+    const errorExpectedEmail = errorMatch ? errorMatch[1] : expectedEmail;
+    
+    return (
+      <WrongAccountView
+        expectedEmail={errorExpectedEmail || expectedEmail || 'another email address'}
+        actualEmail={currentUserEmail || 'your current account'}
+        onSwitchAccount={() => {
+          // Logout and redirect to invite link
+          authStorage.clear();
+          storage.clear();
+          window.location.href = `/accept-invite?token=${token || ''}&code=${shortCode || ''}`;
+        }}
+        onCancel={handleNavigateHome}
+      />
+    );
+  }
+
   // Invalid or expired token/code
-  if (!validationResult?.valid) {
+  // Check both validationResult and inviteError to catch all error cases
+  if (!validationResult?.valid || (inviteError && !validationResult)) {
     return (
       <InvalidTokenView
-        validationResult={validationResult}
+        validationResult={validationResult || { valid: false, code: 'INVALID_TOKEN', error: inviteError || 'Invalid invitation' }}
         inviteError={inviteError}
         onNavigateHome={handleNavigateHome}
         onNavigateSignIn={handleNavigateSignIn}
@@ -144,7 +198,8 @@ export function AcceptInvitationPage() {
 
             <SignupForm
               formEmail={formEmail}
-              displayName={displayName}
+              firstName={firstName}
+              lastName={lastName}
               formPassword={formPassword}
               confirmPassword={confirmPassword}
               agreeToTerms={agreeToTerms}
@@ -153,7 +208,8 @@ export function AcceptInvitationPage() {
               isSigningUp={isSigningUp}
               isGoogleLoggingIn={isGoogleLoggingIn}
               onEmailChange={setFormEmail}
-              onDisplayNameChange={setDisplayName}
+              onFirstNameChange={setFirstName}
+              onLastNameChange={setLastName}
               onPasswordChange={setFormPassword}
               onConfirmPasswordChange={setConfirmPassword}
               onAgreeChange={setAgreeToTerms}

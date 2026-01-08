@@ -96,17 +96,21 @@ class MessageService {
   }
 
   handleMessageHistory(data) {
-    console.log('[MessageService] ========== MESSAGE_HISTORY RECEIVED ==========');
-    console.log('[MessageService] Messages count:', data.messages?.length);
-    console.log('[MessageService] HasMore:', data.hasMore);
+    if (import.meta.env.DEV) {
+      console.log('[MessageService] ========== MESSAGE_HISTORY RECEIVED ==========');
+      console.log('[MessageService] Messages count:', data.messages?.length);
+      console.log('[MessageService] HasMore:', data.hasMore);
+    }
     if (data.messages) {
       // Root cause fix: Don't replace existing messages with empty array
       // message_history is meant to REPLACE (fresh load), but if server sends
       // empty array (error, race condition, new room), we shouldn't clear existing messages
       if (data.messages.length === 0 && this.messages.length > 0) {
-        console.warn(
-          '[MessageService] Ignoring empty message_history - preserving existing messages'
-        );
+        if (import.meta.env.DEV) {
+          console.warn(
+            '[MessageService] Ignoring empty message_history - preserving existing messages'
+          );
+        }
         return; // Don't replace existing messages with empty array
       }
 
@@ -270,6 +274,30 @@ class MessageService {
   notify() {
     const state = this.getState();
     this.subscribers.forEach(cb => cb(state));
+  }
+
+  /**
+   * Remove messages matching predicate (e.g., pending_original, ai_intervention)
+   * @param {Function} predicate - Function that returns true for messages to remove
+   */
+  removeMessages(predicate) {
+    const initialCount = this.messages.length;
+    
+    // Remove from messages array
+    this.messages = this.messages.filter(msg => !predicate(msg));
+    
+    // Remove from pending messages map
+    for (const [tempId, msg] of this.pendingMessages.entries()) {
+      if (predicate(msg)) {
+        this.pendingMessages.delete(tempId);
+        this.messageStatuses.delete(tempId);
+      }
+    }
+    
+    // Only notify if messages were actually removed
+    if (this.messages.length !== initialCount) {
+      this.notify();
+    }
   }
 
   /**

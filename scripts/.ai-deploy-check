@@ -1,0 +1,10 @@
+#!/bin/bash
+# This file is automatically checked by AI assistants before deploying
+# If this check fails, deployment is blocked
+
+# This is a marker file that indicates deployment validation is required
+# AI assistants should check for this file and run validate-vercel-project.sh
+# before any Vercel deployment
+
+echo "Deployment validation required. Run: ./scripts/validate-vercel-project.sh"
+

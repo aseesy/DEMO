@@ -5,6 +5,7 @@
  */
 
 const { buildUserObject } = require('../utils');
+const { defaultLogger } = require('../../src/infrastructure/logging/logger');
 
 /**
  * Message history result
@@ -27,30 +28,29 @@ const { buildUserObject } = require('../utils');
  * @returns {Promise<MessageHistoryResult>}
  */
 async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
+  const logger = defaultLogger.child({ function: 'getMessageHistory' });
+  
   // CRITICAL: Validate roomId before proceeding
   if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
     const error = new Error('Invalid roomId: roomId is required and must be a non-empty string');
-    console.error('[getMessageHistory]', error.message, {
-      roomId,
+    logger.error('Invalid roomId provided', error, {
       type: typeof roomId,
       isNull: roomId === null,
       isUndefined: roomId === undefined,
+      // Don't log roomId value - may contain sensitive data
     });
     throw error;
   }
 
-  console.log(
-    '[getMessageHistory] Loading messages for room:',
-    roomId,
-    'limit:',
+  logger.debug('Loading message history', {
+    roomId: roomId.substring(0, 8) + '...', // Partial ID for debugging
     limit,
-    'offset:',
-    offset
-  );
+    offset,
+  });
 
   // Get total count of user messages (exclude system messages)
   const totalMessages = await getTotalMessageCount(roomId, dbPostgres);
-  console.log('[getMessageHistory] Total user messages in room:', totalMessages);
+  logger.debug('Message count retrieved', { totalMessages });
 
   // Get room members for receiver resolution
   const { roomMembers, success: roomMembersQuerySucceeded } = await getRoomMembers(
@@ -59,15 +59,15 @@ async function getMessageHistory(roomId, dbPostgres, limit = 500, offset = 0) {
   );
 
   // Get messages with user data
-  const result = await fetchMessages(roomId, dbPostgres, limit, offset);
-  console.log('[getMessageHistory] Retrieved', result.rows.length, 'messages from database');
+  const result = await fetchMessages(roomId, dbPostgres, limit, offset, logger);
+  logger.debug('Messages retrieved from database', { count: result.rows.length });
 
   // Sort to chronological order and format messages
   const sortedRows = sortMessageRows(result.rows);
-  const messages = formatMessages(sortedRows, roomMembers, roomMembersQuerySucceeded, roomId);
+  const messages = formatMessages(sortedRows, roomMembers, roomMembersQuerySucceeded, roomId, logger);
 
   // Log sample of messages
-  logMessageSample(messages, roomId);
+  logMessageSample(messages, roomId, logger);
 
   return {
     messages,
@@ -97,6 +97,7 @@ async function getTotalMessageCount(roomId, dbPostgres) {
  * Get room members for receiver resolution
  */
 async function getRoomMembers(roomId, dbPostgres) {
+  const logger = defaultLogger.child({ function: 'getRoomMembers' });
   try {
     const membersQuery = `
       SELECT rm.user_id, u.email, u.first_name, u.last_name
@@ -105,14 +106,17 @@ async function getRoomMembers(roomId, dbPostgres) {
       WHERE rm.room_id = $1
     `;
     const membersResult = await dbPostgres.query(membersQuery, [roomId]);
-    console.log('[getMessageHistory] Room members:', {
-      roomId,
+    logger.debug('Room members retrieved', {
+      roomId: roomId.substring(0, 8) + '...',
       count: membersResult.rows.length,
-      emails: membersResult.rows.map(m => m.email),
+      // Don't log emails - PII
     });
     return { roomMembers: membersResult.rows, success: true };
   } catch (membersError) {
-    console.error('[getMessageHistory] Error getting room members:', membersError);
+    logger.error('Error getting room members', membersError, {
+      roomId: roomId.substring(0, 8) + '...',
+      errorCode: membersError.code,
+    });
     return { roomMembers: [], success: false };
   }
 }
@@ -120,7 +124,7 @@ async function getRoomMembers(roomId, dbPostgres) {
 /**
  * Fetch messages from database
  */
-async function fetchMessages(roomId, dbPostgres, limit, offset) {
+async function fetchMessages(roomId, dbPostgres, limit, offset, logger = defaultLogger.child({ function: 'fetchMessages' })) {
   const historyQuery = `
     SELECT m.id, m.type, m.user_email, m.text, m.timestamp, m.room_id, m.thread_id,
            m.edited, m.edited_at, m.reactions, m.user_flagged_by,
@@ -138,12 +142,11 @@ async function fetchMessages(roomId, dbPostgres, limit, offset) {
   try {
     return await dbPostgres.query(historyQuery, [roomId, limit, offset]);
   } catch (queryError) {
-    console.error('[getMessageHistory] Database query error:', {
-      error: queryError.message,
-      stack: queryError.stack,
-      roomId,
+    logger.error('Database query error', queryError, {
+      roomId: roomId.substring(0, 8) + '...',
       limit,
       offset,
+      errorCode: queryError.code,
     });
     throw queryError;
   }
@@ -166,11 +169,11 @@ function sortMessageRows(rows) {
 /**
  * Format messages with sender and receiver info
  */
-function formatMessages(sortedRows, roomMembers, roomMembersQuerySucceeded, roomId) {
+function formatMessages(sortedRows, roomMembers, roomMembersQuerySucceeded, roomId, logger = defaultLogger.child({ function: 'formatMessages' })) {
   return sortedRows.map(msg => {
     const senderData = buildSenderData(msg);
-    const sender = buildSender(senderData, msg, roomId);
-    const receiver = buildReceiver(senderData, roomMembers, roomMembersQuerySucceeded, roomId);
+    const sender = buildSender(senderData, msg, roomId, logger);
+    const receiver = buildReceiver(senderData, roomMembers, roomMembersQuerySucceeded, roomId, logger);
 
     return {
       id: msg.id,
@@ -203,11 +206,11 @@ function buildSenderData(msg) {
 /**
  * Build sender object with fallbacks
  */
-function buildSender(senderData, msg, roomId) {
+function buildSender(senderData, msg, roomId, logger = defaultLogger.child({ function: 'buildSender' })) {
   if (!senderData.email) {
-    console.warn('[getMessageHistory] Message missing user_email', {
+    logger.warn('Message missing user_email', {
       messageId: msg.id,
-      roomId,
+      roomId: roomId.substring(0, 8) + '...',
       hasUserEmail: !!msg.user_email,
       hasEmail: !!msg.email,
     });
@@ -222,16 +225,13 @@ function buildSender(senderData, msg, roomId) {
       msg.user_email_from_join &&
       msg.user_email_from_join.toLowerCase() === senderData.email.toLowerCase();
 
-    console.warn(
-      '[getMessageHistory] User lookup failed, creating minimal sender from user_email',
-      {
-        user_email: senderData.email,
-        user_id: senderData.id,
-        roomId,
-        messageId: msg.id,
-        canUseId,
-      }
-    );
+    logger.warn('User lookup failed, creating minimal sender from user_email', {
+      user_id: senderData.id,
+      roomId: roomId.substring(0, 8) + '...',
+      messageId: msg.id,
+      canUseId,
+      // Don't log email - PII
+    });
 
     sender = {
       uuid: canUseId ? senderData.id : null,
@@ -242,11 +242,11 @@ function buildSender(senderData, msg, roomId) {
   }
 
   if (!sender) {
-    console.warn('[getMessageHistory] Message has no sender object and no email', {
+    logger.warn('Message has no sender object and no email', {
       messageId: msg.id,
-      user_email: msg.user_email,
       user_id: msg.user_id,
-      roomId,
+      roomId: roomId.substring(0, 8) + '...',
+      // Don't log user_email - PII
     });
   }
 
@@ -256,13 +256,13 @@ function buildSender(senderData, msg, roomId) {
 /**
  * Build receiver object from room members
  */
-function buildReceiver(senderData, roomMembers, roomMembersQuerySucceeded, roomId) {
+function buildReceiver(senderData, roomMembers, roomMembersQuerySucceeded, roomId, logger = defaultLogger.child({ function: 'buildReceiver' })) {
   if (!roomMembersQuerySucceeded || roomMembers.length < 2 || !senderData.email) {
     if (roomMembers.length < 2) {
-      console.warn(
-        '[getMessageHistory] Room has fewer than 2 members',
-        { roomId, roomMemberCount: roomMembers.length }
-      );
+      logger.warn('Room has fewer than 2 members', {
+        roomId: roomId.substring(0, 8) + '...',
+        roomMemberCount: roomMembers.length,
+      });
     }
     return null;
   }
@@ -273,10 +273,10 @@ function buildReceiver(senderData, roomMembers, roomMembersQuerySucceeded, roomI
   );
 
   if (!otherMember) {
-    console.warn('[getMessageHistory] Could not find receiver in room members', {
-      roomId,
-      senderEmail: senderData.email,
-      roomMemberEmails: roomMembers.map(m => m.email),
+    logger.warn('Could not find receiver in room members', {
+      roomId: roomId.substring(0, 8) + '...',
+      roomMemberCount: roomMembers.length,
+      // Don't log emails - PII
     });
     return null;
   }
@@ -304,30 +304,27 @@ function parseJsonField(value, fallback = {}) {
 /**
  * Log sample of messages for debugging
  */
-function logMessageSample(messages, roomId) {
+function logMessageSample(messages, roomId, logger = defaultLogger.child({ function: 'logMessageSample' })) {
   if (messages.length === 0) return;
 
   const messagesWithNullSender = messages.filter(m => !m.sender);
   const messagesWithNullSenderEmail = messages.filter(m => !m.sender?.email && !m.user_email);
 
-  console.log('[getMessageHistory] Sample messages:', {
-    first: messages[0]?.text?.substring(0, 30),
-    last: messages[messages.length - 1]?.text?.substring(0, 30),
+  logger.debug('Message history sample', {
+    firstTextPreview: messages[0]?.text?.substring(0, 30),
+    lastTextPreview: messages[messages.length - 1]?.text?.substring(0, 30),
     count: messages.length,
-    firstSenderEmail: messages[0]?.sender?.email || messages[0]?.user_email || 'MISSING',
+    hasFirstSenderEmail: !!(messages[0]?.sender?.email || messages[0]?.user_email),
     messagesWithNullSender: messagesWithNullSender.length,
     messagesWithNullSenderEmail: messagesWithNullSenderEmail.length,
+    // Don't log email addresses - PII
   });
 
   if (messagesWithNullSender.length > 0) {
-    console.warn('[getMessageHistory] Messages with null sender:', {
+    logger.warn('Messages with null sender detected', {
       count: messagesWithNullSender.length,
-      sample: messagesWithNullSender.slice(0, 3).map(m => ({
-        id: m.id,
-        user_email: m.user_email,
-        hasSender: !!m.sender,
-        senderEmail: m.sender?.email,
-      })),
+      sampleIds: messagesWithNullSender.slice(0, 3).map(m => m.id),
+      // Don't log user_email or senderEmail - PII
     });
   }
 }

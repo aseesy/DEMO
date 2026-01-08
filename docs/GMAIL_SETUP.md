@@ -35,7 +35,7 @@ GMAIL_USER=info@liaizen.com
 GMAIL_APP_PASSWORD=abcdefghijklmnop
 EMAIL_FROM=info@liaizen.com
 APP_NAME=Co-Parent Chat
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:5173,http://localhost:5174
 ```
 
 **Note:** Remove spaces from the app password when pasting it.
@@ -121,7 +121,7 @@ GMAIL_CLIENT_SECRET=YOUR_CLIENT_SECRET
 GMAIL_REFRESH_TOKEN=YOUR_REFRESH_TOKEN
 EMAIL_FROM=info@liaizen.com
 APP_NAME=Co-Parent Chat
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:5173,http://localhost:5174
 ```
 
 ---

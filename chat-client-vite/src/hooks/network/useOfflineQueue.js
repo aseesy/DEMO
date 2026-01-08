@@ -43,7 +43,14 @@ export function useOfflineQueue() {
     window.addEventListener('storage', handleStorageChange);
 
     // Poll for changes (in case storage event doesn't fire in same tab)
-    const interval = setInterval(updateQueueSize, 1000);
+    // Reduced from 1s to 5s to prevent CPU overheating
+    // Storage events should handle most updates, polling is just a fallback
+    const interval = setInterval(() => {
+      // Only update if page is visible to save CPU
+      if (document.visibilityState === 'visible') {
+        updateQueueSize();
+      }
+    }, 5000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);

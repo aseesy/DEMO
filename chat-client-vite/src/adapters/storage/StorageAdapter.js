@@ -39,6 +39,7 @@ export const StorageKeys = {
   // OAuth state (stored in both localStorage and sessionStorage for ITP resilience)
   OAUTH_STATE: 'oauth_state',
   OAUTH_STATE_TIMESTAMP: 'oauth_state_timestamp',
+  OAUTH_CODE_VERIFIER: 'oauth_code_verifier', // PKCE code verifier
 
   // Application state
   SMART_TASK: 'liaizenSmartTask',
@@ -315,14 +316,64 @@ export const sessionStorage = new StorageAdapter(createSessionStorageProvider())
 // Export class for testing or custom instances
 export { StorageAdapter };
 
+// Lazy import tokenManager to avoid potential circular dependencies
+// tokenManager doesn't import authStorage, so this is safe
+let tokenManagerRef = null;
+function getTokenManager() {
+  if (!tokenManagerRef && typeof window !== 'undefined') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { tokenManager } = require('../utils/tokenManager.js');
+      tokenManagerRef = tokenManager;
+    } catch (error) {
+      // tokenManager not available (shouldn't happen in production)
+      console.warn('[authStorage] tokenManager not available:', error);
+    }
+  }
+  return tokenManagerRef;
+}
+
 /**
  * Auth-specific storage helpers
  * Provides typed accessors for authentication data
+ * 
+ * CRITICAL: Token storage now delegates to tokenManager (single source of truth)
+ * tokenManager manages its own storage using the same key (StorageKeys.AUTH_TOKEN = 'auth_token_backup')
+ * All token reads/writes should go through tokenManager for consistency
  */
 export const authStorage = {
-  getToken: () => storage.getString(StorageKeys.AUTH_TOKEN),
-  setToken: token => storage.set(StorageKeys.AUTH_TOKEN, token),
-  removeToken: () => storage.remove(StorageKeys.AUTH_TOKEN),
+  // CRITICAL: Delegate to tokenManager for consistency (single source of truth)
+  // tokenManager is the authoritative source for token storage
+  getToken: () => {
+    const tm = getTokenManager();
+    if (tm) {
+      return tm.getToken();
+    }
+    // Fallback to direct storage read if tokenManager not available (edge case during init)
+    return storage.getString(StorageKeys.AUTH_TOKEN);
+  },
+  // DEPRECATED: Use tokenManager.setToken() instead
+  // Keeping for backward compatibility but may cause sync issues
+  setToken: token => {
+    console.warn('[authStorage] setToken is deprecated. Use tokenManager.setToken() instead.');
+    const tm = getTokenManager();
+    if (tm) {
+      tm.setToken(token);
+    } else {
+      // Fallback to direct storage write
+      storage.set(StorageKeys.AUTH_TOKEN, token);
+    }
+  },
+  removeToken: () => {
+    // Delegate to tokenManager for consistency
+    const tm = getTokenManager();
+    if (tm) {
+      tm.clearToken();
+    } else {
+      // Fallback to direct storage removal
+      storage.remove(StorageKeys.AUTH_TOKEN);
+    }
+  },
 
   getUsername: () => storage.getString(StorageKeys.USERNAME),
   setUsername: username => storage.set(StorageKeys.USERNAME, username),

@@ -68,6 +68,22 @@ export function AuthGuard({ isAuthenticated, isCheckingAuth, onGetStarted, child
       const currentPath = window.location.pathname;
       const returnUrl = currentPath + (window.location.search || '');
 
+      // PUBLIC ROUTES: Allow these routes without authentication
+      // These routes handle their own authentication flows
+      const publicRoutes = [
+        '/accept-invite',
+        '/invite-coparent',
+        '/forgot-password',
+        '/reset-password',
+        '/auth/google/callback',
+      ];
+      
+      if (publicRoutes.includes(currentPath)) {
+        // Allow public routes to render - they handle their own auth flows
+        console.log('[AuthGuard] On public route, allowing access:', currentPath);
+        return <>{children}</>;
+      }
+
       // Store return URL for deep linking (if not already on auth pages)
       if (
         returnUrl &&

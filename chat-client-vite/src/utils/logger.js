@@ -1,103 +1,92 @@
 /**
- * Centralized logging utility
- * Provides environment-aware logging with different levels
+ * Centralized Logging Utility
+ * 
+ * Provides structured logging that:
+ * - Only logs in development (gated by import.meta.env.DEV)
+ * - Prevents sensitive data leakage (PII, tokens, etc.)
+ * - Supports log levels (info, warn, error, debug)
+ * - Can be extended to send logs to services (Datadog, Sentry) in production
  */
 
-const isDevelopment = import.meta.env.DEV;
-const isProduction = import.meta.env.PROD;
+const isDev = import.meta.env.DEV;
 
 /**
- * Log levels
+ * Sanitize data to prevent logging sensitive information
+ * @param {any} data - Data to sanitize
+ * @returns {any} Sanitized data
  */
-export const LogLevel = {
-  DEBUG: 'debug',
-  INFO: 'info',
-  WARN: 'warn',
-  ERROR: 'error',
-};
+function sanitizeData(data) {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
 
-/**
- * Logger class for consistent logging across the application
- */
-class Logger {
-  /**
-   * Log debug messages (only in development)
-   * @param {string} message - Log message
-   * @param {any} data - Optional data to log
-   */
-  debug(message, data = null) {
-    if (isDevelopment) {
-      if (data) {
-        console.log(`[DEBUG] ${message}`, data);
-      } else {
-        console.log(`[DEBUG] ${message}`);
-      }
+  const sensitiveKeys = [
+    'password',
+    'token',
+    'secret',
+    'authorization',
+    'auth',
+    'cookie',
+    'session',
+    'apiKey',
+    'api_key',
+    'accessToken',
+    'refreshToken',
+    'email', // Redact email addresses to prevent PII leakage
+    'userEmail',
+    'username', // May contain email
+    'socketId', // Can be used to track users
+  ];
+
+  const sanitized = { ...data };
+
+  for (const key in sanitized) {
+    const lowerKey = key.toLowerCase();
+    if (sensitiveKeys.some(sensitive => lowerKey.includes(sensitive))) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof sanitized[key] === 'string' && sanitized[key].includes('Bearer ')) {
+      sanitized[key] = '[REDACTED_TOKEN]';
+    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+      sanitized[key] = sanitizeData(sanitized[key]);
     }
   }
 
-  /**
-   * Log info messages (only in development)
-   * @param {string} message - Log message
-   * @param {any} data - Optional data to log
-   */
-  info(message, data = null) {
-    if (isDevelopment) {
-      if (data) {
-        console.log(`[INFO] ${message}`, data);
-      } else {
-        console.log(`[INFO] ${message}`);
-      }
-    }
-  }
-
-  /**
-   * Log warning messages (always shown)
-   * @param {string} message - Warning message
-   * @param {any} data - Optional data to log
-   */
-  warn(message, data = null) {
-    if (data) {
-      console.warn(`[WARN] ${message}`, data);
-    } else {
-      console.warn(`[WARN] ${message}`);
-    }
-  }
-
-  /**
-   * Log error messages (always shown)
-   * @param {string} message - Error message
-   * @param {Error|any} error - Error object or data
-   */
-  error(message, error = null) {
-    if (error) {
-      if (error instanceof Error) {
-        console.error(`[ERROR] ${message}`, error.message, error.stack);
-      } else {
-        console.error(`[ERROR] ${message}`, error);
-      }
-    } else {
-      console.error(`[ERROR] ${message}`);
-    }
-  }
-
-  /**
-   * Log API errors with context
-   * @param {string} endpoint - API endpoint
-   * @param {number} status - HTTP status code
-   * @param {string} message - Error message
-   */
-  apiError(endpoint, status, message) {
-    this.error(`API Error [${status}] ${endpoint}`, message);
-  }
+  return sanitized;
 }
 
-// Export singleton instance
-export const logger = new Logger();
+/**
+ * Create a logger with context prefix
+ * @param {string} context - Context prefix (e.g., '[ChatContext]')
+ * @returns {Object} Logger object with info, warn, error, debug methods
+ */
+export function createLogger(context) {
+  return {
+    info: (...args) => {
+      if (!isDev) return;
+      const sanitized = args.map(arg => (typeof arg === 'object' ? sanitizeData(arg) : arg));
+      console.log(`[${context}]`, ...sanitized);
+    },
+    warn: (...args) => {
+      if (!isDev) return;
+      const sanitized = args.map(arg => (typeof arg === 'object' ? sanitizeData(arg) : arg));
+      console.warn(`[${context}]`, ...sanitized);
+    },
+    error: (...args) => {
+      // Always log errors (even in production) but sanitize sensitive data
+      const sanitized = args.map(arg => (typeof arg === 'object' ? sanitizeData(arg) : arg));
+      console.error(`[${context}]`, ...sanitized);
+    },
+    debug: (...args) => {
+      if (!isDev) return;
+      const sanitized = args.map(arg => (typeof arg === 'object' ? sanitizeData(arg) : arg));
+      console.debug(`[${context}]`, ...sanitized);
+    },
+  };
+}
 
-// Export convenience functions
-export const logDebug = (message, data) => logger.debug(message, data);
-export const logInfo = (message, data) => logger.info(message, data);
-export const logWarn = (message, data) => logger.warn(message, data);
-export const logError = (message, error) => logger.error(message, error);
-export const logApiError = (endpoint, status, message) =>
-  logger.apiError(endpoint, status, message);
+/**
+ * Default logger for backwards compatibility
+ */
+export const logger = createLogger('App');
+
+export default logger;

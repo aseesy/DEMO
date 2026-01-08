@@ -25,6 +25,7 @@ import {
 } from '../../../utils/errorHandler.jsx';
 import { storage, StorageKeys, authStorage } from '../../../adapters/storage';
 import { NavigationPaths } from '../../../adapters/navigation';
+import { getInviteTokenFromUrl } from '../../../utils/inviteTokenParser';
 
 /**
  * useAcceptInvitationXState hook
@@ -32,8 +33,16 @@ import { NavigationPaths } from '../../../adapters/navigation';
 export function useAcceptInvitationXState() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
-  const shortCode = searchParams.get('code');
+  const { token, code: shortCode } = getInviteTokenFromUrl(searchParams);
+  
+  // Log token read in dev mode
+  if (import.meta.env.DEV) {
+    console.log('[useAcceptInvitationXState] Token read:', {
+      hasToken: !!token,
+      hasCode: !!shortCode,
+      tokenPreview: token ? `${token.substring(0, 8)}...` : null,
+    });
+  }
 
   const {
     isAuthenticated,
@@ -54,32 +63,99 @@ export function useAcceptInvitationXState() {
   // Create services for the machine
   const validateInvitationService = React.useCallback(
     async (tokenParam, shortCodeParam) => {
+      const startTime = Date.now();
+      
       if (!tokenParam && !shortCodeParam) {
+        if (import.meta.env.DEV) {
+          console.warn('[InviteAccept] Validation failed: No token or code provided');
+        }
         return { valid: false, code: 'TOKEN_REQUIRED' };
       }
-      return await validateFromContext(tokenParam, shortCodeParam);
+      
+      if (import.meta.env.DEV) {
+        console.log('[InviteAccept] Validating invitation:', {
+          hasToken: !!tokenParam,
+          hasCode: !!shortCodeParam,
+        });
+      }
+      
+      const result = await validateFromContext(tokenParam, shortCodeParam);
+      
+      const duration = Date.now() - startTime;
+      if (import.meta.env.DEV) {
+        console.log('[InviteAccept] Validation result:', {
+          valid: result.valid,
+          duration: `${duration}ms`,
+          code: result.code,
+        });
+      }
+      
+      return result;
     },
     [validateFromContext]
   );
 
   const autoAcceptInvitationService = React.useCallback(
     async (tokenParam, shortCodeParam) => {
-      if (shortCodeParam) {
-        return await acceptByCode(shortCodeParam);
+      const startTime = Date.now();
+      
+      if (import.meta.env.DEV) {
+        console.log('[InviteAccept] Starting auto-accept:', {
+          hasToken: !!tokenParam,
+          hasCode: !!shortCodeParam,
+        });
       }
-      return await acceptInvitation(tokenParam);
+      
+      let result;
+      if (shortCodeParam) {
+        result = await acceptByCode(shortCodeParam);
+      } else {
+        result = await acceptInvitation(tokenParam);
+      }
+      
+      const duration = Date.now() - startTime;
+      if (import.meta.env.DEV) {
+        console.log('[InviteAccept] Auto-accept result:', {
+          success: result.success,
+          duration: `${duration}ms`,
+          code: result.code,
+          pairingId: result.pairingId,
+          roomId: result.roomId,
+        });
+      }
+      
+      return result;
     },
     [acceptByCode, acceptInvitation]
   );
 
   const submitSignupService = React.useCallback(
     async ({ firstName, lastName, formEmail, formPassword, tokenParam, shortCodeParam }) => {
+      const startTime = Date.now();
+      
+      if (import.meta.env.DEV) {
+        console.log('[InviteAccept] Starting signup with invite:', {
+          hasToken: !!tokenParam,
+          hasCode: !!shortCodeParam,
+          email: formEmail,
+        });
+      }
+      
       // Re-validate token before registration
       if (tokenParam || shortCodeParam) {
+        if (import.meta.env.DEV) {
+          console.log('[InviteAccept] Re-validating token before signup');
+        }
         const revalidation = await validateFromContext(tokenParam, shortCodeParam);
         if (!revalidation.valid) {
           const errorInfo = revalidation.errorInfo || getErrorMessage({ code: revalidation.code });
+          if (import.meta.env.DEV) {
+            console.warn('[InviteAccept] Token validation failed:', revalidation.code);
+          }
           throw new Error(errorInfo.userMessage);
+        }
+        if (import.meta.env.DEV) {
+          console.log('[InviteAccept] Token validation passed');
         }
       }
 
@@ -116,6 +192,9 @@ export function useAcceptInvitationXState() {
           operation: 'register_from_invite',
           email: formEmail,
         });
+        if (import.meta.env.DEV) {
+          console.error('[InviteAccept] Signup failed:', errorInfo.userMessage);
+        }
         throw new Error(errorInfo.userMessage);
       }
 
@@ -129,6 +208,16 @@ export function useAcceptInvitationXState() {
         storage.set(StorageKeys.USER_EMAIL, data.user.email);
       }
       authStorage.setAuthenticated(true);
+
+      const duration = Date.now() - startTime;
+      if (import.meta.env.DEV) {
+        console.log('[InviteAccept] Signup successful:', {
+          duration: `${duration}ms`,
+          userId: data.user?.id,
+          pairingId: data.pairingId,
+          roomId: data.roomId,
+        });
+      }
 
       return { success: true, data };
     },
@@ -218,7 +307,7 @@ export function useAcceptInvitationXState() {
     // XState v5 evaluates guards with current context at transition time
   }, [isAuthenticated]);
 
-  // Handle success callback
+  // Handle success callback - redirect after acceptance
   React.useEffect(() => {
     if (state.value === 'success' && state.context.successMessage) {
       storage.remove(StorageKeys.PENDING_INVITE_CODE);
@@ -235,15 +324,26 @@ export function useAcceptInvitationXState() {
         );
       }
 
+      // Determine redirect destination
+      // TODO: If roomId/pairingId available, redirect to specific room/workspace
+      // For now, redirect to home (dashboard)
+      const redirectPath = NavigationPaths.HOME;
+      
+      if (import.meta.env.DEV) {
+        console.log('[InviteAccept] Redirecting after success:', redirectPath);
+      }
+
       setTimeout(() => {
-        navigate(NavigationPaths.HOME, { replace: true });
+        navigate(redirectPath, { replace: true });
       }, 1500);
     }
   }, [state.value, state.context.successMessage, navigate, clearInvitationState]);
 
   // Derived state for compatibility with existing component
   const isLoading = state.value === 'validating' || isValidating || isCheckingAuth;
-  const validationResult = state.context.validationResult;
+  // Ensure validationResult is always available, even when invalid
+  const validationResult = state.context.validationResult || 
+    (state.value === 'invalid' ? { valid: false, code: 'INVALID_TOKEN', error: state.context.inviteError || 'Invalid invitation' } : null);
 
   return {
     // Machine state
@@ -268,7 +368,8 @@ export function useAcceptInvitationXState() {
     isGoogleLoggingIn,
 
     // Form state
-    displayName: state.context.firstName, // Alias for compatibility
+    firstName: state.context.firstName,
+    lastName: state.context.lastName,
     formEmail: state.context.formEmail,
     formPassword: state.context.formPassword,
     confirmPassword: state.context.confirmPassword,
@@ -276,8 +377,12 @@ export function useAcceptInvitationXState() {
     formError: state.context.formError,
 
     // Form setters
-    setDisplayName: React.useCallback(
+    setFirstName: React.useCallback(
       value => send({ type: 'UPDATE_FIELD', field: 'firstName', value }),
+      [send]
+    ),
+    setLastName: React.useCallback(
+      value => send({ type: 'UPDATE_FIELD', field: 'lastName', value }),
       [send]
     ),
     setFormEmail: React.useCallback(
@@ -312,9 +417,45 @@ export function useAcceptInvitationXState() {
     handleSubmit: React.useCallback(
       e => {
         e?.preventDefault();
+        
+        // Validate form before submitting
+        const { firstName, lastName, formEmail, formPassword, confirmPassword, agreeToTerms } = state.context;
+        
+        if (!firstName?.trim()) {
+          send({ type: 'UPDATE_FIELD', field: 'formError', value: 'Please enter your first name' });
+          return;
+        }
+        if (!lastName?.trim()) {
+          send({ type: 'UPDATE_FIELD', field: 'formError', value: 'Please enter your last name' });
+          return;
+        }
+        if (!formEmail?.trim()) {
+          send({ type: 'UPDATE_FIELD', field: 'formError', value: 'Please enter your email' });
+          return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formEmail.trim().toLowerCase())) {
+          send({ type: 'UPDATE_FIELD', field: 'formError', value: 'Please enter a valid email address' });
+          return;
+        }
+        if (!formPassword || formPassword.length < 10) {
+          send({ type: 'UPDATE_FIELD', field: 'formError', value: 'Password must be at least 10 characters' });
+          return;
+        }
+        if (formPassword !== confirmPassword) {
+          send({ type: 'UPDATE_FIELD', field: 'formError', value: 'Passwords do not match' });
+          return;
+        }
+        if (!agreeToTerms) {
+          send({ type: 'UPDATE_FIELD', field: 'formError', value: 'Please agree to the Terms of Service and Privacy Policy' });
+          return;
+        }
+        
+        // Clear any previous errors and submit
+        send({ type: 'UPDATE_FIELD', field: 'formError', value: null });
         send({ type: 'SUBMIT' });
       },
-      [send]
+      [send, state.context]
     ),
     handleGoogleLogin: React.useCallback(() => {
       send({ type: 'GOOGLE_LOGIN' });

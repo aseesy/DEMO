@@ -17,7 +17,10 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest watch",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:validate": "bash ../scripts/validate-vercel-project.sh",
+    "deploy": "npm run deploy:validate && vercel --prod --yes",
+    "deploy:preview": "npm run deploy:validate && vercel"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.17",

@@ -190,6 +190,11 @@ export const invitationAcceptanceMachine = setup({
         onError: {
           target: 'invalid',
           actions: assign({
+            validationResult: ({ event }) => ({
+              valid: false,
+              code: 'VALIDATION_ERROR',
+              error: event.error?.message || 'Validation failed',
+            }),
             inviteError: ({ event }) => event.error?.message || 'Validation failed',
           }),
         },
@@ -286,6 +291,8 @@ export const invitationAcceptanceMachine = setup({
                   event.field === 'confirmPassword' ? event.value : context.confirmPassword,
                 agreeToTerms: ({ context, event }) =>
                   event.field === 'agreeToTerms' ? event.value : context.agreeToTerms,
+                formError: ({ context, event }) =>
+                  event.field === 'formError' ? event.value : context.formError,
               }),
             },
             SUBMIT: {

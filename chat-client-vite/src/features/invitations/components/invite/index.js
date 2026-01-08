@@ -8,3 +8,4 @@ export { EmailInput, CodeInput } from './InviteFormInputs.jsx';
 export { InviteGeneratedView } from './InviteGeneratedView.jsx';
 export { InvitePreGenerationView } from './InvitePreGenerationView.jsx';
 export * from './AcceptInviteViews.jsx';
+export { WrongAccountView } from './AcceptInviteViews.jsx';

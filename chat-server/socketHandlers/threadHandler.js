@@ -15,10 +15,14 @@
 // Note: autoThreading is no longer imported here to break dependency cycle
 // Embedding generation is handled by ThreadCreated/SubThreadCreated event listeners
 
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
+const { emitError } = require('./utils');
+
 function registerThreadHandlers(socket, io, services) {
   // Phase 2: No longer receives activeUsers
   // Services manage their own state via UserSessionService
   const { threadManager, userSessionService } = services;
+  const logger = defaultLogger.child({ handler: 'thread' });
 
   // create_thread handler - emits delta (new thread only)
   socket.on('create_thread', async ({ roomId, title, messageId, category }) => {
@@ -75,8 +79,8 @@ function registerThreadHandlers(socket, io, services) {
 
       socket.emit('thread_created_success', { threadId, title });
     } catch (error) {
-      console.error('Error creating thread:', error);
-      socket.emit('error', { message: 'Failed to create thread.' });
+      logger.error('Error creating thread', error, { errorCode: error.code, roomId, title });
+      emitError(socket, 'Failed to create thread.', error, 'create_thread');
     }
   });
 
@@ -92,8 +96,8 @@ function registerThreadHandlers(socket, io, services) {
       const threads = await threadManager.getThreadsForRoom(roomId);
       socket.emit('threads_list', threads);
     } catch (error) {
-      console.error('Error getting threads:', error);
-      socket.emit('error', { message: 'Failed to get threads.' });
+      logger.error('Error getting threads', error, { errorCode: error.code, roomId });
+      emitError(socket, 'Failed to get threads.', error, 'get_threads');
     }
   });
 
@@ -118,8 +122,8 @@ function registerThreadHandlers(socket, io, services) {
         offset: validOffset,
       });
     } catch (error) {
-      console.error('Error getting thread messages:', error);
-      socket.emit('error', { message: 'Failed to get thread messages.' });
+      logger.error('Error getting thread messages', error, { errorCode: error.code, threadId });
+      emitError(socket, 'Failed to get thread messages.', error, 'get_thread_messages');
     }
   });
 
@@ -146,8 +150,8 @@ function registerThreadHandlers(socket, io, services) {
 
       socket.emit('message_added_to_thread', { messageId, threadId });
     } catch (error) {
-      console.error('Error adding to thread:', error);
-      socket.emit('error', { message: 'Failed to add message to thread.' });
+      logger.error('Error adding to thread', error, { errorCode: error.code, messageId, threadId });
+      emitError(socket, 'Failed to add message to thread.', error, 'add_to_thread');
     }
   });
 
@@ -172,8 +176,8 @@ function registerThreadHandlers(socket, io, services) {
 
       socket.emit('message_removed_from_thread', { messageId });
     } catch (error) {
-      console.error('Error removing from thread:', error);
-      socket.emit('error', { message: 'Failed to remove message from thread.' });
+      logger.error('Error removing from thread', error, { errorCode: error.code, messageId, threadId });
+      emitError(socket, 'Failed to remove message from thread.', error, 'remove_from_thread');
     }
   });
 
@@ -246,8 +250,8 @@ function registerThreadHandlers(socket, io, services) {
 
       socket.emit('sub_thread_created_success', { threadId, title, parentThreadId });
     } catch (error) {
-      console.error('Error creating sub-thread:', error);
-      socket.emit('error', { message: 'Failed to create sub-thread.' });
+      logger.error('Error creating sub-thread', error, { errorCode: error.code, roomId, parentThreadId });
+      emitError(socket, 'Failed to create sub-thread.', error, 'create_sub_thread');
     }
   });
 
@@ -263,8 +267,8 @@ function registerThreadHandlers(socket, io, services) {
       const ancestors = await threadManager.getThreadAncestors(threadId);
       socket.emit('thread_ancestors', { threadId, ancestors });
     } catch (error) {
-      console.error('Error getting thread ancestors:', error);
-      socket.emit('error', { message: 'Failed to get thread ancestors.' });
+      logger.error('Error getting thread ancestors', error, { errorCode: error.code, threadId });
+      emitError(socket, 'Failed to get thread ancestors.', error, 'get_thread_ancestors');
     }
   });
 
@@ -280,8 +284,8 @@ function registerThreadHandlers(socket, io, services) {
       const subThreads = await threadManager.getSubThreads(threadId);
       socket.emit('sub_threads_list', { parentThreadId: threadId, subThreads });
     } catch (error) {
-      console.error('Error getting sub-threads:', error);
-      socket.emit('error', { message: 'Failed to get sub-threads.' });
+      logger.error('Error getting sub-threads', error, { errorCode: error.code, parentThreadId });
+      emitError(socket, 'Failed to get sub-threads.', error, 'get_sub_threads');
     }
   });
 
@@ -297,8 +301,8 @@ function registerThreadHandlers(socket, io, services) {
       const hierarchy = await threadManager.getThreadHierarchy(threadId);
       socket.emit('thread_hierarchy', { rootThreadId: threadId, hierarchy });
     } catch (error) {
-      console.error('Error getting thread hierarchy:', error);
-      socket.emit('error', { message: 'Failed to get thread hierarchy.' });
+      logger.error('Error getting thread hierarchy', error, { errorCode: error.code, roomId });
+      emitError(socket, 'Failed to get thread hierarchy.', error, 'get_thread_hierarchy');
     }
   });
 
@@ -351,8 +355,8 @@ function registerThreadHandlers(socket, io, services) {
         messageId: result.message.id,
       });
     } catch (error) {
-      console.error('Error replying in thread:', error);
-      socket.emit('error', { message: error.message || 'Failed to reply in thread.' });
+      logger.error('Error replying in thread', error, { errorCode: error.code, threadId });
+      emitError(socket, 'Failed to reply in thread.', error, 'reply_in_thread');
     }
   });
 
@@ -407,8 +411,8 @@ function registerThreadHandlers(socket, io, services) {
         newThreadId: result.newThreadId,
       });
     } catch (error) {
-      console.error('Error moving message to thread:', error);
-      socket.emit('error', { message: error.message || 'Failed to move message to thread.' });
+      logger.error('Error moving message to thread', error, { errorCode: error.code, messageId, targetThreadId });
+      emitError(socket, 'Failed to move message to thread.', error, 'move_message_to_thread');
     }
   });
 
@@ -451,8 +455,8 @@ function registerThreadHandlers(socket, io, services) {
 
       socket.emit('thread_archived_success', { threadId, archived: shouldArchive });
     } catch (error) {
-      console.error('Error archiving thread:', error);
-      socket.emit('error', { message: error.message || 'Failed to archive thread.' });
+      logger.error('Error archiving thread', error, { errorCode: error.code, threadId });
+      emitError(socket, 'Failed to archive thread.', error, 'archive_thread');
     }
   });
 
@@ -483,8 +487,8 @@ function registerThreadHandlers(socket, io, services) {
         createdThreadsCount: result.createdThreads?.length || 0,
       });
     } catch (error) {
-      console.error('Error analyzing conversation history:', error);
-      socket.emit('error', { message: 'Failed to analyze conversation history.' });
+      logger.error('Error analyzing conversation history', error, { errorCode: error.code, roomId });
+      emitError(socket, 'Failed to analyze conversation history.', error, 'analyze_conversation_history');
     }
   });
 
@@ -521,8 +525,8 @@ function registerThreadHandlers(socket, io, services) {
         totalCount,
       });
     } catch (error) {
-      console.error('Error getting conversation threads:', error);
-      socket.emit('error', { message: 'Failed to get conversation threads.' });
+      logger.error('Error getting conversation threads', error, { errorCode: error.code, roomId });
+      emitError(socket, 'Failed to get conversation threads.', error, 'get_conversation_threads');
     }
   });
 
@@ -547,8 +551,8 @@ function registerThreadHandlers(socket, io, services) {
 
       socket.emit('thread_details', { thread });
     } catch (error) {
-      console.error('Error getting thread details:', error);
-      socket.emit('error', { message: 'Failed to get thread details.' });
+      logger.error('Error getting thread details', error, { errorCode: error.code, threadId });
+      emitError(socket, 'Failed to get thread details.', error, 'get_thread_details');
     }
   });
 
@@ -564,7 +568,7 @@ function registerThreadHandlers(socket, io, services) {
       const { getThreadService } = require('../src/services/threads');
       const threadService = getThreadService();
 
-      console.log(`[ThreadHandler] Processing threads for room ${roomId} (manual trigger)`);
+      logger.debug('Processing threads for room (manual trigger)', { roomId });
       const result = await threadService.processRoom(roomId);
 
       // Emit threads_updated event to all room members
@@ -583,8 +587,8 @@ function registerThreadHandlers(socket, io, services) {
           : `Processed: ${result.created} created, ${result.updated} updated`,
       });
     } catch (error) {
-      console.error('Error processing room threads:', error);
-      socket.emit('error', { message: 'Failed to process room threads.' });
+      logger.error('Error processing room threads', error, { errorCode: error.code, roomId });
+      emitError(socket, 'Failed to process room threads.', error, 'process_room_threads');
     }
   });
 
@@ -600,7 +604,7 @@ function registerThreadHandlers(socket, io, services) {
       const { getThreadService } = require('../src/services/threads');
       const threadService = getThreadService();
 
-      console.log(`[ThreadHandler] Backfilling threads for room ${roomId}`);
+      logger.debug('Backfilling threads for room', { roomId });
       const result = await threadService.backfillRoom(roomId, {
         limit: limit || 500,
         batchSize: batchSize || 10,
@@ -620,8 +624,8 @@ function registerThreadHandlers(socket, io, services) {
         message: `Backfill complete: ${result.created} threads created from ${result.processed} windows`,
       });
     } catch (error) {
-      console.error('Error backfilling room threads:', error);
-      socket.emit('error', { message: 'Failed to backfill room threads.' });
+      logger.error('Error backfilling room threads', error, { errorCode: error.code, roomId });
+      emitError(socket, 'Failed to backfill room threads.', error, 'backfill_room_threads');
     }
   });
 }
@@ -635,8 +639,9 @@ function registerThreadHandlers(socket, io, services) {
  * @param {Object} threadManager - Thread manager service
  */
 async function maybeAnalyzeRoomOnJoin(io, roomId, threadManager) {
+  const analysisLogger = defaultLogger.child({ function: 'maybeAnalyzeRoomOnJoin' });
   try {
-    console.log(`[ThreadHandler] 🔍 DEBUG: maybeAnalyzeRoomOnJoin called for room ${roomId}`);
+    analysisLogger.debug('maybeAnalyzeRoomOnJoin called', { roomId });
 
     const messageStore = require('../messageStore');
     const dbPostgres = require('../dbPostgres');
@@ -655,16 +660,20 @@ async function maybeAnalyzeRoomOnJoin(io, roomId, threadManager) {
       return msgDate >= thirtyDaysAgo;
     });
 
-    console.log(
-      `[ThreadHandler] 🔍 DEBUG: Found ${validMessages.length} valid recent messages (out of ${recentMessages.length} total)`
-    );
+    analysisLogger.debug('Found valid recent messages', {
+      validCount: validMessages.length,
+      totalCount: recentMessages.length,
+      roomId,
+    });
 
     // FIXED: Lower threshold for testing and early analysis (was 5, now 2)
     const MIN_MESSAGES_FOR_ANALYSIS = 2;
     if (validMessages.length < MIN_MESSAGES_FOR_ANALYSIS) {
-      console.log(
-        `[ThreadHandler] Room ${roomId} has only ${validMessages.length} messages (need ${MIN_MESSAGES_FOR_ANALYSIS}+), skipping analysis`
-      );
+      analysisLogger.debug('Skipping analysis - insufficient messages', {
+        messageCount: validMessages.length,
+        required: MIN_MESSAGES_FOR_ANALYSIS,
+        roomId,
+      });
       io.to(roomId).emit('conversation_analysis_complete', {
         roomId,
         createdThreadsCount: 0,
@@ -691,16 +700,18 @@ async function maybeAnalyzeRoomOnJoin(io, roomId, threadManager) {
     );
 
     const unthreadedMessageCount = parseInt(unthreadedCount.rows[0].count, 10);
-    console.log(
-      `[ThreadHandler] 🔍 DEBUG: Found ${unthreadedMessageCount} unthreaded messages in last 30 days`
-    );
+    analysisLogger.debug('Found unthreaded messages', {
+      unthreadedCount: unthreadedMessageCount,
+      roomId,
+    });
 
     // Only skip if there are NO unthreaded messages to analyze
     if (unthreadedMessageCount === 0) {
       const existingThreads = await threadManager.getThreadsForRoom(roomId, false, 1);
-      console.log(
-        `[ThreadHandler] Room ${roomId} has ${existingThreads.length} threads and 0 unthreaded messages, skipping analysis`
-      );
+      analysisLogger.debug('Skipping analysis - all messages threaded', {
+        existingThreads: existingThreads.length,
+        roomId,
+      });
       io.to(roomId).emit('conversation_analysis_complete', {
         roomId,
         createdThreadsCount: existingThreads.length,
@@ -710,13 +721,14 @@ async function maybeAnalyzeRoomOnJoin(io, roomId, threadManager) {
       return;
     }
 
-    console.log(
-      `[ThreadHandler] ✅ Room ${roomId} has ${unthreadedMessageCount} unthreaded messages, triggering analysis`
-    );
+    analysisLogger.info('Triggering analysis - unthreaded messages found', {
+      unthreadedCount: unthreadedMessageCount,
+      roomId,
+    });
 
     // Check OpenAI API key
     if (!process.env.OPENAI_API_KEY) {
-      console.warn(`[ThreadHandler] ⚠️  OPENAI_API_KEY not set - analysis will be skipped`);
+      analysisLogger.warn('OPENAI_API_KEY not set - analysis will be skipped', { roomId });
       io.to(roomId).emit('conversation_analysis_complete', {
         roomId,
         createdThreadsCount: 0,
@@ -731,41 +743,42 @@ async function maybeAnalyzeRoomOnJoin(io, roomId, threadManager) {
     // Trigger analysis in background (don't block join)
     setImmediate(async () => {
       try {
-        console.log(
-          `[ThreadHandler] 🔍 DEBUG: Starting analyzeConversationHistory for room ${roomId}`
-        );
+        analysisLogger.debug('Starting analyzeConversationHistory', { roomId });
         const result = await threadManager.analyzeConversationHistory(roomId, 100);
-        console.log(`[ThreadHandler] 🔍 DEBUG: Analysis result:`, {
-          suggestions: result.suggestions?.length || 0,
-          createdThreads: result.createdThreads?.length || 0,
+        analysisLogger.debug('Analysis result', {
+          suggestionsCount: result.suggestions?.length || 0,
+          createdThreadsCount: result.createdThreads?.length || 0,
+          roomId,
         });
 
         if (result.createdThreads && result.createdThreads.length > 0) {
-          console.log(
-            `[ThreadHandler] ✅ Created ${result.createdThreads.length} threads for room ${roomId}`
-          );
+          analysisLogger.info('Created threads from analysis', {
+            threadCount: result.createdThreads.length,
+            roomId,
+          });
 
           // Emit each created thread as delta
           for (const created of result.createdThreads) {
             const thread = await threadManager.getThread(created.threadId);
             if (thread) {
-              console.log(
-                `[ThreadHandler] 🔍 DEBUG: Emitting thread_created for thread ${thread.id}: ${thread.title}`
-              );
+              analysisLogger.debug('Emitting thread_created event', {
+                threadId: thread.id,
+                threadTitle: thread.title,
+                roomId,
+              });
               io.to(roomId).emit('thread_created', { thread });
             } else {
-              console.warn(
-                `[ThreadHandler] ⚠️  Thread ${created.threadId} not found after creation`
-              );
+              analysisLogger.warn('Thread not found after creation', {
+                threadId: created.threadId,
+                roomId,
+              });
             }
           }
         } else {
-          console.log(`[ThreadHandler] ⚠️  Analysis completed but no threads were created`);
-          if (result.suggestions && result.suggestions.length > 0) {
-            console.log(
-              `[ThreadHandler] 🔍 DEBUG: ${result.suggestions.length} suggestions were generated but not created`
-            );
-          }
+          analysisLogger.debug('Analysis completed but no threads created', {
+            suggestionsCount: result.suggestions?.length || 0,
+            roomId,
+          });
         }
 
         // CRITICAL: Emit analysis complete event so frontend knows analysis finished
@@ -774,12 +787,15 @@ async function maybeAnalyzeRoomOnJoin(io, roomId, threadManager) {
           roomId,
           createdThreadsCount: result.createdThreads?.length || 0,
         });
-        console.log(
-          `[ThreadHandler] ✅ Analysis complete for room ${roomId}, created ${result.createdThreads?.length || 0} threads`
-        );
+        analysisLogger.info('Analysis complete', {
+          createdThreadsCount: result.createdThreads?.length || 0,
+          roomId,
+        });
       } catch (err) {
-        console.error(`[ThreadHandler] ❌ Auto-analysis failed for room ${roomId}:`, err.message);
-        console.error(`[ThreadHandler] 🔍 DEBUG: Error stack:`, err.stack);
+        analysisLogger.error('Auto-analysis failed', err, {
+          errorCode: err.code,
+          roomId,
+        });
         // Even on error, emit completion event so frontend doesn't get stuck
         io.to(roomId).emit('conversation_analysis_complete', {
           roomId,
@@ -789,8 +805,10 @@ async function maybeAnalyzeRoomOnJoin(io, roomId, threadManager) {
       }
     });
   } catch (err) {
-    console.error(`[ThreadHandler] ❌ maybeAnalyzeRoomOnJoin error:`, err.message);
-    console.error(`[ThreadHandler] 🔍 DEBUG: Error stack:`, err.stack);
+    analysisLogger.error('maybeAnalyzeRoomOnJoin error', err, {
+      errorCode: err.code,
+      roomId,
+    });
   }
 }
 

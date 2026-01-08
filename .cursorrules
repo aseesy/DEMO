@@ -1,0 +1,141 @@
+# Cursor AI Rules for LiaiZen Project
+
+## 🔒 SEALED AUTH FILES - CRITICAL WARNING
+
+**⚠️ DO NOT MODIFY AUTHENTICATION CORE FILES**
+
+These files are SEALED and SET IN STONE. The authentication flow is production-ready and battle-tested.
+
+### Sealed Files (DO NOT MODIFY):
+- `chat-client-vite/src/context/AuthContext.jsx` - FSM state management
+- `chat-client-vite/src/utils/tokenManager.js` - Token storage (single source of truth)
+- `chat-client-vite/src/utils/authQueries.js` - API command functions
+- `chat-client-vite/src/utils/validators.js` - Validation logic (must match server)
+- `chat-client-vite/src/features/auth/model/useAuth.js` - Auth hook interface
+- `chat-client-vite/src/features/auth/model/useAuthRedirect.js` - Redirect logic
+
+### Rules for AI:
+1. ❌ NEVER modify authentication state management logic
+2. ❌ NEVER change token storage patterns
+3. ❌ NEVER alter FSM (Finite State Machine) auth status flow
+4. ❌ NEVER modify validation logic without coordinating with backend
+5. ✅ CAN modify UI/styling in `LoginSignup.jsx` (presentation only)
+6. ✅ CAN modify error messages (user-facing text only)
+
+**Full documentation:** `docs/AUTH_FLOW_SEALED.md`
+
+---
+
+## Project-Specific Rules
+
+### Design System
+- Use Tailwind design tokens: `bg-teal-dark`, `bg-teal-medium`, `bg-teal-light`
+- Never hardcode colors: ❌ `bg-[#275559]` → ✅ `bg-teal-dark`
+- Use 8px spacing unit for consistency
+- Touch targets must be 44px minimum
+- z-index layers: `z-nav` (50), `z-modal` (100)
+
+### Code Style
+- Frontend: Named exports preferred, hooks for logic extraction
+- Backend: Modular managers, async/await with try-catch
+- Use `apiGet`/`apiPost` from `apiClient.js` - never raw fetch()
+- Database queries via `dbSafe.js` (parameterized)
+
+### Authentication
+- JWT tokens stored in localStorage (via tokenManager)
+- AuthContext uses FSM pattern (LOADING → AUTHENTICATED | ANONYMOUS)
+- TokenManager is single source of truth
+
+### AI Mediation
+- Use mediator from `src/liaizen/core/` - never direct OpenAI calls
+- Follow constitution: `chat-server/ai-mediation-constitution.md`
+- No psychological labels - describe phrasing mechanics only
+- Sender-first: mediation happens BEFORE sending
+
+### Socket Events
+- Client: `send_message`, `join_room`, `typing`
+- Server: `new_message`, `ai_intervention`, `room_update`
+
+### Naming Conventions
+- React components: PascalCase
+- Hooks: camelCase with `use` prefix
+- Backend routes: kebab-case
+- Socket events: snake_case
+- Database tables: snake_case
+- Functions: `get*` for retrieval, `create*` for new entities
+
+### Vercel Deployment - CRITICAL RULES
+
+**⚠️ CRITICAL: Vercel Deployment Rules for AI**
+
+When deploying to Vercel, AI MUST follow these rules:
+
+1. **ONLY deploy chat-client-vite to the correct project**
+   - Project Name: `chat-client-vite`
+   - Project ID: `prj_3Iz716ASKvPuwjAcu6oGzs8LUhRr`
+   - URL: `chat-client-vite-a3vgwwysr-aseesys-projects.vercel.app`
+
+2. **NEVER deploy main app to:**
+   - ❌ `marketing-site` project (that's for marketing site only)
+   - ❌ Root directory deployments
+   - ❌ Any other Vercel project
+
+3. **ALWAYS validate before deploying:**
+   ```bash
+   # Method 1: Use AI wrapper script (RECOMMENDED FOR AI)
+   ./scripts/ai-deploy.sh
+   
+   # Method 2: Use safe script (RECOMMENDED FOR HUMANS)
+   ./scripts/deploy-chat-client-vite.sh
+   
+   # Method 3: Use npm script with validation
+   cd chat-client-vite && npm run deploy
+   
+   # Method 4: Manual with validation
+   cd chat-client-vite
+   ../scripts/validate-vercel-project.sh  # MUST run first
+   vercel --prod --yes
+   ```
+
+4. **ALWAYS deploy from `chat-client-vite/` directory**
+   - ❌ NEVER deploy from project root
+   - ❌ NEVER deploy from `marketing-site/` directory
+   - ✅ ALWAYS deploy from `chat-client-vite/` directory
+
+5. **Before any deployment, AI MUST:**
+   - Verify current directory is `chat-client-vite/`
+   - Run `scripts/validate-vercel-project.sh` to verify correct project
+   - Check `.vercel/project.json` shows `"projectName": "chat-client-vite"`
+   - Abort deployment if validation fails
+
+6. **If user asks to deploy, AI MUST:**
+   - **Preferred**: Use `./scripts/ai-deploy.sh` (automatic validation + deployment)
+   - **Alternative**: Use `./scripts/deploy-chat-client-vite.sh` OR
+   - **Manual**: Run validation first (`./scripts/validate-vercel-project.sh`), then deploy from `chat-client-vite/`
+
+**See `DEPLOYMENT.md` and `chat-client-vite/VERCEL_PROJECT_LOCK.md` for details.**
+
+---
+
+## Secret Protection
+
+**CRITICAL:** Never expose secrets in code, configs, logs, or outputs.
+
+- Never hardcode API keys, passwords, tokens, or connection strings
+- Never commit `.env` files
+- Always use environment variables: `process.env.SECRET_NAME`
+- Use placeholders in examples: `your-api-key-here`, `<REDACTED>`
+
+---
+
+## When Modifying Sealed Files
+
+If you MUST modify sealed auth files:
+1. Check `docs/AUTH_FLOW_SEALED.md` for approval process
+2. Verify API contract compatibility
+3. Test all state transitions
+4. Update documentation
+5. Coordinate with backend team if changing validation
+
+**Default action:** If user asks to modify sealed files, WARN them and ask for explicit confirmation.
+

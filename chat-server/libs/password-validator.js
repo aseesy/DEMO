@@ -81,11 +81,41 @@ function isBlockedPassword(password) {
 }
 
 /**
+ * Check if password contains email local-part or app name
+ * Follows NIST guidance: block context-specific words (username and derivatives)
+ * @param {string} password - Password to check
+ * @param {string} email - User's email address (optional)
+ * @returns {string|null} Error message if blocked, null otherwise
+ */
+function containsContextSpecificWords(password, email = null) {
+  if (!password) return null;
+
+  const passwordLower = password.toLowerCase();
+
+  // Block app name
+  const appName = 'liaizen';
+  if (passwordLower.includes(appName)) {
+    return 'Password cannot contain the application name';
+  }
+
+  // Block email local-part (before @) if email provided
+  if (email) {
+    const localPart = email.split('@')[0].toLowerCase();
+    if (localPart && localPart.length >= 3 && passwordLower.includes(localPart)) {
+      return 'Password cannot contain your email username';
+    }
+  }
+
+  return null;
+}
+
+/**
  * Validate password against security requirements
  * @param {string} password - Password to validate
+ * @param {string} email - User's email address (optional, for context-specific checks)
  * @returns {{ valid: boolean, errors: string[] }} Validation result
  */
-function validatePassword(password) {
+function validatePassword(password, email = null) {
   const errors = [];
 
   if (!password || typeof password !== 'string') {
@@ -104,6 +134,12 @@ function validatePassword(password) {
     errors.push('This password is too common. Please choose something more unique.');
   }
 
+  // Block context-specific words (email local-part, app name)
+  const contextError = containsContextSpecificWords(password, email);
+  if (contextError) {
+    errors.push(contextError);
+  }
+
   return {
     valid: errors.length === 0,
     errors,
@@ -113,10 +149,11 @@ function validatePassword(password) {
 /**
  * Get a user-friendly error message for invalid passwords
  * @param {string} password - Password to validate
+ * @param {string} email - User's email address (optional, for context-specific checks)
  * @returns {string|null} Error message or null if valid
  */
-function getPasswordError(password) {
-  const result = validatePassword(password);
+function getPasswordError(password, email = null) {
+  const result = validatePassword(password, email);
   if (result.valid) {
     return null;
   }
@@ -236,4 +273,5 @@ module.exports = {
   validatePasswordDetailed,
   checkPasswordStrength,
   isBlockedPassword,
+  containsContextSpecificWords,
 };
