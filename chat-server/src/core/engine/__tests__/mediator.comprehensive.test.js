@@ -426,19 +426,15 @@ describe('AI Mediator - Comprehensive Tests', () => {
       expect(messageCache.set).toHaveBeenCalled();
     });
 
-    it('should update emotional state from response', async () => {
-      const mockEmotion = {
-        currentEmotion: 'frustrated',
-        stressLevel: 70,
-      };
-
+    it('should process response without emotional state tracking', async () => {
+      // Emotional state tracking was removed - no evidence it improves outcomes
+      // This test verifies the mediator still processes responses correctly
       openaiClient.createChatCompletion.mockResolvedValue({
         choices: [
           {
             message: {
               content: JSON.stringify({
                 action: 'STAY_SILENT',
-                emotion: mockEmotion,
               }),
             },
           },
@@ -447,18 +443,10 @@ describe('AI Mediator - Comprehensive Tests', () => {
 
       responseProcessor.processResponse.mockResolvedValue(null);
 
-      const updateEmotionalStateSpy = jest.spyOn(stateManager, 'updateEmotionalState');
-
       await mediator.analyzeMessage(mockMessage, mockRecentMessages, [], [], null, 'room-123');
 
-      expect(updateEmotionalStateSpy).toHaveBeenCalledWith(
-        mockConversationContext,
-        'room-123',
-        'user1',
-        mockEmotion
-      );
-
-      updateEmotionalStateSpy.mockRestore();
+      // Verify response was processed (even if emotional state tracking is disabled)
+      expect(responseProcessor.processResponse).toHaveBeenCalled();
     });
 
     it('should track comment time for COMMENT actions', async () => {
@@ -591,7 +579,7 @@ describe('AI Mediator - Comprehensive Tests', () => {
 
       responseProcessor.processResponse.mockResolvedValue(null);
 
-      const result = await mediator.analyzeMessage(mockMessage, [], [], [], null, 'room-123');
+      await mediator.analyzeMessage(mockMessage, [], [], [], null, 'room-123');
 
       // Should continue even if code layer fails
       expect(openaiClient.createChatCompletion).toHaveBeenCalled();

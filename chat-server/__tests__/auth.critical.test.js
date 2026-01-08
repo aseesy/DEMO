@@ -18,6 +18,7 @@ jest.mock('../dbSafe', () => ({
   safeInsert: jest.fn(),
   safeUpdate: jest.fn(),
   safeInsertTx: jest.fn(),
+  query: jest.fn().mockResolvedValue({ rows: [] }), // Mock query for getRoomsForUser
   parseResult: jest.fn(result => {
     // parseResult implementation matches dbSafe/utils.js
     if (!result) return [];
@@ -28,9 +29,11 @@ jest.mock('../dbSafe', () => ({
   withTransaction: jest.fn(),
 }));
 
-jest.mock('../dbPostgres', () => ({
-  query: jest.fn(),
-}));
+const mockDbPostgres = {
+  query: jest.fn().mockResolvedValue({ rows: [] }),
+};
+
+jest.mock('../dbPostgres', () => mockDbPostgres);
 
 jest.mock('../roomManager', () => ({
   createPrivateRoom: jest.fn().mockResolvedValue({ roomId: 'test-room-123' }),
@@ -108,10 +111,11 @@ describe('CRITICAL: Account Creation', () => {
 
       dbSafe.safeSelect.mockResolvedValue([]);
       // Email conflict should throw error
-      dbSafe.safeInsert
-        .mockRejectedValueOnce({ code: '23505', constraint: 'users_email_key' });
+      dbSafe.safeInsert.mockRejectedValueOnce({ code: '23505', constraint: 'users_email_key' });
 
-      await expect(auth.createUserWithEmail(email, 'password', {})).rejects.toThrow('Email already exists');
+      await expect(auth.createUserWithEmail(email, 'password', {})).rejects.toThrow(
+        'Email already exists'
+      );
     });
   });
 
@@ -202,9 +206,11 @@ describe('CRITICAL: User Login', () => {
     test('MUST return ACCOUNT_NOT_FOUND for non-existent email', async () => {
       dbSafe.safeSelect.mockResolvedValue([]);
 
+      await expect(
+        auth.authenticateUserByEmail('nobody@example.com', 'password')
+      ).rejects.toThrow();
       try {
         await auth.authenticateUserByEmail('nobody@example.com', 'password');
-        fail('Should have thrown');
       } catch (error) {
         expect(error.code).toBe('ACCOUNT_NOT_FOUND');
       }
@@ -223,9 +229,9 @@ describe('CRITICAL: User Login', () => {
         },
       ]);
 
+      await expect(auth.authenticateUserByEmail(email, 'wrongPassword')).rejects.toThrow();
       try {
         await auth.authenticateUserByEmail(email, 'wrongPassword');
-        fail('Should have thrown');
       } catch (error) {
         expect(error.code).toBe('INVALID_PASSWORD');
       }
@@ -242,9 +248,11 @@ describe('CRITICAL: User Login', () => {
         },
       ]);
 
+      await expect(
+        auth.authenticateUserByEmail('google@example.com', 'anypassword')
+      ).rejects.toThrow();
       try {
         await auth.authenticateUserByEmail('google@example.com', 'anypassword');
-        fail('Should have thrown');
       } catch (error) {
         expect(error.code).toBe('OAUTH_ONLY_ACCOUNT');
       }
@@ -301,29 +309,28 @@ describe('CRITICAL: User Login', () => {
       // Reset mocks to ensure clean state
       dbSafe.safeSelect.mockReset();
       dbSafe.safeUpdate.mockReset();
-      
+
       // Mock the user lookup - email is converted to lowercase in authenticateUserByEmail
       // safeSelect returns result.rows (array), parseResult should return it as-is
-      dbSafe.safeSelect
-        .mockResolvedValueOnce([
-          {
-            id: 1,
-            email: email.toLowerCase(),
-            password_hash: sha256Hash,
-          },
-        ]);
+      dbSafe.safeSelect.mockResolvedValueOnce([
+        {
+          id: 1,
+          email: email.toLowerCase(),
+          password_hash: sha256Hash,
+        },
+      ]);
 
       dbSafe.safeUpdate.mockResolvedValue(true);
-      
+
       // Mock getUserContextByEmail - authenticateUserByEmail calls it
       // We'll mock it at the module level by requiring and spying
       try {
         const userContext = require('../../src/core/profiles/userContext');
         jest.spyOn(userContext, 'getUserContextByEmail').mockResolvedValue({});
-      } catch (e) {
+      } catch (_error) {
         // If module doesn't exist, that's ok - the function will handle it
       }
-      
+
       // Mock roomManager
       roomManager.getUserRoom = jest.fn().mockResolvedValue(null);
 
@@ -532,10 +539,10 @@ describe('CRITICAL: Co-Parent Sync', () => {
         query: jest
           .fn()
           .mockResolvedValueOnce({ rows: [{ id: 200 }] }) // User insert
-          .mockResolvedValueOnce({}) // Invitation update
-          .mockResolvedValueOnce({}) // Room insert
-          .mockResolvedValueOnce({}) // Room member 1
-          .mockResolvedValueOnce({}) // Room member 2
+          .mockResolvedValueOnce({ rows: [] }) // Invitation update
+          .mockResolvedValueOnce({ rows: [] }) // Room insert
+          .mockResolvedValueOnce({ rows: [] }) // Room member 1
+          .mockResolvedValueOnce({ rows: [] }) // Room member 2
           .mockResolvedValueOnce({ rows: [{ first_name: 'Test', display_name: 'Test User' }] }), // Query for contact name
       };
 
@@ -544,6 +551,13 @@ describe('CRITICAL: Co-Parent Sync', () => {
       });
 
       dbSafe.safeInsertTx.mockResolvedValue(1);
+
+      // Mock createCoParentRoom to return expected structure
+      const roomManager = require('../roomManager');
+      roomManager.createCoParentRoom = jest.fn().mockResolvedValue({
+        roomId: 'coparent-room-123',
+        roomName: 'Inviter & Invitee',
+      });
 
       const result = await auth.registerFromInvitation(params, {});
 
@@ -685,7 +699,7 @@ describe('MONITORING: Self-Presenting Issues', () => {
 
       try {
         await auth.authenticateUserByEmail('test@example.com', 'password');
-      } catch (e) {
+      } catch (_error) {
         // Expected
       }
 
@@ -696,16 +710,26 @@ describe('MONITORING: Self-Presenting Issues', () => {
 
     test('User creation MUST be logged', async () => {
       jest.clearAllMocks();
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      // Mock the logger - need to mock child() method too
+      const { defaultLogger } = require('../src/infrastructure/logging/logger');
+      const mockChildLogger = {
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn(),
+      };
+      const loggerInfoSpy = jest.spyOn(defaultLogger, 'child').mockReturnValue(mockChildLogger);
 
       dbSafe.safeSelect.mockResolvedValue([]);
       dbSafe.safeInsert.mockResolvedValue(1);
 
       await auth.createUserWithEmail('logtest@example.com', 'password', {});
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Created user'));
+      expect(mockChildLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('User created successfully')
+      );
 
-      consoleSpy.mockRestore();
+      loggerInfoSpy.mockRestore();
     });
   });
 });
