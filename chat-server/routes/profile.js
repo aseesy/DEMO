@@ -3,6 +3,18 @@ const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const { handleServiceError } = require('../middleware/errorHandlers');
 const { calculateProfileCompletion } = require('../src/services/profileService');
+const validateSchema = require('./auth/validateSchema');
+const {
+  updateProfileSchema,
+  updatePrivacySettingsSchema,
+  profileQuerySchema,
+} = require('./profile/profileSchemas');
+
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'profile',
+});
 
 // @di-pattern: injected
 // Service will be injected via router.setHelpers
@@ -15,41 +27,57 @@ router.setHelpers = function (helpers) {
 /**
  * GET /api/profile/me
  * Gets the complete profile for the currently authenticated user.
+ * Query params are optional and validated if provided.
  */
-router.get('/me', authenticate, async (req, res) => {
-  try {
-    const { userId } = req.user;
+router.get(
+  '/me',
+  authenticate,
+  validateSchema(profileQuerySchema, { validateQuery: true }),
+  async (req, res) => {
+    try {
+      const { userId } = req.user;
 
-    const profileData = await profileService.getComprehensiveProfile(userId);
-    const privacySettings = await profileService.getPrivacySettings(userId);
+      const profileData = await profileService.getComprehensiveProfile(userId);
+      const privacySettings = await profileService.getPrivacySettings(userId);
 
-    console.log('DEBUG: Returning profile data for user:', userId, profileData);
-    console.log('DEBUG: Returning privacy settings for user:', userId, privacySettings);
+      logger.debug('Returning profile data for user', {
+        userId: userId,
+        profileData: profileData,
+      });
+      logger.debug('Returning privacy settings for user', {
+        userId: userId,
+        privacySettings: privacySettings,
+      });
 
-    res.json({
-      ...profileData,
-      privacySettings,
-      isOwnProfile: true, // Always true for /me endpoint
-    });
-  } catch (error) {
-    handleServiceError(error, res);
+      res.json({
+        ...profileData,
+        privacySettings,
+        isOwnProfile: true, // Always true for /me endpoint
+      });
+    } catch (error) {
+      handleServiceError(error, res);
+    }
   }
-});
+);
 
 /**
  * PUT /api/profile/me
  * Updates the profile for the currently authenticated user.
  */
-router.put('/me', authenticate, async (req, res) => {
+router.put('/me', authenticate, validateSchema(updateProfileSchema), async (req, res) => {
   try {
     const { userId } = req.user;
     const updates = req.body;
 
-    console.log('DEBUG PUT /api/profile/me - userId:', userId);
-    console.log('DEBUG PUT /api/profile/me - updates keys:', Object.keys(updates));
+    logger.debug('DEBUG PUT userId', {
+      userId: userId,
+    });
+    logger.debug('DEBUG PUT updates keys', {
+      Object_keys: Object.keys(updates),
+    });
 
     if (!userId) {
-      console.error('DEBUG PUT /api/profile/me - No userId found in token!');
+      logger.error('DEBUG PUT No userId found in token!');
       return res.status(401).json({ error: 'Invalid authentication token - no user ID.' });
     }
 
@@ -72,31 +100,37 @@ router.put('/me', authenticate, async (req, res) => {
 /**
  * GET /api/profile/privacy/me
  * Gets privacy settings for the currently authenticated user.
+ * Query params are optional and validated if provided.
  */
-router.get('/privacy/me', authenticate, async (req, res) => {
-  try {
-    const { userId } = req.user;
+router.get(
+  '/privacy/me',
+  authenticate,
+  validateSchema(profileQuerySchema, { validateQuery: true }),
+  async (req, res) => {
+    try {
+      const { userId } = req.user;
 
-    const privacySettings = await profileService.getPrivacySettings(userId);
+      const privacySettings = await profileService.getPrivacySettings(userId);
 
-    if (!privacySettings) {
-      // Return default privacy settings
-      return res.json({
-        user_id: userId,
-        personal_visibility: 'shared',
-        work_visibility: 'private',
-        health_visibility: 'private',
-        financial_visibility: 'private',
-        background_visibility: 'shared',
-        field_overrides: '{}',
-      });
+      if (!privacySettings) {
+        // Return default privacy settings
+        return res.json({
+          user_id: userId,
+          personal_visibility: 'shared',
+          work_visibility: 'private',
+          health_visibility: 'private',
+          financial_visibility: 'private',
+          background_visibility: 'shared',
+          field_overrides: '{}',
+        });
+      }
+
+      res.json(privacySettings);
+    } catch (error) {
+      handleServiceError(error, res);
     }
-
-    res.json(privacySettings);
-  } catch (error) {
-    handleServiceError(error, res);
   }
-});
+);
 
 /**
  * PUT /api/profile/privacy/me
@@ -126,7 +160,7 @@ router.get('/preview-coparent-view', authenticate, async (req, res) => {
     const profile = await profileService.getComprehensiveProfile(userId);
 
     // Get privacy settings
-    const settings = await profileService.getPrivacySettings(userId) || {
+    const settings = (await profileService.getPrivacySettings(userId)) || {
       personal_visibility: 'shared',
       work_visibility: 'private',
       health_visibility: 'private',

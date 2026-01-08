@@ -1,0 +1,14 @@
+{
+  "name": "@liaizen/codemods",
+  "version": "1.0.0",
+  "description": "Automated code transformation tools for LiaiZen",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "console-to-logger": "jscodeshift -t transforms/console-to-logger.js"
+  },
+  "devDependencies": {
+    "jscodeshift": "^0.15.1",
+    "jest": "^29.7.0"
+  }
+}
