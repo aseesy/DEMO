@@ -142,7 +142,7 @@ Co-parents pair
 
 ### Development
 
-```bash
+````bash
 # Start all services (frontend + backend)
 npm run dev
 
@@ -161,13 +161,13 @@ cd chat-server && node server.js
    # Check actual .env files (source of truth)
    cat chat-server/.env | grep PORT
    cat chat-client-vite/.env | grep VITE_API_URL
-   
+
    # Check what scripts actually use
    grep "BACKEND_PORT\|PORT" scripts/dev.mjs
-   
+
    # Check config files
    grep "DEFAULT.*PORT" chat-server/config.js
-   ```
+````
 
 2. **If documentation and code conflict:**
    - ❌ DON'T assume documentation is wrong
@@ -188,8 +188,10 @@ cd chat-server && node server.js
 **See `docs/VERIFICATION_PROCESS.md` for detailed verification checklist.**
 
 # Restart services
+
 npm run restart
-```
+
+````
 
 ### Testing
 
@@ -200,7 +202,7 @@ npm run test:coverage
 
 # Run specific test
 cd chat-server && npm test -- auth.routes.test.js
-```
+````
 
 ### Code Quality
 
@@ -262,6 +264,7 @@ Server events: `new_message`, `ai_intervention`, `room_update`
 **⚠️ CRITICAL: The authentication flow is SEALED and SET IN STONE.**
 
 **DO NOT modify these files without explicit approval:**
+
 - `chat-client-vite/src/context/AuthContext.jsx` - FSM state management (SEALED)
 - `chat-client-vite/src/utils/tokenManager.js` - Token storage (single source of truth)
 - `chat-client-vite/src/utils/authQueries.js` - API command functions (CQS pattern)
@@ -270,6 +273,7 @@ Server events: `new_message`, `ai_intervention`, `room_update`
 - `chat-client-vite/src/features/auth/model/useAuthRedirect.js` - Redirect logic
 
 **Rules for AI assistants:**
+
 1. ❌ **NEVER modify** authentication state management logic
 2. ❌ **NEVER change** token storage patterns
 3. ❌ **NEVER alter** FSM (Finite State Machine) auth status flow
@@ -279,13 +283,22 @@ Server events: `new_message`, `ai_intervention`, `room_update`
 7. ✅ **CAN modify** error messages (user-facing text only)
 
 **Before modifying ANY auth file:**
+
 - Check `docs/AUTH_FLOW_SEALED.md` for complete guidelines
 - Verify if the change breaks API contracts
 - Test all state transitions if modifying FSM
 - Coordinate with backend team if changing validation
 
 **These files are production-ready, battle-tested, and locked down.**
-**See `docs/AUTH_FLOW_SEALED.md` for the full sealing document.**
+**Sealed Deployment Files:**
+
+- `vercel.json` - Vercel build configuration (SEALED)
+  - **Location**: Repository root
+  - **Why Sealed**: Standardized after extensive troubleshooting, works with monorepo structure
+  - **Documentation**: `docs/deployment/VERCEL_CONFIG_SEALED.md`
+
+**See `docs/AUTH_FLOW_SEALED.md` for authentication sealing details.**  
+**See `docs/deployment/VERCEL_CONFIG_SEALED.md` for Vercel configuration sealing details.**
 
 ## Environment Variables
 
@@ -325,11 +338,13 @@ Auto-deploy on push to `main` branch for both platforms.
 **When deploying to Vercel, AI assistants MUST follow these rules:**
 
 #### Correct Deployment Target
+
 - **ONLY deploy** `chat-client-vite/` to Vercel project: `chat-client-vite`
 - **Project ID**: `prj_3Iz716ASKvPuwjAcu6oGzs8LUhRr`
 - **Vercel URL**: `chat-client-vite-a3vgwwysr-aseesys-projects.vercel.app`
 
 #### NEVER Deploy To
+
 - ❌ `marketing-site` project (separate project for marketing site only)
 - ❌ Root directory deployments
 - ❌ Any other Vercel project
@@ -339,9 +354,11 @@ Auto-deploy on push to `main` branch for both platforms.
 **AI MUST do ALL of these before deploying:**
 
 1. **Validate project configuration:**
+
    ```bash
    ./scripts/validate-vercel-project.sh
    ```
+
    - Must show: `Project Name: chat-client-vite`
    - Must show: `Project ID: prj_3Iz716ASKvPuwjAcu6oGzs8LUhRr`
    - Must pass all validation checks
@@ -352,17 +369,18 @@ Auto-deploy on push to `main` branch for both platforms.
    - ❌ NEVER deploy from `marketing-site/` directory
 
 3. **Use safe deployment method:**
+
    ```bash
    # Method 1: AI wrapper script (RECOMMENDED FOR AI ASSISTANTS)
    ./scripts/ai-deploy.sh
    # This automatically runs validation and deploys safely
-   
+
    # Method 2: Safe script (RECOMMENDED FOR HUMANS)
    ./scripts/deploy-chat-client-vite.sh
-   
+
    # Method 3: npm script (includes validation)
    cd chat-client-vite && npm run deploy
-   
+
    # Method 4: Manual (with validation first)
    cd chat-client-vite
    ../scripts/validate-vercel-project.sh  # REQUIRED
@@ -370,13 +388,16 @@ Auto-deploy on push to `main` branch for both platforms.
    ```
 
 #### If Deployment Validation Fails
+
 - **STOP immediately** - Do not proceed with deployment
 - **Report error** to user
 - **Fix configuration** before retrying
 - **Verify** correct project is linked: `cd chat-client-vite && vercel link`
 
 #### Deployment Checklist for AI
+
 When user asks to deploy, AI MUST:
+
 - [ ] Check if we're deploying to Vercel
 - [ ] If yes, verify target is `chat-client-vite` project
 - [ ] Run `scripts/validate-vercel-project.sh`
@@ -386,6 +407,7 @@ When user asks to deploy, AI MUST:
 - [ ] Abort if any validation fails
 
 **Reference files:**
+
 - `DEPLOYMENT.md` - Complete deployment guide
 - `chat-client-vite/VERCEL_PROJECT_LOCK.md` - Project configuration reference
 - `scripts/validate-vercel-project.sh` - Validation script

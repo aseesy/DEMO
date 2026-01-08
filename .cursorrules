@@ -1,18 +1,21 @@
 # Cursor AI Rules for LiaiZen Project
 
-## 🔒 SEALED AUTH FILES - CRITICAL WARNING
+## 🔒 SEALED FILES - CRITICAL WARNING
 
-**⚠️ DO NOT MODIFY AUTHENTICATION CORE FILES**
+**⚠️ DO NOT MODIFY SEALED FILES WITHOUT APPROVAL**
 
-These files are SEALED and SET IN STONE. The authentication flow is production-ready and battle-tested.
+These files are SEALED and SET IN STONE. They are production-ready and battle-tested.
 
-### Sealed Files (DO NOT MODIFY):
+### Sealed Authentication Files (DO NOT MODIFY):
 - `chat-client-vite/src/context/AuthContext.jsx` - FSM state management
 - `chat-client-vite/src/utils/tokenManager.js` - Token storage (single source of truth)
 - `chat-client-vite/src/utils/authQueries.js` - API command functions
 - `chat-client-vite/src/utils/validators.js` - Validation logic (must match server)
 - `chat-client-vite/src/features/auth/model/useAuth.js` - Auth hook interface
 - `chat-client-vite/src/features/auth/model/useAuthRedirect.js` - Redirect logic
+
+### Sealed Deployment Files (DO NOT MODIFY):
+- `vercel.json` - Vercel build configuration (monorepo structure)
 
 ### Rules for AI:
 1. ❌ NEVER modify authentication state management logic
@@ -130,12 +133,22 @@ When deploying to Vercel, AI MUST follow these rules:
 
 ## When Modifying Sealed Files
 
-If you MUST modify sealed auth files:
+If you MUST modify sealed files:
+
+**For Authentication Files:**
 1. Check `docs/AUTH_FLOW_SEALED.md` for approval process
 2. Verify API contract compatibility
 3. Test all state transitions
 4. Update documentation
 5. Coordinate with backend team if changing validation
+
+**For Deployment Files (vercel.json):**
+1. Check `docs/deployment/VERCEL_CONFIG_SEALED.md` for approval process
+2. Test build locally with `vercel build`
+3. Test in Vercel preview environment
+4. Verify Root Directory setting in Vercel Dashboard matches configuration
+5. Update documentation
+6. Coordinate with team before changing
 
 **Default action:** If user asks to modify sealed files, WARN them and ask for explicit confirmation.
 
