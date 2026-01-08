@@ -11,6 +11,12 @@ const dbSyncValidator = require('./dbSyncValidator');
 const dbSafe = require('../../../dbSafe');
 const neo4jClient = require('../../infrastructure/database/neo4jClient');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'relationshipSync',
+});
+
 let syncInterval = null;
 let isRunning = false;
 
@@ -28,7 +34,10 @@ async function syncRoomMetadata(roomId) {
   try {
     await dbSyncValidator.syncRelationshipMetadata(roomId);
   } catch (error) {
-    console.error(`❌ Error syncing room metadata for ${roomId}:`, error.message);
+    logger.error('Log message', {
+      arg0: `❌ Error syncing room metadata for ${roomId}:`,
+      message: error.message,
+    });
   }
 }
 
@@ -42,7 +51,7 @@ async function syncAllRelationships() {
   }
 
   isRunning = true;
-  console.log('🔄 Starting relationship metadata sync...');
+  logger.debug('🔄 Starting relationship metadata sync...');
 
   try {
     // Get all co-parent rooms (rooms with exactly 2 members)
@@ -58,7 +67,9 @@ async function syncAllRelationships() {
     const roomsResult = await dbPostgres.query(roomsQuery);
     const roomIds = roomsResult.rows.map(row => row.room_id);
 
-    console.log(`📊 Syncing ${roomIds.length} co-parent relationships...`);
+    logger.debug('Log message', {
+      value: `📊 Syncing ${roomIds.length} co-parent relationships...`,
+    });
 
     // Sync each room (with rate limiting to avoid overwhelming Neo4j)
     let synced = 0;
@@ -72,13 +83,20 @@ async function syncAllRelationships() {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       } catch (error) {
-        console.error(`⚠️  Failed to sync room ${roomId}:`, error.message);
+        logger.error('Log message', {
+          arg0: `⚠️  Failed to sync room ${roomId}:`,
+          message: error.message,
+        });
       }
     }
 
-    console.log(`✅ Relationship metadata sync complete: ${synced}/${roomIds.length} rooms synced`);
+    logger.debug('Log message', {
+      value: `✅ Relationship metadata sync complete: ${synced}/${roomIds.length} rooms synced`,
+    });
   } catch (error) {
-    console.error('❌ Error during relationship metadata sync:', error.message);
+    logger.error('❌ Error during relationship metadata sync', {
+      message: error.message,
+    });
   } finally {
     isRunning = false;
   }
@@ -91,21 +109,25 @@ async function syncAllRelationships() {
  */
 function startSyncJob(intervalMinutes = 60) {
   if (syncInterval) {
-    console.log('⚠️  Sync job already running');
+    logger.debug('⚠️  Sync job already running');
     return;
   }
 
   if (!neo4jClient.isAvailable()) {
-    console.log('ℹ️  Neo4j not configured - sync job not started');
+    logger.debug('ℹ️  Neo4j not configured - sync job not started');
     return;
   }
 
-  console.log(`🔄 Starting relationship metadata sync job (every ${intervalMinutes} minutes)`);
+  logger.debug('Log message', {
+    value: `🔄 Starting relationship metadata sync job (every ${intervalMinutes} minutes)`,
+  });
 
   // Run initial sync after 30 seconds
   setTimeout(() => {
     syncAllRelationships().catch(err => {
-      console.error('⚠️  Initial sync failed:', err.message);
+      logger.error('⚠️  Initial sync failed', {
+        message: err.message,
+      });
     });
   }, 30000);
 
@@ -113,7 +135,9 @@ function startSyncJob(intervalMinutes = 60) {
   syncInterval = setInterval(
     () => {
       syncAllRelationships().catch(err => {
-        console.error('⚠️  Periodic sync failed:', err.message);
+        logger.error('⚠️  Periodic sync failed', {
+          message: err.message,
+        });
       });
     },
     intervalMinutes * 60 * 1000
@@ -127,7 +151,7 @@ function stopSyncJob() {
   if (syncInterval) {
     clearInterval(syncInterval);
     syncInterval = null;
-    console.log('🛑 Relationship metadata sync job stopped');
+    logger.debug('🛑 Relationship metadata sync job stopped');
   }
 }
 

@@ -12,6 +12,12 @@ const dbSafe = require('../../../dbSafe');
 const dbPostgres = require('../../../dbPostgres');
 const neo4jClient = require('../../infrastructure/database/neo4jClient');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'dbSyncValidator',
+});
+
 /**
  * Validate that all co-parent relationships in PostgreSQL exist in Neo4j
  *
@@ -84,7 +90,9 @@ async function validateCoParentRelationships() {
       timestamp: new Date().toISOString(),
     };
   } catch (error) {
-    console.error('❌ Error validating co-parent relationships:', error);
+    logger.error('❌ Error validating co-parent relationships', {
+      error: error,
+    });
     return {
       valid: false,
       error: error.message,
@@ -125,7 +133,9 @@ async function validateUserNodes() {
       timestamp: new Date().toISOString(),
     };
   } catch (error) {
-    console.error('❌ Error validating user nodes:', error);
+    logger.error('❌ Error validating user nodes', {
+      error: error,
+    });
     return {
       valid: false,
       error: error.message,
@@ -186,14 +196,17 @@ async function syncRelationshipMetadata(roomId) {
     });
 
     if (success) {
-      console.log(
-        `✅ Synced relationship metadata for room ${roomId}: ${messageCount} messages, ${interventionCount} interventions`
-      );
+      logger.debug('Log message', {
+        value: `✅ Synced relationship metadata for room ${roomId}: ${messageCount} messages, ${interventionCount} interventions`,
+      });
     }
 
     return success;
   } catch (error) {
-    console.error(`❌ Error syncing relationship metadata for room ${roomId}:`, error.message);
+    logger.error('Log message', {
+      arg0: `❌ Error syncing relationship metadata for room ${roomId}:`,
+      message: error.message,
+    });
     return false;
   }
 }
@@ -233,7 +246,10 @@ async function fixMissingRelationships(discrepancies) {
           } catch (error) {
             // User node might already exist, which is fine
             if (!error.message.includes('already exists')) {
-              console.warn(`⚠️  Could not ensure user node exists for user ${user.id}:`, error.message);
+              logger.warn('Log message', {
+                arg0: `⚠️  Could not ensure user node exists for user ${user.id}:`,
+                message: error.message,
+              });
             }
           }
         }
@@ -254,21 +270,21 @@ async function fixMissingRelationships(discrepancies) {
 
         if (result) {
           fixed++;
-          console.log(
-            `✅ Fixed missing relationship: User ${discrepancy.userId1} <-> User ${discrepancy.userId2} (Room: ${discrepancy.roomId})`
-          );
+          logger.debug('Log message', {
+            value: `✅ Fixed missing relationship: User ${discrepancy.userId1} <-> User ${discrepancy.userId2} (Room: ${discrepancy.roomId})`,
+          });
         } else {
           errors++;
-          console.warn(
-            `⚠️  Failed to fix relationship: User ${discrepancy.userId1} <-> User ${discrepancy.userId2} (Room: ${discrepancy.roomId})`
-          );
+          logger.warn('Log message', {
+            value: `⚠️  Failed to fix relationship: User ${discrepancy.userId1} <-> User ${discrepancy.userId2} (Room: ${discrepancy.roomId})`,
+          });
         }
       } catch (error) {
         errors++;
-        console.error(
-          `❌ Error fixing relationship for room ${discrepancy.roomId}:`,
-          error.message
-        );
+        logger.error('Log message', {
+          arg0: `❌ Error fixing relationship for room ${discrepancy.roomId}:`,
+          message: error.message,
+        });
       }
     }
   }
@@ -287,7 +303,7 @@ async function fixMissingRelationships(discrepancies) {
  * @returns {Promise<Object>} Complete validation results
  */
 async function runFullValidation(autoFix = false) {
-  console.log('🔍 Starting database synchronization validation...');
+  logger.debug('🔍 Starting database synchronization validation...');
 
   const [relationships, users] = await Promise.all([
     validateCoParentRelationships(),
@@ -296,9 +312,11 @@ async function runFullValidation(autoFix = false) {
 
   let fixResults = null;
   if (autoFix && relationships.discrepancies?.length > 0) {
-    console.log(`🔧 Auto-fixing ${relationships.discrepancies.length} missing relationships...`);
+    logger.debug('Log message', {
+      value: `🔧 Auto-fixing ${relationships.discrepancies.length} missing relationships...`,
+    });
     fixResults = await fixMissingRelationships(relationships.discrepancies);
-    
+
     // Re-validate after fixing
     if (fixResults.fixed > 0) {
       const revalidation = await validateCoParentRelationships();
@@ -319,14 +337,20 @@ async function runFullValidation(autoFix = false) {
   };
 
   if (results.overall.hasDiscrepancies) {
-    console.warn('⚠️  Database synchronization validation found discrepancies');
-    console.warn(`   Relationships: ${relationships.discrepancies?.length || 0} issues`);
-    console.warn(`   Users: ${users.missingUsers?.length || 0} issues`);
+    logger.warn('⚠️  Database synchronization validation found discrepancies');
+    logger.warn('Log message', {
+      value: `   Relationships: ${relationships.discrepancies?.length || 0} issues`,
+    });
+    logger.warn('Log message', {
+      value: `   Users: ${users.missingUsers?.length || 0} issues`,
+    });
     if (fixResults) {
-      console.log(`   Fixed: ${fixResults.fixed} relationships, Errors: ${fixResults.errors}`);
+      logger.debug('Log message', {
+        value: `   Fixed: ${fixResults.fixed} relationships, Errors: ${fixResults.errors}`,
+      });
     }
   } else {
-    console.log('✅ Database synchronization validation passed');
+    logger.debug('✅ Database synchronization validation passed');
   }
 
   return results;

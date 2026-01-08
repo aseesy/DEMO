@@ -15,6 +15,12 @@ const pool = require('../../../dbPostgres');
 const ConversationWindower = require('./ConversationWindower');
 const ThreadAnalyzer = require('./ThreadAnalyzer');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'ThreadService',
+});
+
 // Processing debounce per room (30 seconds)
 const PROCESS_DEBOUNCE_MS = 30 * 1000;
 
@@ -108,10 +114,7 @@ class ThreadService {
    */
   async getThreadWithDetails(threadId) {
     // Get thread
-    const threadResult = await pool.query(
-      'SELECT * FROM threads WHERE id = $1',
-      [threadId]
-    );
+    const threadResult = await pool.query('SELECT * FROM threads WHERE id = $1', [threadId]);
 
     if (threadResult.rows.length === 0) {
       return null;
@@ -131,9 +134,7 @@ class ThreadService {
     );
 
     // Get participant names
-    const emails = [
-      ...new Set(messagesResult.rows.map(m => m.user_email).filter(Boolean)),
-    ];
+    const emails = [...new Set(messagesResult.rows.map(m => m.user_email).filter(Boolean))];
     const usersResult =
       emails.length > 0
         ? await pool.query(
@@ -144,8 +145,7 @@ class ThreadService {
 
     const nameMap = {};
     usersResult.rows.forEach(u => {
-      nameMap[u.email] =
-        u.first_name || u.display_name || u.email.split('@')[0];
+      nameMap[u.email] = u.first_name || u.display_name || u.email.split('@')[0];
     });
 
     return {
@@ -194,17 +194,17 @@ class ThreadService {
         await this.processRoom(roomId);
         state.lastProcessed = new Date();
       } catch (error) {
-        console.error(
-          `[ThreadService] Error processing room ${roomId}:`,
-          error
-        );
+        logger.error('Log message', {
+          arg0: `[ThreadService] Error processing room ${roomId}:`,
+          error: error,
+        });
       }
       state.timer = null;
     }, this.debounceMs);
 
-    console.log(
-      `[ThreadService] Queued processing for room ${roomId} (${this.debounceMs}ms debounce)`
-    );
+    logger.debug('Log message', {
+      value: `[ThreadService] Queued processing for room ${roomId} (${this.debounceMs}ms debounce)`,
+    });
   }
 
   /**
@@ -215,11 +215,13 @@ class ThreadService {
    * @returns {Promise<{created: number, updated: number}>}
    */
   async processRoom(roomId, options = {}) {
-    console.log(`[ThreadService] Processing room ${roomId}...`);
+    logger.debug('Log message', {
+      value: `[ThreadService] Processing room ${roomId}...`,
+    });
 
     // Check if AI is available
     if (!this.analyzer.isAvailable()) {
-      console.warn('[ThreadService] AI not available, skipping analysis');
+      logger.warn('[ThreadService] AI not available, skipping analysis');
       return { created: 0, updated: 0, skipped: true };
     }
 
@@ -227,11 +229,13 @@ class ThreadService {
     const windows = await this.windower.getUnprocessedWindows(roomId, 10);
 
     if (windows.length === 0) {
-      console.log('[ThreadService] No unprocessed windows found');
+      logger.debug('[ThreadService] No unprocessed windows found');
       return { created: 0, updated: 0 };
     }
 
-    console.log(`[ThreadService] Found ${windows.length} windows to process`);
+    logger.debug('Log message', {
+      value: `[ThreadService] Found ${windows.length} windows to process`,
+    });
 
     let created = 0;
     let updated = 0;
@@ -255,11 +259,13 @@ class ThreadService {
         }
 
         created++;
-        console.log(
-          `[ThreadService] Created thread: "${analysis.title}" (${analysis.category})`
-        );
+        logger.debug('Log message', {
+          value: `[ThreadService] Created thread: "${analysis.title}" (${analysis.category})`,
+        });
       } catch (error) {
-        console.error('[ThreadService] Error processing window:', error);
+        logger.error('[ThreadService] Error processing window', {
+          error: error,
+        });
       }
     }
 
@@ -276,14 +282,18 @@ class ThreadService {
   async backfillRoom(roomId, options = {}) {
     const { limit = 500, batchSize = 10 } = options;
 
-    console.log(`[ThreadService] Starting backfill for room ${roomId}...`);
+    logger.debug('Log message', {
+      value: `[ThreadService] Starting backfill for room ${roomId}...`,
+    });
 
     // Get all windows
     const windows = await this.windower.getConversationWindows(roomId, {
       limit,
     });
 
-    console.log(`[ThreadService] Found ${windows.length} total windows`);
+    logger.debug('Log message', {
+      value: `[ThreadService] Found ${windows.length} total windows`,
+    });
 
     let created = 0;
 
@@ -294,9 +304,7 @@ class ThreadService {
       for (const window of batch) {
         try {
           // Check if window messages are already threaded
-          const alreadyThreaded = await this._areMessagesThreaded(
-            window.messageIds
-          );
+          const alreadyThreaded = await this._areMessagesThreaded(window.messageIds);
           if (alreadyThreaded) {
             continue;
           }
@@ -314,13 +322,15 @@ class ThreadService {
 
           created++;
         } catch (error) {
-          console.error('[ThreadService] Backfill error:', error.message);
+          logger.error('[ThreadService] Backfill error', {
+            message: error.message,
+          });
         }
       }
 
-      console.log(
-        `[ThreadService] Backfill progress: ${Math.min(i + batchSize, windows.length)}/${windows.length}`
-      );
+      logger.debug('Log message', {
+        value: `[ThreadService] Backfill progress: ${Math.min(i + batchSize, windows.length)}/${windows.length}`,
+      });
 
       // Small delay between batches to avoid rate limits
       if (i + batchSize < windows.length) {
@@ -328,7 +338,9 @@ class ThreadService {
       }
     }
 
-    console.log(`[ThreadService] Backfill complete: ${created} threads created`);
+    logger.debug('Log message', {
+      value: `[ThreadService] Backfill complete: ${created} threads created`,
+    });
     return { processed: windows.length, created };
   }
 

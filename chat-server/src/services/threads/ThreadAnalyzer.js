@@ -16,6 +16,12 @@
 const pool = require('../../../dbPostgres');
 const openaiClient = require('../../core/engine/client');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'ThreadAnalyzer',
+});
+
 // Categories in priority order (highest to lowest)
 const CATEGORIES = [
   'safety',
@@ -71,9 +77,7 @@ class ThreadAnalyzer {
   async analyzeWindow(window) {
     try {
       // Get participant display names
-      const participantNames = await this._getParticipantNames(
-        window.participants
-      );
+      const participantNames = await this._getParticipantNames(window.participants);
 
       // Build and send prompt
       const prompt = this._buildPrompt(window, participantNames);
@@ -91,7 +95,9 @@ class ThreadAnalyzer {
 
       return result;
     } catch (error) {
-      console.error('[ThreadAnalyzer] Error analyzing window:', error);
+      logger.error('[ThreadAnalyzer] Error analyzing window', {
+        error: error,
+      });
       // Return fallback analysis
       return this._generateFallbackAnalysis(window);
     }
@@ -115,9 +121,7 @@ class ThreadAnalyzer {
       .join('\n');
 
     // Build category options string
-    const categoryOptions = CATEGORIES.map(
-      c => `  - ${c}: ${CATEGORY_DESCRIPTIONS[c]}`
-    ).join('\n');
+    const categoryOptions = CATEGORIES.map(c => `  - ${c}: ${CATEGORY_DESCRIPTIONS[c]}`).join('\n');
 
     return `Analyze this co-parenting conversation and extract structured information.
 
@@ -172,14 +176,14 @@ OUTPUT FORMAT (valid JSON only):
     try {
       parsed = JSON.parse(content);
     } catch (e) {
-      console.error('[ThreadAnalyzer] Failed to parse JSON:', content);
+      logger.error('[ThreadAnalyzer] Failed to parse JSON', {
+        content: content,
+      });
       throw new Error('Invalid JSON response from AI');
     }
 
     // Validate and normalize category
-    const category = CATEGORIES.includes(parsed.category)
-      ? parsed.category
-      : 'logistics';
+    const category = CATEGORIES.includes(parsed.category) ? parsed.category : 'logistics';
 
     // Validate title
     const title =
@@ -215,15 +219,11 @@ OUTPUT FORMAT (valid JSON only):
       }));
 
     // Validate key message IDs
-    const keyMessageIds = (parsed.key_message_ids || []).filter(id =>
-      validMessageIds.has(id)
-    );
+    const keyMessageIds = (parsed.key_message_ids || []).filter(id => validMessageIds.has(id));
 
     // Validate confidence
     const confidence =
-      typeof parsed.confidence === 'number' &&
-      parsed.confidence >= 0 &&
-      parsed.confidence <= 1
+      typeof parsed.confidence === 'number' && parsed.confidence >= 0 && parsed.confidence <= 1
         ? parsed.confidence
         : 0.8;
 
@@ -248,7 +248,10 @@ OUTPUT FORMAT (valid JSON only):
    */
   _generateFallbackAnalysis(window) {
     // Try to detect category from message content
-    const allText = window.messages.map(m => m.text).join(' ').toLowerCase();
+    const allText = window.messages
+      .map(m => m.text)
+      .join(' ')
+      .toLowerCase();
     let category = 'logistics';
 
     for (const cat of CATEGORIES) {
@@ -260,10 +263,17 @@ OUTPUT FORMAT (valid JSON only):
     }
 
     // Try to extract key topic from first few messages
-    const firstMessages = window.messages.slice(0, 5).map(m => m.text).join(' ');
+    const firstMessages = window.messages
+      .slice(0, 5)
+      .map(m => m.text)
+      .join(' ');
     // Look for common patterns: names, events, topics
-    const nameMatch = firstMessages.match(/\b(vira|thomas|celine|emma|school|doctor|pickup|dropoff)\b/i);
-    const topicHint = nameMatch ? nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1) : null;
+    const nameMatch = firstMessages.match(
+      /\b(vira|thomas|celine|emma|school|doctor|pickup|dropoff)\b/i
+    );
+    const topicHint = nameMatch
+      ? nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1)
+      : null;
 
     const date = new Date(window.firstMessageAt).toLocaleDateString('en-US', {
       month: 'short',
@@ -310,13 +320,14 @@ OUTPUT FORMAT (valid JSON only):
 
       const nameMap = {};
       result.rows.forEach(u => {
-        nameMap[u.email] =
-          u.first_name || u.display_name || u.email.split('@')[0];
+        nameMap[u.email] = u.first_name || u.display_name || u.email.split('@')[0];
       });
 
       return emails.map(email => nameMap[email] || email.split('@')[0]);
     } catch (error) {
-      console.error('[ThreadAnalyzer] Error getting participant names:', error);
+      logger.error('[ThreadAnalyzer] Error getting participant names', {
+        error: error,
+      });
       return emails.map(e => e.split('@')[0]);
     }
   }
@@ -328,9 +339,7 @@ OUTPUT FORMAT (valid JSON only):
   _getSenderDisplayName(email, participantNames) {
     // Simple mapping - first participant is usually "Mom", second is "Dad"
     // But use actual names from the lookup
-    const index = participantNames.findIndex(
-      (_, i) => i < participantNames.length
-    );
+    const index = participantNames.findIndex((_, i) => i < participantNames.length);
     return email ? email.split('@')[0] : 'Unknown';
   }
 }

@@ -9,6 +9,12 @@
 
 const { BaseService } = require('../BaseService');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'onboardingService',
+});
+
 class OnboardingService extends BaseService {
   constructor() {
     super(null, null);
@@ -30,7 +36,7 @@ class OnboardingService extends BaseService {
    */
   async checkUserHasCoParent(userId) {
     if (!this.dbSafe) {
-      console.error('OnboardingService: dbSafe not initialized');
+      logger.error('OnboardingService: dbSafe not initialized');
       return false;
     }
 
@@ -65,7 +71,9 @@ class OnboardingService extends BaseService {
 
       return hasCoparentContact;
     } catch (error) {
-      console.error('Error checking co-parent status:', error);
+      logger.error('Error checking co-parent status', {
+        error: error,
+      });
       return false;
     }
   }
@@ -76,7 +84,7 @@ class OnboardingService extends BaseService {
    */
   async autoCompleteOnboardingTasks(userId) {
     if (!this.dbSafe) {
-      console.error('OnboardingService: dbSafe not initialized');
+      logger.error('OnboardingService: dbSafe not initialized');
       return;
     }
 
@@ -139,11 +147,15 @@ class OnboardingService extends BaseService {
             { status: 'completed', completed_at: now, updated_at: now },
             { id: task.id }
           );
-          console.log(`[OnboardingService] Auto-completed task "${task.title}" for user ${userId}`);
+          logger.debug('Log message', {
+            value: `[OnboardingService] Auto-completed task "${task.title}" for user ${userId}`,
+          });
         }
       }
     } catch (error) {
-      console.error('Error in autoCompleteOnboardingTasks:', error);
+      logger.error('Error in autoCompleteOnboardingTasks', {
+        error: error,
+      });
     }
   }
 
@@ -153,7 +165,7 @@ class OnboardingService extends BaseService {
    */
   async backfillOnboardingTasks(userId) {
     if (!this.dbSafe) {
-      console.error('OnboardingService: dbSafe not initialized');
+      logger.error('OnboardingService: dbSafe not initialized');
       return;
     }
 
@@ -211,7 +223,9 @@ class OnboardingService extends BaseService {
         }
       }
     } catch (error) {
-      console.error('Error in backfillOnboardingTasks:', error);
+      logger.error('Error in backfillOnboardingTasks', {
+        error: error,
+      });
     }
   }
 }

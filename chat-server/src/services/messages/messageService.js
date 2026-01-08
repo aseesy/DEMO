@@ -13,6 +13,12 @@ const { buildUserObject } = require('../../../socketHandlers/utils');
 const { withRetry } = require('../../../utils/dbRetry');
 const dbPostgres = require('../../../dbPostgres');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'messageService',
+});
+
 class MessageService {
   constructor() {
     this.repository = new MessageRepository();
@@ -115,25 +121,29 @@ class MessageService {
     if (messageData.threadId || messageData.thread_id) {
       const threadId = messageData.threadId || messageData.thread_id;
       const roomId = messageData.roomId || messageData.room_id;
-      
+
       if (roomId) {
         // Verify thread exists and belongs to same room
         const threadResult = await dbPostgres.query(
           'SELECT id, room_id, is_archived FROM threads WHERE id = $1',
           [threadId]
         );
-        
+
         if (threadResult.rows.length === 0) {
           throw new Error(`Thread not found: ${threadId}`);
         }
-        
+
         const thread = threadResult.rows[0];
         if (thread.room_id !== roomId) {
-          throw new Error(`Thread belongs to different room. Thread room: ${thread.room_id}, Message room: ${roomId}`);
+          throw new Error(
+            `Thread belongs to different room. Thread room: ${thread.room_id}, Message room: ${roomId}`
+          );
         }
-        
+
         if (thread.is_archived === 1) {
-          throw new Error('Cannot send message to archived thread. Please reopen the thread first.');
+          throw new Error(
+            'Cannot send message to archived thread. Please reopen the thread first.'
+          );
         }
       }
     }
@@ -345,7 +355,9 @@ class MessageService {
       const result = await dbPostgres.query(query, [roomId]);
       return result.rows;
     } catch (error) {
-      console.error('[MessageService] Error getting room members:', error);
+      logger.error('[MessageService] Error getting room members', {
+        error: error,
+      });
       return [];
     }
   }

@@ -10,13 +10,18 @@
 const openaiClient = require('../../../openaiClient');
 const { normalizeCategory, getCategoryKeywords } = require('./threadCategories');
 const { extractDistinctiveKeywords } = require('./threadKeywords');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'threadAnalysis',
+});
 
 // Neo4j client for semantic threading
 let neo4jClient = null;
 try {
   neo4jClient = require('../../infrastructure/database/neo4jClient');
 } catch (err) {
-  console.warn('⚠️  Neo4j client not available - semantic threading will use fallback');
+  logger.warn('⚠️  Neo4j client not available - semantic threading will use fallback');
 }
 
 /**
@@ -103,7 +108,9 @@ Respond in JSON:
 
     return null;
   } catch (error) {
-    console.error('Error suggesting thread:', error);
+    logger.error('Error suggesting thread', {
+      error: error,
+    });
     return null;
   }
 }
@@ -125,7 +132,7 @@ Respond in JSON:
  */
 async function analyzeConversationHistory(roomId, limit = 100, dependencies = {}) {
   if (!process.env.OPENAI_API_KEY) {
-    console.warn('OpenAI API key not configured, skipping conversation analysis');
+    logger.warn('OpenAI API key not configured, skipping conversation analysis');
     return {
       suggestions: [],
       createdThreads: [],
@@ -141,9 +148,9 @@ async function analyzeConversationHistory(roomId, limit = 100, dependencies = {}
   } = dependencies;
 
   try {
-    console.log(
-      `[threadManager] Starting conversation analysis for room: ${roomId}, limit: ${limit}`
-    );
+    logger.debug('Log message', {
+      value: `[threadManager] Starting conversation analysis for room: ${roomId}, limit: ${limit}`,
+    });
     const messageStore = require('../../../messageStore');
 
     // Get recent messages for the room (excluding system messages)
@@ -166,18 +173,18 @@ async function analyzeConversationHistory(roomId, limit = 100, dependencies = {}
 
     if (filteredMessages.length < 5) {
       // Not enough messages to analyze
-      console.log(
-        `[threadManager] Not enough messages to analyze (${filteredMessages.length} < 5)`
-      );
+      logger.debug('Log message', {
+        value: `[threadManager] Not enough messages to analyze (${filteredMessages.length} < 5)`,
+      });
       return {
         suggestions: [],
         createdThreads: [],
       };
     }
 
-    console.log(
-      `[threadManager] Analyzing ${filteredMessages.length} messages for room: ${roomId}`
-    );
+    logger.debug('Log message', {
+      value: `[threadManager] Analyzing ${filteredMessages.length} messages for room: ${roomId}`,
+    });
 
     // Get existing threads to avoid duplicates
     const existingThreads = await getThreadsForRoom(roomId, false);
@@ -284,24 +291,39 @@ Only include conversations with confidence >= 60 and at least 3 related messages
 
     // Automatically create threads from suggestions using semantic search
     const createdThreads = [];
-    console.log(`[threadManager] Processing ${validSuggestions.length} valid suggestions`);
+    logger.debug('Log message', {
+      value: `[threadManager] Processing ${validSuggestions.length} valid suggestions`,
+    });
 
     for (const suggestion of validSuggestions) {
       try {
         let matchingMessages = [];
-        console.log(
-          `[threadManager] Processing suggestion: "${suggestion.title}" (${suggestion.messageCount} messages)`
-        );
+        logger.debug('Log message', {
+          value: `[threadManager] Processing suggestion: "${suggestion.title}" (${suggestion.messageCount} messages)`,
+        });
 
         // Use Neo4j semantic search if available, otherwise fall back to keyword matching
         if (neo4jClient && neo4jClient.isAvailable()) {
           try {
             // Generate embedding for the thread title
             const threadEmbeddings = require('./threadEmbeddings');
-            const threadEmbedding = await threadEmbeddings.generateEmbeddingForText(suggestion.title);
+
+            const {
+              defaultLogger: defaultLogger,
+            } = require('../../../src/infrastructure/logging/logger');
+
+            const logger = defaultLogger.child({
+              module: 'threadAnalysis',
+            });
+
+            const threadEmbedding = await threadEmbeddings.generateEmbeddingForText(
+              suggestion.title
+            );
 
             if (threadEmbedding) {
-              console.log(`[threadManager] Using Neo4j semantic search for "${suggestion.title}"`);
+              logger.debug('Log message', {
+                value: `[threadManager] Using Neo4j semantic search for "${suggestion.title}"`,
+              });
               // Use cosine similarity function to find similar messages
               const similarMessages = await neo4jClient.findSimilarMessages(
                 threadEmbedding,
@@ -310,30 +332,30 @@ Only include conversations with confidence >= 60 and at least 3 related messages
                 0.7 // 70% similarity threshold
               );
 
-              console.log(
-                `[threadManager] Found ${similarMessages.length} similar messages via Neo4j`
-              );
+              logger.debug('Log message', {
+                value: `[threadManager] Found ${similarMessages.length} similar messages via Neo4j`,
+              });
               // Map Neo4j results to message objects
               const messageIds = similarMessages.map(m => m.messageId);
               matchingMessages = filteredMessages.filter(
                 msg => messageIds.includes(msg.id) && !msg.threadId
               );
             } else {
-              console.warn(
-                `[threadManager] Failed to generate embedding for "${suggestion.title}", using keyword fallback`
-              );
+              logger.warn('Log message', {
+                value: `[threadManager] Failed to generate embedding for "${suggestion.title}", using keyword fallback`,
+              });
             }
           } catch (neo4jError) {
-            console.warn(
-              `⚠️  Neo4j semantic search failed for "${suggestion.title}", using keyword fallback:`,
-              neo4jError.message
-            );
+            logger.warn('Log message', {
+              arg0: `⚠️  Neo4j semantic search failed for "${suggestion.title}", using keyword fallback:`,
+              message: neo4jError.message,
+            });
             // Fall through to keyword matching
           }
         } else {
-          console.log(
-            `[threadManager] Neo4j not available, using keyword matching for "${suggestion.title}"`
-          );
+          logger.debug('Log message', {
+            value: `[threadManager] Neo4j not available, using keyword matching for "${suggestion.title}"`,
+          });
         }
 
         // Fallback to keyword matching if Neo4j not available or failed
@@ -345,17 +367,21 @@ Only include conversations with confidence >= 60 and at least 3 related messages
           // Combine and deduplicate
           const allKeywords = [...new Set([...topicKeywords, ...reasoningKeywords])];
 
-          console.log(`[threadManager] Keyword matching for "${suggestion.title}":`, {
-            topicKeywords,
-            reasoningKeywords: reasoningKeywords.slice(0, 5), // Log first 5
-            totalDistinctive: allKeywords.length,
+          logger.debug('Log message', {
+            arg0: `[threadManager] Keyword matching for "${suggestion.title}":`,
+
+            ...{
+              topicKeywords,
+              reasoningKeywords: reasoningKeywords.slice(0, 5), // Log first 5
+              totalDistinctive: allKeywords.length,
+            },
           });
 
           // Skip if no distinctive keywords found
           if (allKeywords.length === 0) {
-            console.log(
-              `[threadManager] No distinctive keywords for "${suggestion.title}", skipping`
-            );
+            logger.debug('Log message', {
+              value: `[threadManager] No distinctive keywords for "${suggestion.title}", skipping`,
+            });
             continue;
           }
 
@@ -379,16 +405,16 @@ Only include conversations with confidence >= 60 and at least 3 related messages
           });
         }
 
-        console.log(
-          `[threadManager] Found ${matchingMessages.length} matching messages for "${suggestion.title}"`
-        );
+        logger.debug('Log message', {
+          value: `[threadManager] Found ${matchingMessages.length} matching messages for "${suggestion.title}"`,
+        });
 
         if (matchingMessages.length >= 3) {
           // Create thread with category
           const threadCategory = normalizeCategory(suggestion.category);
-          console.log(
-            `[threadManager] Creating thread "${suggestion.title}" [${threadCategory}] with ${matchingMessages.length} messages`
-          );
+          logger.debug('Log message', {
+            value: `[threadManager] Creating thread "${suggestion.title}" [${threadCategory}] with ${matchingMessages.length} messages`,
+          });
           const threadId = await createThread(
             roomId,
             suggestion.title,
@@ -412,40 +438,47 @@ Only include conversations with confidence >= 60 and at least 3 related messages
           }
 
           if (addedCount > 0) {
-            console.log(
-              `[threadManager] ✅ Created thread "${suggestion.title}" with ${addedCount} messages`
-            );
+            logger.debug('Log message', {
+              value: `[threadManager] ✅ Created thread "${suggestion.title}" with ${addedCount} messages`,
+            });
             createdThreads.push({
               threadId,
               title: suggestion.title,
               messageCount: addedCount,
             });
           } else {
-            console.warn(
-              `[threadManager] ⚠️  No messages added to thread "${suggestion.title}", archiving empty thread`
-            );
+            logger.warn('Log message', {
+              value: `[threadManager] ⚠️  No messages added to thread "${suggestion.title}", archiving empty thread`,
+            });
             // If no messages were added, delete the empty thread
             await archiveThread(threadId, true);
           }
         } else {
-          console.log(
-            `[threadManager] ⚠️  Not enough matching messages (${matchingMessages.length} < 3) for "${suggestion.title}"`
-          );
+          logger.debug('Log message', {
+            value: `[threadManager] ⚠️  Not enough matching messages (${matchingMessages.length} < 3) for "${suggestion.title}"`,
+          });
         }
       } catch (error) {
-        console.error(`[threadManager] ❌ Error creating thread for "${suggestion.title}":`, error);
+        logger.error('Log message', {
+          arg0: `[threadManager] ❌ Error creating thread for "${suggestion.title}":`,
+          error: error,
+        });
         // Continue with other suggestions even if one fails
       }
     }
 
-    console.log(`[threadManager] Analysis complete: ${createdThreads.length} threads created`);
+    logger.debug('Log message', {
+      value: `[threadManager] Analysis complete: ${createdThreads.length} threads created`,
+    });
 
     return {
       suggestions: validSuggestions,
       createdThreads,
     };
   } catch (error) {
-    console.error('Error analyzing conversation history:', error);
+    logger.error('Error analyzing conversation history', {
+      error: error,
+    });
     return {
       suggestions: [],
       createdThreads: [],
@@ -523,7 +556,9 @@ async function autoAssignMessageToThread(message, getThreadsForRoom, addMessageT
       .sort((a, b) => b.score - a.score)[0];
 
     if (bestMatch) {
-      console.log(`[threadAnalysis] Auto-assigning message to thread "${bestMatch.threadTitle}" (score: ${bestMatch.score})`);
+      logger.debug('Log message', {
+        value: `[threadAnalysis] Auto-assigning message to thread "${bestMatch.threadTitle}" (score: ${bestMatch.score})`,
+      });
 
       // Actually assign the message to the thread
       await addMessageToThread(message.id, bestMatch.threadId);
@@ -538,7 +573,9 @@ async function autoAssignMessageToThread(message, getThreadsForRoom, addMessageT
 
     return null;
   } catch (error) {
-    console.error('[threadAnalysis] Error auto-assigning message to thread:', error);
+    logger.error('[threadAnalysis] Error auto-assigning message to thread', {
+      error: error,
+    });
     return null;
   }
 }

@@ -18,12 +18,18 @@
 const dbSafe = require('../../../dbSafe');
 const { buildUserObject } = require('../../../socketHandlers/utils');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'threadMessages',
+});
+
 // Neo4j client for semantic threading
 let neo4jClient = null;
 try {
   neo4jClient = require('../../infrastructure/database/neo4jClient');
 } catch (err) {
-  console.warn('⚠️  Neo4j client not available - semantic threading will use fallback');
+  logger.warn('⚠️  Neo4j client not available - semantic threading will use fallback');
 }
 
 /**
@@ -64,7 +70,9 @@ async function addMessageToThread(messageId, threadId) {
       try {
         await neo4jClient.linkMessageToThread(messageId, threadId);
       } catch (err) {
-        console.warn('⚠️  Failed to link message to thread in Neo4j (non-fatal):', err.message);
+        logger.warn('⚠️  Failed to link message to thread in Neo4j (non-fatal)', {
+          message: err.message,
+        });
       }
     }
 
@@ -75,7 +83,9 @@ async function addMessageToThread(messageId, threadId) {
 
     return { success: true, messageCount, lastMessageAt, sequenceNumber };
   } catch (error) {
-    console.error('Error adding message to thread:', error);
+    logger.error('Error adding message to thread', {
+      error: error,
+    });
     return { success: false, messageCount: 0, lastMessageAt: null, sequenceNumber: null };
   }
 }
@@ -115,7 +125,9 @@ async function removeMessageFromThread(messageId) {
 
     return { success: true, threadId, messageCount };
   } catch (error) {
-    console.error('Error removing message from thread:', error);
+    logger.error('Error removing message from thread', {
+      error: error,
+    });
     return { success: false, threadId: null, messageCount: 0 };
   }
 }
@@ -178,7 +190,9 @@ async function getThreadMessages(threadId, limit = 50, offset = 0) {
       };
     });
   } catch (error) {
-    console.error('Error getting thread messages:', error);
+    logger.error('Error getting thread messages', {
+      error: error,
+    });
     return [];
   }
 }

@@ -10,6 +10,12 @@
 const { BaseService } = require('../BaseService');
 const { NotFoundError, AuthorizationError, ValidationError } = require('../errors');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'cleanupService',
+});
+
 class CleanupService extends BaseService {
   constructor() {
     super(null); // Operates on multiple tables
@@ -53,7 +59,9 @@ class CleanupService extends BaseService {
       messages: messagesResult.length,
     };
 
-    console.log('✅ Cleanup completed:', deleted);
+    logger.debug('✅ Cleanup completed', {
+      deleted: deleted,
+    });
 
     return {
       success: true,
@@ -73,10 +81,7 @@ class CleanupService extends BaseService {
     }
 
     // Check if user exists
-    const user = await this.queryOne(
-      `SELECT id, username FROM users WHERE id = $1`,
-      [userId]
-    );
+    const user = await this.queryOne(`SELECT id, username FROM users WHERE id = $1`, [userId]);
 
     if (!user) {
       throw new NotFoundError('User', userId);
@@ -96,7 +101,9 @@ class CleanupService extends BaseService {
       `DELETE FROM messages WHERE room_id IS NOT NULL AND room_id NOT IN (SELECT id FROM rooms)`
     );
 
-    console.log(`✅ User ${username} (ID: ${userId}) deleted successfully`);
+    logger.debug('Log message', {
+      value: `✅ User ${username} (ID: ${userId}) deleted successfully`,
+    });
 
     return {
       success: true,
@@ -125,10 +132,9 @@ class CleanupService extends BaseService {
       const userIds = room.user_ids.split(',').map(id => parseInt(id));
 
       // Get user info for all members
-      const users = await this.query(
-        `SELECT id, username, email FROM users WHERE id = ANY($1)`,
-        [userIds]
-      );
+      const users = await this.query(`SELECT id, username, email FROM users WHERE id = ANY($1)`, [
+        userIds,
+      ]);
 
       // Create contacts for each pair
       for (let i = 0; i < users.length; i++) {
@@ -194,13 +200,14 @@ class CleanupService extends BaseService {
     };
 
     // Find test user
-    const testUser = await this.queryOne(
-      `SELECT id, username, email FROM users WHERE email = $1`,
-      [testEmail]
-    );
+    const testUser = await this.queryOne(`SELECT id, username, email FROM users WHERE email = $1`, [
+      testEmail,
+    ]);
 
     if (testUser) {
-      console.log(`🧹 Cleaning up test user: ${testUser.email}`);
+      logger.debug('Log message', {
+        value: `🧹 Cleaning up test user: ${testUser.email}`,
+      });
 
       // Delete contacts owned by test user
       const contactsDeleted = await this.query(
@@ -252,7 +259,9 @@ class CleanupService extends BaseService {
       results.usersDeleted = 1;
     }
 
-    console.log('✅ Test cleanup complete:', results);
+    logger.debug('✅ Test cleanup complete', {
+      results: results,
+    });
     return { success: true, results };
   }
 
@@ -269,22 +278,20 @@ class CleanupService extends BaseService {
     }
 
     // Get user info
-    const parentA = await this.queryOne(
-      `SELECT id, username, email FROM users WHERE id = $1`,
-      [userAId]
-    );
-    const parentB = await this.queryOne(
-      `SELECT id, username, email FROM users WHERE id = $1`,
-      [userBId]
-    );
+    const parentA = await this.queryOne(`SELECT id, username, email FROM users WHERE id = $1`, [
+      userAId,
+    ]);
+    const parentB = await this.queryOne(`SELECT id, username, email FROM users WHERE id = $1`, [
+      userBId,
+    ]);
 
     if (!parentA || !parentB) {
       throw new NotFoundError('One or both users');
     }
 
-    console.log(
-      `🔧 Force connecting ${parentA.username} (${parentA.id}) and ${parentB.username} (${parentB.id})`
-    );
+    logger.debug('Log message', {
+      value: `🔧 Force connecting ${parentA.username} (${parentA.id}) and ${parentB.username} (${parentB.id})`,
+    });
 
     // Create the shared room
     const room = await createCoParentRoom(
@@ -368,9 +375,9 @@ class CleanupService extends BaseService {
 
     for (const pairing of pairingsWithoutRoom) {
       try {
-        console.log(
-          `🔧 Repairing pairing ${pairing.id}: ${pairing.parent_a_username} & ${pairing.parent_b_username}`
-        );
+        logger.debug('Log message', {
+          value: `🔧 Repairing pairing ${pairing.id}: ${pairing.parent_a_username} & ${pairing.parent_b_username}`,
+        });
 
         // Create the room
         const room = await createCoParentRoom(
@@ -381,15 +388,20 @@ class CleanupService extends BaseService {
         );
 
         // Update the pairing with the room ID
-        await this.query(
-          `UPDATE pairing_sessions SET shared_room_id = $1 WHERE id = $2`,
-          [room.roomId, pairing.id]
-        );
+        await this.query(`UPDATE pairing_sessions SET shared_room_id = $1 WHERE id = $2`, [
+          room.roomId,
+          pairing.id,
+        ]);
 
         results.roomsCreated++;
-        console.log(`✅ Created room ${room.roomId} for pairing ${pairing.id}`);
+        logger.debug('Log message', {
+          value: `✅ Created room ${room.roomId} for pairing ${pairing.id}`,
+        });
       } catch (error) {
-        console.error(`❌ Failed to repair pairing ${pairing.id}:`, error);
+        logger.error('Log message', {
+          arg0: `❌ Failed to repair pairing ${pairing.id}:`,
+          error: error,
+        });
         results.errors.push({ pairingId: pairing.id, error: error.message });
       }
     }

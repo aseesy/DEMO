@@ -11,12 +11,18 @@
 const dbSafe = require('../../../dbSafe');
 const { normalizeCategory } = require('./threadCategories');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'threadOperations',
+});
+
 // Neo4j client for semantic threading
 let neo4jClient = null;
 try {
   neo4jClient = require('../../infrastructure/database/neo4jClient');
 } catch (err) {
-  console.warn('⚠️  Neo4j client not available - semantic threading will use fallback');
+  logger.warn('⚠️  Neo4j client not available - semantic threading will use fallback');
 }
 
 /**
@@ -72,13 +78,17 @@ async function createThread(
       try {
         await neo4jClient.createOrUpdateThreadNode(threadId, roomId, title);
       } catch (err) {
-        console.warn('⚠️  Failed to create Neo4j thread node (non-fatal):', err.message);
+        logger.warn('⚠️  Failed to create Neo4j thread node (non-fatal)', {
+          message: err.message,
+        });
       }
     }
 
     return threadId;
   } catch (error) {
-    console.error('Error creating thread:', error);
+    logger.error('Error creating thread', {
+      error: error,
+    });
     throw error;
   }
 }
@@ -92,7 +102,9 @@ async function getThread(threadId) {
     const threads = dbSafe.parseResult(result);
     return threads.length > 0 ? threads[0] : null;
   } catch (error) {
-    console.error('Error getting thread:', error);
+    logger.error('Error getting thread', {
+      error: error,
+    });
     return null;
   }
 }
@@ -115,7 +127,9 @@ async function getThreadsForRoom(roomId, includeArchived = false, limit = 10) {
 
     return dbSafe.parseResult(result);
   } catch (error) {
-    console.error('Error getting threads:', error);
+    logger.error('Error getting threads', {
+      error: error,
+    });
     return [];
   }
 }
@@ -137,7 +151,9 @@ async function updateThreadTitle(threadId, newTitle) {
     // PostgreSQL auto-commits, no manual save needed
     return true;
   } catch (error) {
-    console.error('Error updating thread title:', error);
+    logger.error('Error updating thread title', {
+      error: error,
+    });
     return false;
   }
 }
@@ -163,7 +179,9 @@ async function updateThreadCategory(threadId, newCategory) {
 
     return true;
   } catch (error) {
-    console.error('Error updating thread category:', error);
+    logger.error('Error updating thread category', {
+      error: error,
+    });
     return false;
   }
 }
@@ -185,7 +203,9 @@ async function archiveThread(threadId, archived = true) {
     // PostgreSQL auto-commits, no manual save needed
     return true;
   } catch (error) {
-    console.error('Error archiving thread:', error);
+    logger.error('Error archiving thread', {
+      error: error,
+    });
     return false;
   }
 }

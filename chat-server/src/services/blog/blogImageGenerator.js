@@ -12,6 +12,12 @@ const https = require('https');
 const http = require('http');
 const { createWriteStream } = require('fs');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'blogImageGenerator',
+});
+
 // Try to load sharp for image optimization
 let sharp = null;
 try {
@@ -65,8 +71,12 @@ async function generateWithDALLE(prompt, size = 'header') {
   const client = getOpenAIClient();
   const imageSize = IMAGE_CONFIG.DALL_E.sizes[size] || IMAGE_CONFIG.DALL_E.sizes.header;
 
-  console.log(`[blogImageGenerator] Generating ${size} image with DALL-E 3...`);
-  console.log(`[blogImageGenerator] Prompt: ${prompt.substring(0, 100)}...`);
+  logger.debug('Log message', {
+    value: `[blogImageGenerator] Generating ${size} image with DALL-E 3...`,
+  });
+  logger.debug('Log message', {
+    value: `[blogImageGenerator] Prompt: ${prompt.substring(0, 100)}...`,
+  });
 
   try {
     const response = await client.images.generate({
@@ -81,14 +91,18 @@ async function generateWithDALLE(prompt, size = 'header') {
     const imageUrl = response.data[0].url;
     const revisedPrompt = response.data[0].revised_prompt || prompt;
 
-    console.log(`[blogImageGenerator] ✅ Image generated successfully`);
+    logger.debug('Log message', {
+      value: `[blogImageGenerator] ✅ Image generated successfully`,
+    });
     return {
       url: imageUrl,
       revised_prompt: revisedPrompt,
       provider: 'dall-e-3',
     };
   } catch (error) {
-    console.error('[blogImageGenerator] ❌ DALL-E 3 generation failed:', error);
+    logger.error('[blogImageGenerator] ❌ DALL-E 3 generation failed', {
+      error: error,
+    });
     throw error;
   }
 }
@@ -107,8 +121,12 @@ async function generateWithFlux(prompt, size = 'header') {
 
   const dimensions = IMAGE_CONFIG.FLUX.sizes[size] || IMAGE_CONFIG.FLUX.sizes.header;
 
-  console.log(`[blogImageGenerator] Generating ${size} image with Flux API...`);
-  console.log(`[blogImageGenerator] Prompt: ${prompt.substring(0, 100)}...`);
+  logger.debug('Log message', {
+    value: `[blogImageGenerator] Generating ${size} image with Flux API...`,
+  });
+  logger.debug('Log message', {
+    value: `[blogImageGenerator] Prompt: ${prompt.substring(0, 100)}...`,
+  });
 
   try {
     // Use Node.js built-in fetch (available in Node 18+)
@@ -144,7 +162,9 @@ async function generateWithFlux(prompt, size = 'header') {
       provider: 'flux',
     };
   } catch (error) {
-    console.error('[blogImageGenerator] ❌ Flux API generation failed:', error);
+    logger.error('[blogImageGenerator] ❌ Flux API generation failed', {
+      error: error,
+    });
     throw error;
   }
 }
@@ -175,14 +195,16 @@ async function downloadAndSaveImage(imageUrl, filePath) {
         },
       };
 
-      console.log(
-        `[blogImageGenerator] Downloading from: ${url.hostname}${url.pathname.substring(0, 50)}...`
-      );
+      logger.debug('Log message', {
+        value: `[blogImageGenerator] Downloading from: ${url.hostname}${url.pathname.substring(0, 50)}...`,
+      });
 
       const request = protocol.request(options, response => {
         // Handle redirects (301, 302, etc.)
         if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-          console.log(`[blogImageGenerator] Following redirect to: ${response.headers.location}`);
+          logger.debug('Log message', {
+            value: `[blogImageGenerator] Following redirect to: ${response.headers.location}`,
+          });
           request.destroy();
           return downloadAndSaveImage(response.headers.location, filePath)
             .then(resolve)
@@ -196,9 +218,13 @@ async function downloadAndSaveImage(imageUrl, filePath) {
             errorBody += chunk.toString();
           });
           response.on('end', () => {
-            console.error(`[blogImageGenerator] ❌ Download failed: ${response.statusCode}`);
+            logger.error('Log message', {
+              value: `[blogImageGenerator] ❌ Download failed: ${response.statusCode}`,
+            });
             if (errorBody) {
-              console.error(`[blogImageGenerator] Error response: ${errorBody.substring(0, 500)}`);
+              logger.error('Log message', {
+                value: `[blogImageGenerator] Error response: ${errorBody.substring(0, 500)}`,
+              });
             }
             reject(
               new Error(
@@ -214,19 +240,25 @@ async function downloadAndSaveImage(imageUrl, filePath) {
 
         fileStream.on('finish', async () => {
           fileStream.close();
-          console.log(`[blogImageGenerator] ✅ Image downloaded to ${filePath}`);
+          logger.debug('Log message', {
+            value: `[blogImageGenerator] ✅ Image downloaded to ${filePath}`,
+          });
 
           // Optimize image if sharp is available
           if (sharp) {
             try {
               const optimizedPath = await optimizeImage(filePath);
-              console.log(`[blogImageGenerator] ✅ Image optimized`);
+              logger.debug('Log message', {
+                value: `[blogImageGenerator] ✅ Image optimized`,
+              });
               resolve(optimizedPath);
             } catch (optimizeError) {
-              console.warn(
-                `[blogImageGenerator] ⚠️  Image optimization failed: ${optimizeError.message}`
-              );
-              console.warn(`[blogImageGenerator] ⚠️  Using original image`);
+              logger.warn('Log message', {
+                value: `[blogImageGenerator] ⚠️  Image optimization failed: ${optimizeError.message}`,
+              });
+              logger.warn('Log message', {
+                value: `[blogImageGenerator] ⚠️  Using original image`,
+              });
               resolve(filePath);
             }
           } else {
@@ -235,14 +267,20 @@ async function downloadAndSaveImage(imageUrl, filePath) {
         });
 
         fileStream.on('error', err => {
-          console.error(`[blogImageGenerator] ❌ File stream error:`, err.message);
+          logger.error('Log message', {
+            arg0: `[blogImageGenerator] ❌ File stream error:`,
+            message: err.message,
+          });
           fs.unlink(filePath).catch(() => {});
           reject(err);
         });
       });
 
       request.on('error', err => {
-        console.error(`[blogImageGenerator] ❌ Request error:`, err.message);
+        logger.error('Log message', {
+          arg0: `[blogImageGenerator] ❌ Request error:`,
+          message: err.message,
+        });
         reject(err);
       });
 
@@ -254,7 +292,10 @@ async function downloadAndSaveImage(imageUrl, filePath) {
 
       request.end();
     } catch (error) {
-      console.error(`[blogImageGenerator] ❌ URL parsing error:`, error.message);
+      logger.error('Log message', {
+        arg0: `[blogImageGenerator] ❌ URL parsing error:`,
+        message: error.message,
+      });
       reject(new Error(`Invalid image URL: ${error.message}`));
     }
   });
@@ -292,14 +333,17 @@ async function optimizeImage(filePath) {
       const newSize = newStats.size;
       const savings = (((originalSize - newSize) / originalSize) * 100).toFixed(1);
 
-      console.log(
-        `[blogImageGenerator] Optimized: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(newSize / 1024 / 1024).toFixed(2)}MB (${savings}% reduction)`
-      );
+      logger.debug('Log message', {
+        value: `[blogImageGenerator] Optimized: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(newSize / 1024 / 1024).toFixed(2)}MB (${savings}% reduction)`,
+      });
     }
 
     return filePath;
   } catch (error) {
-    console.error(`[blogImageGenerator] Optimization error:`, error.message);
+    logger.error('Log message', {
+      arg0: `[blogImageGenerator] Optimization error:`,
+      message: error.message,
+    });
     throw error;
   }
 }
@@ -479,13 +523,19 @@ async function generateHeaderImage(articleMeta, provider = 'dall-e-3', outputDir
     await fs.mkdir(outputDir, { recursive: true });
     try {
       localPath = await downloadAndSaveImage(result.url, filePath);
-      console.log(`[blogImageGenerator] ✅ Image saved to: ${localPath}`);
+      logger.debug('Log message', {
+        value: `[blogImageGenerator] ✅ Image saved to: ${localPath}`,
+      });
     } catch (downloadError) {
-      console.error(`[blogImageGenerator] ⚠️  Failed to download image: ${downloadError.message}`);
-      console.error(`[blogImageGenerator] ⚠️  Image URL is still available: ${result.url}`);
-      console.error(
-        `[blogImageGenerator] ⚠️  Note: URLs expire after ~2 hours, download immediately`
-      );
+      logger.error('Log message', {
+        value: `[blogImageGenerator] ⚠️  Failed to download image: ${downloadError.message}`,
+      });
+      logger.error('Log message', {
+        value: `[blogImageGenerator] ⚠️  Image URL is still available: ${result.url}`,
+      });
+      logger.error('Log message', {
+        value: `[blogImageGenerator] ⚠️  Note: URLs expire after ~2 hours, download immediately`,
+      });
       // Don't fail the entire operation - return the URL even if download fails
     }
   }
@@ -531,11 +581,15 @@ async function generateSocialMediaGraphic(
     try {
       localPath = await downloadAndSaveImage(result.url, filePath);
     } catch (downloadError) {
-      console.error(`[blogImageGenerator] ⚠️  Failed to download image: ${downloadError.message}`);
-      console.error(`[blogImageGenerator] ⚠️  Image URL is still available: ${result.url}`);
-      console.error(
-        `[blogImageGenerator] ⚠️  Note: URLs expire after ~2 hours, download immediately`
-      );
+      logger.error('Log message', {
+        value: `[blogImageGenerator] ⚠️  Failed to download image: ${downloadError.message}`,
+      });
+      logger.error('Log message', {
+        value: `[blogImageGenerator] ⚠️  Image URL is still available: ${result.url}`,
+      });
+      logger.error('Log message', {
+        value: `[blogImageGenerator] ⚠️  Note: URLs expire after ~2 hours, download immediately`,
+      });
       // Don't fail the entire operation - return the URL even if download fails
     }
   }
@@ -556,7 +610,9 @@ async function generateSocialMediaGraphic(
  * @returns {Promise<Object>} Generated images
  */
 async function generateAllImages(articleMeta, provider = 'dall-e-3', outputDir = null) {
-  console.log(`[blogImageGenerator] Generating all images for article: ${articleMeta.title}`);
+  logger.debug('Log message', {
+    value: `[blogImageGenerator] Generating all images for article: ${articleMeta.title}`,
+  });
 
   try {
     const [header, instagram, twitter] = await Promise.all([
@@ -574,7 +630,9 @@ async function generateAllImages(articleMeta, provider = 'dall-e-3', outputDir =
       },
     };
   } catch (error) {
-    console.error('[blogImageGenerator] ❌ Failed to generate images:', error);
+    logger.error('[blogImageGenerator] ❌ Failed to generate images', {
+      error: error,
+    });
     throw error;
   }
 }

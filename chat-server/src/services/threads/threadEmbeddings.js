@@ -5,6 +5,12 @@
  * - Generate embeddings for text
  */
 
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'threadEmbeddings',
+});
+
 /**
  * Generate embedding for text
  * @param {string} text - Text to generate embedding for
@@ -35,7 +41,9 @@ async function generateEmbeddingForText(text) {
 
     return response.data[0].embedding;
   } catch (error) {
-    console.error('❌ Failed to generate embedding:', error.message);
+    logger.error('❌ Failed to generate embedding', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -43,4 +51,3 @@ async function generateEmbeddingForText(text) {
 module.exports = {
   generateEmbeddingForText,
 };
-

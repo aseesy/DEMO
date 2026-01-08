@@ -13,6 +13,12 @@
 
 const pairingManager = require('../../../../libs/pairing-manager');
 
+const { defaultLogger: defaultLogger } = require('../../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'RoomMembershipUseCase',
+});
+
 /**
  * Check if room has multiple members
  *
@@ -39,12 +45,15 @@ async function checkRoomMembers({ userId, username, roomManager, db }) {
     const activePairing = await pairingManager.getActivePairing(userId, db);
     if (activePairing && activePairing.shared_room_id) {
       roomId = activePairing.shared_room_id;
-      console.log(
-        `[RoomMembershipUseCase] User ${username} has active pairing, using shared room: ${roomId}`
-      );
+      logger.debug('Log message', {
+        value: `[RoomMembershipUseCase] User ${username} has active pairing, using shared room: ${roomId}`,
+      });
     }
   } catch (pairingError) {
-    console.error(`[RoomMembershipUseCase] Error checking pairing for ${userId}:`, pairingError);
+    logger.error('Log message', {
+      arg0: `[RoomMembershipUseCase] Error checking pairing for ${userId}:`,
+      pairingError: pairingError,
+    });
   }
 
   // Fallback: get user's room the traditional way
@@ -53,7 +62,10 @@ async function checkRoomMembers({ userId, username, roomManager, db }) {
       const room = await roomManager.getUserRoom(userId);
       roomId = room?.roomId;
     } catch (roomError) {
-      console.error(`[RoomMembershipUseCase] Error getting user room for ${userId}:`, roomError);
+      logger.error('Log message', {
+        arg0: `[RoomMembershipUseCase] Error getting user room for ${userId}:`,
+        roomError: roomError,
+      });
       return { hasMultipleMembers: false, memberCount: 0 };
     }
   }
@@ -67,10 +79,10 @@ async function checkRoomMembers({ userId, username, roomManager, db }) {
   try {
     members = await roomManager.getRoomMembers(roomId);
   } catch (membersError) {
-    console.error(
-      `[RoomMembershipUseCase] Error getting room members for ${roomId}:`,
-      membersError
-    );
+    logger.error('Log message', {
+      arg0: `[RoomMembershipUseCase] Error getting room members for ${roomId}:`,
+      membersError: membersError,
+    });
     return { hasMultipleMembers: false, memberCount: 0 };
   }
 

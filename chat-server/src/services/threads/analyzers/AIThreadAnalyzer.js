@@ -10,6 +10,9 @@ const openaiClient = require('../../../../openaiClient');
 const { normalizeCategory, getCategoryKeywords } = require('../threadCategories');
 const { extractDistinctiveKeywords } = require('../threadKeywords');
 const threadEmbeddings = require('../threadEmbeddings');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ component: 'AIThreadAnalyzer' });
 
 /**
  * AI Thread Analyzer implementation
@@ -107,7 +110,7 @@ Respond in JSON:
 
       return null;
     } catch (error) {
-      console.error('Error suggesting thread:', error);
+      logger.error('Error suggesting thread', error, { roomId, messageId: message.id });
       return null;
     }
   }
@@ -121,7 +124,7 @@ Respond in JSON:
    */
   async analyzeConversationHistory(roomId, limit = 100, dependencies = {}) {
     if (!process.env.OPENAI_API_KEY) {
-      console.warn('[AIThreadAnalyzer] ⚠️  OpenAI API key not configured, skipping conversation analysis');
+      logger.warn('OpenAI API key not configured, skipping conversation analysis');
       return {
         suggestions: [],
         createdThreads: [],
@@ -137,19 +140,17 @@ Respond in JSON:
     } = dependencies;
 
     try {
-      console.log(
-        `[AIThreadAnalyzer] 🔍 DEBUG: Starting conversation analysis for room: ${roomId}, limit: ${limit}`
-      );
+      logger.debug('Starting conversation analysis', { roomId, limit });
       const messageStore = require('../../../../messageStore');
 
       // Get recent messages for the room (excluding system messages)
       const messages = await messageStore.getMessagesByRoom(roomId, limit);
-      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Retrieved ${messages.length} messages from messageStore`);
+      logger.debug('Retrieved messages from messageStore', { count: messages.length, roomId });
 
       // Only analyze messages from the last 30 days to avoid old historical data
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Filtering messages after ${thirtyDaysAgo.toISOString()}`);
+      logger.debug('Filtering messages after date', { cutoffDate: thirtyDaysAgo.toISOString() });
 
       // Filter out system messages, private messages, flagged messages, messages without text,
       // and messages older than 30 days
@@ -162,22 +163,29 @@ Respond in JSON:
         return msgDate >= thirtyDaysAgo;
       });
 
-      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: After filtering: ${filteredMessages.length} messages (removed ${messages.length - filteredMessages.length})`);
+      logger.debug('After filtering', {
+        filteredCount: filteredMessages.length,
+        removedCount: messages.length - filteredMessages.length,
+        roomId,
+      });
 
       if (filteredMessages.length < 5) {
         // Not enough messages to analyze
-        console.log(
-          `[AIThreadAnalyzer] ⚠️  Not enough messages to analyze (${filteredMessages.length} < 5)`
-        );
+        logger.debug('Not enough messages to analyze', {
+          count: filteredMessages.length,
+          minRequired: 5,
+          roomId,
+        });
         return {
           suggestions: [],
           createdThreads: [],
         };
       }
 
-      console.log(
-        `[AIThreadAnalyzer] Analyzing ${filteredMessages.length} messages for room: ${roomId}`
-      );
+      logger.info('Analyzing messages for room', {
+        messageCount: filteredMessages.length,
+        roomId,
+      });
 
       // Get existing threads to avoid duplicates
       const existingThreads = await getThreadsForRoom(roomId, false);
@@ -246,7 +254,7 @@ Respond in JSON array format:
 
 Only include conversations with confidence >= 60 and at least 3 related messages.`;
 
-      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Calling OpenAI API with ${filteredMessages.length} messages`);
+      logger.debug('Calling OpenAI API', { messageCount: filteredMessages.length, roomId });
       const completion = await openaiClient.createChatCompletion({
         model: 'gpt-3.5-turbo',
         messages: [
@@ -265,16 +273,21 @@ Only include conversations with confidence >= 60 and at least 3 related messages
       });
 
       const response = completion.choices[0].message.content.trim();
-      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: OpenAI response length: ${response.length} chars`);
+      logger.debug('OpenAI response received', { responseLength: response.length, roomId });
       // Remove markdown code blocks if present
       const cleanResponse = response.replace(/^```json\n?/, '').replace(/\n?```$/, '');
       let suggestions;
       try {
         suggestions = JSON.parse(cleanResponse);
-        console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Parsed ${suggestions.length} suggestions from OpenAI`);
+        logger.debug('Parsed suggestions from OpenAI', {
+          suggestionCount: suggestions.length,
+          roomId,
+        });
       } catch (parseError) {
-        console.error(`[AIThreadAnalyzer] ❌ Failed to parse OpenAI response:`, parseError.message);
-        console.error(`[AIThreadAnalyzer] 🔍 DEBUG: Response was:`, cleanResponse.substring(0, 500));
+        logger.error('Failed to parse OpenAI response', parseError, {
+          roomId,
+          responsePreview: cleanResponse.substring(0, 500),
+        });
         return {
           suggestions: [],
           createdThreads: [],
@@ -282,16 +295,24 @@ Only include conversations with confidence >= 60 and at least 3 related messages
       }
 
       // Filter and validate suggestions
-      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Filtering ${suggestions.length} suggestions`);
+      logger.debug('Filtering suggestions', { suggestionCount: suggestions.length, roomId });
       const validSuggestions = suggestions
         .filter(s => {
           const hasConfidence = s.confidence >= 60;
           const hasMessages = s.messageCount >= 3;
           if (!hasConfidence) {
-            console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Suggestion "${s.title}" filtered out: confidence ${s.confidence} < 60`);
+            logger.debug('Suggestion filtered out: low confidence', {
+              title: s.title,
+              confidence: s.confidence,
+              threshold: 60,
+            });
           }
           if (!hasMessages) {
-            console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Suggestion "${s.title}" filtered out: messageCount ${s.messageCount} < 3`);
+            logger.debug('Suggestion filtered out: insufficient messages', {
+              title: s.title,
+              messageCount: s.messageCount,
+              required: 3,
+            });
           }
           return hasConfidence && hasMessages;
         })
@@ -300,28 +321,37 @@ Only include conversations with confidence >= 60 and at least 3 related messages
           const titleLower = s.title.toLowerCase();
           const isDuplicate = existingThreads.some(
             t =>
-              t.title.toLowerCase().includes(titleLower) || titleLower.includes(t.title.toLowerCase())
+              t.title.toLowerCase().includes(titleLower) ||
+              titleLower.includes(t.title.toLowerCase())
           );
           if (isDuplicate) {
-            console.log(`[AIThreadAnalyzer] 🔍 DEBUG: Suggestion "${s.title}" filtered out: duplicate of existing thread`);
+            logger.debug('Suggestion filtered out: duplicate thread', { title: s.title });
           }
           return !isDuplicate;
         })
         .sort((a, b) => b.messageCount - a.messageCount) // Sort by message count
         .slice(0, 5); // Limit to top 5 suggestions
 
-      console.log(`[AIThreadAnalyzer] 🔍 DEBUG: ${validSuggestions.length} valid suggestions after filtering`);
-      
+      logger.debug('Valid suggestions after filtering', {
+        validCount: validSuggestions.length,
+        roomId,
+      });
+
       // Automatically create threads from suggestions using semantic search
       const createdThreads = [];
-      console.log(`[AIThreadAnalyzer] Processing ${validSuggestions.length} valid suggestions`);
+      logger.info('Processing valid suggestions', {
+        suggestionCount: validSuggestions.length,
+        roomId,
+      });
 
       for (const suggestion of validSuggestions) {
         try {
           let matchingMessages = [];
-          console.log(
-            `[AIThreadAnalyzer] Processing suggestion: "${suggestion.title}" (${suggestion.messageCount} messages)`
-          );
+          logger.debug('Processing suggestion', {
+            title: suggestion.title,
+            messageCount: suggestion.messageCount,
+            roomId,
+          });
 
           // Use semantic search if available, otherwise fall back to keyword matching
           if (this.semanticIndex) {
@@ -330,7 +360,7 @@ Only include conversations with confidence >= 60 and at least 3 related messages
               const threadEmbedding = await generateEmbeddingForText(suggestion.title);
 
               if (threadEmbedding) {
-                console.log(`[AIThreadAnalyzer] Using semantic search for "${suggestion.title}"`);
+                logger.debug('Using semantic search', { title: suggestion.title, roomId });
                 // Use semantic index to find similar messages
                 const similarMessages = await this.semanticIndex.findSimilarMessages(
                   threadEmbedding,
@@ -339,9 +369,11 @@ Only include conversations with confidence >= 60 and at least 3 related messages
                   0.7 // 70% similarity threshold
                 );
 
-                console.log(
-                  `[AIThreadAnalyzer] Found ${similarMessages.length} similar messages via semantic search`
-                );
+                logger.debug('Found similar messages via semantic search', {
+                  title: suggestion.title,
+                  count: similarMessages.length,
+                  roomId,
+                });
                 // Map semantic search results to message objects
                 const messageIds = similarMessages.map(m => m.messageId);
                 // Filter to only unthreaded messages - check both msg.threadId and msg.thread_id
@@ -349,7 +381,7 @@ Only include conversations with confidence >= 60 and at least 3 related messages
                 matchingMessages = filteredMessages.filter(
                   msg => messageIds.includes(msg.id) && !msg.threadId && !msg.thread_id
                 );
-                
+
                 // Double-check in database to ensure messages aren't already threaded
                 // This prevents the "Messages already assigned to threads" issue
                 if (matchingMessages.length > 0) {
@@ -362,25 +394,27 @@ Only include conversations with confidence >= 60 and at least 3 related messages
                   const alreadyThreadedIds = new Set(dbCheck.rows.map(r => r.id));
                   matchingMessages = matchingMessages.filter(m => !alreadyThreadedIds.has(m.id));
                   if (alreadyThreadedIds.size > 0) {
-                    console.log(`[AIThreadAnalyzer] Filtered out ${alreadyThreadedIds.size} messages already in threads`);
+                    logger.debug('Filtered out messages already in threads', {
+                      filteredCount: alreadyThreadedIds.size,
+                      title: suggestion.title,
+                    });
                   }
                 }
               } else {
-                console.warn(
-                  `[AIThreadAnalyzer] Failed to generate embedding for "${suggestion.title}", using keyword fallback`
-                );
+                logger.warn('Failed to generate embedding, using keyword fallback', {
+                  title: suggestion.title,
+                });
               }
             } catch (semanticError) {
-              console.warn(
-                `⚠️  Semantic search failed for "${suggestion.title}", using keyword fallback:`,
-                semanticError.message
-              );
+              logger.warn('Semantic search failed, using keyword fallback', semanticError, {
+                title: suggestion.title,
+              });
               // Fall through to keyword matching
             }
           } else {
-            console.log(
-              `[AIThreadAnalyzer] Semantic index not available, using keyword matching for "${suggestion.title}"`
-            );
+            logger.debug('Semantic index not available, using keyword matching', {
+              title: suggestion.title,
+            });
           }
 
           // Fallback to keyword matching if Neo4j not available or failed
@@ -392,7 +426,8 @@ Only include conversations with confidence >= 60 and at least 3 related messages
             // Combine and deduplicate
             const allKeywords = [...new Set([...topicKeywords, ...reasoningKeywords])];
 
-            console.log(`[AIThreadAnalyzer] Keyword matching for "${suggestion.title}":`, {
+            logger.debug('Keyword matching', {
+              title: suggestion.title,
               topicKeywords,
               reasoningKeywords: reasoningKeywords.slice(0, 5), // Log first 5
               totalDistinctive: allKeywords.length,
@@ -400,9 +435,7 @@ Only include conversations with confidence >= 60 and at least 3 related messages
 
             // Skip if no distinctive keywords found
             if (allKeywords.length === 0) {
-              console.log(
-                `[AIThreadAnalyzer] No distinctive keywords for "${suggestion.title}", skipping`
-              );
+              logger.debug('No distinctive keywords found, skipping', { title: suggestion.title });
               continue;
             }
 
@@ -427,16 +460,21 @@ Only include conversations with confidence >= 60 and at least 3 related messages
             });
           }
 
-          console.log(
-            `[AIThreadAnalyzer] Found ${matchingMessages.length} matching messages for "${suggestion.title}"`
-          );
+          logger.debug('Found matching messages', {
+            title: suggestion.title,
+            count: matchingMessages.length,
+            roomId,
+          });
 
           if (matchingMessages.length >= 3) {
             // Create thread with category
             const threadCategory = normalizeCategory(suggestion.category);
-            console.log(
-              `[AIThreadAnalyzer] Creating thread "${suggestion.title}" [${threadCategory}] with ${matchingMessages.length} messages`
-            );
+            logger.info('Creating thread', {
+              title: suggestion.title,
+              category: threadCategory,
+              messageCount: matchingMessages.length,
+              roomId,
+            });
             const threadId = await createThread(
               roomId,
               suggestion.title,
@@ -455,7 +493,7 @@ Only include conversations with confidence >= 60 and at least 3 related messages
             const db = require('../../../../dbPostgres');
             const messageIdsToCheck = messagesToAdd.map(m => m.id);
             let unthreadedMessages = messagesToAdd;
-            
+
             if (messageIdsToCheck.length > 0) {
               const dbCheck = await db.query(
                 'SELECT id, thread_id FROM messages WHERE id = ANY($1)',
@@ -465,7 +503,10 @@ Only include conversations with confidence >= 60 and at least 3 related messages
                 dbCheck.rows.filter(r => r.thread_id).map(r => r.id)
               );
               if (alreadyThreadedIds.size > 0) {
-                console.log(`[AIThreadAnalyzer] Filtering out ${alreadyThreadedIds.size} messages already in threads`);
+                logger.debug('Filtering out messages already in threads', {
+                  filteredCount: alreadyThreadedIds.size,
+                  title: suggestion.title,
+                });
                 unthreadedMessages = messagesToAdd.filter(m => !alreadyThreadedIds.has(m.id));
               }
             }
@@ -480,39 +521,56 @@ Only include conversations with confidence >= 60 and at least 3 related messages
             }
 
             if (addedCount > 0) {
-              console.log(
-                `[AIThreadAnalyzer] ✅ Created thread "${suggestion.title}" with ${addedCount} messages`
-              );
+              logger.info('Created thread', {
+                threadId,
+                title: suggestion.title,
+                messageCount: addedCount,
+                roomId,
+              });
               createdThreads.push({
                 threadId,
                 title: suggestion.title,
                 messageCount: addedCount,
               });
             } else {
-              console.warn(
-                `[AIThreadAnalyzer] ⚠️  No messages added to thread "${suggestion.title}", archiving empty thread`
-              );
+              logger.warn('No messages added to thread, archiving empty thread', {
+                threadId,
+                title: suggestion.title,
+              });
               // If no messages were added, delete the empty thread
               await archiveThread(threadId, true);
             }
           } else {
-            console.log(
-              `[AIThreadAnalyzer] ⚠️  Not enough matching messages (${matchingMessages.length} < 3) for "${suggestion.title}"`
-            );
+            logger.debug('Not enough matching messages', {
+              title: suggestion.title,
+              count: matchingMessages.length,
+              required: 3,
+            });
           }
         } catch (error) {
-          console.error(`[AIThreadAnalyzer] ❌ Error creating thread for "${suggestion.title}":`, error);
+          logger.error('Error creating thread for suggestion', error, {
+            title: suggestion.title,
+            roomId,
+          });
           // Continue with other suggestions even if one fails
         }
       }
 
-      console.log(`[AIThreadAnalyzer] ✅ Analysis complete: ${createdThreads.length} threads created`);
+      logger.info('Analysis complete', {
+        threadsCreated: createdThreads.length,
+        suggestionsGenerated: validSuggestions.length,
+        roomId,
+      });
       if (createdThreads.length === 0 && validSuggestions.length > 0) {
-        console.log(`[AIThreadAnalyzer] ⚠️  WARNING: ${validSuggestions.length} suggestions were generated but no threads were created`);
-        console.log(`[AIThreadAnalyzer] 🔍 DEBUG: This could mean:`);
-        console.log(`[AIThreadAnalyzer]    - Not enough matching messages found (need 3+)`);
-        console.log(`[AIThreadAnalyzer]    - Messages already assigned to threads`);
-        console.log(`[AIThreadAnalyzer]    - Thread creation failed`);
+        logger.warn('Suggestions generated but no threads created', {
+          suggestionCount: validSuggestions.length,
+          roomId,
+          possibleReasons: [
+            'Not enough matching messages found (need 3+)',
+            'Messages already assigned to threads',
+            'Thread creation failed',
+          ],
+        });
       }
 
       return {
@@ -520,7 +578,7 @@ Only include conversations with confidence >= 60 and at least 3 related messages
         createdThreads,
       };
     } catch (error) {
-      console.error('Error analyzing conversation history:', error);
+      logger.error('Error analyzing conversation history', error, { roomId, limit });
       return {
         suggestions: [],
         createdThreads: [],
@@ -596,7 +654,12 @@ Only include conversations with confidence >= 60 and at least 3 related messages
         .sort((a, b) => b.score - a.score)[0];
 
       if (bestMatch) {
-        console.log(`[AIThreadAnalyzer] Auto-assigning message to thread "${bestMatch.threadTitle}" (score: ${bestMatch.score})`);
+        logger.info('Auto-assigning message to thread', {
+          threadId: bestMatch.threadId,
+          threadTitle: bestMatch.threadTitle,
+          score: bestMatch.score,
+          messageId: message.id,
+        });
 
         // Actually assign the message to the thread
         await addMessageToThread(message.id, bestMatch.threadId);
@@ -611,11 +674,13 @@ Only include conversations with confidence >= 60 and at least 3 related messages
 
       return null;
     } catch (error) {
-      console.error('[AIThreadAnalyzer] Error auto-assigning message to thread:', error);
+      logger.error('Error auto-assigning message to thread', error, {
+        messageId: message.id,
+        roomId: message.roomId,
+      });
       return null;
     }
   }
 }
 
 module.exports = { AIThreadAnalyzer };
-

@@ -14,6 +14,12 @@ const { BaseService } = require('../BaseService');
 const { AuthorizationError } = require('../errors');
 const dbPostgres = require('../../../dbPostgres');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'PermissionService',
+});
+
 class PermissionService extends BaseService {
   constructor() {
     super(); // No default table - manages permissions across multiple tables
@@ -35,7 +41,9 @@ class PermissionService extends BaseService {
 
       return result.rows.map(row => row.permission_name);
     } catch (error) {
-      console.error('[PermissionService] Error getting user permissions:', error);
+      logger.error('[PermissionService] Error getting user permissions', {
+        error: error,
+      });
       throw error;
     }
   }
@@ -57,7 +65,9 @@ class PermissionService extends BaseService {
 
       return result.rows.map(row => row.name);
     } catch (error) {
-      console.error('[PermissionService] Error getting user roles:', error);
+      logger.error('[PermissionService] Error getting user roles', {
+        error: error,
+      });
       throw error;
     }
   }
@@ -80,7 +90,9 @@ class PermissionService extends BaseService {
 
       return result.rows.length > 0;
     } catch (error) {
-      console.error('[PermissionService] Error checking permission:', error);
+      logger.error('[PermissionService] Error checking permission', {
+        error: error,
+      });
       return false; // Fail closed - deny access on error
     }
   }
@@ -108,7 +120,9 @@ class PermissionService extends BaseService {
 
       return result.rows.length > 0;
     } catch (error) {
-      console.error('[PermissionService] Error checking permissions:', error);
+      logger.error('[PermissionService] Error checking permissions', {
+        error: error,
+      });
       return false; // Fail closed
     }
   }
@@ -136,7 +150,9 @@ class PermissionService extends BaseService {
       const count = parseInt(result.rows[0].count, 10);
       return count === permissionNames.length;
     } catch (error) {
-      console.error('[PermissionService] Error checking permissions:', error);
+      logger.error('[PermissionService] Error checking permissions', {
+        error: error,
+      });
       return false; // Fail closed
     }
   }
@@ -160,7 +176,9 @@ class PermissionService extends BaseService {
 
       return result.rows.length > 0;
     } catch (error) {
-      console.error('[PermissionService] Error checking role:', error);
+      logger.error('[PermissionService] Error checking role', {
+        error: error,
+      });
       return false; // Fail closed
     }
   }
@@ -189,7 +207,9 @@ class PermissionService extends BaseService {
 
       return result.rows.length > 0;
     } catch (error) {
-      console.error('[PermissionService] Error checking roles:', error);
+      logger.error('[PermissionService] Error checking roles', {
+        error: error,
+      });
       return false; // Fail closed
     }
   }
@@ -222,7 +242,9 @@ class PermissionService extends BaseService {
 
       return true;
     } catch (error) {
-      console.error('[PermissionService] Error assigning role:', error);
+      logger.error('[PermissionService] Error assigning role', {
+        error: error,
+      });
       throw error;
     }
   }
@@ -257,7 +279,9 @@ class PermissionService extends BaseService {
 
       return result.rowCount > 0;
     } catch (error) {
-      console.error('[PermissionService] Error removing role:', error);
+      logger.error('[PermissionService] Error removing role', {
+        error: error,
+      });
       throw error;
     }
   }
@@ -272,7 +296,9 @@ class PermissionService extends BaseService {
     try {
       await this.assignRole(userId, 'user');
     } catch (error) {
-      console.error('[PermissionService] Error ensuring default role:', error);
+      logger.error('[PermissionService] Error ensuring default role', {
+        error: error,
+      });
       // Don't throw - default role assignment failure shouldn't block registration
     }
   }
@@ -289,7 +315,9 @@ class PermissionService extends BaseService {
 
       return result.rows;
     } catch (error) {
-      console.error('[PermissionService] Error getting roles:', error);
+      logger.error('[PermissionService] Error getting roles', {
+        error: error,
+      });
       throw error;
     }
   }
@@ -306,7 +334,9 @@ class PermissionService extends BaseService {
 
       return result.rows;
     } catch (error) {
-      console.error('[PermissionService] Error getting permissions:', error);
+      logger.error('[PermissionService] Error getting permissions', {
+        error: error,
+      });
       throw error;
     }
   }

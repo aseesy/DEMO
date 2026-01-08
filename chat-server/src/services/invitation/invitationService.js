@@ -18,6 +18,12 @@ const pairingManager = require('../../../libs/pairing-manager');
 const db = require('../../../dbPostgres');
 const { createCoParentRoom } = require('../../../roomManager/coParent');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'invitationService',
+});
+
 // Lazy load invitationEmailService to avoid circular dependency
 let invitationEmailService = null;
 function getInvitationEmailService() {
@@ -280,7 +286,9 @@ class InvitationService extends BaseService {
         });
         emailSent = emailResult.emailSent;
       } catch (error) {
-        console.error('[InvitationService] Failed to send email:', error);
+        logger.error('[InvitationService] Failed to send email', {
+          error: error,
+        });
         // Don't fail invitation creation if email fails
       }
     }
@@ -334,7 +342,9 @@ class InvitationService extends BaseService {
           token: result.token,
         });
       } catch (error) {
-        console.error('[InvitationService] Failed to resend email:', error);
+        logger.error('[InvitationService] Failed to resend email', {
+          error: error,
+        });
         // Don't fail resend if email fails
       }
     }
@@ -418,7 +428,9 @@ class InvitationService extends BaseService {
     const validation = await primaryFn();
 
     if (!validation.valid && validation.code === notFoundCode) {
-      console.log(`${type} not found in invitations table, trying pairing_sessions...`);
+      logger.debug('Log message', {
+        value: `${type} not found in invitations table, trying pairing_sessions...`,
+      });
       const pairingValidation = await fallbackFn();
 
       if (pairingValidation.valid) {

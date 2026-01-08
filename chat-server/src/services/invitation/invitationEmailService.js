@@ -11,6 +11,12 @@ const { BaseService } = require('../BaseService');
 const { ValidationError, ExternalServiceError } = require('../errors');
 const emailService = require('../../../emailService');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'invitationEmailService',
+});
+
 class InvitationEmailService extends BaseService {
   constructor() {
     super(null); // No primary table
@@ -41,7 +47,9 @@ class InvitationEmailService extends BaseService {
         'LiaiZen'
       );
 
-      console.log(`✅ Invitation email sent to: ${inviteeEmail}`);
+      logger.debug('Log message', {
+        value: `✅ Invitation email sent to: ${inviteeEmail}`,
+      });
 
       return {
         success: true,
@@ -49,7 +57,9 @@ class InvitationEmailService extends BaseService {
         recipientEmail: inviteeEmail,
       };
     } catch (error) {
-      console.error('Error sending invitation email:', error);
+      logger.error('Error sending invitation email', {
+        error: error,
+      });
 
       // Don't throw - email failures shouldn't block the invitation flow
       return {
@@ -84,7 +94,9 @@ class InvitationEmailService extends BaseService {
         'LiaiZen'
       );
 
-      console.log(`✅ Invitation email resent to: ${inviteeEmail}`);
+      logger.debug('Log message', {
+        value: `✅ Invitation email resent to: ${inviteeEmail}`,
+      });
 
       return {
         success: true,
@@ -92,7 +104,9 @@ class InvitationEmailService extends BaseService {
         recipientEmail: inviteeEmail,
       };
     } catch (error) {
-      console.error('Error resending invitation email:', error);
+      logger.error('Error resending invitation email', {
+        error: error,
+      });
 
       return {
         success: false,

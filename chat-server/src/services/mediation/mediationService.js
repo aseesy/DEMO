@@ -36,21 +36,30 @@ class MediationService extends BaseService {
   }
 
   /**
-   * Get user by username
-   * @param {string} username - Username (case-insensitive)
+   * Get user by username or email
+   * @param {string} identifier - Username or email (case-insensitive)
    * @returns {Promise<Object>} User object with id
    * @throws {NotFoundError} If user not found
    */
-  async getUserByUsername(username) {
-    if (!username) {
-      throw new ValidationError('Username is required', 'username');
+  async getUserByUsername(identifier) {
+    if (!identifier) {
+      throw new ValidationError('Username or email is required', 'username');
     }
 
-    const userResult = await dbSafe.safeSelect('users', { username: username.toLowerCase() }, { limit: 1 });
-    const users = dbSafe.parseResult(userResult);
+    const lowerIdentifier = identifier.toLowerCase();
+
+    // Try to find by email first (most users use email now)
+    let userResult = await dbSafe.safeSelect('users', { email: lowerIdentifier }, { limit: 1 });
+    let users = dbSafe.parseResult(userResult);
+
+    // If not found by email, try username
+    if (users.length === 0) {
+      userResult = await dbSafe.safeSelect('users', { username: lowerIdentifier }, { limit: 1 });
+      users = dbSafe.parseResult(userResult);
+    }
 
     if (users.length === 0) {
-      throw new NotFoundError('User', username);
+      throw new NotFoundError('User', identifier);
     }
 
     return users[0];
@@ -66,7 +75,11 @@ class MediationService extends BaseService {
       return null;
     }
 
-    const roomMembersResult = await dbSafe.safeSelect('room_members', { user_id: userId }, { limit: 1 });
+    const roomMembersResult = await dbSafe.safeSelect(
+      'room_members',
+      { user_id: userId },
+      { limit: 1 }
+    );
     const roomMembers = dbSafe.parseResult(roomMembersResult);
 
     if (roomMembers && roomMembers.length > 0) {
@@ -98,24 +111,30 @@ class MediationService extends BaseService {
   }
 
   /**
-   * Get participant usernames for a room
+   * Get participant emails for a room
    * @param {string} roomId - Room ID
-   * @param {string} fallbackUsername - Username to use if no room found
-   * @returns {Promise<Array<string>>} Array of usernames
+   * @param {string} fallbackEmail - Email to use if no room found
+   * @returns {Promise<Array<string>>} Array of emails
    */
-  async getParticipantUsernames(roomId, fallbackUsername) {
+  async getParticipantUsernames(roomId, fallbackEmail) {
     if (!roomId) {
-      return [fallbackUsername];
+      return [fallbackEmail];
     }
 
-    const result = await dbSafe.safeSelect('room_members', { room_id: roomId });
-    const roomMembers = dbSafe.parseResult(result);
+    // Join room_members with users to get emails
+    const query = `
+      SELECT u.email
+      FROM room_members rm
+      JOIN users u ON rm.user_id = u.id
+      WHERE rm.room_id = $1
+    `;
+    const result = await db.query(query, [roomId]);
 
-    if (roomMembers && roomMembers.length > 0) {
-      return roomMembers.map(m => m.username);
+    if (result.rows && result.rows.length > 0) {
+      return result.rows.map(r => r.email);
     }
 
-    return [fallbackUsername];
+    return [fallbackEmail];
   }
 
   /**
@@ -226,39 +245,36 @@ class MediationService extends BaseService {
    * Analyze a message for mediation
    *
    * This is the main use case method that orchestrates all the business logic:
-   * 1. Get user context
-   * 2. Get room context
-   * 3. Get recent messages
-   * 4. Get participant information
-   * 5. Get contact context
-   * 6. Call AI mediator
-   * 7. Format response
+   * 1. Get room context (using userId from JWT)
+   * 2. Get recent messages
+   * 3. Get participant information
+   * 4. Get contact context
+   * 5. Call AI mediator
+   * 6. Format response
    *
    * @param {Object} params - Analysis parameters
    * @param {string} params.text - Message text to analyze
-   * @param {string} params.username - Username of sender
+   * @param {number} params.userId - User ID from JWT token
+   * @param {string} params.email - User email for message attribution
    * @param {Object} [params.senderProfile] - Optional sender profile
    * @param {Object} [params.receiverProfile] - Optional receiver profile
    * @returns {Promise<Object>} Formatted analysis response
-   * @throws {NotFoundError} If user not found
    * @throws {ValidationError} If required parameters missing
    */
-  async analyzeMessage({ text, username, senderProfile = {}, receiverProfile = {} }) {
+  async analyzeMessage({ text, userId, email, senderProfile = {}, receiverProfile = {} }) {
     if (!text || !text.trim()) {
       throw new ValidationError('Message text is required', 'text');
     }
 
-    if (!username) {
-      throw new ValidationError('Username is required', 'username');
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId');
     }
 
     if (!this.aiMediator) {
       throw new Error('AI mediator not available');
     }
 
-    // 1. Get user context
-    const user = await this.getUserByUsername(username);
-    const userId = user.id;
+    // userId comes directly from JWT - no lookup needed
 
     // 2. Get room context
     const roomId = await this.getUserRoomId(userId);
@@ -266,8 +282,8 @@ class MediationService extends BaseService {
     // 3. Get recent messages
     const recentMessages = await this.getRecentMessages(roomId);
 
-    // 4. Get participant usernames
-    const participantUsernames = await this.getParticipantUsernames(roomId, username);
+    // 4. Get participant emails/usernames
+    const participantUsernames = await this.getParticipantUsernames(roomId, email);
 
     // 5. Get contact context
     const { existingContacts, contactContextForAI } = await this.getContactContext(userId);
@@ -275,7 +291,7 @@ class MediationService extends BaseService {
     // 6. Create message object for analysis
     const message = {
       text: text.trim(),
-      username: username,
+      username: email, // Use email as identifier
       timestamp: new Date().toISOString(),
     };
 
@@ -301,4 +317,3 @@ class MediationService extends BaseService {
 const mediationService = new MediationService();
 
 module.exports = { mediationService, MediationService };
-

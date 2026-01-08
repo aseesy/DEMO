@@ -13,6 +13,12 @@
 
 const pool = require('../../../dbPostgres');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'SummaryGenerator',
+});
+
 class SummaryGenerator {
   /**
    * @param {Object} aiClient OpenAI client instance
@@ -45,16 +51,17 @@ class SummaryGenerator {
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
         max_tokens: this.maxTokens,
-        temperature: 0.3 // Lower temperature for factual summaries
+        temperature: 0.3, // Lower temperature for factual summaries
       });
 
       // Parse response
       const result = this._parseResponse(response, messages);
 
       return result;
-
     } catch (error) {
-      console.error('[SummaryGenerator] Error generating summary:', error);
+      logger.error('[SummaryGenerator] Error generating summary', {
+        error: error,
+      });
       // Return fallback summary
       return this._generateFallbackSummary(messages, context);
     }
@@ -68,10 +75,7 @@ class SummaryGenerator {
    */
   async regenerateSummary(topicId) {
     // Get topic details
-    const topicResult = await pool.query(
-      'SELECT * FROM topic_summaries WHERE id = $1',
-      [topicId]
-    );
+    const topicResult = await pool.query('SELECT * FROM topic_summaries WHERE id = $1', [topicId]);
 
     if (topicResult.rows.length === 0) {
       throw new Error(`Topic not found: ${topicId}`);
@@ -80,13 +84,16 @@ class SummaryGenerator {
     const topic = topicResult.rows[0];
 
     // Get messages for topic
-    const messagesResult = await pool.query(`
+    const messagesResult = await pool.query(
+      `
       SELECT m.id, m.text, m.user_email, m.timestamp
       FROM messages m
       JOIN topic_messages tm ON m.id = tm.message_id
       WHERE tm.topic_id = $1
       ORDER BY m.timestamp ASC
-    `, [topicId]);
+    `,
+      [topicId]
+    );
 
     // Get participant names
     const participants = await this._getParticipantNames(messagesResult.rows);
@@ -94,7 +101,7 @@ class SummaryGenerator {
     // Generate new summary
     const result = await this.generateSummary(topicId, messagesResult.rows, {
       participants,
-      category: topic.category
+      category: topic.category,
     });
 
     // Save to database
@@ -111,10 +118,12 @@ class SummaryGenerator {
     const { participants = [], category = 'general' } = context;
 
     // Format messages with IDs
-    const formattedMessages = messages.map(m => {
-      const sender = m.displayName || m.user_email?.split('@')[0] || 'Unknown';
-      return `[${m.id}] ${sender}: ${m.text}`;
-    }).join('\n');
+    const formattedMessages = messages
+      .map(m => {
+        const sender = m.displayName || m.user_email?.split('@')[0] || 'Unknown';
+        return `[${m.id}] ${sender}: ${m.text}`;
+      })
+      .join('\n');
 
     return `You are summarizing a co-parent conversation about: ${category}
 
@@ -166,17 +175,18 @@ Output valid JSON only:
           claim: c.claim,
           messageIds: c.message_ids.filter(id => validMessageIds.has(id)),
           // Calculate position in summary
-          ...this._findClaimPosition(parsed.summary, c.claim)
+          ...this._findClaimPosition(parsed.summary, c.claim),
         }))
         .filter(c => c.messageIds.length > 0); // Only keep citations with valid message IDs
 
       return {
         summary: parsed.summary,
-        citations
+        citations,
       };
-
     } catch (error) {
-      console.error('[SummaryGenerator] Error parsing response:', error);
+      logger.error('[SummaryGenerator] Error parsing response', {
+        error: error,
+      });
       throw error;
     }
   }
@@ -199,7 +209,7 @@ Output valid JSON only:
           if (partialIndex !== -1) {
             return {
               startIndex: partialIndex,
-              endIndex: partialIndex + word.length
+              endIndex: partialIndex + word.length,
             };
           }
         }
@@ -209,7 +219,7 @@ Output valid JSON only:
 
     return {
       startIndex,
-      endIndex: startIndex + claim.length
+      endIndex: startIndex + claim.length,
     };
   }
 
@@ -219,9 +229,7 @@ Output valid JSON only:
    */
   _generateFallbackSummary(messages, context) {
     // Sort by timestamp
-    const sorted = [...messages].sort((a, b) =>
-      new Date(a.timestamp) - new Date(b.timestamp)
-    );
+    const sorted = [...messages].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     // Use first and last message for basic summary
     const first = sorted[0];
@@ -236,9 +244,9 @@ Output valid JSON only:
           claim: 'Discussion',
           messageIds: [first.id],
           startIndex: 0,
-          endIndex: 10
-        }
-      ]
+          endIndex: 10,
+        },
+      ],
     };
   }
 
@@ -251,15 +259,16 @@ Output valid JSON only:
 
     if (emails.length === 0) return [];
 
-    const result = await pool.query(`
+    const result = await pool.query(
+      `
       SELECT email, first_name, display_name
       FROM users
       WHERE email = ANY($1)
-    `, [emails]);
-
-    return result.rows.map(u =>
-      u.first_name || u.display_name || u.email.split('@')[0]
+    `,
+      [emails]
     );
+
+    return result.rows.map(u => u.first_name || u.display_name || u.email.split('@')[0]);
   }
 
   /**
@@ -273,7 +282,8 @@ Output valid JSON only:
       await client.query('BEGIN');
 
       // Archive current version to history
-      await client.query(`
+      await client.query(
+        `
         INSERT INTO summary_history (id, summary_id, version, summary_text, citations)
         SELECT
           'hist-' || extract(epoch from now())::text || '-' || substr(md5(random()::text), 1, 8),
@@ -284,40 +294,44 @@ Output valid JSON only:
            FROM summary_citations WHERE summary_id = $1)
         FROM topic_summaries
         WHERE id = $1
-      `, [topicId]);
+      `,
+        [topicId]
+      );
 
       // Update summary
-      await client.query(`
+      await client.query(
+        `
         UPDATE topic_summaries
         SET summary_text = $1,
             summary_version = summary_version + 1,
             updated_at = NOW()
         WHERE id = $2
-      `, [result.summary, topicId]);
+      `,
+        [result.summary, topicId]
+      );
 
       // Delete old citations
-      await client.query(
-        'DELETE FROM summary_citations WHERE summary_id = $1',
-        [topicId]
-      );
+      await client.query('DELETE FROM summary_citations WHERE summary_id = $1', [topicId]);
 
       // Insert new citations
       for (const citation of result.citations) {
-        await client.query(`
+        await client.query(
+          `
           INSERT INTO summary_citations (id, summary_id, claim_text, claim_start_index, claim_end_index, message_ids)
           VALUES ($1, $2, $3, $4, $5, $6)
-        `, [
-          `cite-${Date.now()}-${Math.random().toString(36).substr(2, 8)}`,
-          topicId,
-          citation.claim,
-          citation.startIndex,
-          citation.endIndex,
-          citation.messageIds
-        ]);
+        `,
+          [
+            `cite-${Date.now()}-${Math.random().toString(36).substr(2, 8)}`,
+            topicId,
+            citation.claim,
+            citation.startIndex,
+            citation.endIndex,
+            citation.messageIds,
+          ]
+        );
       }
 
       await client.query('COMMIT');
-
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;

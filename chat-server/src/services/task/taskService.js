@@ -11,6 +11,12 @@ const { BaseService } = require('../BaseService');
 const { NotFoundError, ValidationError, ExternalServiceError } = require('../errors');
 const { PostgresTaskRepository, PostgresUserRepository } = require('../../repositories');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'taskService',
+});
+
 class TaskService extends BaseService {
   constructor() {
     // Use task repository instead of direct table access
@@ -64,7 +70,9 @@ class TaskService extends BaseService {
         // Refresh tasks after auto-complete
         tasks = await this.taskRepository.find(conditions, queryOptions);
       } catch (error) {
-        console.error('Error auto-completing onboarding tasks:', error);
+        logger.error('Error auto-completing onboarding tasks', {
+          error: error,
+        });
       }
     }
 
@@ -114,18 +122,18 @@ class TaskService extends BaseService {
 
     // Log duplicates for debugging
     if (duplicateTitles.size > 0) {
-      console.warn(
-        `[TaskService] Found duplicate tasks for user ${userId}:`,
-        Array.from(duplicateTitles)
-      );
+      logger.warn('Log message', {
+        arg0: `[TaskService] Found duplicate tasks for user ${userId}:`,
+        arg1: Array.from(duplicateTitles),
+      });
       // Log the actual duplicate task IDs for debugging
       for (const title of duplicateTitles) {
         const allTasksWithTitle = tasks.filter(t => (t.title || '').trim() === title);
         if (allTasksWithTitle.length > 1) {
-          console.warn(
-            `[TaskService] Duplicate "${title}" tasks:`,
-            allTasksWithTitle.map(t => `ID ${t.id} (${t.status}, created: ${t.created_at})`)
-          );
+          logger.warn('Log message', {
+            arg0: `[TaskService] Duplicate "${title}" tasks:`,
+            arg1: allTasksWithTitle.map(t => `ID ${t.id} (${t.status}, created: ${t.created_at})`),
+          });
         }
       }
     }
@@ -341,7 +349,9 @@ Respond in JSON format only with this structure:
         },
       };
     } catch (error) {
-      console.error('Error generating task with AI:', error);
+      logger.error('Error generating task with AI', {
+        error: error,
+      });
       throw new ExternalServiceError('Failed to generate task: ' + error.message);
     }
   }
@@ -390,7 +400,9 @@ Respond in JSON format only with this structure:
       }
       return JSON.parse(response);
     } catch (parseError) {
-      console.error('Error parsing AI response:', parseError);
+      logger.error('Error parsing AI response', {
+        parseError: parseError,
+      });
       throw new ExternalServiceError('Failed to parse AI response. Please try again.');
     }
   }

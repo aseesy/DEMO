@@ -14,14 +14,59 @@
 
 const pool = require('../../../dbPostgres');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'TopicDetector',
+});
+
 // Category keywords for classification
 const CATEGORY_KEYWORDS = {
-  medical: ['doctor', 'appointment', 'medication', 'sick', 'fever', 'health', 'hospital', 'therapy', 'dentist'],
-  school: ['school', 'homework', 'teacher', 'class', 'grade', 'test', 'exam', 'parent-teacher', 'assignment'],
-  activities: ['soccer', 'basketball', 'practice', 'game', 'piano', 'lesson', 'camp', 'birthday', 'party'],
-  logistics: ['pickup', 'drop off', 'dropoff', 'schedule', 'time', 'weekend', 'holiday', 'vacation'],
+  medical: [
+    'doctor',
+    'appointment',
+    'medication',
+    'sick',
+    'fever',
+    'health',
+    'hospital',
+    'therapy',
+    'dentist',
+  ],
+  school: [
+    'school',
+    'homework',
+    'teacher',
+    'class',
+    'grade',
+    'test',
+    'exam',
+    'parent-teacher',
+    'assignment',
+  ],
+  activities: [
+    'soccer',
+    'basketball',
+    'practice',
+    'game',
+    'piano',
+    'lesson',
+    'camp',
+    'birthday',
+    'party',
+  ],
+  logistics: [
+    'pickup',
+    'drop off',
+    'dropoff',
+    'schedule',
+    'time',
+    'weekend',
+    'holiday',
+    'vacation',
+  ],
   financial: ['money', 'pay', 'cost', 'expense', 'bill', '$', 'fee', 'reimburse'],
-  general: [] // fallback
+  general: [], // fallback
 };
 
 class TopicDetector {
@@ -54,7 +99,9 @@ class TopicDetector {
       const messages = await this._getMessagesWithEmbeddings(roomId, { since, limit });
 
       if (messages.length < this.minMessages) {
-        console.log(`[TopicDetector] Not enough messages (${messages.length}) for topic detection`);
+        logger.debug('Log message', {
+          value: `[TopicDetector] Not enough messages (${messages.length}) for topic detection`,
+        });
         return [];
       }
 
@@ -73,9 +120,10 @@ class TopicDetector {
       // 4. Sort by message count and limit
       topics.sort((a, b) => b.messageIds.length - a.messageIds.length);
       return topics.slice(0, this.maxTopics);
-
     } catch (error) {
-      console.error('[TopicDetector] Error detecting topics:', error);
+      logger.error('[TopicDetector] Error detecting topics', {
+        error: error,
+      });
       throw error;
     }
   }
@@ -115,9 +163,10 @@ class TopicDetector {
       }
 
       return bestMatch;
-
     } catch (error) {
-      console.error('[TopicDetector] Error assigning message to topic:', error);
+      logger.error('[TopicDetector] Error assigning message to topic', {
+        error: error,
+      });
       return null;
     }
   }
@@ -269,7 +318,7 @@ class TopicDetector {
       confidence,
       firstMessageAt: cluster[0].timestamp,
       lastMessageAt: cluster[cluster.length - 1].timestamp,
-      roomId
+      roomId,
     };
   }
 
@@ -279,12 +328,35 @@ class TopicDetector {
    */
   _generateTitle(cluster) {
     // Combine message texts
-    const allText = cluster.map(m => m.text).join(' ').toLowerCase();
+    const allText = cluster
+      .map(m => m.text)
+      .join(' ')
+      .toLowerCase();
 
     // Find most common meaningful words
-    const words = allText.split(/\s+/)
+    const words = allText
+      .split(/\s+/)
       .filter(w => w.length > 3)
-      .filter(w => !['this', 'that', 'with', 'from', 'have', 'will', 'what', 'when', 'they', 'them', 'been', 'were', 'your', 'just', 'about'].includes(w));
+      .filter(
+        w =>
+          ![
+            'this',
+            'that',
+            'with',
+            'from',
+            'have',
+            'will',
+            'what',
+            'when',
+            'they',
+            'them',
+            'been',
+            'were',
+            'your',
+            'just',
+            'about',
+          ].includes(w)
+      );
 
     const wordCounts = {};
     for (const word of words) {
@@ -309,7 +381,10 @@ class TopicDetector {
    * @private
    */
   _determineCategory(cluster) {
-    const allText = cluster.map(m => m.text).join(' ').toLowerCase();
+    const allText = cluster
+      .map(m => m.text)
+      .join(' ')
+      .toLowerCase();
 
     let bestCategory = 'general';
     let bestScore = 0;
@@ -367,7 +442,8 @@ class TopicDetector {
    */
   async _getExistingTopicCentroids(roomId) {
     // Get topics with their message embeddings averaged
-    const result = await pool.query(`
+    const result = await pool.query(
+      `
       SELECT ts.id, ts.title,
              AVG(m.embedding) as centroid
       FROM topic_summaries ts
@@ -375,7 +451,9 @@ class TopicDetector {
       JOIN messages m ON tm.message_id = m.id
       WHERE ts.room_id = $1 AND ts.is_archived = FALSE
       GROUP BY ts.id, ts.title
-    `, [roomId]);
+    `,
+      [roomId]
+    );
 
     return result.rows;
   }
@@ -385,10 +463,7 @@ class TopicDetector {
    * @private
    */
   async _getMessageEmbedding(messageId) {
-    const result = await pool.query(
-      'SELECT embedding FROM messages WHERE id = $1',
-      [messageId]
-    );
+    const result = await pool.query('SELECT embedding FROM messages WHERE id = $1', [messageId]);
     return result.rows[0]?.embedding;
   }
 

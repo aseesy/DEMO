@@ -19,7 +19,17 @@
 const { BaseService } = require('../BaseService');
 const { NotFoundError, ValidationError } = require('../errors');
 const dbPostgres = require('../../../dbPostgres');
-const { getSession, setSession, deleteSession } = require('../../infrastructure/cache/sessionCache');
+const {
+  getSession,
+  setSession,
+  deleteSession,
+} = require('../../infrastructure/cache/sessionCache');
+
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'userSessionService',
+});
 
 class UserSessionService extends BaseService {
   constructor() {
@@ -42,7 +52,7 @@ class UserSessionService extends BaseService {
     try {
       // Check if database is available
       this._dbAvailable = await dbPostgres.testConnection();
-      
+
       if (this._dbAvailable) {
         // Check if active_sessions table exists
         const tableCheck = await dbPostgres.query(`
@@ -72,15 +82,19 @@ class UserSessionService extends BaseService {
             });
           }
 
-          console.log(`[UserSessionService] Loaded ${result.rows.length} sessions from database`);
+          logger.debug('Log message', {
+            value: `[UserSessionService] Loaded ${result.rows.length} sessions from database`,
+          });
         } else {
-          console.warn('[UserSessionService] active_sessions table not found - run migration 040');
+          logger.warn('[UserSessionService] active_sessions table not found - run migration 040');
         }
       } else {
-        console.warn('[UserSessionService] Database not available - using in-memory only');
+        logger.warn('[UserSessionService] Database not available - using in-memory only');
       }
     } catch (error) {
-      console.error('[UserSessionService] Error initializing:', error.message);
+      logger.error('[UserSessionService] Error initializing', {
+        message: error.message,
+      });
       // Continue with in-memory only if database fails
       this._dbAvailable = false;
     }
@@ -128,7 +142,9 @@ class UserSessionService extends BaseService {
 
     // Cache in Redis for fast lookups (non-blocking)
     setSession(socketId, userData, 300).catch(err => {
-      console.warn('[UserSessionService] Failed to cache session in Redis:', err.message);
+      logger.warn('[UserSessionService] Failed to cache session in Redis', {
+        message: err.message,
+      });
     });
 
     // Persist to database (non-blocking, fail-open)
@@ -146,16 +162,20 @@ class UserSessionService extends BaseService {
         );
       } catch (error) {
         // Fail-open: log error but continue with in-memory cache
-        console.error('[UserSessionService] Error persisting session to database:', error.message);
+        logger.error('[UserSessionService] Error persisting session to database', {
+          message: error.message,
+        });
       }
     }
 
-    console.log('[UserSessionService] Registered user:', {
-      socketId: socketId.substring(0, 20) + '...',
-      email: email,
-      roomId: roomId,
-      userId: userData.id,
-      first_name: userData.first_name,
+    logger.debug('[UserSessionService] Registered user', {
+      ...{
+        socketId: socketId.substring(0, 20) + '...',
+        email: email,
+        roomId: roomId,
+        userId: userData.id,
+        first_name: userData.first_name,
+      },
     });
 
     return userData;
@@ -187,7 +207,9 @@ class UserSessionService extends BaseService {
         return redisSession;
       }
     } catch (error) {
-      console.warn('[UserSessionService] Redis cache lookup failed:', error.message);
+      logger.warn('[UserSessionService] Redis cache lookup failed', {
+        message: error.message,
+      });
     }
 
     // Fallback to database if needed (slower, but comprehensive)
@@ -212,7 +234,9 @@ class UserSessionService extends BaseService {
           return userData;
         }
       } catch (error) {
-        console.warn('[UserSessionService] Database lookup failed:', error.message);
+        logger.warn('[UserSessionService] Database lookup failed', {
+          message: error.message,
+        });
       }
     }
 
@@ -246,7 +270,9 @@ class UserSessionService extends BaseService {
 
       // Remove from Redis cache (non-blocking)
       deleteSession(socketId).catch(err => {
-        console.warn('[UserSessionService] Failed to delete session from Redis:', err.message);
+        logger.warn('[UserSessionService] Failed to delete session from Redis', {
+          message: err.message,
+        });
       });
 
       // Remove from database (non-blocking, fail-open)
@@ -255,14 +281,18 @@ class UserSessionService extends BaseService {
           await dbPostgres.query('DELETE FROM active_sessions WHERE socket_id = $1', [socketId]);
         } catch (error) {
           // Fail-open: log error but continue
-          console.error('[UserSessionService] Error removing session from database:', error.message);
+          logger.error('[UserSessionService] Error removing session from database', {
+            message: error.message,
+          });
         }
       }
 
-      console.log('[UserSessionService] Disconnected user:', {
-        socketId: socketId.substring(0, 20) + '...',
-        email: user.email,
-        roomId: user.roomId,
+      logger.debug('[UserSessionService] Disconnected user', {
+        ...{
+          socketId: socketId.substring(0, 20) + '...',
+          email: user.email,
+          roomId: user.roomId,
+        },
       });
       return true;
     }
@@ -297,20 +327,23 @@ class UserSessionService extends BaseService {
     // Remove from database (non-blocking, fail-open)
     if (disconnected.length > 0 && this._dbAvailable) {
       try {
-        await dbPostgres.query(
-          'DELETE FROM active_sessions WHERE socket_id = ANY($1)',
-          [disconnected]
-        );
+        await dbPostgres.query('DELETE FROM active_sessions WHERE socket_id = ANY($1)', [
+          disconnected,
+        ]);
       } catch (error) {
-        console.error('[UserSessionService] Error removing duplicates from database:', error.message);
+        logger.error('[UserSessionService] Error removing duplicates from database', {
+          message: error.message,
+        });
       }
     }
 
     if (disconnected.length > 0) {
-      console.log('[UserSessionService] Disconnected duplicate connections:', {
-        email: emailLower,
-        roomId,
-        count: disconnected.length,
+      logger.debug('[UserSessionService] Disconnected duplicate connections', {
+        ...{
+          email: emailLower,
+          roomId,
+          count: disconnected.length,
+        },
       });
     }
 
@@ -369,7 +402,9 @@ class UserSessionService extends BaseService {
   clearAll() {
     const count = this._activeUsers.size;
     this._activeUsers.clear();
-    console.warn('[UserSessionService] Cleared all active users:', count);
+    logger.warn('[UserSessionService] Cleared all active users', {
+      count: count,
+    });
     return count;
   }
 }
@@ -378,4 +413,3 @@ class UserSessionService extends BaseService {
 const userSessionService = new UserSessionService();
 
 module.exports = { userSessionService, UserSessionService };
-

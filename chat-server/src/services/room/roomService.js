@@ -18,6 +18,12 @@ const {
   checkSharedRoom: checkSharedRoomUseCase,
 } = require('./useCases');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'roomService',
+});
+
 class RoomService extends BaseService {
   constructor() {
     super(null, new PostgresRoomRepository());
@@ -157,13 +163,20 @@ class RoomService extends BaseService {
         roomId: room.roomId,
         expiresAt: activeInvite.expires_at,
       };
-      console.log(`RoomService: Returning existing invite code: ${invite.inviteCode}`);
+      logger.debug('Log message', {
+        value: `RoomService: Returning existing invite code: ${invite.inviteCode}`,
+      });
     } else {
       invite = await this.roomManager.createInvite(room.roomId, userId);
-      console.log(`RoomService: Created new invite code: ${invite.inviteCode}`);
+      logger.debug('Log message', {
+        value: `RoomService: Created new invite code: ${invite.inviteCode}`,
+      });
     }
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl =
+      process.env.FRONTEND_URL ||
+      process.env.VITE_API_URL?.replace('/api', '') ||
+      'http://localhost:5173';
 
     return {
       success: true,
@@ -197,7 +210,10 @@ class RoomService extends BaseService {
     }
 
     const invite = await this.roomManager.createInvite(room.roomId, user.id);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl =
+      process.env.FRONTEND_URL ||
+      process.env.VITE_API_URL?.replace('/api', '') ||
+      'http://localhost:5173';
 
     return {
       success: true,
@@ -266,7 +282,9 @@ class RoomService extends BaseService {
           }
         }
       } catch (error) {
-        console.error('Error auto-completing onboarding tasks after using invite:', error);
+        logger.error('Error auto-completing onboarding tasks after using invite', {
+          error: error,
+        });
       }
     }
 
@@ -322,7 +340,9 @@ class RoomService extends BaseService {
       throw new NotFoundError('Room');
     }
 
-    console.log(`🔄 Backfilling contacts for room ${room.roomId}`);
+    logger.debug('Log message', {
+      value: `🔄 Backfilling contacts for room ${room.roomId}`,
+    });
     await this.roomManager.ensureContactsForRoomMembers(room.roomId);
 
     return {

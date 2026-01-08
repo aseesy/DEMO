@@ -19,7 +19,17 @@
  * - Suitable for serverless environments
  */
 
-const { acquireLock, releaseLock, checkRateLimit } = require('../../../infrastructure/database/redisClient');
+const {
+  acquireLock,
+  releaseLock,
+  checkRateLimit,
+} = require('../../../infrastructure/database/redisClient');
+
+const { defaultLogger: defaultLogger } = require('../../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'AutoAssignMessageUseCase',
+});
 
 // Configuration constants
 const MAX_THREAD_DEPTH = 3; // Maximum depth to query (0 = top-level only, 3 = up to 3 levels deep)
@@ -49,30 +59,92 @@ class AutoAssignMessageUseCase {
    */
   async isMessageAlreadyAssigned(messageId) {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:44',message:'isMessageAlreadyAssigned entry',data:{messageId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'AutoAssignMessageUseCase.js:44',
+        message: 'isMessageAlreadyAssigned entry',
+        data: { messageId },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'A',
+      }),
+    }).catch(() => {});
     // #endregion
     try {
       // Check if message has a thread_id in the messages table
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:47',message:'Before require dbPostgres',data:{path:'../../../../dbPostgres'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'AutoAssignMessageUseCase.js:47',
+          message: 'Before require dbPostgres',
+          data: { path: '../../../../dbPostgres' },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'A',
+        }),
+      }).catch(() => {});
       // #endregion
       const db = require('../../../../dbPostgres');
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:50',message:'After require dbPostgres',data:{dbExists:!!db,hasQuery:typeof db?.query==='function'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'AutoAssignMessageUseCase.js:50',
+          message: 'After require dbPostgres',
+          data: { dbExists: !!db, hasQuery: typeof db?.query === 'function' },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'A',
+        }),
+      }).catch(() => {});
       // #endregion
       const result = await db.query(
         'SELECT thread_id FROM messages WHERE id = $1 AND thread_id IS NOT NULL LIMIT 1',
         [messageId]
       );
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:54',message:'Query result',data:{rowCount:result?.rows?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'AutoAssignMessageUseCase.js:54',
+          message: 'Query result',
+          data: { rowCount: result?.rows?.length || 0 },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'B',
+        }),
+      }).catch(() => {});
       // #endregion
       return result.rows.length > 0;
     } catch (error) {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:57',message:'Error in isMessageAlreadyAssigned',data:{errorMessage:error?.message,errorStack:error?.stack?.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'AutoAssignMessageUseCase.js:57',
+          message: 'Error in isMessageAlreadyAssigned',
+          data: { errorMessage: error?.message, errorStack: error?.stack?.substring(0, 200) },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'A',
+        }),
+      }).catch(() => {});
       // #endregion
-      console.error('[AutoAssignMessageUseCase] Error checking message assignment:', error);
+      logger.error('[AutoAssignMessageUseCase] Error checking message assignment', {
+        error: error,
+      });
       // Fail-open: if we can't check, proceed (better than blocking)
       return false;
     }
@@ -115,12 +187,36 @@ class AutoAssignMessageUseCase {
    */
   async getThreadsForRoomWithLimits(roomId, includeArchived) {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:90',message:'getThreadsForRoomWithLimits entry',data:{roomId,includeArchived},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'AutoAssignMessageUseCase.js:90',
+        message: 'getThreadsForRoomWithLimits entry',
+        data: { roomId, includeArchived },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'A',
+      }),
+    }).catch(() => {});
     // #endregion
     try {
       // Query threads with depth limit
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:93',message:'Before require dbPostgres in getThreadsForRoomWithLimits',data:{path:'../../../../dbPostgres'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'AutoAssignMessageUseCase.js:93',
+          message: 'Before require dbPostgres in getThreadsForRoomWithLimits',
+          data: { path: '../../../../dbPostgres' },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'A',
+        }),
+      }).catch(() => {});
       // #endregion
       const db = require('../../../../dbPostgres');
       // PERFORMANCE: Uses idx_threads_room_archived_updated or idx_threads_room_active_updated
@@ -137,15 +233,41 @@ class AutoAssignMessageUseCase {
         [roomId, MAX_THREAD_DEPTH, MAX_THREADS_TO_QUERY]
       );
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:106',message:'Query success',data:{rowCount:result?.rows?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'AutoAssignMessageUseCase.js:106',
+          message: 'Query success',
+          data: { rowCount: result?.rows?.length || 0 },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'B',
+        }),
+      }).catch(() => {});
       // #endregion
 
       return result.rows || [];
     } catch (error) {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AutoAssignMessageUseCase.js:109',message:'Error in getThreadsForRoomWithLimits',data:{errorMessage:error?.message,errorStack:error?.stack?.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/83e2bb31-7602-4e5a-bb5a-bc4e122570f2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'AutoAssignMessageUseCase.js:109',
+          message: 'Error in getThreadsForRoomWithLimits',
+          data: { errorMessage: error?.message, errorStack: error?.stack?.substring(0, 200) },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'A',
+        }),
+      }).catch(() => {});
       // #endregion
-      console.error('[AutoAssignMessageUseCase] Error querying threads:', error);
+      logger.error('[AutoAssignMessageUseCase] Error querying threads', {
+        error: error,
+      });
       // Fallback to repository method if depth query fails
       const threads = await this.threadRepository.findByRoomId(roomId, {
         includeArchived,
@@ -166,8 +288,13 @@ class AutoAssignMessageUseCase {
   async execute({ message }) {
     // Validate input
     if (!message || !message.id || !message.roomId) {
-      const error = new Error('[AutoAssignMessageUseCase] Invalid message object: missing id or roomId');
-      console.warn(error.message, { message: message ? { id: message.id, roomId: message.roomId } : null });
+      const error = new Error(
+        '[AutoAssignMessageUseCase] Invalid message object: missing id or roomId'
+      );
+      logger.warn('Log message', {
+        message: error.message,
+        ...{ message: message ? { id: message.id, roomId: message.roomId } : null },
+      });
       throw error;
     }
 
@@ -178,9 +305,9 @@ class AutoAssignMessageUseCase {
     // If another server instance is processing this message, we'll skip it
     const lockAcquired = await this.acquireProcessingLock(messageId);
     if (!lockAcquired) {
-      console.log(
-        `[AutoAssignMessageUseCase] Message ${messageId} is being processed by another instance, skipping`
-      );
+      logger.debug('Log message', {
+        value: `[AutoAssignMessageUseCase] Message ${messageId} is being processed by another instance, skipping`,
+      });
       return {
         success: true,
         alreadyProcessing: true,
@@ -207,9 +334,9 @@ class AutoAssignMessageUseCase {
     if (!rateLimitResult.allowed) {
       // Release lock before returning
       await this.releaseProcessingLock(messageId);
-      console.warn(
-        `[AutoAssignMessageUseCase] Rate limit exceeded for room ${roomId} (${rateLimitResult.count}/${MAX_ASSIGNMENTS_PER_WINDOW}), skipping auto-assignment. Resets at ${new Date(rateLimitResult.resetAt).toISOString()}`
-      );
+      logger.warn('Log message', {
+        value: `[AutoAssignMessageUseCase] Rate limit exceeded for room ${roomId} (${rateLimitResult.count}/${MAX_ASSIGNMENTS_PER_WINDOW}), skipping auto-assignment. Resets at ${new Date(rateLimitResult.resetAt).toISOString()}`,
+      });
       return {
         success: false,
         rateLimited: true,
@@ -232,9 +359,9 @@ class AutoAssignMessageUseCase {
         // This is a critical check - another instance might have assigned it
         const stillUnassigned = !(await this.isMessageAlreadyAssigned(messageIdParam));
         if (!stillUnassigned) {
-          console.log(
-            `[AutoAssignMessageUseCase] Message ${messageIdParam} was assigned concurrently by another instance, skipping`
-          );
+          logger.debug('Log message', {
+            value: `[AutoAssignMessageUseCase] Message ${messageIdParam} was assigned concurrently by another instance, skipping`,
+          });
           // Return success but indicate it was already assigned (idempotent)
           return {
             success: true,
@@ -266,11 +393,13 @@ class AutoAssignMessageUseCase {
       return result;
     } catch (error) {
       // Log error with context for debugging
-      console.error('[AutoAssignMessageUseCase] Error executing auto-assignment:', {
-        messageId,
-        roomId,
-        error: error.message,
-        stack: error.stack,
+      logger.error('[AutoAssignMessageUseCase] Error executing auto-assignment', {
+        ...{
+          messageId,
+          roomId,
+          error: error.message,
+          stack: error.stack,
+        },
       });
       // Re-throw with context
       throw new Error(
@@ -284,4 +413,3 @@ class AutoAssignMessageUseCase {
 }
 
 module.exports = { AutoAssignMessageUseCase };
-

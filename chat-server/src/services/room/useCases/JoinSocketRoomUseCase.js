@@ -26,6 +26,12 @@ const {
   getMessageHistory,
 } = require('../../../../socketHandlers/connectionOperations/messageHistory');
 
+const { defaultLogger: defaultLogger } = require('../../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'JoinSocketRoomUseCase',
+});
+
 /**
  * Execute the join socket room use case
  *
@@ -75,7 +81,9 @@ async function execute({
   try {
     user = await getUserByEmail(cleanEmail, auth);
   } catch (error) {
-    console.error('[JoinSocketRoomUseCase] getUserByEmail failed:', error.message);
+    logger.error('[JoinSocketRoomUseCase] getUserByEmail failed', {
+      message: error.message,
+    });
     return { success: false, error: 'Failed to verify user.', errorContext: 'getUserByEmail' };
   }
 
@@ -88,14 +96,18 @@ async function execute({
   try {
     room = await resolveOrCreateUserRoom(user, cleanEmail, db, roomManager);
   } catch (error) {
-    console.error('[JoinSocketRoomUseCase] resolveOrCreateUserRoom failed:', error.message);
+    logger.error('[JoinSocketRoomUseCase] resolveOrCreateUserRoom failed', {
+      message: error.message,
+    });
     return { success: false, error: 'Failed to join chat room.', errorContext: 'resolveRoom' };
   }
 
   if (!room?.roomId || typeof room.roomId !== 'string' || !room.roomId.trim()) {
-    console.warn('[JoinSocketRoomUseCase] No valid room for user:', {
-      email: cleanEmail,
-      userId: user?.id,
+    logger.warn('[JoinSocketRoomUseCase] No valid room for user', {
+      ...{
+        email: cleanEmail,
+        userId: user?.id,
+      },
     });
     return { success: false, error: 'No room available. You must be connected to a co-parent.' };
   }
@@ -111,7 +123,9 @@ async function execute({
     // Run in background - don't block join flow
     setImmediate(() => {
       maybeAnalyzeRoomOnJoin(io, roomId, threadManager).catch(err => {
-        console.error('[JoinSocketRoomUseCase] Thread analysis failed (non-fatal):', err.message);
+        logger.error('[JoinSocketRoomUseCase] Thread analysis failed (non-fatal)', {
+          message: err.message,
+        });
       });
     });
   }
@@ -149,7 +163,9 @@ async function execute({
       await roomManager.ensureContactsForRoomMembers(roomId);
     }
   } catch (error) {
-    console.error('[JoinSocketRoomUseCase] ensureContacts failed (non-fatal):', error.message);
+    logger.error('[JoinSocketRoomUseCase] ensureContacts failed (non-fatal)', {
+      message: error.message,
+    });
   }
 
   // Step 6: Load message history
@@ -170,17 +186,18 @@ async function execute({
     messages = history.messages;
     hasMore = history.hasMore;
   } catch (error) {
-    console.error('[JoinSocketRoomUseCase] MessageService failed:', error.message);
+    logger.error('[JoinSocketRoomUseCase] MessageService failed', {
+      message: error.message,
+    });
     // Fallback to old method for backward compatibility
     try {
       const history = await getMessageHistory(roomId, db);
       messages = history.messages;
       hasMore = history.hasMore;
     } catch (fallbackError) {
-      console.error(
-        '[JoinSocketRoomUseCase] Fallback getMessageHistory also failed:',
-        fallbackError.message
-      );
+      logger.error('[JoinSocketRoomUseCase] Fallback getMessageHistory also failed', {
+        message: fallbackError.message,
+      });
       return {
         success: false,
         error: 'Failed to load message history.',

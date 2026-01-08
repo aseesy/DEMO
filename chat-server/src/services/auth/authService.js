@@ -19,6 +19,12 @@ const adaptiveAuth = require('../../../libs/adaptive-auth');
 const emailService = require('../../../emailService');
 const { generateToken } = require('../../../middleware/auth');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'authService',
+});
+
 /**
  * Login result types
  */
@@ -94,7 +100,7 @@ class AuthService extends BaseService {
       } else if (username) {
         // Legacy path: username provided instead of email
         // authenticateUser now redirects to authenticateUserByEmail internally
-        console.warn(
+        logger.warn(
           '[AuthService] Login attempted with username instead of email - consider updating client'
         );
         user = await auth.authenticateUser(username, password);
@@ -108,10 +114,9 @@ class AuthService extends BaseService {
 
       if (isDatabaseConnectionError(authError)) {
         // Don't record as failed login attempt - it's a system error
-        console.warn(
-          '[AuthService] Database connection error during authentication:',
-          authError.code || authError.message
-        );
+        logger.warn('[AuthService] Database connection error during authentication', {
+          arg0: authError.code || authError.message,
+        });
         throw new Error('DATABASE_NOT_READY');
       }
 
@@ -195,7 +200,9 @@ class AuthService extends BaseService {
           });
         } catch (err) {
           // Log but don't fail - code generation succeeded
-          console.error('[AuthService] Failed to send verification code:', err);
+          logger.error('[AuthService] Failed to send verification code', {
+            err: err,
+          });
         }
 
         return {

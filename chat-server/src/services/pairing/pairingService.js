@@ -16,6 +16,12 @@ const { factory: invitationFactory } = require('../../../libs/pairing-manager/In
 // These libraries haven't been refactored to use repositories yet
 const db = require('../../../dbPostgres');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'pairingService',
+});
+
 class PairingService extends BaseService {
   constructor() {
     super('pairing_sessions');
@@ -173,9 +179,13 @@ class PairingService extends BaseService {
         try {
           const { markSessionExpired } = require('../../../libs/pairing-manager/pairingValidator');
           await markSessionExpired(this.db, result.pairing.id);
-          console.log(`[PairingService] Marked expired pairing session ${result.pairing.id}`);
+          logger.debug('Log message', {
+            value: `[PairingService] Marked expired pairing session ${result.pairing.id}`,
+          });
         } catch (expireError) {
-          console.error('[PairingService] Failed to mark session as expired:', expireError);
+          logger.error('[PairingService] Failed to mark session as expired', {
+            expireError: expireError,
+          });
           // Continue - validation result is still correct
         }
       }
@@ -184,14 +194,16 @@ class PairingService extends BaseService {
     } catch (error) {
       // Handle database errors
       if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
-        console.error('[PairingService] Database connection error during token validation:', error);
+        logger.error('[PairingService] Database connection error during token validation', {
+          error: error,
+        });
         return {
           valid: false,
           error: 'Database connection failed',
           code: 'DATABASE_ERROR',
         };
       }
-      
+
       // Re-throw unexpected errors
       throw error;
     }

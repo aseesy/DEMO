@@ -9,6 +9,12 @@
 const dbSafe = require('../../../dbSafe');
 const { normalizeCategory } = require('./threadCategories');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'threadQueries',
+});
+
 /**
  * Get threads by category for a room
  * @param {string} roomId - Room ID
@@ -27,7 +33,9 @@ async function getThreadsByCategory(roomId, category, limit = 10) {
 
     return dbSafe.parseResult(result);
   } catch (error) {
-    console.error('Error getting threads by category:', error);
+    logger.error('Error getting threads by category', {
+      error: error,
+    });
     return [];
   }
 }
@@ -35,4 +43,3 @@ async function getThreadsByCategory(roomId, category, limit = 10) {
 module.exports = {
   getThreadsByCategory,
 };
-

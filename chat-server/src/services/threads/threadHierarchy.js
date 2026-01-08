@@ -11,9 +11,17 @@
 
 const dbSafe = require('../../../dbSafe');
 const { normalizeCategory } = require('./threadCategories');
-const { factory: semanticIndexFactory } = require('../../infrastructure/semantic/SemanticIndexFactory');
+const {
+  factory: semanticIndexFactory,
+} = require('../../infrastructure/semantic/SemanticIndexFactory');
 const { eventEmitter } = require('../../core/events/DomainEventEmitter');
 const { SUB_THREAD_CREATED } = require('../../core/events/ThreadEvents');
+
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'threadHierarchy',
+});
 
 /**
  * Create a sub-thread (spawned from a message in an existing thread)
@@ -50,12 +58,12 @@ async function createSubThread(
 
     const parentThread = parentResult.rows[0];
     const parentDepth = parentThread.depth || 0;
-    
+
     // Validate depth limit (max depth is 3)
     if (parentDepth >= 3) {
       throw new Error('Maximum thread depth (3) reached. Cannot create sub-thread.');
     }
-    
+
     // Root is always the top-level ancestor (parent's root, or parent itself if parent is top-level)
     const rootThreadId = parentThread.root_thread_id || parentThreadId;
     const depth = parentDepth + 1;
@@ -88,7 +96,9 @@ async function createSubThread(
         await semanticIndex.indexThread(threadId, roomId, title);
         await semanticIndex.linkThreadToParent(threadId, parentThreadId);
       } catch (err) {
-        console.warn('⚠️  Failed to index sub-thread (non-fatal):', err.message);
+        logger.warn('⚠️  Failed to index sub-thread (non-fatal)', {
+          message: err.message,
+        });
       }
     }
 
@@ -103,12 +113,14 @@ async function createSubThread(
       category: normalizedCategory,
     });
 
-    console.log(
-      `[threadManager] Created sub-thread: ${threadId} (parent: ${parentThreadId}, root: ${rootThreadId}, depth: ${depth})`
-    );
+    logger.debug('Log message', {
+      value: `[threadManager] Created sub-thread: ${threadId} (parent: ${parentThreadId}, root: ${rootThreadId}, depth: ${depth})`,
+    });
     return threadId;
   } catch (error) {
-    console.error('Error creating sub-thread:', error);
+    logger.error('Error creating sub-thread', {
+      error: error,
+    });
     throw error;
   }
 }
@@ -146,7 +158,9 @@ async function getThreadAncestors(threadId) {
 
     return result.rows;
   } catch (error) {
-    console.error('Error getting thread ancestors:', error);
+    logger.error('Error getting thread ancestors', {
+      error: error,
+    });
     return [];
   }
 }
@@ -169,7 +183,9 @@ async function getSubThreads(threadId) {
 
     return dbSafe.parseResult(result);
   } catch (error) {
-    console.error('Error getting sub-threads:', error);
+    logger.error('Error getting sub-threads', {
+      error: error,
+    });
     return [];
   }
 }
@@ -208,7 +224,9 @@ async function getThreadHierarchy(threadId) {
 
     return result.rows;
   } catch (error) {
-    console.error('Error getting thread hierarchy:', error);
+    logger.error('Error getting thread hierarchy', {
+      error: error,
+    });
     return [];
   }
 }
@@ -231,7 +249,9 @@ async function getThreadsByRoot(rootThreadId) {
 
     return dbSafe.parseResult(result);
   } catch (error) {
-    console.error('Error getting threads by root:', error);
+    logger.error('Error getting threads by root', {
+      error: error,
+    });
     return [];
   }
 }

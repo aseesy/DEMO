@@ -7,7 +7,16 @@
  * @module src/services/auditService
  */
 
-const { PROFILE_SECTIONS, SENSITIVE_FIELDS } = require('../features/profile/constants/profileConstants');
+const {
+  PROFILE_SECTIONS,
+  SENSITIVE_FIELDS,
+} = require('../features/profile/constants/profileConstants');
+
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'auditService',
+});
 
 // ============================================================================
 // PROFILE AUDIT LOGGING
@@ -33,7 +42,9 @@ async function logProfileView(profileUserId, viewerUserId, requestInfo = {}) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error logging profile view:', error.message);
+    logger.error('Error logging profile view', {
+      message: error.message,
+    });
     // Don't throw - audit logging should not break the main flow
   }
 }
@@ -82,7 +93,9 @@ async function logProfileChanges(userId, oldProfile, newProfile, requestInfo = {
       }
     }
   } catch (error) {
-    console.error('Error logging profile changes:', error.message);
+    logger.error('Error logging profile changes', {
+      message: error.message,
+    });
     // Don't throw - audit logging should not break the main flow
   }
 }
@@ -121,7 +134,9 @@ async function logPrivacyChange(userId, oldSettings, newSettings, requestInfo = 
       }
     }
   } catch (error) {
-    console.error('Error logging privacy change:', error.message);
+    logger.error('Error logging privacy change', {
+      message: error.message,
+    });
     // Don't throw - audit logging should not break the main flow
   }
 }
