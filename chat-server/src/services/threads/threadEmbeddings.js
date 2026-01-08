@@ -5,7 +5,7 @@
  * - Generate embeddings for text
  */
 
-const { defaultLogger } = require('../../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'threadEmbeddings',
