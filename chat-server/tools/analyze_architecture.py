@@ -86,6 +86,17 @@ class DeadCodeIssue:
     suggested_action: str
 
 
+@dataclass
+class SocketIssue:
+    """Represents a socket-related issue"""
+    file: str
+    line: int
+    issue_type: str  # 'missing_handler', 'missing_response', 'unprotected', 'no_error_boundary', 'naming_violation'
+    message: str
+    severity: str  # 'error', 'warning'
+    details: Dict = field(default_factory=dict)
+
+
 class ArchitectureAnalyzer:
     """Analyzes project architecture for issues"""
     
@@ -93,6 +104,7 @@ class ArchitectureAnalyzer:
         self.dependency_issues: List[DependencyIssue] = []
         self.env_var_issues: List[EnvVarIssue] = []
         self.dead_code_issues: List[DeadCodeIssue] = []
+        self.socket_issues: List[SocketIssue] = []
         
         # Dependency graph
         self.import_graph: Dict[str, Set[str]] = defaultdict(set)
@@ -102,6 +114,12 @@ class ArchitectureAnalyzer:
         # Environment variables
         self.env_vars_used: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
         self.env_vars_documented: Set[str] = set()
+        
+        # Socket events
+        self.client_emits: Set[str] = set()  # Events client emits (sends to server)
+        self.client_listens: Set[str] = set()  # Events client listens to (receives from server)
+        self.server_handlers: Dict[str, List[Tuple[str, int]]] = defaultdict(list)  # event -> [(file, line)]
+        self.server_emits: Dict[str, List[Tuple[str, int]]] = defaultdict(list)  # event -> [(file, line)]
         
         # File tracking
         self.all_files: Set[Path] = set()
@@ -626,10 +644,12 @@ class ArchitectureAnalyzer:
             "dependency_issues": [asdict(issue) for issue in self.dependency_issues],
             "env_var_issues": [asdict(issue) for issue in self.env_var_issues],
             "dead_code_issues": [asdict(issue) for issue in self.dead_code_issues],
+            "socket_issues": [asdict(issue) for issue in self.socket_issues],
             "summary": {
                 "total_dependency_issues": len(self.dependency_issues),
                 "total_env_var_issues": len(self.env_var_issues),
                 "total_dead_code_issues": len(self.dead_code_issues),
+                "total_socket_issues": len(self.socket_issues),
                 "circular_dependencies": len([i for i in self.dependency_issues if i.issue_type == "circular"]),
                 "forbidden_dependencies": len([i for i in self.dependency_issues if i.issue_type == "forbidden"]),
             }
@@ -645,7 +665,7 @@ class ArchitectureAnalyzer:
     def analyze_all(self, checks: List[str] = None):
         """Run all analyses"""
         if checks is None:
-            checks = ["dependencies", "env", "dead-code"]
+            checks = ["dependencies", "env", "dead-code", "sockets"]
         
         print("🏗️  Architecture Analysis")
         print("=" * 80)
@@ -664,6 +684,9 @@ class ArchitectureAnalyzer:
         if "dead-code" in checks:
             self.detect_dead_code()
         
+        if "sockets" in checks:
+            self.analyze_sockets()
+        
         # Generate report
         reports_dir = BASE_DIR / "reports"
         reports_dir.mkdir(exist_ok=True)
@@ -679,14 +702,265 @@ class ArchitectureAnalyzer:
         print(f"    - Forbidden: {report['summary']['forbidden_dependencies']}")
         print(f"  Environment Variable Issues: {report['summary']['total_env_var_issues']}")
         print(f"  Dead Code Issues: {report['summary']['total_dead_code_issues']}")
+        print(f"  Socket Issues: {report['summary']['total_socket_issues']}")
         
         # Return success status
         has_errors = any(
             issue.severity == "error"
-            for issue in self.dependency_issues
+            for issue in self.dependency_issues + self.socket_issues
         )
         
         return not has_errors
+    
+    def extract_client_socket_events(self):
+        """Extract socket events from client code (SocketEvents constants and usage)"""
+        print("\n🔌 Extracting client socket events...")
+        
+        # Find SocketEvents constant definition
+        socket_adapter = CLIENT_DIR / "src/adapters/socket/SocketAdapter.js"
+        if socket_adapter.exists():
+            try:
+                with open(socket_adapter, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    
+                # Extract SocketEvents object values
+                # Pattern: KEY: 'event_name',
+                pattern = r"['\"]([^'\"]+)['\"]\s*[,}]"
+                in_socket_events = False
+                for line in content.splitlines():
+                    if 'SocketEvents' in line and '{' in line:
+                        in_socket_events = True
+                    if in_socket_events:
+                        matches = re.findall(pattern, line)
+                        for match in matches:
+                            if match not in ['connect', 'disconnect']:  # Skip built-in events
+                                # SocketEvents contains both emits and listens, we'll categorize later
+                                self.client_emits.add(match)  # Default to emit, will be refined
+                                self.client_listens.add(match)  # Also add to listens
+                        if '};' in line:
+                            break
+            except Exception as e:
+                print(f"  ⚠️  Error reading SocketAdapter: {e}")
+        
+        # Also scan for socket.emit() and socket.on() calls in client
+        client_files = self.get_all_js_files(CLIENT_DIR)
+        for file_path in client_files:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    lines = content.splitlines()
+                
+                for line_num, line in enumerate(lines, 1):
+                    # socket.emit('event_name', ...) - client sends to server
+                    emit_match = re.search(r"socket\.emit\(['\"]([^'\"]+)['\"]", line)
+                    if emit_match:
+                        self.client_emits.add(emit_match.group(1))
+                    
+                    # socket.on('event_name', ...) - client receives from server
+                    on_match = re.search(r"socket\.on\(['\"]([^'\"]+)['\"]", line)
+                    if on_match:
+                        self.client_listens.add(on_match.group(1))
+            except Exception:
+                continue
+        
+        print(f"  Found {len(self.client_emits)} client emit events (requests)")
+        print(f"  Found {len(self.client_listens)} client listen events (responses)")
+    
+    def extract_server_socket_handlers(self):
+        """Extract socket handlers from server code"""
+        print("🔌 Extracting server socket handlers...")
+        
+        server_files = self.get_all_js_files(SERVER_DIR)
+        socket_handler_files = [f for f in server_files if 'socketHandlers' in str(f)]
+        
+        for file_path in socket_handler_files:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    lines = content.splitlines()
+                
+                rel_path = str(file_path.relative_to(BASE_DIR)).replace('\\', '/')
+                
+                for line_num, line in enumerate(lines, 1):
+                    # socket.on('event_name', ...)
+                    on_match = re.search(r"socket\.on\(['\"]([^'\"]+)['\"]", line)
+                    if on_match:
+                        event_name = on_match.group(1)
+                        self.server_handlers[event_name].append((rel_path, line_num))
+                    
+                    # socket.emit('event_name', ...)
+                    emit_match = re.search(r"socket\.emit\(['\"]([^'\"]+)['\"]", line)
+                    if emit_match:
+                        event_name = emit_match.group(1)
+                        self.server_emits[event_name].append((rel_path, line_num))
+            except Exception:
+                continue
+        
+        print(f"  Found {len(self.server_handlers)} unique server handlers")
+        print(f"  Found {len(self.server_emits)} unique server emit events")
+    
+    def check_event_consistency(self):
+        """Check that client events have server handlers"""
+        print("\n🔗 Checking event consistency...")
+        
+        # Built-in socket.io events (don't need handlers)
+        builtin_events = {'connect', 'disconnect', 'connect_error', 'reconnect', 'reconnect_attempt', 'error'}
+        
+        # Filter out events that are server responses (server emits them, so they don't need handlers)
+        # If server emits an event, it's a response, not a request that needs a handler
+        client_requests = set()
+        for event in self.client_emits:
+            # If server emits this event, it's a response, not a request
+            if event not in self.server_emits and event not in builtin_events:
+                client_requests.add(event)
+        
+        # Check client request events (client emits, server should handle)
+        missing_handlers = []
+        for event in client_requests:
+            if event not in self.server_handlers:
+                missing_handlers.append(event)
+        
+        if missing_handlers:
+            print(f"  ⚠️  {len(missing_handlers)} client request events without server handlers:")
+            for event in missing_handlers[:10]:
+                print(f"    {event}")
+                # Check if this might be a response event (server emits it but we didn't catch it)
+                # Or if it's in SocketEvents but client only listens (not emits)
+                is_likely_response = (
+                    event in self.client_listens or
+                    event.endswith('_success') or
+                    event.endswith('_result') or
+                    event.endswith('_list') or
+                    event.endswith('_history') or
+                    event.startswith('new_') or
+                    event.startswith('thread_') or
+                    'intervention' in event or
+                    'flagged' in event or
+                    'delivered' in event
+                )
+                
+                severity = "warning" if is_likely_response else "error"
+                self.socket_issues.append(SocketIssue(
+                    file="client",
+                    line=0,
+                    issue_type="missing_handler",
+                    message=f"Client emits '{event}' but no server handler found" + 
+                           (" (may be server response event)" if is_likely_response else ""),
+                    severity=severity,
+                    details={"event": event, "likely_response": is_likely_response}
+                ))
+            if len(missing_handlers) > 10:
+                print(f"    ... and {len(missing_handlers) - 10} more")
+        else:
+            print("  ✅ All client request events have server handlers")
+        
+        # Check server emits (responses) that client should listen to (informational only)
+        missing_listeners = []
+        for event in self.server_emits:
+            if event not in builtin_events and event not in self.client_listens:
+                missing_listeners.append(event)
+        
+        if missing_listeners and len(missing_listeners) <= 5:  # Only show if few missing
+            print(f"  ℹ️  {len(missing_listeners)} server response events without client listeners (may be intentional)")
+            # Don't add as errors - client might not need to listen to all server events
+    
+    def check_error_handling(self):
+        """Check socket handlers for proper error handling"""
+        print("\n🛡️  Checking error handling patterns...")
+        
+        server_files = self.get_all_js_files(SERVER_DIR)
+        socket_handler_files = [f for f in server_files if 'socketHandlers' in str(f)]
+        
+        handlers_without_wrap = []
+        for file_path in socket_handler_files:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    lines = content.splitlines()
+                
+                rel_path = str(file_path.relative_to(BASE_DIR)).replace('\\', '/')
+                
+                # Check if file uses wrapSocketHandler
+                uses_wrap = 'wrapSocketHandler' in content or 'errorBoundary' in content.lower()
+                
+                # Find socket.on() calls
+                for line_num, line in enumerate(lines, 1):
+                    if re.search(r"socket\.on\(['\"]", line):
+                        # Check if this handler is wrapped
+                        # Look for wrapSocketHandler in nearby lines (within 5 lines)
+                        context_start = max(0, line_num - 5)
+                        context_end = min(len(lines), line_num + 5)
+                        context = '\n'.join(lines[context_start:context_end])
+                        
+                        if not uses_wrap and 'wrapSocketHandler' not in context:
+                            handlers_without_wrap.append((rel_path, line_num, line.strip()[:50]))
+            except Exception:
+                continue
+        
+        if handlers_without_wrap:
+            print(f"  ⚠️  {len(handlers_without_wrap)} handlers without error boundary:")
+            for file_path, line_num, snippet in handlers_without_wrap[:10]:
+                print(f"    {file_path}:{line_num} - {snippet}...")
+                self.socket_issues.append(SocketIssue(
+                    file=file_path,
+                    line=line_num,
+                    issue_type="no_error_boundary",
+                    message="Socket handler not wrapped with wrapSocketHandler",
+                    severity="warning",
+                    details={"snippet": snippet}
+                ))
+            if len(handlers_without_wrap) > 10:
+                print(f"    ... and {len(handlers_without_wrap) - 10} more")
+        else:
+            print("  ✅ All handlers use error boundaries")
+    
+    def check_naming_conventions(self):
+        """Check socket event naming conventions (should be snake_case)"""
+        print("\n📝 Checking naming conventions...")
+        
+        violations = []
+        all_events = set(self.client_emits) | set(self.client_listens) | set(self.server_handlers.keys()) | set(self.server_emits.keys())
+        
+        # Pattern: should be snake_case (lowercase with underscores)
+        snake_case_pattern = re.compile(r'^[a-z][a-z0-9_]*$')
+        
+        for event in all_events:
+            # Skip built-in socket.io events
+            if event in ['connect', 'disconnect', 'connect_error', 'reconnect', 'reconnect_attempt', 'error']:
+                continue
+            
+            if not snake_case_pattern.match(event):
+                violations.append(event)
+        
+        if violations:
+            print(f"  ⚠️  {len(violations)} events violate snake_case naming:")
+            for event in violations[:10]:
+                print(f"    {event}")
+                self.socket_issues.append(SocketIssue(
+                    file="socket events",
+                    line=0,
+                    issue_type="naming_violation",
+                    message=f"Event '{event}' should use snake_case naming",
+                    severity="warning",
+                    details={"event": event}
+                ))
+            if len(violations) > 10:
+                print(f"    ... and {len(violations) - 10} more")
+        else:
+            print("  ✅ All events follow snake_case naming")
+    
+    def analyze_sockets(self):
+        """Run all socket-related analyses"""
+        print("\n🔌 Socket Analysis")
+        print("=" * 80)
+        
+        self.extract_client_socket_events()
+        self.extract_server_socket_handlers()
+        self.check_event_consistency()
+        self.check_error_handling()
+        self.check_naming_conventions()
+        
+        print(f"\n  Total socket issues: {len(self.socket_issues)}")
 
 
 def main():
@@ -694,8 +968,8 @@ def main():
     parser.add_argument(
         "--check",
         nargs="+",
-        choices=["dependencies", "env", "dead-code"],
-        default=["dependencies", "env", "dead-code"],
+        choices=["dependencies", "env", "dead-code", "sockets"],
+        default=["dependencies", "env", "dead-code", "sockets"],
         help="Which checks to run"
     )
     parser.add_argument(

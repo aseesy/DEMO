@@ -15,6 +15,7 @@ A comprehensive Python-based architecture analysis tool has been added to the pr
 - **Dependency Graph Analysis**: Detects circular dependencies and forbidden architectural imports
 - **Environment Variable Consistency**: Tracks usage vs documentation in `.env.example`
 - **Dead Code Detection**: Identifies unused files and modules
+- **Socket Analysis**: Validates socket event consistency, error handling, and naming conventions
 
 **Technology Stack**:
 
@@ -73,6 +74,9 @@ npm run analyze:architecture:env
 
 # Only dead code
 npm run analyze:architecture:dead-code
+
+# Only sockets
+npm run analyze:architecture:sockets
 ```
 
 ### Command Line Options
@@ -163,10 +167,12 @@ Saved to `reports/architecture_analysis.json`:
   "dependency_issues": [...],
   "env_var_issues": [...],
   "dead_code_issues": [...],
+  "socket_issues": [...],
   "summary": {
     "total_dependency_issues": 0,
     "total_env_var_issues": 2,
     "total_dead_code_issues": 5,
+    "total_socket_issues": 3,
     "circular_dependencies": 0,
     "forbidden_dependencies": 0
   }

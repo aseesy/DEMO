@@ -56,6 +56,9 @@ npm run analyze:architecture:env
 
 # Only check for dead code
 npm run analyze:architecture:dead-code
+
+# Only check sockets
+npm run analyze:architecture:sockets
 ```
 
 ### Command Line Options
@@ -65,7 +68,7 @@ npm run analyze:architecture:dead-code
 ./tools/analyze-architecture
 
 # Run specific checks
-./tools/analyze-architecture --check dependencies env
+./tools/analyze-architecture --check dependencies env sockets
 
 # Quiet mode (only show errors)
 ./tools/analyze-architecture --quiet
