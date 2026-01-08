@@ -4,21 +4,22 @@
  * Tests for RBAC permission system
  */
 
+// Mock dbPostgres BEFORE importing the service
+const mockDbPostgres = {
+  query: jest.fn(),
+};
+
+jest.mock('../../dbPostgres', () => mockDbPostgres);
+
 describe('PermissionService', () => {
   let PermissionService;
   let permissionService;
-  let mockDbPostgres;
 
   beforeEach(() => {
-    // Mock database
-    mockDbPostgres = {
-      query: jest.fn(),
-    };
+    // Clear all mocks before each test
+    jest.clearAllMocks();
 
-    // Mock dbPostgres module
-    jest.mock('../../dbPostgres', () => mockDbPostgres);
-
-    // Import service after mocking
+    // Import service after mocking (jest.mock hoists, but we need fresh instance)
     PermissionService =
       require('../../src/services/permissions/PermissionService').PermissionService;
     permissionService = new PermissionService();
