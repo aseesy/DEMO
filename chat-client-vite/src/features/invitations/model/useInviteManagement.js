@@ -114,6 +114,7 @@ export function useInviteManagement({
       const result = await commandJoinRoom(pendingInviteCode, username);
 
       if (result.success) {
+        logger.info('Manual invite accepted successfully', { roomId: result.roomId });
         logger.debug('Successfully accepted invite, joined room:', result.roomId);
         setPendingInviteCode(null);
         removeWithMigration('pendingInviteCode');
@@ -147,6 +148,7 @@ export function useInviteManagement({
       return;
     }
 
+    logger.info('Manual invite acceptance initiated');
     setIsAcceptingInvite(true);
     setInviteError('');
 
@@ -161,6 +163,10 @@ export function useInviteManagement({
     }
 
     if (result.success) {
+      logger.info('Manual invite accepted successfully', {
+        inviteType: isCoParentInviteCode ? 'coParent' : 'room',
+        roomId: result.roomId,
+      });
       logger.debug('Successfully accepted invite:', result);
       setPendingInviteCode(null);
       setManualInviteCode('');
@@ -357,9 +363,11 @@ export function useInviteManagement({
           console.log('[useInviteManagement] No token found after 500ms, waiting 1000ms more');
           setTimeout(() => {
             if (tokenManager.hasToken()) {
-      checkRoomMembers();
+              checkRoomMembers();
             } else {
-              console.log('[useInviteManagement] No token found after 1500ms, skipping checkRoomMembers');
+              console.log(
+                '[useInviteManagement] No token found after 1500ms, skipping checkRoomMembers'
+              );
             }
           }, 1000);
         }

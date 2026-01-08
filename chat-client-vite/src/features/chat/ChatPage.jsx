@@ -50,11 +50,10 @@ function NoCoParentEmptyState({ onGenerateCode, onEnterCode }) {
         </div>
 
         {/* Title and description */}
-        <h2 className="text-xl font-semibold text-gray-800 mb-2">
-          Connect with Your Co-Parent
-        </h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Connect with Your Co-Parent</h2>
         <p className="text-gray-600 mb-6">
-          To start chatting, you need to connect with your co-parent. Generate an invite code to share with them, or enter a code they shared with you.
+          To start chatting, you need to connect with your co-parent. Generate an invite code to
+          share with them, or enter a code they shared with you.
         </p>
 
         {/* Action buttons */}
@@ -171,9 +170,7 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
   const sendInterventionFeedback = React.useCallback(
     (interventionId, helpful) => {
       if (!socket || !socket.connected) {
-        if (import.meta.env.DEV) {
-          console.warn('Cannot send feedback: socket not connected');
-        }
+        logger.warn('Cannot send feedback: socket not connected');
         return;
       }
       socket.emit('intervention_feedback', {
@@ -272,6 +269,13 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
         !trackedInterventionsRef.current.has(msg.id)
       ) {
         trackedInterventionsRef.current.add(msg.id);
+        // Log high-level event for debugging
+        logger.info('AI intervention displayed', {
+          interventionType: msg.interventionType || 'general',
+          confidence: msg.confidence || 'medium',
+          riskLevel: msg.riskLevel || 'medium',
+        });
+        // Track with analytics (separate concern)
         trackAIIntervention(
           msg.interventionType || 'general',
           msg.confidence || 'medium',
@@ -279,7 +283,7 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
         );
       }
     });
-  }, [messages]);
+  }, [messages, logger]);
 
   // Threads are now automatically loaded by useChatSocket when roomId is available
   // No need to manually load threads here - useChatSocket handles it
@@ -325,11 +329,13 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
   // Destructure invite state for child components
   // Safety check: inviteState should always be provided, but handle undefined gracefully
   if (!inviteState) {
+    const errorMsg =
+      'ChatView: inviteState is undefined. Make sure to use ChatViewLegacy wrapper or pass inviteState prop.';
     if (import.meta.env.DEV) {
-      console.error(
-        'ChatView: inviteState is undefined. Make sure to use ChatViewLegacy wrapper or pass inviteState prop.'
-      );
+      // Throw in development to fail fast and surface the bug
+      throw new Error(errorMsg);
     }
+    logger.error(errorMsg);
     return null;
   }
 
@@ -351,11 +357,13 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
 
   // Safety check: inviteHandlers should always be provided
   if (!inviteHandlers) {
+    const errorMsg =
+      'ChatView: inviteHandlers is undefined. Make sure to use ChatViewLegacy wrapper or pass inviteHandlers prop.';
     if (import.meta.env.DEV) {
-      console.error(
-        'ChatView: inviteHandlers is undefined. Make sure to use ChatViewLegacy wrapper or pass inviteHandlers prop.'
-      );
+      // Throw in development to fail fast and surface the bug
+      throw new Error(errorMsg);
     }
+    logger.error(errorMsg);
     return null;
   }
 
@@ -402,7 +410,11 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
         >
           {/* Show empty state when no co-parent is connected and no invite process is active */}
           {/* Wait for isCheckingCoParent to complete to prevent flash */}
-          {!isCheckingCoParent && !hasCoParentConnected && !inviteLink && !showManualInvite && !inviteError ? (
+          {!isCheckingCoParent &&
+          !hasCoParentConnected &&
+          !inviteLink &&
+          !showManualInvite &&
+          !inviteError ? (
             <NoCoParentEmptyState
               onGenerateCode={handleLoadInvite}
               onEnterCode={() => setShowManualInvite(true)}
@@ -410,7 +422,8 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
           ) : (
             <>
               {/* Manual Invite Acceptance UI */}
-              {(showManualInvite || (pendingInviteCode && !hasCoParentConnected && inviteError)) && (
+              {(showManualInvite ||
+                (pendingInviteCode && !hasCoParentConnected && inviteError)) && (
                 <ManualInvitePanel
                   pendingInviteCode={pendingInviteCode}
                   manualInviteCode={manualInviteCode}

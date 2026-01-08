@@ -10,6 +10,9 @@
 
 import React from 'react';
 import { socketService } from '../../../services/socket/index.js';
+import { createLogger } from '../../../utils/logger.js';
+
+const logger = createLogger('useSearchMessages');
 
 export function useSearchMessages({ username, setError }) {
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -36,6 +39,7 @@ export function useSearchMessages({ username, setError }) {
       }
 
       setIsSearching(true);
+      logger.debug('Searching messages', { query: query.trim(), queryLength: query.trim().length });
       socketService.emit('search_messages', {
         query: query.trim(),
         limit: 50,
@@ -61,18 +65,23 @@ export function useSearchMessages({ username, setError }) {
   // Toggle search mode
   const toggleSearchMode = React.useCallback(() => {
     setSearchMode(prev => {
-      if (prev) {
+      const newMode = !prev;
+      if (newMode) {
+        logger.info('User entered search mode');
+      } else {
+        logger.info('User exited search mode');
         // Exiting search mode - clear search
         setSearchQuery('');
         setSearchResults([]);
         setSearchTotal(0);
       }
-      return !prev;
+      return newMode;
     });
-  }, []);
+  }, [logger]);
 
   // Exit search mode and reload current messages
   const exitSearchMode = React.useCallback(() => {
+    logger.info('User exited search mode');
     setSearchMode(false);
     setSearchQuery('');
     setSearchResults([]);
@@ -81,7 +90,7 @@ export function useSearchMessages({ username, setError }) {
     if (socketService.isConnected() && username) {
       socketService.emit('join', { email: username });
     }
-  }, [username]);
+  }, [username, logger]);
 
   // Handle search results from socket
   const handleSearchResults = React.useCallback(({ messages: results, total }) => {

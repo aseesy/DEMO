@@ -6,6 +6,10 @@
  * - jump_to_message_result
  */
 
+import { createLogger } from '../../../utils/logger.js';
+
+const logger = createLogger('SearchHandlers');
+
 /**
  * Setup search event handlers
  * @param {Object} socket - Socket.io socket instance
@@ -22,6 +26,11 @@ export function setupSearchHandlers(socket, handlers) {
       setIsSearching(false);
       setSearchResults(results || []);
       setSearchTotal(total || 0);
+      // Log high-level event for debugging
+      logger.info('Search results received', {
+        resultCount: results?.length || 0,
+        total,
+      });
     }
   };
 
