@@ -10,7 +10,7 @@
 const openaiClient = require('../../../openaiClient');
 const { normalizeCategory, getCategoryKeywords } = require('./threadCategories');
 const { extractDistinctiveKeywords } = require('./threadKeywords');
-const { defaultLogger } = require('../../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'threadAnalysis',
