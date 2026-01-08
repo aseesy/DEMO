@@ -3,7 +3,7 @@
   "git": {
     "submodules": false
   },
-  "buildCommand": "npm install && npm run build",
+  "buildCommand": "cd chat-client-vite && npm install && npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "framework": null,
