@@ -1,13 +1,13 @@
 /**
  * Unit Tests: State Manager
  *
- * Tests for conversation state management (escalation, emotional, policy state).
+ * Tests for conversation state management (escalation state only).
+ * Note: Emotional and policy state tracking have been removed as unproven.
  *
  * @module src/liaizen/core/__tests__/stateManager.test
  */
 
 const stateManager = require('../stateManager');
-const { ESCALATION, MESSAGE } = require('../../../infrastructure/config/constants');
 
 describe('State Manager', () => {
   // Mock conversation context
@@ -17,8 +17,6 @@ describe('State Manager', () => {
     // Create fresh mock context for each test
     mockConversationContext = {
       escalationState: new Map(),
-      emotionalState: new Map(),
-      policyState: new Map(),
     };
   });
 
@@ -48,534 +46,264 @@ describe('State Manager', () => {
       const state = stateManager.initializeEscalationState(mockConversationContext, roomId);
 
       expect(state).toBeDefined();
-      expect(state.escalationScore).toBe(0);
-      expect(state.lastNegativeTime).toBeNull();
+      expect(state.lastInterventionTime).toBeNull();
+      expect(state.recentInterventionCount).toBe(0);
+      expect(state.lastInterventionResetTime).toBeGreaterThan(0);
       expect(state.patternCounts).toEqual({
         accusatory: 0,
         triangulation: 0,
-        comparison: 0,
-        blaming: 0,
       });
     });
 
     it('should return existing state if already initialized', () => {
       const roomId = 'room-123';
       const state1 = stateManager.initializeEscalationState(mockConversationContext, roomId);
-      state1.escalationScore = 10;
+      state1.recentInterventionCount = 5;
 
       const state2 = stateManager.initializeEscalationState(mockConversationContext, roomId);
 
       expect(state2).toBe(state1);
-      expect(state2.escalationScore).toBe(10);
+      expect(state2.recentInterventionCount).toBe(5);
     });
 
     it('should handle multiple rooms independently', () => {
       const room1 = stateManager.initializeEscalationState(mockConversationContext, 'room-1');
       const room2 = stateManager.initializeEscalationState(mockConversationContext, 'room-2');
 
-      room1.escalationScore = 5;
-      room2.escalationScore = 10;
+      room1.recentInterventionCount = 5;
+      room2.recentInterventionCount = 10;
 
-      expect(room1.escalationScore).toBe(5);
-      expect(room2.escalationScore).toBe(10);
+      expect(room1.recentInterventionCount).toBe(5);
+      expect(room2.recentInterventionCount).toBe(10);
     });
-  });
 
-  describe('initializeEmotionalState', () => {
-    it('should create new emotional state for room', () => {
+    it('should create escalationState Map if it does not exist', () => {
+      const contextWithoutMap = {};
       const roomId = 'room-123';
-      const state = stateManager.initializeEmotionalState(mockConversationContext, roomId);
 
+      const state = stateManager.initializeEscalationState(contextWithoutMap, roomId);
+
+      expect(contextWithoutMap.escalationState).toBeInstanceOf(Map);
       expect(state).toBeDefined();
-      expect(state.participants).toEqual({});
-      expect(state.conversationEmotion).toBe('neutral');
-      expect(state.escalationRisk).toBe(0);
-      expect(state.lastUpdated).toBeGreaterThan(0);
-    });
-
-    it('should return existing state if already initialized', () => {
-      const roomId = 'room-123';
-      const state1 = stateManager.initializeEmotionalState(mockConversationContext, roomId);
-      state1.conversationEmotion = 'frustrated';
-
-      const state2 = stateManager.initializeEmotionalState(mockConversationContext, roomId);
-
-      expect(state2).toBe(state1);
-      expect(state2.conversationEmotion).toBe('frustrated');
-    });
-  });
-
-  describe('initializePolicyState', () => {
-    it('should create new policy state for room', () => {
-      const roomId = 'room-123';
-      const state = stateManager.initializePolicyState(mockConversationContext, roomId);
-
-      expect(state).toBeDefined();
-      expect(state.interventionThreshold).toBe(50);
-      expect(state.interventionHistory).toEqual([]);
-      expect(state.adaptationLevel).toBe('moderate');
-    });
-
-    it('should return existing state if already initialized', () => {
-      const roomId = 'room-123';
-      const state1 = stateManager.initializePolicyState(mockConversationContext, roomId);
-      state1.interventionThreshold = 75;
-
-      const state2 = stateManager.initializePolicyState(mockConversationContext, roomId);
-
-      expect(state2).toBe(state1);
-      expect(state2.interventionThreshold).toBe(75);
     });
   });
 
   describe('updateEscalationScore', () => {
-    it('should increment score for accusatory patterns', () => {
+    it('should increment accusatory pattern count', () => {
       const roomId = 'room-123';
       const patterns = {
-        accusatory: true,
-        triangulation: false,
-        comparison: false,
-        blaming: false,
+        hasAccusatory: true,
+        hasTriangulation: false,
       };
 
       const state = stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
 
-      expect(state.escalationScore).toBe(ESCALATION.SCORE_INCREMENT);
       expect(state.patternCounts.accusatory).toBe(1);
-      expect(state.lastNegativeTime).toBeGreaterThan(0);
+      expect(state.patternCounts.triangulation).toBe(0);
     });
 
-    it('should increment score for multiple patterns', () => {
+    it('should increment triangulation pattern count', () => {
       const roomId = 'room-123';
       const patterns = {
-        accusatory: true,
-        triangulation: true,
-        comparison: false,
-        blaming: false,
+        hasAccusatory: false,
+        hasTriangulation: true,
       };
 
       const state = stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
 
-      expect(state.escalationScore).toBe(ESCALATION.SCORE_INCREMENT * 2); // Two patterns
-      expect(state.patternCounts.accusatory).toBe(1);
+      expect(state.patternCounts.accusatory).toBe(0);
       expect(state.patternCounts.triangulation).toBe(1);
     });
 
-    it('should increment score for all pattern types', () => {
+    it('should increment both pattern counts when both are present', () => {
       const roomId = 'room-123';
       const patterns = {
-        accusatory: true,
-        triangulation: true,
-        comparison: true,
-        blaming: true,
+        hasAccusatory: true,
+        hasTriangulation: true,
       };
 
       const state = stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
 
       expect(state.patternCounts.accusatory).toBe(1);
       expect(state.patternCounts.triangulation).toBe(1);
-      expect(state.patternCounts.comparison).toBe(1);
-      expect(state.patternCounts.blaming).toBe(1);
-      expect(state.escalationScore).toBe(ESCALATION.SCORE_INCREMENT * 4); // Four patterns
     });
 
-    it('should not increment score for no patterns', () => {
+    it('should not increment counts when no patterns are present', () => {
       const roomId = 'room-123';
       const patterns = {
-        accusatory: false,
-        triangulation: false,
-        comparison: false,
-        blaming: false,
+        hasAccusatory: false,
+        hasTriangulation: false,
       };
 
       const state = stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
 
-      expect(state.escalationScore).toBe(0);
-      expect(state.lastNegativeTime).toBeNull();
+      expect(state.patternCounts.accusatory).toBe(0);
+      expect(state.patternCounts.triangulation).toBe(0);
     });
 
-    it('should decay score after decay interval', () => {
+    it('should reset intervention count after 24 hours', () => {
       const roomId = 'room-123';
 
-      // Set up state with old negative time
+      // Initialize state and set old reset time
       const state = stateManager.initializeEscalationState(mockConversationContext, roomId);
-      state.escalationScore = 10;
-      state.lastNegativeTime = Date.now() - ESCALATION.DECAY_INTERVAL_MS - 1000; // 1 second past decay interval
+      state.recentInterventionCount = 5;
+      const oldResetTime = Date.now() - 25 * 60 * 60 * 1000; // 25 hours ago
+      state.lastInterventionResetTime = oldResetTime;
 
       const patterns = { hasAccusatory: false };
-      const updatedState = stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
-
-      expect(updatedState.escalationScore).toBe(9); // 10 - 1 (decay)
-    });
-
-    it('should not decay score if within decay interval', () => {
-      const roomId = 'room-123';
-
-      // Set up state with recent negative time
-      const state = stateManager.initializeEscalationState(mockConversationContext, roomId);
-      state.escalationScore = 10;
-      state.lastNegativeTime = Date.now() - 1000; // 1 second ago (within interval)
-
-      const patterns = { hasAccusatory: false };
-      const updatedState = stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
-
-      expect(updatedState.escalationScore).toBe(10); // No decay
-    });
-
-    it('should not allow negative escalation score', () => {
-      const roomId = 'room-123';
-
-      // Set up state with score of 1 and old negative time
-      const state = stateManager.initializeEscalationState(mockConversationContext, roomId);
-      state.escalationScore = 1;
-      state.lastNegativeTime = Date.now() - ESCALATION.DECAY_INTERVAL_MS - 1000;
-
-      const patterns = { hasAccusatory: false };
-      const updatedState = stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
-
-      expect(updatedState.escalationScore).toBe(0); // Should not go negative
-    });
-  });
-
-  describe('updateEmotionalState', () => {
-    it('should create participant state if not exists', () => {
-      const roomId = 'room-123';
-      const username = 'user1';
-      const emotionData = {
-        currentEmotion: 'frustrated',
-        stressLevel: 75,
-      };
-
-      stateManager.updateEmotionalState(mockConversationContext, roomId, username, emotionData);
-      const emotionalState = stateManager.initializeEmotionalState(mockConversationContext, roomId);
-
-      expect(emotionalState.participants[username]).toBeDefined();
-      expect(emotionalState.participants[username].currentEmotion).toBe('frustrated');
-      expect(emotionalState.participants[username].stressLevel).toBe(75);
-    });
-
-    it('should update existing participant state', () => {
-      const roomId = 'room-123';
-      const username = 'user1';
-
-      // First update
-      stateManager.updateEmotionalState(mockConversationContext, roomId, username, {
-        currentEmotion: 'neutral',
-        stressLevel: 50,
-      });
-
-      // Second update
-      stateManager.updateEmotionalState(mockConversationContext, roomId, username, {
-        currentEmotion: 'frustrated',
-        stressLevel: 80,
-      });
-
-      const emotionalState = stateManager.initializeEmotionalState(mockConversationContext, roomId);
-      expect(emotionalState.participants[username].currentEmotion).toBe('frustrated');
-      expect(emotionalState.participants[username].stressLevel).toBe(80);
-    });
-
-    it('should track emotion history', () => {
-      const roomId = 'room-123';
-      const username = 'user1';
-
-      stateManager.updateEmotionalState(mockConversationContext, roomId, username, {
-        currentEmotion: 'frustrated',
-        stressLevel: 75,
-      });
-
-      const emotionalState = stateManager.initializeEmotionalState(mockConversationContext, roomId);
-      const participant = emotionalState.participants[username];
-
-      expect(participant.emotionHistory.length).toBe(1);
-      expect(participant.emotionHistory[0].emotion).toBe('frustrated');
-      expect(participant.emotionHistory[0].intensity).toBe(75);
-    });
-
-    it('should limit emotion history to MAX_EMOTION_HISTORY', () => {
-      const roomId = 'room-123';
-      const username = 'user1';
-
-      // Add more than MAX_EMOTION_HISTORY entries
-      for (let i = 0; i < MESSAGE.MAX_EMOTION_HISTORY + 5; i++) {
-        stateManager.updateEmotionalState(mockConversationContext, roomId, username, {
-          currentEmotion: 'neutral',
-          stressLevel: 50,
-        });
-      }
-
-      const emotionalState = stateManager.initializeEmotionalState(mockConversationContext, roomId);
-      const participant = emotionalState.participants[username];
-
-      expect(participant.emotionHistory.length).toBe(MESSAGE.MAX_EMOTION_HISTORY);
-    });
-
-    it('should track recent triggers', () => {
-      const roomId = 'room-123';
-      const username = 'user1';
-
-      stateManager.updateEmotionalState(mockConversationContext, roomId, username, {
-        currentEmotion: 'frustrated',
-        stressLevel: 75,
-        triggers: ['schedule', 'communication'],
-      });
-
-      const emotionalState = stateManager.initializeEmotionalState(mockConversationContext, roomId);
-      const participant = emotionalState.participants[username];
-
-      expect(participant.recentTriggers).toContain('schedule');
-      expect(participant.recentTriggers).toContain('communication');
-    });
-
-    it('should limit recent triggers to MAX_RECENT_TRIGGERS', () => {
-      const roomId = 'room-123';
-      const username = 'user1';
-
-      // Add more than MAX_RECENT_TRIGGERS
-      const manyTriggers = Array.from(
-        { length: MESSAGE.MAX_RECENT_TRIGGERS + 5 },
-        (_, i) => `trigger-${i}`
+      const updatedState = stateManager.updateEscalationScore(
+        mockConversationContext,
+        roomId,
+        patterns
       );
 
-      stateManager.updateEmotionalState(mockConversationContext, roomId, username, {
-        currentEmotion: 'frustrated',
-        stressLevel: 75,
-        triggers: manyTriggers,
-      });
-
-      const emotionalState = stateManager.initializeEmotionalState(mockConversationContext, roomId);
-      const participant = emotionalState.participants[username];
-
-      expect(participant.recentTriggers.length).toBe(MESSAGE.MAX_RECENT_TRIGGERS);
+      expect(updatedState.recentInterventionCount).toBe(0);
+      expect(updatedState.lastInterventionResetTime).toBeGreaterThanOrEqual(oldResetTime);
+      expect(updatedState.lastInterventionResetTime).toBeGreaterThanOrEqual(
+        state.lastInterventionResetTime
+      );
     });
 
-    it('should update conversation-level emotion', () => {
-      const roomId = 'room-123';
-      const username = 'user1';
-
-      stateManager.updateEmotionalState(mockConversationContext, roomId, username, {
-        currentEmotion: 'frustrated',
-        conversationEmotion: 'tense',
-      });
-
-      const emotionalState = stateManager.initializeEmotionalState(mockConversationContext, roomId);
-      expect(emotionalState.conversationEmotion).toBe('tense');
-    });
-
-    it('should calculate escalation risk from average stress', () => {
+    it('should not reset intervention count if less than 24 hours', () => {
       const roomId = 'room-123';
 
-      // Add two participants with different stress levels
-      stateManager.updateEmotionalState(mockConversationContext, roomId, 'user1', {
-        currentEmotion: 'frustrated',
-        stressLevel: 80,
-      });
+      // Initialize state with recent reset time
+      const state = stateManager.initializeEscalationState(mockConversationContext, roomId);
+      state.recentInterventionCount = 5;
+      state.lastInterventionResetTime = Date.now() - 23 * 60 * 60 * 1000; // 23 hours ago
 
-      stateManager.updateEmotionalState(mockConversationContext, roomId, 'user2', {
-        currentEmotion: 'neutral',
-        stressLevel: 20,
-      });
+      const patterns = { hasAccusatory: false };
+      const updatedState = stateManager.updateEscalationScore(
+        mockConversationContext,
+        roomId,
+        patterns
+      );
 
-      const emotionalState = stateManager.initializeEmotionalState(mockConversationContext, roomId);
-      // Recalculate to ensure it's updated
-      const allStressLevels = Object.values(emotionalState.participants).map(p => p.stressLevel);
-      const avgStress =
-        allStressLevels.length > 0
-          ? allStressLevels.reduce((a, b) => a + b, 0) / allStressLevels.length
-          : 0;
-      expect(avgStress).toBe(50); // (80 + 20) / 2
-      expect(emotionalState.escalationRisk).toBe(50);
-    });
-
-    it('should update lastUpdated timestamp', () => {
-      const roomId = 'room-123';
-      const username = 'user1';
-      const before = Date.now();
-
-      stateManager.updateEmotionalState(mockConversationContext, roomId, username, {
-        currentEmotion: 'neutral',
-        stressLevel: 50,
-      });
-
-      const after = Date.now();
-      const emotionalState = stateManager.initializeEmotionalState(mockConversationContext, roomId);
-
-      expect(emotionalState.lastUpdated).toBeGreaterThanOrEqual(before);
-      expect(emotionalState.lastUpdated).toBeLessThanOrEqual(after);
+      expect(updatedState.recentInterventionCount).toBe(5); // Not reset
     });
   });
 
-  describe('updatePolicyState', () => {
-    it('should add intervention to history', () => {
-      const roomId = 'room-123';
-      const intervention = {
-        type: 'intervene',
-        escalationRisk: 'high',
-        emotionalState: 'frustrated',
-      };
-
-      stateManager.updatePolicyState(mockConversationContext, roomId, intervention);
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
-
-      expect(policyState.interventionHistory.length).toBe(1);
-      expect(policyState.interventionHistory[0].type).toBe('intervene');
-      expect(policyState.interventionHistory[0].escalationRisk).toBe('high');
-    });
-
-    it('should limit intervention history to MAX_INTERVENTION_HISTORY', () => {
-      const roomId = 'room-123';
-
-      // Add more than MAX_INTERVENTION_HISTORY interventions
-      for (let i = 0; i < MESSAGE.MAX_INTERVENTION_HISTORY + 5; i++) {
-        stateManager.updatePolicyState(mockConversationContext, roomId, {
-          type: 'intervene',
-          escalationRisk: 'medium',
-        });
-      }
-
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      expect(policyState.interventionHistory.length).toBe(MESSAGE.MAX_INTERVENTION_HISTORY);
-    });
-
-    it('should update lastInterventionTime', () => {
+  describe('recordIntervention', () => {
+    it('should record intervention time and increment count', () => {
       const roomId = 'room-123';
       const before = Date.now();
 
-      stateManager.updatePolicyState(mockConversationContext, roomId, {
-        type: 'intervene',
-        escalationRisk: 'medium',
-      });
-
+      const state = stateManager.recordIntervention(mockConversationContext, roomId);
       const after = Date.now();
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
 
-      expect(policyState.lastInterventionTime).toBeGreaterThanOrEqual(before);
-      expect(policyState.lastInterventionTime).toBeLessThanOrEqual(after);
+      expect(state.lastInterventionTime).toBeGreaterThanOrEqual(before);
+      expect(state.lastInterventionTime).toBeLessThanOrEqual(after);
+      expect(state.recentInterventionCount).toBe(1);
     });
 
-    it('should handle multiple interventions', () => {
+    it('should increment count on multiple interventions', () => {
       const roomId = 'room-123';
 
-      stateManager.updatePolicyState(mockConversationContext, roomId, { type: 'intervene', escalationRisk: 'high' });
-      stateManager.updatePolicyState(mockConversationContext, roomId, { type: 'comment', escalationRisk: 'low' });
-      stateManager.updatePolicyState(mockConversationContext, roomId, { type: 'intervene', escalationRisk: 'medium' });
+      stateManager.recordIntervention(mockConversationContext, roomId);
+      const state = stateManager.recordIntervention(mockConversationContext, roomId);
 
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      expect(policyState.interventionHistory.length).toBe(3);
+      expect(state.recentInterventionCount).toBe(2);
     });
   });
 
-  describe('recordInterventionFeedback', () => {
-    it('should update last intervention with helpful feedback', () => {
+  describe('getInterventionThrottle', () => {
+    it('should return throttle info for new room', () => {
       const roomId = 'room-123';
+      const throttle = stateManager.getInterventionThrottle(mockConversationContext, roomId);
 
-      // Add an intervention first
-      stateManager.updatePolicyState(mockConversationContext, roomId, {
-        type: 'intervene',
-        escalationRisk: 'medium',
-      });
-
-      // Record helpful feedback
-      stateManager.recordInterventionFeedback(mockConversationContext, roomId, true);
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
-
-      expect(policyState.interventionHistory[0].outcome).toBe('helpful');
-      expect(policyState.interventionHistory[0].feedback).toBe('User found helpful');
+      expect(throttle.shouldThrottle).toBe(false);
+      expect(throttle.lastInterventionTime).toBeNull();
+      expect(throttle.recentCount).toBe(0);
+      expect(throttle.maxPerDay).toBe(10);
     });
 
-    it('should update last intervention with unhelpful feedback', () => {
+    it('should throttle when intervention count exceeds max', () => {
       const roomId = 'room-123';
+      const maxPerDay = 5;
 
-      // Add an intervention first
-      stateManager.updatePolicyState(mockConversationContext, roomId, {
-        type: 'intervene',
-        escalationRisk: 'medium',
-      });
+      // Record more than max interventions
+      for (let i = 0; i < maxPerDay + 1; i++) {
+        stateManager.recordIntervention(mockConversationContext, roomId);
+      }
 
-      // Record unhelpful feedback
-      stateManager.recordInterventionFeedback(mockConversationContext, roomId, false);
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
-
-      expect(policyState.interventionHistory[0].outcome).toBe('unhelpful');
-      expect(policyState.interventionHistory[0].feedback).toBe('User found unhelpful');
-    });
-
-    it('should increase threshold for unhelpful feedback', () => {
-      const roomId = 'room-123';
-      const initialThreshold = 50;
-
-      // Initialize and set threshold
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      policyState.interventionThreshold = initialThreshold;
-
-      // Add intervention and record unhelpful feedback
-      stateManager.updatePolicyState(mockConversationContext, roomId, { type: 'intervene' });
-      stateManager.recordInterventionFeedback(mockConversationContext, roomId, false);
-
-      const updatedState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      expect(updatedState.interventionThreshold).toBe(
-        initialThreshold + ESCALATION.INTERVENTION_THRESHOLD_INCREMENT
+      const throttle = stateManager.getInterventionThrottle(
+        mockConversationContext,
+        roomId,
+        maxPerDay
       );
+
+      expect(throttle.shouldThrottle).toBe(true);
+      expect(throttle.recentCount).toBe(maxPerDay + 1);
     });
 
-    it('should decrease threshold for helpful feedback', () => {
+    it('should not throttle when intervention count is below max', () => {
       const roomId = 'room-123';
-      const initialThreshold = 50;
+      const maxPerDay = 5;
 
-      // Initialize and set threshold
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      policyState.interventionThreshold = initialThreshold;
+      // Record fewer than max interventions
+      for (let i = 0; i < maxPerDay - 1; i++) {
+        stateManager.recordIntervention(mockConversationContext, roomId);
+      }
 
-      // Add intervention and record helpful feedback
-      stateManager.updatePolicyState(mockConversationContext, roomId, { type: 'intervene' });
-      stateManager.recordInterventionFeedback(mockConversationContext, roomId, true);
-
-      const updatedState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      expect(updatedState.interventionThreshold).toBe(
-        initialThreshold - ESCALATION.INTERVENTION_THRESHOLD_DECREMENT
+      const throttle = stateManager.getInterventionThrottle(
+        mockConversationContext,
+        roomId,
+        maxPerDay
       );
+
+      expect(throttle.shouldThrottle).toBe(false);
+      expect(throttle.recentCount).toBe(maxPerDay - 1);
     });
 
-    it('should not exceed max threshold', () => {
+    it('should use custom maxPerDay value', () => {
       const roomId = 'room-123';
+      const customMax = 3;
 
-      // Set threshold to max
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      policyState.interventionThreshold = ESCALATION.INTERVENTION_THRESHOLD_MAX;
+      const throttle = stateManager.getInterventionThrottle(
+        mockConversationContext,
+        roomId,
+        customMax
+      );
 
-      // Add intervention and record unhelpful feedback
-      stateManager.updatePolicyState(mockConversationContext, roomId, { type: 'intervene' });
-      stateManager.recordInterventionFeedback(mockConversationContext, roomId, false);
+      expect(throttle.maxPerDay).toBe(customMax);
+    });
+  });
 
-      const updatedState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      expect(updatedState.interventionThreshold).toBe(ESCALATION.INTERVENTION_THRESHOLD_MAX);
+  describe('Deprecated functions', () => {
+    it('should return null for deprecated initializeEmotionalState', () => {
+      const roomId = 'room-123';
+      const result = stateManager.initializeEmotionalState(mockConversationContext, roomId);
+      expect(result).toBeNull();
     });
 
-    it('should not go below min threshold', () => {
+    it('should return null for deprecated initializePolicyState', () => {
       const roomId = 'room-123';
-
-      // Set threshold to min
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      policyState.interventionThreshold = ESCALATION.INTERVENTION_THRESHOLD_MIN;
-
-      // Add intervention and record helpful feedback
-      stateManager.updatePolicyState(mockConversationContext, roomId, { type: 'intervene' });
-      stateManager.recordInterventionFeedback(mockConversationContext, roomId, true);
-
-      const updatedState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      expect(updatedState.interventionThreshold).toBe(ESCALATION.INTERVENTION_THRESHOLD_MIN);
+      const result = stateManager.initializePolicyState(mockConversationContext, roomId);
+      expect(result).toBeNull();
     });
 
-    it('should handle empty intervention history gracefully', () => {
+    it('should return null for deprecated updateEmotionalState', () => {
       const roomId = 'room-123';
+      const result = stateManager.updateEmotionalState(
+        mockConversationContext,
+        roomId,
+        'user1',
+        {}
+      );
+      expect(result).toBeNull();
+    });
 
-      // Record feedback without any interventions
+    it('should return null for deprecated updatePolicyState', () => {
+      const roomId = 'room-123';
+      const result = stateManager.updatePolicyState(mockConversationContext, roomId, {});
+      expect(result).toBeNull();
+    });
+
+    it('should handle deprecated recordInterventionFeedback without error', () => {
+      const roomId = 'room-123';
       expect(() => {
         stateManager.recordInterventionFeedback(mockConversationContext, roomId, true);
       }).not.toThrow();
-
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      expect(policyState.interventionHistory.length).toBe(0);
     });
   });
 
@@ -587,7 +315,7 @@ describe('State Manager', () => {
       }).not.toThrow();
 
       expect(() => {
-        stateManager.initializeEmotionalState(mockConversationContext, undefined);
+        stateManager.initializeEscalationState(mockConversationContext, undefined);
       }).not.toThrow();
     });
 
@@ -599,48 +327,24 @@ describe('State Manager', () => {
       expect(() => {
         stateManager.updateEscalationScore(null, roomId, patterns);
       }).toThrow('conversationContext is required');
-      
+
       // Should work with valid context and empty patterns
       expect(() => {
         stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
       }).not.toThrow();
     });
 
-    it('should handle missing emotion data', () => {
+    it('should handle patterns with undefined values', () => {
       const roomId = 'room-123';
-      const username = 'user1';
+      const patterns = {
+        hasAccusatory: undefined,
+        hasTriangulation: undefined,
+      };
 
-      // Should throw when conversationContext is null (fail-fast design)
-      expect(() => {
-        stateManager.updateEmotionalState(null, roomId, username, null);
-      }).toThrow('conversationContext is required');
+      const state = stateManager.updateEscalationScore(mockConversationContext, roomId, patterns);
 
-      // Should work with valid context and empty emotion data
-      expect(() => {
-        stateManager.updateEmotionalState(mockConversationContext, roomId, username, {});
-      }).not.toThrow();
-    });
-
-    it('should handle missing intervention data', () => {
-      const roomId = 'room-123';
-
-      // Should throw when conversationContext is null (fail-fast design)
-      expect(() => {
-        stateManager.updatePolicyState(null, roomId, null);
-      }).toThrow('conversationContext is required');
-
-      // Should work with valid context and empty intervention data
-      expect(() => {
-        stateManager.updatePolicyState(mockConversationContext, roomId, {});
-      }).not.toThrow();
-
-      // Should create intervention with defaults
-      const policyState = stateManager.initializePolicyState(mockConversationContext, roomId);
-      expect(policyState.interventionHistory.length).toBeGreaterThan(0);
-      const lastIntervention =
-        policyState.interventionHistory[policyState.interventionHistory.length - 1];
-      expect(lastIntervention.type).toBe('intervene');
-      expect(lastIntervention.escalationRisk).toBe('unknown');
+      expect(state.patternCounts.accusatory).toBe(0);
+      expect(state.patternCounts.triangulation).toBe(0);
     });
   });
 });

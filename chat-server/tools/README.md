@@ -40,6 +40,50 @@ cd chat-server
 npm run analyze:contracts
 ```
 
+### analyze_tests.py
+
+Test failure analysis tool that:
+
+- Parses Jest test output to extract failure patterns
+- Categorizes failures by type (null references, mock issues, undefined variables, etc.)
+- Identifies common patterns across test failures
+- Suggests fixes based on identified patterns
+- Generates detailed reports (text or JSON)
+
+**Quick start**:
+
+```bash
+cd chat-server
+./tools/analyze-tests
+# or
+npm run analyze:tests
+
+# Generate JSON report
+npm run analyze:tests:json
+```
+
+**Features**:
+
+- **Pattern Detection**: Automatically categorizes failures (null_reference, undefined_variable, mock_missing, etc.)
+- **Smart Suggestions**: Provides actionable fix suggestions based on failure patterns
+- **File Analysis**: Analyze specific test files for common issues
+- **JSON Output**: Generate structured JSON reports for further analysis
+
+**Example output**:
+
+```
+🔍 Failure Patterns
+--------------------------------------------------------------------------------
+
+NULL_REFERENCE: 48 failures
+  Description: Cannot read/set properties of null
+  💡 Suggested Fix: Initialize conversationContext Maps before calling stateManager methods
+
+MOCK_MISSING: 4 failures
+  Description: Mock function not called as expected
+  💡 Suggested Fix: Verify that mocks are properly configured and code paths actually call the mocked functions
+```
+
 ## Testing Tools
 
 ### interceptor.py
