@@ -7,12 +7,18 @@
 
 const { ISemanticIndex } = require('../../core/interfaces/ISemanticIndex');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'Neo4jSemanticIndex',
+});
+
 // Neo4j client for semantic threading
 let neo4jClient = null;
 try {
   neo4jClient = require('../database/neo4jClient');
 } catch (err) {
-  console.warn('⚠️  Neo4j client not available - semantic indexing will use fallback');
+  logger.warn('⚠️  Neo4j client not available - semantic indexing will use fallback');
 }
 
 /**
@@ -42,7 +48,9 @@ class Neo4jSemanticIndex {
     try {
       await neo4jClient.createOrUpdateThreadNode(threadId, roomId, title);
     } catch (err) {
-      console.warn('⚠️  Failed to index thread in Neo4j (non-fatal):', err.message);
+      logger.warn('⚠️  Failed to index thread in Neo4j (non-fatal)', {
+        message: err.message,
+      });
       throw err; // Re-throw to allow fallback handling
     }
   }
@@ -61,7 +69,9 @@ class Neo4jSemanticIndex {
     try {
       await neo4jClient.linkMessageToThread(messageId, threadId);
     } catch (err) {
-      console.warn('⚠️  Failed to index message in Neo4j (non-fatal):', err.message);
+      logger.warn('⚠️  Failed to index message in Neo4j (non-fatal)', {
+        message: err.message,
+      });
       throw err; // Re-throw to allow fallback handling
     }
   }
@@ -80,7 +90,9 @@ class Neo4jSemanticIndex {
     try {
       await neo4jClient.linkThreadToParent(threadId, parentThreadId);
     } catch (err) {
-      console.warn('⚠️  Failed to link thread to parent in Neo4j (non-fatal):', err.message);
+      logger.warn('⚠️  Failed to link thread to parent in Neo4j (non-fatal)', {
+        message: err.message,
+      });
       throw err; // Re-throw to allow fallback handling
     }
   }
@@ -101,11 +113,12 @@ class Neo4jSemanticIndex {
     try {
       return await neo4jClient.findSimilarMessages(embedding, roomId, limit, threshold);
     } catch (err) {
-      console.warn('⚠️  Failed to find similar messages in Neo4j (non-fatal):', err.message);
+      logger.warn('⚠️  Failed to find similar messages in Neo4j (non-fatal)', {
+        message: err.message,
+      });
       throw err; // Re-throw to allow fallback handling
     }
   }
 }
 
 module.exports = { Neo4jSemanticIndex };
-

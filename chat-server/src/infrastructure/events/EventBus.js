@@ -8,6 +8,12 @@
  * Decouples services and makes system more testable
  */
 
+const { defaultLogger } = require('../logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'eventBus',
+});
+
 class EventBus {
   constructor() {
     this.subscribers = new Map(); // eventName -> Set<callback>
@@ -27,7 +33,10 @@ class EventBus {
         try {
           callback(data);
         } catch (error) {
-          console.error(`[EventBus] Error in subscriber for '${eventName}':`, error);
+          logger.error('Log message', {
+            arg0: `[EventBus] Error in subscriber for '${eventName}':`,
+            error: error,
+          });
         }
       });
     }
@@ -99,4 +108,3 @@ class EventBus {
 const eventBus = new EventBus();
 
 module.exports = { eventBus, EventBus };
-

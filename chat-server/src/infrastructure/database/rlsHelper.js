@@ -7,6 +7,12 @@
 
 const dbPostgres = require('../../../dbPostgres');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'rlsHelper',
+});
+
 /**
  * Set current user ID in PostgreSQL session for RLS policies
  * This must be called before executing queries that rely on RLS
@@ -22,7 +28,9 @@ async function setCurrentUserId(userId) {
     // Set session variable that current_user_id() function reads
     await dbPostgres.query(`SET LOCAL app.current_user_id = $1`, [userId]);
   } catch (error) {
-    console.error('[RLS Helper] Error setting current user ID:', error);
+    logger.error('[RLS Helper] Error setting current user ID', {
+      error: error,
+    });
     // Don't throw - RLS will fail closed (deny access) if variable not set
   }
 }

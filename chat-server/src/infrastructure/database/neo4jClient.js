@@ -12,8 +12,11 @@
  */
 
 const neo4j = require('neo4j-driver');
+const { defaultLogger } = require('../logging/logger');
 
-console.log('🔷 Neo4j Client v2.0 (Bolt driver) loaded');
+const logger = defaultLogger.child({ component: 'neo4jClient' });
+
+logger.info('Neo4j Client v2.0 (Bolt driver) loaded');
 
 // Configuration from environment
 const NEO4J_URI = process.env.NEO4J_URI;
@@ -86,7 +89,7 @@ async function executeCypher(query, params = {}) {
  */
 async function createUserNode(userId) {
   if (!isNeo4jConfigured) {
-    console.log('⚠️  Neo4j not configured - skipping user node creation');
+    logger.warn('Neo4j not configured - skipping user node creation');
     return null;
   }
 
@@ -109,14 +112,14 @@ async function createUserNode(userId) {
 
     if (result.records.length > 0) {
       const node = result.records[0].get('u').properties;
-      console.log(`✅ Created Neo4j user node for userId: ${userId}`);
+      logger.info('Created Neo4j user node', { userId });
       return node;
     }
 
     throw new Error('Neo4j query returned no results');
   } catch (error) {
     // Log error but don't throw - user creation should succeed even if Neo4j fails
-    console.error(`❌ Failed to create Neo4j user node for userId ${userId}:`, error.message);
+    logger.error('Failed to create Neo4j user node', error, { userId });
     return null;
   }
 }
@@ -135,7 +138,7 @@ async function createUserNode(userId) {
  */
 async function createCoParentRelationship(userId1, userId2, roomId, roomName = null) {
   if (!isNeo4jConfigured) {
-    console.log('⚠️  Neo4j not configured - skipping relationship creation');
+    logger.warn('Neo4j not configured - skipping relationship creation');
     return null;
   }
 
@@ -195,18 +198,17 @@ async function createCoParentRelationship(userId1, userId2, roomId, roomName = n
     const result = await executeCypher(query, params);
 
     if (result.records.length > 0) {
-      console.log(
-        `✅ Created Neo4j co-parent relationship: User ${userId1} <-> User ${userId2} (Room: ${roomId})`
-      );
+      logger.info('Created Neo4j co-parent relationship', { userId1, userId2, roomId });
       return result.records[0].toObject();
     }
 
     throw new Error('Neo4j query returned no results');
   } catch (error) {
-    console.error(
-      `❌ Failed to create Neo4j co-parent relationship for users ${userId1} and ${userId2}:`,
-      error.message
-    );
+    logger.error('Failed to create Neo4j co-parent relationship', error, {
+      userId1,
+      userId2,
+      roomId,
+    });
     return null;
   }
 }
@@ -221,7 +223,7 @@ async function createCoParentRelationship(userId1, userId2, roomId, roomName = n
  */
 async function endCoParentRelationship(userId1, userId2) {
   if (!isNeo4jConfigured) {
-    console.log('⚠️  Neo4j not configured - skipping relationship deactivation');
+    logger.warn('Neo4j not configured - skipping relationship deactivation');
     return false;
   }
 
@@ -240,15 +242,13 @@ async function endCoParentRelationship(userId1, userId2) {
     const result = await executeCypher(query, params);
 
     if (result.records.length > 0) {
-      console.log(
-        `✅ Deactivated Neo4j co-parent relationship: User ${userId1} <-> User ${userId2}`
-      );
+      logger.info('Deactivated Neo4j co-parent relationship', { userId1, userId2 });
       return true;
     }
 
     return false;
   } catch (error) {
-    console.error(`❌ Failed to deactivate Neo4j co-parent relationship:`, error.message);
+    logger.error('Failed to deactivate Neo4j co-parent relationship', error, { userId1, userId2 });
     return false;
   }
 }
@@ -264,14 +264,19 @@ async function endCoParentRelationship(userId1, userId2) {
  */
 async function getCoParents(userId, authenticatedUserId = null) {
   if (!isNeo4jConfigured) {
-    console.log('⚠️  Neo4j not configured - cannot query co-parents');
+    logger.warn('Neo4j not configured - cannot query co-parents');
     return [];
   }
 
   // PRIVACY: Verify user can only query their own relationships
   if (authenticatedUserId !== null && userId !== authenticatedUserId) {
-    console.error(
-      `❌ PRIVACY VIOLATION: User ${authenticatedUserId} attempted to query relationships for user ${userId}`
+    logger.error(
+      'PRIVACY VIOLATION: User attempted to query relationships for another user',
+      null,
+      {
+        authenticatedUserId,
+        requestedUserId: userId,
+      }
     );
     throw new Error("Unauthorized: Cannot query other users' relationships");
   }
@@ -291,7 +296,7 @@ async function getCoParents(userId, authenticatedUserId = null) {
       roomId: record.get('roomId'),
     }));
   } catch (error) {
-    console.error(`❌ Failed to query co-parents for user ${userId}:`, error.message);
+    logger.error('Failed to query co-parents for user', error, { userId });
     return [];
   }
 }
@@ -341,7 +346,7 @@ async function generateEmbedding(text) {
 
     return response.data[0].embedding;
   } catch (error) {
-    console.error('❌ Failed to generate embedding:', error.message);
+    logger.error('Failed to generate embedding', error);
     throw error;
   }
 }
@@ -420,10 +425,7 @@ async function createOrUpdateMessageNode(
 
     throw new Error('Neo4j query returned no results');
   } catch (error) {
-    console.error(
-      `❌ Failed to create/update message node for messageId ${messageId}:`,
-      error.message
-    );
+    logger.error('Failed to create/update message node', error, { messageId, roomId });
     return null;
   }
 }
@@ -485,10 +487,7 @@ async function createOrUpdateThreadNode(threadId, roomId, title, embedding = nul
 
     throw new Error('Neo4j query returned no results');
   } catch (error) {
-    console.error(
-      `❌ Failed to create/update thread node for threadId ${threadId}:`,
-      error.message
-    );
+    logger.error('Failed to create/update thread node', error, { threadId, roomId });
     return null;
   }
 }
@@ -517,7 +516,7 @@ async function linkMessageToThread(messageId, threadId) {
 
     return result.records.length > 0;
   } catch (error) {
-    console.error(`❌ Failed to link message ${messageId} to thread ${threadId}:`, error.message);
+    logger.error('Failed to link message to thread', error, { messageId, threadId });
     return false;
   }
 }
@@ -584,7 +583,7 @@ async function findSimilarMessages(queryEmbedding, roomId, limit = 10, minSimila
       similarity: record.get('similarity'),
     }));
   } catch (error) {
-    console.error(`❌ Failed to find similar messages:`, error.message);
+    logger.error('Failed to find similar messages', error, { roomId });
     return [];
   }
 }
@@ -645,7 +644,7 @@ async function findSimilarThreads(queryEmbedding, roomId, limit = 5, minSimilari
       similarity: record.get('similarity'),
     }));
   } catch (error) {
-    console.error(`❌ Failed to find similar threads:`, error.message);
+    logger.error('Failed to find similar threads', error, { roomId });
     return [];
   }
 }
@@ -657,7 +656,7 @@ async function findSimilarThreads(queryEmbedding, roomId, limit = 5, minSimilari
  */
 async function initializeIndexes() {
   if (!isNeo4jConfigured) {
-    console.log('⚠️  Neo4j not configured - skipping index initialization');
+    logger.warn('Neo4j not configured - skipping index initialization');
     return false;
   }
 
@@ -701,15 +700,15 @@ async function initializeIndexes() {
     // FOR (m:Message) ON m.embedding
     // OPTIONS {indexConfig: {`vector.dimensions`: 1536, `vector.similarity_function`: 'cosine'}}
 
-    console.log('✅ Neo4j indexes initialized successfully');
+    logger.info('Neo4j indexes initialized successfully');
     return true;
   } catch (error) {
     // Indexes might already exist, which is fine
     if (error.message.includes('already exists') || error.message.includes('equivalent')) {
-      console.log('ℹ️  Neo4j indexes already exist');
+      logger.info('Neo4j indexes already exist');
       return true;
     }
-    console.error(`❌ Failed to initialize Neo4j indexes:`, error.message);
+    logger.error('Failed to initialize Neo4j indexes', error);
     return false;
   }
 }
@@ -753,7 +752,7 @@ async function updateRelationshipMetadata(userId1, userId2, roomId, metadata = {
     const result = await executeCypher(query, params);
     return result.records.length > 0;
   } catch (error) {
-    console.error(`❌ Failed to update relationship metadata:`, error.message);
+    logger.error('Failed to update relationship metadata', error, { userId1, userId2, roomId });
     return false;
   }
 }
@@ -772,8 +771,13 @@ async function getCoParentsWithMetrics(userId, authenticatedUserId = null) {
 
   // PRIVACY: Verify user can only query their own relationships
   if (authenticatedUserId !== null && userId !== authenticatedUserId) {
-    console.error(
-      `❌ PRIVACY VIOLATION: User ${authenticatedUserId} attempted to query relationships for user ${userId}`
+    logger.error(
+      'PRIVACY VIOLATION: User attempted to query relationships for another user',
+      null,
+      {
+        authenticatedUserId,
+        requestedUserId: userId,
+      }
     );
     throw new Error("Unauthorized: Cannot query other users' relationships");
   }
@@ -804,7 +808,7 @@ async function getCoParentsWithMetrics(userId, authenticatedUserId = null) {
       relationshipCreatedAt: record.get('relationshipCreatedAt'),
     }));
   } catch (error) {
-    console.error(`❌ Failed to query co-parents with metrics for user ${userId}:`, error.message);
+    logger.error('Failed to query co-parents with metrics for user', error, { userId });
     return [];
   }
 }
@@ -850,7 +854,7 @@ async function getRelationshipNetwork(userId, maxDepth = 2, authenticatedUserId 
       roomIds: record.get('roomIds') || [],
     }));
   } catch (error) {
-    console.error(`❌ Failed to query relationship network for user ${userId}:`, error.message);
+    logger.error('Failed to query relationship network for user', error, { userId, maxDepth });
     return [];
   }
 }
@@ -896,7 +900,7 @@ async function getActiveRelationships(userId, minMessages = 10, authenticatedUse
       lastInteraction: record.get('lastInteraction'),
     }));
   } catch (error) {
-    console.error(`❌ Failed to query active relationships for user ${userId}:`, error.message);
+    logger.error('Failed to query active relationships for user', error, { userId, minMessages });
     return [];
   }
 }
@@ -914,7 +918,7 @@ async function testConnection() {
     const result = await executeCypher('RETURN 1 as test');
     return result.records.length > 0;
   } catch (error) {
-    console.error('❌ Neo4j connection test failed:', error.message);
+    logger.error('Neo4j connection test failed', error);
     return false;
   }
 }
@@ -926,7 +930,7 @@ async function close() {
   if (driver) {
     await driver.close();
     driver = null;
-    console.log('✅ Neo4j driver closed');
+    logger.info('Neo4j driver closed');
   }
 }
 
@@ -980,7 +984,7 @@ async function createOrUpdatePersonNode(name, roomId, metadata = {}) {
     }
     return null;
   } catch (error) {
-    console.error(`❌ Failed to create/update Person node for "${name}":`, error.message);
+    logger.error('Failed to create/update Person node', error, { name, roomId });
     return null;
   }
 }
@@ -994,7 +998,13 @@ async function createOrUpdatePersonNode(name, roomId, metadata = {}) {
  * @param {number} count - Mention count
  * @returns {Promise<boolean>} Success status
  */
-async function createMentionsRelationship(userId, personName, roomId, sentiment = 'neutral', count = 1) {
+async function createMentionsRelationship(
+  userId,
+  personName,
+  roomId,
+  sentiment = 'neutral',
+  count = 1
+) {
   if (!isNeo4jConfigured || !userId || !personName || !roomId) {
     return false;
   }
@@ -1028,7 +1038,7 @@ async function createMentionsRelationship(userId, personName, roomId, sentiment 
     const result = await executeCypher(query, params);
     return result.records.length > 0;
   } catch (error) {
-    console.error(`❌ Failed to create MENTIONS relationship:`, error.message);
+    logger.error('Failed to create MENTIONS relationship', error, { userId, personName, roomId });
     return false;
   }
 }
@@ -1043,7 +1053,14 @@ async function createMentionsRelationship(userId, personName, roomId, sentiment 
  * @param {string} reason - Brief explanation
  * @returns {Promise<boolean>} Success status
  */
-async function createSentimentRelationship(userId, personName, roomId, type, strength = 0.5, reason = '') {
+async function createSentimentRelationship(
+  userId,
+  personName,
+  roomId,
+  type,
+  strength = 0.5,
+  reason = ''
+) {
   if (!isNeo4jConfigured || !userId || !personName || !roomId || !type) {
     return false;
   }
@@ -1051,7 +1068,7 @@ async function createSentimentRelationship(userId, personName, roomId, type, str
   // Validate type
   const validTypes = ['TRUSTS', 'DISLIKES', 'NEUTRAL_TOWARD'];
   if (!validTypes.includes(type)) {
-    console.warn(`⚠️ Invalid sentiment type: ${type}. Using NEUTRAL_TOWARD.`);
+    logger.warn('Invalid sentiment type, using NEUTRAL_TOWARD', { invalidType: type });
     type = 'NEUTRAL_TOWARD';
   }
 
@@ -1090,7 +1107,12 @@ async function createSentimentRelationship(userId, personName, roomId, type, str
     const result = await executeCypher(query, params);
     return result.records.length > 0;
   } catch (error) {
-    console.error(`❌ Failed to create ${type} relationship:`, error.message);
+    logger.error(`Failed to create ${type} relationship`, error, {
+      userId,
+      personName,
+      roomId,
+      type,
+    });
     return false;
   }
 }
@@ -1170,7 +1192,11 @@ async function getRelationshipContext(senderUserId, receiverUserId, personNames,
 
     return { senderSentiment, receiverSentiment, isSensitive };
   } catch (error) {
-    console.error(`❌ Failed to get relationship context:`, error.message);
+    logger.error('Failed to get relationship context', error, {
+      senderUserId,
+      receiverUserId,
+      roomId,
+    });
     return { senderSentiment: {}, receiverSentiment: {}, isSensitive: false };
   }
 }
@@ -1209,7 +1235,7 @@ async function getRoomPeople(roomId) {
       sentiments: record.get('sentiments') || [],
     }));
   } catch (error) {
-    console.error(`❌ Failed to get room people:`, error.message);
+    logger.error('Failed to get room people', error, { roomId });
     return [];
   }
 }

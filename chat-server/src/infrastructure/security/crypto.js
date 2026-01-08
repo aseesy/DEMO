@@ -10,6 +10,12 @@
 const crypto = require('crypto');
 const { SENSITIVE_FIELDS } = require('../../features/profile/constants/profileConstants');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'crypto',
+});
+
 /**
  * Generate a cryptographically secure random token
  *
@@ -205,7 +211,7 @@ function getEncryptionKey() {
       throw new Error('PROFILE_ENCRYPTION_KEY must be set in production');
     }
     // Development fallback - NOT SECURE, only for local testing
-    console.warn('Using development encryption key - NOT SECURE for production');
+    logger.warn('Using development encryption key - NOT SECURE for production');
     return crypto.createHash('sha256').update('dev-key-not-secure').digest();
   }
   return Buffer.from(key, 'hex');
@@ -236,7 +242,9 @@ function encrypt(text) {
     // Format: iv:authTag:ciphertext
     return `${iv.toString('hex')}:${authTag}:${encrypted}`;
   } catch (error) {
-    console.error('Encryption error:', error.message);
+    logger.error('Encryption error', {
+      message: error.message,
+    });
     throw new Error('Failed to encrypt sensitive data');
   }
 }
@@ -279,7 +287,9 @@ function decrypt(encryptedText) {
 
     return decrypted;
   } catch (error) {
-    console.error('Decryption error:', error.message);
+    logger.error('Decryption error', {
+      message: error.message,
+    });
     // Return null for corrupted/invalid encrypted data
     return null;
   }

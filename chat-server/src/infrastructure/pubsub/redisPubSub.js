@@ -7,7 +7,18 @@
  * @module liaizen/infrastructure/pubsub/redisPubSub
  */
 
-const { getClient, createSubscriber, publish, isRedisAvailable } = require('../database/redisClient');
+const {
+  getClient,
+  createSubscriber,
+  publish,
+  isRedisAvailable,
+} = require('../database/redisClient');
+
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'redisPubSub',
+});
 
 class RedisPubSub {
   constructor() {
@@ -41,11 +52,17 @@ class RedisPubSub {
               try {
                 callback(data, channel);
               } catch (error) {
-                console.error(`[RedisPubSub] Callback error for ${channel}:`, error.message);
+                logger.error('Log message', {
+                  arg0: `[RedisPubSub] Callback error for ${channel}:`,
+                  message: error.message,
+                });
               }
             });
           } catch (error) {
-            console.error(`[RedisPubSub] Failed to parse message from ${channel}:`, error.message);
+            logger.error('Log message', {
+              arg0: `[RedisPubSub] Failed to parse message from ${channel}:`,
+              message: error.message,
+            });
           }
         }
       });
@@ -56,7 +73,10 @@ class RedisPubSub {
           await this.subscriber.connect();
         } catch (error) {
           // Ignore "already connecting" errors - connection might be in progress
-          if (!error.message.includes('already connecting') && !error.message.includes('already connected')) {
+          if (
+            !error.message.includes('already connecting') &&
+            !error.message.includes('already connected')
+          ) {
             throw error;
           }
         }
@@ -79,10 +99,12 @@ class RedisPubSub {
       }
 
       this.isSubscribed = true;
-      console.log('✅ Redis Pub/Sub initialized');
+      logger.debug('✅ Redis Pub/Sub initialized');
       return true;
     } catch (error) {
-      console.error('❌ Redis Pub/Sub initialization failed:', error.message);
+      logger.error('❌ Redis Pub/Sub initialization failed', {
+        message: error.message,
+      });
       return false;
     }
   }
@@ -95,7 +117,7 @@ class RedisPubSub {
    */
   async subscribe(channel, callback) {
     if (!this.isSubscribed || !this.subscriber) {
-      console.warn('[RedisPubSub] Not initialized, cannot subscribe');
+      logger.warn('[RedisPubSub] Not initialized, cannot subscribe');
       return false;
     }
 
@@ -109,7 +131,10 @@ class RedisPubSub {
       this.subscriptions.get(channel).add(callback);
       return true;
     } catch (error) {
-      console.error(`[RedisPubSub] Failed to subscribe to ${channel}:`, error.message);
+      logger.error('Log message', {
+        arg0: `[RedisPubSub] Failed to subscribe to ${channel}:`,
+        message: error.message,
+      });
       return false;
     }
   }
@@ -143,7 +168,10 @@ class RedisPubSub {
 
       return true;
     } catch (error) {
-      console.error(`[RedisPubSub] Failed to unsubscribe from ${channel}:`, error.message);
+      logger.error('Log message', {
+        arg0: `[RedisPubSub] Failed to unsubscribe from ${channel}:`,
+        message: error.message,
+      });
       return false;
     }
   }
@@ -169,9 +197,11 @@ class RedisPubSub {
         this.subscriber = null;
         this.isSubscribed = false;
         this.subscriptions.clear();
-        console.log('✅ Redis Pub/Sub closed');
+        logger.debug('✅ Redis Pub/Sub closed');
       } catch (error) {
-        console.error('❌ Redis Pub/Sub close error:', error.message);
+        logger.error('❌ Redis Pub/Sub close error', {
+          message: error.message,
+        });
       }
     }
   }
@@ -195,4 +225,3 @@ module.exports = {
   RedisPubSub,
   getPubSub,
 };
-

@@ -8,6 +8,12 @@
 const { Neo4jSemanticIndex } = require('./Neo4jSemanticIndex');
 const { NoOpSemanticIndex } = require('./NoOpSemanticIndex');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'SemanticIndexFactory',
+});
+
 /**
  * Factory for creating semantic index instances
  * Singleton pattern - checks availability once and reuses the instance
@@ -30,12 +36,12 @@ class SemanticIndexFactory {
 
     // Check Neo4j availability once at wiring time
     const neo4jIndex = new Neo4jSemanticIndex();
-    
+
     if (neo4jIndex.isAvailable()) {
-      console.log('✅ Using Neo4j semantic index');
+      logger.debug('✅ Using Neo4j semantic index');
       this._semanticIndex = neo4jIndex;
     } else {
-      console.log('⚠️  Neo4j not available, using NoOp semantic index (fail-open)');
+      logger.debug('⚠️  Neo4j not available, using NoOp semantic index (fail-open)');
       this._semanticIndex = new NoOpSemanticIndex();
     }
 
@@ -47,4 +53,3 @@ class SemanticIndexFactory {
 // Export singleton instance
 const factory = new SemanticIndexFactory();
 module.exports = { SemanticIndexFactory, factory };
-

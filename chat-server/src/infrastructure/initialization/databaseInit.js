@@ -10,6 +10,12 @@
  * - Error handling (non-blocking)
  */
 
+const { defaultLogger } = require('../logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'databaseInit',
+});
+
 /**
  * Initialize Redis connection (optional)
  *
@@ -25,29 +31,33 @@ async function initRedis() {
 
     if (!client) {
       // Redis not configured - this is OK, it's optional
-      console.log('ℹ️  Redis: Not configured (optional for distributed locking and rate limiting)');
+      logger.debug(
+        'ℹ️  Redis: Not configured (optional for distributed locking and rate limiting)'
+      );
       return { redisConnected: false, redisError: null };
     }
 
     // Try to connect and verify
     if (client.status === 'ready') {
       redisConnected = true;
-      console.log('✅ Redis: Connected and ready');
+      logger.debug('✅ Redis: Connected and ready');
     } else {
       // Client exists but not ready - will connect asynchronously
       // Wait a moment to see if connection succeeds
       await new Promise(resolve => setTimeout(resolve, 500));
       if (isRedisAvailable()) {
         redisConnected = true;
-        console.log('✅ Redis: Connected and ready');
+        logger.debug('✅ Redis: Connected and ready');
       } else {
-        console.log('⚠️  Redis: Connection in progress (will be available when ready)');
+        logger.debug('⚠️  Redis: Connection in progress (will be available when ready)');
         // Don't mark as error - connection might succeed later
       }
     }
   } catch (err) {
     redisError = err.message;
-    console.warn('⚠️  Redis: Initialization warning (non-fatal):', err.message);
+    logger.warn('⚠️  Redis: Initialization warning (non-fatal)', {
+      message: err.message,
+    });
     // Don't throw - Redis is optional
   }
 
@@ -64,15 +74,15 @@ async function initDatabase() {
   let dbError = null;
 
   if (!process.env.DATABASE_URL) {
-    console.error('❌ WARNING: DATABASE_URL not set!');
-    console.error('⚠️  PostgreSQL is required for full functionality.');
-    console.error('💡 Add PostgreSQL service in Railway dashboard to get DATABASE_URL');
+    logger.error('❌ WARNING: DATABASE_URL not set!');
+    logger.error('⚠️  PostgreSQL is required for full functionality.');
+    logger.error('💡 Add PostgreSQL service in Railway dashboard to get DATABASE_URL');
     // Don't return error - allow server to start without database
     // Database will be unavailable but server can still respond to health checks
     return { dbConnected: false, dbError: 'DATABASE_URL not configured' };
   }
 
-  console.log('🐘 PostgreSQL mode: DATABASE_URL detected');
+  logger.debug('🐘 PostgreSQL mode: DATABASE_URL detected');
 
   try {
     // Initialize PostgreSQL client (non-blocking)
@@ -82,10 +92,12 @@ async function initDatabase() {
     // Mark as connected immediately - actual connection test happens in background
     // This allows server to start even if database is slow to connect
     dbConnected = true;
-    console.log('📊 Using PostgreSQL database (connection testing in background)');
+    logger.debug('📊 Using PostgreSQL database (connection testing in background)');
   } catch (err) {
     dbError = err.message;
-    console.error('❌ Database initialization error:', err.message);
+    logger.error('❌ Database initialization error', {
+      message: err.message,
+    });
     // Don't throw - allow server to start even if database fails
     // Health check will report database status but server stays up
   }

@@ -2,16 +2,22 @@
  * Schema Utilities
  *
  * Provides schema validation functions for database tables.
- * 
+ *
  * IMPORTANT: Schema changes must be done via migration files in migrations/ directory.
  * This module only provides validation - it does NOT create columns or modify schema.
- * 
+ *
  * For new features requiring schema changes:
  * 1. Create a .sql file in migrations/ directory
  * 2. Use format: XXX_description.sql (where XXX is next migration number)
  * 3. Use IF NOT EXISTS checks to make migrations idempotent
  * 4. Run migrations via: npm run migrate
  */
+
+const { defaultLogger } = require('../logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'schema',
+});
 
 // Lazy-load dbPostgres to avoid initialization issues
 function getDb() {
@@ -49,7 +55,10 @@ async function columnExists(tableName, columnName) {
     columnCache.set(cacheKey, exists);
     return exists;
   } catch (error) {
-    console.error(`Error checking column existence for ${tableName}.${columnName}:`, error);
+    logger.error('Log message', {
+      arg0: `Error checking column existence for ${tableName}.${columnName}:`,
+      error: error,
+    });
     // On error, assume column doesn't exist (safer to create than skip)
     return false;
   }
@@ -57,12 +66,12 @@ async function columnExists(tableName, columnName) {
 
 /**
  * @deprecated DO NOT USE FOR NEW FEATURES
- * 
+ *
  * This function no longer creates columns. It only validates that columns exist.
  * Schema changes must be done via migration files in migrations/ directory.
- * 
+ *
  * If column is missing, throws an error directing developer to create a migration.
- * 
+ *
  * @param {string} tableName - Table name
  * @param {string} columnName - Column name
  * @param {string} columnType - PostgreSQL column type (ignored, kept for backward compatibility)
@@ -75,9 +84,9 @@ async function createColumnIfNotExists(tableName, columnName, columnType = 'TEXT
   if (!exists) {
     throw new Error(
       `Schema Error: Column ${tableName}.${columnName} does not exist.\n` +
-      `ACTION REQUIRED: Create a migration file in migrations/ directory to add this column.\n` +
-      `See SCHEMA_STANDARDIZATION_PLAN.md for migration guidelines.\n` +
-      `Example: Create migrations/XXX_add_${columnName}_column.sql`
+        `ACTION REQUIRED: Create a migration file in migrations/ directory to add this column.\n` +
+        `See SCHEMA_STANDARDIZATION_PLAN.md for migration guidelines.\n` +
+        `Example: Create migrations/XXX_add_${columnName}_column.sql`
     );
   }
 
@@ -87,21 +96,22 @@ async function createColumnIfNotExists(tableName, columnName, columnType = 'TEXT
 
 /**
  * @deprecated DO NOT USE FOR NEW FEATURES
- * 
+ *
  * This function no longer creates columns. It only validates that required profile columns exist.
  * All profile columns should be added via migration 007_add_profile_columns.sql
- * 
+ *
  * If columns are missing, throws an error directing developer to run migrations.
- * 
+ *
  * @returns {Promise<Object>} Object with validation status
  * @throws {Error} If required columns are missing
  */
 async function ensureProfileColumnsExist() {
-  console.warn(
-    '[DEPRECATED] ensureProfileColumnsExist() - Schema changes must be done via migrations.\n' +
-    'If you see this warning, remove the call to ensureProfileColumnsExist() from your code.\n' +
-    'Migration 007_add_profile_columns.sql ensures all required columns exist.'
-  );
+  logger.warn('Log message', {
+    value:
+      '[DEPRECATED] ensureProfileColumnsExist() - Schema changes must be done via migrations.\n' +
+      'If you see this warning, remove the call to ensureProfileColumnsExist() from your code.\n' +
+      'Migration 007_add_profile_columns.sql ensures all required columns exist.',
+  });
 
   const requiredColumns = [
     { name: 'first_name', type: 'TEXT' },
@@ -129,9 +139,9 @@ async function ensureProfileColumnsExist() {
   if (missing.length > 0) {
     throw new Error(
       `Schema Error: Missing required profile columns: ${missing.join(', ')}\n` +
-      `ACTION REQUIRED: Run migration 007_add_profile_columns.sql\n` +
-      `Command: npm run migrate (from chat-server directory)\n` +
-      `All schema changes must be done via migration files, not runtime creation.`
+        `ACTION REQUIRED: Run migration 007_add_profile_columns.sql\n` +
+        `Command: npm run migrate (from chat-server directory)\n` +
+        `All schema changes must be done via migration files, not runtime creation.`
     );
   }
 
@@ -185,8 +195,8 @@ async function verifyProfileColumnsExist() {
   if (missing.length > 0) {
     throw new Error(
       `Missing required profile columns: ${missing.join(', ')}\n` +
-      `Please run migration 007_add_profile_columns.sql\n` +
-      `Command: npm run migrate`
+        `Please run migration 007_add_profile_columns.sql\n` +
+        `Command: npm run migrate`
     );
   }
 }

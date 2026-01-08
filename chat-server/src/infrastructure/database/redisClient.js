@@ -15,6 +15,9 @@
  */
 
 const Redis = require('ioredis');
+const { defaultLogger } = require('../logging/logger');
+
+const logger = defaultLogger.child({ component: 'redisClient' });
 
 // Configuration from environment
 // Railway provides: REDIS_URL, REDISHOST, REDISPORT, REDISUSER, REDISPASSWORD
@@ -31,8 +34,8 @@ const REDIS_PASSWORD = process.env.REDISPASSWORD || process.env.REDIS_PASSWORD;
 let effectiveRedisUrl = REDIS_URL;
 if (effectiveRedisUrl && effectiveRedisUrl.includes('${{')) {
   // Railway template syntax detected - ignore REDIS_URL and use individual variables instead
-  console.log(
-    '⚠️  Redis: REDIS_URL contains Railway template syntax, using individual variables for local dev'
+  logger.warn(
+    'REDIS_URL contains Railway template syntax, using individual variables for local dev'
   );
   effectiveRedisUrl = null;
 }
@@ -43,7 +46,7 @@ if (
     effectiveRedisUrl === 'rediss://' ||
     effectiveRedisUrl.match(/^redis(s)?:\/\/$/))
 ) {
-  console.log('⚠️  Redis: REDIS_URL is incomplete, constructing from individual variables');
+  logger.warn('REDIS_URL is incomplete, constructing from individual variables');
   effectiveRedisUrl = null;
 }
 if (!effectiveRedisUrl && REDIS_HOST && REDIS_PORT) {
@@ -111,36 +114,36 @@ function getClient() {
         isAvailable = false;
         // Only log if error message exists (prevents empty error logs)
         if (err && err.message) {
-          console.error('❌ Redis: Connection error:', err.message);
+          logger.error('Connection error', err);
         }
         // Don't crash - Redis is optional for graceful degradation
       });
 
       redisClient.on('connect', () => {
-        console.log('🔄 Redis: Connecting...');
+        logger.debug('Connecting...');
       });
 
       redisClient.on('ready', () => {
         isAvailable = true;
-        console.log('✅ Redis: Connected and ready');
+        logger.info('Connected and ready');
       });
 
       redisClient.on('close', () => {
         isAvailable = false;
-        console.log('⚠️  Redis: Connection closed');
+        logger.warn('Connection closed');
       });
 
       redisClient.on('reconnecting', () => {
-        console.log('🔄 Redis: Reconnecting...');
+        logger.debug('Reconnecting...');
       });
 
       // Attempt to connect (non-blocking)
       redisClient.connect().catch(err => {
-        console.warn('⚠️  Redis: Failed to connect (will retry):', err.message || 'Unknown error');
+        logger.warn('Failed to connect (will retry)', { error: err.message || 'Unknown error' });
         isAvailable = false;
       });
     } catch (error) {
-      console.error('❌ Redis: Failed to create client:', error.message);
+      logger.error('Failed to create client', error);
       isAvailable = false;
       return null;
     }
@@ -166,7 +169,7 @@ function isRedisAvailable() {
 async function acquireLock(key, ttlSeconds = 30) {
   if (!isRedisAvailable()) {
     // Fallback: if Redis is unavailable, allow operation (graceful degradation)
-    console.warn(`⚠️  Redis unavailable, skipping lock for ${key}`);
+    logger.warn('Redis unavailable, skipping lock', { key });
     return true;
   }
 
@@ -175,7 +178,7 @@ async function acquireLock(key, ttlSeconds = 30) {
     const result = await redisClient.set(`lock:${key}`, '1', 'EX', ttlSeconds, 'NX');
     return result === 'OK';
   } catch (error) {
-    console.error(`❌ Redis: Failed to acquire lock for ${key}:`, error.message);
+    logger.error('Failed to acquire lock', error, { key, ttlSeconds });
     // Fail-open: if Redis fails, allow operation (better than blocking)
     return true;
   }
@@ -194,7 +197,7 @@ async function releaseLock(key) {
   try {
     await redisClient.del(`lock:${key}`);
   } catch (error) {
-    console.error(`❌ Redis: Failed to release lock for ${key}:`, error.message);
+    logger.error('Failed to release lock', error, { key });
     // Non-fatal - lock will expire anyway
   }
 }
@@ -209,7 +212,7 @@ async function releaseLock(key) {
 async function checkRateLimit(key, maxRequests, windowSeconds = 60) {
   if (!isRedisAvailable()) {
     // Fallback: if Redis is unavailable, allow operation (graceful degradation)
-    console.warn(`⚠️  Redis unavailable, skipping rate limit for ${key}`);
+    logger.warn('Redis unavailable, skipping rate limit', { key });
     return { allowed: true, remaining: maxRequests, resetAt: Date.now() + windowSeconds * 1000 };
   }
 
@@ -247,7 +250,7 @@ async function checkRateLimit(key, maxRequests, windowSeconds = 60) {
 
     return { allowed, remaining, resetAt, count: newCount };
   } catch (error) {
-    console.error(`❌ Redis: Failed to check rate limit for ${key}:`, error.message);
+    logger.error('Failed to check rate limit', error, { key, maxRequests, windowSeconds });
     // Fail-open: if Redis fails, allow operation (better than blocking)
     return { allowed: true, remaining: maxRequests, resetAt: Date.now() + windowSeconds * 1000 };
   }
@@ -271,7 +274,7 @@ async function cacheSet(key, value, ttlSeconds = 3600) {
     await redisClient.setex(redisKey, ttlSeconds, serialized);
     return true;
   } catch (error) {
-    console.error(`❌ Redis: Failed to cache ${key}:`, error.message);
+    logger.error('Failed to cache', error, { key, ttlSeconds });
     return false;
   }
 }
@@ -294,7 +297,7 @@ async function cacheGet(key) {
     }
     return JSON.parse(serialized);
   } catch (error) {
-    console.error(`❌ Redis: Failed to get cache ${key}:`, error.message);
+    logger.error('Failed to get cache', error, { key });
     return null;
   }
 }
@@ -314,7 +317,7 @@ async function cacheDelete(key) {
     await redisClient.del(redisKey);
     return true;
   } catch (error) {
-    console.error(`❌ Redis: Failed to delete cache ${key}:`, error.message);
+    logger.error('Failed to delete cache', error, { key });
     return false;
   }
 }
@@ -354,7 +357,7 @@ async function cacheDeletePattern(pattern) {
       stream.on('error', reject);
     });
   } catch (error) {
-    console.error(`❌ Redis: Failed to delete cache pattern ${pattern}:`, error.message);
+    logger.error('Failed to delete cache pattern', error, { pattern });
     return 0;
   }
 }
@@ -389,7 +392,7 @@ async function setPresence(userId, socketId, metadata = {}, ttlSeconds = 300) {
 
     return true;
   } catch (error) {
-    console.error(`❌ Redis: Failed to set presence for ${userId}:`, error.message);
+    logger.error('Failed to set presence', error, { userId, socketId });
     return false;
   }
 }
@@ -420,7 +423,7 @@ async function removePresence(userId, socketId) {
 
     return true;
   } catch (error) {
-    console.error(`❌ Redis: Failed to remove presence for ${userId}:`, error.message);
+    logger.error('Failed to remove presence', error, { userId, socketId });
     return false;
   }
 }
@@ -440,7 +443,7 @@ async function isUserOnline(userId) {
     const count = await redisClient.scard(userSocketsKey);
     return count > 0;
   } catch (error) {
-    console.error(`❌ Redis: Failed to check presence for ${userId}:`, error.message);
+    logger.error('Failed to check presence', error, { userId });
     return false;
   }
 }
@@ -490,7 +493,7 @@ async function getOnlineUsersInRoom(roomId) {
       stream.on('error', reject);
     });
   } catch (error) {
-    console.error(`❌ Redis: Failed to get online users for room ${roomId}:`, error.message);
+    logger.error('Failed to get online users for room', error, { roomId });
     return [];
   }
 }
@@ -540,34 +543,33 @@ function createSubscriber() {
     subscriber.on('error', err => {
       // Only log if error message exists (prevents empty error logs)
       if (err && err.message) {
-        console.error('❌ Redis: Subscriber connection error:', err.message);
+        logger.error('Subscriber connection error', err);
       }
       // Don't crash - Redis is optional for graceful degradation
     });
 
     subscriber.on('close', () => {
-      console.log('⚠️  Redis: Subscriber connection closed');
+      logger.warn('Subscriber connection closed');
     });
 
     subscriber.on('reconnecting', () => {
-      console.log('🔄 Redis: Subscriber reconnecting...');
+      logger.debug('Subscriber reconnecting...');
     });
 
     subscriber.on('ready', () => {
-      console.log('✅ Redis: Subscriber connected and ready');
+      logger.info('Subscriber connected and ready');
     });
 
     // Attempt to connect (non-blocking)
     subscriber.connect().catch(err => {
-      console.warn(
-        '⚠️  Redis: Subscriber failed to connect (will retry):',
-        err.message || 'Unknown error'
-      );
+      logger.warn('Subscriber failed to connect (will retry)', {
+        error: err.message || 'Unknown error',
+      });
     });
 
     return subscriber;
   } catch (error) {
-    console.error('❌ Redis: Failed to create subscriber:', error.message);
+    logger.error('Failed to create subscriber', error);
     return null;
   }
 }
@@ -588,7 +590,7 @@ async function publish(channel, message) {
     const count = await redisClient.publish(channel, serialized);
     return count;
   } catch (error) {
-    console.error(`❌ Redis: Failed to publish to ${channel}:`, error.message);
+    logger.error('Failed to publish', error, { channel });
     return 0;
   }
 }
@@ -602,9 +604,9 @@ async function close() {
     try {
       await redisClient.quit();
       isAvailable = false;
-      console.log('✅ Redis: Connection closed gracefully');
+      logger.info('Connection closed gracefully');
     } catch (error) {
-      console.error('❌ Redis: Error closing connection:', error.message);
+      logger.error('Error closing connection', error);
     }
   }
 }

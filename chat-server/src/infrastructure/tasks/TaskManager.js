@@ -6,6 +6,12 @@
  * Ensures proper cleanup on shutdown
  */
 
+const { defaultLogger } = require('../logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'taskManager',
+});
+
 class TaskManager {
   constructor() {
     this.tasks = new Map(); // taskId -> { type, fn, timeoutId/intervalId, name, createdAt }
@@ -25,7 +31,10 @@ class TaskManager {
       try {
         await fn();
       } catch (error) {
-        console.error(`[TaskManager] Error in task '${name}':`, error.message);
+        logger.error('Log message', {
+          arg0: `[TaskManager] Error in task '${name}':`,
+          message: error.message,
+        });
       } finally {
         this.tasks.delete(taskId);
       }
@@ -55,7 +64,10 @@ class TaskManager {
       try {
         await fn();
       } catch (error) {
-        console.error(`[TaskManager] Error in recurring task '${name}':`, error.message);
+        logger.error('Log message', {
+          arg0: `[TaskManager] Error in recurring task '${name}':`,
+          message: error.message,
+        });
       }
     }, interval);
 
@@ -68,7 +80,9 @@ class TaskManager {
     });
 
     if (process.env.NODE_ENV !== 'test') {
-      console.log(`[TaskManager] Scheduled recurring task: ${name} (interval: ${interval}ms, id: ${taskId})`);
+      logger.debug('Log message', {
+        value: `[TaskManager] Scheduled recurring task: ${name} (interval: ${interval}ms, id: ${taskId})`,
+      });
     }
 
     return taskId;
@@ -92,7 +106,9 @@ class TaskManager {
     }
 
     if (process.env.NODE_ENV !== 'test') {
-      console.log(`[TaskManager] Cancelled task: ${task.name} (id: ${taskId})`);
+      logger.debug('Log message', {
+        value: `[TaskManager] Cancelled task: ${task.name} (id: ${taskId})`,
+      });
     }
 
     this.tasks.delete(taskId);
@@ -115,7 +131,9 @@ class TaskManager {
       count++;
     }
     this.tasks.clear();
-    console.log(`[TaskManager] Cancelled ${count} background tasks`);
+    logger.debug('Log message', {
+      value: `[TaskManager] Cancelled ${count} background tasks`,
+    });
     return count;
   }
 
@@ -145,4 +163,3 @@ class TaskManager {
 const taskManager = new TaskManager();
 
 module.exports = { taskManager, TaskManager };
-

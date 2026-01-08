@@ -10,6 +10,12 @@
  * - Utility function injection
  */
 
+const { defaultLogger } = require('../logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'serviceLoader',
+});
+
 /**
  * Load all database-dependent services
  *
@@ -52,10 +58,9 @@ function loadServices() {
   // Phase 1: Initialize UserSessionService (load sessions from database)
   if (userSessionService && userSessionService.initialize) {
     userSessionService.initialize().catch(err => {
-      console.warn(
-        '[ServiceLoader] UserSessionService initialization failed (non-blocking):',
-        err.message
-      );
+      logger.warn('[ServiceLoader] UserSessionService initialization failed (non-blocking)', {
+        message: err.message,
+      });
     });
   }
 
@@ -66,9 +71,11 @@ function loadServices() {
       registerThreadEventListeners,
     } = require('../../../src/core/events/listeners/ThreadEventListeners');
     registerThreadEventListeners();
-    console.log('✅ Domain event listeners registered');
+    logger.debug('✅ Domain event listeners registered');
   } catch (err) {
-    console.warn('⚠️  Failed to register thread event listeners:', err.message);
+    logger.warn('⚠️  Failed to register thread event listeners', {
+      message: err.message,
+    });
   }
 
   // Add specific utility functions

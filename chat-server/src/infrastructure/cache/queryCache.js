@@ -7,7 +7,19 @@
  * @module liaizen/infrastructure/cache/queryCache
  */
 
-const { cacheGet, cacheSet, cacheDelete, cacheDeletePattern, isRedisAvailable } = require('../database/redisClient');
+const {
+  cacheGet,
+  cacheSet,
+  cacheDelete,
+  cacheDeletePattern,
+  isRedisAvailable,
+} = require('../database/redisClient');
+
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'queryCache',
+});
 
 const DEFAULT_TTL = 300; // 5 minutes
 const CACHE_PREFIX = 'query:';
@@ -39,7 +51,10 @@ async function get(queryName, params = {}) {
     const key = generateKey(queryName, params);
     return await cacheGet(key);
   } catch (error) {
-    console.warn(`[QueryCache] Failed to get cache for ${queryName}:`, error.message);
+    logger.warn('Log message', {
+      arg0: `[QueryCache] Failed to get cache for ${queryName}:`,
+      message: error.message,
+    });
     return null;
   }
 }
@@ -61,7 +76,10 @@ async function set(queryName, params = {}, result, ttlSeconds = DEFAULT_TTL) {
     const key = generateKey(queryName, params);
     return await cacheSet(key, result, ttlSeconds);
   } catch (error) {
-    console.warn(`[QueryCache] Failed to cache ${queryName}:`, error.message);
+    logger.warn('Log message', {
+      arg0: `[QueryCache] Failed to cache ${queryName}:`,
+      message: error.message,
+    });
     return false;
   }
 }
@@ -80,7 +98,10 @@ async function invalidate(queryPattern) {
     const pattern = `${CACHE_PREFIX}${queryPattern}`;
     return await cacheDeletePattern(pattern);
   } catch (error) {
-    console.warn(`[QueryCache] Failed to invalidate ${queryPattern}:`, error.message);
+    logger.warn('Log message', {
+      arg0: `[QueryCache] Failed to invalidate ${queryPattern}:`,
+      message: error.message,
+    });
     return 0;
   }
 }
@@ -121,7 +142,10 @@ async function invalidateRoom(roomId) {
 
     return totalDeleted;
   } catch (error) {
-    console.warn(`[QueryCache] Failed to invalidate room ${roomId}:`, error.message);
+    logger.warn('Log message', {
+      arg0: `[QueryCache] Failed to invalidate room ${roomId}:`,
+      message: error.message,
+    });
     return 0;
   }
 }
@@ -133,4 +157,3 @@ module.exports = {
   invalidateQuery,
   invalidateRoom,
 };
-

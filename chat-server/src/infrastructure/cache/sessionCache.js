@@ -10,6 +10,12 @@
 
 const { cacheGet, cacheSet, cacheDelete, isRedisAvailable } = require('../database/redisClient');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'sessionCache',
+});
+
 const SESSION_CACHE_TTL = 300; // 5 minutes
 const CACHE_PREFIX = 'session:';
 
@@ -26,7 +32,9 @@ async function getSession(socketId) {
   try {
     return await cacheGet(`${CACHE_PREFIX}${socketId}`);
   } catch (error) {
-    console.warn('[SessionCache] Failed to get session:', error.message);
+    logger.warn('[SessionCache] Failed to get session', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -46,7 +54,9 @@ async function setSession(socketId, sessionData, ttlSeconds = SESSION_CACHE_TTL)
   try {
     return await cacheSet(`${CACHE_PREFIX}${socketId}`, sessionData, ttlSeconds);
   } catch (error) {
-    console.warn('[SessionCache] Failed to cache session:', error.message);
+    logger.warn('[SessionCache] Failed to cache session', {
+      message: error.message,
+    });
     return false;
   }
 }
@@ -64,7 +74,9 @@ async function deleteSession(socketId) {
   try {
     return await cacheDelete(`${CACHE_PREFIX}${socketId}`);
   } catch (error) {
-    console.warn('[SessionCache] Failed to delete session:', error.message);
+    logger.warn('[SessionCache] Failed to delete session', {
+      message: error.message,
+    });
     return false;
   }
 }
@@ -86,7 +98,9 @@ async function invalidateUserSessions(email) {
     const pattern = `${CACHE_PREFIX}*`;
     return await cacheDeletePattern(pattern);
   } catch (error) {
-    console.warn('[SessionCache] Failed to invalidate user sessions:', error.message);
+    logger.warn('[SessionCache] Failed to invalidate user sessions', {
+      message: error.message,
+    });
     return 0;
   }
 }
@@ -97,4 +111,3 @@ module.exports = {
   deleteSession,
   invalidateUserSessions,
 };
-
