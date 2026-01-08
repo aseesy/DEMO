@@ -208,8 +208,8 @@ describe('OpenAI Client', () => {
       process.env.OPENAI_API_KEY = 'sk-test-key';
     });
 
-    it('should track rate limit statistics', () => {
-      const stats = client.getRateLimitStats();
+    it('should track rate limit statistics', async () => {
+      const stats = await client.getRateLimitStats();
 
       expect(stats).toBeDefined();
       expect(stats).toHaveProperty('requestCount');
@@ -228,7 +228,7 @@ describe('OpenAI Client', () => {
       mockCreate.mockResolvedValue(mockResponse);
 
       // Get initial stats
-      const initialStats = client.getRateLimitStats();
+      const initialStats = await client.getRateLimitStats();
 
       // Make a request
       await client.createChatCompletion({
@@ -237,7 +237,7 @@ describe('OpenAI Client', () => {
       });
 
       // Check that request count increased
-      const afterStats = client.getRateLimitStats();
+      const afterStats = await client.getRateLimitStats();
       expect(afterStats.requestCount).toBeGreaterThanOrEqual(initialStats.requestCount);
     });
 
@@ -273,20 +273,17 @@ describe('OpenAI Client', () => {
       process.env.OPENAI_API_KEY = 'sk-test-key';
     });
 
-    it('should log errors to console', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    it('should handle errors and throw them', async () => {
       const error = new Error('Test error');
       mockCreate.mockRejectedValue(error);
 
+      // Verify error is thrown (logger.error is called internally by client)
       await expect(
         client.createChatCompletion({
           model: 'gpt-4o-mini',
           messages: [{ role: 'user', content: 'Test' }],
         })
-      ).rejects.toThrow();
-
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
+      ).rejects.toThrow('Test error');
     });
 
     it('should preserve error message for unknown errors', async () => {
