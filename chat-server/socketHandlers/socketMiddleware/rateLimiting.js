@@ -6,6 +6,12 @@
 
 const { SocketErrorCodes, emitSocketError } = require('./errorCodes');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'rateLimiting',
+});
+
 // Rate limit config per event type (requests per second)
 const RATE_LIMITS = {
   join: { max: 2, windowMs: 1000 }, // 2 joins/sec (prevent DDoS via room join spam)
@@ -82,7 +88,9 @@ function rateLimitMiddleware(socket) {
     }
 
     if (isRateLimited(socket, event)) {
-      console.warn(`[Rate Limit] Socket ${socket.id} rate limited on event: ${event}`);
+      logger.warn('Log message', {
+        value: `[Rate Limit] Socket ${socket.id} rate limited on event: ${event}`,
+      });
       emitSocketError(
         socket,
         SocketErrorCodes.RATE_LIMITED,

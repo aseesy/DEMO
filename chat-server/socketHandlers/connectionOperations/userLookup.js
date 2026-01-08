@@ -4,6 +4,12 @@
  * Handles user validation and lookup by email/username.
  */
 
+const { defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'userLookup',
+});
+
 /**
  * Validation result type
  * @typedef {Object} ValidationResult
@@ -62,7 +68,7 @@ async function getUserByUsername(cleanUsername, auth) {
     return auth.getUser(cleanUsername);
   }
   // Fallback: try to find user by old username field (for migration period)
-  console.warn('[getUserByUsername] Deprecated: Use getUserByEmail with email instead');
+  logger.warn('[getUserByUsername] Deprecated: Use getUserByEmail with email instead');
   return null;
 }
 

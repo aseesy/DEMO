@@ -6,6 +6,12 @@
 
 const pairingManager = require('../../libs/pairing-manager');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'roomResolution',
+});
+
 /**
  * Room resolution result
  * @typedef {Object} RoomResolution
@@ -32,7 +38,9 @@ async function getExistingUserRoom(user, cleanEmail, dbPostgres, roomManager) {
 
   if (activePairing && activePairing.shared_room_id) {
     const roomId = activePairing.shared_room_id;
-    console.log(`[join] User ${cleanEmail} has active pairing, using shared room: ${roomId}`);
+    logger.debug('Log message', {
+      value: `[join] User ${cleanEmail} has active pairing, using shared room: ${roomId}`,
+    });
 
     const roomResult = await dbPostgres.query('SELECT name FROM rooms WHERE id = $1', [roomId]);
     const roomName = roomResult.rows[0]?.name || 'Co-Parenting Room';
@@ -44,7 +52,9 @@ async function getExistingUserRoom(user, cleanEmail, dbPostgres, roomManager) {
   const existingRoom = await roomManager.getUserRoom(user.id);
 
   if (existingRoom) {
-    console.log(`[join] User ${cleanEmail} has existing room: ${existingRoom.roomId}`);
+    logger.debug('Log message', {
+      value: `[join] User ${cleanEmail} has existing room: ${existingRoom.roomId}`,
+    });
     return { roomId: existingRoom.roomId, roomName: existingRoom.roomName };
   }
 
@@ -71,7 +81,9 @@ async function resolveOrCreateUserRoom(user, cleanEmail, dbPostgres, roomManager
 
   // No room found - users should not have personal rooms
   // They must be connected to a co-parent to have a room
-  console.log(`[join] User ${cleanEmail} has no room. Users must be connected to a co-parent.`);
+  logger.debug('Log message', {
+    value: `[join] User ${cleanEmail} has no room. Users must be connected to a co-parent.`,
+  });
   return null;
 }
 

@@ -19,6 +19,12 @@
 
 const { getTopicService } = require('../src/services/topics');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'topicsHandler',
+});
+
 // Track which sockets are subscribed to which rooms for topics
 const topicSubscriptions = new Map(); // roomId -> Set<socketId>
 
@@ -43,7 +49,9 @@ function setupTopicsHandler(socket, io) {
       // Join a room-specific channel for topic events
       socket.join(`topics:${roomId}`);
 
-      console.log(`[Topics] ${userEmail} subscribed to topics in ${roomId}`);
+      logger.debug('Log message', {
+        value: `[Topics] ${userEmail} subscribed to topics in ${roomId}`,
+      });
 
       // Send initial topics list
       const topicService = getTopicService();
@@ -52,11 +60,12 @@ function setupTopicsHandler(socket, io) {
       socket.emit('topics:list', {
         roomId,
         topics,
-        count: topics.length
+        count: topics.length,
       });
-
     } catch (error) {
-      console.error('[Topics] Subscribe error:', error);
+      logger.error('[Topics] Subscribe error', {
+        error: error,
+      });
       socket.emit('topics:error', { error: 'Failed to subscribe to topics' });
     }
   });
@@ -68,7 +77,9 @@ function setupTopicsHandler(socket, io) {
     if (roomId && topicSubscriptions.has(roomId)) {
       topicSubscriptions.get(roomId).delete(socket.id);
       socket.leave(`topics:${roomId}`);
-      console.log(`[Topics] ${userEmail} unsubscribed from topics in ${roomId}`);
+      logger.debug('Log message', {
+        value: `[Topics] ${userEmail} unsubscribed from topics in ${roomId}`,
+      });
     }
   });
 
@@ -81,12 +92,14 @@ function setupTopicsHandler(socket, io) {
         return socket.emit('topics:error', { error: 'Room ID required' });
       }
 
-      console.log(`[Topics] ${userEmail} requested topic detection for ${roomId}`);
+      logger.debug('Log message', {
+        value: `[Topics] ${userEmail} requested topic detection for ${roomId}`,
+      });
 
       const topicService = getTopicService();
       const topics = await topicService.detectAndCreateTopics(roomId, {
         since: options.since ? new Date(options.since) : undefined,
-        limit: options.limit || 200
+        limit: options.limit || 200,
       });
 
       // Emit to all subscribers in this room
@@ -94,19 +107,20 @@ function setupTopicsHandler(socket, io) {
         roomId,
         topics,
         count: topics.length,
-        message: `Detected ${topics.length} topic(s)`
+        message: `Detected ${topics.length} topic(s)`,
       });
 
       // Also emit individual created events for each new topic
       for (const topic of topics) {
         io.to(`topics:${roomId}`).emit('topics:created', {
           roomId,
-          topic
+          topic,
         });
       }
-
     } catch (error) {
-      console.error('[Topics] Detection error:', error);
+      logger.error('[Topics] Detection error', {
+        error: error,
+      });
       socket.emit('topics:error', { error: 'Failed to detect topics' });
     }
   });
@@ -120,7 +134,9 @@ function setupTopicsHandler(socket, io) {
         return socket.emit('topics:error', { error: 'Topic ID required' });
       }
 
-      console.log(`[Topics] ${userEmail} requested regeneration for ${topicId}`);
+      logger.debug('Log message', {
+        value: `[Topics] ${userEmail} requested regeneration for ${topicId}`,
+      });
 
       const topicService = getTopicService();
       const result = await topicService.regenerateSummary(topicId);
@@ -141,12 +157,13 @@ function setupTopicsHandler(socket, io) {
           topicId,
           title,
           summary: result.summary,
-          citations: result.citations
+          citations: result.citations,
         });
       }
-
     } catch (error) {
-      console.error('[Topics] Regeneration error:', error);
+      logger.error('[Topics] Regeneration error', {
+        error: error,
+      });
       socket.emit('topics:error', { error: 'Failed to regenerate summary' });
     }
   });
@@ -160,18 +177,21 @@ function setupTopicsHandler(socket, io) {
         return socket.emit('topics:error', { error: 'Topic ID required' });
       }
 
-      console.log(`[Topics] ${userEmail} reported inaccuracy for ${topicId}: ${reason}`);
+      logger.debug('Log message', {
+        value: `[Topics] ${userEmail} reported inaccuracy for ${topicId}: ${reason}`,
+      });
 
       const topicService = getTopicService();
       await topicService.reportInaccurate(topicId, userEmail, reason || 'User reported inaccuracy');
 
       socket.emit('topics:reported', {
         topicId,
-        message: 'Report received, summary will be regenerated'
+        message: 'Report received, summary will be regenerated',
       });
-
     } catch (error) {
-      console.error('[Topics] Report error:', error);
+      logger.error('[Topics] Report error', {
+        error: error,
+      });
       socket.emit('topics:error', { error: 'Failed to report summary' });
     }
   });
@@ -196,7 +216,7 @@ function setupTopicsHandler(socket, io) {
 function broadcastTopicCreated(io, roomId, topic) {
   io.to(`topics:${roomId}`).emit('topics:created', {
     roomId,
-    topic
+    topic,
   });
 }
 
@@ -208,7 +228,7 @@ function broadcastTopicUpdated(io, roomId, topicId, summary, citations) {
     roomId,
     topicId,
     summary,
-    citations
+    citations,
   });
 }
 
@@ -219,7 +239,7 @@ function broadcastMessageAddedToTopic(io, roomId, topicId, messageId) {
   io.to(`topics:${roomId}`).emit('topics:message_added', {
     roomId,
     topicId,
-    messageId
+    messageId,
   });
 }
 
@@ -227,5 +247,5 @@ module.exports = {
   setupTopicsHandler,
   broadcastTopicCreated,
   broadcastTopicUpdated,
-  broadcastMessageAddedToTopic
+  broadcastMessageAddedToTopic,
 };

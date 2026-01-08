@@ -2,6 +2,12 @@
  * Socket Contact Handlers
  */
 
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'contactHandler',
+});
+
 function registerContactHandlers(socket, io, services) {
   const { dbSafe, aiMediator, userSessionService } = services;
 
@@ -55,7 +61,9 @@ function registerContactHandlers(socket, io, services) {
       }
       delete socket.data.pendingContactSuggestion;
     } catch (error) {
-      console.error('Error handling contact suggestion response:', error);
+      logger.error('Error handling contact suggestion response', {
+        error: error,
+      });
     }
   });
 
@@ -94,7 +102,9 @@ function registerContactHandlers(socket, io, services) {
         delete socket.data.pendingContactSuggestion;
       }
     } catch (error) {
-      console.error('Error handling contact relationship:', error);
+      logger.error('Error handling contact relationship', {
+        error: error,
+      });
     }
   });
 
@@ -140,7 +150,9 @@ function registerContactHandlers(socket, io, services) {
       );
       io.to(user.roomId).emit('message_flagged', { messageId, flaggedBy, roomId: user.roomId });
     } catch (error) {
-      console.error('Error flagging message:', error);
+      logger.error('Error flagging message', {
+        error: error,
+      });
     }
   });
 }

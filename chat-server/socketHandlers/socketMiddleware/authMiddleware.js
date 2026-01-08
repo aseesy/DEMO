@@ -8,6 +8,12 @@ const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../../config');
 const { SocketErrorCodes } = require('./errorCodes');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'authMiddleware',
+});
+
 /**
  * Socket.io authentication middleware
  * Verifies JWT token from handshake auth or query parameters
@@ -20,12 +26,20 @@ const { SocketErrorCodes } = require('./errorCodes');
  */
 function authMiddleware(socket, next) {
   // ALWAYS log the first line to verify middleware is called
-  console.log(`[Socket Auth] >>> MIDDLEWARE INVOKED for socket ${socket.id}`);
+  logger.debug('Log message', {
+    value: `[Socket Auth] >>> MIDDLEWARE INVOKED for socket ${socket.id}`,
+  });
 
   // Only log details in development to avoid noise in production
   if (process.env.NODE_ENV !== 'production') {
-    console.log(`[Socket Auth] Handshake auth:`, socket.handshake.auth);
-    console.log(`[Socket Auth] Handshake query:`, socket.handshake.query);
+    logger.debug('Log message', {
+      arg0: `[Socket Auth] Handshake auth:`,
+      auth: socket.handshake.auth,
+    });
+    logger.debug('Log message', {
+      arg0: `[Socket Auth] Handshake query:`,
+      query: socket.handshake.query,
+    });
   }
 
   try {
@@ -36,12 +50,20 @@ function authMiddleware(socket, next) {
 
     if (!token) {
       if (process.env.NODE_ENV !== 'production') {
-        console.warn(`[Socket Auth] ❌ No token found for socket ${socket.id}`);
-        console.warn(`[Socket Auth] Handshake auth:`, socket.handshake.auth);
-        console.warn(`[Socket Auth] Handshake query:`, socket.handshake.query);
-        console.warn(
-          `[Socket Auth] Client should send token in auth object: { auth: { token: '...' } }`
-        );
+        logger.warn('Log message', {
+          value: `[Socket Auth] ❌ No token found for socket ${socket.id}`,
+        });
+        logger.warn('Log message', {
+          arg0: `[Socket Auth] Handshake auth:`,
+          auth: socket.handshake.auth,
+        });
+        logger.warn('Log message', {
+          arg0: `[Socket Auth] Handshake query:`,
+          query: socket.handshake.query,
+        });
+        logger.warn('Log message', {
+          value: `[Socket Auth] Client should send token in auth object: { auth: { token: '...' } }`,
+        });
       }
       const err = new Error('Authentication required');
       err.data = { code: SocketErrorCodes.AUTH_REQUIRED };
@@ -67,13 +89,18 @@ function authMiddleware(socket, next) {
     socket.data.authenticatedUser = authenticatedUser;
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`[Socket Auth] ✅ Authenticated: ${socket.user.email} (socket: ${socket.id})`);
+      logger.debug('Log message', {
+        value: `[Socket Auth] ✅ Authenticated: ${socket.user.email} (socket: ${socket.id})`,
+      });
     }
     next();
   } catch (err) {
     // Only log in development
     if (process.env.NODE_ENV !== 'production') {
-      console.warn(`[Socket Auth] ❌ Authentication failed for socket ${socket.id}:`, err.message);
+      logger.warn('Log message', {
+        arg0: `[Socket Auth] ❌ Authentication failed for socket ${socket.id}:`,
+        message: err.message,
+      });
     }
 
     const error = new Error('Authentication failed');

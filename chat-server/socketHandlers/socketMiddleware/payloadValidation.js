@@ -6,6 +6,12 @@
 
 const { SocketErrorCodes, emitSocketError } = require('./errorCodes');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'payloadValidation',
+});
+
 const MAX_PAYLOAD_SIZE = 100000; // 100KB max payload
 
 /**
@@ -18,9 +24,9 @@ function payloadValidationMiddleware(socket) {
       try {
         const payloadSize = JSON.stringify(data).length;
         if (payloadSize > MAX_PAYLOAD_SIZE) {
-          console.warn(
-            `[Payload] Socket ${socket.id} sent oversized payload: ${payloadSize} bytes for ${event}`
-          );
+          logger.warn('Log message', {
+            value: `[Payload] Socket ${socket.id} sent oversized payload: ${payloadSize} bytes for ${event}`,
+          });
           emitSocketError(
             socket,
             SocketErrorCodes.PAYLOAD_TOO_LARGE,

@@ -2,6 +2,12 @@
  * Socket Feedback and Intervention Handlers
  */
 
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'feedbackHandler',
+});
+
 function registerFeedbackHandlers(socket, io, services) {
   const { aiMediator, feedbackLearner, dbSafe, userSessionService } = services;
 
@@ -24,7 +30,9 @@ function registerFeedbackHandlers(socket, io, services) {
       aiMediator.recordInterventionFeedback(user.roomId, helpful);
       socket.emit('feedback_recorded', { success: true });
     } catch (error) {
-      console.error('Error recording intervention feedback:', error);
+      logger.error('Error recording intervention feedback', {
+        error: error,
+      });
       socket.emit('error', { message: 'Failed to record feedback.' });
     }
   });
@@ -38,7 +46,9 @@ function registerFeedbackHandlers(socket, io, services) {
       await aiMediator.recordAcceptedRewrite(user.username, { original, rewrite, tip });
       socket.emit('rewrite_recorded', { success: true });
     } catch (error) {
-      console.error('Error recording accepted rewrite:', error);
+      logger.error('Error recording accepted rewrite', {
+        error: error,
+      });
     }
   });
 
@@ -77,11 +87,12 @@ function registerFeedbackHandlers(socket, io, services) {
         socket.emit('error', { message: 'Original message not found.' });
       }
     } catch (error) {
-      console.error('Error handling override:', error);
+      logger.error('Error handling override', {
+        error: error,
+      });
       socket.emit('error', { message: 'Failed to override intervention.' });
     }
   });
 }
 
 module.exports = { registerFeedbackHandlers };
-

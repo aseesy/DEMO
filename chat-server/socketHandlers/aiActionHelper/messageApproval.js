@@ -7,6 +7,12 @@
 
 const { updateUserStats, gatherAnalysisContext } = require('../aiHelperUtils');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'messageApproval',
+});
+
 /**
  * Processes an approved (non-flagged) message
  *
@@ -35,14 +41,18 @@ async function processApprovedMessage(socket, io, services, context) {
   // This ensures message persists even if client disconnects
   try {
     await addToHistory(message, user.roomId);
-    console.log('[processApprovedMessage] Message saved to database:', {
-      id: message.id,
-      username: message.username,
-      text: message.text?.substring(0, 50),
-      roomId: user.roomId,
+    logger.debug('[processApprovedMessage] Message saved to database', {
+      ...{
+        id: message.id,
+        username: message.username,
+        text: message.text?.substring(0, 50),
+        roomId: user.roomId,
+      },
     });
   } catch (saveError) {
-    console.error('[processApprovedMessage] ERROR saving message:', saveError);
+    logger.error('[processApprovedMessage] ERROR saving message', {
+      saveError: saveError,
+    });
     // Still emit the message even if save fails (user should see it)
     // But log the error so we can debug
   }
@@ -109,50 +119,60 @@ async function sendPushNotification(dbPostgres, user, message) {
         return memberEmail?.toLowerCase() !== userEmail?.toLowerCase();
       });
 
-      console.log('[processApprovedMessage] Push notification check:', {
-        roomMembersCount: roomMembersResult.rows.length,
-        senderEmail: userEmail,
-        roomMembers: roomMembersResult.rows.map(r => r.email || r.username),
-        recipientFound: !!recipient,
-        recipientUserId: recipient?.user_id,
+      logger.debug('[processApprovedMessage] Push notification check', {
+        ...{
+          roomMembersCount: roomMembersResult.rows.length,
+          senderEmail: userEmail,
+          roomMembers: roomMembersResult.rows.map(r => r.email || r.username),
+          recipientFound: !!recipient,
+          recipientUserId: recipient?.user_id,
+        },
       });
 
       if (recipient && recipient.user_id) {
         // Import push notification service
         const pushNotificationService = require('../../services/pushNotificationService');
-        console.log('[processApprovedMessage] Sending push notification:', {
-          recipientUserId: recipient.user_id,
-          recipientUsername: recipient.username,
-          messageId: message.id,
-          messageUsername: message.username,
-          messageDisplayName: message.displayName,
-          messageText: message.text?.substring(0, 50),
-          hasText: !!message.text,
+        logger.debug('[processApprovedMessage] Sending push notification', {
+          ...{
+            recipientUserId: recipient.user_id,
+            recipientUsername: recipient.username,
+            messageId: message.id,
+            messageUsername: message.username,
+            messageDisplayName: message.displayName,
+            messageText: message.text?.substring(0, 50),
+            hasText: !!message.text,
+          },
         });
         const result = await pushNotificationService.notifyNewMessage(recipient.user_id, message);
-        console.log('[processApprovedMessage] Push notification result:', {
-          recipientUserId: recipient.user_id,
-          sent: result.sent,
-          failed: result.failed,
-          totalSubscriptions: result.sent + result.failed,
+        logger.debug('[processApprovedMessage] Push notification result', {
+          ...{
+            recipientUserId: recipient.user_id,
+            sent: result.sent,
+            failed: result.failed,
+            totalSubscriptions: result.sent + result.failed,
+          },
         });
       } else {
         const userEmail = user.email || user.username; // Fallback for backward compatibility
-        console.log('[processApprovedMessage] No recipient found for push notification:', {
-          roomMembersCount: roomMembersResult.rows.length,
-          senderEmail: userEmail,
-          roomMembers: roomMembersResult.rows.map(r => ({
-            email: r.email || r.username,
-            userId: r.user_id,
-          })),
+        logger.debug('[processApprovedMessage] No recipient found for push notification', {
+          ...{
+            roomMembersCount: roomMembersResult.rows.length,
+            senderEmail: userEmail,
+            roomMembers: roomMembersResult.rows.map(r => ({
+              email: r.email || r.username,
+              userId: r.user_id,
+            })),
+          },
         });
       }
     } else {
-      console.log('[processApprovedMessage] No room members found, skipping push notification');
+      logger.debug('[processApprovedMessage] No room members found, skipping push notification');
     }
   } catch (pushError) {
     // Don't fail message delivery if push notification fails
-    console.error('[processApprovedMessage] Error sending push notification:', pushError);
+    logger.error('[processApprovedMessage] Error sending push notification', {
+      pushError: pushError,
+    });
   }
 }
 
@@ -189,9 +209,11 @@ async function extractAndUpdateContacts(socket, services, user, message) {
     );
 
     if (updatedContacts.length > 0) {
-      console.log('[processApprovedMessage] ✅ Updated contacts with extracted information:', {
-        count: updatedContacts.length,
-        contacts: updatedContacts.map(c => c.contact_name),
+      logger.debug('[processApprovedMessage] ✅ Updated contacts with extracted information', {
+        ...{
+          count: updatedContacts.length,
+          contacts: updatedContacts.map(c => c.contact_name),
+        },
       });
 
       // Optionally notify the user that contacts were updated
@@ -208,7 +230,9 @@ async function extractAndUpdateContacts(socket, services, user, message) {
     }
   } catch (extractionError) {
     // Don't fail message delivery if extraction fails
-    console.error('[processApprovedMessage] Error extracting information:', extractionError);
+    logger.error('[processApprovedMessage] Error extracting information', {
+      extractionError: extractionError,
+    });
   }
 }
 

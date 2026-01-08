@@ -6,6 +6,12 @@
 
 const { updateUserStats } = require('../aiHelperUtils');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'interventionProcessing',
+});
+
 /**
  * Processes an AI intervention (coaching moment)
  *
@@ -32,9 +38,11 @@ async function processIntervention(socket, io, services, context) {
     // RACE CONDITION GUARD: Check if socket is still connected before emitting
     if (!socket.connected) {
       const userEmail = user.email || user.username; // Fallback for backward compatibility
-      console.warn('[processIntervention] Socket disconnected, skipping emit', {
-        email: userEmail,
-        messageId: message.id,
+      logger.warn('[processIntervention] Socket disconnected, skipping emit', {
+        ...{
+          email: userEmail,
+          messageId: message.id,
+        },
       });
       return;
     }

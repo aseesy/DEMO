@@ -2,7 +2,7 @@
  * AI Context Helpers for Socket Messages
  */
 
-const { defaultLogger } = require('../../src/infrastructure/logging/logger');
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
 
 /**
  * Get recent messages from a room
@@ -17,7 +17,7 @@ async function getRecentMessages(dbPostgres, roomId) {
 
 async function getParticipantUsernames(dbSafe, roomId, userSessionService) {
   const logger = defaultLogger.child({ function: 'getParticipantUsernames' });
-  
+
   // Try database first (most reliable)
   try {
     const roomMembers = await dbSafe.safeSelect('room_members', { room_id: roomId });
@@ -25,7 +25,8 @@ async function getParticipantUsernames(dbSafe, roomId, userSessionService) {
     if (userIds.length > 0) {
       const memberUsers = await dbSafe.safeSelect('users', { id: userIds });
       if (memberUsers.length > 0) {
-        return memberUsers.map(u => u.username);
+        // Use email as primary identifier (username can be NULL for newer users)
+        return memberUsers.map(u => u.email || u.username).filter(Boolean);
       }
     }
   } catch (dbError) {
@@ -40,7 +41,8 @@ async function getParticipantUsernames(dbSafe, roomId, userSessionService) {
   if (userSessionService) {
     try {
       const activeUsers = userSessionService.getUsersInRoom(roomId);
-      return activeUsers.map(u => u.username);
+      // Use email as primary identifier (username can be NULL for newer users)
+      return activeUsers.map(u => u.email || u.username).filter(Boolean);
     } catch (sessionError) {
       logger.warn('Session service failed', {
         error: sessionError.message,
@@ -59,11 +61,16 @@ async function getContactContext(services, user, participantUsernames) {
   let aiContext = null;
 
   try {
-    const userResult = await dbSafe.safeSelect(
-      'users',
-      { username: user.username.toLowerCase() },
-      { limit: 1 }
-    );
+    // Use email (always present) or username as fallback
+    const userIdentifier = user.email || user.username;
+    if (!userIdentifier) {
+      return { existingContacts: [], aiContext: null };
+    }
+
+    // Query by email first (more reliable), fallback to username
+    const userResult = user.email
+      ? await dbSafe.safeSelect('users', { email: user.email.toLowerCase() }, { limit: 1 })
+      : await dbSafe.safeSelect('users', { username: user.username.toLowerCase() }, { limit: 1 });
     if (userResult.length > 0) {
       const fullContacts = await dbSafe.safeSelect('contacts', { user_id: userResult[0].id });
       existingContacts = fullContacts.map(c => c.contact_name);
@@ -142,13 +149,13 @@ async function getThreadContext(services, message) {
   try {
     const { dbSafe } = services;
     const threadResult = await dbSafe.safeSelect('threads', { id: threadId }, { limit: 1 });
-    
+
     if (threadResult.length === 0) {
       return null;
     }
 
     const thread = threadResult[0];
-    
+
     // Map category to description for better AI context
     const categoryDescriptions = {
       safety: 'Safety and well-being concerns',

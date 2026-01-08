@@ -6,6 +6,12 @@
 
 const contactIntelligence = require('../../src/core/intelligence/contactIntelligence');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'contactDetection',
+});
+
 /**
  * Detect contact mentions in message text and generate contact suggestion with relationship
  * PURE FUNCTION: Only analyzes text, does not store or emit anything
@@ -56,7 +62,9 @@ async function detectContactSuggestion(aiMediator, context) {
       }
     }
   } catch (err) {
-    console.error('Error detecting contact mentions:', err);
+    logger.error('Error detecting contact mentions', {
+      err: err,
+    });
   }
   return null;
 }

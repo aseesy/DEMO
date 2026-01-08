@@ -5,6 +5,12 @@
  * and notifying users of the issue.
  */
 
+const { defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'aiFailure',
+});
+
 /**
  * Handles AI processing failure gracefully
  *
@@ -24,7 +30,9 @@
 async function handleAiFailure(socket, io, context) {
   const { user, message, error, addToHistory } = context;
 
-  console.error('❌ AI Mediator failure:', error.message);
+  logger.error('❌ AI Mediator failure', {
+    message: error.message,
+  });
 
   // RACE CONDITION GUARD: Only emit private error to socket if still connected
   if (socket.connected) {

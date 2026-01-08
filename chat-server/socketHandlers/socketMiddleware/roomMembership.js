@@ -4,6 +4,12 @@
  * Verifies user is a member of a room.
  */
 
+const { defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'roomMembership',
+});
+
 /**
  * Verify user is a member of the room they're trying to interact with
  * @param {string} userId - User ID
@@ -25,7 +31,9 @@ async function verifyRoomMembership(userId, roomId, dbSafe) {
     const members = dbSafe.parseResult(result);
     return members.length > 0;
   } catch (err) {
-    console.error('[Room Membership] Verification error:', err);
+    logger.error('[Room Membership] Verification error', {
+      err: err,
+    });
     return false;
   }
 }

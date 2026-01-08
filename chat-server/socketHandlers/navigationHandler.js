@@ -2,6 +2,12 @@
  * Socket Navigation and Search Handlers
  */
 
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'navigationHandler',
+});
+
 function registerNavigationHandlers(socket, io, services) {
   const { dbPostgres, userSessionService } = services;
 
@@ -54,14 +60,16 @@ function registerNavigationHandlers(socket, io, services) {
         hasMore: result.rows.length === limit,
       });
     } catch (error) {
-      console.error('Error loading older messages:', error);
+      logger.error('Error loading older messages', {
+        error: error,
+      });
       socket.emit('error', { message: 'Failed to load older messages.' });
     }
   });
 
   // search_messages handler
   socket.on('search_messages', async ({ query, limit = 50, offset = 0 }) => {
-      const user = await userSessionService.getUserBySocketId(socket.id);
+    const user = await userSessionService.getUserBySocketId(socket.id);
     if (!user) {
       socket.emit('error', { message: 'You must join before searching.' });
       return;
@@ -112,14 +120,16 @@ function registerNavigationHandlers(socket, io, services) {
         hasMore: offset + result.rows.length < total,
       });
     } catch (error) {
-      console.error('Error searching messages:', error);
+      logger.error('Error searching messages', {
+        error: error,
+      });
       socket.emit('error', { message: 'Failed to search messages.' });
     }
   });
 
   // jump_to_message handler
   socket.on('jump_to_message', async ({ messageId }) => {
-      const user = await userSessionService.getUserBySocketId(socket.id);
+    const user = await userSessionService.getUserBySocketId(socket.id);
     if (!user) return;
 
     try {
@@ -164,7 +174,9 @@ function registerNavigationHandlers(socket, io, services) {
         targetMessageId: messageId,
       });
     } catch (error) {
-      console.error('Error jumping to message:', error);
+      logger.error('Error jumping to message', {
+        error: error,
+      });
       socket.emit('error', { message: 'Failed to load message context.' });
     }
   });
