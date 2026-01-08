@@ -14,6 +14,12 @@
 const pool = require('../../../dbPostgres');
 const openaiClient = require('../engine/client');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'narrativeMemory',
+});
+
 // Helper to run queries
 const query = (sql, params) => pool.query(sql, params);
 
@@ -33,7 +39,7 @@ async function generateEmbedding(text) {
 
   const client = openaiClient.getClient();
   if (!client) {
-    console.warn('⚠️ NarrativeMemory: OpenAI client not configured');
+    logger.warn('⚠️ NarrativeMemory: OpenAI client not configured');
     return null;
   }
 
@@ -44,13 +50,15 @@ async function generateEmbedding(text) {
     });
 
     if (!response.data?.[0]?.embedding) {
-      console.warn('⚠️ NarrativeMemory: Empty embedding response');
+      logger.warn('⚠️ NarrativeMemory: Empty embedding response');
       return null;
     }
 
     return response.data[0].embedding;
   } catch (error) {
-    console.error('❌ NarrativeMemory: Failed to generate embedding:', error.message);
+    logger.error('❌ NarrativeMemory: Failed to generate embedding', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -82,7 +90,9 @@ async function storeMessageEmbedding(messageId, text) {
     );
     return true;
   } catch (error) {
-    console.error('❌ NarrativeMemory: Failed to store embedding:', error.message);
+    logger.error('❌ NarrativeMemory: Failed to store embedding', {
+      message: error.message,
+    });
     return false;
   }
 }
@@ -178,7 +188,9 @@ async function findSimilarMessages(queryText, userId, roomId, limit = 5) {
 
     return messagesWithSimilarity;
   } catch (error) {
-    console.error('❌ NarrativeMemory: Failed to find similar messages:', error.message);
+    logger.error('❌ NarrativeMemory: Failed to find similar messages', {
+      message: error.message,
+    });
     return [];
   }
 }
@@ -220,7 +232,9 @@ async function getUserNarrativeProfile(userId, roomId) {
 
     return result.rows[0];
   } catch (error) {
-    console.error('❌ NarrativeMemory: Failed to get user profile:', error.message);
+    logger.error('❌ NarrativeMemory: Failed to get user profile', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -294,7 +308,9 @@ async function updateNarrativeProfile(userId, roomId, analysis) {
 
     return true;
   } catch (error) {
-    console.error('❌ NarrativeMemory: Failed to update profile:', error.message);
+    logger.error('❌ NarrativeMemory: Failed to update profile', {
+      message: error.message,
+    });
     return false;
   }
 }
@@ -324,7 +340,9 @@ async function getRoomNarrativeProfiles(roomId) {
 
     return result.rows;
   } catch (error) {
-    console.error('❌ NarrativeMemory: Failed to get room profiles:', error.message);
+    logger.error('❌ NarrativeMemory: Failed to get room profiles', {
+      message: error.message,
+    });
     return [];
   }
 }
@@ -349,7 +367,9 @@ async function findStaleProfiles(staleDays = 7, limit = 100) {
 
     return result.rows;
   } catch (error) {
-    console.error('❌ NarrativeMemory: Failed to find stale profiles:', error.message);
+    logger.error('❌ NarrativeMemory: Failed to find stale profiles', {
+      message: error.message,
+    });
     return [];
   }
 }
@@ -376,7 +396,9 @@ async function getMessagesWithoutEmbeddings(roomId, limit = 50) {
 
     return result.rows;
   } catch (error) {
-    console.error('❌ NarrativeMemory: Failed to get messages without embeddings:', error.message);
+    logger.error('❌ NarrativeMemory: Failed to get messages without embeddings', {
+      message: error.message,
+    });
     return [];
   }
 }

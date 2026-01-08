@@ -12,6 +12,12 @@
 const neo4jClient = require('../../infrastructure/database/neo4jClient');
 const entityExtractor = require('./entityExtractor');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'socialMapBuilder',
+});
+
 /**
  * Build complete social map for a room from message history
  * @param {string} roomId - Room ID
@@ -31,7 +37,9 @@ async function buildSocialMap(roomId, messages, options = {}) {
     };
   }
 
-  console.log(`🔄 SocialMapBuilder: Building map for room ${roomId} (${messages.length} messages)`);
+  logger.debug('Log message', {
+    value: `🔄 SocialMapBuilder: Building map for room ${roomId} (${messages.length} messages)`,
+  });
 
   const stats = {
     people: 0,
@@ -45,7 +53,7 @@ async function buildSocialMap(roomId, messages, options = {}) {
     const entities = await entityExtractor.extractEntities(messages, roomId);
 
     if (!entities || entities.people.length === 0) {
-      console.log('ℹ️ SocialMapBuilder: No people found in messages');
+      logger.debug('ℹ️ SocialMapBuilder: No people found in messages');
       return { success: true, stats, entities };
     }
 
@@ -125,13 +133,15 @@ async function buildSocialMap(roomId, messages, options = {}) {
       }
     }
 
-    console.log(
-      `✅ SocialMapBuilder: Built map with ${stats.people} people, ${stats.mentionsRelationships} mentions, ${stats.sentimentRelationships} sentiment relationships`
-    );
+    logger.debug('Log message', {
+      value: `✅ SocialMapBuilder: Built map with ${stats.people} people, ${stats.mentionsRelationships} mentions, ${stats.sentimentRelationships} sentiment relationships`,
+    });
 
     return { success: true, stats, entities };
   } catch (error) {
-    console.error('❌ SocialMapBuilder: Failed to build social map:', error.message);
+    logger.error('❌ SocialMapBuilder: Failed to build social map', {
+      message: error.message,
+    });
     return { success: false, error: error.message, stats };
   }
 }
@@ -166,13 +176,15 @@ async function updateSocialMapFromMessage(message, userId, roomId) {
       await neo4jClient.createMentionsRelationship(userId, personName, roomId, 'neutral', 1);
     }
 
-    console.log(
-      `✅ SocialMapBuilder: Updated map with ${entities.people.length} people from new message`
-    );
+    logger.debug('Log message', {
+      value: `✅ SocialMapBuilder: Updated map with ${entities.people.length} people from new message`,
+    });
 
     return { updated: true, entities };
   } catch (error) {
-    console.error('❌ SocialMapBuilder: Failed to update from message:', error.message);
+    logger.error('❌ SocialMapBuilder: Failed to update from message', {
+      message: error.message,
+    });
     return { updated: false, error: error.message };
   }
 }
@@ -225,7 +237,9 @@ async function getSocialMapSummary(roomId) {
       },
     };
   } catch (error) {
-    console.error('❌ SocialMapBuilder: Failed to get summary:', error.message);
+    logger.error('❌ SocialMapBuilder: Failed to get summary', {
+      message: error.message,
+    });
     return { people: [], summary: null, error: error.message };
   }
 }
@@ -253,7 +267,9 @@ async function getSensitivePeopleForUser(userId, roomId) {
       })
       .map(person => person.name);
   } catch (error) {
-    console.error('❌ SocialMapBuilder: Failed to get sensitive people:', error.message);
+    logger.error('❌ SocialMapBuilder: Failed to get sensitive people', {
+      message: error.message,
+    });
     return [];
   }
 }

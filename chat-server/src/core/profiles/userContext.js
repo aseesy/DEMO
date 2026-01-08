@@ -5,7 +5,13 @@
 const dbPostgres = require('../../../dbPostgres');
 const dbSafe = require('../../../dbSafe');
 
-console.log('📊 UserContext: Using PostgreSQL');
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'userContext',
+});
+
+logger.debug('📊 UserContext: Using PostgreSQL');
 
 /**
  * Get user context by email
@@ -35,7 +41,9 @@ async function getUserContext(email) {
       contacts: contacts,
     };
   } catch (err) {
-    console.error('Error getting user context:', err);
+    logger.error('Error getting user context', {
+      err: err,
+    });
     return null;
   }
 }
@@ -67,7 +75,9 @@ async function setUserContext(email, context) {
 
     return { email: emailLower, co_parent: coParent, children, contacts };
   } catch (err) {
-    console.error('Error setting user context:', err);
+    logger.error('Error setting user context', {
+      err: err,
+    });
     throw err;
   }
 }
@@ -99,16 +109,15 @@ async function formatContextForAI(email, profileData = null) {
   if (!userProfile) {
     try {
       // Use email to get user
-      const users = await dbSafe.safeSelect(
-        'users',
-        { email: emailLower },
-        { limit: 1 }
-      );
+      const users = await dbSafe.safeSelect('users', { email: emailLower }, { limit: 1 });
       if (users.length > 0) {
         userProfile = users[0];
       }
     } catch (err) {
-      console.error(`Error getting profile for ${emailLower}:`, err.message);
+      logger.error('Log message', {
+        arg0: `Error getting profile for ${emailLower}:`,
+        message: err.message,
+      });
     }
   }
 

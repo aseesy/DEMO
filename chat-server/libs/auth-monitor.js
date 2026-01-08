@@ -10,6 +10,12 @@
  * INFO: Normal operation logging
  */
 
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'authMonitor',
+});
+
 const AUTH_EVENTS = {
   // Successful operations
   SIGNUP_SUCCESS: 'auth.signup.success',
@@ -113,11 +119,15 @@ function logAuthEvent(event, severity, data = {}) {
 
   // Use appropriate console method based on severity
   if (severity === SEVERITY.CRITICAL) {
-    console.error(message);
+    logger.error('Error occurred', message, {});
   } else if (severity === SEVERITY.WARNING) {
-    console.warn(message);
+    logger.warn('message logged', {
+      message: message,
+    });
   } else {
-    console.log(message);
+    logger.debug('message logged', {
+      message: message,
+    });
   }
 
   return logEntry;

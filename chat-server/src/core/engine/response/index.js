@@ -12,7 +12,10 @@
  * @module liaizen/core/response
  */
 
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
 const { parseResponse, extractAction, validateInterventionFields } = require('./parser');
+
+const logger = defaultLogger.child({ module: 'responseProcessor' });
 const { validateRewrites, validateCodeLayerResponse } = require('./validator');
 const { recordToProfile, updateGraphMetrics, recordToHistory } = require('./recorder');
 const {
@@ -47,10 +50,12 @@ async function processResponse({
 
   // Debug logging
   if (result.intervention) {
-    console.log('📝 VALIDATION:', result.intervention.validation);
-    // Removed insight logging per user request
-    console.log('📝 REWRITE 1:', result.intervention.rewrite1);
-    console.log('📝 REWRITE 2:', result.intervention.rewrite2);
+    logger.debug('Intervention received', {
+      hasValidation: !!result.intervention.validation,
+      hasRewrite1: !!result.intervention.rewrite1,
+      hasRewrite2: !!result.intervention.rewrite2,
+      validationPreview: result.intervention.validation?.substring(0, 100),
+    });
   }
 
   const action = extractAction(result);

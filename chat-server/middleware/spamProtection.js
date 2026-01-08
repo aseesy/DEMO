@@ -5,6 +5,12 @@
  * to protect forms from bots and spam.
  */
 
+const { defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'spamProtection',
+});
+
 // In-memory rate limit store (use Redis in production for multi-instance)
 const rateLimitStore = new Map();
 
@@ -47,9 +53,9 @@ function honeypotCheck(fieldName = 'website') {
 
     // If honeypot field is filled, silently reject (don't give bots info)
     if (honeypotValue && honeypotValue.trim() !== '') {
-      console.log(
-        `[SPAM] Honeypot triggered from IP: ${getClientIP(req)}, field: ${fieldName}=${honeypotValue}`
-      );
+      logger.debug('Log message', {
+        value: `[SPAM] Honeypot triggered from IP: ${getClientIP(req)}, field: ${fieldName}=${honeypotValue}`,
+      });
 
       // Return success to not tip off the bot, but don't actually process
       return res.json({
@@ -106,9 +112,9 @@ function rateLimit(options = {}) {
     res.set('X-RateLimit-Reset', new Date(data.firstRequest + windowMs).toISOString());
 
     if (data.count > maxRequests) {
-      console.log(
-        `[RATE LIMIT] IP ${clientIP} exceeded limit for ${req.path}: ${data.count}/${maxRequests}`
-      );
+      logger.debug('Log message', {
+        value: `[RATE LIMIT] IP ${clientIP} exceeded limit for ${req.path}: ${data.count}/${maxRequests}`,
+      });
       return res.status(429).json({
         error: message,
         retryAfter: Math.ceil((data.firstRequest + windowMs - now) / 1000),
@@ -137,7 +143,7 @@ function recaptchaVerify(options = {}) {
 
     // Skip if reCAPTCHA is not configured
     if (!secretKey) {
-      console.log('[RECAPTCHA] Secret key not configured, skipping verification');
+      logger.debug('[RECAPTCHA] Secret key not configured, skipping verification');
       return next();
     }
 
@@ -145,7 +151,7 @@ function recaptchaVerify(options = {}) {
 
     // Skip if no token provided (for backward compatibility)
     if (!token) {
-      console.log('[RECAPTCHA] No token provided, skipping verification');
+      logger.debug('[RECAPTCHA] No token provided, skipping verification');
       return next();
     }
 
@@ -159,7 +165,9 @@ function recaptchaVerify(options = {}) {
       const data = await response.json();
 
       if (!data.success) {
-        console.log(`[RECAPTCHA] Verification failed: ${JSON.stringify(data['error-codes'])}`);
+        logger.debug('Log message', {
+          value: `[RECAPTCHA] Verification failed: ${JSON.stringify(data['error-codes'])}`,
+        });
         return res.status(400).json({
           error: 'Security verification failed. Please try again.',
         });
@@ -167,9 +175,9 @@ function recaptchaVerify(options = {}) {
 
       // Check score for v3
       if (data.score !== undefined && data.score < minScore) {
-        console.log(
-          `[RECAPTCHA] Low score: ${data.score} (min: ${minScore}) from IP: ${getClientIP(req)}`
-        );
+        logger.debug('Log message', {
+          value: `[RECAPTCHA] Low score: ${data.score} (min: ${minScore}) from IP: ${getClientIP(req)}`,
+        });
         return res.status(400).json({
           error: 'Security verification failed. Please try again.',
         });
@@ -177,7 +185,9 @@ function recaptchaVerify(options = {}) {
 
       // Check action if specified
       if (action && data.action !== action) {
-        console.log(`[RECAPTCHA] Action mismatch: expected ${action}, got ${data.action}`);
+        logger.debug('Log message', {
+          value: `[RECAPTCHA] Action mismatch: expected ${action}, got ${data.action}`,
+        });
         return res.status(400).json({
           error: 'Security verification failed. Please try again.',
         });
@@ -192,7 +202,9 @@ function recaptchaVerify(options = {}) {
 
       next();
     } catch (error) {
-      console.error('[RECAPTCHA] Verification error:', error);
+      logger.error('[RECAPTCHA] Verification error', {
+        error: error,
+      });
       // Allow request to proceed on verification error (fail open)
       next();
     }
@@ -260,7 +272,9 @@ function rejectDisposableEmail(req, res, next) {
   if (email) {
     const domain = email.split('@')[1]?.toLowerCase();
     if (domain && DISPOSABLE_DOMAINS.has(domain)) {
-      console.log(`[SPAM] Disposable email rejected: ${email} from IP: ${getClientIP(req)}`);
+      logger.debug('Log message', {
+        value: `[SPAM] Disposable email rejected: ${email} from IP: ${getClientIP(req)}`,
+      });
       return res.status(400).json({
         error: 'Please use a permanent email address, not a disposable one.',
       });

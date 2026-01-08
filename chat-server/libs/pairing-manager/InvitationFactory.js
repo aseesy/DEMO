@@ -11,6 +11,12 @@ const { EmailInvitationCreator } = require('./creators/EmailInvitationCreator');
 const { LinkInvitationCreator } = require('./creators/LinkInvitationCreator');
 const { CodeInvitationCreator } = require('./creators/CodeInvitationCreator');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'InvitationFactory',
+});
+
 /**
  * Factory for invitation creators
  * Handles registration and creation of pairing invitations
@@ -40,7 +46,9 @@ class InvitationFactory {
     }
 
     this.creators.set(type.toLowerCase(), creator);
-    console.log(`✅ InvitationFactory: Registered creator for type "${type}"`);
+    logger.debug('Log message', {
+      value: `✅ InvitationFactory: Registered creator for type "${type}"`,
+    });
   }
 
   /**
@@ -58,7 +66,9 @@ class InvitationFactory {
 
     const creator = this.creators.get(type.toLowerCase());
     if (!creator) {
-      throw new Error(`Unknown invitation type: ${type}. Registered types: ${Array.from(this.creators.keys()).join(', ')}`);
+      throw new Error(
+        `Unknown invitation type: ${type}. Registered types: ${Array.from(this.creators.keys()).join(', ')}`
+      );
     }
 
     return creator.create(params, db);
@@ -94,4 +104,3 @@ module.exports = {
   InvitationFactory,
   factory,
 };
-

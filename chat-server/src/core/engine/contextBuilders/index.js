@@ -8,6 +8,7 @@
  */
 
 const { MESSAGE } = require('../../../infrastructure/config/constants');
+const { isEnabled } = require('../../../infrastructure/config/featureFlags');
 const { getParticipantProfiles } = require('./participantContext');
 const {
   buildRoleAwareContext,
@@ -26,10 +27,7 @@ const {
   buildConversationPatternsSection,
   buildInterventionLearningSection,
 } = require('./intelligenceContext');
-const {
-  buildDualBrainContext,
-  updateDualBrainFromMessage,
-} = require('./dualBrainContext');
+const { buildDualBrainContext, updateDualBrainFromMessage } = require('./dualBrainContext');
 
 /**
  * Build all contexts for AI mediation
@@ -60,9 +58,13 @@ async function buildAllContexts({
     .slice(-MESSAGE.RECENT_MESSAGES_COUNT)
     .map((msg, index) => {
       // Add sequence markers for flow awareness
-      const sequence = index === 0 ? '[Most Recent]' : index === recentMessages.length - 1 ? '[Earlier]' : '';
-      const timestamp = msg.timestamp 
-        ? new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+      const sequence =
+        index === 0 ? '[Most Recent]' : index === recentMessages.length - 1 ? '[Earlier]' : '';
+      const timestamp = msg.timestamp
+        ? new Date(msg.timestamp).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
         : '';
       const timePrefix = timestamp ? `[${timestamp}]` : '';
       return `${timePrefix} ${sequence} ${msg.username}: ${msg.text}`.trim();
@@ -76,6 +78,7 @@ async function buildAllContexts({
   const receiverUserId = receiverProfileForIds?.id;
 
   // Build all contexts in parallel where possible
+  // Experimental contexts are only built if feature flags are enabled
   const [
     roleAwareContext,
     graphContextString,
@@ -86,12 +89,18 @@ async function buildAllContexts({
     dualBrainContext,
   ] = await Promise.all([
     buildRoleAwareContext(roleContext, recentMessages, message.text),
-    buildGraphContext(roleContext, participantProfiles, roomId),
-    buildValuesContext(roleContext, participantProfiles, message.text),
-    buildUserIntelligenceContext(roleContext, participantProfiles, message.text, roomId),
-    buildVoiceSignatureSection(roleContext, recentMessages),
-    buildInterventionLearningSection(roleContext),
-    senderUserId ? buildDualBrainContext(message.text, senderUserId, receiverUserId, roomId) : null,
+    isEnabled('GRAPH_CONTEXT') ? buildGraphContext(roleContext, participantProfiles, roomId) : null,
+    isEnabled('VALUES_CONTEXT')
+      ? buildValuesContext(roleContext, participantProfiles, message.text)
+      : null,
+    isEnabled('USER_INTELLIGENCE')
+      ? buildUserIntelligenceContext(roleContext, participantProfiles, message.text, roomId)
+      : null,
+    isEnabled('VOICE_SIGNATURE') ? buildVoiceSignatureSection(roleContext, recentMessages) : null,
+    isEnabled('INTERVENTION_LEARNING') ? buildInterventionLearningSection(roleContext) : null,
+    isEnabled('DUAL_BRAIN_CONTEXT') && senderUserId
+      ? buildDualBrainContext(message.text, senderUserId, receiverUserId, roomId)
+      : null,
   ]);
 
   // Build synchronous contexts
@@ -101,7 +110,9 @@ async function buildAllContexts({
     existingContacts,
     message.text
   );
-  const conversationPatternsSection = buildConversationPatternsSection(roleContext, recentMessages);
+  const conversationPatternsSection = isEnabled('CONVERSATION_PATTERNS')
+    ? buildConversationPatternsSection(roleContext, recentMessages)
+    : null;
 
   // Get display names - prefer contact_name from contacts, then first_name from profile, fallback to username
   // Contacts may have relationship names like "Dad" or "Mom" which are preferred
@@ -129,7 +140,11 @@ async function buildAllContexts({
 
       // Match by linked_user_id if available (links to user ID)
       // Check against receiver user ID from profile
-      if (c.linked_user_id && receiverUserIdForContact && c.linked_user_id === receiverUserIdForContact) {
+      if (
+        c.linked_user_id &&
+        receiverUserIdForContact &&
+        c.linked_user_id === receiverUserIdForContact
+      ) {
         return true;
       }
 

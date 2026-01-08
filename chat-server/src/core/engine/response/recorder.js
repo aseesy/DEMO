@@ -8,6 +8,9 @@
  */
 
 const libs = require('../libraryLoader');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'interventionRecorder' });
 
 /**
  * Record intervention to sender's communication profile
@@ -33,7 +36,10 @@ async function recordToProfile(roleContext, result, originalText) {
       dbPostgres
     );
   } catch (err) {
-    console.warn('⚠️ Recorder: Failed to record intervention to profile:', err.message);
+    logger.warn('Failed to record intervention to profile', {
+      error: err.message,
+      senderId: roleContext?.senderId,
+    });
   }
 }
 
@@ -57,10 +63,19 @@ async function updateGraphMetrics(roleContext, participantProfiles, roomId) {
       await libs.graphContext.updateMetrics(senderProfile.id, receiverProfile.id, roomId, {
         incrementInterventions: true,
       });
-      console.log('📊 Recorder: Updated Neo4j intervention count');
+      logger.debug('Updated Neo4j intervention count', {
+        senderId: senderProfile.id,
+        receiverId: receiverProfile.id,
+        roomId,
+      });
     }
   } catch (err) {
-    console.warn('⚠️ Recorder: Failed to update graph metrics:', err.message);
+    logger.warn('Failed to update graph metrics', {
+      error: err.message,
+      senderId: roleContext?.senderId,
+      receiverId: roleContext?.receiverId,
+      roomId,
+    });
   }
 }
 

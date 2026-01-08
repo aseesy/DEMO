@@ -1,6 +1,12 @@
 const openaiClient = require('../engine/client');
 const dbSafe = require('../../../dbSafe');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'contactIntelligence',
+});
+
 /**
  * AI Contact Intelligence Module
  *
@@ -18,7 +24,12 @@ const dbSafe = require('../../../dbSafe');
  * @param {Array} participantUsernames - Usernames of chat participants (to exclude from detection)
  * @returns {Promise<Object|null>} - Detected people to add or null
  */
-async function detectContactMentions(messageText, existingContacts = [], recentMessages = [], participantUsernames = []) {
+async function detectContactMentions(
+  messageText,
+  existingContacts = [],
+  recentMessages = [],
+  participantUsernames = []
+) {
   if (!openaiClient.isConfigured() || !messageText || messageText.trim().length === 0) {
     return null;
   }
@@ -27,18 +38,17 @@ async function detectContactMentions(messageText, existingContacts = [], recentM
     const existingContactNames = existingContacts
       .map(c => c.contact_name?.toLowerCase())
       .filter(Boolean);
-    const participantNames = participantUsernames
-      .map(u => u.toLowerCase())
-      .filter(Boolean);
+    const participantNames = participantUsernames.map(u => u.toLowerCase()).filter(Boolean);
     const allExcludedNames = [...existingContactNames, ...participantNames];
     const recentContext = recentMessages
       .slice(-5)
       .map(m => `${m.username}: ${m.text}`)
       .join('\n');
 
-    const excludedNamesString = allExcludedNames.length > 0
-      ? `\n\nIMPORTANT - DO NOT suggest these names (they are already contacts or chat participants): ${allExcludedNames.join(', ')}`
-      : '';
+    const excludedNamesString =
+      allExcludedNames.length > 0
+        ? `\n\nIMPORTANT - DO NOT suggest these names (they are already contacts or chat participants): ${allExcludedNames.join(', ')}`
+        : '';
 
     const prompt = `You are analyzing a co-parenting message to detect mentions of people who should be added as contacts.
 
@@ -104,23 +114,27 @@ If no new people detected, return empty detectedPeople array and shouldPrompt: f
       result.detectedPeople = result.detectedPeople.filter(
         p => p.confidence === 'high' || p.confidence === 'medium'
       );
-      
+
       // Safety filter: Exclude any detected names that match participant usernames or existing contacts
-      result.detectedPeople = result.detectedPeople.filter(
-        p => {
-          const detectedNameLower = p.name?.toLowerCase();
-          return detectedNameLower && 
-                 !allExcludedNames.includes(detectedNameLower) &&
-                 !allExcludedNames.some(excluded => detectedNameLower.includes(excluded) || excluded.includes(detectedNameLower));
-        }
-      );
-      
+      result.detectedPeople = result.detectedPeople.filter(p => {
+        const detectedNameLower = p.name?.toLowerCase();
+        return (
+          detectedNameLower &&
+          !allExcludedNames.includes(detectedNameLower) &&
+          !allExcludedNames.some(
+            excluded => detectedNameLower.includes(excluded) || excluded.includes(detectedNameLower)
+          )
+        );
+      });
+
       result.shouldPrompt = result.detectedPeople.length > 0;
     }
 
     return result;
   } catch (error) {
-    console.error('Error detecting contact mentions:', error.message);
+    logger.error('Error detecting contact mentions', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -218,17 +232,28 @@ Respond in JSON format:
     try {
       return JSON.parse(response);
     } catch (parseError) {
-      console.error('Error parsing AI response as JSON:', parseError.message);
-      console.error('AI response was:', response.substring(0, 500));
+      logger.error('Error parsing AI response as JSON', {
+        message: parseError.message,
+      });
+      logger.error('AI response was', {
+        response_substring: response.substring(0, 500),
+      });
       // Return null to trigger fallback
       return null;
     }
   } catch (error) {
-    console.error('Error generating contact profile:', error.message);
-    console.error('Error stack:', error.stack);
+    logger.error('Error generating contact profile', {
+      message: error.message,
+    });
+    logger.error('Error stack', {
+      stack: error.stack,
+    });
     // Check if it's an OpenAI API error
     if (error.response) {
-      console.error('OpenAI API error:', error.response.status, error.response.data);
+      logger.error('OpenAI API error', {
+        status: error.response.status,
+        data: error.response.data,
+      });
     }
     return null;
   }
@@ -303,7 +328,9 @@ async function mapContactRelationships(userId) {
 
     return { relationships, suggestions };
   } catch (error) {
-    console.error('Error mapping contact relationships:', error.message);
+    logger.error('Error mapping contact relationships', {
+      message: error.message,
+    });
     return { relationships: [], suggestions: [] };
   }
 }
@@ -391,7 +418,9 @@ Respond in JSON format:
     const response = completion.choices[0].message.content.trim();
     return JSON.parse(response);
   } catch (error) {
-    console.error('Error enriching contact from messages:', error.message);
+    logger.error('Error enriching contact from messages', {
+      message: error.message,
+    });
     return null;
   }
 }

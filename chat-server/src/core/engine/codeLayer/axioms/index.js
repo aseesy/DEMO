@@ -16,6 +16,9 @@
 'use strict';
 
 const { AXIOM_CATEGORIES } = require('../types');
+const { defaultLogger } = require('../../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'axiomChecker' });
 
 // ============================================================================
 // AXIOM IMPORTS
@@ -132,7 +135,10 @@ async function checkAll(parsed, context = {}) {
         return result;
       }
     } catch (error) {
-      console.error(`[AxiomChecker] Error checking ${id}:`, error.message);
+      logger.error('Error checking axiom', {
+        axiomId: id,
+        error: error.message,
+      });
     }
     return null;
   });

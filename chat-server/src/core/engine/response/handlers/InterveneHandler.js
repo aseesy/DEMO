@@ -7,7 +7,10 @@
  */
 
 const { MESSAGE } = require('../../../../infrastructure/config/constants');
+const { defaultLogger } = require('../../../../infrastructure/logging/logger');
 const { ActionHandler } = require('./ActionHandler');
+
+const logger = defaultLogger.child({ module: 'interveneHandler' });
 const { validateInterventionFields } = require('../parser');
 const { validateRewrites, validateCodeLayerResponse } = require('../validator');
 const { recordToProfile, updateGraphMetrics, recordToHistory } = require('../recorder');
@@ -49,11 +52,10 @@ class InterveneHandler extends ActionHandler {
     // Validate required fields
     const fieldValidation = validateInterventionFields(intervention);
     if (!fieldValidation.valid) {
-      console.error(
-        '❌ INTERVENE action missing required fields - ALLOWING message (safety fallback)'
-      );
-      console.error('Missing fields:', fieldValidation.missing.join(', '));
-      console.log('⚠️  Safety fallback: Allowing message to prevent false positives');
+      logger.error('INTERVENE action missing required fields, using safety fallback', {
+        missingFields: fieldValidation.missing,
+        messagePreview: message.text?.substring(0, MESSAGE.PREVIEW_LENGTH),
+      });
       return buildSafetyFallback();
     }
 
@@ -63,12 +65,11 @@ class InterveneHandler extends ActionHandler {
     // Validate Code Layer response
     validateCodeLayerResponse(result, parsedMessage);
 
-    console.log('✅ AI Mediator: INTERVENE - blocking message');
-    console.log('📊 AI Decision:', {
+    logger.debug('INTERVENE action - blocking message', {
       action: 'INTERVENE',
       riskLevel: result.escalation?.riskLevel,
       confidence: result.escalation?.confidence,
-      messagePreview: message.text.substring(0, MESSAGE.PREVIEW_LENGTH),
+      messagePreview: message.text?.substring(0, MESSAGE.PREVIEW_LENGTH),
       hasAllFields: true,
     });
 

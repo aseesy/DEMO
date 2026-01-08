@@ -1,8 +1,11 @@
 /**
  * State Manager - Conversation State Management
  *
- * Manages escalation, emotional, and policy state for conversations.
- * Handles state initialization, updates, and decay.
+ * Manages minimal essential state for conversations.
+ * Tracks only proven metrics: intervention history, pattern counts, and basic throttling.
+ *
+ * SIMPLIFIED: Removed unproven tracking (emotional states, stress trajectories, adaptive thresholds).
+ * These can be added back if A/B testing proves they improve outcomes.
  *
  * REFACTORED: No longer uses global state. Context is passed as parameter.
  *
@@ -10,9 +13,13 @@
  */
 
 const { ESCALATION, MESSAGE } = require('../../infrastructure/config/constants');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'stateManager' });
 
 /**
  * Initialize escalation state for a room
+ * SIMPLIFIED: Only tracks essential metrics (pattern counts, last intervention time)
  * @param {Object} conversationContext - Conversation context object (must have escalationState Map)
  * @param {string} roomId - Room identifier
  * @returns {Object} Escalation state object
@@ -29,13 +36,12 @@ function initializeEscalationState(conversationContext, roomId) {
 
   if (!conversationContext.escalationState.has(roomId)) {
     conversationContext.escalationState.set(roomId, {
-      escalationScore: 0,
-      lastNegativeTime: null,
+      lastInterventionTime: null,
+      recentInterventionCount: 0, // Count in last 24 hours
+      lastInterventionResetTime: Date.now(),
       patternCounts: {
         accusatory: 0,
         triangulation: 0,
-        comparison: 0,
-        blaming: 0,
       },
     });
   }
@@ -43,61 +49,20 @@ function initializeEscalationState(conversationContext, roomId) {
 }
 
 /**
- * Initialize emotional state for a room
- * @param {Object} conversationContext - Conversation context object (must have emotionalState Map)
- * @param {string} roomId - Room identifier
- * @returns {Object} Emotional state object
+ * REMOVED: initializeEmotionalState
+ * Emotional state tracking removed - no evidence it improves outcomes.
+ * Can be re-added if A/B testing proves value.
  */
-function initializeEmotionalState(conversationContext, roomId) {
-  if (!conversationContext) {
-    throw new Error('conversationContext is required');
-  }
-
-  // Ensure emotionalState Map exists
-  if (!conversationContext.emotionalState) {
-    conversationContext.emotionalState = new Map();
-  }
-
-  if (!conversationContext.emotionalState.has(roomId)) {
-    conversationContext.emotionalState.set(roomId, {
-      participants: {},
-      conversationEmotion: 'neutral',
-      escalationRisk: 0,
-      lastUpdated: Date.now(),
-    });
-  }
-  return conversationContext.emotionalState.get(roomId);
-}
 
 /**
- * Initialize policy state for a room
- * @param {Object} conversationContext - Conversation context object (must have policyState Map)
- * @param {string} roomId - Room identifier
- * @returns {Object} Policy state object
+ * REMOVED: initializePolicyState
+ * Policy state with adaptive thresholds removed - too complex, unproven.
+ * Can be re-added if A/B testing proves value.
  */
-function initializePolicyState(conversationContext, roomId) {
-  if (!conversationContext) {
-    throw new Error('conversationContext is required');
-  }
-
-  // Ensure policyState Map exists
-  if (!conversationContext.policyState) {
-    conversationContext.policyState = new Map();
-  }
-
-  if (!conversationContext.policyState.has(roomId)) {
-    conversationContext.policyState.set(roomId, {
-      interventionThreshold: 50,
-      interventionHistory: [],
-      lastInterventionTime: null,
-      adaptationLevel: 'moderate',
-    });
-  }
-  return conversationContext.policyState.get(roomId);
-}
 
 /**
- * Update escalation score based on detected patterns
+ * Update escalation state based on detected patterns
+ * SIMPLIFIED: Only tracks pattern counts, no complex scoring/decay
  * @param {Object} conversationContext - Conversation context object
  * @param {string} roomId - Room identifier
  * @param {Object} patterns - Detected conflict patterns
@@ -106,173 +71,98 @@ function initializePolicyState(conversationContext, roomId) {
 function updateEscalationScore(conversationContext, roomId, patterns) {
   const state = initializeEscalationState(conversationContext, roomId);
 
-  // Update pattern counts
-  if (patterns.accusatory) {
+  // Update pattern counts (simple increment, no complex scoring)
+  if (patterns.hasAccusatory) {
     state.patternCounts.accusatory++;
-    state.escalationScore += ESCALATION.SCORE_INCREMENT;
-    state.lastNegativeTime = Date.now();
   }
-  if (patterns.triangulation) {
+  if (patterns.hasTriangulation) {
     state.patternCounts.triangulation++;
-    state.escalationScore += ESCALATION.SCORE_INCREMENT;
-    state.lastNegativeTime = Date.now();
-  }
-  if (patterns.comparison) {
-    state.patternCounts.comparison++;
-    state.escalationScore += ESCALATION.SCORE_INCREMENT;
-    state.lastNegativeTime = Date.now();
-  }
-  if (patterns.blaming) {
-    state.patternCounts.blaming++;
-    state.escalationScore += ESCALATION.SCORE_INCREMENT;
-    state.lastNegativeTime = Date.now();
   }
 
-  // Decay escalation score over time (reduce by 1 every 5 minutes)
-  const timeSinceLastNegative = state.lastNegativeTime
-    ? Date.now() - state.lastNegativeTime
-    : Infinity;
-  if (timeSinceLastNegative > ESCALATION.DECAY_INTERVAL_MS) {
-    state.escalationScore = Math.max(0, state.escalationScore - ESCALATION.SCORE_DECAY);
+  // Reset intervention count if 24 hours have passed
+  const hoursSinceReset = (Date.now() - state.lastInterventionResetTime) / (1000 * 60 * 60);
+  if (hoursSinceReset >= 24) {
+    state.recentInterventionCount = 0;
+    state.lastInterventionResetTime = Date.now();
+    logger.debug('Reset intervention count for room', { roomId });
   }
 
   return state;
 }
 
 /**
- * Update emotional state for a participant
- * @param {Object} conversationContext - Conversation context object
- * @param {string} roomId - Room identifier
- * @param {string} username - Participant username
- * @param {Object} emotionData - Emotion data from AI analysis
+ * REMOVED: updateEmotionalState
+ * Emotional state tracking removed - no evidence it improves outcomes.
  */
-function updateEmotionalState(conversationContext, roomId, username, emotionData) {
-  const emotionalState = initializeEmotionalState(conversationContext, roomId);
-
-  if (!emotionalState.participants[username]) {
-    emotionalState.participants[username] = {
-      currentEmotion: 'neutral',
-      emotionHistory: [],
-      stressLevel: 0,
-      stressTrajectory: 'stable',
-      emotionalMomentum: 0,
-      stressPoints: [],
-      recentTriggers: [],
-    };
-  }
-
-  const participantState = emotionalState.participants[username];
-
-  if (emotionData) {
-    participantState.currentEmotion = emotionData.currentEmotion || participantState.currentEmotion;
-    participantState.stressLevel = emotionData.stressLevel || participantState.stressLevel;
-    participantState.stressTrajectory =
-      emotionData.stressTrajectory || participantState.stressTrajectory;
-    participantState.emotionalMomentum =
-      emotionData.emotionalMomentum || participantState.emotionalMomentum;
-
-    // Track emotion history
-    if (emotionData.currentEmotion) {
-      participantState.emotionHistory.push({
-        timestamp: Date.now(),
-        emotion: emotionData.currentEmotion,
-        intensity: emotionData.stressLevel || 0,
-        triggers: emotionData.triggers || [],
-      });
-      if (participantState.emotionHistory.length > MESSAGE.MAX_EMOTION_HISTORY) {
-        participantState.emotionHistory.shift();
-      }
-    }
-
-    // Update recent triggers
-    if (emotionData.triggers && emotionData.triggers.length > 0) {
-      participantState.recentTriggers.push(...emotionData.triggers);
-      if (participantState.recentTriggers.length > MESSAGE.MAX_RECENT_TRIGGERS) {
-        participantState.recentTriggers = participantState.recentTriggers.slice(
-          -MESSAGE.MAX_RECENT_TRIGGERS
-        );
-      }
-    }
-  }
-
-  // Update conversation-level emotion
-  if (emotionData && emotionData.conversationEmotion) {
-    emotionalState.conversationEmotion = emotionData.conversationEmotion;
-  }
-
-  // Calculate overall escalation risk
-  const allStressLevels = Object.values(emotionalState.participants).map(p => p.stressLevel);
-  const avgStress =
-    allStressLevels.length > 0
-      ? allStressLevels.reduce((a, b) => a + b, 0) / allStressLevels.length
-      : 0;
-  emotionalState.escalationRisk = avgStress;
-  emotionalState.lastUpdated = Date.now();
-
-  return emotionalState;
-}
 
 /**
- * Update policy state after intervention
+ * Update intervention tracking (simplified)
  * @param {Object} conversationContext - Conversation context object
  * @param {string} roomId - Room identifier
- * @param {Object} intervention - Intervention data
  */
-function updatePolicyState(conversationContext, roomId, intervention) {
-  const policyState = initializePolicyState(conversationContext, roomId);
+function recordIntervention(conversationContext, roomId) {
+  const state = initializeEscalationState(conversationContext, roomId);
+  state.lastInterventionTime = Date.now();
+  state.recentInterventionCount++;
 
-  policyState.interventionHistory.push({
-    timestamp: Date.now(),
-    type: (intervention && intervention.type) || 'intervene',
-    escalationRisk: (intervention && intervention.escalationRisk) || 'unknown',
-    emotionalState: (intervention && intervention.emotionalState) || 'unknown',
+  logger.debug('Intervention recorded', {
+    roomId,
+    recentCount: state.recentInterventionCount,
   });
 
-  if (policyState.interventionHistory.length > MESSAGE.MAX_INTERVENTION_HISTORY) {
-    policyState.interventionHistory.shift();
-  }
-
-  policyState.lastInterventionTime = Date.now();
-
-  return policyState;
+  return state;
 }
 
 /**
- * Record intervention feedback and adjust threshold
+ * Get intervention throttling info
+ * Returns whether interventions should be throttled (too many recently)
  * @param {Object} conversationContext - Conversation context object
  * @param {string} roomId - Room identifier
- * @param {boolean} helpful - Whether intervention was helpful
+ * @param {number} maxInterventionsPerDay - Maximum interventions per 24 hours (default: 10)
+ * @returns {Object} { shouldThrottle: boolean, lastInterventionTime: number|null, recentCount: number }
  */
-function recordInterventionFeedback(conversationContext, roomId, helpful) {
-  const policyState = initializePolicyState(conversationContext, roomId);
+function getInterventionThrottle(conversationContext, roomId, maxInterventionsPerDay = 10) {
+  const state = initializeEscalationState(conversationContext, roomId);
 
-  if (policyState.interventionHistory.length > 0) {
-    const lastIntervention =
-      policyState.interventionHistory[policyState.interventionHistory.length - 1];
-    lastIntervention.outcome = helpful ? 'helpful' : 'unhelpful';
-    lastIntervention.feedback = helpful ? 'User found helpful' : 'User found unhelpful';
+  const shouldThrottle = state.recentInterventionCount >= maxInterventionsPerDay;
 
-    // Adjust threshold based on feedback
-    if (!helpful) {
-      policyState.interventionThreshold = Math.min(
-        ESCALATION.INTERVENTION_THRESHOLD_MAX,
-        policyState.interventionThreshold + ESCALATION.INTERVENTION_THRESHOLD_INCREMENT
-      );
-    } else {
-      policyState.interventionThreshold = Math.max(
-        ESCALATION.INTERVENTION_THRESHOLD_MIN,
-        policyState.interventionThreshold - ESCALATION.INTERVENTION_THRESHOLD_DECREMENT
-      );
-    }
-  }
+  return {
+    shouldThrottle,
+    lastInterventionTime: state.lastInterventionTime,
+    recentCount: state.recentInterventionCount,
+    maxPerDay: maxInterventionsPerDay,
+  };
 }
+
+/**
+ * REMOVED: updatePolicyState, recordInterventionFeedback
+ * Adaptive threshold system removed - too complex, unproven.
+ * Can be re-added if A/B testing proves value.
+ */
 
 module.exports = {
   initializeEscalationState,
-  initializeEmotionalState,
-  initializePolicyState,
   updateEscalationScore,
-  updateEmotionalState,
-  updatePolicyState,
-  recordInterventionFeedback,
+  recordIntervention,
+  getInterventionThrottle,
+  // Deprecated exports (for backward compatibility - will be removed)
+  initializeEmotionalState: () => {
+    logger.warn('initializeEmotionalState is deprecated and returns null');
+    return null;
+  },
+  initializePolicyState: () => {
+    logger.warn('initializePolicyState is deprecated and returns null');
+    return null;
+  },
+  updateEmotionalState: () => {
+    logger.warn('updateEmotionalState is deprecated and returns null');
+    return null;
+  },
+  updatePolicyState: () => {
+    logger.warn('updatePolicyState is deprecated and returns null');
+    return null;
+  },
+  recordInterventionFeedback: () => {
+    logger.warn('recordInterventionFeedback is deprecated');
+  },
 };

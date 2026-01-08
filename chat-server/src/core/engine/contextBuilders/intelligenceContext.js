@@ -8,6 +8,9 @@
  */
 
 const libs = require('../libraryLoader');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'intelligenceContext' });
 
 /**
  * Build user intelligence context (passive learning)
@@ -38,7 +41,9 @@ async function buildUserIntelligenceContext(roleContext, participantProfiles, me
         (await libs.userIntelligence.formatForAI(senderProfile.id, messageText)) || '';
 
       if (senderContext) {
-        console.log('🧠 Intelligence Context: User intelligence loaded for sender');
+        logger.debug('User intelligence loaded for sender', {
+          senderId: senderProfile.id,
+        });
       }
     }
 
@@ -50,12 +55,18 @@ async function buildUserIntelligenceContext(roleContext, participantProfiles, me
           (await libs.userIntelligence.formatForReceiverAI(receiverProfile.id, messageText)) || '';
 
         if (receiverContext) {
-          console.log('🧠 Intelligence Context: Receiver intelligence loaded');
+          logger.debug('Receiver intelligence loaded', {
+            receiverId: receiverProfile.id,
+          });
         }
       }
     }
   } catch (err) {
-    console.warn('⚠️ Intelligence Context: Failed to build:', err.message);
+    logger.warn('Failed to build user intelligence context', {
+      error: err.message,
+      senderId: roleContext?.senderId,
+      receiverId: roleContext?.receiverId,
+    });
   }
 
   return { senderContext, receiverContext };
@@ -93,7 +104,10 @@ async function buildVoiceSignatureSection(roleContext, recentMessages) {
 
     return section;
   } catch (err) {
-    console.warn('⚠️ Intelligence Context: Voice signature extraction failed:', err.message);
+    logger.warn('Voice signature extraction failed', {
+      error: err.message,
+      senderId: roleContext?.senderId,
+    });
     return '';
   }
 }
@@ -121,7 +135,10 @@ function updateVoiceSignatureInProfile(senderId, signature) {
       }
     })
     .catch(err => {
-      console.warn('⚠️ Intelligence Context: Failed to update voice signature:', err.message);
+      logger.warn('Failed to update voice signature in profile', {
+        error: err.message,
+        senderId,
+      });
     });
 }
 
@@ -152,7 +169,12 @@ function buildConversationPatternsSection(roleContext, recentMessages) {
       return libs.conversationPatterns.formatPatternsForAI(patterns);
     }
   } catch (err) {
-    console.warn('⚠️ Intelligence Context: Conversation pattern analysis failed:', err.message);
+    logger.warn('Conversation pattern analysis failed', {
+      error: err.message,
+      senderId: roleContext?.senderId,
+      receiverId: roleContext?.receiverId,
+      messageCount: recentMessages.length,
+    });
   }
 
   return '';
@@ -180,7 +202,10 @@ async function buildInterventionLearningSection(roleContext) {
       return libs.interventionLearning.formatLearningForAI(learningData);
     }
   } catch (err) {
-    console.warn('⚠️ Intelligence Context: Failed to load intervention learning:', err.message);
+    logger.warn('Failed to load intervention learning', {
+      error: err.message,
+      senderId: roleContext?.senderId,
+    });
   }
 
   return '';

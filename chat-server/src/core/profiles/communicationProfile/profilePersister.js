@@ -11,6 +11,12 @@
 
 const { PostgresCommunicationRepository } = require('../../../repositories/postgres');
 
+const { defaultLogger: defaultLogger } = require('../../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'profilePersister',
+});
+
 // Singleton repository instance
 const communicationRepo = new PostgresCommunicationRepository();
 
@@ -47,7 +53,12 @@ async function updateProfile(userId, updates, db) {
       }
       if (triggers.phrases) {
         for (const phrase of triggers.phrases) {
-          await communicationRepo.recordTrigger(userId, 'phrase', phrase, triggers.intensity || 0.5);
+          await communicationRepo.recordTrigger(
+            userId,
+            'phrase',
+            phrase,
+            triggers.intensity || 0.5
+          );
         }
       }
     }
@@ -55,12 +66,17 @@ async function updateProfile(userId, updates, db) {
     // Note: successful_rewrites and intervention_history are updated via
     // recordAcceptedRewrite and recordIntervention respectively
 
-    console.log(`✅ ProfilePersister: Updated profile for ${userId}`);
+    logger.debug('Log message', {
+      value: `✅ ProfilePersister: Updated profile for ${userId}`,
+    });
 
     // Return the updated profile
     return communicationRepo.getCommunicationProfile(userId);
   } catch (err) {
-    console.error(`❌ ProfilePersister: Error updating profile for ${userId}:`, err.message);
+    logger.error('Log message', {
+      arg0: `❌ ProfilePersister: Error updating profile for ${userId}:`,
+      message: err.message,
+    });
     throw err;
   }
 }
@@ -91,18 +107,19 @@ async function recordIntervention(userId, interventionData, db) {
       accepted_count: stats.accepted_count || 0,
       rejected_count: stats.rejected_count || 0,
       acceptance_rate:
-        stats.total_interventions > 0
-          ? stats.accepted_count / stats.total_interventions
-          : 0,
+        stats.total_interventions > 0 ? stats.accepted_count / stats.total_interventions : 0,
       last_intervention: stats.last_intervention_at,
     };
 
-    console.log(
-      `✅ ProfilePersister: Recorded intervention for ${userId} (total: ${history.total_interventions})`
-    );
+    logger.debug('Log message', {
+      value: `✅ ProfilePersister: Recorded intervention for ${userId} (total: ${history.total_interventions})`,
+    });
     return history;
   } catch (err) {
-    console.error(`❌ ProfilePersister: Error recording intervention for ${userId}:`, err.message);
+    logger.error('Log message', {
+      arg0: `❌ ProfilePersister: Error recording intervention for ${userId}:`,
+      message: err.message,
+    });
     throw err;
   }
 }
@@ -130,19 +147,19 @@ async function recordAcceptedRewrite(userId, rewriteData, db) {
     // Get the updated profile for the full response
     const profile = await communicationRepo.getCommunicationProfile(userId);
 
-    console.log(
-      `✅ ProfilePersister: Recorded accepted rewrite for ${userId} (total accepted: ${stats.accepted_count})`
-    );
+    logger.debug('Log message', {
+      value: `✅ ProfilePersister: Recorded accepted rewrite for ${userId} (total accepted: ${stats.accepted_count})`,
+    });
 
     return {
       successful_rewrites: profile.successful_rewrites,
       intervention_history: profile.intervention_history,
     };
   } catch (err) {
-    console.error(
-      `❌ ProfilePersister: Error recording accepted rewrite for ${userId}:`,
-      err.message
-    );
+    logger.error('Log message', {
+      arg0: `❌ ProfilePersister: Error recording accepted rewrite for ${userId}:`,
+      message: err.message,
+    });
     throw err;
   }
 }

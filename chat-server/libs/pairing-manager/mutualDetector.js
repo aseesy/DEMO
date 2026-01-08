@@ -12,6 +12,12 @@
 
 const { PAIRING_STATUS, logPairingAction } = require('./pairingCreator');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'mutualDetector',
+});
+
 /**
  * Check if a mutual invitation exists
  * Called when User A invites User B - checks if User B already invited User A
@@ -111,9 +117,13 @@ async function autoCompleteMutualPairing(params, db, roomManager) {
         userAName // inviteeName
       );
       sharedRoomId = room.roomId;
-      console.log(`[mutualDetector] Created shared room ${sharedRoomId} for mutual pairing`);
+      logger.debug('Log message', {
+        value: `[mutualDetector] Created shared room ${sharedRoomId} for mutual pairing`,
+      });
     } catch (error) {
-      console.error('Failed to create shared room in mutual pairing:', error);
+      logger.error('Failed to create shared room in mutual pairing', {
+        error: error,
+      });
     }
   }
 
@@ -146,7 +156,9 @@ async function autoCompleteMutualPairing(params, db, roomManager) {
       [parentBId, userBName, userB.email]
     );
   } catch (error) {
-    console.error('Failed to create mutual contacts:', error);
+    logger.error('Failed to create mutual contacts', {
+      error: error,
+    });
   }
 
   // Log to audit trail
@@ -199,7 +211,9 @@ async function detectAndCompleteMutual(params, db, roomManager) {
   }
 
   // Found mutual invitation - auto-complete it
-  console.log(`Mutual invitation detected: ${initiatorEmail} <-> ${inviteeEmail}`);
+  logger.debug('Log message', {
+    value: `Mutual invitation detected: ${initiatorEmail} <-> ${inviteeEmail}`,
+  });
 
   return autoCompleteMutualPairing(
     {

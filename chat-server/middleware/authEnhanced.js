@@ -13,6 +13,12 @@ const jwt = require('jsonwebtoken');
 const { SessionService } = require('../src/services/auth/sessionService');
 const { RefreshTokenService } = require('../src/services/auth/refreshTokenService');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'authEnhanced',
+});
+
 // JWT_SECRET must be set in environment
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -60,9 +66,7 @@ async function generateTokensWithSession(user, options = {}) {
   const accessTokenWithSession = generateAccessToken(user, session.id);
 
   // Generate refresh token linked to session
-  const refreshExpiresAt = new Date(
-    Date.now() + REFRESH_TOKEN_LIFETIME_DAYS * 24 * 60 * 60 * 1000
-  );
+  const refreshExpiresAt = new Date(Date.now() + REFRESH_TOKEN_LIFETIME_DAYS * 24 * 60 * 60 * 1000);
   const { token: refreshToken } = await refreshTokenService.createToken({
     userId: user.id,
     sessionId: session.id,
@@ -149,7 +153,9 @@ async function authenticateWithSession(req, res, next) {
 
       // Update last seen (async, non-blocking)
       sessionService.updateLastSeen(session.id).catch(err => {
-        console.warn('[Auth] Failed to update last seen:', err.message);
+        logger.warn('[Auth] Failed to update last seen', {
+          message: err.message,
+        });
       });
     }
 
@@ -227,4 +233,3 @@ module.exports = {
   ACCESS_TOKEN_LIFETIME,
   REFRESH_TOKEN_LIFETIME_DAYS,
 };
-

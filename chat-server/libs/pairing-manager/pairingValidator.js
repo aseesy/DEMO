@@ -23,6 +23,12 @@ const {
   logPairingAction,
 } = require('./pairingCreator');
 
+const { defaultLogger: defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'pairingValidator',
+});
+
 /**
  * Upsert a co-parent contact (insert or update if exists)
  * Works regardless of whether unique constraint exists on contacts table
@@ -467,9 +473,11 @@ async function acceptPairing(params, db, roomManager) {
   if (pairing.parent_b_email) {
     const expectedEmail = pairing.parent_b_email.toLowerCase().trim();
     const actualEmail = (acceptor.email || '').toLowerCase().trim();
-    
+
     if (actualEmail !== expectedEmail) {
-      throw new Error(`This invitation was sent to ${pairing.parent_b_email}. You're logged in as ${acceptor.email || 'a different account'}.`);
+      throw new Error(
+        `This invitation was sent to ${pairing.parent_b_email}. You're logged in as ${acceptor.email || 'a different account'}.`
+      );
     }
   }
 
@@ -484,13 +492,17 @@ async function acceptPairing(params, db, roomManager) {
         acceptor.username
       );
       sharedRoomId = room.roomId;
-      console.log(`✅ Created shared room ${sharedRoomId} for pairing ${pairingId}`);
+      logger.debug('Log message', {
+        value: `✅ Created shared room ${sharedRoomId} for pairing ${pairingId}`,
+      });
     } catch (error) {
-      console.error('Failed to create shared room:', error);
+      logger.error('Failed to create shared room', {
+        error: error,
+      });
       // Continue without room - can be created later
     }
   } else {
-    console.warn('⚠️ roomManager.createCoParentRoom not available, skipping room creation');
+    logger.warn('⚠️ roomManager.createCoParentRoom not available, skipping room creation');
   }
 
   // Update pairing to active and increment use_count
@@ -526,9 +538,13 @@ async function acceptPairing(params, db, roomManager) {
     if (initiator) {
       await upsertCoParentContact(db, acceptorId, initiatorName, initiator.email, initiator.id);
     }
-    console.log(`✅ Created mutual co-parent contacts for pairing ${pairingId}`);
+    logger.debug('Log message', {
+      value: `✅ Created mutual co-parent contacts for pairing ${pairingId}`,
+    });
   } catch (error) {
-    console.error('Failed to create mutual contacts:', error);
+    logger.error('Failed to create mutual contacts', {
+      error: error,
+    });
     // Continue - pairing is still valid
   }
 

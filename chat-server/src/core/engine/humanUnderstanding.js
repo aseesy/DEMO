@@ -15,6 +15,9 @@
 
 const openaiClient = require('./client');
 const { AI } = require('../../infrastructure/config/constants');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'humanUnderstanding' });
 
 /**
  * Generate deep human understanding insights for a message situation
@@ -116,14 +119,16 @@ Respond with a JSON object:
 
     const insights = JSON.parse(jsonText);
 
-    console.log('🧠 Human Understanding: Generated deep insights');
+    logger.debug('Generated deep human understanding insights');
     return insights;
   } catch (error) {
-    console.error('❌ Human Understanding: Failed to generate insights:', error.message);
-    // Log response if available (for debugging)
-    if (error.response?.data) {
-      console.error('Response data:', JSON.stringify(error.response.data).substring(0, 200));
-    }
+    logger.error('Failed to generate human understanding insights', {
+      error: error.message,
+      stack: error.stack,
+      responseData: error.response?.data
+        ? JSON.stringify(error.response.data).substring(0, 200)
+        : undefined,
+    });
     // Return null on error - system can continue without understanding layer
     // This is non-critical, so we fail gracefully
     return null;

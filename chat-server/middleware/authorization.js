@@ -7,6 +7,12 @@
 
 const { AuthorizationError } = require('../src/services/errors');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'authorization',
+});
+
 /**
  * Middleware to require a specific permission
  * @param {string} permission - Permission name (e.g., 'message:create')
@@ -23,9 +29,9 @@ function requirePermission(permission) {
       const hasPermission = await permissionService.hasPermission(req.user.id, permission);
 
       if (!hasPermission) {
-        console.warn(
-          `[Authorization] Permission denied: User ${req.user.id} lacks permission ${permission}`
-        );
+        logger.warn('Log message', {
+          value: `[Authorization] Permission denied: User ${req.user.id} lacks permission ${permission}`,
+        });
         return res.status(403).json({
           error: 'Access denied',
           message: `You do not have permission to perform this action`,
@@ -35,7 +41,9 @@ function requirePermission(permission) {
 
       next();
     } catch (error) {
-      console.error('[Authorization] Error checking permission:', error);
+      logger.error('[Authorization] Error checking permission', {
+        error: error,
+      });
       return res.status(500).json({
         error: 'Authorization error',
         message: 'An error occurred while checking permissions',
@@ -60,9 +68,9 @@ function requireAnyPermission(permissions) {
       const hasPermission = await permissionService.hasAnyPermission(req.user.id, permissions);
 
       if (!hasPermission) {
-        console.warn(
-          `[Authorization] Permission denied: User ${req.user.id} lacks any of permissions: ${permissions.join(', ')}`
-        );
+        logger.warn('Log message', {
+          value: `[Authorization] Permission denied: User ${req.user.id} lacks any of permissions: ${permissions.join(', ')}`,
+        });
         return res.status(403).json({
           error: 'Access denied',
           message: `You do not have permission to perform this action`,
@@ -72,7 +80,9 @@ function requireAnyPermission(permissions) {
 
       next();
     } catch (error) {
-      console.error('[Authorization] Error checking permissions:', error);
+      logger.error('[Authorization] Error checking permissions', {
+        error: error,
+      });
       return res.status(500).json({
         error: 'Authorization error',
         message: 'An error occurred while checking permissions',
@@ -97,9 +107,9 @@ function requireAllPermissions(permissions) {
       const hasPermission = await permissionService.hasAllPermissions(req.user.id, permissions);
 
       if (!hasPermission) {
-        console.warn(
-          `[Authorization] Permission denied: User ${req.user.id} lacks all of permissions: ${permissions.join(', ')}`
-        );
+        logger.warn('Log message', {
+          value: `[Authorization] Permission denied: User ${req.user.id} lacks all of permissions: ${permissions.join(', ')}`,
+        });
         return res.status(403).json({
           error: 'Access denied',
           message: `You do not have permission to perform this action`,
@@ -109,7 +119,9 @@ function requireAllPermissions(permissions) {
 
       next();
     } catch (error) {
-      console.error('[Authorization] Error checking permissions:', error);
+      logger.error('[Authorization] Error checking permissions', {
+        error: error,
+      });
       return res.status(500).json({
         error: 'Authorization error',
         message: 'An error occurred while checking permissions',
@@ -134,7 +146,9 @@ function requireRole(role) {
       const hasRole = await permissionService.hasRole(req.user.id, role);
 
       if (!hasRole) {
-        console.warn(`[Authorization] Role denied: User ${req.user.id} lacks role ${role}`);
+        logger.warn('Log message', {
+          value: `[Authorization] Role denied: User ${req.user.id} lacks role ${role}`,
+        });
         return res.status(403).json({
           error: 'Access denied',
           message: `This action requires the ${role} role`,
@@ -144,7 +158,9 @@ function requireRole(role) {
 
       next();
     } catch (error) {
-      console.error('[Authorization] Error checking role:', error);
+      logger.error('[Authorization] Error checking role', {
+        error: error,
+      });
       return res.status(500).json({
         error: 'Authorization error',
         message: 'An error occurred while checking roles',
@@ -169,9 +185,9 @@ function requireAnyRole(roles) {
       const hasRole = await permissionService.hasAnyRole(req.user.id, roles);
 
       if (!hasRole) {
-        console.warn(
-          `[Authorization] Role denied: User ${req.user.id} lacks any of roles: ${roles.join(', ')}`
-        );
+        logger.warn('Log message', {
+          value: `[Authorization] Role denied: User ${req.user.id} lacks any of roles: ${roles.join(', ')}`,
+        });
         return res.status(403).json({
           error: 'Access denied',
           message: `This action requires one of the following roles: ${roles.join(', ')}`,
@@ -181,7 +197,9 @@ function requireAnyRole(roles) {
 
       next();
     } catch (error) {
-      console.error('[Authorization] Error checking roles:', error);
+      logger.error('[Authorization] Error checking roles', {
+        error: error,
+      });
       return res.status(500).json({
         error: 'Authorization error',
         message: 'An error occurred while checking roles',
@@ -223,7 +241,9 @@ function requireOwnership(getResourceOwnerId) {
 
       next();
     } catch (error) {
-      console.error('[Authorization] Error checking ownership:', error);
+      logger.error('[Authorization] Error checking ownership', {
+        error: error,
+      });
       return res.status(500).json({
         error: 'Authorization error',
         message: 'An error occurred while checking resource ownership',

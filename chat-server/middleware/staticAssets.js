@@ -14,6 +14,12 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'staticAssets',
+});
+
 /**
  * Setup static asset serving middleware
  *
@@ -80,7 +86,10 @@ function setupStaticAssets(app) {
   // DEBUG: Client-side log relay endpoint (TEMPORARY - remove after debugging)
   app.post('/api/debug-log', express.json(), (req, res) => {
     const { message, data, timestamp } = req.body;
-    console.log(`[CLIENT-DEBUG] ${timestamp} - ${message}`, JSON.stringify(data || {}, null, 2));
+    logger.debug('Log message', {
+      arg0: `[CLIENT-DEBUG] ${timestamp} - ${message}`,
+      arg1: JSON.stringify(data || {}, null, 2),
+    });
     res.json({ received: true });
   });
 }

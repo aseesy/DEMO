@@ -18,6 +18,12 @@
 const crypto = require('crypto');
 const dbSafe = require('../dbSafe');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'adaptive-auth',
+});
+
 // Risk thresholds
 const RISK_LEVELS = {
   LOW: { max: 25, action: 'allow' },
@@ -117,7 +123,9 @@ async function getLoginHistory(userId, days = 30) {
 
     return history.filter(h => h.attempted_at >= cutoff);
   } catch (error) {
-    console.error('[AdaptiveAuth] Error getting login history:', error);
+    logger.error('[AdaptiveAuth] Error getting login history', {
+      error: error,
+    });
     return [];
   }
 }
@@ -340,7 +348,9 @@ async function recordLoginAttempt(attempt) {
     });
   } catch (error) {
     // Log but don't fail login
-    console.error('[AdaptiveAuth] Failed to record attempt:', error.message);
+    logger.error('[AdaptiveAuth] Failed to record attempt', {
+      message: error.message,
+    });
   }
 }
 
@@ -383,7 +393,9 @@ async function trustDevice(userId, deviceFingerprint, deviceName = null) {
       });
     }
   } catch (error) {
-    console.error('[AdaptiveAuth] Failed to trust device:', error.message);
+    logger.error('[AdaptiveAuth] Failed to trust device', {
+      message: error.message,
+    });
   }
 }
 
@@ -409,7 +421,9 @@ async function generateStepUpCode(userId, type = 'email') {
 
     return code;
   } catch (error) {
-    console.error('[AdaptiveAuth] Failed to generate code:', error.message);
+    logger.error('[AdaptiveAuth] Failed to generate code', {
+      message: error.message,
+    });
     throw error;
   }
 }
@@ -440,7 +454,9 @@ async function verifyStepUpCode(userId, code) {
 
     return true;
   } catch (error) {
-    console.error('[AdaptiveAuth] Failed to verify code:', error.message);
+    logger.error('[AdaptiveAuth] Failed to verify code', {
+      message: error.message,
+    });
     return false;
   }
 }

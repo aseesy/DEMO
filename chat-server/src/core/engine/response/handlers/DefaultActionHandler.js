@@ -6,7 +6,10 @@
  * @module liaizen/core/response/handlers/DefaultActionHandler
  */
 
+const { defaultLogger } = require('../../../../infrastructure/logging/logger');
 const { ActionHandler } = require('./ActionHandler');
+
+const logger = defaultLogger.child({ module: 'defaultActionHandler' });
 
 /**
  * Default handler for unknown actions
@@ -22,10 +25,12 @@ class DefaultActionHandler extends ActionHandler {
    */
   async process(context) {
     const action = context.result?.action || 'UNKNOWN';
-    console.warn('Unknown action from AI, defaulting to STAY_SILENT:', action);
+    logger.warn('Unknown action from AI, defaulting to STAY_SILENT', {
+      action,
+      messageId: context.message?.id,
+    });
     return null;
   }
 }
 
 module.exports = { DefaultActionHandler };
-

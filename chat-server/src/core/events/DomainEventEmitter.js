@@ -14,6 +14,12 @@
  *   });
  */
 
+const { defaultLogger } = require('../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'domainEventEmitter',
+});
+
 class DomainEventEmitter {
   constructor() {
     this.listeners = new Map();
@@ -57,14 +63,17 @@ class DomainEventEmitter {
     }
 
     const handlers = this.listeners.get(eventName);
-    
+
     // Fire and forget - call all handlers asynchronously
     handlers.forEach(handler => {
       setImmediate(async () => {
         try {
           await handler(eventData);
         } catch (error) {
-          console.error(`[DomainEventEmitter] Error in ${eventName} handler:`, error);
+          logger.error('Log message', {
+            arg0: `[DomainEventEmitter] Error in ${eventName} handler:`,
+            error: error,
+          });
           // Don't throw - event handlers should not break the main flow
         }
       });
@@ -91,4 +100,3 @@ class DomainEventEmitter {
 // Export singleton instance
 const eventEmitter = new DomainEventEmitter();
 module.exports = { DomainEventEmitter, eventEmitter };
-

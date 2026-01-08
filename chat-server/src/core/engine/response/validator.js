@@ -8,6 +8,9 @@
 
 const { MESSAGE } = require('../../../infrastructure/config/constants');
 const libs = require('../libraryLoader');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'responseValidator' });
 
 /**
  * Validate and fix rewrites using rewrite validator
@@ -31,10 +34,10 @@ function validateRewrites(intervention, originalText, languageAnalysis) {
     return intervention;
   }
 
-  console.warn('⚠️ Validator: Rewrite perspective validation failed:', {
-    rewrite1: validationResult.rewrite1,
-    rewrite2: validationResult.rewrite2,
-    originalMessage: originalText.substring(0, MESSAGE.PREVIEW_LENGTH),
+  logger.warn('Rewrite perspective validation failed', {
+    rewrite1Valid: validationResult.rewrite1?.valid,
+    rewrite2Valid: validationResult.rewrite2?.valid,
+    originalMessagePreview: originalText.substring(0, MESSAGE.PREVIEW_LENGTH),
   });
 
   // Apply fallbacks for failed rewrites
@@ -45,15 +48,15 @@ function validateRewrites(intervention, originalText, languageAnalysis) {
     const fixed = { ...intervention };
 
     if (!validationResult.rewrite1.valid) {
-      console.log('📝 Applying fallback for rewrite1');
+      logger.debug('Applying fallback for rewrite1');
       fixed.rewrite1 = fallbacks.rewrite1;
     }
     if (!validationResult.rewrite2.valid) {
-      console.log('📝 Applying fallback for rewrite2');
+      logger.debug('Applying fallback for rewrite2');
       fixed.rewrite2 = fallbacks.rewrite2;
     }
 
-    console.log('📊 Perspective validation applied fallbacks:', {
+    logger.debug('Perspective validation applied fallbacks', {
       category: fallbacks.category,
       originalRewrite1Failed: !validationResult.rewrite1.valid,
       originalRewrite2Failed: !validationResult.rewrite2.valid,
@@ -61,7 +64,10 @@ function validateRewrites(intervention, originalText, languageAnalysis) {
 
     return fixed;
   } catch (err) {
-    console.warn('⚠️ Validator: Failed to apply fallbacks:', err.message);
+    logger.warn('Failed to apply fallbacks', {
+      error: err.message,
+      originalMessagePreview: originalText?.substring(0, MESSAGE.PREVIEW_LENGTH),
+    });
     return intervention;
   }
 }
@@ -80,8 +86,10 @@ function validateCodeLayerResponse(result, parsedMessage) {
   const validation = libs.codeLayerIntegration.validateAIResponse(result, parsedMessage);
 
   if (!validation.valid && validation.errors.length > 0) {
-    console.warn('⚠️ Validator: Code Layer response validation issues:');
-    validation.errors.forEach(err => console.warn(`   - ${err}`));
+    logger.warn('Code Layer response validation issues', {
+      errors: validation.errors,
+      action: result?.action,
+    });
   }
 }
 

@@ -16,6 +16,9 @@ const narrativeMemory = require('../../memory/narrativeMemory');
 const entityExtractor = require('../../intelligence/entityExtractor');
 const socialMapBuilder = require('../../intelligence/socialMapBuilder');
 const neo4jClient = require('../../../infrastructure/database/neo4jClient');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'dualBrainContext' });
 
 /**
  * Build complete dual-brain context for AI mediation
@@ -36,7 +39,12 @@ async function buildDualBrainContext(messageText, senderUserId, receiverUserId, 
     };
   }
 
-  console.log(`🧠 DualBrain: Building context for room ${roomId}`);
+  logger.debug('Building dual-brain context', {
+    roomId,
+    senderUserId,
+    receiverUserId,
+    messagePreview: messageText?.substring(0, 50),
+  });
 
   try {
     // Query both brains in parallel
@@ -49,16 +57,15 @@ async function buildDualBrainContext(messageText, senderUserId, receiverUserId, 
     const synthesis = generateSynthesis(narrativeContext, socialContext, messageText);
 
     const hasContext =
-      narrativeContext.hasProfile ||
-      narrativeContext.hasSimilarMessages ||
-      socialContext.hasPeople;
+      narrativeContext.hasProfile || narrativeContext.hasSimilarMessages || socialContext.hasPeople;
 
     if (hasContext) {
-      console.log(
-        `✅ DualBrain: Context built - Narrative: ${narrativeContext.hasProfile ? 'profile' : 'none'}, ` +
-          `Similar: ${narrativeContext.similarMessages?.length || 0}, ` +
-          `People: ${socialContext.mentionedPeople?.length || 0}`
-      );
+      logger.debug('Dual-brain context built', {
+        roomId,
+        hasNarrativeProfile: narrativeContext.hasProfile,
+        similarMessageCount: narrativeContext.similarMessages?.length || 0,
+        mentionedPeopleCount: socialContext.mentionedPeople?.length || 0,
+      });
     }
 
     return {
@@ -68,7 +75,13 @@ async function buildDualBrainContext(messageText, senderUserId, receiverUserId, 
       hasContext,
     };
   } catch (error) {
-    console.error('❌ DualBrain: Failed to build context:', error.message);
+    logger.error('Failed to build dual-brain context', {
+      error: error.message,
+      stack: error.stack,
+      roomId,
+      senderUserId,
+      receiverUserId,
+    });
     return {
       narrativeContext: null,
       socialContext: null,
@@ -117,7 +130,12 @@ async function buildNarrativeContext(messageText, senderUserId, receiverUserId, 
       context.detectedPatterns = detectPatterns(similarMessages, messageText);
     }
   } catch (error) {
-    console.warn('⚠️ DualBrain: Narrative context partial failure:', error.message);
+    logger.warn('Narrative context partial failure', {
+      error: error.message,
+      senderUserId,
+      receiverUserId,
+      roomId,
+    });
   }
 
   return context;
@@ -170,7 +188,12 @@ async function buildSocialContext(messageText, senderUserId, receiverUserId, roo
       context.sensitivePeople = sensitivePeople;
     }
   } catch (error) {
-    console.warn('⚠️ DualBrain: Social context partial failure:', error.message);
+    logger.warn('Social context partial failure', {
+      error: error.message,
+      senderUserId,
+      receiverUserId,
+      roomId,
+    });
   }
 
   return context;
@@ -199,7 +222,11 @@ function detectPatterns(similarMessages, currentMessage) {
     { pattern: /\bnever\b/i, theme: 'absolutes', description: 'Uses absolute language' },
     { pattern: /\byou should\b/i, theme: 'directive', description: 'Directive phrasing' },
     { pattern: /\byou need to\b/i, theme: 'directive', description: 'Directive phrasing' },
-    { pattern: /\bwhy (don't|didn't|won't|can't) you\b/i, theme: 'accusatory', description: 'Accusatory questioning' },
+    {
+      pattern: /\bwhy (don't|didn't|won't|can't) you\b/i,
+      theme: 'accusatory',
+      description: 'Accusatory questioning',
+    },
     { pattern: /\bi told you\b/i, theme: 'frustration', description: 'Repetition frustration' },
     { pattern: /\bagain\b/i, theme: 'frustration', description: 'Repetition frustration' },
   ];
@@ -267,10 +294,33 @@ function detectPatterns(similarMessages, currentMessage) {
  */
 function isCommonWord(word) {
   const commonWords = new Set([
-    'about', 'after', 'before', 'being', 'could', 'doing', 'going',
-    'having', 'their', 'there', 'these', 'thing', 'think', 'those',
-    'through', 'would', 'really', 'should', 'still', 'where', 'which',
-    'while', 'because', 'other', 'people', 'something', 'anything',
+    'about',
+    'after',
+    'before',
+    'being',
+    'could',
+    'doing',
+    'going',
+    'having',
+    'their',
+    'there',
+    'these',
+    'thing',
+    'think',
+    'those',
+    'through',
+    'would',
+    'really',
+    'should',
+    'still',
+    'where',
+    'which',
+    'while',
+    'because',
+    'other',
+    'people',
+    'something',
+    'anything',
   ]);
   return commonWords.has(word);
 }
@@ -510,7 +560,11 @@ function updateDualBrainFromMessage(message, userId, roomId) {
     // Update social map with any new entities
     socialMapBuilder.updateSocialMapFromMessage(message, userId, roomId),
   ]).catch(error => {
-    console.warn('⚠️ DualBrain: Background update failed:', error.message);
+    logger.warn('Background dual-brain update failed', {
+      error: error.message,
+      userId,
+      roomId,
+    });
   });
 }
 

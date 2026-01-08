@@ -13,6 +13,12 @@
  * Feature: Contextual Awareness Improvements - Phase 2
  */
 
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'interventionLearning',
+});
+
 /**
  * Record an intervention outcome
  * @param {string} userId - User ID
@@ -99,10 +105,15 @@ async function recordInterventionOutcome(userId, outcomeData, db) {
       [normalizedId, JSON.stringify(learningData), now]
     );
 
-    console.log(`✅ InterventionLearning: Recorded ${outcome.outcome} outcome for ${userId}`);
+    logger.debug('Log message', {
+      value: `✅ InterventionLearning: Recorded ${outcome.outcome} outcome for ${userId}`,
+    });
     return learningData;
   } catch (err) {
-    console.error(`❌ InterventionLearning: Error recording outcome for ${userId}:`, err.message);
+    logger.error('Log message', {
+      arg0: `❌ InterventionLearning: Error recording outcome for ${userId}:`,
+      message: err.message,
+    });
     throw err;
   }
 }
@@ -221,7 +232,10 @@ async function getInterventionLearning(userId, db) {
     const learning = result.rows[0].intervention_learning;
     return typeof learning === 'string' ? JSON.parse(learning) : learning;
   } catch (err) {
-    console.error(`❌ InterventionLearning: Error loading learning for ${userId}:`, err.message);
+    logger.error('Log message', {
+      arg0: `❌ InterventionLearning: Error loading learning for ${userId}:`,
+      message: err.message,
+    });
     return getDefaultLearning();
   }
 }

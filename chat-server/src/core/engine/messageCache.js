@@ -10,7 +10,14 @@
 
 const crypto = require('crypto');
 const { CACHE } = require('../../infrastructure/config/constants');
-const { cacheGet, cacheSet, isRedisAvailable } = require('../../infrastructure/database/redisClient');
+const {
+  cacheGet,
+  cacheSet,
+  isRedisAvailable,
+} = require('../../infrastructure/database/redisClient');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'messageCache' });
 
 // In-memory fallback cache (used when Redis unavailable)
 const memoryCache = new Map();
@@ -53,7 +60,10 @@ async function get(hash) {
         return cached;
       }
     } catch (error) {
-      console.warn('[MessageCache] Redis get failed, falling back to memory:', error.message);
+      logger.warn('Redis get failed, falling back to memory', {
+        error: error.message,
+        hash: hash.substring(0, 8),
+      });
     }
   }
 
@@ -87,7 +97,10 @@ async function set(hash, result) {
     try {
       await cacheSet(`message:${hash}`, result, ttlSeconds);
     } catch (error) {
-      console.warn('[MessageCache] Redis set failed, using memory only:', error.message);
+      logger.warn('Redis set failed, using memory only', {
+        error: error.message,
+        hash: hash.substring(0, 8),
+      });
     }
   }
 
@@ -134,13 +147,15 @@ function clearExpired() {
  */
 async function clear() {
   memoryCache.clear();
-  
+
   if (isRedisAvailable()) {
     try {
       const { cacheDeletePattern } = require('../../infrastructure/database/redisClient');
       await cacheDeletePattern('message:*');
     } catch (error) {
-      console.warn('[MessageCache] Failed to clear Redis cache:', error.message);
+      logger.warn('Failed to clear Redis cache', {
+        error: error.message,
+      });
     }
   }
 }

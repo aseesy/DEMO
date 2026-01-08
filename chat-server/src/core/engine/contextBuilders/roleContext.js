@@ -7,6 +7,9 @@
  */
 
 const libs = require('../libraryLoader');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'roleContext' });
 
 /**
  * Build role-aware mediation context
@@ -41,7 +44,11 @@ async function buildRoleAwareContext(roleContext, recentMessages, messageText) {
       recentMessages,
     });
   } catch (err) {
-    console.warn('⚠️ Role Context: Failed to build:', err.message);
+    logger.warn('Failed to build role-aware context', {
+      error: err.message,
+      senderId: roleContext?.senderId,
+      receiverId: roleContext?.receiverId,
+    });
     return null;
   }
 }
@@ -61,7 +68,9 @@ function formatRoleAwarePromptSection(roleAwareContext) {
     const mediationContext = require('../../profiles/communicationProfile/mediationContext');
     return mediationContext.formatFullContext(roleAwareContext);
   } catch (err) {
-    console.warn('⚠️ Role Context: Failed to format:', err.message);
+    logger.warn('Failed to format role-aware prompt section', {
+      error: err.message,
+    });
     return '';
   }
 }

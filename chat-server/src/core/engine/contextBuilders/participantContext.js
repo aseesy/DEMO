@@ -8,6 +8,10 @@
  * @module liaizen/core/contexts/participantContext
  */
 
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'participantContext' });
+
 /**
  * Get profiles for all conversation participants
  *
@@ -26,20 +30,12 @@ async function getParticipantProfiles(identifiers) {
 
       try {
         // Try email first (most common case - identifiers are usually emails)
-        let userResult = await dbSafe.safeSelect(
-          'users',
-          { email: normalized },
-          { limit: 1 }
-        );
+        let userResult = await dbSafe.safeSelect('users', { email: normalized }, { limit: 1 });
         let users = dbSafe.parseResult(userResult);
 
         // Fall back to username if not found by email
         if (users.length === 0) {
-          userResult = await dbSafe.safeSelect(
-            'users',
-            { username: normalized },
-            { limit: 1 }
-          );
+          userResult = await dbSafe.safeSelect('users', { username: normalized }, { limit: 1 });
           users = dbSafe.parseResult(userResult);
         }
 
@@ -52,11 +48,17 @@ async function getParticipantProfiles(identifiers) {
           profiles.set(normalized, user);
         }
       } catch (err) {
-        console.error(`Error getting profile for ${identifier}:`, err.message);
+        logger.error('Error getting profile for participant', {
+          identifier,
+          error: err.message,
+        });
       }
     }
   } catch (err) {
-    console.error('Error getting participant profiles:', err.message);
+    logger.error('Error getting participant profiles', {
+      error: err.message,
+      identifierCount: identifiers.length,
+    });
   }
 
   return profiles;

@@ -1,4 +1,7 @@
 const dbSafe = require('../../../../dbSafe');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'communicationStats' });
 
 /**
  * Communication Stats Manager
@@ -14,7 +17,11 @@ const dbSafe = require('../../../../dbSafe');
  */
 async function updateCommunicationStats(userId, roomId, hadIntervention) {
   try {
-    console.log(`[communicationStats] updateCommunicationStats called: userId=${userId}, roomId=${roomId}, hadIntervention=${hadIntervention}`);
+    logger.debug('Updating communication stats', {
+      userId,
+      roomId,
+      hadIntervention,
+    });
     const now = new Date().toISOString();
 
     // Get or create stats record for this user-room combination
@@ -28,7 +35,11 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
     );
 
     const stats = dbSafe.parseResult(statsResult);
-    console.log(`[communicationStats] Existing stats found: ${stats.length > 0 ? 'yes' : 'no'}`);
+    logger.debug('Existing stats check', {
+      userId,
+      roomId,
+      hasExistingStats: stats.length > 0,
+    });
 
     if (stats.length === 0) {
       // Create new stats record
@@ -45,9 +56,12 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
         updated_at: now,
       });
 
-      console.log(
-        `📊 Created communication stats for user ${userId} in room ${roomId}: ${hadIntervention ? 'intervention' : '+1 streak'}`
-      );
+      logger.debug('Created communication stats', {
+        userId,
+        roomId,
+        hadIntervention,
+        initialStreak: hadIntervention ? 0 : 1,
+      });
     } else {
       // Update existing stats
       const currentStats = stats[0];
@@ -59,9 +73,11 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
 
       if (hadIntervention) {
         // Intervention breaks the streak - add current streak to total
-        console.log(
-          `🚫 Streak ended for user ${userId}: was at ${currentStats.current_streak}, adding to total`
-        );
+        logger.debug('Streak ended due to intervention', {
+          userId,
+          roomId,
+          previousStreak: currentStats.current_streak,
+        });
         newStreak = 0;
         newTotalInterventions += 1;
       } else {
@@ -72,9 +88,17 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
         // Update best streak if current exceeds it
         if (newStreak > newBestStreak) {
           newBestStreak = newStreak;
-          console.log(`🎉 New best streak for user ${userId}: ${newBestStreak}!`);
+          logger.debug('New best streak achieved', {
+            userId,
+            roomId,
+            newBestStreak,
+          });
         } else {
-          console.log(`✅ Streak continues for user ${userId}: ${newStreak}`);
+          logger.debug('Streak continues', {
+            userId,
+            roomId,
+            currentStreak: newStreak,
+          });
         }
       }
 
@@ -97,14 +121,24 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
         }
       );
 
-      console.log(
-        `📊 Updated stats for user ${userId}: streak=${newStreak}, best=${newBestStreak}, positive=${newTotalPositive}, interventions=${newTotalInterventions}`
-      );
+      logger.debug('Updated communication stats', {
+        userId,
+        roomId,
+        streak: newStreak,
+        bestStreak: newBestStreak,
+        totalPositive: newTotalPositive,
+        totalInterventions: newTotalInterventions,
+      });
     }
 
     return true;
   } catch (error) {
-    console.error('Error updating communication stats:', error);
+    logger.error('Error updating communication stats', {
+      error: error.message,
+      stack: error.stack,
+      userId,
+      roomId,
+    });
     return false;
   }
 }
@@ -116,16 +150,19 @@ async function updateCommunicationStats(userId, roomId, hadIntervention) {
  */
 async function getUserStats(userId) {
   try {
-    console.log(`[communicationStats] getUserStats called for userId: ${userId}`);
+    logger.debug('Getting user stats', { userId });
     const statsResult = await dbSafe.safeSelect('communication_stats', {
       user_id: userId,
     });
 
     const stats = dbSafe.parseResult(statsResult);
-    console.log(`[communicationStats] Found ${stats.length} stats records for userId ${userId}`);
+    logger.debug('User stats query result', {
+      userId,
+      recordCount: stats.length,
+    });
 
     if (stats.length === 0) {
-      console.log(`[communicationStats] No stats found for userId ${userId}, returning zeros`);
+      logger.debug('No stats found for user, returning zeros', { userId });
       return {
         currentStreak: 0,
         bestStreak: 0,
@@ -162,10 +199,17 @@ async function getUserStats(userId) {
         ? Math.round((aggregated.totalPositive / aggregated.totalMessages) * 100)
         : 0;
 
-    console.log(`[communicationStats] Aggregated stats for userId ${userId}:`, aggregated);
+    logger.debug('Aggregated user stats', {
+      userId,
+      ...aggregated,
+    });
     return aggregated;
   } catch (error) {
-    console.error('Error getting user stats:', error);
+    logger.error('Error getting user stats', {
+      error: error.message,
+      stack: error.stack,
+      userId,
+    });
     return null;
   }
 }
@@ -216,7 +260,12 @@ async function getRoomStats(userId, roomId) {
       lastInterventionDate: stat.last_intervention_date,
     };
   } catch (error) {
-    console.error('Error getting room stats:', error);
+    logger.error('Error getting room stats', {
+      error: error.message,
+      stack: error.stack,
+      userId,
+      roomId,
+    });
     return null;
   }
 }

@@ -7,10 +7,13 @@
  * @module liaizen/core/response/handlers/ActionHandlerRegistry
  */
 
+const { defaultLogger } = require('../../../../infrastructure/logging/logger');
 const { StaySilentHandler } = require('./StaySilentHandler');
 const { CommentHandler } = require('./CommentHandler');
 const { InterveneHandler } = require('./InterveneHandler');
 const { DefaultActionHandler } = require('./DefaultActionHandler');
+
+const logger = defaultLogger.child({ module: 'actionHandlerRegistry' });
 
 /**
  * Registry for action handlers
@@ -43,7 +46,9 @@ class ActionHandlerRegistry {
 
     const normalizedAction = action.toUpperCase();
     this.handlers.set(normalizedAction, handler);
-    console.log(`✅ ActionHandlerRegistry: Registered handler for action "${normalizedAction}"`);
+    logger.debug('Registered action handler', {
+      action: normalizedAction,
+    });
   }
 
   /**
@@ -91,4 +96,3 @@ module.exports = {
   ActionHandlerRegistry,
   registry,
 };
-

@@ -7,6 +7,12 @@
  * Feature: 002-sender-profile-mediation
  */
 
+const { defaultLogger } = require('../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'profilePersister',
+});
+
 /**
  * Update a user's communication profile
  * @param {string} userId - User ID (username)
@@ -60,7 +66,7 @@ async function updateProfile(userId, updates, db) {
     setClauses.push(`profile_version = COALESCE(profile_version, 0) + 1`);
 
     if (setClauses.length === 0) {
-      console.warn('⚠️ ProfilePersister: No updates provided');
+      logger.warn('⚠️ ProfilePersister: No updates provided');
       return null;
     }
 
@@ -80,10 +86,15 @@ async function updateProfile(userId, updates, db) {
       values
     );
 
-    console.log(`✅ ProfilePersister: Updated profile for ${userId}`);
+    logger.debug('Log message', {
+      value: `✅ ProfilePersister: Updated profile for ${userId}`,
+    });
     return result.rows[0];
   } catch (err) {
-    console.error(`❌ ProfilePersister: Error updating profile for ${userId}:`, err.message);
+    logger.error('Log message', {
+      arg0: `❌ ProfilePersister: Error updating profile for ${userId}:`,
+      message: err.message,
+    });
     throw err;
   }
 }
@@ -153,12 +164,15 @@ async function recordIntervention(userId, interventionData, db) {
       [normalizedId, JSON.stringify(history), now]
     );
 
-    console.log(
-      `✅ ProfilePersister: Recorded intervention for ${userId} (total: ${history.total_interventions})`
-    );
+    logger.debug('Log message', {
+      value: `✅ ProfilePersister: Recorded intervention for ${userId} (total: ${history.total_interventions})`,
+    });
     return history;
   } catch (err) {
-    console.error(`❌ ProfilePersister: Error recording intervention for ${userId}:`, err.message);
+    logger.error('Log message', {
+      arg0: `❌ ProfilePersister: Error recording intervention for ${userId}:`,
+      message: err.message,
+    });
     throw err;
   }
 }
@@ -238,15 +252,15 @@ async function recordAcceptedRewrite(userId, rewriteData, db) {
       [normalizedId, JSON.stringify(rewrites), JSON.stringify(history), now]
     );
 
-    console.log(
-      `✅ ProfilePersister: Recorded accepted rewrite for ${userId} (total accepted: ${history.accepted_count})`
-    );
+    logger.debug('Log message', {
+      value: `✅ ProfilePersister: Recorded accepted rewrite for ${userId} (total accepted: ${history.accepted_count})`,
+    });
     return { successful_rewrites: rewrites, intervention_history: history };
   } catch (err) {
-    console.error(
-      `❌ ProfilePersister: Error recording accepted rewrite for ${userId}:`,
-      err.message
-    );
+    logger.error('Log message', {
+      arg0: `❌ ProfilePersister: Error recording accepted rewrite for ${userId}:`,
+      message: err.message,
+    });
     throw err;
   }
 }

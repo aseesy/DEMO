@@ -3,6 +3,12 @@
  * Provides transparency, override controls, and graceful degradation
  */
 
+const { defaultLogger } = require('../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'safety',
+});
+
 /**
  * Generate explanation for an intervention
  * @param {Object} intervention - Intervention details
@@ -50,9 +56,9 @@ function checkInterventionConfidence(intervention, confidenceThreshold = 60) {
   const confidence = intervention.confidence || 0;
 
   if (confidence < confidenceThreshold) {
-    console.log(
-      `⚠️ Intervention confidence (${confidence}%) below threshold (${confidenceThreshold}%) - considering fallback`
-    );
+    logger.debug('Log message', {
+      value: `⚠️ Intervention confidence (${confidence}%) below threshold (${confidenceThreshold}%) - considering fallback`,
+    });
     return false;
   }
 

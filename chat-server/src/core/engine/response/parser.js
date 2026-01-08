@@ -6,6 +6,10 @@
  * @module liaizen/core/response/parser
  */
 
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'responseParser' });
+
 /**
  * Parse AI response JSON
  *
@@ -16,8 +20,11 @@ function parseResponse(responseText) {
   try {
     return JSON.parse(responseText);
   } catch (parseError) {
-    console.error('❌ Failed to parse AI response as JSON:', parseError.message);
-    console.error('Response was:', responseText);
+    logger.error('Failed to parse AI response as JSON', {
+      error: parseError.message,
+      responsePreview: responseText?.substring(0, 200),
+      responseLength: responseText?.length,
+    });
     return null;
   }
 }

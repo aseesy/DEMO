@@ -18,6 +18,12 @@
 const openaiClient = require('../engine/client');
 const narrativeMemory = require('../memory/narrativeMemory');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'profileAnalyzer',
+});
+
 /**
  * Build the prompt for user perspective analysis
  * @param {Array<{text: string, timestamp: Date}>} userMessages - User's messages
@@ -117,7 +123,9 @@ function parseProfileResponse(aiResponse) {
 
     for (const field of requiredFields) {
       if (!(field in parsed)) {
-        console.warn(`⚠️ ProfileAnalyzer: Missing required field: ${field}`);
+        logger.warn('Log message', {
+          value: `⚠️ ProfileAnalyzer: Missing required field: ${field}`,
+        });
         parsed[field] = field === 'communication_patterns' ? {} : [];
       }
     }
@@ -146,7 +154,9 @@ function parseProfileResponse(aiResponse) {
 
     return parsed;
   } catch (error) {
-    console.error('❌ ProfileAnalyzer: Failed to parse AI response:', error.message);
+    logger.error('❌ ProfileAnalyzer: Failed to parse AI response', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -174,7 +184,9 @@ async function analyzeUserPerspective(userId, roomId, messages) {
       [userId]
     );
     if (userResult.rows.length === 0) {
-      console.warn(`⚠️ ProfileAnalyzer: User ${userId} not found`);
+      logger.warn('Log message', {
+        value: `⚠️ ProfileAnalyzer: User ${userId} not found`,
+      });
       return null;
     }
     userEmail = userResult.rows[0].email;
@@ -185,13 +197,15 @@ async function analyzeUserPerspective(userId, roomId, messages) {
     // Check both username and user_email fields since username may be short form (e.g., "mom1")
     // while user_email has the full email (e.g., "mom1@test.com")
     const userMessages = messages
-      .filter(m => (m.username === userEmail || m.user_email === userEmail) && m.text && m.text.trim())
+      .filter(
+        m => (m.username === userEmail || m.user_email === userEmail) && m.text && m.text.trim()
+      )
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Most recent first
 
     if (userMessages.length < 5) {
-      console.log(
-        `ℹ️ ProfileAnalyzer: User ${userId} has only ${userMessages.length} messages, skipping analysis`
-      );
+      logger.debug('Log message', {
+        value: `ℹ️ ProfileAnalyzer: User ${userId} has only ${userMessages.length} messages, skipping analysis`,
+      });
       return null;
     }
 
@@ -200,7 +214,7 @@ async function analyzeUserPerspective(userId, roomId, messages) {
     const client = openaiClient.getClient();
 
     if (!client) {
-      console.warn('⚠️ ProfileAnalyzer: OpenAI client not configured');
+      logger.warn('⚠️ ProfileAnalyzer: OpenAI client not configured');
       return null;
     }
 
@@ -220,7 +234,7 @@ async function analyzeUserPerspective(userId, roomId, messages) {
 
     const aiResponse = response.choices?.[0]?.message?.content;
     if (!aiResponse) {
-      console.warn('⚠️ ProfileAnalyzer: Empty AI response');
+      logger.warn('⚠️ ProfileAnalyzer: Empty AI response');
       return null;
     }
 
@@ -235,16 +249,18 @@ async function analyzeUserPerspective(userId, roomId, messages) {
     // Store the profile
     const stored = await narrativeMemory.updateNarrativeProfile(userId, roomId, analysis);
     if (!stored) {
-      console.warn('⚠️ ProfileAnalyzer: Failed to store profile');
+      logger.warn('⚠️ ProfileAnalyzer: Failed to store profile');
     }
 
-    console.log(
-      `✅ ProfileAnalyzer: Analyzed ${userMessages.length} messages for user ${userId} in room ${roomId}`
-    );
+    logger.debug('Log message', {
+      value: `✅ ProfileAnalyzer: Analyzed ${userMessages.length} messages for user ${userId} in room ${roomId}`,
+    });
 
     return analysis;
   } catch (error) {
-    console.error('❌ ProfileAnalyzer: Analysis failed:', error.message);
+    logger.error('❌ ProfileAnalyzer: Analysis failed', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -276,7 +292,9 @@ async function analyzeRoomParticipants(roomId, messages) {
     const results = {};
 
     for (const user of userResult.rows) {
-      console.log(`🔄 ProfileAnalyzer: Analyzing user ${user.id} in room ${roomId}...`);
+      logger.debug('Log message', {
+        value: `🔄 ProfileAnalyzer: Analyzing user ${user.id} in room ${roomId}...`,
+      });
       const analysis = await analyzeUserPerspective(user.id, roomId, messages);
       if (analysis) {
         results[user.id] = analysis;
@@ -285,7 +303,9 @@ async function analyzeRoomParticipants(roomId, messages) {
 
     return results;
   } catch (error) {
-    console.error('❌ ProfileAnalyzer: Room analysis failed:', error.message);
+    logger.error('❌ ProfileAnalyzer: Room analysis failed', {
+      message: error.message,
+    });
     return {};
   }
 }

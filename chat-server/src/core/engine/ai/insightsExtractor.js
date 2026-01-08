@@ -8,6 +8,9 @@
 
 const openaiClient = require('../client');
 const { MESSAGE } = require('../../../infrastructure/config/constants');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'insightsExtractor' });
 
 /**
  * Extract relationship insights from conversation
@@ -109,7 +112,12 @@ Respond with ONLY valid JSON:
 
     return merged;
   } catch (error) {
-    console.error('Error extracting relationship insights:', error.message);
+    logger.error('Error extracting relationship insights', {
+      error: error.message,
+      stack: error.stack,
+      roomId,
+      messageCount: recentMessages.length,
+    });
     return null;
   }
 }
@@ -158,9 +166,15 @@ async function persistInsights(roomId, insights, roleContext) {
       await dbSafe.safeInsert('relationship_insights', insertData);
     }
 
-    console.log('📚 Relationship insights saved for room:', roomId);
+    logger.debug('Relationship insights saved', {
+      roomId,
+      hasInsights: !!insights,
+    });
   } catch (err) {
-    console.error('Error saving relationship insights:', err.message);
+    logger.error('Error saving relationship insights', {
+      error: err.message,
+      roomId,
+    });
   }
 }
 
@@ -195,7 +209,10 @@ async function getRelationshipInsights(roomId, conversationInsights) {
 
     return conversationInsights.get(roomId) || null;
   } catch (err) {
-    console.error('Error loading relationship insights:', err.message);
+    logger.error('Error loading relationship insights', {
+      error: err.message,
+      roomId,
+    });
     return conversationInsights.get(roomId) || null;
   }
 }

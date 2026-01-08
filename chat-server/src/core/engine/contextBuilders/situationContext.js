@@ -8,6 +8,9 @@
  */
 
 const libs = require('../libraryLoader');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'situationContext' });
 
 /**
  * Build co-parenting situation context from contacts
@@ -55,7 +58,10 @@ function buildCoparentingContext(roleContext, existingContacts, messageText) {
 
     return { contextString, messageGoal };
   } catch (err) {
-    console.warn('⚠️ Situation Context: Failed to build co-parenting context:', err.message);
+    logger.warn('Failed to build co-parenting context', {
+      error: err.message,
+      senderId: roleContext?.senderId,
+    });
     return { contextString: '', messageGoal: null };
   }
 }
@@ -91,18 +97,24 @@ async function buildGraphContext(roleContext, participantProfiles, roomId) {
       return '';
     }
 
-    console.log(
-      '📊 Situation Context: Graph context loaded -',
-      relationshipData.insights?.healthIndicator || 'unknown',
-      'relationship health'
-    );
+    logger.debug('Graph context loaded', {
+      healthIndicator: relationshipData.insights?.healthIndicator || 'unknown',
+      senderId: senderProfile.id,
+      receiverId: receiverProfile.id,
+      roomId,
+    });
 
     return `\n\n=== RELATIONSHIP HISTORY (from graph database) ===
 ${relationshipData.formattedContext}
 
 ATTUNEMENT GUIDANCE: Use this relationship history to calibrate your response. For high-conflict relationships, be extra gentle. For new relationships, provide more foundational guidance. For established relationships with few interventions, acknowledge their progress.`;
   } catch (err) {
-    console.warn('⚠️ Situation Context: Failed to build graph context:', err.message);
+    logger.warn('Failed to build graph context', {
+      error: err.message,
+      senderId: roleContext?.senderId,
+      receiverId: roleContext?.receiverId,
+      roomId,
+    });
     return '';
   }
 }
@@ -133,12 +145,18 @@ async function buildValuesContext(roleContext, participantProfiles, messageText)
     const context = await libs.valuesProfile.formatForAI(senderProfile.id);
 
     if (context) {
-      console.log('💡 Situation Context: Values context loaded');
+      logger.debug('Values context loaded', {
+        senderId: senderProfile.id,
+        hasContext: !!context,
+      });
     }
 
     return context || '';
   } catch (err) {
-    console.warn('⚠️ Situation Context: Failed to build values context:', err.message);
+    logger.warn('Failed to build values context', {
+      error: err.message,
+      senderId: roleContext?.senderId,
+    });
     return '';
   }
 }

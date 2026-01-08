@@ -6,8 +6,11 @@
  * @module liaizen/core/response/handlers/CommentHandler
  */
 
+const { defaultLogger } = require('../../../../infrastructure/logging/logger');
 const { ActionHandler } = require('./ActionHandler');
 const { buildCommentResult } = require('../resultBuilder');
+
+const logger = defaultLogger.child({ module: 'commentHandler' });
 
 /**
  * Handler for COMMENT action
@@ -27,16 +30,19 @@ class CommentHandler extends ActionHandler {
     const { result, message, shouldLimitComments } = context;
 
     if (shouldLimitComments) {
-      console.log('💬 AI Mediator: Skipping comment due to frequency limit');
+      logger.debug('Skipping comment due to frequency limit');
       return null;
     }
 
     if (!result.intervention?.comment) {
-      console.error('❌ COMMENT action but no comment text');
+      logger.error('COMMENT action but no comment text', {
+        hasIntervention: !!result.intervention,
+        action: result?.action,
+      });
       return null;
     }
 
-    console.log('💬 AI Mediator: Adding comment');
+    logger.debug('Adding comment to message');
     return buildCommentResult({
       commentText: result.intervention.comment,
       message,
@@ -46,4 +52,3 @@ class CommentHandler extends ActionHandler {
 }
 
 module.exports = { CommentHandler };
-

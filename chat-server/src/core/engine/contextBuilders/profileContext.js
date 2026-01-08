@@ -7,6 +7,9 @@
  */
 
 const libs = require('../libraryLoader');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'profileContext' });
 
 /**
  * Build comprehensive profile context
@@ -37,7 +40,11 @@ function buildProfileContext(roleContext, participantProfiles) {
 
     return libs.profileHelpers.buildDualProfileContext(senderProfile, receiverProfile);
   } catch (err) {
-    console.warn('⚠️ Profile Context: Failed to build:', err.message);
+    logger.warn('Failed to build profile context', {
+      error: err.message,
+      senderId: roleContext?.senderId,
+      receiverId: roleContext?.receiverId,
+    });
     return null;
   }
 }

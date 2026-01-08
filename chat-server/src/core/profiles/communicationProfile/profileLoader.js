@@ -11,6 +11,12 @@
 
 const { PostgresCommunicationRepository } = require('../../../repositories/postgres');
 
+const { defaultLogger: defaultLogger } = require('../../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'profileLoader',
+});
+
 // Singleton repository instance
 const communicationRepo = new PostgresCommunicationRepository();
 
@@ -49,7 +55,7 @@ const DEFAULT_PROFILE = {
  */
 async function getProfile(userId, db) {
   if (!userId) {
-    console.warn('⚠️ ProfileLoader: No userId provided');
+    logger.warn('⚠️ ProfileLoader: No userId provided');
     return { ...DEFAULT_PROFILE, user_id: null };
   }
 
@@ -58,12 +64,17 @@ async function getProfile(userId, db) {
     const profile = await communicationRepo.getCommunicationProfile(userId);
 
     if (profile.is_new) {
-      console.log(`📊 ProfileLoader: No profile for ${userId}, using defaults`);
+      logger.debug('Log message', {
+        value: `📊 ProfileLoader: No profile for ${userId}, using defaults`,
+      });
     }
 
     return profile;
   } catch (err) {
-    console.error(`❌ ProfileLoader: Error loading profile for ${userId}:`, err.message);
+    logger.error('Log message', {
+      arg0: `❌ ProfileLoader: Error loading profile for ${userId}:`,
+      message: err.message,
+    });
     // Return default profile on error (graceful degradation)
     return {
       ...DEFAULT_PROFILE,
@@ -106,10 +117,14 @@ async function getProfiles(userIds, db) {
       profiles.set(userId, profile);
     }
 
-    console.log(`📊 ProfileLoader: Loaded ${profiles.size} profiles`);
+    logger.debug('Log message', {
+      value: `📊 ProfileLoader: Loaded ${profiles.size} profiles`,
+    });
     return profiles;
   } catch (err) {
-    console.error('❌ ProfileLoader: Error batch loading profiles:', err.message);
+    logger.error('❌ ProfileLoader: Error batch loading profiles', {
+      message: err.message,
+    });
     // Return default profiles on error
     for (const userId of normalizedIds) {
       profiles.set(userId, {

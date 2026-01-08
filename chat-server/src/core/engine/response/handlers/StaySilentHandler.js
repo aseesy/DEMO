@@ -6,7 +6,10 @@
  * @module liaizen/core/response/handlers/StaySilentHandler
  */
 
+const { defaultLogger } = require('../../../../infrastructure/logging/logger');
 const { ActionHandler } = require('./ActionHandler');
+
+const logger = defaultLogger.child({ module: 'staySilentHandler' });
 
 /**
  * Handler for STAY_SILENT action
@@ -20,10 +23,11 @@ class StaySilentHandler extends ActionHandler {
    * @returns {Promise<null>} Always returns null to allow message
    */
   async process(context) {
-    console.log('🤖 AI Mediator: STAY_SILENT - allowing message');
+    logger.debug('STAY_SILENT action - allowing message', {
+      messageId: context.message?.id,
+    });
     return null;
   }
 }
 
 module.exports = { StaySilentHandler };
-

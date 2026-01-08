@@ -15,6 +15,12 @@
 
 const dbPostgres = require('../../../dbPostgres');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'valuesProfile',
+});
+
 // ============================================================
 // VALUE CATEGORIES AND DETECTION PATTERNS
 // ============================================================
@@ -356,11 +362,11 @@ function getDominantValue(signals) {
 
 /**
  * Verify that the values profile table exists
- * 
+ *
  * @deprecated Schema changes must be done via migrations, not runtime creation.
  * Table is created by migration 041_user_values_profile.sql
  * This function now only validates the table exists (throws if missing)
- * 
+ *
  * @returns {Promise<boolean>} True if table exists
  * @throws {Error} If table does not exist (migration needs to be run)
  */
@@ -376,8 +382,8 @@ async function initializeTable() {
     if (result.rows.length === 0) {
       throw new Error(
         'user_values_profile table does not exist. ' +
-        'Please run migration 041_user_values_profile.sql. ' +
-        'Command: npm run migrate (from chat-server directory)'
+          'Please run migration 041_user_values_profile.sql. ' +
+          'Command: npm run migrate (from chat-server directory)'
       );
     }
 
@@ -386,7 +392,9 @@ async function initializeTable() {
     if (error.message.includes('does not exist')) {
       throw error;
     }
-    console.error('❌ Error verifying values profile table:', error.message);
+    logger.error('❌ Error verifying values profile table', {
+      message: error.message,
+    });
     throw error;
   }
 }
@@ -441,7 +449,9 @@ async function getValuesProfile(userId) {
       messagesAnalyzed: 0,
     };
   } catch (error) {
-    console.error('❌ Failed to get values profile:', error.message);
+    logger.error('❌ Failed to get values profile', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -516,7 +526,9 @@ async function learnFromMessage(userId, message) {
       messagesAnalyzed: profile.messagesAnalyzed + 1,
     };
   } catch (error) {
-    console.error('❌ Failed to learn from message:', error.message);
+    logger.error('❌ Failed to learn from message', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -546,7 +558,9 @@ async function addNonNegotiable(userId, nonNegotiable, source = 'inferred') {
 
     return updated;
   } catch (error) {
-    console.error('❌ Failed to add non-negotiable:', error.message);
+    logger.error('❌ Failed to add non-negotiable', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -576,7 +590,9 @@ async function addMotivation(userId, topic, motivation) {
 
     return updated;
   } catch (error) {
-    console.error('❌ Failed to add motivation:', error.message);
+    logger.error('❌ Failed to add motivation', {
+      message: error.message,
+    });
     return null;
   }
 }

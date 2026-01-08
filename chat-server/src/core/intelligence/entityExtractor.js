@@ -16,6 +16,12 @@
 
 const openaiClient = require('../engine/client');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'entityExtractor',
+});
+
 /**
  * Extract entities from a single message (for real-time)
  * @param {string} text - Message text
@@ -92,7 +98,9 @@ Respond with JSON:
       return { people: [], locations: [], topics: [] };
     }
   } catch (error) {
-    console.error('❌ EntityExtractor: Failed to extract entities:', error.message);
+    logger.error('❌ EntityExtractor: Failed to extract entities', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -176,14 +184,17 @@ Respond with JSON:
         sentiment: ['positive', 'negative', 'neutral', 'mixed'].includes(parsed.sentiment)
           ? parsed.sentiment
           : 'neutral',
-        strength: typeof parsed.strength === 'number' ? Math.max(0, Math.min(1, parsed.strength)) : 0.5,
+        strength:
+          typeof parsed.strength === 'number' ? Math.max(0, Math.min(1, parsed.strength)) : 0.5,
         reason: parsed.reason || '',
       };
     } catch {
       return { sentiment: 'neutral', strength: 0.5, reason: 'parse error' };
     }
   } catch (error) {
-    console.error('❌ EntityExtractor: Failed to analyze sentiment:', error.message);
+    logger.error('❌ EntityExtractor: Failed to analyze sentiment', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -259,17 +270,14 @@ async function extractEntities(messages, roomId) {
 
   // Convert maps to arrays and sort by count
   const result = {
-    people: Array.from(entityCounts.people.values())
-      .sort((a, b) => b.count - a.count),
-    locations: Array.from(entityCounts.locations.values())
-      .sort((a, b) => b.count - a.count),
-    topics: Array.from(entityCounts.topics.values())
-      .sort((a, b) => b.count - a.count),
+    people: Array.from(entityCounts.people.values()).sort((a, b) => b.count - a.count),
+    locations: Array.from(entityCounts.locations.values()).sort((a, b) => b.count - a.count),
+    topics: Array.from(entityCounts.topics.values()).sort((a, b) => b.count - a.count),
   };
 
-  console.log(
-    `✅ EntityExtractor: Found ${result.people.length} people, ${result.locations.length} locations, ${result.topics.length} topics in room ${roomId}`
-  );
+  logger.debug('Log message', {
+    value: `✅ EntityExtractor: Found ${result.people.length} people, ${result.locations.length} locations, ${result.topics.length} topics in room ${roomId}`,
+  });
 
   return result;
 }

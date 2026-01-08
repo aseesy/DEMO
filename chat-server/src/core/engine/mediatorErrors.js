@@ -8,6 +8,8 @@
 const { RetryableError } = require('../../infrastructure/errors/errors');
 const { defaultLogger } = require('../../infrastructure/logging/logger');
 
+const logger = defaultLogger.child({ module: 'mediatorErrors' });
+
 /**
  * Error categories for AI mediation
  */
@@ -101,11 +103,20 @@ function handleAnalysisError(error, context, logger = null) {
 }
 
 /**
+ * Result type for withErrorHandling
+ * @typedef {Object} ErrorHandlingResult
+ * @property {boolean} success - Whether the operation succeeded
+ * @property {*} [result] - The result if successful
+ * @property {Error} [error] - The error if failed
+ * @property {boolean} [failOpen] - Whether to fail open (continue on error)
+ */
+
+/**
  * Wrap an async operation with standardized error handling
  * @param {Function} operation - Async operation to execute
  * @param {Object} context - Context for error handling
  * @param {Object} options - Options for error handling
- * @returns {Promise<{ success: boolean, result?: any, error?: Error, failOpen?: boolean }>}
+ * @returns {Promise<ErrorHandlingResult>}
  */
 async function withErrorHandling(operation, context, options = {}) {
   const { logger, operationName = 'unknown' } = options;
@@ -129,14 +140,18 @@ async function withErrorHandling(operation, context, options = {}) {
  * Logs errors but doesn't affect main flow
  * @param {Function} operation - Async operation to execute
  * @param {string} operationName - Name for logging
- * @param {any} defaultValue - Value to return on failure
- * @returns {Promise<any>}
+ * @param {*} defaultValue - Value to return on failure
+ * @returns {Promise<*>}
  */
 async function safeExecute(operation, operationName, defaultValue = null) {
   try {
     return await operation();
   } catch (error) {
-    console.warn(`⚠️ AI Mediator: ${operationName} failed, continuing:`, error.message);
+    logger.warn('Operation failed, continuing with default value', {
+      operation: operationName,
+      error: error.message,
+      defaultValue: defaultValue !== null ? typeof defaultValue : 'null',
+    });
     return defaultValue;
   }
 }

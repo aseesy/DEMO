@@ -7,6 +7,10 @@
  * @module liaizen/core/libraryLoader
  */
 
+const { defaultLogger } = require('../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'libraryLoader' });
+
 /**
  * Safely load a module with graceful degradation
  * @param {string} modulePath - Path to require
@@ -20,15 +24,18 @@ function safeLoad(modulePath, name, initFn = null) {
 
     if (initFn) {
       initFn(module).catch(err => {
-        console.warn(`⚠️ Library Loader: ${name} initialization failed:`, err.message);
+        logger.warn('Library initialization failed', {
+          name,
+          error: err.message,
+        });
       });
     }
 
-    console.log(`✅ Library Loader: ${name} loaded`);
+    logger.debug('Library loaded', { name });
     return module;
   } catch (err) {
-    // Optional modules are expected to be missing - use info level instead of warn
-    console.log(`ℹ️ Library Loader: ${name} not available (optional feature)`);
+    // Optional modules are expected to be missing - use debug level
+    logger.debug('Library not available (optional feature)', { name });
     return null;
   }
 }
@@ -53,7 +60,7 @@ function createLazyLoader(modulePath, name, initFn = null) {
 
     // Prevent concurrent loading
     if (isLoading) {
-      console.warn(`⚠️ Library Loader: ${name} is already loading, returning null`);
+      logger.warn('Library is already loading, returning null', { name });
       return null;
     }
 
@@ -74,13 +81,17 @@ function loadCodeLayerIntegration() {
   try {
     const module = require('./codeLayerIntegration');
     if (module.isAvailable()) {
-      console.log(`✅ Library Loader: Code Layer Integration v${module.getVersion()} loaded`);
+      logger.debug('Code Layer Integration loaded', {
+        version: module.getVersion(),
+      });
       return module;
     }
-    console.warn('⚠️ Library Loader: Code Layer Integration loaded but Code Layer not available');
+    logger.warn('Code Layer Integration loaded but Code Layer not available');
     return module;
   } catch (err) {
-    console.warn('⚠️ Library Loader: Code Layer Integration not available:', err.message);
+    logger.warn('Code Layer Integration not available', {
+      error: err.message,
+    });
     return null;
   }
 }
@@ -139,7 +150,7 @@ const libraries = {
   // Values Profile (Learn user values from conversations)
   valuesProfile: safeLoad('../profiles/valuesProfile', 'Values profile', async module => {
     await module.initializeTable();
-    console.log('✅ Library Loader: Values profile table initialized');
+    logger.debug('Values profile table initialized');
   }),
 
   // User Intelligence (Passive learning from conversations)
@@ -148,7 +159,7 @@ const libraries = {
     'User intelligence',
     async module => {
       await module.initializeInsightsTable();
-      console.log('✅ Library Loader: User intelligence table initialized');
+      logger.debug('User intelligence table initialized');
     }
   ),
 };
@@ -203,11 +214,11 @@ const communicationProfileGetter = () => {
   return lazyLoaders.communicationProfile();
 };
 
-const languageAnalyzerSetter = (value) => {
+const languageAnalyzerSetter = value => {
   languageAnalyzerOverride = value;
 };
 
-const communicationProfileSetter = (value) => {
+const communicationProfileSetter = value => {
   communicationProfileOverride = value;
 };
 

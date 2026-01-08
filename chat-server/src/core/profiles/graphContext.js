@@ -16,6 +16,12 @@
 
 const neo4jClient = require('../../infrastructure/database/neo4jClient');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'graphContext',
+});
+
 /**
  * Get comprehensive relationship context for AI mediation
  *
@@ -26,7 +32,7 @@ const neo4jClient = require('../../infrastructure/database/neo4jClient');
  */
 async function getRelationshipContext(senderId, receiverId, roomId) {
   if (!neo4jClient.isAvailable()) {
-    console.log('⚠️  GraphContext: Neo4j not available, skipping graph insights');
+    logger.debug('⚠️  GraphContext: Neo4j not available, skipping graph insights');
     return null;
   }
 
@@ -47,7 +53,9 @@ async function getRelationshipContext(senderId, receiverId, roomId) {
       formattedContext: formatForAI(metrics, insights),
     };
   } catch (error) {
-    console.error('❌ GraphContext: Failed to get relationship context:', error.message);
+    logger.error('❌ GraphContext: Failed to get relationship context', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -89,7 +97,9 @@ async function getRelationshipMetrics(senderId, receiverId, roomId) {
       receiverUsername: record.get('receiverUsername'),
     };
   } catch (error) {
-    console.error('❌ GraphContext: Neo4j query failed:', error.message);
+    logger.error('❌ GraphContext: Neo4j query failed', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -255,7 +265,9 @@ async function updateMetrics(userId1, userId2, roomId, update = {}) {
 
     return true;
   } catch (error) {
-    console.error('❌ GraphContext: Failed to update metrics:', error.message);
+    logger.error('❌ GraphContext: Failed to update metrics', {
+      message: error.message,
+    });
     return false;
   }
 }
@@ -302,7 +314,9 @@ async function getInterventionEffectiveness(userId) {
           : 0,
     };
   } catch (error) {
-    console.error('❌ GraphContext: Failed to get intervention effectiveness:', error.message);
+    logger.error('❌ GraphContext: Failed to get intervention effectiveness', {
+      message: error.message,
+    });
     return null;
   }
 }

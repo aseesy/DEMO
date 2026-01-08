@@ -13,6 +13,10 @@
 
 'use strict';
 
+const { defaultLogger } = require('../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ module: 'codeLayerIntegration' });
+
 // Lazy load Code Layer (only load when analyzeWithCodeLayer is called)
 // This reduces cold start time by deferring heavy module loading
 let codeLayer = null;
@@ -38,10 +42,14 @@ function getCodeLayer() {
   codeLayerLoadAttempted = true;
   try {
     codeLayer = require('./codeLayer');
-    console.log('✅ Code Layer Integration: Code Layer v' + codeLayer.VERSION + ' loaded (lazy)');
+    logger.debug('Code Layer loaded (lazy)', {
+      version: codeLayer.VERSION,
+    });
     return codeLayer;
   } catch (err) {
-    console.warn('⚠️ Code Layer Integration: Code Layer not available:', err.message);
+    logger.warn('Code Layer not available', {
+      error: err.message,
+    });
     codeLayer = null;
     return null;
   }
@@ -289,7 +297,10 @@ function validateAIResponse(aiResponse, parsed) {
 
   // Log validation failures for monitoring
   if (errors.length > 0) {
-    console.warn('[CodeLayerIntegration] AI Response validation failures:', errors);
+    logger.warn('AI Response validation failures', {
+      errors,
+      action: aiResponse.action,
+    });
   }
 
   return {
@@ -328,15 +339,21 @@ async function analyzeWithCodeLayer(messageText, context = {}) {
     const quickPass = shouldQuickPass(parsed);
 
     // Log analysis results
-    console.log(`[CodeLayer] Analyzed: "${messageText.substring(0, 50)}..."`);
-    console.log(`[CodeLayer] Axioms: ${parsed.axiomsFired.map(a => a.id).join(', ') || 'none'}`);
-    console.log(
-      `[CodeLayer] Conflict: ${parsed.assessment.conflict_potential}, QuickPass: ${quickPass.canPass}`
-    );
+    logger.debug('Code Layer analysis complete', {
+      messagePreview: messageText.substring(0, 50),
+      axiomsFired: parsed.axiomsFired.map(a => a.id),
+      conflictPotential: parsed.assessment.conflict_potential,
+      quickPass: quickPass.canPass,
+      quickPassReason: quickPass.reason,
+    });
 
     return { parsed, quickPass };
   } catch (error) {
-    console.error('[CodeLayerIntegration] Analysis error:', error.message);
+    logger.error('Code Layer analysis error', {
+      error: error.message,
+      stack: error.stack,
+      messagePreview: messageText?.substring(0, 50),
+    });
     return {
       parsed: null,
       quickPass: { canPass: false, reason: 'analysis_error', error: error.message },

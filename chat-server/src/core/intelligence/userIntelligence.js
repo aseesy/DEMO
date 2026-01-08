@@ -22,7 +22,7 @@ let neo4jClient;
 try {
   neo4jClient = require('../../infrastructure/database/neo4jClient');
 } catch (err) {
-  console.warn('⚠️ UserIntelligence: Neo4j client not available');
+  logger.warn('⚠️ UserIntelligence: Neo4j client not available');
   neo4jClient = null;
 }
 
@@ -31,11 +31,17 @@ let valuesProfile;
 try {
   valuesProfile = require('../profiles/valuesProfile');
 } catch (err) {
-  console.warn('⚠️ UserIntelligence: Values profile not available');
+  logger.warn('⚠️ UserIntelligence: Values profile not available');
   valuesProfile = null;
 }
 
 const dbPostgres = require('../../../dbPostgres');
+
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'userIntelligence',
+});
 
 // ============================================================
 // POSTGRESQL FALLBACK (when Neo4j is unavailable)
@@ -43,11 +49,11 @@ const dbPostgres = require('../../../dbPostgres');
 
 /**
  * Verify that the user_intelligence table exists
- * 
+ *
  * @deprecated Schema changes must be done via migrations, not runtime creation.
  * Table is created by migration 042_user_intelligence.sql
  * This function now only validates the table exists (throws if missing)
- * 
+ *
  * @returns {Promise<void>}
  * @throws {Error} If table does not exist (migration needs to be run)
  */
@@ -63,15 +69,17 @@ async function initializeIntelligenceTable() {
     if (result.rows.length === 0) {
       throw new Error(
         'user_intelligence table does not exist. ' +
-        'Please run migration 042_user_intelligence.sql. ' +
-        'Command: npm run migrate (from chat-server directory)'
+          'Please run migration 042_user_intelligence.sql. ' +
+          'Command: npm run migrate (from chat-server directory)'
       );
     }
   } catch (error) {
     if (error.message.includes('does not exist')) {
       throw error;
     }
-    console.error('❌ UserIntelligence: Error verifying PostgreSQL table:', error.message);
+    logger.error('❌ UserIntelligence: Error verifying PostgreSQL table', {
+      message: error.message,
+    });
     throw error;
   }
 }
@@ -132,7 +140,9 @@ async function updatePostgresProfile(userId, intelligence) {
     }
     return true;
   } catch (error) {
-    console.error('❌ UserIntelligence: Failed to update PostgreSQL profile:', error.message);
+    logger.error('❌ UserIntelligence: Failed to update PostgreSQL profile', {
+      message: error.message,
+    });
     return false;
   }
 }
@@ -158,7 +168,9 @@ async function getProfileFromPostgres(userId) {
       emotionalPatterns: row.emotional_patterns || {},
     };
   } catch (error) {
-    console.error('❌ UserIntelligence: Failed to get PostgreSQL profile:', error.message);
+    logger.error('❌ UserIntelligence: Failed to get PostgreSQL profile', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -442,7 +454,9 @@ async function updateNeo4jProfile(userId, intelligence) {
     await neo4jClient._executeCypher(query, params);
     return true;
   } catch (error) {
-    console.error('❌ UserIntelligence: Failed to update Neo4j profile:', error.message);
+    logger.error('❌ UserIntelligence: Failed to update Neo4j profile', {
+      message: error.message,
+    });
     return false;
   }
 }
@@ -479,12 +493,16 @@ async function learnFromMessage(userId, message, roomId = null) {
     }
 
     if (learned.length > 0) {
-      console.log(`🧠 UserIntelligence: Learned from user ${userId}: ${learned.join('; ')}`);
+      logger.debug('Log message', {
+        value: `🧠 UserIntelligence: Learned from user ${userId}: ${learned.join('; ')}`,
+      });
     }
 
     return intelligence;
   } catch (error) {
-    console.error('❌ UserIntelligence: Failed to learn from message:', error.message);
+    logger.error('❌ UserIntelligence: Failed to learn from message', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -512,20 +530,22 @@ async function storeInsight(userId, insight, roomId = null) {
       await initializeInsightsTable();
       return storeInsight(userId, insight, roomId);
     }
-    console.error('❌ UserIntelligence: Failed to store insight:', error.message);
+    logger.error('❌ UserIntelligence: Failed to store insight', {
+      message: error.message,
+    });
     return false;
   }
 }
 
 /**
  * Verify that all PostgreSQL tables for user intelligence exist
- * 
+ *
  * @deprecated Schema changes must be done via migrations, not runtime creation.
  * Tables are created by migrations:
  *   - 042_user_intelligence.sql (user_intelligence table)
  *   - 043_user_insights.sql (user_insights table)
  * This function now only validates tables exist (throws if missing)
- * 
+ *
  * @returns {Promise<void>}
  * @throws {Error} If tables do not exist (migrations need to be run)
  */
@@ -541,8 +561,8 @@ async function initializeInsightsTable() {
     if (insightsResult.rows.length === 0) {
       throw new Error(
         'user_insights table does not exist. ' +
-        'Please run migration 043_user_insights.sql. ' +
-        'Command: npm run migrate (from chat-server directory)'
+          'Please run migration 043_user_insights.sql. ' +
+          'Command: npm run migrate (from chat-server directory)'
       );
     }
 
@@ -552,7 +572,9 @@ async function initializeInsightsTable() {
     if (error.message.includes('does not exist')) {
       throw error;
     }
-    console.error('❌ UserIntelligence: Error verifying insights table:', error.message);
+    logger.error('❌ UserIntelligence: Error verifying insights table', {
+      message: error.message,
+    });
     throw error;
   }
 }
@@ -633,7 +655,9 @@ async function getProfileFromNeo4j(userId) {
 
     return profile;
   } catch (error) {
-    console.error('❌ UserIntelligence: Failed to get profile from Neo4j:', error.message);
+    logger.error('❌ UserIntelligence: Failed to get profile from Neo4j', {
+      message: error.message,
+    });
     return null;
   }
 }

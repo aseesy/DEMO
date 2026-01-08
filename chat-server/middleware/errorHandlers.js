@@ -35,6 +35,12 @@ const {
   getDatabaseErrorStatusCode,
 } = require('../src/utils/databaseErrorClassifier');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'errorHandlers',
+});
+
 /**
  * Check if error is a database connection error
  * @param {Error} error - The error to check
@@ -58,15 +64,16 @@ function isDatabaseConnectionError(error) {
 function handleServiceError(error, res, options = {}) {
   const { includeField = true, includeCode = true } = options;
 
-  console.error('Service error:', error.message);
+  logger.error('Service error', {
+    message: error.message,
+  });
 
   // CRITICAL: Check for database connection errors first
   // These should return 503 Service Unavailable, not 500 or authentication errors
   if (isDatabaseConnectionError(error)) {
-    console.warn(
-      '[handleServiceError] Database connection error detected:',
-      error.code || error.message
-    );
+    logger.warn('[handleServiceError] Database connection error detected', {
+      arg0: error.code || error.message,
+    });
     const errorResponse = getDatabaseErrorResponse(error);
     const statusCode = getDatabaseErrorStatusCode(error);
     return res.status(statusCode).json(errorResponse);

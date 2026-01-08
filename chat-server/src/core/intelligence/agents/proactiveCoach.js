@@ -1,5 +1,11 @@
 const openaiClient = require('../../engine/client');
 
+const { defaultLogger: defaultLogger } = require('../../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'proactiveCoach',
+});
+
 /**
  * Analyze a draft message before sending and provide proactive coaching
  * @param {string} draftText - The message text user is about to send
@@ -90,7 +96,9 @@ If the message is fine as-is, set shouldSend to true and provide minimal feedbac
       shouldSend: coaching.shouldSend !== false, // Default to true if not specified
     };
   } catch (error) {
-    console.error('Error in proactive coaching:', error.message);
+    logger.error('Error in proactive coaching', {
+      message: error.message,
+    });
     return null;
   }
 }

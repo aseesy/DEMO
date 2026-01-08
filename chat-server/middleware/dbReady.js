@@ -12,6 +12,12 @@
 
 const db = require('../dbPostgres');
 
+const { defaultLogger: defaultLogger } = require('../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'dbReady',
+});
+
 /**
  * Middleware to check if database is ready
  * Returns 503 Service Unavailable if database is not ready
@@ -19,7 +25,9 @@ const db = require('../dbPostgres');
 function requireDatabaseReady(req, res, next) {
   // Check if database is ready
   if (!db.isReady()) {
-    console.warn(`[dbReady] Database not ready for ${req.method} ${req.path}`);
+    logger.warn('Log message', {
+      value: `[dbReady] Database not ready for ${req.method} ${req.path}`,
+    });
     return res.status(503).json({
       error: 'Service temporarily unavailable',
       code: 'DATABASE_NOT_READY',

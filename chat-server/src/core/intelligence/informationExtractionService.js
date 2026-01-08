@@ -16,6 +16,12 @@
 const openaiClient = require('../engine/client');
 const dbSafe = require('../../../dbSafe');
 
+const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+
+const logger = defaultLogger.child({
+  module: 'informationExtractionService',
+});
+
 /**
  * Extract structured information from a message about people (especially children)
  * @param {string} messageText - The message text to analyze
@@ -117,7 +123,7 @@ Only extract information with high or medium confidence. Be conservative - only 
     });
 
     const response = completion.choices[0].message.content.trim();
-    
+
     // Remove markdown code blocks if present
     let cleanedResponse = response;
     if (cleanedResponse.startsWith('```')) {
@@ -141,9 +147,13 @@ Only extract information with high or medium confidence. Be conservative - only 
 
     return result;
   } catch (error) {
-    console.error('[InformationExtraction] Error extracting information:', error.message);
+    logger.error('[InformationExtraction] Error extracting information', {
+      message: error.message,
+    });
     if (error.stack) {
-      console.error('[InformationExtraction] Stack:', error.stack);
+      logger.error('[InformationExtraction] Stack', {
+        stack: error.stack,
+      });
     }
     return null;
   }
@@ -175,30 +185,37 @@ async function updateContactWithExtraction(userId, extraction) {
       // Try to match by name (case-insensitive, partial match)
       const personNameLower = extraction.personName.toLowerCase();
       const matchedContact = contacts.find(
-        c => c.contact_name?.toLowerCase() === personNameLower ||
-             c.contact_name?.toLowerCase().includes(personNameLower) ||
-             personNameLower.includes(c.contact_name?.toLowerCase())
+        c =>
+          c.contact_name?.toLowerCase() === personNameLower ||
+          c.contact_name?.toLowerCase().includes(personNameLower) ||
+          personNameLower.includes(c.contact_name?.toLowerCase())
       );
 
       if (matchedContact) {
         contactId = matchedContact.id;
-        console.log('[InformationExtraction] Matched contact by name:', {
-          personName: extraction.personName,
-          contactId,
-          contactName: matchedContact.contact_name,
+        logger.debug('[InformationExtraction] Matched contact by name', {
+          ...{
+            personName: extraction.personName,
+            contactId,
+            contactName: matchedContact.contact_name,
+          },
         });
       }
     }
 
     if (!contactId) {
-      console.log('[InformationExtraction] No contact found for:', extraction.personName);
+      logger.debug('[InformationExtraction] No contact found for', {
+        personName: extraction.personName,
+      });
       return null;
     }
 
     // Verify contact ownership
     const contact = await dbSafe.safeSelect('contacts', { id: contactId }, { limit: 1 });
     if (!contact || contact.length === 0 || contact[0].user_id !== userId) {
-      console.error('[InformationExtraction] Contact not found or access denied:', contactId);
+      logger.error('[InformationExtraction] Contact not found or access denied', {
+        contactId: contactId,
+      });
       return null;
     }
 
@@ -244,7 +261,9 @@ async function updateContactWithExtraction(userId, extraction) {
 
     // Only update if we have changes
     if (Object.keys(updates).length === 0) {
-      console.log('[InformationExtraction] No updates to apply for contact:', contactId);
+      logger.debug('[InformationExtraction] No updates to apply for contact', {
+        contactId: contactId,
+      });
       return existingContact;
     }
 
@@ -254,17 +273,21 @@ async function updateContactWithExtraction(userId, extraction) {
     // Update contact
     await dbSafe.safeUpdate('contacts', updates, { id: contactId });
 
-    console.log('[InformationExtraction] ✅ Updated contact:', {
-      contactId,
-      personName: extraction.personName,
-      updates,
+    logger.debug('[InformationExtraction] ✅ Updated contact', {
+      ...{
+        contactId,
+        personName: extraction.personName,
+        updates,
+      },
     });
 
     // Return updated contact
     const updatedContact = await dbSafe.safeSelect('contacts', { id: contactId }, { limit: 1 });
     return updatedContact && updatedContact.length > 0 ? updatedContact[0] : null;
   } catch (error) {
-    console.error('[InformationExtraction] Error updating contact:', error.message);
+    logger.error('[InformationExtraction] Error updating contact', {
+      message: error.message,
+    });
     return null;
   }
 }
@@ -277,14 +300,23 @@ async function updateContactWithExtraction(userId, extraction) {
  * @param {Array} recentMessages - Recent conversation messages
  * @returns {Promise<Array>} - Array of updated contacts
  */
-async function processMessageExtraction(messageText, userId, existingContacts = [], recentMessages = []) {
+async function processMessageExtraction(
+  messageText,
+  userId,
+  existingContacts = [],
+  recentMessages = []
+) {
   if (!messageText || !userId) {
     return [];
   }
 
   try {
     // Extract information from message
-    const extractionResult = await extractInformation(messageText, existingContacts, recentMessages);
+    const extractionResult = await extractInformation(
+      messageText,
+      existingContacts,
+      recentMessages
+    );
 
     if (!extractionResult || !extractionResult.shouldUpdate || !extractionResult.extractions) {
       return [];
@@ -302,7 +334,9 @@ async function processMessageExtraction(messageText, userId, existingContacts = 
 
     return updatedContacts;
   } catch (error) {
-    console.error('[InformationExtraction] Error processing message extraction:', error.message);
+    logger.error('[InformationExtraction] Error processing message extraction', {
+      message: error.message,
+    });
     return [];
   }
 }
@@ -312,4 +346,3 @@ module.exports = {
   updateContactWithExtraction,
   processMessageExtraction,
 };
-

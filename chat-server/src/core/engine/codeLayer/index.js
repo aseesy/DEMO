@@ -19,6 +19,7 @@
 'use strict';
 
 const { VERSION, createEmptyParsedMessage, CONFLICT_LEVELS, AXIOM_CATEGORIES } = require('./types');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
 
 const tokenizer = require('./tokenizer');
 const markerDetector = require('./markerDetector');
@@ -26,6 +27,8 @@ const primitiveMapper = require('./primitiveMapper');
 const vectorIdentifier = require('./vectorIdentifier');
 const assessmentGen = require('./assessmentGen');
 const axiomChecker = require('./axioms');
+
+const logger = defaultLogger.child({ module: 'codeLayer' });
 
 // ============================================================================
 // CONFIGURATION
@@ -68,8 +71,8 @@ let performanceLoggingEnabled = process.env.CODE_LAYER_PERF_LOG === 'true';
  *   receiverId: "bob",
  *   childNames: ["Emma"]
  * });
- * console.log(parsed.axioms_fired); // Axioms that matched
- * console.log(parsed.assessment.transmit); // Whether AI intervention needed
+ * // parsed.axioms_fired contains axioms that matched
+ * // parsed.assessment.transmit indicates whether AI intervention needed
  */
 async function parse(messageText, context = {}) {
   const startTime = Date.now();
@@ -101,7 +104,10 @@ async function parse(messageText, context = {}) {
       componentLatency.tokenizerMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
       performanceLoggingEnabled
     ) {
-      console.warn(`[CodeLayer] ⚠️ Tokenizer slow: ${componentLatency.tokenizerMs}ms`);
+      logger.warn('Tokenizer performance slow', {
+        latencyMs: componentLatency.tokenizerMs,
+        threshold: PERFORMANCE_THRESHOLDS.COMPONENT_MS,
+      });
     }
 
     // =========================================================================
@@ -115,7 +121,10 @@ async function parse(messageText, context = {}) {
       componentLatency.markerDetectorMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
       performanceLoggingEnabled
     ) {
-      console.warn(`[CodeLayer] ⚠️ Marker Detector slow: ${componentLatency.markerDetectorMs}ms`);
+      logger.warn('Marker detector performance slow', {
+        latencyMs: componentLatency.markerDetectorMs,
+        threshold: PERFORMANCE_THRESHOLDS.COMPONENT_MS,
+      });
     }
 
     // =========================================================================
@@ -134,7 +143,10 @@ async function parse(messageText, context = {}) {
       componentLatency.primitiveMapperMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
       performanceLoggingEnabled
     ) {
-      console.warn(`[CodeLayer] ⚠️ Primitive Mapper slow: ${componentLatency.primitiveMapperMs}ms`);
+      logger.warn('Primitive mapper performance slow', {
+        latencyMs: componentLatency.primitiveMapperMs,
+        threshold: PERFORMANCE_THRESHOLDS.COMPONENT_MS,
+      });
     }
 
     // =========================================================================
@@ -154,9 +166,10 @@ async function parse(messageText, context = {}) {
       componentLatency.vectorIdentifierMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
       performanceLoggingEnabled
     ) {
-      console.warn(
-        `[CodeLayer] ⚠️ Vector Identifier slow: ${componentLatency.vectorIdentifierMs}ms`
-      );
+      logger.warn('Vector identifier performance slow', {
+        latencyMs: componentLatency.vectorIdentifierMs,
+        threshold: PERFORMANCE_THRESHOLDS.COMPONENT_MS,
+      });
     }
 
     // =========================================================================
@@ -180,7 +193,10 @@ async function parse(messageText, context = {}) {
       componentLatency.axiomCheckerMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
       performanceLoggingEnabled
     ) {
-      console.warn(`[CodeLayer] ⚠️ Axiom Checker slow: ${componentLatency.axiomCheckerMs}ms`);
+      logger.warn('Axiom checker performance slow', {
+        latencyMs: componentLatency.axiomCheckerMs,
+        threshold: PERFORMANCE_THRESHOLDS.COMPONENT_MS,
+      });
     }
 
     // =========================================================================
@@ -199,9 +215,10 @@ async function parse(messageText, context = {}) {
       componentLatency.assessmentGenMs > PERFORMANCE_THRESHOLDS.COMPONENT_MS &&
       performanceLoggingEnabled
     ) {
-      console.warn(
-        `[CodeLayer] ⚠️ Assessment Generator slow: ${componentLatency.assessmentGenMs}ms`
-      );
+      logger.warn('Assessment generator performance slow', {
+        latencyMs: componentLatency.assessmentGenMs,
+        threshold: PERFORMANCE_THRESHOLDS.COMPONENT_MS,
+      });
     }
 
     // =========================================================================
@@ -210,7 +227,11 @@ async function parse(messageText, context = {}) {
     const totalLatency = Date.now() - startTime;
 
     if (totalLatency > PERFORMANCE_THRESHOLDS.TOTAL_MS && performanceLoggingEnabled) {
-      console.warn(`[CodeLayer] ⚠️ Total parsing slow: ${totalLatency}ms`);
+      logger.warn('Total code layer parsing slow', {
+        totalLatencyMs: totalLatency,
+        threshold: PERFORMANCE_THRESHOLDS.TOTAL_MS,
+        componentLatencies: componentLatency,
+      });
     }
 
     const parsedMessage = {
@@ -237,7 +258,11 @@ async function parse(messageText, context = {}) {
     return parsedMessage;
   } catch (error) {
     // Handle errors gracefully - return partial ParsedMessage with error flag
-    console.error('[CodeLayer] ❌ Parse error:', error.message);
+    logger.error('Code layer parse error', {
+      error: error.message,
+      stack: error.stack,
+      messagePreview: trimmedText?.substring(0, 50),
+    });
 
     const errorResult = createEmptyParsedMessage(trimmedText, context);
     errorResult.meta.latencyMs = Date.now() - startTime;
