@@ -48,6 +48,71 @@ if [ -d "chat-client-vite" ]; then
   echo "✅ Critical exports verified"
 fi
 
+# Contract & Architecture Analysis
+# Ensures no cross-layer imports and API contracts are valid
+if [ -f "chat-server/tools/analyze_contracts.py" ] && [ -d "chat-server/.venv" ]; then
+  echo "🔍 Running contract & architecture analysis..."
+  cd chat-server
+  
+  # Run contract analysis
+  if ./tools/analyze --quiet 2>&1 | grep -qE "(❌|violations.*[1-9]|issues.*[1-9])"; then
+    echo "❌ Contract analysis found violations!"
+    echo "   Run: ./tools/analyze-contracts to see details"
+    echo "   Or: cd chat-server && ./tools/analyze"
+    exit 1
+  fi
+  echo "✅ Contract analysis passed"
+  
+  # Run architecture analysis (check for errors only - circular deps, forbidden imports)
+  if [ -f "tools/analyze_architecture.py" ]; then
+    echo "🏗️  Running architecture analysis..."
+    
+    # Run analysis and capture output
+    ARCH_OUTPUT=$(./tools/analyze-architecture --quiet 2>&1)
+    ARCH_EXIT=$?
+    
+    # Check JSON report for errors (more reliable than parsing output)
+    if [ -f "../reports/architecture_analysis.json" ]; then
+      # Count errors (severity == "error")
+      ERROR_COUNT=$(python3 -c "
+import json
+try:
+    with open('../reports/architecture_analysis.json') as f:
+        data = json.load(f)
+    errors = [i for i in data.get('dependency_issues', []) if i.get('severity') == 'error']
+    print(len(errors))
+except:
+    print(0)
+" 2>/dev/null || echo "0")
+      
+      if [ "$ERROR_COUNT" -gt 0 ]; then
+        echo "❌ Architecture analysis found $ERROR_COUNT error(s)!"
+        echo "   Issues: Circular dependencies or forbidden imports"
+        echo "   Run: ./tools/analyze-architecture to see details"
+        echo "   Or: cd chat-server && npm run analyze:architecture"
+        exit 1
+      fi
+    fi
+    
+    # Also check exit code as fallback
+    if [ $ARCH_EXIT -ne 0 ]; then
+      echo "❌ Architecture analysis failed!"
+      echo "   Run: ./tools/analyze-architecture to see details"
+      exit 1
+    fi
+    
+    # Show warnings if any (but don't block)
+    if echo "$ARCH_OUTPUT" | grep -qE "(⚠️|warning)"; then
+      echo "⚠️  Architecture analysis found warnings (not blocking)"
+      echo "   Review: cd chat-server && npm run analyze:architecture"
+    else
+      echo "✅ Architecture analysis passed"
+    fi
+  fi
+  
+  cd ..
+fi
+
 # CRITICAL: Run production build to catch missing exports/imports
 # This catches issues that tests miss but would fail on Vercel
 if [ -d "chat-client-vite" ]; then

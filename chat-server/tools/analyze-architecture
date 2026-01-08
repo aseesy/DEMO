@@ -1,0 +1,28 @@
+#!/bin/bash
+# Wrapper script that auto-activates venv and runs analyze_architecture.py
+# Usage: ./tools/analyze-architecture [args...]
+# 
+# Can be run from:
+#   - chat-server/ directory: ./tools/analyze-architecture
+#   - project root: cd chat-server && ./tools/analyze-architecture
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."  # Go to chat-server directory
+
+# Verify we're in the right place
+if [ ! -f "tools/analyze_architecture.py" ]; then
+    echo "❌ Error: Must be run from chat-server/ directory"
+    echo "   Current directory: $(pwd)"
+    echo "   Expected: chat-server/"
+    exit 1
+fi
+
+# Auto-activate venv if it exists
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
+fi
+
+# Run the analysis script with all arguments
+exec python3 "$SCRIPT_DIR/analyze_architecture.py" "$@"

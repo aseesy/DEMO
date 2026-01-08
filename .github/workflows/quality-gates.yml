@@ -41,6 +41,24 @@ jobs:
         working-directory: ./chat-server
         run: node scripts/validate-naming-conventions.js
 
+      - name: Contract & Architecture Analysis
+        working-directory: ./chat-server
+        run: |
+          # Setup Python and venv if needed
+          python3 -m venv .venv || true
+          source .venv/bin/activate || true
+          pip install tree-sitter tree-sitter-javascript tree-sitter-typescript networkx --quiet || true
+          # Run contract analysis (fail on violations)
+          python3 tools/analyze_contracts.py --quiet || {
+            echo "❌ Contract analysis found violations!"
+            exit 1
+          }
+          # Run architecture analysis (fail on errors)
+          python3 tools/analyze_architecture.py --quiet || {
+            echo "❌ Architecture analysis found errors!"
+            exit 1
+          }
+
   test-backend:
     name: Backend Tests
     runs-on: ubuntu-latest

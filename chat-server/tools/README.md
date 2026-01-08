@@ -1,5 +1,49 @@
 # LiaiZen Tools
 
+Standalone tools and utilities for testing, debugging, and analyzing the LiaiZen codebase.
+
+## Analysis Tools
+
+### analyze_architecture.py
+
+Comprehensive architecture analysis tool that checks:
+
+- **Dependency graphs**: Circular dependencies and forbidden imports
+- **Environment variables**: Usage vs documentation consistency
+- **Dead code**: Unused files and modules
+
+See [README_ARCHITECTURE.md](./README_ARCHITECTURE.md) for full documentation.
+
+**Quick start**:
+
+```bash
+cd chat-server
+./tools/analyze-architecture
+# or
+npm run analyze:architecture
+```
+
+### analyze_contracts.py
+
+Contract and API analysis tool that checks:
+
+- Cross-layer imports (client ↔ server)
+- API schema validation requirements
+- Architecture boundary compliance
+
+**Quick start**:
+
+```bash
+cd chat-server
+./tools/analyze
+# or
+npm run analyze:contracts
+```
+
+## Testing Tools
+
+### interceptor.py
+
 Standalone tools and utilities for testing and debugging the LiaiZen mediation system.
 
 ## interceptor.py
