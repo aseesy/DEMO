@@ -10,7 +10,7 @@ const pool = require('../../../dbPostgres');
 const TopicDetector = require('./TopicDetector');
 const SummaryGenerator = require('./SummaryGenerator');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'TopicService',

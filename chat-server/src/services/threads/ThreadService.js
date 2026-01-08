@@ -15,7 +15,7 @@ const pool = require('../../../dbPostgres');
 const ConversationWindower = require('./ConversationWindower');
 const ThreadAnalyzer = require('./ThreadAnalyzer');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'ThreadService',

@@ -10,7 +10,7 @@
 const crypto = require('crypto');
 const { SENSITIVE_FIELDS } = require('../../features/profile/constants/profileConstants');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../logging/logger');
 
 const logger = defaultLogger.child({
   module: 'crypto',

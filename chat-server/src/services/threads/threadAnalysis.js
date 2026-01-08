@@ -308,9 +308,7 @@ Only include conversations with confidence >= 60 and at least 3 related messages
             // Generate embedding for the thread title
             const threadEmbeddings = require('./threadEmbeddings');
 
-            const {
-              defaultLogger: defaultLogger,
-            } = require('../../../src/infrastructure/logging/logger');
+            const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
 
             const logger = defaultLogger.child({
               module: 'threadAnalysis',

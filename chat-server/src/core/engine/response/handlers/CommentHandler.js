@@ -6,7 +6,7 @@
  * @module liaizen/core/response/handlers/CommentHandler
  */
 
-const { defaultLogger } = require('../../../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
 const { ActionHandler } = require('./ActionHandler');
 const { buildCommentResult } = require('../resultBuilder');
 

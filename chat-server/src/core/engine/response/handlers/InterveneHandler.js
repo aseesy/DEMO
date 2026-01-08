@@ -7,7 +7,7 @@
  */
 
 const { MESSAGE } = require('../../../../infrastructure/config/constants');
-const { defaultLogger } = require('../../../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
 const { ActionHandler } = require('./ActionHandler');
 
 const logger = defaultLogger.child({ module: 'interveneHandler' });

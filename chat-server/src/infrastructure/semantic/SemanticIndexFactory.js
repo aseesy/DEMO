@@ -8,7 +8,7 @@
 const { Neo4jSemanticIndex } = require('./Neo4jSemanticIndex');
 const { NoOpSemanticIndex } = require('./NoOpSemanticIndex');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../logging/logger');
 
 const logger = defaultLogger.child({
   module: 'SemanticIndexFactory',

@@ -16,7 +16,7 @@ const narrativeMemory = require('../../memory/narrativeMemory');
 const entityExtractor = require('../../intelligence/entityExtractor');
 const socialMapBuilder = require('../../intelligence/socialMapBuilder');
 const neo4jClient = require('../../../infrastructure/database/neo4jClient');
-const { defaultLogger } = require('../../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({ module: 'dualBrainContext' });
 

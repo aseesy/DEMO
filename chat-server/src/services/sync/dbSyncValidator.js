@@ -12,7 +12,7 @@ const dbSafe = require('../../../dbSafe');
 const dbPostgres = require('../../../dbPostgres');
 const neo4jClient = require('../../infrastructure/database/neo4jClient');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'dbSyncValidator',

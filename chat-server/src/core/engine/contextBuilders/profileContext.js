@@ -7,7 +7,7 @@
  */
 
 const libs = require('../libraryLoader');
-const { defaultLogger } = require('../../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({ module: 'profileContext' });
 

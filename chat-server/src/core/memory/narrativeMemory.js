@@ -14,7 +14,7 @@
 const pool = require('../../../dbPostgres');
 const openaiClient = require('../engine/client');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'narrativeMemory',

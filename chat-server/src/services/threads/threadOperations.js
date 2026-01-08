@@ -11,7 +11,7 @@
 const dbSafe = require('../../../dbSafe');
 const { normalizeCategory } = require('./threadCategories');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'threadOperations',

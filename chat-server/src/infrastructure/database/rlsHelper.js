@@ -7,7 +7,7 @@
 
 const dbPostgres = require('../../../dbPostgres');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../logging/logger');
 
 const logger = defaultLogger.child({
   module: 'rlsHelper',

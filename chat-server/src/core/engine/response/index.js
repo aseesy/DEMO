@@ -12,7 +12,7 @@
  * @module liaizen/core/response
  */
 
-const { defaultLogger } = require('../../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
 const { parseResponse, extractAction, validateInterventionFields } = require('./parser');
 
 const logger = defaultLogger.child({ module: 'responseProcessor' });

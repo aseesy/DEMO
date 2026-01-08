@@ -11,7 +11,7 @@ const { BaseService } = require('../BaseService');
 const { ValidationError, ExternalServiceError } = require('../errors');
 const emailService = require('../../../emailService');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'invitationEmailService',

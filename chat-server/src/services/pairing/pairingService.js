@@ -16,7 +16,7 @@ const { factory: invitationFactory } = require('../../../libs/pairing-manager/In
 // These libraries haven't been refactored to use repositories yet
 const db = require('../../../dbPostgres');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'pairingService',

@@ -11,7 +11,7 @@ const { BaseService } = require('../BaseService');
 const { NotFoundError, ValidationError, ExternalServiceError } = require('../errors');
 const { PostgresTaskRepository, PostgresUserRepository } = require('../../repositories');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'taskService',

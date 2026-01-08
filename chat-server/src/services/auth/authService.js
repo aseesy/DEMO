@@ -19,7 +19,7 @@ const adaptiveAuth = require('../../../libs/adaptive-auth');
 const emailService = require('../../../emailService');
 const { generateToken } = require('../../../middleware/auth');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'authService',

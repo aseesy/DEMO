@@ -12,7 +12,7 @@ const https = require('https');
 const http = require('http');
 const { createWriteStream } = require('fs');
 
-const { defaultLogger: defaultLogger } = require('../../../src/infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'blogImageGenerator',
