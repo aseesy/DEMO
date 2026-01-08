@@ -27,12 +27,23 @@ const REDIS_PASSWORD = process.env.REDISPASSWORD || process.env.REDIS_PASSWORD;
 
 // Build REDIS_URL from individual variables if not provided (Railway pattern)
 // Skip REDIS_URL if it contains Railway template syntax (e.g., ${{REDISUSER}}) - those are for Railway only
+// Also skip if REDIS_URL is incomplete (just "redis://" without host/port)
 let effectiveRedisUrl = REDIS_URL;
 if (effectiveRedisUrl && effectiveRedisUrl.includes('${{')) {
   // Railway template syntax detected - ignore REDIS_URL and use individual variables instead
   console.log(
     '⚠️  Redis: REDIS_URL contains Railway template syntax, using individual variables for local dev'
   );
+  effectiveRedisUrl = null;
+}
+// Check if REDIS_URL is incomplete (just "redis://" or "rediss://" without host)
+if (
+  effectiveRedisUrl &&
+  (effectiveRedisUrl === 'redis://' ||
+    effectiveRedisUrl === 'rediss://' ||
+    effectiveRedisUrl.match(/^redis(s)?:\/\/$/))
+) {
+  console.log('⚠️  Redis: REDIS_URL is incomplete, constructing from individual variables');
   effectiveRedisUrl = null;
 }
 if (!effectiveRedisUrl && REDIS_HOST && REDIS_PORT) {
