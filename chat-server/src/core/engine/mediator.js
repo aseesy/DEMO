@@ -28,10 +28,11 @@
  */
 
 const openaiClient = require('./client');
-const userContext = require('../profiles/userContext');
 const { defaultLogger } = require('../../infrastructure/logging/logger');
 const { AI } = require('../../infrastructure/config/constants');
 const stateManager = require('./stateManager');
+
+const logger = defaultLogger.child({ module: 'mediator' });
 
 // Extracted modules
 const libs = require('./libraryLoader');
@@ -120,7 +121,9 @@ class AIMediator {
 
     // Check if OpenAI is configured
     if (!openaiClient.isConfigured()) {
-      console.log('⚠️  AI Mediator: OpenAI not configured - allowing all messages through');
+      logger.warn('OpenAI not configured, allowing message through', {
+        messageId: message?.id,
+      });
       return null;
     }
 
@@ -139,17 +142,19 @@ class AIMediator {
     const cachedResult = await messageCache.get(hash);
 
     if (cachedResult) {
-      console.log('✅ AI Mediator: Using cached analysis (cache hit)');
+      logger.debug('Using cached analysis', { cacheHit: true, messageId: message?.id });
       return cachedResult;
     }
 
-    // === PRE-FILTERS ===
+    // === PRE-FILTERS (Early Exit #1) ===
     const preFilterResult = preFilters.runPreFilters(message.text);
     if (preFilterResult.shouldSkipAI) {
-      console.log(
-        `✅ AI Mediator: Pre-approved message (${preFilterResult.reason}) - allowing without analysis`
-      );
-      return null;
+      logger.debug('Pre-approved message, skipping AI', {
+        reason: preFilterResult.reason,
+        messageId: message?.id,
+        messageLength: typeof message === 'string' ? message.length : message?.text?.length,
+      });
+      return null; // Early exit - no context building needed
     }
 
     // === CODE LAYER ANALYSIS ===
@@ -176,16 +181,18 @@ class AIMediator {
 
         if (parsedMessage) {
           libs.codeLayerIntegration.recordMetrics(parsedMessage, codeLayerResult.quickPass);
-          console.log(
-            `📊 Code Layer: Axioms fired: ${parsedMessage.axiomsFired.map(a => a.id).join(', ') || 'none'}`
-          );
+          logger.debug('Code layer analysis complete', {
+            axiomsFired: parsedMessage.axiomsFired.map(a => a.id),
+            quickPass: codeLayerResult.quickPass.canPass,
+          });
 
-          // Quick-pass optimization
+          // Quick-pass optimization (Early Exit #2)
           if (codeLayerResult.quickPass.canPass) {
-            console.log(
-              '✅ AI Mediator: Quick-pass (Code Layer clean) - allowing without AI analysis'
-            );
-            return null;
+            logger.debug('Code layer quick-pass, skipping AI', {
+              messageId: message?.id,
+              axiomsFired: parsedMessage.axiomsFired.map(a => a.id),
+            });
+            return null; // Early exit - no context building needed
           }
 
           codeLayerPromptSection =
@@ -196,7 +203,11 @@ class AIMediator {
 
     try {
       const msgEmail = message.sender?.email || message.user_email || message.username;
-      console.log('🤖 AI Mediator: Analyzing message from', msgEmail);
+      logger.debug('Starting AI analysis', {
+        senderEmail: msgEmail,
+        messageId: message?.id,
+        messageLength: typeof message === 'string' ? message.length : message?.text?.length,
+      });
 
       // === LANGUAGE ANALYSIS ===
       let languageAnalysis = null;
@@ -206,14 +217,14 @@ class AIMediator {
           .map(c => c.name);
 
         languageAnalysis = libs.languageAnalyzer.analyze(message.text, { childNames });
-        console.log(`📊 Language Analysis: ${languageAnalysis.summary.length} observations`);
+        logger.debug('Language analysis complete', {
+          observationCount: languageAnalysis.summary.length,
+        });
       }
 
       // === PATTERN DETECTION & STATE UPDATES ===
       const patterns = preFilters.detectConflictPatterns(message.text);
       stateManager.updateEscalationScore(this.conversationContext, roomId, patterns);
-      stateManager.initializeEmotionalState(this.conversationContext, roomId);
-      const policyState = stateManager.initializePolicyState(this.conversationContext, roomId);
 
       // === BUILD ALL CONTEXTS ===
       const contexts = await contextBuilder.buildAllContexts({
@@ -230,11 +241,10 @@ class AIMediator {
       });
 
       // === GET RELATIONSHIP INSIGHTS ===
-      const insights = await aiService.getRelationshipInsights(
-        roomId,
-        this.conversationContext.relationshipInsights
-      );
-      const insightsString = promptBuilder.formatInsightsForPrompt(insights);
+      // NOTE: Insights extraction is now user-triggered only (via API endpoint)
+      // Automatic extraction removed to reduce costs - insights are low-value for mediation decisions
+      // If needed, call extractRelationshipInsights() explicitly via API
+      const insightsString = null; // Disabled automatic extraction
 
       // === GENERATE HUMAN UNDERSTANDING ===
       // Generate deep insights about human nature, psychology, and relationships
@@ -270,10 +280,13 @@ class AIMediator {
         );
 
         humanUnderstanding = await Promise.race([understandingPromise, timeoutPromise]);
-        console.log('✅ Human Understanding: Generated successfully');
+        logger.debug('Human understanding generated successfully');
       } catch (error) {
         // Log warning but continue - system can still function, just with less context
-        console.warn('⚠️ Human Understanding: Skipped due to error or timeout:', error.message);
+        logger.warn('Human understanding skipped due to error or timeout', {
+          error: error.message,
+          messageId: message?.id,
+        });
         // Continue without understanding, but responses may be less contextual
         humanUnderstanding = null;
       }
@@ -325,7 +338,10 @@ class AIMediator {
       });
 
       const responseText = completion.choices[0].message.content.trim();
-      console.log('🤖 AI Mediator: Received unified response');
+      logger.debug('Received unified AI response', {
+        messageId: message?.id,
+        responseLength: responseText.length,
+      });
 
       // === PROCESS RESPONSE ===
       const result = await responseProcessor.processResponse({
@@ -334,7 +350,7 @@ class AIMediator {
         roleContext,
         participantProfiles: contexts.participantProfiles,
         roomId,
-        policyState,
+        policyState: this.conversationContext.policyState?.get(roomId) || null, // Deprecated, may be undefined
         parsedMessage,
         languageAnalysis,
         shouldLimitComments,
@@ -342,16 +358,9 @@ class AIMediator {
 
       // Update emotional state if available
       try {
-        const parsed = JSON.parse(responseText);
-        if (parsed.emotion) {
-          stateManager.updateEmotionalState(
-            this.conversationContext,
-            roomId,
-            message.sender?.email || message.user_email || message.username,
-            parsed.emotion
-          );
-        }
-      } catch (e) {
+        // Emotion tracking removed - no evidence it improves outcomes
+        // Can be re-added if A/B testing proves value
+      } catch (_error) {
         /* ignore */
       }
 
@@ -363,7 +372,10 @@ class AIMediator {
       // === CACHE RESULT ===
       // Cache asynchronously (don't block response)
       messageCache.set(hash, result).catch(err => {
-        console.warn('[AI Mediator] Failed to cache result:', err.message);
+        logger.warn('Failed to cache analysis result', {
+          error: err.message,
+          messageId: message?.id,
+        });
       });
 
       return result;
@@ -454,10 +466,15 @@ class AIMediator {
         );
       }
 
-      console.log(`✅ AI Mediator: Recorded accepted rewrite for ${senderId}`);
+      logger.debug('Recorded accepted rewrite', {
+        senderId,
+      });
       return true;
     } catch (err) {
-      console.error(`❌ AI Mediator: Failed to record accepted rewrite:`, err.message);
+      logger.error('Failed to record accepted rewrite', {
+        error: err.message,
+        senderId,
+      });
       return false;
     }
   }
