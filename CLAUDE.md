@@ -259,11 +259,13 @@ Server events: `new_message`, `ai_intervention`, `room_update`
 - Refresh via httpOnly cookies
 - Google OAuth callback at `/auth/google/callback`
 
-### 🔒 SEALED AUTH FILES - DO NOT MODIFY
+### 🔒 SEALED FILES - DO NOT MODIFY
 
-**⚠️ CRITICAL: The authentication flow is SEALED and SET IN STONE.**
+**⚠️ CRITICAL: These files are SEALED and SET IN STONE.**
 
 **DO NOT modify these files without explicit approval:**
+
+**Authentication Files:**
 
 - `chat-client-vite/src/context/AuthContext.jsx` - FSM state management (SEALED)
 - `chat-client-vite/src/utils/tokenManager.js` - Token storage (single source of truth)
