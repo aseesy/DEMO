@@ -21,16 +21,16 @@
  */
 export function isOwnMessage(message, currentUserEmail) {
   if (!message || !currentUserEmail) return false;
-  
+
   // Try new structure first (sender.email)
   if (message.sender?.email) {
     return message.sender.email.toLowerCase() === currentUserEmail.toLowerCase();
   }
-  
+
   // Fallback to legacy fields (username is deprecated, set to email for backward compatibility)
   const messageEmail = message.user_email || message.email || message.username;
   if (!messageEmail) return false;
-  
+
   return messageEmail.toLowerCase() === currentUserEmail.toLowerCase();
 }
 
@@ -78,7 +78,8 @@ export function messageExistsByContent(messages, message, timeWindowMs = 5000) {
   const normalizedText = (message.text || '').trim().toLowerCase();
   // Use new sender structure (sender.email) with fallback to legacy fields
   // username is deprecated (set to email for backward compatibility)
-  const messageEmail = message.sender?.email || message.user_email || message.email || message.username || '';
+  const messageEmail =
+    message.sender?.email || message.user_email || message.email || message.username || '';
   const normalizedEmail = messageEmail.toLowerCase();
   const messageTime = new Date(message.timestamp || message.created_at || 0).getTime();
 
@@ -122,7 +123,12 @@ export function findMatchingOptimisticIndex(
   if (!Array.isArray(messages) || !serverMessage || !currentUsername) return -1;
 
   // Use new sender structure (sender.email) with fallback to legacy fields
-  const serverEmail = serverMessage.sender?.email || serverMessage.user_email || serverMessage.email || serverMessage.username || '';
+  const serverEmail =
+    serverMessage.sender?.email ||
+    serverMessage.user_email ||
+    serverMessage.email ||
+    serverMessage.username ||
+    '';
   const normalizedServerEmail = serverEmail.toLowerCase();
   const normalizedCurrentEmail = currentUsername.toLowerCase();
 
@@ -137,6 +143,9 @@ export function findMatchingOptimisticIndex(
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i];
       if (!isOptimisticMessage(msg)) continue;
+
+      // CRITICAL: Don't match blocked messages - they should stay visible as blocked
+      if (msg.isBlocked || msg.status === 'blocked' || msg.needsMediation) continue;
 
       const msgEmail = msg.sender?.email || msg.user_email || msg.email || msg.username || '';
       const normalizedMsgEmail = msgEmail.toLowerCase();
@@ -154,6 +163,9 @@ export function findMatchingOptimisticIndex(
 
     // Only consider optimistic messages
     if (!isOptimisticMessage(msg)) continue;
+
+    // CRITICAL: Don't match blocked messages - they should stay visible as blocked
+    if (msg.isBlocked || msg.status === 'blocked' || msg.needsMediation) continue;
 
     // Only consider messages from the same user
     const msgEmail = msg.sender?.email || msg.user_email || msg.email || msg.username || '';
@@ -205,6 +217,17 @@ export function determineMessageAction(messages, serverMessage, currentUsername)
     const matchingIndex = findMatchingOptimisticIndex(messages, serverMessage, currentUsername);
 
     if (matchingIndex >= 0) {
+      // CRITICAL: Don't replace blocked messages - they need to stay visible
+      const matchedMessage = messages[matchingIndex];
+      if (
+        matchedMessage.isBlocked ||
+        matchedMessage.status === 'blocked' ||
+        matchedMessage.needsMediation
+      ) {
+        // This is a blocked message that should stay visible - don't replace it
+        return { action: 'skip', reason: 'blocked_message_must_stay_visible' };
+      }
+
       return {
         action: 'replace',
         removeIndex: matchingIndex,
@@ -239,6 +262,29 @@ export function applyMessageAction(messages, newMessage, action) {
       return messages;
 
     case 'replace': {
+      // CRITICAL SAFEGUARD: Double-check we're not removing a blocked message
+      // Even though determineMessageAction should prevent this, add extra protection
+      const messageToReplace = messages[action.removeIndex];
+      if (
+        messageToReplace &&
+        (messageToReplace.isBlocked ||
+          messageToReplace.status === 'blocked' ||
+          messageToReplace.needsMediation)
+      ) {
+        if (import.meta.env.DEV) {
+          console.error(
+            '[applyMessageAction] BLOCKED: Attempted to replace blocked message - skipping replace:',
+            {
+              messageId: messageToReplace.id,
+              text: messageToReplace.text?.substring(0, 30),
+              action: action,
+            }
+          );
+        }
+        // Don't replace - just append the new message instead
+        return [...messages, newMessage];
+      }
+
       const result = [...messages];
       result.splice(action.removeIndex, 1);
       return [...result, newMessage];

@@ -4,7 +4,7 @@
  * Handles message sending logic:
  * - emitOrQueueMessage: Creates pending message (not optimistic "sent") and sends via socket or queues offline
  * - sendMessage: Main send handler with hybrid analysis (frontend pre-check + backend full analysis)
- * 
+ *
  * Phase 1: Uses useMessageUI internally for UI state management
  * Phase 2: Uses useMessageTransport for network transport
  * Phase 4: Uses useMessageMediation for frontend pre-check (hybrid analysis)
@@ -112,7 +112,18 @@ export function useMessageSending({
       };
 
       // OPTIMISTIC UPDATE: Add message to UI immediately (as pending, not sent)
-      setMessages(prev => [...prev, optimisticMessage]);
+      setMessages(prev => {
+        const updated = [...prev, optimisticMessage];
+        if (import.meta.env.DEV) {
+          console.log('[useMessageSending] ✅ Added optimistic message:', {
+            messageId: optimisticMessage.id,
+            text: optimisticMessage.text?.substring(0, 30),
+            totalMessages: updated.length,
+            timestamp: optimisticMessage.timestamp,
+          });
+        }
+        return updated;
+      });
 
       // Send via transport (Phase 2: uses useMessageTransport)
       // Note: Backend will perform full analysis with historical context
@@ -132,11 +143,13 @@ export function useMessageSending({
           if (offlineQueueRef?.current) {
             offlineQueueRef.current.push(optimisticMessage);
             // Use StorageAdapter directly (saveOfflineQueue is deprecated and async)
-            import('../../../adapters/storage').then(({ storage, StorageKeys }) => {
-              storage.set(StorageKeys.OFFLINE_QUEUE, offlineQueueRef.current);
-            }).catch(err => {
-              console.warn('[useMessageSending] Failed to save offline queue:', err);
-            });
+            import('../../../adapters/storage')
+              .then(({ storage, StorageKeys }) => {
+                storage.set(StorageKeys.OFFLINE_QUEUE, offlineQueueRef.current);
+              })
+              .catch(err => {
+                console.warn('[useMessageSending] Failed to save offline queue:', err);
+              });
           }
           // Mark as queued in UI state
           ui.markMessageQueued(messageId);
@@ -148,9 +161,9 @@ export function useMessageSending({
       }
       // If success: true, message was sent successfully
       // Backend will respond with 'new_message' or 'draft_coaching' event
-
-      // Clear input and draft coaching
-      setDraftCoaching(null);
+      // NOTE: Don't clear draftCoaching here - it's handled by backend responses:
+      // - 'new_message' clears it (in messageHandlers.js)
+      // - 'draft_coaching' sets it with analyzing: false (in draftCoachingHandlers.js)
     },
     [
       username,
@@ -191,8 +204,22 @@ export function useMessageSending({
 
       // If we already have a draft coaching result for this exact message
       // and it shows intervention needed, don't send
+      // BUT: Allow sending NEW messages even if there's a blocked message showing
       if (draftCoaching && draftCoaching.observerData && draftCoaching.originalText === clean) {
+        if (import.meta.env.DEV) {
+          console.log(
+            '[useMessageSending] Blocked: duplicate of blocked message:',
+            clean.substring(0, 30)
+          );
+        }
         return;
+      }
+
+      if (import.meta.env.DEV && draftCoaching) {
+        console.log('[useMessageSending] Sending NEW message while draftCoaching active:', {
+          newMessage: clean.substring(0, 30),
+          previousBlocked: draftCoaching.originalText?.substring(0, 30),
+        });
       }
 
       // AI-GENERATED REWRITES: Skip analysis only if not edited
@@ -214,7 +241,10 @@ export function useMessageSending({
         // Frontend pre-check blocked the message
         // Draft coaching state already set by useMessageMediation
         if (import.meta.env.DEV) {
-          console.log('[useMessageSending] Message blocked by frontend pre-check:', validation.reason);
+          console.log(
+            '[useMessageSending] Message blocked by frontend pre-check:',
+            validation.reason
+          );
         }
         return;
       }
@@ -224,22 +254,50 @@ export function useMessageSending({
       // Backend will emit either:
       // - 'new_message' if clean (marks as sent)
       // - 'draft_coaching' if intervention needed (removes pending, shows ObserverCard)
+
+      // Clear input immediately (user feedback)
+      clearInput?.();
+
+      // CRITICAL: Only clear previous draftCoaching if it's for a DIFFERENT message
+      // Blocked messages should stay visible until a NEW message is sent
+      // Don't clear if the new message text matches the blocked message (user is retrying)
+      if (draftCoaching && draftCoaching.originalText !== clean.trim()) {
+        // This is a genuinely NEW message - clear the previous blocked message's coaching
+        // The blocked message itself will stay in the messages array (marked as isBlocked: true)
+        // But we clear the draftCoaching state so the ObserverCard disappears
+        if (import.meta.env.DEV) {
+          console.log('[useMessageSending] Clearing previous draftCoaching for new message:', {
+            previousBlocked: draftCoaching.originalText?.substring(0, 30),
+            newMessage: clean.substring(0, 30),
+          });
+        }
+        setDraftCoaching(null);
+      } else if (draftCoaching && import.meta.env.DEV) {
+        console.log(
+          '[useMessageSending] Keeping draftCoaching - new message matches blocked message'
+        );
+      }
+
+      // Send the message
       emitOrQueueMessage(clean);
+
+      // NOTE: Backend response will handle final state:
+      // - 'draft_coaching' (sets coaching state for this new message)
+      // - 'new_message' (clears coaching in messageHandlers.js if approved)
     },
     [
       inputMessage,
       emitOrQueueMessage,
       socketRef,
-      setDraftCoaching,
-      draftCoaching,
+      clearInput,
       isPreApprovedRewrite,
       originalRewrite,
       mediation,
     ]
   );
 
-  return { 
-    sendMessage, 
+  return {
+    sendMessage,
     emitOrQueueMessage,
     // Expose UI state for backward compatibility
     pendingMessages: ui.pendingMessages,
@@ -252,4 +310,3 @@ export function useMessageSending({
     getConnectionId: transport.getConnectionId,
   };
 }
-

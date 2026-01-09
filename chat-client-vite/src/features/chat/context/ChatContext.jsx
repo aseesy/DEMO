@@ -12,7 +12,7 @@ import { useTyping } from '../../../hooks/chat/useTyping.js';
 import { useThreads } from '../../../hooks/chat/useThreads.js';
 import { useCoaching } from '../../../hooks/chat/useCoaching.js';
 import { useUnread } from '../../../hooks/chat/useUnread.js';
-import { useSocket } from '../../../hooks/socket/useSocket.js';
+// useSocket no longer needed - SocketService subscribes to tokenManager directly
 
 // Feature hooks
 import { useSearchMessages } from '../model/useSearchMessages.js';
@@ -58,47 +58,49 @@ export function ChatProvider({
     });
   }, []);
 
-  // === SOCKET CONNECTION (infrastructure) - v2 Simplified System ===
-  // Ensure tokenManager is initialized before getting token
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      tokenManager.initialize().catch(err => {
-        logger.warn('TokenManager initialization failed', { error: err.message });
-      });
-    }
-  }, [isAuthenticated, logger]);
+  // === SOCKET CONNECTION (Event-Driven Architecture) ===
+  // SocketService now subscribes to tokenManager directly.
+  // When token changes, socket auto-connects/disconnects.
+  // No need for complex token memoization or useSocket dependencies.
 
-  // Memoize token to prevent unnecessary re-connections
-  // Include isAuthenticated in deps to update when auth state changes
-  const token = React.useMemo(() => {
-    if (!isAuthenticated) return null;
-    // Always use tokenManager as single source of truth
-    const retrievedToken = tokenManager.getToken();
-    return retrievedToken;
-  }, [isAuthenticated]);
-  const { isConnected, emit } = useSocket({
-    token,
-    enabled: isAuthenticated,
-  });
-
-  // Log socket connection state changes
+  // Initialize tokenManager on mount (needed for initial token load)
   React.useEffect(() => {
-    logger.debug('Socket connection state changed', { isConnected });
-  }, [isConnected, logger]);
+    tokenManager.initialize().catch(err => {
+      logger.warn('TokenManager initialization failed', { error: err.message });
+    });
+  }, [logger]);
+
+  // Get connection state from service (reactive via subscribeToState)
+  const [isConnected, setIsConnected] = React.useState(socketServiceV2.isConnected());
+  const prevConnectedRef = React.useRef(isConnected);
+  React.useEffect(() => {
+    return socketServiceV2.subscribeToState(state => {
+      const newConnected = state === 'connected';
+      setIsConnected(newConnected);
+
+      // Only log when connection state actually changes (not on every render)
+      if (prevConnectedRef.current !== newConnected) {
+        logger.debug('Socket connection state changed', {
+          isConnected: newConnected,
+          previous: prevConnectedRef.current,
+        });
+        prevConnectedRef.current = newConnected;
+      }
+    });
+  }, [logger]);
 
   // Create socket-compatible object for components that need it
+  const emit = React.useCallback((event, data) => socketServiceV2.emit(event, data), []);
   const socket = React.useMemo(
     () => ({
       connected: isConnected,
       emit,
       on: (event, handler) => socketServiceV2.subscribe(event, handler),
       off: (_event, _handler) => {
-        // socketServiceV2.subscribe returns unsubscribe, but we need a separate off method
-        // For now, components should store the unsubscribe function from 'on' calls
         logger.warn('socket.off called - use unsubscribe from socket.on instead');
       },
     }),
-    [isConnected, emit]
+    [isConnected, emit, logger]
   );
 
   // === INDEPENDENT HOOKS (each subscribes to its own service) ===
@@ -109,9 +111,18 @@ export function ChatProvider({
   const coaching = useCoaching();
   const unread = useUnread();
 
+  // === EVENT-DRIVEN ROOM JOIN ===
+  // Just set the email - ChatRoomService handles auto-join on socket connect
+  // This is much simpler than the old useEffect chain with isConnected/isAuthenticated/etc.
+  React.useEffect(() => {
+    if (isAuthenticated && userEmail) {
+      room.setEmail(userEmail);
+    } else {
+      room.clearEmail();
+    }
+  }, [isAuthenticated, userEmail, room.setEmail, room.clearEmail]);
+
   // Configure unread service with current user info
-  // Note: unread.setUsername is stable (useCallback in hook)
-  // username is actually userEmail (for backward compatibility)
   React.useEffect(() => {
     unread.setUsername(userEmail);
   }, [userEmail, unread.setUsername]);
@@ -120,17 +131,7 @@ export function ChatProvider({
     unread.setViewingChat(currentView === 'chat');
   }, [currentView, unread.setViewingChat]);
 
-  // === AUTO-JOIN (when connected + authenticated) ===
-  // Note: room.join is stable (useCallback in hook)
-  React.useEffect(() => {
-    // username is actually userEmail (for backward compatibility)
-    if (isConnected && isAuthenticated && userEmail && !room.isJoined) {
-      room.join(userEmail);
-    }
-  }, [isConnected, isAuthenticated, userEmail, room.isJoined, room.join]);
-
   // Load threads when room is joined
-  // Note: threads.loadThreads is stable (useCallback in hook)
   React.useEffect(() => {
     if (room.isJoined && room.roomId) {
       threads.loadThreads(room.roomId);

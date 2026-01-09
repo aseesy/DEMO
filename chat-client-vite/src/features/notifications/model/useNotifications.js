@@ -1,4 +1,7 @@
 import React from 'react';
+import { createLogger } from '../../../utils/logger.js';
+
+const logger = createLogger('[useNotifications]');
 
 /**
  * Custom hook to manage browser notifications for new messages
@@ -22,7 +25,7 @@ export function useNotifications({ username, enabled = true }) {
   // Request notification permission
   const requestPermission = React.useCallback(async () => {
     if (!isSupported) {
-      console.warn('Browser notifications are not supported');
+      logger.warn('Browser notifications are not supported');
       return false;
     }
 
@@ -41,7 +44,7 @@ export function useNotifications({ username, enabled = true }) {
 
       return result === 'granted';
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      logger.error('Error requesting notification permission', error);
       return false;
     }
   }, [isSupported, permission]);
@@ -58,13 +61,14 @@ export function useNotifications({ username, enabled = true }) {
       // - Not supported
       // - Message is from current user
       if (!enabled || !isSupported) {
-        console.debug('[useNotifications] Notifications disabled or not supported');
+        logger.debug('Notifications disabled or not supported');
         return;
       }
 
       // Case-insensitive comparison to ensure own messages don't trigger notifications
       // Check new structure first (sender.email), fallback to legacy (username)
-      const senderEmail = message.sender?.email || message.user_email || message.email || message.username;
+      const senderEmail =
+        message.sender?.email || message.user_email || message.email || message.username;
       if (senderEmail?.toLowerCase() === username?.toLowerCase()) {
         return; // Don't notify for own messages
       }
@@ -73,7 +77,7 @@ export function useNotifications({ username, enabled = true }) {
       playNotificationSound();
 
       if (permission !== 'granted') {
-        console.debug('[useNotifications] Permission not granted:', permission);
+        logger.debug('Permission not granted', { permission });
         return;
       }
 
@@ -86,7 +90,9 @@ export function useNotifications({ username, enabled = true }) {
 
         // Ensure we have permission before creating notification
         if (Notification.permission !== 'granted') {
-          console.warn('[useNotifications] Permission not granted, cannot show notification');
+          logger.warn('Permission not granted, cannot show notification', {
+            permission: Notification.permission,
+          });
           return;
         }
 
@@ -112,7 +118,7 @@ export function useNotifications({ username, enabled = true }) {
         };
 
         // Get sender name from new structure (sender object), fallback to legacy fields
-        const getSenderDisplayName = (msg) => {
+        const getSenderDisplayName = msg => {
           if (msg.sender) {
             // Use new structure: first_name + last_name > first_name > email
             if (msg.sender.first_name && msg.sender.last_name) {
@@ -125,9 +131,9 @@ export function useNotifications({ username, enabled = true }) {
         };
         const senderName = getSenderDisplayName(message);
 
-        console.log('[useNotifications] Creating notification:', {
-          title: 'New message from ' + senderName,
-          body: truncatedText,
+        logger.debug('Creating notification', {
+          senderName,
+          messagePreview: truncatedText.substring(0, 50),
           permission: Notification.permission,
         });
 
@@ -138,15 +144,15 @@ export function useNotifications({ username, enabled = true }) {
 
         // Verify notification was created
         if (!notification) {
-          console.error('[useNotifications] Notification object is null');
+          logger.error('Notification object is null');
           return;
         }
 
-        console.log('[useNotifications] Notification created successfully');
+        logger.debug('Notification created successfully', { messageId: message.id });
 
         // Click notification to focus window
         notification.onclick = () => {
-          console.log('[useNotifications] Notification clicked');
+          logger.debug('Notification clicked');
           window.focus();
           notification.close();
           // Optionally navigate to chat view
@@ -157,17 +163,17 @@ export function useNotifications({ username, enabled = true }) {
 
         // Handle notification close
         notification.onclose = () => {
-          console.log('[useNotifications] Notification closed');
+          logger.debug('Notification closed');
         };
 
         // Handle notification error
         notification.onerror = error => {
-          console.error('[useNotifications] Notification error:', error);
+          logger.error('Notification error', error);
         };
 
         // Handle notification show - verify it's actually visible
         notification.onshow = () => {
-          console.log('[useNotifications] Notification shown - should be visible on screen');
+          logger.debug('Notification shown - should be visible on screen');
           // If notification is shown but user can't see it, it might be:
           // 1. In Notification Center (macOS) - check System Preferences > Notifications
           // 2. Do Not Disturb is enabled
@@ -181,10 +187,10 @@ export function useNotifications({ username, enabled = true }) {
         // Play notification sound
         playNotificationSound();
       } catch (error) {
-        console.error('[useNotifications] Error showing notification:', error);
+        logger.error('Error showing notification', error);
         // Fallback: try to show a simpler notification
         try {
-          console.log('[useNotifications] Attempting fallback notification');
+          logger.debug('Attempting fallback notification');
           const fallbackNotification = new Notification('LiaiZen', {
             body: 'You have a new message',
             icon: '/flower-icon.svg',
@@ -194,7 +200,7 @@ export function useNotifications({ username, enabled = true }) {
           // No auto-close - user must dismiss manually
           playNotificationSound();
         } catch (fallbackError) {
-          console.error('[useNotifications] Fallback notification also failed:', fallbackError);
+          logger.error('Fallback notification also failed', fallbackError);
         }
       }
     },
@@ -205,21 +211,19 @@ export function useNotifications({ username, enabled = true }) {
   // NOTE: This only runs if permission is already granted (not requesting permission)
   React.useEffect(() => {
     if (permission === 'granted' && window.liaizenPWA?.subscribeToPush) {
-      console.log('[useNotifications] Permission granted, subscribing to push notifications...');
+      logger.debug('Permission granted, subscribing to push notifications');
       // Safe to call - permission already granted, no requestPermission() call needed
       window.liaizenPWA
         .subscribeToPush()
         .then(subscription => {
           if (subscription) {
-            console.log('[useNotifications] ✅ Successfully subscribed to push notifications');
+            logger.info('Successfully subscribed to push notifications');
           } else {
-            console.warn(
-              '[useNotifications] ⚠️ subscribeToPush returned null - subscription may have failed'
-            );
+            logger.warn('subscribeToPush returned null - subscription may have failed');
           }
         })
         .catch(error => {
-          console.error('[useNotifications] ❌ Could not subscribe to push:', error);
+          logger.error('Could not subscribe to push', error);
         });
     }
   }, [permission]);
@@ -255,10 +259,10 @@ export function useNotifications({ username, enabled = true }) {
       oscillator2.start(audioContext.currentTime + 0.15);
       oscillator2.stop(audioContext.currentTime + 0.5);
 
-      console.log('[useNotifications] 🔔 Playing notification sound');
+      logger.debug('Playing notification sound');
     } catch (error) {
       // Silently fail if audio doesn't work
-      console.debug('Could not play notification sound:', error);
+      logger.debug('Could not play notification sound', error);
     }
   };
 

@@ -3,7 +3,12 @@ import { ObserverCard } from '../../dashboard/components/ObserverCard.jsx';
 import { MessageItem } from './MessageItem.jsx';
 import { VirtualizedMessagesContainer } from './VirtualizedMessagesContainer.jsx';
 import { createLogger } from '../../../utils/logger.js';
-import { groupMessagesByDate, detectMessageOwnership, isAIMessage, createDateFormatterCache } from '../../../utils/messageDisplayUtils.js';
+import {
+  groupMessagesByDate,
+  detectMessageOwnership,
+  isAIMessage,
+  createDateFormatterCache,
+} from '../../../utils/messageDisplayUtils.js';
 
 // Threshold for switching to virtual scrolling (performance optimization)
 // Use virtual scrolling when message count exceeds this threshold
@@ -215,9 +220,14 @@ function MessagesContainerComponent({
             // Use utility function for ownership detection
             const { isOwn, messageUserId, senderDisplayName } = detectMessageOwnership(msg, userId);
 
-            // DEBUG: Log first few messages to diagnose ownership issue (dev only)
-            // Only log in development and limit to first 3 messages to avoid spam
-            if (msgIndex < 3) {
+            // DEBUG: Log only on initial mount to diagnose ownership issues (dev only)
+            // Set localStorage.debugOwnership=true to enable continuous logging
+            if (
+              import.meta.env.DEV &&
+              typeof window !== 'undefined' &&
+              window.localStorage?.getItem('debugOwnership') === 'true' &&
+              msgIndex < 3
+            ) {
               const logger = createLogger('MessagesContainer');
               logger.debug('Message ownership check', {
                 messageId: msg.id,
@@ -273,10 +283,26 @@ function MessagesContainerComponent({
         </div>
       )}
 
-      {/* Loading state when analyzing */}
+      {/* Loading state when analyzing - Fixed at bottom to stay above input bar */}
       {draftCoaching && draftCoaching.analyzing && (
-        <div className="mb-1">
-          <div className="flex items-center gap-3 text-sm text-gray-600">
+        <div
+          className="mb-1"
+          style={{
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 50, // Higher than MessageInput (z-index: 40 on mobile)
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(4px)',
+            paddingTop: '0.5rem',
+            paddingBottom: '0.5rem',
+            paddingLeft: '1rem',
+            paddingRight: '1rem',
+            borderTop: '1px solid rgba(229, 231, 235, 0.8)',
+            marginTop: '0.5rem',
+            marginBottom: '0.5rem',
+          }}
+        >
+          <div className="flex items-center gap-3 text-sm text-gray-600 max-w-3xl mx-auto">
             <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-teal-medium" />
             <span>Analyzing message...</span>
           </div>

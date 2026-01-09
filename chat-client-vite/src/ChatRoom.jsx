@@ -252,12 +252,19 @@ function ChatRoomContent({
     [refreshNotifications, setHasCoParentConnected]
   );
 
-  // Debug: Log render state
-  console.log('[ChatRoom] Rendering:', {
-    isAuthenticated,
-    isCheckingAuth,
-    currentView,
-  });
+  // Debug: Log render state (only in dev, and throttle to prevent spam)
+  if (import.meta.env.DEV) {
+    const renderCountRef = React.useRef(0);
+    renderCountRef.current += 1;
+    if (renderCountRef.current % 10 === 0) {
+      console.log('[ChatRoom] Rendering (every 10th render):', {
+        isAuthenticated,
+        isCheckingAuth,
+        currentView,
+        renderCount: renderCountRef.current,
+      });
+    }
+  }
 
   // Main authenticated UI - wrapped in AuthGuard
   return (

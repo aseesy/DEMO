@@ -32,11 +32,18 @@ function MessageItemComponent({
           width: 'fit-content',
         }}
       >
+        {/* LiaiZen label for AI messages */}
+        {isAI && (
+          <div className="flex items-center gap-1.5 mb-1">
+            <img src="/assets/Logo.svg" alt="" className="h-4 w-4" />
+            <span className="text-xs font-medium text-teal-700">LiaiZen</span>
+          </div>
+        )}
         {/* Message bubble - only text inside */}
         <div
           className={`px-3 py-2 rounded-2xl ${
             isAI
-              ? 'bg-teal-lightest border border-teal-light text-teal-dark'
+              ? 'bg-teal-50 border border-teal-200 text-teal-800'
               : isOwn
                 ? isSending
                   ? 'bg-teal-500 text-white' // Slightly lighter while sending

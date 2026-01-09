@@ -37,24 +37,98 @@ function handleBlockedMessage(coaching, eventName, handlers) {
 
   // Mark optimistic messages that match the blocked text as "blocked" or "pending_mediation"
   // Keep them visible on sender's side - DON'T remove them
+  // Use normalized text matching to handle whitespace differences
+  const normalizedOriginalText = (coaching.originalText || '').trim().toLowerCase();
+  console.log(`[${eventName}] Looking for blocked message:`, {
+    originalText: normalizedOriginalText.substring(0, 50),
+    currentEmail: normalizedCurrentEmail,
+    totalMessages: 0, // Will be set in map
+  });
+
   setMessages(prev => {
-    return prev.map(msg => {
-      if (msg.isOptimistic && coaching.originalText) {
+    let foundMatch = false;
+    const updated = prev.map(msg => {
+      // CRITICAL: Only match messages that match BOTH text AND haven't already been matched/blocked
+      // This prevents matching the wrong message when multiple optimistic messages exist
+      if (msg.isOptimistic && normalizedOriginalText && !msg.isBlocked) {
+        // Try multiple ways to get email/username from message
         const msgEmail = getMessageEmail(msg);
-        if (msg.text === coaching.originalText && msgEmail === normalizedCurrentEmail) {
-          console.log(`[${eventName}] Marking message as blocked (pending mediation):`, msg.id);
+        // Also check username field directly (optimistic messages use username)
+        const msgUsername = (msg.username || '').toLowerCase();
+        const normalizedMsgText = (msg.text || '').trim().toLowerCase();
+
+        // Match by normalized text (trimmed, lowercased) and email/username
+        const emailMatches = msgEmail === normalizedCurrentEmail;
+        const usernameMatches = msgUsername === normalizedCurrentEmail;
+        const textMatches = normalizedMsgText === normalizedOriginalText;
+
+        if (textMatches && (emailMatches || usernameMatches)) {
+          foundMatch = true;
+          console.log(`[${eventName}] ✅ MATCHED - Marking message as blocked:`, {
+            messageId: msg.id,
+            messageText: normalizedMsgText.substring(0, 30),
+            originalText: normalizedOriginalText.substring(0, 30),
+            emailMatch: emailMatches,
+            usernameMatch: usernameMatches,
+            totalOptimistic: prev.filter(m => m.isOptimistic).length,
+            totalBlocked: prev.filter(m => m.isBlocked).length,
+          });
           messageIdsToBlock.push(msg.id);
-          // Mark message as blocked but keep it visible
-          return {
+          // Mark message as blocked but keep it visible - DO NOT remove it
+          const blockedMessage = {
             ...msg,
             status: 'blocked', // or 'pending_mediation'
             isBlocked: true,
             needsMediation: true,
+            // Keep the original text visible
+            text: msg.text, // Preserve original text
+            // Ensure it stays in the messages array
+            isOptimistic: true, // Keep optimistic flag so it's not filtered out
           };
+
+          console.log(`[${eventName}] 🔒 BLOCKED MESSAGE CREATED - Must stay visible:`, {
+            messageId: blockedMessage.id,
+            text: blockedMessage.text?.substring(0, 50),
+            isBlocked: blockedMessage.isBlocked,
+            isOptimistic: blockedMessage.isOptimistic,
+            status: blockedMessage.status,
+            needsMediation: blockedMessage.needsMediation,
+          });
+
+          return blockedMessage;
         }
       }
-      return msg; // Keep other messages unchanged
+      return msg; // Keep other messages unchanged (including already-blocked messages)
     });
+
+    if (!foundMatch && normalizedOriginalText) {
+      console.warn(`[${eventName}] ⚠️ No matching optimistic message found:`, {
+        originalText: normalizedOriginalText.substring(0, 50),
+        currentEmail: normalizedCurrentEmail,
+        optimisticMessages: prev
+          .filter(m => m.isOptimistic)
+          .map(m => ({
+            id: m.id,
+            text: (m.text || '').trim().toLowerCase().substring(0, 30),
+            email: getMessageEmail(m),
+            username: (m.username || '').toLowerCase(),
+          })),
+      });
+    }
+
+    // CRITICAL: Verify blocked messages are still in the array after update
+    const blockedMessagesAfter = updated.filter(
+      m => m.isBlocked || m.status === 'blocked' || m.needsMediation
+    );
+    if (import.meta.env.DEV) {
+      console.log(`[${eventName}] Blocked messages after marking:`, {
+        count: blockedMessagesAfter.length,
+        messageIds: blockedMessagesAfter.map(m => m.id),
+        texts: blockedMessagesAfter.map(m => m.text?.substring(0, 30)),
+      });
+    }
+
+    return updated;
   });
 
   // Update status for blocked messages - keep them in pending messages
@@ -99,13 +173,19 @@ export function setupDraftCoachingHandlers(socket, handlers) {
       shouldSend: coaching?.shouldSend,
       hasObserverData: !!coaching?.observerData,
       originalText: coaching?.originalText?.substring(0, 30),
+      analyzing: coaching?.analyzing,
     });
 
-    // If message is blocked, remove the optimistic message
+    // If message is blocked, mark the optimistic message as blocked
     handleBlockedMessage(coaching, 'draft_coaching', handlers);
 
     // Set the draft coaching state (this shows the ObserverCard)
-    setDraftCoaching(coaching);
+    // CRITICAL: Ensure analyzing is false when we receive coaching from backend
+    // Backend coaching replaces frontend pre-check analyzing state
+    setDraftCoaching({
+      ...coaching,
+      analyzing: false, // Backend has finished analyzing
+    });
   };
 
   const handleDraftAnalysis = coaching => {

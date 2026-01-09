@@ -2,7 +2,12 @@ import React from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { MessageItem } from './MessageItem.jsx';
 import { ObserverCard } from '../../dashboard/components/ObserverCard.jsx';
-import { formatMessageDate, detectMessageOwnership, isAIMessage, createDateFormatterCache } from '../../../utils/messageDisplayUtils.js';
+import {
+  formatMessageDate,
+  detectMessageOwnership,
+  isAIMessage,
+  createDateFormatterCache,
+} from '../../../utils/messageDisplayUtils.js';
 
 /**
  * VirtualizedMessagesContainer - Renders messages with virtual scrolling
@@ -60,7 +65,7 @@ function VirtualizedMessagesContainerComponent({
 
     for (let index = 0; index < displayMessages.length; index++) {
       const msg = displayMessages[index];
-      
+
       // Use utility function for date formatting
       const dateLabel = formatMessageDate(
         msg.created_at || msg.timestamp || Date.now(),
@@ -292,10 +297,26 @@ function VirtualizedMessagesContainerComponent({
         </div>
       )}
 
-      {/* Loading state when analyzing */}
+      {/* Loading state when analyzing - Fixed at bottom to stay above input bar */}
       {draftCoaching && draftCoaching.analyzing && (
-        <div className="mb-1">
-          <div className="flex items-center gap-3 text-sm text-gray-600">
+        <div
+          className="mb-1"
+          style={{
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 50, // Higher than MessageInput (z-index: 40 on mobile)
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(4px)',
+            paddingTop: '0.5rem',
+            paddingBottom: '0.5rem',
+            paddingLeft: '1rem',
+            paddingRight: '1rem',
+            borderTop: '1px solid rgba(229, 231, 235, 0.8)',
+            marginTop: '0.5rem',
+            marginBottom: '0.5rem',
+          }}
+        >
+          <div className="flex items-center gap-3 text-sm text-gray-600 max-w-3xl mx-auto">
             <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-teal-medium" />
             <span>Analyzing message...</span>
           </div>

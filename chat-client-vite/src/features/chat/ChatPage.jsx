@@ -117,13 +117,26 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
   const userEmail = username;
   const logger = createLogger('ChatPage');
 
-  // DEBUG: Log userEmail and userId props to diagnose ownership issue (development only)
+  // DEBUG: Log auth props only when they actually change (not on every render)
+  // Set localStorage.debugAuth=true to enable continuous logging
+  const prevAuthRef = React.useRef({ userEmail, userId });
   React.useEffect(() => {
-    logger.debug('Auth props received', {
-      userId: userId ? String(userId) : null,
-      hasEmail: !!userEmail,
-      // Email is automatically redacted by logger
-    });
+    const authChanged =
+      prevAuthRef.current.userEmail !== userEmail || prevAuthRef.current.userId !== userId;
+    const shouldLog =
+      import.meta.env.DEV &&
+      (authChanged ||
+        (typeof window !== 'undefined' && window.localStorage?.getItem('debugAuth') === 'true'));
+
+    if (shouldLog && authChanged) {
+      logger.debug('Auth props changed', {
+        userId: userId ? String(userId) : null,
+        hasEmail: !!userEmail,
+        previousUserId: prevAuthRef.current.userId ? String(prevAuthRef.current.userId) : null,
+        // Email is automatically redacted by logger
+      });
+      prevAuthRef.current = { userEmail, userId };
+    }
   }, [userEmail, userId, logger]);
 
   // Get all chat state from context (socket persists across view changes)
@@ -289,15 +302,27 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
   // No need to manually load threads here - useChatSocket handles it
 
   // Listen for rewrite-sent event to clean up pending messages
+  // Only remove blocked messages when a NEW message is sent (not a rewrite)
   React.useEffect(() => {
-    const handleRewriteSent = () => {
-      removeMessages(m => {
-        if (m.type === 'pending_original' || m.type === 'ai_intervention') {
-          return true;
-        }
-        return false;
-      });
-      setPendingOriginalMessageToRemove(null);
+    const handleRewriteSent = event => {
+      // Only remove messages if this is a genuinely NEW message, not a rewrite
+      const isNewMessage = event.detail?.isNewMessage && !event.detail?.isRewrite;
+      // Get specific message IDs to remove (captured at dispatch time to prevent race conditions)
+      const messageIdsToRemove = event.detail?.messageIdsToRemove || [];
+
+      if (isNewMessage && messageIdsToRemove.length > 0) {
+        // Remove only the specific messages by ID (prevents race condition with newly arriving messages)
+        removeMessages(m => {
+          // CRITICAL: Never remove blocked messages - they must stay visible
+          if (m.isBlocked || m.status === 'blocked' || m.needsMediation) {
+            return false;
+          }
+          // Only remove messages that were captured at dispatch time
+          return messageIdsToRemove.includes(m.id);
+        });
+        setPendingOriginalMessageToRemove(null);
+      }
+      // If it's a rewrite or no IDs provided, keep all messages visible
     };
 
     window.addEventListener('rewrite-sent', handleRewriteSent);
@@ -310,11 +335,25 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
       const clean = inputMessage.trim();
       if (clean) {
         trackMessageSent(clean.length, isPreApprovedRewrite);
-        window.dispatchEvent(new CustomEvent('rewrite-sent', { detail: { isNewMessage: true } }));
+
+        // Capture the IDs of current pending_original and ai_intervention messages
+        // This prevents race conditions where newly arriving messages get removed
+        const messageIdsToRemove = messages
+          .filter(m => m.type === 'pending_original' || m.type === 'ai_intervention')
+          .map(m => m.id)
+          .filter(Boolean);
+
+        // Only trigger cleanup for genuinely new messages (not rewrites)
+        const isNewMessage = !isPreApprovedRewrite;
+        window.dispatchEvent(
+          new CustomEvent('rewrite-sent', {
+            detail: { isNewMessage, isRewrite: isPreApprovedRewrite, messageIdsToRemove },
+          })
+        );
       }
       originalSendMessage(e);
     },
-    [inputMessage, isPreApprovedRewrite, originalSendMessage]
+    [inputMessage, isPreApprovedRewrite, originalSendMessage, messages]
   );
 
   // Wrapped flagMessage with analytics

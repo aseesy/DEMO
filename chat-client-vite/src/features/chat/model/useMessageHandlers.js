@@ -47,48 +47,45 @@ export function useMessageHandlers({
     ).toLowerCase();
   }, []);
 
-  // Helper function to determine if a message should be removed when rewrite is sent
-  const shouldRemoveMessageOnRewrite = React.useCallback((message, pendingOriginal) => {
-    // Always remove pending_original and ai_intervention messages
-    if (message.type === 'pending_original' || message.type === 'ai_intervention') {
-      return true;
-    }
-
-    // If we have a pending original message to remove, check if this message matches it
-    if (!pendingOriginal) {
-      return false;
-    }
-
-    // Match flagged/private messages that match the pending original
-    const isFlaggedPrivate = message.flagged === true && message.private === true;
-    const messageEmail = getMessageEmail(message);
-    const pendingEmail = getMessageEmail(pendingOriginal);
-    const matchesUsername = messageEmail === pendingEmail;
-    const matchesText = message.text === pendingOriginal.text;
-
-    // Match by exact timestamp or within 2 seconds (handles timing differences)
-    const matchesTimestamp =
-      message.timestamp === pendingOriginal.timestamp ||
-      (message.timestamp &&
-        pendingOriginal.timestamp &&
-        Math.abs(
-          new Date(message.timestamp).getTime() - new Date(pendingOriginal.timestamp).getTime()
-        ) < 2000);
-
-    return isFlaggedPrivate && matchesUsername && matchesText && matchesTimestamp;
-  }, []);
-
   // Listen for rewrite-sent event to remove original message
+  // Only remove when a NEW message is sent (not a rewrite)
   React.useEffect(() => {
-    const handleRewriteSent = () => {
-      // Remove all pending original messages and interventions when a new message is sent
-      removeMessages(m => shouldRemoveMessageOnRewrite(m, pendingOriginalMessageToRemove));
-      setPendingOriginalMessageToRemove(null);
+    const handleRewriteSent = event => {
+      // Only remove messages if this is a genuinely NEW message, not a rewrite
+      const isNewMessage = event.detail?.isNewMessage && !event.detail?.isRewrite;
+      // Get specific message IDs to remove (captured at dispatch time to prevent race conditions)
+      const messageIdsToRemove = event.detail?.messageIdsToRemove || [];
+
+      if (isNewMessage && messageIdsToRemove.length > 0) {
+        // Remove only the specific messages by ID (prevents race condition with newly arriving messages)
+        removeMessages(m => messageIdsToRemove.includes(m.id));
+      }
+
+      // Also check for pending original message to remove (for flagged messages)
+      if (isNewMessage && pendingOriginalMessageToRemove) {
+        removeMessages(m => {
+          const isFlaggedPrivate = m.flagged === true && m.private === true;
+          const messageEmail = getMessageEmail(m);
+          const pendingEmail = getMessageEmail(pendingOriginalMessageToRemove);
+          const matchesUsername = messageEmail === pendingEmail;
+          const matchesText = m.text === pendingOriginalMessageToRemove.text;
+          const matchesTimestamp =
+            m.timestamp === pendingOriginalMessageToRemove.timestamp ||
+            (m.timestamp &&
+              pendingOriginalMessageToRemove.timestamp &&
+              Math.abs(
+                new Date(m.timestamp).getTime() -
+                  new Date(pendingOriginalMessageToRemove.timestamp).getTime()
+              ) < 2000);
+          return isFlaggedPrivate && matchesUsername && matchesText && matchesTimestamp;
+        });
+        setPendingOriginalMessageToRemove(null);
+      }
     };
 
     window.addEventListener('rewrite-sent', handleRewriteSent);
     return () => window.removeEventListener('rewrite-sent', handleRewriteSent);
-  }, [pendingOriginalMessageToRemove, removeMessages, shouldRemoveMessageOnRewrite]);
+  }, [pendingOriginalMessageToRemove, removeMessages, getMessageEmail]);
 
   // Wrap sendMessage to track analytics and clean up pending messages
   const sendMessage = React.useCallback(
@@ -98,14 +95,26 @@ export function useMessageHandlers({
         // Track message sent before sending
         trackMessageSent(clean.length, isPreApprovedRewrite);
 
-        // Clear any pending original messages and interventions when any message is sent
-        // This ensures the "not sent yet" bubble disappears
-        window.dispatchEvent(new CustomEvent('rewrite-sent', { detail: { isNewMessage: true } }));
+        // Capture the IDs of current pending_original and ai_intervention messages
+        // This prevents race conditions where newly arriving messages get removed
+        const messageIdsToRemove = messages
+          .filter(m => m.type === 'pending_original' || m.type === 'ai_intervention')
+          .map(m => m.id)
+          .filter(Boolean);
+
+        // Only trigger cleanup for genuinely new messages (not rewrites)
+        // Rewrites should keep the blocked message visible
+        const isNewMessage = !isPreApprovedRewrite;
+        window.dispatchEvent(
+          new CustomEvent('rewrite-sent', {
+            detail: { isNewMessage, isRewrite: isPreApprovedRewrite, messageIdsToRemove },
+          })
+        );
       }
       // Call original sendMessage (it handles validation)
       originalSendMessage(e);
     },
-    [inputMessage, isPreApprovedRewrite, originalSendMessage]
+    [inputMessage, isPreApprovedRewrite, originalSendMessage, messages]
   );
 
   // Wrap flagMessage to track analytics

@@ -114,7 +114,7 @@ export function useInviteManagement({
       const result = await commandJoinRoom(pendingInviteCode, username);
 
       if (result.success) {
-        logger.info('Manual invite accepted successfully', { roomId: result.roomId });
+        logger.info('Auto-accepted invite from URL/storage', { roomId: result.roomId });
         logger.debug('Successfully accepted invite, joined room:', result.roomId);
         setPendingInviteCode(null);
         removeWithMigration('pendingInviteCode');
