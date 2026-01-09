@@ -54,20 +54,35 @@ export class MessageTransportService {
    */
   async sendMessage(messagePayload) {
     if (!this.isConnected()) {
+      console.warn('[MessageTransportService] ❌ Cannot send message - not connected');
       return false;
     }
 
     try {
-      const success = this._transport.emit(SocketEvents.SEND_MESSAGE, {
+      const payload = {
         text: messagePayload.text,
         isPreApprovedRewrite: messagePayload.isPreApprovedRewrite || false,
         originalRewrite: messagePayload.originalRewrite || null,
         optimisticId: messagePayload.optimisticId || null,
+      };
+
+      console.log('[MessageTransportService] 📤 Sending message to server:', {
+        textPreview: payload.text?.substring(0, 50),
+        isPreApprovedRewrite: payload.isPreApprovedRewrite,
+        hasOptimisticId: !!payload.optimisticId,
+        socketId: this._transport?.id,
+        connected: this._transport?.connected,
       });
+
+      const success = this._transport.emit(SocketEvents.SEND_MESSAGE, payload);
+
+      if (!success) {
+        console.warn('[MessageTransportService] ⚠️ emit() returned false');
+      }
 
       return success;
     } catch (error) {
-      console.error('[MessageTransportService] Error sending message:', error);
+      console.error('[MessageTransportService] ❌ Error sending message:', error);
       return false;
     }
   }

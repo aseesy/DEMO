@@ -1,6 +1,9 @@
 import { API_BASE_URL } from './config.js';
 import { trackAPIError, trackAPIResponseTime } from './utils/analyticsEnhancements.js';
 import { tokenManager } from './utils/tokenManager.js';
+import { createLogger } from './utils/logger.js';
+
+const logger = createLogger('[apiClient]');
 
 // Thin wrappers around fetch so we have a single place to adjust
 // base URLs, credentials, and common headers.
@@ -197,11 +200,10 @@ function addAuthHeader(headers = {}) {
     // Debug logging in development
     if (import.meta.env.DEV) {
       const tokenParts = cleanToken.split('.');
-      console.log('[apiClient] Adding auth header:', {
+      logger.debug('Adding auth header', {
         hasToken: !!cleanToken,
         tokenParts: tokenParts.length,
         tokenLength: cleanToken.length,
-        tokenPreview: cleanToken.substring(0, 20) + '...',
       });
     }
   }
@@ -212,7 +214,7 @@ function addAuthHeader(headers = {}) {
   // 3. Initial page loads before auth is verified
   // Only log in debug mode if needed
   if (!token && import.meta.env.DEV && import.meta.env.VITE_DEBUG_AUTH) {
-    console.log('[apiClient] No token available (this is normal for login/signup requests)');
+    logger.debug('No token available (this is normal for login/signup requests)');
   }
   return headers;
 }
@@ -253,9 +255,10 @@ export async function apiGet(path, options = {}) {
         const retryAfter = response.headers.get('Retry-After');
         const retryAfterSeconds = retryAfter ? parseInt(retryAfter, 10) : null;
         dispatchRateLimit(endpoint, retryAfterSeconds);
-        console.warn(
-          `[apiClient] Rate limited on ${endpoint}. Retry after: ${retryAfterSeconds || 60}s`
-        );
+        logger.warn('Rate limited', {
+          endpoint,
+          retryAfterSeconds: retryAfterSeconds || 60,
+        });
       }
     }
 
@@ -264,51 +267,54 @@ export async function apiGet(path, options = {}) {
     // Track network errors with offline/server classification
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
-    
+
     // Check if this is a connection refused error
-    const isConnectionRefused = 
+    const isConnectionRefused =
       error.message?.includes('ERR_CONNECTION_REFUSED') ||
       error.message?.includes('Failed to fetch') ||
       error.message?.includes('NetworkError') ||
-      error.name === 'TypeError' && error.message?.includes('fetch');
-    
+      (error.name === 'TypeError' && error.message?.includes('fetch'));
+
     if (isConnectionRefused) {
       connectionRefusedCount++;
-      
+
       // Mark server as down for 30 seconds to suppress excessive errors
       markServerDown(30000);
-      
+
       // Only log connection refused errors occasionally to avoid spam
       const now = Date.now();
       const timeSinceLastLog = now - lastConnectionRefusedLog;
-      
+
       if (timeSinceLastLog > 10000 || connectionRefusedCount === 1) {
         // Log first error or if 10+ seconds have passed
-        console.warn(
-          `[apiClient] Server appears to be down (connection refused). ` +
-          `Suppressing similar errors for 30s. Count: ${connectionRefusedCount}`
-        );
+        logger.warn('Server appears to be down (connection refused)', {
+          endpoint,
+          connectionRefusedCount,
+          suppressingFor: '30s',
+        });
         lastConnectionRefusedLog = now;
       }
-      
+
       // Don't track connection refused errors excessively
       if (connectionRefusedCount <= 3) {
         trackAPIError(endpoint, 0, 'Connection refused - server may be down');
       }
     } else {
       // Not connection refused - track normally
-    trackAPIError(endpoint, 0, error.message || 'Network error');
+      trackAPIError(endpoint, 0, error.message || 'Network error');
     }
-    
+
     // Classify error type (offline vs server) for observability
     if (typeof window !== 'undefined') {
-      import('./utils/pwaObservability.js').then(({ trackErrorWithClassification }) => {
-        trackErrorWithClassification(error, `api_get_${endpoint}`);
-      }).catch(() => {
-        // Silently ignore if module not available
-      });
+      import('./utils/pwaObservability.js')
+        .then(({ trackErrorWithClassification }) => {
+          trackErrorWithClassification(error, `api_get_${endpoint}`);
+        })
+        .catch(() => {
+          // Silently ignore if module not available
+        });
     }
-    
+
     throw error;
   }
 }
@@ -319,7 +325,7 @@ export async function apiPost(path, body, options = {}) {
 
   // Only log in development to avoid exposing sensitive data in production
   if (import.meta.env.DEV) {
-    console.log('[apiPost] Making request', {
+    logger.debug('Making POST request', {
       path,
       url: `${API_BASE_URL}${path}`,
       hasBody: !!body,
@@ -335,7 +341,7 @@ export async function apiPost(path, body, options = {}) {
     });
 
     if (import.meta.env.DEV) {
-      console.log('[apiPost] Fetching...', { url: `${API_BASE_URL}${path}` });
+      logger.debug('Fetching POST request', { url: `${API_BASE_URL}${path}` });
     }
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -347,10 +353,11 @@ export async function apiPost(path, body, options = {}) {
     });
 
     if (import.meta.env.DEV) {
-      console.log('[apiPost] Response received', {
+      logger.debug('POST response received', {
         ok: response.ok,
         status: response.status,
         statusText: response.statusText,
+        endpoint: path,
       });
     }
 
@@ -374,19 +381,19 @@ export async function apiPost(path, body, options = {}) {
     // Track network errors with connection refused handling
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
-    
-    const isConnectionRefused = 
+
+    const isConnectionRefused =
       error.message?.includes('ERR_CONNECTION_REFUSED') ||
       error.message?.includes('Failed to fetch') ||
       error.message?.includes('NetworkError');
-    
+
     if (isConnectionRefused) {
       markServerDown(30000);
       if (connectionRefusedCount <= 3) {
         trackAPIError(endpoint, 0, 'Connection refused - server may be down');
       }
     } else {
-    trackAPIError(endpoint, 0, error.message || 'Network error');
+      trackAPIError(endpoint, 0, error.message || 'Network error');
     }
     throw error;
   }
@@ -431,19 +438,19 @@ export async function apiPut(path, body, options = {}) {
     // Track network errors with connection refused handling
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
-    
-    const isConnectionRefused = 
+
+    const isConnectionRefused =
       error.message?.includes('ERR_CONNECTION_REFUSED') ||
       error.message?.includes('Failed to fetch') ||
       error.message?.includes('NetworkError');
-    
+
     if (isConnectionRefused) {
       markServerDown(30000);
       if (connectionRefusedCount <= 3) {
         trackAPIError(endpoint, 0, 'Connection refused - server may be down');
       }
     } else {
-    trackAPIError(endpoint, 0, error.message || 'Network error');
+      trackAPIError(endpoint, 0, error.message || 'Network error');
     }
     throw error;
   }
@@ -486,19 +493,19 @@ export async function apiDelete(path, params = {}) {
     // Track network errors with connection refused handling
     const duration = performance.now() - startTime;
     trackAPIResponseTime(endpoint, duration);
-    
-    const isConnectionRefused = 
+
+    const isConnectionRefused =
       error.message?.includes('ERR_CONNECTION_REFUSED') ||
       error.message?.includes('Failed to fetch') ||
       error.message?.includes('NetworkError');
-    
+
     if (isConnectionRefused) {
       markServerDown(30000);
       if (connectionRefusedCount <= 3) {
         trackAPIError(endpoint, 0, 'Connection refused - server may be down');
       }
     } else {
-    trackAPIError(endpoint, 0, error.message || 'Network error');
+      trackAPIError(endpoint, 0, error.message || 'Network error');
     }
     throw error;
   }

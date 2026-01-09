@@ -3,6 +3,10 @@
  * Supports Google Analytics 4 (GA4) and custom event tracking
  */
 
+import { createLogger } from './logger.js';
+
+const logger = createLogger('[Analytics]');
+
 // Google Analytics Measurement ID (set via environment variable)
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || '';
 const GOOGLE_TAG = import.meta.env.VITE_GOOGLE_TAG || import.meta.env.GOOGLE_TAG || '';
@@ -11,7 +15,7 @@ const GOOGLE_TAG = import.meta.env.VITE_GOOGLE_TAG || import.meta.env.GOOGLE_TAG
 export function initAnalytics() {
   // If GOOGLE_TAG is set, skip dynamic initialization (tag is injected via injectGoogleTag.js)
   if (GOOGLE_TAG) {
-    console.log('Analytics: GOOGLE_TAG detected, skipping dynamic initialization');
+    logger.debug('GOOGLE_TAG detected, skipping dynamic initialization');
     // Ensure gtag is available if Google Tag Manager is used
     if (typeof window !== 'undefined' && !window.gtag && window.dataLayer) {
       window.gtag = function () {
@@ -22,7 +26,7 @@ export function initAnalytics() {
   }
 
   if (!GA_MEASUREMENT_ID || typeof window === 'undefined') {
-    console.log('Analytics: GA_MEASUREMENT_ID not set or running server-side');
+    logger.debug('GA_MEASUREMENT_ID not set or running server-side');
     return;
   }
 
@@ -43,13 +47,13 @@ export function initAnalytics() {
     send_page_view: true,
   });
 
-  console.log('Analytics initialized:', GA_MEASUREMENT_ID);
+  logger.info('Analytics initialized', { measurementId: GA_MEASUREMENT_ID });
 }
 
 // Track page view
 export function trackPageView(path, title) {
   if (!window.gtag) {
-    console.log('Analytics: trackPageView - gtag not initialized');
+    logger.debug('trackPageView - gtag not initialized');
     return;
   }
 
@@ -62,7 +66,7 @@ export function trackPageView(path, title) {
 // Track CTA click by section
 export function trackCTAClick(section, ctaText, ctaPosition = 'unknown') {
   if (!window.gtag) {
-    console.log('Analytics: trackCTAClick - gtag not initialized');
+    logger.debug('trackCTAClick - gtag not initialized');
     return;
   }
 
@@ -74,13 +78,13 @@ export function trackCTAClick(section, ctaText, ctaPosition = 'unknown') {
     event_label: `${section} - ${ctaText}`,
   });
 
-  console.log('Analytics: CTA clicked', { section, ctaText, ctaPosition });
+  logger.debug('CTA clicked', { section, ctaText, ctaPosition });
 }
 
 // Track section view (when user scrolls to section)
 export function trackSectionView(sectionName) {
   if (!window.gtag) {
-    console.log('Analytics: trackSectionView - gtag not initialized');
+    logger.debug('trackSectionView - gtag not initialized');
     return;
   }
 
@@ -89,24 +93,24 @@ export function trackSectionView(sectionName) {
     event_category: 'engagement',
   });
 
-  console.log('Analytics: Section viewed', sectionName);
+  logger.debug('Section viewed', { sectionName });
 }
 
 // Track custom event
 export function trackEvent(eventName, eventParams = {}) {
   if (!window.gtag) {
-    console.log('Analytics: trackEvent - gtag not initialized');
+    logger.debug('trackEvent - gtag not initialized');
     return;
   }
 
   window.gtag('event', eventName, eventParams);
-  console.log('Analytics: Event tracked', { eventName, eventParams });
+  logger.debug('Event tracked', { eventName, eventParams });
 }
 
 // Track conversion (sign-up)
 export function trackConversion(source, method = 'signup') {
   if (!window.gtag) {
-    console.log('Analytics: trackConversion - gtag not initialized');
+    logger.debug('trackConversion - gtag not initialized');
     return;
   }
 
@@ -123,13 +127,13 @@ export function trackConversion(source, method = 'signup') {
     source: source,
   });
 
-  console.log('Analytics: Conversion tracked', { source, method });
+  logger.info('Conversion tracked', { source, method });
 }
 
 // Track form submission
 export function trackFormSubmit(formName, formType = 'newsletter') {
   if (!window.gtag) {
-    console.log('Analytics: trackFormSubmit - gtag not initialized');
+    logger.debug('trackFormSubmit - gtag not initialized');
     return;
   }
 
@@ -139,13 +143,13 @@ export function trackFormSubmit(formName, formType = 'newsletter') {
     event_category: 'engagement',
   });
 
-  console.log('Analytics: Form submitted', { formName, formType });
+  logger.debug('Form submitted', { formName, formType });
 }
 
 // Track exit intent
 export function trackExitIntent() {
   if (!window.gtag) {
-    console.log('Analytics: trackExitIntent - gtag not initialized');
+    logger.debug('trackExitIntent - gtag not initialized');
     return;
   }
 
@@ -154,13 +158,13 @@ export function trackExitIntent() {
     event_label: 'User attempted to leave page',
   });
 
-  console.log('Analytics: Exit intent detected');
+  logger.debug('Exit intent detected');
 }
 
 // Track sign-in modal open
 export function trackSignInModalOpen() {
   if (!window.gtag) {
-    console.log('Analytics: trackSignInModalOpen - gtag not initialized');
+    logger.debug('trackSignInModalOpen - gtag not initialized');
     return;
   }
 
@@ -168,7 +172,7 @@ export function trackSignInModalOpen() {
     event_category: 'engagement',
   });
 
-  console.log('Analytics: Sign-in modal opened');
+  logger.debug('Sign-in modal opened');
 }
 
 // Track scroll depth
@@ -256,7 +260,7 @@ export function trackMessageSent(messageLength, isPreApprovedRewrite = false) {
     event_category: 'chat',
   });
 
-  console.log('Analytics: Message sent', { messageLength, isPreApprovedRewrite });
+  logger.debug('Message sent', { messageLength, isPreApprovedRewrite });
 }
 
 // Track AI intervention triggered
@@ -272,7 +276,7 @@ export function trackAIIntervention(interventionType, confidence, riskLevel) {
     event_category: 'ai',
   });
 
-  console.log('Analytics: AI intervention', { interventionType, confidence, riskLevel });
+  logger.debug('AI intervention', { interventionType, confidence, riskLevel });
 }
 
 // Track rewrite suggestion used
@@ -288,7 +292,7 @@ export function trackRewriteUsed(rewriteOption, originalLength, rewriteLength) {
     event_category: 'ai',
   });
 
-  console.log('Analytics: Rewrite used', { rewriteOption, originalLength, rewriteLength });
+  logger.debug('Rewrite used', { rewriteOption, originalLength, rewriteLength });
 }
 
 // Track intervention override
@@ -302,7 +306,7 @@ export function trackInterventionOverride(overrideAction) {
     event_category: 'ai',
   });
 
-  console.log('Analytics: Intervention overridden', { overrideAction });
+  logger.debug('Intervention overridden', { overrideAction });
 }
 
 // Track message flagged
@@ -316,7 +320,7 @@ export function trackMessageFlagged(reason) {
     event_category: 'moderation',
   });
 
-  console.log('Analytics: Message flagged', { reason });
+  logger.debug('Message flagged', { reason });
 }
 
 // Track task created
@@ -331,7 +335,7 @@ export function trackTaskCreated(taskType, priority) {
     event_category: 'tasks',
   });
 
-  console.log('Analytics: Task created', { taskType, priority });
+  logger.debug('Task created', { taskType, priority });
 }
 
 // Track task completed
@@ -345,7 +349,7 @@ export function trackTaskCompleted(taskType) {
     event_category: 'tasks',
   });
 
-  console.log('Analytics: Task completed', { taskType });
+  logger.debug('Task completed', { taskType });
 }
 
 // Track contact added
@@ -359,7 +363,7 @@ export function trackContactAdded(contactType) {
     event_category: 'contacts',
   });
 
-  console.log('Analytics: Contact added', { contactType });
+  logger.debug('Contact added', { contactType });
 }
 
 // Track view change
@@ -373,7 +377,7 @@ export function trackViewChange(viewName) {
     event_category: 'navigation',
   });
 
-  console.log('Analytics: View changed', { viewName });
+  logger.debug('View changed', { viewName });
 }
 
 // Track thread created
@@ -386,7 +390,7 @@ export function trackThreadCreated() {
     event_category: 'chat',
   });
 
-  console.log('Analytics: Thread created');
+  logger.debug('Thread created');
 }
 
 // Track intervention feedback
@@ -400,5 +404,5 @@ export function trackInterventionFeedback(helpful) {
     event_category: 'ai',
   });
 
-  console.log('Analytics: Intervention feedback', { helpful });
+  logger.debug('Intervention feedback', { helpful });
 }

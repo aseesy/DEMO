@@ -3,6 +3,10 @@
  * These functions support custom dimensions, user properties, and advanced tracking
  */
 
+import { createLogger } from './logger.js';
+
+const logger = createLogger('[Analytics]');
+
 // Set user properties (persists across sessions)
 export function setUserProperties(properties) {
   if (!window.gtag) {
@@ -28,7 +32,7 @@ export function setUserID(userId) {
 // Track errors and exceptions
 export function trackError(error, errorType = 'exception', fatal = false) {
   if (!window.gtag) {
-    console.log('Analytics: trackError - gtag not initialized');
+    logger.debug('trackError - gtag not initialized');
     return;
   }
 
@@ -40,7 +44,7 @@ export function trackError(error, errorType = 'exception', fatal = false) {
     error_stack: error.stack?.substring(0, 500) || '',
   });
 
-  console.log('Analytics: Error tracked', { errorType, fatal, message: error.message });
+  logger.debug('Error tracked', { errorType, fatal, message: error.message });
 }
 
 // Track API errors
@@ -56,7 +60,7 @@ export function trackAPIError(endpoint, statusCode, errorMessage) {
     event_category: 'errors',
   });
 
-  console.log('Analytics: API error tracked', { endpoint, statusCode });
+  logger.debug('API error tracked', { endpoint, statusCode });
 }
 
 // Track page load performance
@@ -77,7 +81,7 @@ export function trackPagePerformance() {
     event_category: 'performance',
   });
 
-  console.log('Analytics: Page performance tracked', {
+  logger.debug('Page performance tracked', {
     pageLoadTime: Math.round(pageLoadTime),
     domContentLoaded: Math.round(domContentLoaded),
   });
@@ -109,7 +113,7 @@ export function trackFormError(formName, fieldName, errorType) {
     event_category: 'errors',
   });
 
-  console.log('Analytics: Form error tracked', { formName, fieldName, errorType });
+  logger.debug('Form error tracked', { formName, fieldName, errorType });
 }
 
 // Track connection errors (WebSocket, etc.)
@@ -124,7 +128,7 @@ export function trackConnectionError(errorType, errorMessage) {
     event_category: 'errors',
   });
 
-  console.log('Analytics: Connection error tracked', { errorType, errorMessage });
+  logger.debug('Connection error tracked', { errorType, errorMessage });
 }
 
 // Enhanced message sent tracking with additional context
@@ -147,7 +151,7 @@ export function trackMessageSentEnhanced(
     event_category: 'chat',
   });
 
-  console.log('Analytics: Message sent (enhanced)', {
+  logger.debug('Message sent (enhanced)', {
     messageLength,
     isPreApprovedRewrite,
     ...additionalParams,
@@ -166,7 +170,7 @@ export function trackEngagementMilestone(milestone, value) {
     event_category: 'engagement',
   });
 
-  console.log('Analytics: Engagement milestone', { milestone, value });
+  logger.debug('Engagement milestone', { milestone, value });
 }
 
 // Track feature discovery
@@ -181,7 +185,7 @@ export function trackFeatureDiscovery(featureName, discoveryMethod) {
     event_category: 'engagement',
   });
 
-  console.log('Analytics: Feature discovery', { featureName, discoveryMethod });
+  logger.debug('Feature discovery', { featureName, discoveryMethod });
 }
 
 // Track search queries (if you add search functionality)
@@ -196,7 +200,7 @@ export function trackSearch(searchTerm, resultsCount) {
     event_category: 'engagement',
   });
 
-  console.log('Analytics: Search tracked', { searchTerm, resultsCount });
+  logger.debug('Search tracked', { searchTerm, resultsCount });
 }
 
 // Track file downloads
@@ -212,7 +216,7 @@ export function trackFileDownload(fileName, fileType, fileSize) {
     event_category: 'engagement',
   });
 
-  console.log('Analytics: File download tracked', { fileName, fileType });
+  logger.debug('File download tracked', { fileName, fileType });
 }
 
 // Track video engagement (if you add videos)
@@ -228,5 +232,5 @@ export function trackVideoEngagement(videoTitle, action, progress) {
     event_category: 'engagement',
   });
 
-  console.log('Analytics: Video engagement', { videoTitle, action, progress });
+  logger.debug('Video engagement', { videoTitle, action, progress });
 }

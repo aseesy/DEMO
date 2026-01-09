@@ -35,7 +35,7 @@ export const StorageKeys = {
   INVITATION_TOKEN: 'invitationToken',
   INVITATION_CODE: 'invitationCode',
   PENDING_SENT_INVITATION: 'pendingSentInvitation',
-  
+
   // OAuth state (stored in both localStorage and sessionStorage for ITP resilience)
   OAUTH_STATE: 'oauth_state',
   OAUTH_STATE_TIMESTAMP: 'oauth_state_timestamp',
@@ -318,25 +318,41 @@ export { StorageAdapter };
 
 // Lazy import tokenManager to avoid potential circular dependencies
 // tokenManager doesn't import authStorage, so this is safe
+// Use lazy import to avoid circular dependency issues
 let tokenManagerRef = null;
+let tokenManagerLoading = false;
+
+async function loadTokenManager() {
+  if (tokenManagerRef || tokenManagerLoading) return tokenManagerRef;
+  tokenManagerLoading = true;
+  try {
+    const module = await import('../../utils/tokenManager.js');
+    tokenManagerRef = module.tokenManager;
+  } catch (error) {
+    console.warn('[authStorage] tokenManager not available:', error);
+  }
+  tokenManagerLoading = false;
+  return tokenManagerRef;
+}
+
+// Synchronous getter - returns null if not loaded yet
 function getTokenManager() {
-  if (!tokenManagerRef && typeof window !== 'undefined') {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { tokenManager } = require('../utils/tokenManager.js');
-      tokenManagerRef = tokenManager;
-    } catch (error) {
-      // tokenManager not available (shouldn't happen in production)
-      console.warn('[authStorage] tokenManager not available:', error);
-    }
+  if (!tokenManagerRef && typeof window !== 'undefined' && !tokenManagerLoading) {
+    // Trigger async load but don't wait
+    loadTokenManager();
   }
   return tokenManagerRef;
+}
+
+// Start loading tokenManager immediately when module loads
+if (typeof window !== 'undefined') {
+  loadTokenManager();
 }
 
 /**
  * Auth-specific storage helpers
  * Provides typed accessors for authentication data
- * 
+ *
  * CRITICAL: Token storage now delegates to tokenManager (single source of truth)
  * tokenManager manages its own storage using the same key (StorageKeys.AUTH_TOKEN = 'auth_token_backup')
  * All token reads/writes should go through tokenManager for consistency

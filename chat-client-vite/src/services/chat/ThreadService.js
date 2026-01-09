@@ -14,6 +14,7 @@ class ThreadService {
     this.isAnalysisComplete = false; // Track if conversation analysis has completed
     this.analysisTimeout = null; // Timeout to stop showing "analyzing" after a delay
     this.subscribers = new Set();
+    this.processedAnalysisComplete = new Set(); // Track processed analysis complete events to prevent duplicates
     this.setupSubscriptions();
   }
 
@@ -22,22 +23,28 @@ class ThreadService {
     socketService.subscribe('threads_list', this.handleThreads.bind(this));
     socketService.subscribe('thread_created', this.handleThreadCreated.bind(this));
     socketService.subscribe('thread_messages', this.handleThreadMessages.bind(this));
-    socketService.subscribe('conversation_analysis_complete', this.handleAnalysisComplete.bind(this));
+    socketService.subscribe(
+      'conversation_analysis_complete',
+      this.handleAnalysisComplete.bind(this)
+    );
     socketService.subscribe('disconnect', this.handleDisconnect.bind(this));
-    
+
     // NEW: Add subscriptions for new events
     socketService.subscribe('reply_in_thread_success', this.handleReplySuccess.bind(this));
     socketService.subscribe('message_moved_to_thread_success', this.handleMoveSuccess.bind(this));
     socketService.subscribe('thread_archived', this.handleThreadArchived.bind(this));
     socketService.subscribe('thread_archived_success', this.handleArchiveSuccess.bind(this));
-    socketService.subscribe('thread_message_count_changed', this.handleMessageCountChanged.bind(this));
+    socketService.subscribe(
+      'thread_message_count_changed',
+      this.handleMessageCountChanged.bind(this)
+    );
   }
 
   handleThreads(data) {
     // Backend sends threads directly (not wrapped in {threads: []})
     const receivedThreads = Array.isArray(data) ? data : data.threads || [];
     this.threads = receivedThreads;
-    
+
     // Only mark analysis complete if we received threads OR if we've already been notified
     // Empty threads_list doesn't mean analysis is done - it might still be running
     // We wait for explicit conversation_analysis_complete event or timeout
@@ -47,17 +54,38 @@ class ThreadService {
       this.clearAnalysisTimeout();
     }
     // If threads_list is empty, DON'T mark complete yet - wait for analysis_complete event
-    
+
     this.notify();
   }
 
   handleAnalysisComplete(data) {
+    // Deduplicate: Only process once per room
+    // The event can be emitted multiple times (from different code paths, or broadcast to room)
+    const roomId = data?.roomId;
+    if (!roomId) {
+      // No roomId - process anyway (legacy event)
+      this.isAnalysisComplete = true;
+      this.clearAnalysisTimeout();
+      this.notify();
+      return;
+    }
+
+    // Check if we've already processed this event for this room
+    const eventKey = `analysis_complete_${roomId}`;
+    if (this.processedAnalysisComplete.has(eventKey)) {
+      // Already processed - skip (but don't log to reduce console noise)
+      return;
+    }
+
+    // Mark as processed
+    this.processedAnalysisComplete.add(eventKey);
+
     // Backend explicitly notified us that analysis is complete
     this.isAnalysisComplete = true;
     this.clearAnalysisTimeout();
     if (import.meta.env.DEV) {
       console.log('[ThreadService] Conversation analysis complete', {
-        roomId: data?.roomId,
+        roomId: roomId,
         createdThreadsCount: data?.createdThreadsCount || 0,
       });
     }
@@ -73,9 +101,9 @@ class ThreadService {
 
   handleThreadMessages(data) {
     this.isLoading = false;
-    
-    const { threadId, messages, limit, offset } = data;
-    
+
+    const { threadId, messages, limit: _limit, offset } = data;
+
     if (offset === 0) {
       // First page - replace messages
       this.threadMessages = {
@@ -90,11 +118,13 @@ class ThreadService {
         [threadId]: [...existing, ...messages],
       };
     }
-    
+
     this.notify();
   }
 
   handleDisconnect() {
+    // Clear processed events on disconnect (allows re-processing on reconnect)
+    this.processedAnalysisComplete.clear();
     // Keep threads but mark loading complete
     this.isLoading = false;
     this.notify();
@@ -157,14 +187,14 @@ class ThreadService {
     this.notify();
   }
 
-  moveMessageInState(messageId, oldThreadId, newThreadId) {
+  moveMessageInState(messageId, oldThreadId, _newThreadId) {
     // Remove from old thread messages
     if (oldThreadId && this.threadMessages[oldThreadId]) {
       this.threadMessages[oldThreadId] = this.threadMessages[oldThreadId].filter(
         msg => msg.id !== messageId
       );
     }
-    
+
     // Add to new thread messages (if loaded)
     // Note: Message will arrive via 'new_message' event, but we need to update thread_id
     // This is handled by the message handler checking thread context
@@ -184,10 +214,10 @@ class ThreadService {
   updateThreadMessageCount(threadId, messageCount, lastMessageAt) {
     this.threads = this.threads.map(thread => {
       if (thread.id === threadId) {
-        return { 
-          ...thread, 
+        return {
+          ...thread,
           message_count: messageCount,
-          last_message_at: lastMessageAt 
+          last_message_at: lastMessageAt,
         };
       }
       return thread;
@@ -217,7 +247,7 @@ class ThreadService {
         this.notify();
       }
     }, 30000); // 30 second timeout
-    
+
     socketService.emit('get_threads', { roomId });
   }
 
@@ -255,10 +285,10 @@ class ThreadService {
    * Move message to thread
    */
   moveMessageToThread(messageId, targetThreadId, roomId) {
-    socketService.emit('move_message_to_thread', { 
-      messageId, 
-      targetThreadId, 
-      roomId 
+    socketService.emit('move_message_to_thread', {
+      messageId,
+      targetThreadId,
+      roomId,
     });
   }
 

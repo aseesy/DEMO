@@ -5,6 +5,9 @@
  */
 
 import { storage, sessionStorage as sessionStorageAdapter, StorageKeys } from '../adapters/storage';
+import { createLogger } from './logger.js';
+
+const logger = createLogger('[OAuth]');
 
 /**
  * Generate a random state parameter for CSRF protection
@@ -28,19 +31,21 @@ export function generatePKCE() {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
-  
+
   // Generate SHA256 hash of code verifier (code challenge)
-  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier)).then(hashBuffer => {
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashBase64 = btoa(String.fromCharCode.apply(null, hashArray));
-    const codeChallenge = hashBase64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    
-    return {
-      codeVerifier,
-      codeChallenge,
-      codeChallengeMethod: 'S256',
-    };
-  });
+  return crypto.subtle
+    .digest('SHA-256', new TextEncoder().encode(codeVerifier))
+    .then(hashBuffer => {
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashBase64 = btoa(String.fromCharCode.apply(null, hashArray));
+      const codeChallenge = hashBase64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+      return {
+        codeVerifier,
+        codeChallenge,
+        codeChallengeMethod: 'S256',
+      };
+    });
 }
 
 /**
@@ -64,7 +69,7 @@ export function storeOAuthState(state, pkceData = null) {
   sessionStorageAdapter.set(StorageKeys.OAUTH_STATE_TIMESTAMP, timestamp);
   storage.set(StorageKeys.OAUTH_STATE, state);
   storage.set(StorageKeys.OAUTH_STATE_TIMESTAMP, timestamp);
-  
+
   // Store PKCE data if provided
   if (pkceData) {
     sessionStorageAdapter.set(StorageKeys.OAUTH_CODE_VERIFIER, pkceData.codeVerifier);
@@ -101,12 +106,12 @@ export function validateOAuthState(receivedState) {
     storedState = storage.getString(StorageKeys.OAUTH_STATE);
     timestamp = storage.getString(StorageKeys.OAUTH_STATE_TIMESTAMP);
     if (storedState && timestamp) {
-      console.log('[OAuth] State recovered from localStorage (sessionStorage was cleared)');
+      logger.debug('State recovered from localStorage (sessionStorage was cleared)');
     }
   }
 
   if (!storedState || !timestamp) {
-    console.warn('[OAuth] No stored state found in sessionStorage or localStorage');
+    logger.warn('No stored state found in sessionStorage or localStorage');
     return false;
   }
 
@@ -114,7 +119,7 @@ export function validateOAuthState(receivedState) {
   const age = Date.now() - parseInt(timestamp, 10);
   if (age > 10 * 60 * 1000) {
     // State expired
-    console.warn('[OAuth] State expired after', Math.round(age / 1000), 'seconds');
+    logger.warn('State expired', { ageSeconds: Math.round(age / 1000) });
     clearOAuthState();
     return false;
   }
@@ -122,12 +127,10 @@ export function validateOAuthState(receivedState) {
   // Check if states match
   if (storedState !== receivedState) {
     // State mismatch - potential CSRF attack
-    console.warn(
-      '[OAuth] State mismatch - stored:',
-      storedState?.substring(0, 8),
-      'received:',
-      receivedState?.substring(0, 8)
-    );
+    logger.warn('State mismatch - potential CSRF attack', {
+      storedStatePreview: storedState?.substring(0, 8),
+      receivedStatePreview: receivedState?.substring(0, 8),
+    });
     clearOAuthState();
     return false;
   }
@@ -205,7 +208,7 @@ export async function openOAuthPopup(authUrl) {
  * @param {Function} onMessage - Callback when OAuth completes
  * @returns {Promise<Object>} OAuth result
  */
-export function waitForOAuthPopup(popup, onMessage) {
+export function waitForOAuthPopup(popup, _onMessage) {
   return new Promise((resolve, reject) => {
     const checkInterval = setInterval(() => {
       if (popup.closed) {

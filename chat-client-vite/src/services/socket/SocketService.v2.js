@@ -4,11 +4,17 @@
  * Single responsibility: Manage socket connection lifecycle and state.
  * Uses SocketAdapter for actual socket.io-client interaction.
  *
+ * Architecture (Event-Driven):
+ * - Subscribes to tokenManager for auth state changes
+ * - Auto-connects when token becomes available
+ * - Auto-disconnects when token is cleared
+ * - Emits 'connect' event for downstream services (ChatRoomService)
+ *
  * Responsibilities:
  * - Connection lifecycle (connect/disconnect)
  * - State management (connected/disconnected/connecting)
  * - Event subscription system
- * - Token management
+ * - Token management (reactive via tokenManager subscription)
  *
  * What it does NOT do:
  * - Direct socket.io-client usage (uses SocketAdapter)
@@ -18,6 +24,10 @@
 
 import { createSocketConnection } from '../../adapters/socket/SocketAdapter.js';
 import { SOCKET_URL } from '../../config.js';
+import { tokenManager } from '../../utils/tokenManager.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('[SocketService]');
 
 class SocketService {
   constructor() {
@@ -27,6 +37,28 @@ class SocketService {
     this.emitQueue = []; // Queue of {event, data} to emit when connected
     this.connecting = false; // Flag to prevent multiple simultaneous connections
     this.currentToken = null; // Track current token to detect changes
+    this.tokenUnsubscribe = null; // Cleanup function for token subscription
+
+    // Subscribe to token changes - this is the core of event-driven auth
+    this.setupTokenSubscription();
+  }
+
+  /**
+   * Subscribe to tokenManager for reactive auth
+   * When token changes, auto-connect/disconnect
+   */
+  setupTokenSubscription() {
+    this.tokenUnsubscribe = tokenManager.subscribe(token => {
+      logger.debug('Token changed', { hasToken: !!token });
+
+      if (token) {
+        // Token available - connect (will reconnect if token changed)
+        this.connect(token);
+      } else {
+        // Token cleared - disconnect
+        this.disconnect();
+      }
+    });
   }
 
   /**
@@ -64,9 +96,26 @@ class SocketService {
       try {
         callback(state);
       } catch (error) {
-        console.error('[SocketService] Error in state subscriber:', error);
+        logger.error('Error in state subscriber', error);
       }
     });
+  }
+
+  /**
+   * Notify event subscribers for a specific event
+   * Used for events not routed through onAny (connect, disconnect)
+   */
+  notifyEventSubscribers(event, ...args) {
+    const callbacks = this.subscribers.get(event);
+    if (callbacks) {
+      callbacks.forEach(callback => {
+        try {
+          callback(...args);
+        } catch (error) {
+          logger.error('Error in event subscriber', error, { event });
+        }
+      });
+    }
   }
 
   /**
@@ -84,38 +133,30 @@ class SocketService {
    */
   connect(token) {
     if (!token) {
-      console.warn('[SocketService] Cannot connect without auth token');
+      logger.warn('Cannot connect without auth token');
       return;
     }
 
     // Already connected with same token - no need to reconnect
     if (this.connection?.connected && this.currentToken === token) {
-      if (import.meta.env.DEV) {
-        console.log('[SocketService] Already connected with same token');
-      }
+      logger.debug('Already connected with same token');
       return;
     }
 
     // If connecting, wait for it to complete
     if (this.connecting) {
-      if (import.meta.env.DEV) {
-        console.log('[SocketService] Connection already in progress, waiting...');
-      }
+      logger.debug('Connection already in progress, waiting');
       return;
     }
 
     // Clean up existing connection if disconnected or token changed
     if (this.connection) {
       if (this.currentToken !== token) {
-        if (import.meta.env.DEV) {
-          console.log('[SocketService] Token changed, cleaning up old connection');
-        }
+        logger.debug('Token changed, cleaning up old connection');
         this.connection.destroy();
         this.connection = null;
       } else if (!this.connection.connected) {
-        if (import.meta.env.DEV) {
-          console.log('[SocketService] Cleaning up disconnected connection');
-        }
+        logger.debug('Cleaning up disconnected connection');
         this.connection.destroy();
         this.connection = null;
       }
@@ -123,9 +164,7 @@ class SocketService {
 
     const socketUrl = this.getSocketUrl();
 
-    if (import.meta.env.DEV) {
-      console.log('[SocketService] Connecting to:', socketUrl);
-    }
+    logger.debug('Connecting to socket', { url: socketUrl });
 
     // Set connecting flag to prevent race conditions
     this.connecting = true;
@@ -141,65 +180,57 @@ class SocketService {
 
       // Set up connection event handlers using adapter's wrapper
       this.connection.on('connect', () => {
-        if (import.meta.env.DEV) {
-          console.log('[SocketService] ✅ Connected:', this.connection.id);
-        }
+        logger.info('Connected', { socketId: this.connection.id });
         this.connecting = false;
         this.notifyStateSubscribers();
+        // Notify event subscribers about 'connect' (not routed via onAny)
+        this.notifyEventSubscribers('connect');
         // Process queued emits
         this.processEmitQueue();
       });
 
       this.connection.on('disconnect', reason => {
-        if (import.meta.env.DEV) {
-          console.log('[SocketService] Disconnected:', reason);
-        }
+        logger.info('Disconnected', { reason });
         this.connecting = false;
         this.notifyStateSubscribers();
+        // Notify event subscribers about 'disconnect' (not routed via onAny)
+        this.notifyEventSubscribers('disconnect', reason);
 
         // If disconnect was not intentional, log for debugging
-        if (reason !== 'io client disconnect' && import.meta.env.DEV) {
-          console.warn('[SocketService] Unexpected disconnect:', reason);
+        if (reason !== 'io client disconnect') {
+          logger.warn('Unexpected disconnect', { reason });
         }
       });
 
       this.connection.on('connect_error', error => {
-        console.error('[SocketService] Connection error:', error.message);
+        logger.error('Connection error', error, { errorMessage: error.message });
         this.connecting = false;
         this.notifyStateSubscribers();
 
         // If auth error, clear token to force re-auth
         if (error.message?.includes('auth') || error.message?.includes('Authentication')) {
-          if (import.meta.env.DEV) {
-            console.warn('[SocketService] Auth error detected, may need new token');
-          }
+          logger.warn('Auth error detected, may need new token');
         }
       });
 
       // Handle reconnection attempts
       this.connection.on('reconnect_attempt', attemptNumber => {
-        if (import.meta.env.DEV) {
-          console.log('[SocketService] Reconnection attempt:', attemptNumber);
-        }
+        logger.debug('Reconnection attempt', { attemptNumber });
       });
 
       this.connection.on('reconnect', attemptNumber => {
-        if (import.meta.env.DEV) {
-          console.log('[SocketService] ✅ Reconnected after', attemptNumber, 'attempts');
-        }
+        logger.info('Reconnected', { attemptNumber });
         this.connecting = false;
         this.notifyStateSubscribers();
         this.processEmitQueue();
       });
 
       this.connection.on('reconnect_error', error => {
-        if (import.meta.env.DEV) {
-          console.error('[SocketService] Reconnection error:', error.message);
-        }
+        logger.error('Reconnection error', error, { errorMessage: error.message });
       });
 
       this.connection.on('reconnect_failed', () => {
-        console.error('[SocketService] Reconnection failed - giving up');
+        logger.error('Reconnection failed - giving up');
         this.connecting = false;
         this.notifyStateSubscribers();
       });
@@ -212,7 +243,7 @@ class SocketService {
             try {
               callback(...args);
             } catch (error) {
-              console.error(`[SocketService] Error in subscriber for ${eventName}:`, error);
+              logger.error('Error in subscriber', error, { eventName });
             }
           });
         }
@@ -221,7 +252,7 @@ class SocketService {
       // Initial state notification
       this.notifyStateSubscribers();
     } catch (error) {
-      console.error('[SocketService] Failed to create connection:', error);
+      logger.error('Failed to create connection', error);
       this.connecting = false;
       this.connection = null;
       this.notifyStateSubscribers();
@@ -232,13 +263,12 @@ class SocketService {
    * Disconnect from socket server
    */
   disconnect() {
-    if (this.socket) {
-      console.log('[SocketService] Disconnecting');
+    if (this.connection) {
+      logger.debug('Disconnecting');
       this.connecting = false;
       this.currentToken = null;
-      this.socket.removeAllListeners();
-      this.socket.disconnect();
-      this.socket = null;
+      this.connection.destroy();
+      this.connection = null;
       this.notifyStateSubscribers();
     }
   }
@@ -251,9 +281,7 @@ class SocketService {
   emit(event, data) {
     if (!this.connection?.connected) {
       // Queue the emit for when connection is ready
-      if (import.meta.env.DEV) {
-        console.log(`[SocketService] Queueing emit '${event}' (not connected yet)`);
-      }
+      logger.debug('Queueing emit (not connected yet)', { event });
       this.emitQueue.push({ event, data });
       return true; // Return true because it's queued
     }
@@ -267,16 +295,12 @@ class SocketService {
   processEmitQueue() {
     if (this.emitQueue.length === 0) return;
 
-    if (import.meta.env.DEV) {
-      console.log(`[SocketService] Processing ${this.emitQueue.length} queued emits`);
-    }
+    logger.debug('Processing queued emits', { queueLength: this.emitQueue.length });
     while (this.emitQueue.length > 0) {
       const { event, data } = this.emitQueue.shift();
       if (this.connection?.connected) {
         this.connection.emit(event, data);
-        if (import.meta.env.DEV) {
-          console.log(`[SocketService] Emitted queued '${event}'`);
-        }
+        logger.debug('Emitted queued event', { event });
       }
     }
   }
@@ -321,7 +345,7 @@ class SocketService {
     try {
       callback(this.getConnectionState());
     } catch (error) {
-      console.error('[SocketService] Error in state subscriber:', error);
+      logger.error('Error in state subscriber', error);
     }
 
     // Return unsubscribe function

@@ -1,6 +1,6 @@
 /**
  * Message Utility Functions
- * 
+ *
  * Shared utilities for message processing:
  * - Date grouping and formatting
  * - Ownership detection
@@ -16,7 +16,7 @@
 export function formatMessageDate(dateInput, formatterCache = null) {
   const msgDate = new Date(dateInput);
   const isValidDate = !isNaN(msgDate.getTime());
-  
+
   if (!isValidDate) {
     return 'Unknown Date';
   }
@@ -87,10 +87,7 @@ export function groupMessagesByDate(messages, formatterCache = null) {
   const cache = formatterCache || createDateFormatterCache();
 
   for (const msg of displayMessages) {
-    const dateLabel = formatMessageDate(
-      msg.created_at || msg.timestamp || Date.now(),
-      cache
-    );
+    const dateLabel = formatMessageDate(msg.created_at || msg.timestamp || Date.now(), cache);
 
     if (dateLabel !== currentDate) {
       if (currentGroup) groups.push(currentGroup);
@@ -114,19 +111,14 @@ export function groupMessagesByDate(messages, formatterCache = null) {
 export function detectMessageOwnership(message, currentUserId) {
   // UUID-based ownership detection (primary method)
   // Messages should have sender.uuid or sender_id from the server
-  const messageUserId = message.sender?.uuid || 
-                        message.sender?.id || 
-                        message.sender_id || 
-                        message.user_id;
+  const messageUserId =
+    message.sender?.uuid || message.sender?.id || message.sender_id || message.user_id;
 
   // Compare UUIDs/IDs (convert to string for safe comparison)
-  const isOwn = currentUserId && messageUserId && 
-                String(currentUserId) === String(messageUserId);
+  const isOwn = currentUserId && messageUserId && String(currentUserId) === String(messageUserId);
 
   // Get display name - prefer first_name, fallback to email
-  const senderDisplayName = message.sender?.first_name || 
-                            message.sender?.email || 
-                            'Unknown';
+  const senderDisplayName = message.sender?.first_name || message.sender?.email || 'Unknown';
 
   return {
     isOwn,
@@ -136,11 +128,17 @@ export function detectMessageOwnership(message, currentUserId) {
 }
 
 /**
- * Check if message is AI-generated
+ * Check if message is from LiaiZen (AI/system)
  * @param {Object} message - Message object
- * @returns {boolean} True if message is from AI
+ * @returns {boolean} True if message is from LiaiZen
  */
 export function isAIMessage(message) {
-  return message.isAI || message.sender?.email === 'LiaiZen';
+  // Check various ways a message might be from LiaiZen
+  return (
+    message.isAI ||
+    message.type === 'system' ||
+    message.sender?.email === 'LiaiZen' ||
+    message.sender?.email === 'system@liaizen.app' ||
+    message.user_email === 'system@liaizen.app'
+  );
 }
-

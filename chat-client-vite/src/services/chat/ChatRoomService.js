@@ -1,36 +1,63 @@
 import { socketService } from '../socket';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('[ChatRoomService]');
 
 /**
  * ChatRoomService - Domain service for room management
  *
- * Single Responsibility: Room joining, leaving, and room state.
- * Nothing else.
+ * Architecture (Event-Driven):
+ * - Stores user email for auto-join on reconnect
+ * - Subscribes to socket 'connect' events for auto-join
+ * - Subscribes to 'join_success' for room state updates
  *
- * This service subscribes to SocketService events directly.
- * React hooks subscribe to this service's state.
+ * Flow:
+ * 1. React calls setEmail(email) when user is authenticated
+ * 2. Socket connects (triggered by tokenManager)
+ * 3. ChatRoomService receives 'connect' → auto-joins with stored email
+ * 4. Server responds with 'join_success' → updates room state
+ *
+ * This eliminates race conditions because:
+ * - Email is stored before socket connects
+ * - Auto-join happens on every connect (including reconnects)
  */
 class ChatRoomService {
   constructor() {
     this.roomId = null;
     this.isJoined = false;
     this.error = null;
+    this.email = null; // Stored email for auto-join
     this.subscribers = new Set();
     this.setupSubscriptions();
   }
 
   setupSubscriptions() {
     // Subscribe to socket events relevant to rooms
-    // Server emits 'join_success' (not 'joined')
+    socketService.subscribe('connect', this.handleConnect.bind(this));
     socketService.subscribe('join_success', this.handleJoinSuccess.bind(this));
     socketService.subscribe('room_created', this.handleRoomCreated.bind(this));
     socketService.subscribe('disconnect', this.handleDisconnect.bind(this));
     socketService.subscribe('error', this.handleError.bind(this));
   }
 
+  /**
+   * Handle socket connect - auto-join with stored email
+   * This is the KEY to eliminating race conditions
+   */
+  handleConnect() {
+    if (this.email) {
+      logger.debug('Socket connected, auto-joining with email', { hasEmail: !!this.email });
+      socketService.emit('join', { email: this.email });
+    } else {
+      logger.debug('Socket connected, but no email set yet');
+    }
+  }
+
   handleJoinSuccess(data) {
-    console.log('[ChatRoomService] ========== JOIN_SUCCESS RECEIVED ==========');
-    console.log('[ChatRoomService] Room ID:', data.roomId);
-    console.log('[ChatRoomService] Email:', data.email);
+    logger.info('JOIN_SUCCESS received', {
+      roomId: data.roomId,
+      hasEmail: !!data.email,
+    });
     this.roomId = data.roomId || this.roomId;
     this.isJoined = true;
     this.error = null;
@@ -55,24 +82,49 @@ class ChatRoomService {
   }
 
   /**
-   * Join a room
-   * Will emit immediately if connected, or wait for connection
+   * Set user email for auto-join
+   * Called when user authenticates - stores email for current and future connections
+   */
+  setEmail(email) {
+    const previousEmail = this.email;
+    this.email = email;
+
+    logger.debug('Email set', { emailChanged: email !== previousEmail });
+
+    // If email changed and socket is connected, join immediately
+    if (email && email !== previousEmail && socketService.isConnected()) {
+      logger.debug('Socket already connected, joining now');
+      socketService.emit('join', { email });
+    }
+  }
+
+  /**
+   * Clear email (on logout)
+   */
+  clearEmail() {
+    this.email = null;
+    this.roomId = null;
+    this.isJoined = false;
+    this.notify();
+  }
+
+  /**
+   * Join a room (legacy method - prefer setEmail for event-driven flow)
+   * Kept for backward compatibility
    */
   join(email) {
     if (!email) return false;
+
+    // Store email for auto-join on reconnect
+    this.email = email;
 
     // If connected, emit immediately
     if (socketService.isConnected()) {
       return socketService.emit('join', { email });
     }
 
-    // Not connected yet - wait for connection then emit
-    console.log('[ChatRoomService] Waiting for connection before joining...');
-    const unsubscribe = socketService.subscribe('connect', () => {
-      console.log('[ChatRoomService] Connected, now joining room');
-      socketService.emit('join', { email });
-      unsubscribe();
-    });
+    // Not connected - handleConnect will auto-join when socket connects
+    logger.debug('Socket not connected, will auto-join when connected');
     return true; // Pending
   }
 

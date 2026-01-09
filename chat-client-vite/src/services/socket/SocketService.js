@@ -2,6 +2,9 @@
 // The Vite-bundled version was sending malformed packets with newline characters
 const io = typeof window !== 'undefined' && window.io ? window.io : null;
 import { SOCKET_URL, API_BASE_URL } from '../../config.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('[SocketService]');
 
 // DEBUG: Helper to send logs to server (so we can see them)
 const debugToServer = async (message, data = {}) => {
@@ -11,7 +14,7 @@ const debugToServer = async (message, data = {}) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, data, timestamp: new Date().toISOString() }),
     });
-  } catch (e) {
+  } catch (_e) {
     // Ignore errors
   }
 };
@@ -35,9 +38,7 @@ const debugToServer = async (message, data = {}) => {
  */
 class SocketService {
   constructor() {
-    console.log('[SocketService] ========================================');
-    console.log('[SocketService] CONSTRUCTOR CALLED at', new Date().toISOString());
-    console.log('[SocketService] ========================================');
+    logger.debug('CONSTRUCTOR CALLED', { timestamp: new Date().toISOString() });
     debugToServer('SocketService CONSTRUCTOR', { timestamp: new Date().toISOString() });
     this.socket = null;
     this.subscribers = new Map(); // event -> Set<callback>
@@ -61,14 +62,13 @@ class SocketService {
    * @returns {boolean} - Whether connection was initiated
    */
   connect(token) {
-    console.log('[SocketService] ========== CONNECT CALLED ==========');
-    console.log(
-      '[SocketService] Token:',
-      token ? `present (${token.substring(0, 20)}...)` : 'MISSING'
-    );
-    console.log('[SocketService] Current state:', this.connectionState);
-    console.log('[SocketService] Socket exists:', !!this.socket);
-    console.log('[SocketService] Socket connected:', this.socket?.connected);
+    logger.debug('CONNECT CALLED', {
+      hasToken: !!token,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : 'MISSING',
+      currentState: this.connectionState,
+      socketExists: !!this.socket,
+      socketConnected: this.socket?.connected,
+    });
     debugToServer('SocketService CONNECT CALLED', {
       hasToken: !!token,
       state: this.connectionState,
@@ -76,37 +76,36 @@ class SocketService {
     });
 
     if (!token) {
-      console.warn('[SocketService] Cannot connect without auth token');
+      logger.warn('Cannot connect without auth token');
       return false;
     }
 
     // Already connected
     if (this.socket?.connected) {
-      console.log('[SocketService] Already connected:', this.socket.id);
+      logger.debug('Already connected', { socketId: this.socket.id });
       return true;
     }
 
     // If we have a socket that's not connected, clean it up first
     if (this.socket) {
-      console.log('[SocketService] Cleaning up old disconnected socket');
+      logger.debug('Cleaning up old disconnected socket');
       this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
     }
 
     if (this.connectionState === 'connecting') {
-      console.log('[SocketService] Connection already in progress');
+      logger.debug('Connection already in progress');
       return true;
     }
 
     this.setConnectionState('connecting');
 
     const socketUrl = this.getSocketUrl();
-    console.log('[SocketService] 🔌 Connecting to:', socketUrl);
-    console.log(
-      '[SocketService] Current location:',
-      typeof window !== 'undefined' ? window.location.href : 'SSR'
-    );
+    logger.debug('Connecting to socket', {
+      url: socketUrl,
+      location: typeof window !== 'undefined' ? window.location.href : 'SSR',
+    });
 
     try {
       // In dev mode, use polling only to avoid session race conditions
@@ -116,18 +115,16 @@ class SocketService {
       // Use polling-first in dev to avoid WebSocket upgrade issues with allowUpgrades:false
       const transports = isDev ? ['polling'] : ['polling', 'websocket'];
 
-      console.log('[SocketService] ========================================');
-      console.log('[SocketService] CREATING SOCKET at', new Date().toISOString());
-      console.log('[SocketService] URL:', socketUrl);
-      console.log('[SocketService] Transports:', transports);
-      console.log('[SocketService] Token length:', token?.length);
-      console.log('[SocketService] io function type:', typeof io);
-      console.log('[SocketService] ========================================');
+      logger.debug('Creating socket', {
+        timestamp: new Date().toISOString(),
+        url: socketUrl,
+        transports,
+        tokenLength: token?.length,
+        ioFunctionType: typeof io,
+      });
 
       if (typeof io !== 'function') {
-        console.error(
-          '[SocketService] ❌ io is not a function! Socket.io-client may not be loaded correctly'
-        );
+        logger.error('io is not a function! Socket.io-client may not be loaded correctly');
         this.setConnectionState('disconnected');
         return false;
       }
@@ -147,38 +144,38 @@ class SocketService {
         query: { token },
       });
 
-      console.log('[SocketService] Socket created successfully!');
-      console.log('[SocketService] Socket object:', this.socket);
-      console.log('[SocketService] Socket id:', this.socket?.id);
-      console.log('[SocketService] Socket manager:', this.socket?.io);
-      console.log('[SocketService] Socket connected:', this.socket?.connected);
+      logger.debug('Socket created successfully', {
+        socketId: this.socket?.id,
+        hasSocketManager: !!this.socket?.io,
+        connected: this.socket?.connected,
+      });
 
       // Log transport events for debugging
       if (this.socket?.io) {
         this.socket.io.on('open', () => {
-          console.log('[SocketService] 🔓 Transport open');
+          logger.debug('Transport open');
         });
         this.socket.io.on('close', reason => {
-          console.log('[SocketService] 🔒 Transport closed:', reason);
+          logger.debug('Transport closed', { reason });
         });
         this.socket.io.on('packet', packet => {
-          console.log('[SocketService] 📦 Packet received:', packet.type);
+          logger.debug('Packet received', { type: packet.type });
         });
         this.socket.io.on('error', err => {
-          console.log('[SocketService] ⚠️ Transport error:', err);
+          logger.warn('Transport error', err);
         });
       } else {
-        console.error('[SocketService] ❌ Socket.io manager not available');
+        logger.error('Socket.io manager not available');
       }
 
       this.setupInternalHandlers();
-      console.log('[SocketService] ✅ Internal handlers set up');
+      logger.debug('Internal handlers set up');
       return true;
     } catch (err) {
-      console.error('[SocketService] ❌ Connection failed with error:', err);
-      console.error('[SocketService] Error name:', err.name);
-      console.error('[SocketService] Error message:', err.message);
-      console.error('[SocketService] Error stack:', err.stack);
+      logger.error('Connection failed', err, {
+        errorName: err.name,
+        errorMessage: err.message,
+      });
       this.setConnectionState('disconnected');
       return false;
     }
@@ -189,7 +186,7 @@ class SocketService {
    */
   disconnect() {
     if (this.socket) {
-      console.log('[SocketService] 🔌 Disconnecting');
+      logger.debug('Disconnecting');
       this.socket.disconnect();
       this.socket = null;
       this.setConnectionState('disconnected');
@@ -203,13 +200,13 @@ class SocketService {
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
-      console.log('[SocketService] ✅ Connected:', this.socket.id);
+      logger.info('Connected', { socketId: this.socket.id });
       this.setConnectionState('connected');
       this.notifySubscribers('connect', { socketId: this.socket.id });
     });
 
     this.socket.on('disconnect', reason => {
-      console.log('[SocketService] ❌ Disconnected:', reason);
+      logger.info('Disconnected', { reason });
       this.setConnectionState('disconnected');
       this.notifySubscribers('disconnect', { reason });
     });
@@ -222,7 +219,7 @@ class SocketService {
         error.type === 'TransportError';
 
       if (!isWebSocketError) {
-        console.log('[SocketService] ⚠️ Connection error:', error.message);
+        logger.warn('Connection error', { error: error.message });
         // Reset state to allow retry (socket.io handles reconnection internally)
         this.setConnectionState('disconnected');
         this.notifySubscribers('connect_error', { error: error.message });
@@ -231,19 +228,19 @@ class SocketService {
 
     // Handle when all reconnection attempts fail
     this.socket.io.on('reconnect_failed', () => {
-      console.log('[SocketService] ❌ All reconnection attempts failed');
+      logger.warn('All reconnection attempts failed');
       this.setConnectionState('disconnected');
       this.notifySubscribers('reconnect_failed', {});
     });
 
     this.socket.io.on('reconnect_attempt', attempt => {
-      console.log('[SocketService] 🔄 Reconnection attempt:', attempt);
+      logger.debug('Reconnection attempt', { attempt });
       this.setConnectionState('connecting');
       this.notifySubscribers('reconnect_attempt', { attempt });
     });
 
     this.socket.io.on('reconnect', () => {
-      console.log('[SocketService] ✅ Reconnected');
+      logger.info('Reconnected');
       this.setConnectionState('connected');
       this.notifySubscribers('reconnect', {});
     });
@@ -262,7 +259,7 @@ class SocketService {
    */
   emit(event, data) {
     if (!this.socket?.connected) {
-      console.warn('[SocketService] Cannot emit, not connected:', event);
+      logger.warn('Cannot emit, not connected', { event });
       return false;
     }
     this.socket.emit(event, data);
@@ -315,7 +312,7 @@ class SocketService {
         try {
           callback(...args);
         } catch (err) {
-          console.error(`[SocketService] Subscriber error for ${event}:`, err);
+          logger.error('Subscriber error', err, { event });
         }
       });
     }
@@ -331,7 +328,7 @@ class SocketService {
         try {
           callback(state);
         } catch (err) {
-          console.error('[SocketService] State subscriber error:', err);
+          logger.error('State subscriber error', err);
         }
       });
     }
@@ -365,11 +362,11 @@ let socketService;
 if (typeof window !== 'undefined' && window.__SOCKET_SERVICE__) {
   // HMR: Clean up old socket completely and create fresh instance
   const oldService = window.__SOCKET_SERVICE__;
-  console.log('[SocketService] HMR detected - cleaning up old socket');
+  logger.debug('HMR detected - cleaning up old socket');
 
   // Fully disconnect and clean up old socket
   if (oldService.socket) {
-    console.log('[SocketService] Destroying old socket:', oldService.socket.id);
+    logger.debug('Destroying old socket', { socketId: oldService.socket.id });
     oldService.socket.removeAllListeners();
     oldService.socket.disconnect();
     oldService.socket = null;
@@ -377,16 +374,16 @@ if (typeof window !== 'undefined' && window.__SOCKET_SERVICE__) {
 
   // Create fresh instance for clean state
   socketService = new SocketService();
-  console.log('[SocketService] Created fresh instance after HMR cleanup');
+  logger.debug('Created fresh instance after HMR cleanup');
 } else {
   socketService = new SocketService();
-  console.log('[SocketService] Created new instance');
+  logger.debug('Created new instance');
 }
 
 // Debug: Expose on window in development
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
   window.__SOCKET_SERVICE__ = socketService;
-  console.log('[SocketService] Debug: Available at window.__SOCKET_SERVICE__');
+  logger.debug('Debug: Available at window.__SOCKET_SERVICE__');
 }
 
 export { socketService };

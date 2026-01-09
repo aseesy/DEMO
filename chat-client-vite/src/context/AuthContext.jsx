@@ -15,22 +15,22 @@ import { logUserTransform } from '../utils/dataTransformDebug.js';
 
 /**
  * 🔒 SEALED FILE - DO NOT MODIFY WITHOUT APPROVAL
- * 
+ *
  * AuthContext - Centralized authentication state management
  *
  * ⚠️ CRITICAL: This file is SEALED and SET IN STONE.
  * The authentication flow is production-ready and battle-tested.
- * 
+ *
  * RULES FOR AI ASSISTANTS:
  * - ❌ DO NOT modify FSM state transitions
- * - ❌ DO NOT change token storage/retrieval patterns  
+ * - ❌ DO NOT change token storage/retrieval patterns
  * - ❌ DO NOT alter session verification logic
  * - ❌ DO NOT modify auth state subscription mechanism
  * - ✅ CAN modify error messages (user-facing text)
  * - ✅ CAN update logging format (dev-only)
- * 
+ *
  * Before modifying: Check docs/AUTH_FLOW_SEALED.md for approval process.
- * 
+ *
  * ARCHITECTURE: Finite State Machine (FSM) for auth status
  * States: LOADING -> AUTHENTICATED | ANONYMOUS
  *
@@ -41,7 +41,7 @@ import { logUserTransform } from '../utils/dataTransformDebug.js';
  * MIGRATION NOTE: Email is now the primary identifier.
  * The `username` field is kept for backward compatibility but always equals `email`.
  * All new code should use `email` instead of `username`.
- * 
+ *
  * See: docs/AUTH_FLOW_SEALED.md for complete sealing documentation.
  */
 
@@ -167,11 +167,11 @@ export function AuthProvider({ children }) {
 
   // MIGRATION: email is the primary identifier, username is kept for backward compatibility
   const [email, setEmail] = React.useState(initialAuthState.email);
-  
+
   // CRITICAL: Token is derived from tokenManager (single source of truth)
   // Subscribe to tokenManager changes to keep React state in sync
   const [token, setToken] = React.useState(() => tokenManager.getToken());
-  
+
   // Subscribe to tokenManager changes
   React.useEffect(() => {
     const unsubscribe = tokenManager.subscribe(newToken => {
@@ -179,7 +179,7 @@ export function AuthProvider({ children }) {
     });
     return unsubscribe;
   }, []);
-  
+
   // username is now an alias for email - kept for backward compatibility with existing components
   const username = email;
   const setUsername = setEmail; // Redirect setUsername calls to setEmail
@@ -201,7 +201,9 @@ export function AuthProvider({ children }) {
   // Track AbortController for cleanup on unmount
   const verifySessionAbortControllerRef = React.useRef(null);
   // Track current auth status for abort recovery
-  const authStatusRef = React.useRef(initialAuthState.isAuthenticated ? AuthStatus.AUTHENTICATED : AuthStatus.ANONYMOUS);
+  const authStatusRef = React.useRef(
+    initialAuthState.isAuthenticated ? AuthStatus.AUTHENTICATED : AuthStatus.ANONYMOUS
+  );
 
   /**
    * Clear auth state - transitions FSM to ANONYMOUS
@@ -233,6 +235,10 @@ export function AuthProvider({ children }) {
    */
   const verifySession = React.useCallback(async () => {
     setError(null);
+
+    // Store previous status BEFORE try block so it's accessible in catch
+    // This allows us to restore state on network errors without logging out
+    let previousStatus = authStatusRef.current;
 
     try {
       const storedToken = authStorage.getToken();
@@ -270,8 +276,8 @@ export function AuthProvider({ children }) {
 
       // CRITICAL: Only set LOADING now that we know we'll complete the request
       // This prevents getting stuck in LOADING if we return early (no token, expired, etc.)
-      // Store previous state so we can restore it on abort if needed
-      const previousStatus = authStatusRef.current;
+      // Update previous state capture now that we're about to set LOADING
+      previousStatus = authStatusRef.current;
       setAuthStatus(AuthStatus.LOADING);
       authStatusRef.current = AuthStatus.LOADING;
 
@@ -303,6 +309,28 @@ export function AuthProvider({ children }) {
           authStatusRef.current = previousStatus;
           return;
         }
+
+        // Handle network errors (server down, connection refused, etc.)
+        // Don't log out on network errors - token is still valid, just server is unavailable
+        if (
+          err.message?.includes('fetch') ||
+          err.message?.includes('network') ||
+          err.message?.includes('Failed to fetch') ||
+          err.message?.includes('ECONNREFUSED') ||
+          err.message?.includes('ERR_CONNECTION_REFUSED') ||
+          err.code === 'ECONNREFUSED'
+        ) {
+          if (import.meta.env.DEV) {
+            console.log(
+              '[verifySession] ⚠️ Network/server error - keeping current auth state (server may be restarting)'
+            );
+          }
+          // Restore previous state - don't log out on network errors
+          setAuthStatus(previousStatus);
+          authStatusRef.current = previousStatus;
+          return;
+        }
+
         throw err;
       }
 
@@ -352,14 +380,31 @@ export function AuthProvider({ children }) {
           clearAuthState();
         }
       } else {
-        if (import.meta.env.DEV) {
-          console.log(
-            '[verifySession] ❌ Server verification failed (status:',
-            response.status,
-            ') -> ANONYMOUS'
-          );
+        // Server responded but not OK
+        if (response.status === 401) {
+          // Server explicitly rejected token - log out
+          if (import.meta.env.DEV) {
+            console.log('[verifySession] ❌ Server rejected token (401) -> ANONYMOUS');
+          }
+          clearAuthState();
+        } else if (response.status >= 500) {
+          // Server error (5xx) - don't log out, server is having issues
+          if (import.meta.env.DEV) {
+            console.log('[verifySession] ⚠️ Server error - keeping current auth state');
+          }
+          setAuthStatus(previousStatus);
+          authStatusRef.current = previousStatus;
+        } else {
+          // Other non-OK status - log out to be safe
+          if (import.meta.env.DEV) {
+            console.log(
+              '[verifySession] ❌ Server verification failed (status:',
+              response.status,
+              ') -> ANONYMOUS'
+            );
+          }
+          clearAuthState();
         }
-        clearAuthState();
       }
     } catch (err) {
       // Log error (but not AbortError)
@@ -368,12 +413,44 @@ export function AuthProvider({ children }) {
           console.error('[verifySession] ⚠️ Error verifying session:', err);
         }
       }
-      // DETERMINISTIC: On any error, go to ANONYMOUS
-      // No "optimistic" state - if we can't verify, user must re-authenticate
-      if (import.meta.env.DEV) {
-        console.log('[verifySession] ❌ Error occurred -> ANONYMOUS (deterministic)');
+
+      // Handle network/server errors - don't log out if server is down/restarting
+      const isNetworkError =
+        err.message?.includes('fetch') ||
+        err.message?.includes('Failed to fetch') ||
+        err.message?.includes('network') ||
+        err.message?.includes('ECONNREFUSED') ||
+        err.message?.includes('ERR_CONNECTION_REFUSED') ||
+        err.code === 'ECONNREFUSED' ||
+        !err.response; // No response means network error
+
+      if (isNetworkError) {
+        // Network error - server is down or restarting, keep current auth state
+        if (import.meta.env.DEV) {
+          console.log(
+            '[verifySession] ⚠️ Network/server error - keeping current auth state (server may be restarting)'
+          );
+        }
+        setAuthStatus(previousStatus);
+        authStatusRef.current = previousStatus;
+        return;
       }
-      clearAuthState();
+
+      // Only log out if server explicitly rejected (401) or token-related error
+      // For other errors, keep current state (token is still valid)
+      if (err.status === 401 || err.response?.status === 401) {
+        if (import.meta.env.DEV) {
+          console.log('[verifySession] ❌ Server rejected token (401) -> ANONYMOUS');
+        }
+        clearAuthState();
+      } else {
+        // Unknown error - be conservative but don't log out on network issues
+        if (import.meta.env.DEV) {
+          console.log('[verifySession] ⚠️ Unknown error - keeping current auth state');
+        }
+        setAuthStatus(previousStatus);
+        authStatusRef.current = previousStatus;
+      }
     }
   }, [clearAuthState]);
 
@@ -470,79 +547,82 @@ export function AuthProvider({ children }) {
    * Signup with email/password
    * CRITICAL: Uses commandSignup for single source of truth (validation, retries, error handling)
    */
-  const signup = React.useCallback(async (email, password, firstName = '', lastName = '', options = {}) => {
-    setIsSigningUp(true);
-    setError(null);
+  const signup = React.useCallback(
+    async (email, password, firstName = '', lastName = '', options = {}) => {
+      setIsSigningUp(true);
+      setError(null);
 
-    try {
-      // Use commandSignup for single source of truth (validation, retries, error handling)
-      const result = await commandSignup({
-        email,
-        password,
-        firstName,
-        lastName,
-        honeypotValue: options.honeypotValue || '',
-      });
+      try {
+        // Use commandSignup for single source of truth (validation, retries, error handling)
+        const result = await commandSignup({
+          email,
+          password,
+          firstName,
+          lastName,
+          honeypotValue: options.honeypotValue || '',
+        });
 
-      // Handle validation errors
-      if (result.validationError) {
-        setError(result.error);
-        return { success: false, error: result.error, validationError: true };
+        // Handle validation errors
+        if (result.validationError) {
+          setError(result.error);
+          return { success: false, error: result.error, validationError: true };
+        }
+
+        // Handle API errors
+        if (!result.success) {
+          const errorMessage = result.error?.userMessage || result.error || 'Signup failed';
+          setError(errorMessage);
+          return { success: false, error: result.error || errorMessage, action: result.action };
+        }
+
+        // Success - extract user and token
+        const { user, token } = result;
+
+        // Backend returns email, not username - use email as the identifier
+        const userIdentifier = user?.email || user?.username;
+        if (userIdentifier) {
+          setUsername(userIdentifier);
+          authStorage.setUsername(userIdentifier);
+          setUserID(userIdentifier);
+          setUserProperties(calculateUserProperties(user, true));
+        }
+
+        if (user) {
+          storage.set(StorageKeys.CHAT_USER, user);
+        }
+
+        // Use cleanEmail from command result (already validated and cleaned)
+        if (result.cleanEmail) {
+          setEmail(result.cleanEmail);
+          storage.set(StorageKeys.USER_EMAIL, result.cleanEmail);
+        }
+
+        if (token) {
+          // CRITICAL: tokenManager is the single source of truth
+          // Setting it will update cache, storage, and notify subscribers (including this component)
+          await tokenManager.setToken(token);
+          // React state will update via tokenManager subscription
+        }
+
+        // FSM: Transition to AUTHENTICATED
+        authStorage.setAuthenticated(true);
+        setAuthStatus(AuthStatus.AUTHENTICATED);
+        authStatusRef.current = AuthStatus.AUTHENTICATED;
+
+        return { success: true, user };
+      } catch (err) {
+        // This should rarely happen since commandSignup handles errors
+        // But keep for unexpected errors
+        const errorInfo = getErrorMessage(err, { statusCode: 0 });
+        setError(errorInfo.userMessage);
+        logError(err, { endpoint: '/api/auth/signup', operation: 'signup' });
+        return { success: false, error: errorInfo };
+      } finally {
+        setIsSigningUp(false);
       }
-
-      // Handle API errors
-      if (!result.success) {
-        const errorMessage = result.error?.userMessage || result.error || 'Signup failed';
-        setError(errorMessage);
-        return { success: false, error: result.error || errorMessage, action: result.action };
-      }
-
-      // Success - extract user and token
-      const { user, token } = result;
-
-      // Backend returns email, not username - use email as the identifier
-      const userIdentifier = user?.email || user?.username;
-      if (userIdentifier) {
-        setUsername(userIdentifier);
-        authStorage.setUsername(userIdentifier);
-        setUserID(userIdentifier);
-        setUserProperties(calculateUserProperties(user, true));
-      }
-
-      if (user) {
-        storage.set(StorageKeys.CHAT_USER, user);
-      }
-
-      // Use cleanEmail from command result (already validated and cleaned)
-      if (result.cleanEmail) {
-        setEmail(result.cleanEmail);
-        storage.set(StorageKeys.USER_EMAIL, result.cleanEmail);
-      }
-
-      if (token) {
-        // CRITICAL: tokenManager is the single source of truth
-        // Setting it will update cache, storage, and notify subscribers (including this component)
-        await tokenManager.setToken(token);
-        // React state will update via tokenManager subscription
-      }
-
-      // FSM: Transition to AUTHENTICATED
-      authStorage.setAuthenticated(true);
-      setAuthStatus(AuthStatus.AUTHENTICATED);
-      authStatusRef.current = AuthStatus.AUTHENTICATED;
-
-      return { success: true, user };
-    } catch (err) {
-      // This should rarely happen since commandSignup handles errors
-      // But keep for unexpected errors
-      const errorInfo = getErrorMessage(err, { statusCode: 0 });
-      setError(errorInfo.userMessage);
-      logError(err, { endpoint: '/api/auth/signup', operation: 'signup' });
-      return { success: false, error: errorInfo };
-    } finally {
-      setIsSigningUp(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   /**
    * Logout
