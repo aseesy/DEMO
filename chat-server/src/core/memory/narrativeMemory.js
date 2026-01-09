@@ -27,6 +27,14 @@ const query = (sql, params) => pool.query(sql, params);
 const EMBEDDING_MODEL = 'text-embedding-3-small';
 const EMBEDDING_DIMENSIONS = 1536;
 
+// Similarity threshold for filtering results (0-1, higher is more similar)
+const SIMILARITY_THRESHOLD = 0.5;
+
+// Batch processing constants for similarity search
+const MAX_MESSAGES_FOR_SIMILARITY_SEARCH = 200; // Pre-filter to recent messages
+const SIMILARITY_BATCH_SIZE = 50; // Process in batches to avoid blocking event loop
+const SIMILARITY_SEARCH_TIME_WINDOW_MONTHS = 6; // Limit search to last 6 months
+
 /**
  * Generate embedding for text using OpenAI
  * @param {string} text - Text to generate embedding for
@@ -145,14 +153,15 @@ async function findSimilarMessages(queryText, userId, roomId, limit = 5) {
 
   try {
     // Get messages with embeddings from the room
-    // Limit to recent messages (last 6 months) for performance
+    // Limit to recent messages for performance
     let sql = `
       SELECT id, text, embedding, timestamp, username
       FROM messages
       WHERE room_id = $1
         AND embedding IS NOT NULL
-        AND timestamp > NOW() - INTERVAL '6 months'
+        AND timestamp > NOW() - INTERVAL '${SIMILARITY_SEARCH_TIME_WINDOW_MONTHS} months'
     `;
+    // Note: Template literal is safe here - SIMILARITY_SEARCH_TIME_WINDOW_MONTHS is a constant number
     const params = [roomId];
 
     if (userId) {
@@ -164,7 +173,7 @@ async function findSimilarMessages(queryText, userId, roomId, limit = 5) {
       }
     }
 
-    sql += ' ORDER BY timestamp DESC LIMIT 200'; // Pre-filter to recent messages
+    sql += ` ORDER BY timestamp DESC LIMIT ${MAX_MESSAGES_FOR_SIMILARITY_SEARCH}`; // Pre-filter to recent messages
 
     const result = await query(sql, params);
 
@@ -172,24 +181,61 @@ async function findSimilarMessages(queryText, userId, roomId, limit = 5) {
       return [];
     }
 
+    // Validate and filter embeddings before similarity calculation
+    const validMessages = result.rows.filter(row => {
+      // Validate embedding dimensions
+      if (!row.embedding || !Array.isArray(row.embedding)) {
+        logger.debug('Invalid embedding: not an array', { messageId: row.id });
+        return false;
+      }
+      if (row.embedding.length !== EMBEDDING_DIMENSIONS) {
+        logger.warn('Invalid embedding dimensions', {
+          expected: EMBEDDING_DIMENSIONS,
+          actual: row.embedding.length,
+          messageId: row.id,
+        });
+        return false;
+      }
+      return true;
+    });
+
+    if (validMessages.length === 0) {
+      return [];
+    }
+
     // Calculate similarity scores in JavaScript
     // (More efficient than computing in PostgreSQL without pgvector)
-    const messagesWithSimilarity = result.rows
-      .map(row => ({
-        id: row.id,
-        text: row.text,
-        timestamp: row.timestamp,
-        username: row.username,
-        similarity: cosineSimilarity(queryEmbedding, row.embedding),
-      }))
-      .filter(m => m.similarity > 0.5) // Only return reasonably similar messages
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, limit);
+    // Process in batches to avoid blocking event loop for large result sets
+    const messagesWithSimilarity = [];
 
-    return messagesWithSimilarity;
+    for (let i = 0; i < validMessages.length; i += SIMILARITY_BATCH_SIZE) {
+      const batch = validMessages.slice(i, i + SIMILARITY_BATCH_SIZE);
+      const batchResults = batch
+        .map(row => ({
+          id: row.id,
+          text: row.text,
+          timestamp: row.timestamp,
+          username: row.username,
+          similarity: cosineSimilarity(queryEmbedding, row.embedding),
+        }))
+        .filter(m => m.similarity > SIMILARITY_THRESHOLD); // Only return reasonably similar messages
+
+      messagesWithSimilarity.push(...batchResults);
+
+      // Yield to event loop every batch to avoid blocking
+      if (i + SIMILARITY_BATCH_SIZE < validMessages.length) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+    }
+
+    return messagesWithSimilarity.sort((a, b) => b.similarity - a.similarity).slice(0, limit);
   } catch (error) {
     logger.error('❌ NarrativeMemory: Failed to find similar messages', {
       message: error.message,
+      roomId,
+      userId: userId || null,
+      queryLength: queryText?.length || 0,
+      errorStack: error.stack,
     });
     return [];
   }
@@ -467,4 +513,8 @@ module.exports = {
   // Constants (for testing)
   EMBEDDING_MODEL,
   EMBEDDING_DIMENSIONS,
+  SIMILARITY_THRESHOLD,
+  MAX_MESSAGES_FOR_SIMILARITY_SEARCH,
+  SIMILARITY_BATCH_SIZE,
+  SIMILARITY_SEARCH_TIME_WINDOW_MONTHS,
 };
