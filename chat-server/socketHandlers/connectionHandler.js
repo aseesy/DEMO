@@ -15,7 +15,7 @@ function registerConnectionHandlers(socket, io, services) {
   // Services manage their own state via UserSessionService
   const { userSessionService } = services;
   const logger = defaultLogger.child({ handler: 'connection' });
-  
+
   // Initialize presence service if available
   let presenceService = null;
   try {
@@ -88,18 +88,11 @@ function registerConnectionHandlers(socket, io, services) {
 
     // Note: Thread analysis is now triggered automatically in JoinSocketRoomUseCase
     // when the room is resolved. This ensures analysis runs even if join event is not explicitly emitted.
-    // Keeping this as a fallback for backwards compatibility, but it should be redundant now.
+    // REMOVED: The fallback call to maybeAnalyzeRoomOnJoin was causing duplicate analysis complete events.
+    // The use case already handles this, so we don't need the fallback anymore.
     if (services.threadManager) {
-      logger.debug('Analysis should already be triggered in use case, keeping fallback', {
+      logger.debug('Analysis triggered in use case - skipping fallback to prevent duplicates', {
         roomId: result.roomId,
-      });
-      // Analysis is now automatic in JoinSocketRoomUseCase - this is just a fallback
-      maybeAnalyzeRoomOnJoin(io, result.roomId, services.threadManager).catch(err => {
-        logger.warn('Fallback analysis failed (non-fatal)', {
-          error: err.message,
-          errorCode: err.code,
-          roomId: result.roomId,
-        });
       });
     }
   });
@@ -120,7 +113,7 @@ function registerConnectionHandlers(socket, io, services) {
     if (!user) return;
 
     const { roomId, email } = user;
-    
+
     // Update presence (non-blocking)
     if (presenceService && email) {
       presenceService.setOffline(email, socket.id).catch(err => {
@@ -131,7 +124,7 @@ function registerConnectionHandlers(socket, io, services) {
         });
       });
     }
-    
+
     await userSessionService.disconnectUser(socket.id);
 
     const roomUsers = getRoomUsers(userSessionService, roomId);

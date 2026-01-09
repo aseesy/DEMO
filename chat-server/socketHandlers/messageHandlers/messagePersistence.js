@@ -92,21 +92,19 @@ async function addToHistory(message, roomId, options = {}) {
       options.io
     ) {
       setImmediate(() => {
-        autoThreading
-          .processMessageForThreading(messageToSave, { io: options.io })
-          .catch(err => {
-            logger.warn('AutoThreading background error', {
-              error: err.message,
-              errorCode: err.code,
-              messageId: messageToSave.id,
-            });
+        autoThreading.processMessageForThreading(messageToSave, { io: options.io }).catch(err => {
+          logger.warn('AutoThreading background error', {
+            error: err.message,
+            errorCode: err.code,
+            messageId: messageToSave.id,
           });
+        });
       });
     }
 
-    // Topic Detection: Assign message to topics for AI summaries (non-blocking)
+    // Topic Detection & Dual-Brain Updates: Process in background (non-blocking)
     // Only process regular user messages with sufficient text content
-    // Note: Runs in background after embedding generation
+    // Note: Runs in background after message is saved
     if (
       message.type !== 'system' &&
       message.type !== 'ai_intervention' &&
@@ -117,16 +115,53 @@ async function addToHistory(message, roomId, options = {}) {
       setImmediate(async () => {
         try {
           // Step 1: Generate and store embedding for this message
-          // Required for topic similarity matching
+          // Required for topic similarity matching and dual-brain narrative memory
           const { storeMessageEmbedding } = require('../../src/core/memory/narrativeMemory');
           const embeddingStored = await storeMessageEmbedding(messageToSave.id, messageToSave.text);
 
           if (!embeddingStored) {
-            // Can't do topic detection without embedding - exit silently
+            // Can't do topic detection or dual-brain updates without embedding - exit silently
             return;
           }
 
-          // Step 2: Try to assign to existing topic
+          // Step 2: Update dual-brain context (social map + narrative memory)
+          // This updates Neo4j with any new entities mentioned and keeps social map current
+          try {
+            const {
+              updateDualBrainFromMessage,
+            } = require('../../src/core/engine/contextBuilders/dualBrainContext');
+            const { isEnabled } = require('../../src/infrastructure/config/featureFlags');
+
+            // Only update if dual-brain context is enabled
+            if (isEnabled('DUAL_BRAIN_CONTEXT')) {
+              // Get userId from userEmail
+              const dbPostgres = require('../../../dbPostgres');
+              const userResult = await dbPostgres.query('SELECT id FROM users WHERE email = $1', [
+                userEmail,
+              ]);
+              if (userResult.rows.length > 0) {
+                const userId = userResult.rows[0].id;
+                // Validate userId is a valid number
+                if (userId && typeof userId === 'number' && !isNaN(userId)) {
+                  updateDualBrainFromMessage(messageToSave, userId, messageToSave.roomId);
+                } else {
+                  logger.warn('Invalid userId from database, skipping dual-brain update', {
+                    userEmail,
+                    userId,
+                    messageId: messageToSave.id,
+                  });
+                }
+              }
+            }
+          } catch (dualBrainError) {
+            // Dual-brain update is non-critical - log and continue
+            logger.debug('Dual-brain update error (non-critical)', {
+              error: dualBrainError.message,
+              messageId: messageToSave.id,
+            });
+          }
+
+          // Step 3: Try to assign to existing topic
           const { getTopicService } = require('../../src/services/topics');
           const { broadcastMessageAddedToTopic } = require('../topicsHandler');
 
@@ -141,7 +176,12 @@ async function addToHistory(message, roomId, options = {}) {
             await topicService.addMessageToTopic(messageToSave.id, topicId);
 
             // Broadcast to subscribers
-            broadcastMessageAddedToTopic(options.io, messageToSave.roomId, topicId, messageToSave.id);
+            broadcastMessageAddedToTopic(
+              options.io,
+              messageToSave.roomId,
+              topicId,
+              messageToSave.id
+            );
 
             logger.info('Message assigned to topic', {
               messageId: messageToSave.id,
@@ -151,8 +191,8 @@ async function addToHistory(message, roomId, options = {}) {
           }
           // If no matching topic, message will be picked up by next manual/scheduled detection
         } catch (err) {
-          // Topic detection is non-critical - log and continue
-          logger.warn('TopicDetection background error', {
+          // Topic detection and dual-brain updates are non-critical - log and continue
+          logger.warn('Background processing error (non-critical)', {
             error: err.message,
             errorCode: err.code,
             messageId: messageToSave.id,

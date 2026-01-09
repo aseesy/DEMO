@@ -10,6 +10,9 @@
 const { PostgresGenericRepository } = require('./PostgresGenericRepository');
 const dbPostgres = require('../../../dbPostgres');
 const { buildUserObject } = require('../../../socketHandlers/utils');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ component: 'MessageRepository' });
 
 /**
  * PostgreSQL implementation of message repository
@@ -30,7 +33,7 @@ class MessageRepository extends PostgresGenericRepository {
 
     // Only cache basic queries (no pagination, no thread filter)
     const isBasicQuery = !before && !after && !threadId && offset === 0;
-    
+
     if (isBasicQuery) {
       const queryCache = require('../../infrastructure/cache/queryCache');
       const cacheKey = { roomId, limit };
@@ -120,7 +123,7 @@ class MessageRepository extends PostgresGenericRepository {
     if (isBasicQuery) {
       const queryCache = require('../../infrastructure/cache/queryCache');
       await queryCache.set('messages:room', { roomId, limit }, response, 120).catch(err => {
-        console.warn('[MessageRepository] Failed to cache messages:', err.message);
+        logger.warn('Failed to cache messages', err, { roomId, limit });
       });
     }
 
@@ -275,7 +278,7 @@ class MessageRepository extends PostgresGenericRepository {
     if (room_id) {
       const queryCache = require('../../infrastructure/cache/queryCache');
       await queryCache.invalidateRoom(room_id).catch(err => {
-        console.warn('[MessageRepository] Failed to invalidate cache:', err.message);
+        logger.warn('Failed to invalidate cache', err, { roomId: room_id });
       });
     }
 
@@ -353,7 +356,7 @@ class MessageRepository extends PostgresGenericRepository {
     if (updatedMessage?.roomId) {
       const queryCache = require('../../infrastructure/cache/queryCache');
       await queryCache.invalidateRoom(updatedMessage.roomId).catch(err => {
-        console.warn('[MessageRepository] Failed to invalidate cache:', err.message);
+        logger.warn('Failed to invalidate cache', err, { roomId: updatedMessage.roomId });
       });
     }
 
@@ -381,7 +384,7 @@ class MessageRepository extends PostgresGenericRepository {
     if (roomId) {
       const queryCache = require('../../infrastructure/cache/queryCache');
       await queryCache.invalidateRoom(roomId).catch(err => {
-        console.warn('[MessageRepository] Failed to invalidate cache:', err.message);
+        logger.warn('Failed to invalidate cache', err, { roomId });
       });
     }
 

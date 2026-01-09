@@ -10,6 +10,9 @@
 const { IThreadRepository } = require('../interfaces/IThreadRepository');
 const { PostgresGenericRepository } = require('./PostgresGenericRepository');
 const { normalizeCategory, validateCategory } = require('../../services/threads/threadCategories');
+const { defaultLogger } = require('../../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ component: 'PostgresThreadRepository' });
 
 /**
  * PostgreSQL implementation of thread repository
@@ -32,7 +35,7 @@ class PostgresThreadRepository extends PostgresGenericRepository {
    */
   async findByRoomId(roomId, options = {}) {
     const { includeArchived = false, limit = 10 } = options;
-    
+
     // Check query cache first
     const queryCache = require('../../infrastructure/cache/queryCache');
     const cacheKey = { roomId, includeArchived, limit };
@@ -53,7 +56,7 @@ class PostgresThreadRepository extends PostgresGenericRepository {
 
     // Cache result for 5 minutes
     await queryCache.set('threads:room', cacheKey, result, 300).catch(err => {
-      console.warn('[PostgresThreadRepository] Failed to cache threads:', err.message);
+      logger.warn('Failed to cache threads', err, { roomId, includeArchived, limit });
     });
 
     return result;
@@ -118,7 +121,7 @@ class PostgresThreadRepository extends PostgresGenericRepository {
     // Invalidate query cache for this room
     const queryCache = require('../../infrastructure/cache/queryCache');
     await queryCache.invalidateRoom(threadData.roomId).catch(err => {
-      console.warn('[PostgresThreadRepository] Failed to invalidate cache:', err.message);
+      logger.warn('Failed to invalidate cache', err, { roomId: threadData.roomId });
     });
 
     // Index thread for semantic search (fail-open: errors are non-fatal)
@@ -127,7 +130,10 @@ class PostgresThreadRepository extends PostgresGenericRepository {
         await this.semanticIndex.indexThread(threadId, threadData.roomId, threadData.title);
       } catch (err) {
         // Fail-open: semantic indexing is optional, don't block thread creation
-        console.warn('⚠️  Failed to index thread (non-fatal):', err.message);
+        logger.warn('Failed to index thread (non-fatal)', err, {
+          threadId,
+          roomId: threadData.roomId,
+        });
       }
     }
 
@@ -155,13 +161,13 @@ class PostgresThreadRepository extends PostgresGenericRepository {
       if (roomId) {
         const queryCache = require('../../infrastructure/cache/queryCache');
         await queryCache.invalidateRoom(roomId).catch(err => {
-          console.warn('[PostgresThreadRepository] Failed to invalidate cache:', err.message);
+          logger.warn('Failed to invalidate cache', err, { roomId });
         });
       }
 
       return true;
     } catch (error) {
-      console.error('Error updating thread title:', error);
+      logger.error('Error updating thread title', error, { threadId });
       return false;
     }
   }
@@ -188,13 +194,13 @@ class PostgresThreadRepository extends PostgresGenericRepository {
       if (roomId) {
         const queryCache = require('../../infrastructure/cache/queryCache');
         await queryCache.invalidateRoom(roomId).catch(err => {
-          console.warn('[PostgresThreadRepository] Failed to invalidate cache:', err.message);
+          logger.warn('Failed to invalidate cache', err, { roomId });
         });
       }
 
       return true;
     } catch (error) {
-      console.error('Error updating thread category:', error);
+      logger.error('Error updating thread category', error, { threadId, category: newCategory });
       return false;
     }
   }
@@ -220,13 +226,13 @@ class PostgresThreadRepository extends PostgresGenericRepository {
       if (roomId) {
         const queryCache = require('../../infrastructure/cache/queryCache');
         await queryCache.invalidateRoom(roomId).catch(err => {
-          console.warn('[PostgresThreadRepository] Failed to invalidate cache:', err.message);
+          logger.warn('Failed to invalidate cache', err, { roomId });
         });
       }
 
       return true;
     } catch (error) {
-      console.error('Error archiving thread:', error);
+      logger.error('Error archiving thread', error, { threadId, archived });
       return false;
     }
   }
@@ -290,7 +296,7 @@ class PostgresThreadRepository extends PostgresGenericRepository {
         };
       });
     } catch (error) {
-      console.error('Error getting thread messages:', error);
+      logger.error('Error getting thread messages', error, { threadId, limit, offset });
       return [];
     }
   }
@@ -332,7 +338,7 @@ class PostgresThreadRepository extends PostgresGenericRepository {
           await this.semanticIndex.indexMessage(messageId, threadId);
         } catch (err) {
           // Fail-open: semantic indexing is optional, don't block message addition
-          console.warn('⚠️  Failed to index message (non-fatal):', err.message);
+          logger.warn('Failed to index message (non-fatal)', err, { messageId, threadId });
         }
       }
 
@@ -344,7 +350,7 @@ class PostgresThreadRepository extends PostgresGenericRepository {
         sequenceNumber: row.thread_sequence || 0,
       };
     } catch (error) {
-      console.error('Error adding message to thread:', error);
+      logger.error('Error adding message to thread', error, { messageId, threadId });
       return { success: false, messageCount: 0, lastMessageAt: null, sequenceNumber: null };
     }
   }
@@ -387,7 +393,7 @@ class PostgresThreadRepository extends PostgresGenericRepository {
         messageCount: result.rows[0]?.message_count || 0,
       };
     } catch (error) {
-      console.error('Error removing message from thread:', error);
+      logger.error('Error removing message from thread', error, { messageId });
       return { success: false, threadId: null, messageCount: 0 };
     }
   }

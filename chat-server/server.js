@@ -42,6 +42,14 @@ initDatabase().then(status => {
 // Load services
 const services = loadServices();
 
+// Log service availability at startup
+console.log('🔍 Service availability check:', {
+  hasAiMediator: !!services.aiMediator,
+  hasUserSessionService: !!services.userSessionService,
+  hasOpenAI: !!process.env.OPENAI_API_KEY,
+  servicesKeys: Object.keys(services),
+});
+
 // Register health check IMMEDIATELY so Railway can verify server is starting
 app.get('/health', (req, res) => healthCheckHandler(req, res, dbConnected, dbError));
 
@@ -77,12 +85,12 @@ try {
   const { createAdapter } = require('@socket.io/redis-adapter');
   const { getClient } = require('./src/infrastructure/database/redisClient');
   const redisClient = getClient();
-  
+
   if (redisClient) {
     // Create Redis adapter for multi-instance support
     const pubClient = redisClient;
     const subClient = redisClient.duplicate();
-    
+
     io = new Server(server, {
       adapter: createAdapter(pubClient, subClient),
       cors: {
@@ -111,7 +119,8 @@ try {
       pingTimeout: 60000,
       pingInterval: 25000,
       maxHttpBufferSize: 1e6,
-      transports: process.env.SOCKET_FORCE_POLLING === 'true' ? ['polling'] : ['websocket', 'polling'],
+      transports:
+        process.env.SOCKET_FORCE_POLLING === 'true' ? ['polling'] : ['websocket', 'polling'],
       allowEIO3: true,
       allowUpgrades: process.env.SOCKET_FORCE_POLLING !== 'true',
     });
@@ -121,7 +130,10 @@ try {
   }
 } catch (error) {
   // Fallback to default Socket.io (single instance)
-  console.warn('⚠️  Socket.io Redis adapter not available, using default (single instance):', error.message);
+  console.warn(
+    '⚠️  Socket.io Redis adapter not available, using default (single instance):',
+    error.message
+  );
   io = new Server(server, {
     cors: {
       origin: (origin, callback) => {
@@ -149,7 +161,8 @@ try {
     pingTimeout: 60000,
     pingInterval: 25000,
     maxHttpBufferSize: 1e6,
-    transports: process.env.SOCKET_FORCE_POLLING === 'true' ? ['polling'] : ['websocket', 'polling'],
+    transports:
+      process.env.SOCKET_FORCE_POLLING === 'true' ? ['polling'] : ['websocket', 'polling'],
     allowEIO3: true,
     allowUpgrades: process.env.SOCKET_FORCE_POLLING !== 'true',
   });
