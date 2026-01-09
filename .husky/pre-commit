@@ -47,6 +47,16 @@ if git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' | xargs grep -E 
   echo "   (This is a warning, not a blocker)"
 fi
 
+# Contract analysis (warn only - doesn't block commit)
+# Only run if contract analysis tool is available
+if [ -f "chat-server/tools/analyze_contracts.py" ] && [ -d "chat-server/.venv" ]; then
+  echo "🔍 Running contract analysis (warning only)..."
+  cd chat-server
+  ./tools/analyze --quiet 2>&1 | grep -E "(⚠️|❌|violations|issues)" || true
+  cd ..
+  echo "💡 Fix contract violations before pushing (run: ./tools/analyze-contracts)"
+fi
+
 
 
 

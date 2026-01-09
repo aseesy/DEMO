@@ -97,6 +97,12 @@ const REQUIRED_SERVER_VARS = {
     description: 'Neo4j password',
     example: 'password',
   },
+  ENABLE_DUAL_BRAIN: {
+    required: false,
+    description: 'Enable Dual-Brain AI Mediator (requires Neo4j and OpenAI)',
+    example: 'true',
+    default: 'false',
+  },
 };
 
 const REQUIRED_CLIENT_VARS = {

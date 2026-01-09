@@ -41,7 +41,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict, Union
 
 from sdd.agents.architecture.models import (
     ExecutionStrategy,
@@ -56,6 +56,17 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+class CurrentState(TypedDict, total=False):
+    """Type definition for current_state parameter in routing methods.
+    
+    Keys:
+        completed_agents: List of agent IDs that have completed their tasks
+        failed_agents: List of failed agent IDs (can be strings or dicts with agent_id key)
+    """
+    completed_agents: List[str]
+    failed_agents: List[Union[str, Dict[str, Any]]]
 
 
 class RouterAgent:
@@ -96,8 +107,6 @@ class RouterAgent:
 
     def _load_domain_mappings(self) -> Dict[str, str]:
         """
-        Load domain-to-agent mappings from agent-collaboration-triggers.md.
-
         Returns:
             Dictionary mapping domains to agent IDs
 
@@ -139,120 +148,209 @@ class RouterAgent:
         Raises:
             ValueError: If required input fields missing
         """
-        # Validate and convert input if needed
-        if isinstance(agent_input, dict):
-            # Restructure flat dict to AgentInput format if needed
-            if "input_data" not in agent_input:
-                structured_input = {
-                    "agent_id": agent_input.get("agent_id", "architecture.router"),
-                    "task_id": agent_input.get("task_id", "unknown"),
-                    "phase": agent_input.get("phase", "routing"),
-                    "context": agent_input.get("context", {}),
-                    "input_data": {}
-                }
-                for key, value in agent_input.items():
-                    if key not in ["agent_id", "task_id", "phase", "context"]:
-                        structured_input["input_data"][key] = value
-                agent_input = AgentInput(**structured_input)
-            else:
-                agent_input = AgentInput(**agent_input)
-
-        logger.info(f"Starting routing analysis for task_id: {agent_input.task_id}")
-
+        # Guard clause: validate and parse input
+        parsed_input = self._validate_and_parse(agent_input)
+        
         try:
-            # Extract input data
-            task_description = agent_input.input_data.get("task_description", "")
-            domains_detected = agent_input.input_data.get("domains_detected", [])
-            current_state = agent_input.input_data.get("current_state", {})
-
-            if not task_description:
-                raise ValueError("task_description required in input_data")
-
-            # Analyze task complexity
-            complexity_score = self._analyze_complexity(task_description, domains_detected)
-
-            # Select agents based on domains
-            selected_agents = self._select_agents(domains_detected, current_state)
-
-            # Determine execution strategy
-            execution_strategy = self._determine_execution_strategy(
-                selected_agents, task_description, complexity_score
-            )
-
-            # Build dependency graph if DAG strategy
-            dependency_graph = None
-            if execution_strategy == ExecutionStrategy.DAG:
-                dependency_graph = self._build_dependency_graph(selected_agents, domains_detected)
-
-            # Determine refinement strategy
-            refinement_strategy = self._determine_refinement_strategy(
-                current_state, complexity_score
-            )
-
-            # Calculate parallel execution opportunities
-            parallel_opportunities = self._identify_parallel_opportunities(
-                selected_agents, dependency_graph
-            )
-
-            # Generate reasoning
-            reasoning = self._generate_reasoning(
-                selected_agents, execution_strategy, domains_detected, complexity_score, current_state
-            )
-
-            # Calculate confidence
-            confidence = self._calculate_confidence(complexity_score, len(domains_detected))
-
-            # Create routing decision
-            routing_decision = RoutingDecision(
-                selected_agents=selected_agents,
-                execution_strategy=execution_strategy,
-                dependency_graph=dependency_graph,
-                refinement_strategy=refinement_strategy,
-                reasoning=reasoning,
-                confidence=confidence,
-                parallel_execution_plan=None,  # Optional, could be added later
-                estimated_duration_seconds=None  # Optional, could be added later
-            )
-
+            # Guard clause: extract and validate input data
+            input_data = self._extract_input_data(parsed_input)
+            
+            # Perform routing analysis
+            routing_decision, complexity_score = self._perform_routing(input_data, parsed_input.task_id)
+            
             # Persist decision
-            self._persist_decision(agent_input.task_id, routing_decision)
-
-            # Generate output
-            next_actions = self._generate_next_actions(routing_decision)
-
-            output = AgentOutput(
-                agent_id=self.agent_id,
-                task_id=agent_input.task_id,
-                success=True,
-                output_data=routing_decision.model_dump(mode='json'),
-                reasoning=reasoning,
-                confidence=confidence,
-                next_actions=next_actions,
-                metadata={
-                    "complexity_score": complexity_score,
-                    "domains_count": len(domains_detected),
-                    "parallel_opportunities": parallel_opportunities
-                },
-                timestamp=datetime.now()
+            self._persist_decision(parsed_input.task_id, routing_decision)
+            
+            # Format and return output
+            return self._format_output(
+                routing_decision, parsed_input.task_id, input_data, complexity_score
             )
-
-            logger.info(f"Routing complete: {len(selected_agents)} agents, {execution_strategy.value} strategy")
-            return output.model_dump(mode='json')
-
         except Exception as e:
-            logger.error(f"Routing failed: {str(e)}", exc_info=True)
-            error_output = AgentOutput(
-                agent_id=self.agent_id,
-                task_id=agent_input.task_id,
-                success=False,
-                output_data={"error": str(e)},
-                reasoning=f"Routing failed: {str(e)}",
-                confidence=0.0,
-                next_actions=["Fix error and retry routing"],
-                metadata={},
-                timestamp=datetime.now()
-            )
-            return error_output.model_dump(mode='json')
+            return self._handle_routing_error(e, parsed_input.task_id)
+
+    def _validate_and_parse(self, agent_input: Union[AgentInput, Dict[str, Any]]) -> AgentInput:
+        """
+        Args:
+            agent_input: AgentInput or dict
+
+        Returns:
+            Validated AgentInput instance
+        """
+        if isinstance(agent_input, AgentInput):
+            return agent_input
+
+        # Convert dict to AgentInput
+        if "input_data" not in agent_input:
+            structured_input = {
+                "agent_id": agent_input.get("agent_id", "architecture.router"),
+                "task_id": agent_input.get("task_id", "unknown"),
+                "phase": agent_input.get("phase", "routing"),
+                "context": agent_input.get("context", {}),
+                "input_data": {}
+            }
+            for key, value in agent_input.items():
+                if key not in ["agent_id", "task_id", "phase", "context"]:
+                    structured_input["input_data"][key] = value
+            return AgentInput(**structured_input)
+
+        return AgentInput(**agent_input)
+
+    def _extract_input_data(self, parsed_input: AgentInput) -> Dict[str, Any]:
+        """
+        Args:
+            parsed_input: Validated AgentInput
+
+        Returns:
+            Dictionary with task_description, domains_detected, current_state
+
+        Raises:
+            ValueError: If task_description is missing
+        """
+        task_description = parsed_input.input_data.get("task_description", "")
+        domains_detected = parsed_input.input_data.get("domains_detected", [])
+        current_state = parsed_input.input_data.get("current_state", {})
+
+        # Guard clause: task_description is required
+        if not task_description:
+            raise ValueError("task_description required in input_data")
+
+        logger.info(f"Starting routing analysis for task_id: {parsed_input.task_id}")
+
+        return {
+            "task_description": task_description,
+            "domains_detected": domains_detected,
+            "current_state": current_state
+        }
+
+    def _perform_routing(
+        self, input_data: Dict[str, Any], task_id: str
+    ) -> Tuple[RoutingDecision, float]:
+        """
+        Perform routing analysis and create routing decision.
+
+        Args:
+            input_data: Dictionary with task_description, domains_detected, current_state
+            task_id: Task identifier for logging
+
+        Returns:
+            Tuple of (RoutingDecision instance, complexity_score)
+        """
+        task_description = input_data["task_description"]
+        domains_detected = input_data["domains_detected"]
+        current_state = input_data["current_state"]
+
+        # Analyze task complexity
+        complexity_score = self._analyze_complexity(task_description, domains_detected)
+
+        # Select agents based on domains
+        selected_agents = self._select_agents(domains_detected, current_state)
+
+        # Determine execution strategy
+        execution_strategy = self._determine_execution_strategy(
+            selected_agents, task_description, complexity_score
+        )
+
+        # Build dependency graph if DAG strategy
+        dependency_graph = None
+        if execution_strategy == ExecutionStrategy.DAG:
+            dependency_graph = self._build_dependency_graph(selected_agents, domains_detected)
+
+        # Determine refinement strategy
+        refinement_strategy = self._determine_refinement_strategy(
+            current_state, complexity_score
+        )
+
+        # Generate reasoning
+        reasoning = self._generate_reasoning(
+            selected_agents, execution_strategy, domains_detected, complexity_score, current_state
+        )
+
+        # Calculate confidence
+        confidence = self._calculate_confidence(complexity_score, len(domains_detected))
+
+        # Create routing decision
+        routing_decision = RoutingDecision(
+            selected_agents=selected_agents,
+            execution_strategy=execution_strategy,
+            dependency_graph=dependency_graph,
+            refinement_strategy=refinement_strategy,
+            reasoning=reasoning,
+            confidence=confidence,
+            parallel_execution_plan=None,  # Optional, could be added later
+            estimated_duration_seconds=None  # Optional, could be added later
+        )
+
+        return routing_decision, complexity_score
+
+    def _format_output(
+        self,
+        routing_decision: RoutingDecision,
+        task_id: str,
+        input_data: Dict[str, Any],
+        complexity_score: float
+    ) -> Dict[str, Any]:
+        """
+        Args:
+            routing_decision: RoutingDecision instance
+            task_id: Task identifier
+            input_data: Original input data for metadata
+            complexity_score: Pre-calculated complexity score
+
+        Returns:
+            Formatted output dictionary
+        """
+        # Calculate parallel execution opportunities
+        parallel_opportunities = self._identify_parallel_opportunities(
+            routing_decision.selected_agents, routing_decision.dependency_graph
+        )
+
+        # Generate next actions
+        next_actions = self._generate_next_actions(routing_decision)
+
+        output = AgentOutput(
+            agent_id=self.agent_id,
+            task_id=task_id,
+            success=True,
+            output_data=routing_decision.model_dump(mode='json'),
+            reasoning=routing_decision.reasoning,
+            confidence=routing_decision.confidence,
+            next_actions=next_actions,
+            metadata={
+                "complexity_score": complexity_score,
+                "domains_count": len(input_data["domains_detected"]),
+                "parallel_opportunities": parallel_opportunities
+            },
+            timestamp=datetime.now()
+        )
+
+        logger.info(
+            f"Routing complete: {len(routing_decision.selected_agents)} agents, "
+            f"{routing_decision.execution_strategy.value} strategy"
+        )
+        return output.model_dump(mode='json')
+
+    def _handle_routing_error(self, error: Exception, task_id: str) -> Dict[str, Any]:
+        """
+        Args:
+            error: Exception that occurred
+            task_id: Task identifier
+
+        Returns:
+            Error output dictionary
+        """
+        logger.error(f"Routing failed: {str(error)}", exc_info=True)
+        error_output = AgentOutput(
+            agent_id=self.agent_id,
+            task_id=task_id,
+            success=False,
+            output_data={"error": str(error)},
+            reasoning=f"Routing failed: {str(error)}",
+            confidence=0.0,
+            next_actions=["Fix error and retry routing"],
+            metadata={},
+            timestamp=datetime.now()
+        )
+        return error_output.model_dump(mode='json')
 
     def _analyze_complexity(self, task_description: str, domains: List[str]) -> float:
         """
@@ -276,11 +374,11 @@ class RouterAgent:
 
         # Factor 3: Keywords indicating complexity
         complex_keywords = ["integration", "multi", "complex", "system", "architecture", "workflow"]
-        complexity += sum(0.05 for kw in complex_keywords if kw in task_description.lower())
+        complexity += sum(0.05 for keyword in complex_keywords if keyword in task_description.lower())
 
         return min(1.0, complexity)
 
-    def _select_agents(self, domains: List[str], current_state: Dict) -> List[str]:
+    def _select_agents(self, domains: List[str], current_state: CurrentState) -> List[str]:
         """
         Select agents based on detected domains.
 
@@ -327,8 +425,6 @@ class RouterAgent:
         complexity_score: float
     ) -> ExecutionStrategy:
         """
-        Determine optimal execution strategy.
-
         Args:
             selected_agents: Selected agents
             task_description: Task description
@@ -354,8 +450,6 @@ class RouterAgent:
 
     def _has_dependencies(self, task_description: str) -> bool:
         """
-        Check if task description implies dependencies.
-
         Args:
             task_description: Task description
 
@@ -366,7 +460,7 @@ class RouterAgent:
             "after", "before", "depends on", "requires", "first", "then",
             "prerequisite", "following", "once", "when"
         ]
-        return any(kw in task_description.lower() for kw in dependency_keywords)
+        return any(keyword in task_description.lower() for keyword in dependency_keywords)
 
     def _build_dependency_graph(
         self,
@@ -374,8 +468,6 @@ class RouterAgent:
         domains: List[str]
     ) -> Dict[str, List[str]]:
         """
-        Build dependency graph for DAG execution.
-
         Args:
             selected_agents: Selected agents
             domains: Detected domains
@@ -403,12 +495,10 @@ class RouterAgent:
 
     def _determine_refinement_strategy(
         self,
-        current_state: Dict,
+        current_state: CurrentState,
         complexity_score: float
     ) -> Optional[RefinementStrategy]:
         """
-        Determine refinement strategy on failure.
-
         Args:
             current_state: Current state with failed agents
             complexity_score: Complexity score
@@ -438,8 +528,6 @@ class RouterAgent:
         dependency_graph: Optional[Dict[str, List[str]]]
     ) -> List[str]:
         """
-        Identify agents that can execute in parallel.
-
         Args:
             selected_agents: Selected agents
             dependency_graph: Dependency graph (if DAG)
@@ -464,11 +552,9 @@ class RouterAgent:
         execution_strategy: ExecutionStrategy,
         domains: List[str],
         complexity_score: float,
-        current_state: Dict
+        current_state: CurrentState
     ) -> str:
         """
-        Generate human-readable reasoning.
-
         Args:
             selected_agents: Selected agents
             execution_strategy: Execution strategy
@@ -499,8 +585,6 @@ class RouterAgent:
 
     def _calculate_confidence(self, complexity_score: float, domain_count: int) -> float:
         """
-        Calculate confidence in routing decision.
-
         Args:
             complexity_score: Task complexity
             domain_count: Number of domains
@@ -523,8 +607,6 @@ class RouterAgent:
 
     def _generate_next_actions(self, routing_decision: RoutingDecision) -> List[str]:
         """
-        Generate next actions based on routing decision.
-
         Args:
             routing_decision: Routing decision
 
@@ -550,8 +632,6 @@ class RouterAgent:
 
     def _persist_decision(self, task_id: str, decision: RoutingDecision) -> None:
         """
-        Persist routing decision to JSON file for audit trail.
-
         Args:
             task_id: Task identifier
             decision: Routing decision to persist

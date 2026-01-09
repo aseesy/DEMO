@@ -1,103 +1,165 @@
-# Python Tools
+# Project Root Tools
 
-Python tools for auditing and dashboard functionality.
+This directory contains convenience scripts that can be run from the project root.
 
-## Structure
+## Contract Analysis
 
-```
-tools/
-├── __init__.py
-├── audit/
-│   ├── __init__.py
-│   ├── git_history.py    # Git commit history analysis
-│   └── db_analysis.py    # Database migration analysis
-└── dashboard/
-    ├── __init__.py
-    ├── ui.py             # Dashboard UI utilities
-    └── backend.py        # Dashboard backend functionality
-```
-
-## Installation
-
-These tools use Python standard library only - no external dependencies required.
-
-## Usage
-
-### Git History Audit
-
-```python
-from tools.audit.git_history import get_git_log, analyze_commit_patterns
-
-# Get recent commits
-commits = get_git_log(limit=50)
-
-# Analyze patterns
-stats = analyze_commit_patterns(commits)
-print(stats)
-```
-
-### Database Analysis
-
-```python
-from tools.audit.db_analysis import analyze_migrations
-
-# Analyze all migrations
-analysis = analyze_migrations('chat-server/migrations')
-print(f"Total tables: {analysis['total_tables']}")
-```
-
-### Dashboard
-
-```python
-from tools.dashboard.backend import generate_report
-
-# Generate complete report
-report = generate_report()
-print(report)
-```
-
-## Running
-
-### Git History Tool
+### Quick Start
 
 ```bash
-python tools/audit/git_history.py
+./tools/analyze-contracts
 ```
 
-### Database Analysis Tool
+### What It Does
+
+- Runs contract & architecture analysis
+- Auto-activates virtual environment
+- Analyzes client/server boundaries
+- Checks API contracts and schemas
+
+### Options
 
 ```bash
-python tools/audit/db_analysis.py
+./tools/analyze-contracts              # Basic analysis
+./tools/analyze-contracts --debug      # Debug output
+./tools/analyze-contracts --quiet      # Quiet mode
 ```
 
-### Dashboard Backend
+### Setup (First Time)
 
 ```bash
+cd chat-server
+./tools/ensure_venv.sh
+```
+
+## Alternative: Run from chat-server/
+
+You can also run directly from `chat-server/`:
+
+```bash
+cd chat-server
+./tools/analyze
+```
+
+---
+
+## Code Quality Metrics Dashboard
+
+### Quick Start
+
+```bash
+./tools/generate-quality-report
+```
+
+### What It Does
+
+- Analyzes JavaScript/TypeScript codebase for code quality metrics
+- Counts console.log occurrences and flags them in production code
+- Measures function complexity (length, nesting depth)
+- Tracks modern pattern adoption (async/await vs callbacks, ES modules vs CommonJS)
+- Identifies refactoring hotspots
+- Generates weekly or per-PR reports
+
+### Options
+
+```bash
+./tools/generate-quality-report                    # Full text report
+./tools/generate-quality-report --weekly           # Weekly markdown report
+./tools/generate-quality-report --pr               # PR-specific report
+./tools/generate-quality-report --pr --pr-number 123  # PR report with number
+./tools/generate-quality-report --json output.json # JSON output
+./tools/generate-quality-report --client-only      # Only analyze client
+./tools/generate-quality-report --server-only      # Only analyze server
+./tools/generate-quality-report --exclude-test     # Exclude test files
+```
+
+### Metrics Collected
+
+1. **Console.log Analysis**
+   - Total occurrences across codebase
+   - Files with console.log statements
+   - Production files with console.log (flagged for cleanup)
+
+2. **Function Complexity**
+   - Average function length
+   - Maximum function length
+   - Functions over 50 lines (flagged)
+
+3. **Nesting Complexity**
+   - Average nesting depth
+   - Maximum nesting depth
+   - Files with deep nesting (>5 levels)
+
+4. **Modern Pattern Adoption**
+   - Percentage of files using async/await
+   - Percentage of files using callbacks
+   - Promise chain depth issues
+
+5. **Module System**
+   - ES Modules (ESM) files
+   - CommonJS files
+   - Mixed module usage
+
+6. **File Size**
+   - Average file size
+   - Large files (>500 lines)
+
+7. **Refactoring Hotspots**
+   - Files flagged for refactoring based on complexity metrics
+
+### Integration with Dashboard
+
+The code quality metrics are integrated into the existing dashboard:
+
+```bash
+# Run full dashboard (includes git, database, and code quality)
 python tools/dashboard/backend.py
 ```
 
-## Features
+### Weekly Reports
 
-### Audit Tools
+Generate a weekly markdown report:
 
-- **git_history.py**: Analyzes git commit history
-  - Get commit logs with structured data
-  - Analyze commit patterns (by author, type, etc.)
-  - Get file changes for specific commits
+```bash
+./tools/generate-quality-report --weekly --output reports/weekly-quality-report.md
+```
 
-- **db_analysis.py**: Analyzes database structure
-  - Find and parse SQL migration files
-  - Extract table definitions
-  - Analyze table dependencies
+### PR Reports
 
-### Dashboard Tools
+Generate a report for a pull request:
 
-- **ui.py**: UI formatting utilities
-  - Format commit statistics for display
-  - Format database statistics
-  - Generate summary reports
+```bash
+./tools/generate-quality-report --pr --pr-number 123 --output reports/pr-123-quality.md
+```
 
-- **backend.py**: Backend functionality
-  - Collect all statistics
-  - Save/load dashboard data as JSON
-  - Generate complete reports
+### Python API
+
+You can also use the Python API directly:
+
+```python
+from tools.audit.code_quality import analyze_code_quality
+from pathlib import Path
+
+# Analyze specific directories
+metrics = analyze_code_quality(
+    base_dir=Path('.'),
+    directories=['chat-client-vite', 'chat-server'],
+    exclude_test_files=False,
+)
+
+print(f"Total files: {metrics['total_files']}")
+print(f"Console.log issues: {metrics['production_files_with_logs']}")
+```
+
+### Setup (First Time)
+
+The tool uses tree-sitter for AST parsing when available (more accurate). If not available, it falls back to regex-based analysis:
+
+```bash
+cd chat-server
+./tools/ensure_venv.sh  # Installs tree-sitter if not already installed
+```
+
+---
+
+For more details, see: `chat-server/docs/AUTOMATION_GUIDE.md`

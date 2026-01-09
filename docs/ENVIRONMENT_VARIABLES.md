@@ -109,6 +109,7 @@ The client `.env` file has trailing `\n` characters in some values:
 - `NEO4J_URI` - ✅ Set
 - `NEO4J_USER` - ✅ Set
 - `NEO4J_PASSWORD` - ✅ Set
+- `ENABLE_DUAL_BRAIN` - ○ Not set (default: false) - Enable Dual-Brain AI Mediator (requires Neo4j)
 
 ### Client
 
@@ -177,7 +178,8 @@ npm run validate:railway
 - **Client Dev Port**: Vite default (5173)
 - **Client API URL**: `VITE_API_URL` (default: `http://localhost:3000`)
 
-**Important**: 
+**Important**:
+
 - Backend runs on port **3000** (default)
 - Frontend (Vite) runs on port **5173** (Vite default)
 - Frontend connects to backend at `http://localhost:3000`

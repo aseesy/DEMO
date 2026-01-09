@@ -18,12 +18,31 @@ Configuration:
     - MAX_REFINEMENT_ROUNDS (default: 20)
     - EARLY_STOP_THRESHOLD (default: 0.95)
     - Quality thresholds per phase
+    
+    Path Resolution (Dependency Inversion Principle):
+    - Uses PathProvider abstraction for path resolution
+    - DefaultPathProvider detects project root or uses environment variables
+    - Environment variables: SDD_PROJECT_ROOT, SDD_CONFIG_DIR, SDD_STATE_DIR
+    - Supports dependency injection for testing and different environments
 
 Usage:
     from sdd.refinement.engine import RefinementEngine
     from sdd.agents.quality.verifier import VerificationAgent
+    from sdd.infrastructure.path_provider import DefaultPathProvider
 
+    # Recommended: Use PathProvider for portability and testability
+    provider = DefaultPathProvider()
+    engine = RefinementEngine(path_provider=provider)
+    
+    # Or use default (automatically detects project root)
     engine = RefinementEngine()
+    
+    # Backward compatible: explicit paths still work
+    engine = RefinementEngine(
+        config_path="/custom/path/refinement.conf",
+        state_dir="/custom/path/state"
+    )
+    
     verifier = VerificationAgent()
 
     # Refine until sufficient quality or max rounds
@@ -50,6 +69,7 @@ from uuid import UUID
 from sdd.agents.quality.models import VerificationDecision
 from sdd.agents.quality.verifier import VerificationAgent
 from sdd.agents.shared.models import AgentContext, AgentInput
+from sdd.infrastructure.path_provider import DefaultPathProvider, PathProvider
 from sdd.refinement.models import IterationRecord, RefinementState
 
 # Configure structured logging (Principle VII)
@@ -73,22 +93,48 @@ class RefinementEngine:
         config: Loaded configuration dictionary
         max_rounds: Maximum refinement iterations (from config)
         early_stop_threshold: Quality score for early stopping (from config)
+        path_provider: PathProvider instance (for dependency injection)
     """
 
     def __init__(
         self,
-        config_path: str = "/workspaces/sdd-agentic-framework/.specify/config/refinement.conf",
-        state_dir: str = "/workspaces/sdd-agentic-framework/.docs/agents/shared/refinement-state"
+        path_provider: Optional[PathProvider] = None,
+        config_path: Optional[str] = None,
+        state_dir: Optional[str] = None
     ):
         """
         Initialize Refinement Engine.
 
         Args:
-            config_path: Path to refinement.conf
-            state_dir: Directory for state persistence
+            path_provider: Optional PathProvider for dependency injection.
+                          If None, uses DefaultPathProvider with environment variable support.
+            config_path: Optional explicit path to refinement.conf.
+                        If provided, overrides path_provider for this path.
+                        If None, uses path_provider.get_config_path("refinement.conf").
+            state_dir: Optional explicit directory for state persistence.
+                       If provided, overrides path_provider for this path.
+                       If None, uses path_provider.get_state_dir("refinement-state").
+
+        Note:
+            Prefer using path_provider for testability and portability.
+            Direct paths (config_path, state_dir) are maintained for backward compatibility.
         """
-        self.config_path = Path(config_path)
-        self.state_dir = Path(state_dir)
+        # Initialize path provider
+        if path_provider is None:
+            path_provider = DefaultPathProvider()
+
+        # Resolve paths: use explicit paths if provided, otherwise use path_provider
+        if config_path is not None:
+            self.config_path = Path(config_path)
+        else:
+            self.config_path = path_provider.get_config_path("refinement.conf")
+
+        if state_dir is not None:
+            self.state_dir = Path(state_dir)
+        else:
+            self.state_dir = path_provider.get_state_dir("refinement-state")
+
+        self.path_provider = path_provider
         self.state_dir.mkdir(parents=True, exist_ok=True)
 
         # Load configuration
@@ -103,8 +149,6 @@ class RefinementEngine:
 
     def _load_config(self) -> Dict[str, Any]:
         """
-        Load configuration from refinement.conf.
-
         Returns:
             Dictionary of configuration key-value pairs
 
@@ -325,8 +369,6 @@ class RefinementEngine:
         quality_threshold: float
     ) -> RefinementState:
         """
-        Load existing refinement state or create new one.
-
         Args:
             task_id: Task identifier
             phase: Workflow phase
@@ -366,8 +408,6 @@ class RefinementEngine:
         quality_threshold: float
     ) -> VerificationDecision:
         """
-        Invoke verification agent to check artifact quality.
-
         Args:
             task_id: Task identifier
             phase: Workflow phase
@@ -473,8 +513,6 @@ or adjust quality thresholds if appropriate.
 
     def get_state(self, task_id: str) -> Optional[RefinementState]:
         """
-        Retrieve refinement state for task.
-
         Args:
             task_id: Task identifier
 
@@ -488,8 +526,6 @@ or adjust quality thresholds if appropriate.
 
     def reset_state(self, task_id: str) -> bool:
         """
-        Delete refinement state for task (start fresh).
-
         Args:
             task_id: Task identifier
 

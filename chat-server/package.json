@@ -14,6 +14,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:integration": "jest --testPathIgnorePatterns='/node_modules/' --testMatch='**/*.integration.test.js'",
+    "test:python": "python3 -m pytest tests/ -v",
+    "test:python:coverage": "python3 -m pytest tests/ --cov=. --cov-report=term-missing",
     "db:validate": "node scripts/db-validate.js",
     "db:backup": "node scripts/backup-database.js",
     "db:monitor": "node scripts/monitor-database.js",

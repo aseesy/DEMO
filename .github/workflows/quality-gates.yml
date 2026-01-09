@@ -54,7 +54,7 @@ jobs:
             exit 1
           }
           # Run architecture analysis (fail on errors)
-          python3 tools/analyze_architecture.py --quiet || {
+          npm run analyze:architecture -- --quiet || {
             echo "❌ Architecture analysis found errors!"
             exit 1
           }

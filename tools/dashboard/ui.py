@@ -66,6 +66,7 @@ def format_db_stats(db_analysis: Dict) -> str:
 def create_dashboard_data(
     git_stats: Optional[Dict] = None,
     db_stats: Optional[Dict] = None,
+    code_quality_stats: Optional[Dict] = None,
 ) -> Dict:
     """
     Create dashboard data structure.
@@ -73,6 +74,7 @@ def create_dashboard_data(
     Args:
         git_stats: Git commit statistics
         db_stats: Database analysis statistics
+        code_quality_stats: Code quality metrics
     
     Returns:
         Dictionary with dashboard data
@@ -81,7 +83,71 @@ def create_dashboard_data(
         'timestamp': datetime.now().isoformat(),
         'git': git_stats or {},
         'database': db_stats or {},
+        'code_quality': code_quality_stats or {},
     }
+
+
+def format_code_quality_stats(stats: Dict) -> str:
+    """
+    Format code quality statistics for display in dashboard.
+    
+    Args:
+        stats: Dictionary with code quality statistics
+    
+    Returns:
+        Formatted string for display
+    """
+    if not stats or 'error' in stats:
+        error_msg = stats.get('error', 'Unknown error') if stats else 'No data'
+        return f"⚠️  Error analyzing code quality: {error_msg}"
+    
+    lines = [
+        f"Files Analyzed: {stats.get('total_files', 0)}",
+        f"Total Lines of Code: {stats.get('total_lines', 0):,}",
+        f"Average File Size: {stats.get('avg_file_size_kb', 0):.1f} KB",
+        "",
+        "Console.log Analysis:",
+        f"  Total occurrences: {stats.get('total_console_logs', 0)}",
+        f"  Files with console.log: {stats.get('files_with_console_logs', 0)}",
+        f"  ⚠️  Production files with logs: {stats.get('production_files_with_logs', 0)}",
+        "",
+        "Function Complexity:",
+        f"  Average function length: {stats.get('avg_function_length', 0):.1f} lines",
+        f"  Max function length: {stats.get('max_function_length', 0)} lines",
+        f"  ⚠️  Functions over 50 lines: {stats.get('functions_over_threshold', 0)}",
+        "",
+        "Nesting Complexity:",
+        f"  Average nesting depth: {stats.get('avg_nesting_depth', 0):.1f}",
+        f"  Max nesting depth: {stats.get('max_nesting_depth', 0)}",
+        f"  ⚠️  Files with deep nesting (>5): {stats.get('files_with_deep_nesting', 0)}",
+        "",
+        "Modern Pattern Adoption:",
+        f"  Async/await adoption: {stats.get('async_await_adoption', 0):.1f}%",
+        f"  Callback usage: {stats.get('callback_usage', 0):.1f}%",
+        f"  ⚠️  Promise depth issues (>3): {stats.get('promise_depth_issues', 0)}",
+        "",
+        "Module System:",
+        f"  ES Modules (ESM): {stats.get('esm_files', 0)}",
+        f"  CommonJS: {stats.get('commonjs_files', 0)}",
+        f"  Mixed: {stats.get('mixed_modules', 0)}",
+        "",
+        "File Size:",
+        f"  ⚠️  Large files (>500 lines): {stats.get('large_files', 0)}",
+        "",
+        "Refactoring Hotspots:",
+    ]
+    
+    hotspots = stats.get('refactoring_hotspots', [])
+    if hotspots:
+        lines.append(f"  Found {len(hotspots)} files needing attention:")
+        for hotspot in hotspots[:10]:  # Top 10
+            lines.append(f"    - {hotspot}")
+        if len(hotspots) > 10:
+            lines.append(f"    ... and {len(hotspots) - 10} more")
+    else:
+        lines.append("  ✅ No hotspots found!")
+    
+    return "\n".join(lines)
 
 
 def generate_summary_report(dashboard_data: Dict) -> str:
@@ -110,6 +176,11 @@ def generate_summary_report(dashboard_data: Dict) -> str:
     if dashboard_data.get('database'):
         lines.append("Database Statistics:")
         lines.append(format_db_stats(dashboard_data['database']))
+        lines.append("")
+    
+    if dashboard_data.get('code_quality'):
+        lines.append("Code Quality Metrics:")
+        lines.append(format_code_quality_stats(dashboard_data['code_quality']))
         lines.append("")
     
     lines.append("=" * 60)

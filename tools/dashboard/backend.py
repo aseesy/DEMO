@@ -11,15 +11,19 @@ from pathlib import Path
 
 # Import audit tools (adjust path based on structure)
 # Since we're in tools/dashboard/, we need to go up to tools/audit/
-sys.path.insert(0, str(Path(__file__).parent.parent))
+TOOLS_DIR = Path(__file__).parent.parent
+sys.path.insert(0, str(TOOLS_DIR))
 
 from audit.git_history import get_git_log, analyze_commit_patterns
 from audit.db_analysis import analyze_migrations
+from audit.code_quality import analyze_code_quality
 
 
 def collect_all_stats(
     git_limit: Optional[int] = 100,
     db_migrations_dir: str = 'chat-server/migrations',
+    code_quality_dirs: Optional[List[str]] = None,
+    exclude_test_files: bool = False,
 ) -> Dict:
     """
     Collect all statistics for the dashboard.
@@ -27,6 +31,8 @@ def collect_all_stats(
     Args:
         git_limit: Maximum number of git commits to analyze
         db_migrations_dir: Directory containing database migrations
+        code_quality_dirs: Optional list of directories to analyze for code quality
+        exclude_test_files: Whether to exclude test files from code quality analysis
     
     Returns:
         Dictionary with all collected statistics
@@ -38,9 +44,27 @@ def collect_all_stats(
     # Collect database statistics
     db_stats = analyze_migrations(db_migrations_dir)
     
+    # Collect code quality statistics
+    code_quality_stats = {}
+    if code_quality_dirs is None:
+        # Default: analyze both client and server
+        code_quality_dirs = ['chat-client-vite', 'chat-server']
+    
+    try:
+        base_dir = Path(__file__).parent.parent.parent.resolve()
+        code_quality_stats = analyze_code_quality(
+            base_dir=base_dir,
+            directories=code_quality_dirs,
+            exclude_test_files=exclude_test_files,
+        )
+    except Exception as e:
+        print(f"⚠️  Error analyzing code quality: {e}")
+        code_quality_stats = {'error': str(e)}
+    
     return {
         'git': git_stats,
         'database': db_stats,
+        'code_quality': code_quality_stats,
     }
 
 
@@ -82,17 +106,26 @@ def load_dashboard_data(input_file: str = 'dashboard_data.json') -> Dict:
         return json.load(f)
 
 
-def generate_report(output_format: str = 'text') -> str:
+def generate_report(
+    output_format: str = 'text',
+    code_quality_dirs: Optional[List[str]] = None,
+    exclude_test_files: bool = False,
+) -> str:
     """
     Generate a complete dashboard report.
     
     Args:
         output_format: Output format ('text' or 'json')
+        code_quality_dirs: Optional list of directories to analyze for code quality
+        exclude_test_files: Whether to exclude test files from code quality analysis
     
     Returns:
         Report content as string
     """
-    stats = collect_all_stats()
+    stats = collect_all_stats(
+        code_quality_dirs=code_quality_dirs,
+        exclude_test_files=exclude_test_files,
+    )
     
     if output_format == 'json':
         return json.dumps(stats, indent=2)
@@ -103,6 +136,7 @@ def generate_report(output_format: str = 'text') -> str:
         dashboard_data = create_dashboard_data(
             git_stats=stats.get('git'),
             db_stats=stats.get('database'),
+            code_quality_stats=stats.get('code_quality'),
         )
         return generate_summary_report(dashboard_data)
 

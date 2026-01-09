@@ -106,3 +106,28 @@ reportOverlappingOverloads = "error"
 
 # Pydantic support (if using pydantic plugin)
 # Note: Pydantic v2 works well with pyright out of the box
+
+[tool.pytest.ini_options]
+# Pytest configuration for test discovery
+# Tests are in __tests__ directories and named test_*.py
+testpaths = [
+    "src",
+    "tests",
+]
+pythonpath = ["."]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+# Discover tests in __tests__ directories
+norecursedirs = [".git", ".venv", "venv", "__pycache__", "*.egg-info", "build", "dist"]
+# Coverage configuration
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",  # Show extra test summary info
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]

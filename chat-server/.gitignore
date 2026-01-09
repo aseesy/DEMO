@@ -1,7 +1,16 @@
-node_modules/
-.env
-users.json
-chat.db
-chat.db-journal
+# Add to existing .gitignore if it exists, or create new
 
-.vercel
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Tree-sitter grammars (can be rebuilt)
+.tree-sitter-grammars/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python

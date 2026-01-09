@@ -239,7 +239,10 @@ class ContextRetriever:
         )
 
     def _load_config(self) -> Dict[str, Any]:
-        """Load configuration from refinement.conf."""
+        """
+        Returns:
+            Dictionary of configuration key-value pairs
+        """
         if not self.config_path.exists():
             logger.warning(f"Config file not found: {self.config_path}, using defaults")
             return {}
