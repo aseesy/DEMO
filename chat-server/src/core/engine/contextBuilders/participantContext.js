@@ -8,7 +8,7 @@
  * @module liaizen/core/contexts/participantContext
  */
 
-const { defaultLogger } = require('../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({ module: 'participantContext' });
 

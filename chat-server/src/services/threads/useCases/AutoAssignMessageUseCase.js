@@ -25,7 +25,7 @@ const {
   checkRateLimit,
 } = require('../../../infrastructure/database/redisClient');
 
-const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'AutoAssignMessageUseCase',

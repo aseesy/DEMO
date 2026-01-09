@@ -26,7 +26,7 @@ const {
   getMessageHistory,
 } = require('../../../../socketHandlers/connectionOperations/messageHistory');
 
-const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'JoinSocketRoomUseCase',

@@ -7,7 +7,7 @@
  * @module liaizen/core/response/handlers/ActionHandlerRegistry
  */
 
-const { defaultLogger } = require('../../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../../../infrastructure/logging/logger');
 const { StaySilentHandler } = require('./StaySilentHandler');
 const { CommentHandler } = require('./CommentHandler');
 const { InterveneHandler } = require('./InterveneHandler');

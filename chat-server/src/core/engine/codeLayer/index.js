@@ -19,7 +19,7 @@
 'use strict';
 
 const { VERSION, createEmptyParsedMessage, CONFLICT_LEVELS, AXIOM_CATEGORIES } = require('./types');
-const { defaultLogger } = require('../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
 
 const tokenizer = require('./tokenizer');
 const markerDetector = require('./markerDetector');

@@ -11,7 +11,7 @@
 
 const { PostgresCommunicationRepository } = require('../../../repositories/postgres');
 
-const { defaultLogger: defaultLogger } = require('../../infrastructure/logging/logger');
+const { defaultLogger: defaultLogger } = require('../../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({
   module: 'profileLoader',

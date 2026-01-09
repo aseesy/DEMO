@@ -8,7 +8,7 @@
 
 const openaiClient = require('../client');
 const { MESSAGE } = require('../../../infrastructure/config/constants');
-const { defaultLogger } = require('../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({ module: 'insightsExtractor' });
 

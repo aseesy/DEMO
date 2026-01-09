@@ -1,5 +1,5 @@
 const dbSafe = require('../../../../dbSafe');
-const { defaultLogger } = require('../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
 const { OperationalError } = require('../../../infrastructure/errors/errors');
 const {
   VALIDATION,

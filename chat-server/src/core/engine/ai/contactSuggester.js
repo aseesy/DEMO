@@ -10,7 +10,7 @@
 
 const openaiClient = require('../client');
 const { isEnabled } = require('../../../infrastructure/config/featureFlags');
-const { defaultLogger } = require('../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
 
 const logger = defaultLogger.child({ module: 'contactSuggester' });
 
