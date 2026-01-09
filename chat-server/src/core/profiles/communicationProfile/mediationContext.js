@@ -211,15 +211,28 @@ function formatFullContext(context) {
   const senderContext = formatSenderContext(context);
   const receiverContext = formatReceiverContext(context);
 
+  const senderName = context.roles?.sender?.display_name || 'the sender';
+  const receiverName = context.roles?.receiver?.display_name || 'the receiver';
+
   return `
 === ROLE-AWARE MEDIATION CONTEXT ===
-You are helping ${context.roles?.sender?.display_name || 'the sender'} send a better message to ${context.roles?.receiver?.display_name || 'the receiver'}.
+You are helping ${senderName} send a better message to ${receiverName}.
 
 ${senderContext}
 
 ${receiverContext}
 
-IMPORTANT: Your coaching is for the SENDER only. Address only "${context.roles?.sender?.display_name || 'the sender'}" using "you/your".
+CRITICAL PERSPECTIVE AWARENESS:
+- You are coaching ${senderName} (the SENDER) - the person writing the message
+- ${receiverName} (the RECEIVER) is the person who will receive the message
+- Your validation must ALWAYS use "you/your" referring to ${senderName} (the sender)
+- Frame validations as: "When YOU say '[message]' to ${receiverName}, this affects them by..."
+- NEVER say "When someone communicates like this to you" - that would be coaching the receiver, which you're not doing
+- You acknowledge how ${senderName}'s words affect ${receiverName}, but always from ${senderName}'s coaching perspective
+
+Example CORRECT: "When you say 'you suck' to ${receiverName}, this phrasing shuts down communication..."
+Example WRONG: "When someone says 'you suck' to you, it's hurtful..." (this is backwards - you're not coaching the receiver)
+
 Never use "we/us/our/both" - you are not part of their relationship.
 === END CONTEXT ===
 `.trim();

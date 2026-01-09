@@ -149,32 +149,37 @@ Every intervention MUST include ALL THREE elements in this order:
 
 ---
 
-### 2. ONE TIP (tip1 field)
+### 2. REFOCUS QUESTIONS (refocusQuestions field)
 
-**Purpose**: Provide a single, precise communication adjustment.
+**Purpose**: Provide 3 brief questions that shift focus from reactivity to responsiveness, helping the sender clarify their needs and intentions.
 
 **Requirements**:
 
-- Maximum 10 words
-- Directly relevant to THIS specific message
-- Actionable immediately
-- No generic advice
-- A skill they can reuse
+- Exactly 3 questions
+- Each question from a different category (needs, intentions, context, assumption-challenging, consequence, communication-mechanics, message-testing)
+- Focus on what they need or what would help, NOT what they're feeling
+- Brief and actionable
+- Help shift from reactive patterns to constructive communication
 
-**Format**: "[Action verb] + [specific technique]"
+**Question Categories**:
 
-**Tip Library** (use contextually, never generic):
+| Category                | Purpose                         | Example                                                     |
+| ----------------------- | ------------------------------- | ----------------------------------------------------------- |
+| Needs                   | Clarify underlying need         | "What do you really need from them right now?"              |
+| Intentions              | Surface actual goal             | "What outcome would actually help here?"                    |
+| Context                 | Consider other perspectives     | "Could this be about their situation, not about you?"       |
+| Assumption-challenging  | Question assumptions            | "What assumption are you making about their intent?"        |
+| Consequence             | Consider long-term impact       | "Will this matter in a week, or is there a bigger pattern?" |
+| Communication-mechanics | Focus on phrasing effectiveness | "Would this phrasing achieve your goal?"                    |
+| Message-testing         | Evaluate message before sending | "What kind of co-parent do you want to be in this moment?"  |
 
-| Pattern                  | Tip                                            |
-| ------------------------ | ---------------------------------------------- |
-| Insults/name-calling     | "Name the feeling, not the person."            |
-| Blame statements         | "Describe the impact, not their intent."       |
-| Demands/commands         | "Make a request, not a command."               |
-| Absolutes (always/never) | "Replace 'always' with 'recently' or 'often'." |
-| Character attacks        | "Address the behavior, not their character."   |
-| Threats                  | "State your need, not the consequence."        |
-| Triangulation            | "Speak directly, not through your child."      |
-| Contempt                 | "Express disappointment, not disgust."         |
+**Examples**:
+
+| Original Message                | REFOCUS QUESTIONS                                                                                                                                                                                                                                                                         |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "You never let me see the kids" | 1. "What do you really need from them right now - an apology or just better consistency?"<br>2. "Could the delay be about their situation, not about you?"<br>3. "Will this matter in a week, or is there a bigger pattern to address?"                                                   |
+| "Tell your dad he needs to pay" | 1. "What outcome would actually help here - payment or acknowledgment?"<br>2. "Is there a way to address this directly without involving the child?"<br>3. "What kind of co-parent do you want to be in this moment?"                                                                     |
+| "You're such a bitch"           | 1. "What do you really need - an apology, better communication, or just to be included in decisions?"<br>2. "Could this be about their situation (work, other commitments) rather than about you?"<br>3. "Would this phrasing achieve your goal of being included in schedule decisions?" |
 
 ---
 
@@ -312,7 +317,7 @@ All AI-generated interventions MUST be validated for:
 - [ ] ADDRESS follows format (mechanics + consequence)
 - [ ] No emotional diagnoses in any field
 - [ ] No prohibited labels used
-- [ ] TIP is ≤10 words and specific
+- [ ] REFOCUS QUESTIONS: exactly 3 questions from different categories, focusing on needs/intentions/mechanics (not emotions)
 - [ ] Both REWRITES are complete messages
 - [ ] REWRITES preserve sender's intent
 - [ ] REWRITES are from sender perspective (not receiver responses)
@@ -327,10 +332,11 @@ If any required field is missing or invalid, the intervention MUST fail graceful
 
 ## Changelog
 
-| Version | Date       | Changes                                                      |
-| ------- | ---------- | ------------------------------------------------------------ |
-| 1.0.0   | 2025-11-26 | Initial constitution                                         |
-| 1.1.0   | 2025-11-26 | Added Principle IV: Sender Perspective Primacy (Feature 006) |
+| Version | Date       | Changes                                                                                                  |
+| ------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| 1.0.0   | 2025-11-26 | Initial constitution                                                                                     |
+| 1.1.0   | 2025-11-26 | Added Principle IV: Sender Perspective Primacy (Feature 006)                                             |
+| 1.2.0   | 2025-01-08 | Updated 1-2-3 Framework: Replaced ONE TIP with REFOCUS QUESTIONS (3 questions from different categories) |
 
 ---
 

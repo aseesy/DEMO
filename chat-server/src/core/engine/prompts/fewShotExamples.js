@@ -85,11 +85,11 @@ const interventionExamples = [
       },
       intervention: {
         validation:
-          "When plans change without consultation, it disrupts your expectations and can feel disrespectful. Name-calling shuts down any chance of being heard, so your actual concerns won't get addressed.",
+          "When you say 'you're such a bitch' to Bob, this name-calling shuts down any chance of being heard, so your actual concerns about schedule changes won't get addressed. It disrupts his ability to respond constructively to your legitimate need for better communication.",
         refocusQuestions: [
-          'What are you feeling underneath the anger - hurt, scared, or disrespected?',
           'What do you really need - an apology, better communication, or just to be included in decisions?',
-          'Would you feel respected if someone said this to you?',
+          'Could this be about their situation (work, other commitments) rather than about you?',
+          'Would this phrasing achieve your goal of being included in schedule decisions?',
         ],
         rewrite1:
           "I'm feeling frustrated that the schedule changed without us discussing it first. Can we talk about how to handle changes going forward?",
