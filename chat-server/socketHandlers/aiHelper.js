@@ -104,12 +104,34 @@ async function handleAiMediation(socket, io, services, context) {
   // 3. Validate required services - if missing, send message anyway
   if (!aiMediator || !userSessionService) {
     const missingService = !aiMediator ? 'aiMediator' : 'userSessionService';
-    logger.error('Required service not available, sending message without analysis', {
+    logger.error('❌ CRITICAL: Required service not available, sending message without analysis', {
       missingService,
       messageId: message.id,
+      hasAiMediator: !!aiMediator,
+      hasUserSessionService: !!userSessionService,
+      servicesKeys: Object.keys(services || {}),
     });
     await sendMessageDirectly(message, user.roomId, io, addToHistory);
     return;
+  }
+
+  // 3.5. Log that mediation is starting (for debugging)
+  logger.debug('✅ Starting AI mediation', {
+    messageId: message.id,
+    hasAiMediator: !!aiMediator,
+    hasUserSessionService: !!userSessionService,
+    textPreview: message.text?.substring(0, 50),
+  });
+
+  // 3.6. Emit immediate "analyzing" state for instant user feedback
+  // This shows the user that AI is working, reducing perceived delay
+  if (socket.connected) {
+    socket.emit('draft_coaching', {
+      analyzing: true,
+      shouldSend: null, // Unknown until analysis completes
+      originalText: message.text,
+      observerData: null, // Will be populated when analysis completes
+    });
   }
 
   // 4. Queue for AI analysis (non-blocking)
@@ -122,11 +144,12 @@ async function handleAiMediation(socket, io, services, context) {
   // Process AI analysis asynchronously (non-blocking)
   // Use setImmediate to avoid blocking the socket handler response
   setImmediate(() => {
+    const analysisLogger = defaultLogger.child({ function: 'handleAiMediation:setImmediate' });
+
     // RACE CONDITION FIX: Check if socket is still connected before processing
     // The user may have disconnected or the room state may have changed
     if (!socket.connected) {
-      const analysisLogger = defaultLogger.child({ function: 'handleAiMediation' });
-      analysisLogger.warn('Socket disconnected before AI analysis - skipping', {
+      analysisLogger.warn('⚠️ Socket disconnected before AI analysis - skipping', {
         socketId: socketId.substring(0, 20) + '...',
         messageId: message.id,
         // Don't log email - PII
@@ -134,15 +157,21 @@ async function handleAiMediation(socket, io, services, context) {
       return;
     }
 
+    analysisLogger.debug('🔄 Starting async AI analysis', {
+      messageId: message.id,
+      socketId: socketId.substring(0, 20) + '...',
+    });
+
     processAiAnalysis(socket, io, services, {
       user,
       message,
       addToHistory,
     }).catch(error => {
-      const analysisLogger = defaultLogger.child({ function: 'handleAiMediation' });
-      analysisLogger.error('Unhandled error in AI analysis', error, {
+      analysisLogger.error('❌ Unhandled error in AI analysis', error, {
         errorCode: error.code,
         messageId: message.id,
+        errorMessage: error.message,
+        errorStack: error.stack?.substring(0, 200),
       });
       // Error is already handled in processAiAnalysis, but catch here as safety net
     });
@@ -164,12 +193,25 @@ async function processAiAnalysis(socket, io, services, context) {
   const logger = defaultLogger.child({ function: 'processAiAnalysis', messageId: message.id });
 
   try {
-    logger.debug('Starting AI analysis for message', {
+    logger.debug('🔍 Starting AI analysis for message', {
       messageId: message.id,
       roomId: user.roomId,
       textPreview: message.text?.substring(0, 50),
+      hasAiMediator: !!aiMediator,
+      hasAnalyzeMessage: !!(aiMediator && typeof aiMediator.analyzeMessage === 'function'),
       // Don't log email - PII
     });
+
+    // Double-check that aiMediator is available and has the analyzeMessage method
+    if (!aiMediator || typeof aiMediator.analyzeMessage !== 'function') {
+      logger.error('❌ CRITICAL: aiMediator is missing or invalid', {
+        messageId: message.id,
+        hasAiMediator: !!aiMediator,
+        aiMediatorType: typeof aiMediator,
+        hasAnalyzeMessage: !!(aiMediator && typeof aiMediator.analyzeMessage === 'function'),
+      });
+      throw new Error('aiMediator is not available or does not have analyzeMessage method');
+    }
 
     // Gather all context needed for analysis (include message for thread context)
     const analysisContext = await gatherAnalysisContext(services, user, user.roomId, message);

@@ -12,7 +12,7 @@
  * @module liaizen/core/response
  */
 
-const { defaultLogger } = require('../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
 const { parseResponse, extractAction, validateInterventionFields } = require('./parser');
 
 const logger = defaultLogger.child({ module: 'responseProcessor' });
@@ -50,12 +50,23 @@ async function processResponse({
 
   // Debug logging
   if (result.intervention) {
-    logger.debug('Intervention received', {
+    const refocusQuestions = result.intervention.refocusQuestions || [];
+    logger.info('Intervention received', {
       hasValidation: !!result.intervention.validation,
       hasRewrite1: !!result.intervention.rewrite1,
       hasRewrite2: !!result.intervention.rewrite2,
+      hasRefocusQuestions: refocusQuestions.length > 0,
+      refocusQuestionsCount: refocusQuestions.length,
+      refocusQuestions: refocusQuestions, // Log all questions for debugging
       validationPreview: result.intervention.validation?.substring(0, 100),
     });
+
+    if (refocusQuestions.length === 0) {
+      logger.warn('⚠️ Intervention missing refocusQuestions - AI may not have generated them', {
+        hasIntervention: !!result.intervention,
+        interventionKeys: Object.keys(result.intervention || {}),
+      });
+    }
   }
 
   const action = extractAction(result);

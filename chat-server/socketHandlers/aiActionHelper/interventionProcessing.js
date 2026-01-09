@@ -66,6 +66,16 @@ async function processIntervention(socket, io, services, context) {
       },
     });
   } else if (intervention.type === 'ai_comment') {
+    // CRITICAL: Clear analyzing state for ai_comment (message is approved with comment)
+    if (socket.connected) {
+      socket.emit('draft_coaching', {
+        analyzing: false,
+        shouldSend: true, // Message was approved (with comment)
+        originalText: message.text,
+        observerData: null, // No intervention needed
+      });
+    }
+
     await addToHistory(message, user.roomId);
     io.to(user.roomId).emit('new_message', message);
 

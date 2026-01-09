@@ -36,6 +36,15 @@ async function handleAiFailure(socket, io, context) {
 
   // RACE CONDITION GUARD: Only emit private error to socket if still connected
   if (socket.connected) {
+    // CRITICAL: Clear analyzing state when AI fails (fail-open behavior)
+    // The server sent analyzing: true initially, so we must clear it now
+    socket.emit('draft_coaching', {
+      analyzing: false,
+      shouldSend: true, // Message is being sent (fail-open)
+      originalText: message.text,
+      observerData: null, // No intervention (AI failed, message sent anyway)
+    });
+
     socket.emit('new_message', {
       id: `ai-error-${Date.now()}`,
       type: 'ai_error',

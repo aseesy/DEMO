@@ -14,6 +14,7 @@
 'use strict';
 
 const { defaultLogger } = require('../../infrastructure/logging/logger');
+const behavioralPatternAnalyzer = require('../behavioralPatternAnalyzer');
 
 const logger = defaultLogger.child({ module: 'codeLayerIntegration' });
 
@@ -160,6 +161,20 @@ function formatParsedMessageForPrompt(parsed) {
   sections.push(`  - Child as Instrument: ${parsed.assessment.child_as_instrument}`);
   sections.push(`  - Deniability: ${parsed.assessment.deniability}`);
 
+  // Behavioral patterns
+  if (parsed.behavioralPatterns && parsed.behavioralPatterns.patterns.length > 0) {
+    sections.push('\n🧠 BEHAVIORAL PATTERNS:');
+    for (const patternResult of parsed.behavioralPatterns.patterns) {
+      sections.push(`  - ${patternResult.pattern.name} (${patternResult.confidence}% confidence)`);
+      if (patternResult.evidence) {
+        sections.push(`    └─ ${patternResult.evidence}`);
+      }
+    }
+    if (parsed.behavioralPatterns.primaryPattern) {
+      sections.push(`\n  PRIMARY: ${parsed.behavioralPatterns.primaryPattern.pattern.name}`);
+    }
+  }
+
   // Linguistic markers summary
   const markers = parsed.linguistic;
   if (markers.intensifiers?.length > 0 || markers.softeners?.length > 0) {
@@ -207,9 +222,31 @@ function buildCodeLayerPromptSection(parsed) {
     }
   }
 
+  // Add behavioral patterns if available
+  if (parsed.behavioralPatterns && parsed.behavioralPatterns.patterns.length > 0) {
+    sections.push('\n=== BEHAVIORAL PATTERNS DETECTED ===');
+    sections.push('\nWhat the sender is doing behaviorally:\n');
+
+    for (const patternResult of parsed.behavioralPatterns.patterns) {
+      const pattern = patternResult.pattern;
+      sections.push(`• ${pattern.name} (${patternResult.confidence}% confidence)`);
+      sections.push(`  Description: ${pattern.description}`);
+      if (patternResult.evidence) {
+        sections.push(`  Evidence: ${patternResult.evidence}`);
+      }
+    }
+
+    if (parsed.behavioralPatterns.primaryPattern) {
+      const primary = parsed.behavioralPatterns.primaryPattern;
+      sections.push(`\nPRIMARY BEHAVIORAL PATTERN: ${primary.pattern.name}`);
+      sections.push(`  Alternative approach: ${primary.pattern.alternative}`);
+    }
+  }
+
   // Guidance for AI
-  sections.push('\n\nUSE THESE AXIOM NAMES in your mirrorMessage observation.');
-  sections.push('Example: "This message shows [Axiom Name] - a pattern where [observation]."');
+  sections.push('\n\nUSE THESE PATTERNS in your validation message.');
+  sections.push("Connect the behavioral pattern to why it won't achieve the sender's goal.");
+  sections.push('Example: "This [behavioral pattern] won\'t help you [actual goal] because..."');
 
   return sections.join('\n');
 }
@@ -279,12 +316,17 @@ function validateAIResponse(aiResponse, parsed) {
     }
   }
 
-  // Check 3: tip1 should be concise
-  if (intervention.tip1) {
-    const wordCount = intervention.tip1.split(/\s+/).length;
-    if (wordCount > 12) {
-      errors.push(`tip1 exceeds word limit: ${wordCount} words (max 12)`);
+  // Check 3: refocusQuestions should be present and have exactly 3 questions
+  if (intervention.refocusQuestions) {
+    if (!Array.isArray(intervention.refocusQuestions)) {
+      errors.push('refocusQuestions must be an array');
+    } else if (intervention.refocusQuestions.length !== 3) {
+      errors.push(
+        `refocusQuestions must have exactly 3 questions, found ${intervention.refocusQuestions.length}`
+      );
     }
+  } else if (aiResponse.action === 'INTERVENE') {
+    errors.push('refocusQuestions is required for INTERVENE action');
   }
 
   // Check 4: Both rewrites should exist for INTERVENE
@@ -335,6 +377,12 @@ async function analyzeWithCodeLayer(messageText, context = {}) {
     // Run Code Layer parsing
     const parsed = await codeLayerModule.parse(messageText, context);
 
+    // Analyze behavioral patterns
+    const behavioralAnalysis = behavioralPatternAnalyzer.analyzeBehavioralPatterns(parsed);
+
+    // Add behavioral patterns to parsed message
+    parsed.behavioralPatterns = behavioralAnalysis;
+
     // Determine quick-pass
     const quickPass = shouldQuickPass(parsed);
 
@@ -342,6 +390,8 @@ async function analyzeWithCodeLayer(messageText, context = {}) {
     logger.debug('Code Layer analysis complete', {
       messagePreview: messageText.substring(0, 50),
       axiomsFired: parsed.axiomsFired.map(a => a.id),
+      behavioralPatterns: behavioralAnalysis.patterns.map(p => p.pattern.id),
+      primaryBehavioralPattern: behavioralAnalysis.primaryPattern?.pattern?.id,
       conflictPotential: parsed.assessment.conflict_potential,
       quickPass: quickPass.canPass,
       quickPassReason: quickPass.reason,

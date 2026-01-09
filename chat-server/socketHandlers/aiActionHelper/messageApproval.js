@@ -57,6 +57,17 @@ async function processApprovedMessage(socket, io, services, context) {
     // But log the error so we can debug
   }
 
+  // CRITICAL: Clear analyzing state when message is approved
+  // The server sent analyzing: true initially, so we must clear it now
+  if (socket.connected) {
+    socket.emit('draft_coaching', {
+      analyzing: false,
+      shouldSend: true, // Message was approved
+      originalText: message.text,
+      observerData: null, // No intervention needed
+    });
+  }
+
   // Emit reconciliation event to original sender (for optimistic update correlation)
   // This allows the sender's client to update the optimistic message ID to the server ID
   if (message.optimisticId && socket.connected) {

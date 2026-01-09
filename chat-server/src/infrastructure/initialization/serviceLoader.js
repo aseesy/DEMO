@@ -23,8 +23,11 @@ const logger = defaultLogger.child({
  */
 function loadServices() {
   if (!process.env.DATABASE_URL) {
+    logger.warn('⚠️ DATABASE_URL not set - services will not be loaded');
     return {};
   }
+
+  logger.debug('📦 Loading services...');
 
   const services = {
     aiMediator: require('../../../aiMediator'),
@@ -48,6 +51,46 @@ function loadServices() {
   const { profileService, userSessionService } = require('../../services');
   services.profileService = profileService;
   services.userSessionService = userSessionService;
+
+  // Log service availability for debugging
+  logger.info('✅ Services loaded', {
+    hasAiMediator: !!services.aiMediator,
+    hasUserSessionService: !!services.userSessionService,
+    hasOpenAI: !!process.env.OPENAI_API_KEY,
+    openaiConfigured: services.aiMediator?.analyzeMessage ? 'checking...' : 'N/A',
+    servicesCount: Object.keys(services).length,
+  });
+
+  // Check if OpenAI is configured
+  if (services.aiMediator) {
+    try {
+      // Try multiple paths for the client module
+      let openaiClient;
+      try {
+        openaiClient = require('../../core/engine/client');
+      } catch (e1) {
+        try {
+          openaiClient = require('../engine/client');
+        } catch (e2) {
+          // If both fail, that's okay - the mediator will check it
+          logger.debug('Could not import OpenAI client directly (will be checked by mediator)');
+        }
+      }
+
+      if (openaiClient) {
+        const isConfigured = openaiClient.isConfigured();
+        if (!isConfigured) {
+          logger.warn('⚠️ OPENAI_API_KEY not configured - AI mediation will be disabled');
+          logger.warn('💡 Messages will be sent without mediation. Set OPENAI_API_KEY to enable.');
+        } else {
+          logger.info('✅ OpenAI is configured - AI mediation is enabled');
+        }
+      }
+    } catch (err) {
+      logger.warn('⚠️ Could not check OpenAI configuration', { error: err.message });
+      // Non-fatal - mediator will check it at runtime
+    }
+  }
 
   // Phase 2: Add EventBus and TaskManager to services
   const { eventBus } = require('../events/EventBus');

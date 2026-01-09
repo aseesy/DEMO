@@ -16,9 +16,15 @@ const narrativeMemory = require('../../memory/narrativeMemory');
 const entityExtractor = require('../../intelligence/entityExtractor');
 const socialMapBuilder = require('../../intelligence/socialMapBuilder');
 const neo4jClient = require('../../../infrastructure/database/neo4jClient');
-const { defaultLogger } = require('../../infrastructure/logging/logger');
+const { defaultLogger } = require('../../../infrastructure/logging/logger');
+const preFilters = require('../preFilters');
 
 const logger = defaultLogger.child({ module: 'dualBrainContext' });
+
+// Constants for dual-brain context building
+const DUAL_BRAIN_TIMEOUT_MS = 3000; // 3 second timeout for context building
+const MIN_MESSAGE_LENGTH_FOR_ENTITY_EXTRACTION = 20; // Skip extraction for very short messages
+const ABSOLUTES_PATTERN_THRESHOLD = 0.7; // Threshold for detecting absolute language patterns
 
 /**
  * Build complete dual-brain context for AI mediation
@@ -46,42 +52,100 @@ async function buildDualBrainContext(messageText, senderUserId, receiverUserId, 
     messagePreview: messageText?.substring(0, 50),
   });
 
+  // Add timeout wrapper to prevent blocking message delivery
+  let timeoutId = null;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error('Dual-brain context timeout')),
+      DUAL_BRAIN_TIMEOUT_MS
+    );
+  });
+
   try {
-    // Query both brains in parallel
-    const [narrativeContext, socialContext] = await Promise.all([
-      buildNarrativeContext(messageText, senderUserId, receiverUserId, roomId),
-      buildSocialContext(messageText, senderUserId, receiverUserId, roomId),
-    ]);
+    // Query both brains in parallel with timeout
+    // Wrap each in Promise.resolve().catch() to ensure graceful degradation
+    const contextPromise = Promise.all([
+      Promise.resolve(
+        buildNarrativeContext(messageText, senderUserId, receiverUserId, roomId)
+      ).catch(err => {
+        logger.warn('Narrative context build failed, using empty context', {
+          error: err.message,
+          roomId,
+          senderUserId,
+        });
+        return {
+          hasProfile: false,
+          hasSimilarMessages: false,
+          similarMessages: [],
+          detectedPatterns: [],
+        };
+      }),
+      Promise.resolve(buildSocialContext(messageText, senderUserId, receiverUserId, roomId)).catch(
+        err => {
+          logger.warn('Social context build failed, using empty context', {
+            error: err.message,
+            roomId,
+            senderUserId,
+          });
+          return { hasPeople: false, mentionedPeople: [], sensitivePeople: [] };
+        }
+      ),
+    ]).then(([narrativeContext, socialContext]) => {
+      // Synthesize insights from both brains
+      const synthesis = generateSynthesis(narrativeContext, socialContext, messageText);
 
-    // Synthesize insights from both brains
-    const synthesis = generateSynthesis(narrativeContext, socialContext, messageText);
+      const hasContext =
+        narrativeContext.hasProfile ||
+        narrativeContext.hasSimilarMessages ||
+        socialContext.hasPeople;
 
-    const hasContext =
-      narrativeContext.hasProfile || narrativeContext.hasSimilarMessages || socialContext.hasPeople;
+      if (hasContext) {
+        logger.debug('Dual-brain context built', {
+          roomId,
+          hasNarrativeProfile: narrativeContext.hasProfile,
+          similarMessageCount: narrativeContext.similarMessages?.length || 0,
+          mentionedPeopleCount: socialContext.mentionedPeople?.length || 0,
+        });
+      }
 
-    if (hasContext) {
-      logger.debug('Dual-brain context built', {
-        roomId,
-        hasNarrativeProfile: narrativeContext.hasProfile,
-        similarMessageCount: narrativeContext.similarMessages?.length || 0,
-        mentionedPeopleCount: socialContext.mentionedPeople?.length || 0,
-      });
+      return {
+        narrativeContext,
+        socialContext,
+        synthesis,
+        hasContext,
+      };
+    });
+
+    const result = await Promise.race([contextPromise, timeoutPromise]);
+    // Clear timeout if we won the race
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    return result;
+  } catch (error) {
+    // Always clear timeout on error
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
     }
 
-    return {
-      narrativeContext,
-      socialContext,
-      synthesis,
-      hasContext,
-    };
-  } catch (error) {
-    logger.error('Failed to build dual-brain context', {
-      error: error.message,
-      stack: error.stack,
-      roomId,
-      senderUserId,
-      receiverUserId,
-    });
+    // Timeout or other error - gracefully degrade
+    if (error.message === 'Dual-brain context timeout') {
+      logger.warn('Dual-brain context build timed out, continuing without context', {
+        roomId,
+        senderUserId,
+        timeoutMs: DUAL_BRAIN_TIMEOUT_MS,
+      });
+    } else {
+      logger.error('Failed to build dual-brain context', {
+        error: error.message,
+        stack: error.stack,
+        roomId,
+        senderUserId,
+        receiverUserId,
+      });
+    }
     return {
       narrativeContext: null,
       socialContext: null,
@@ -160,6 +224,27 @@ async function buildSocialContext(messageText, senderUserId, receiverUserId, roo
   };
 
   try {
+    // Skip entity extraction for pre-approved messages to save API costs
+    // Pre-filters catch greetings, polite responses, etc. that don't need entity extraction
+    const preFilterResult = preFilters.runPreFilters(messageText);
+    if (preFilterResult.shouldSkipAI) {
+      logger.debug('Skipping entity extraction for pre-approved message', {
+        reason: preFilterResult.reason,
+        roomId,
+      });
+      return context;
+    }
+
+    // Skip entity extraction for very short messages to save costs
+    // These are unlikely to mention people and are often just acknowledgments
+    if (messageText.trim().length < MIN_MESSAGE_LENGTH_FOR_ENTITY_EXTRACTION) {
+      logger.debug('Skipping entity extraction for short message', {
+        length: messageText.trim().length,
+        roomId,
+      });
+      return context;
+    }
+
     // Extract entities from current message
     const entityContext = await entityExtractor.getMessageEntityContext(
       messageText,
@@ -169,23 +254,43 @@ async function buildSocialContext(messageText, senderUserId, receiverUserId, roo
     );
 
     context.entityContext = entityContext;
-    context.mentionedPeople = entityContext?.entities?.people || [];
-    context.hasPeople = context.mentionedPeople.length > 0;
+    // Extract person names from entity context
+    const mentionedPeople = entityContext?.entities?.people || [];
+    context.mentionedPeople = mentionedPeople;
+    context.hasPeople = mentionedPeople.length > 0;
 
-    if (context.mentionedPeople.length > 0) {
-      // Get relationship context from Neo4j
-      const [relationshipContext, sensitivePeople] = await Promise.all([
-        neo4jClient.getRelationshipContext(
+    if (mentionedPeople.length > 0) {
+      // Check Neo4j availability before calling
+      if (
+        !neo4jClient?.isAvailable ||
+        typeof neo4jClient.isAvailable !== 'function' ||
+        !neo4jClient.isAvailable()
+      ) {
+        logger.debug('Neo4j not available, skipping relationship context', {
+          roomId,
           senderUserId,
-          receiverUserId,
-          context.mentionedPeople,
-          roomId
-        ),
-        socialMapBuilder.getSensitivePeopleForUser(receiverUserId, roomId),
-      ]);
+        });
+        context.relationshipContext = {
+          senderSentiment: {},
+          receiverSentiment: {},
+          isSensitive: false,
+        };
+        context.sensitivePeople = [];
+      } else {
+        // Get relationship context from Neo4j
+        // Convert to array of person names if needed
+        const personNames = Array.isArray(mentionedPeople)
+          ? mentionedPeople
+          : mentionedPeople.map(p => (typeof p === 'string' ? p : p.name || p));
 
-      context.relationshipContext = relationshipContext;
-      context.sensitivePeople = sensitivePeople;
+        const [relationshipContext, sensitivePeople] = await Promise.all([
+          neo4jClient.getRelationshipContext(senderUserId, receiverUserId, personNames, roomId),
+          receiverUserId ? socialMapBuilder.getSensitivePeopleForUser(receiverUserId, roomId) : [],
+        ]);
+
+        context.relationshipContext = relationshipContext;
+        context.sensitivePeople = sensitivePeople;
+      }
     }
   } catch (error) {
     logger.warn('Social context partial failure', {
@@ -240,6 +345,8 @@ function detectPatterns(similarMessages, currentMessage) {
     }
 
     for (const msg of similarMessages) {
+      // Defensive: skip null/undefined messages
+      if (!msg || typeof msg !== 'object') continue;
       if (indicator.pattern.test(msg.text || '')) {
         matchCount++;
       }
@@ -255,7 +362,12 @@ function detectPatterns(similarMessages, currentMessage) {
           isRecurring: true,
         });
       } else {
-        themes.get(indicator.theme).frequency += matchCount;
+        // Update frequency by creating new object (immutable update)
+        const existing = themes.get(indicator.theme);
+        themes.set(indicator.theme, {
+          ...existing,
+          frequency: existing.frequency + matchCount,
+        });
       }
     }
   }
@@ -380,7 +492,7 @@ function generateSynthesis(narrativeContext, socialContext, messageText) {
       });
     }
 
-    if (profile.communication_patterns?.uses_absolutes > 0.7) {
+    if (profile.communication_patterns?.uses_absolutes > ABSOLUTES_PATTERN_THRESHOLD) {
       synthesis.senderInsights.push({
         type: 'pattern',
         insight: 'Sender tends to use absolute language (always/never)',
@@ -406,10 +518,16 @@ function generateSynthesis(narrativeContext, socialContext, messageText) {
       });
 
       // Check if message might trigger receiver
+      // Use word boundaries for more accurate matching
       const messageLower = messageText.toLowerCase();
-      const triggeredTopics = profile.known_triggers.filter(trigger =>
-        messageLower.includes(trigger.toLowerCase())
-      );
+      const triggeredTopics = profile.known_triggers.filter(trigger => {
+        const triggerLower = trigger.toLowerCase().trim();
+        if (!triggerLower) return false;
+        // Escape special regex characters and use word boundaries
+        const escapedTrigger = triggerLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const triggerPattern = new RegExp(`\\b${escapedTrigger}\\b`, 'i');
+        return triggerPattern.test(messageText);
+      });
 
       if (triggeredTopics.length > 0) {
         synthesis.warnings.push({
@@ -437,35 +555,56 @@ function generateSynthesis(narrativeContext, socialContext, messageText) {
   // Relationship insights from social context
   if (socialContext?.relationshipContext) {
     const relContext = socialContext.relationshipContext;
+    const senderSentiment = relContext.senderSentiment || {};
+    const receiverSentiment = relContext.receiverSentiment || {};
+    const contestedPeople = [];
 
-    if (relContext.senderSentiments?.length > 0) {
-      for (const sentiment of relContext.senderSentiments) {
-        if (sentiment.type === 'DISLIKES') {
-          synthesis.relationshipInsights.push({
-            type: 'sentiment_conflict',
-            insight: `Sender has negative feelings about ${sentiment.person}`,
-          });
+    // Process sender sentiments (object keyed by person name)
+    for (const [personName, sentiment] of Object.entries(senderSentiment)) {
+      if (sentiment.type === 'DISLIKES') {
+        synthesis.relationshipInsights.push({
+          type: 'sentiment_conflict',
+          insight: `Sender has negative feelings about ${personName}`,
+        });
+      }
+
+      // Check if this person is contested (different sentiments from each parent)
+      const receiverSent = receiverSentiment[personName];
+      if (receiverSent) {
+        if (
+          (sentiment.type === 'TRUSTS' && receiverSent.type === 'DISLIKES') ||
+          (sentiment.type === 'DISLIKES' && receiverSent.type === 'TRUSTS')
+        ) {
+          contestedPeople.push(personName);
         }
       }
     }
 
-    if (relContext.receiverSentiments?.length > 0) {
-      for (const sentiment of relContext.receiverSentiments) {
-        if (sentiment.type === 'DISLIKES') {
-          synthesis.relationshipInsights.push({
-            type: 'sentiment_conflict',
-            insight: `Receiver has negative feelings about ${sentiment.person}`,
-          });
-        }
+    // Process receiver sentiments
+    for (const [personName, sentiment] of Object.entries(receiverSentiment)) {
+      if (sentiment.type === 'DISLIKES') {
+        synthesis.relationshipInsights.push({
+          type: 'sentiment_conflict',
+          insight: `Receiver has negative feelings about ${personName}`,
+        });
       }
     }
 
-    // Check for contested people (different sentiments from each parent)
-    if (relContext.contestedPeople?.length > 0) {
+    // Add warning for contested people
+    if (contestedPeople.length > 0) {
       synthesis.warnings.push({
         type: 'contested_person',
         severity: 'high',
-        message: `${relContext.contestedPeople.join(', ')} viewed differently by each parent - sensitive topic`,
+        message: `${contestedPeople.join(', ')} viewed differently by each parent - sensitive topic`,
+      });
+    }
+
+    // Add warning if isSensitive flag is set
+    if (relContext.isSensitive) {
+      synthesis.warnings.push({
+        type: 'sensitive_relationship',
+        severity: 'high',
+        message: 'Message mentions people with sensitive relationship dynamics',
       });
     }
   }

@@ -7,6 +7,9 @@
 
 const OpenAI = require('openai');
 const { RATE_LIMIT, AI } = require('../infrastructure/config/constants');
+const { defaultLogger } = require('../infrastructure/logging/logger');
+
+const logger = defaultLogger.child({ component: 'OpenAIClient' });
 
 // Singleton instance
 let openaiInstance = null;
@@ -28,7 +31,7 @@ function getClient() {
     const apiKey = process.env.OPENAI_API_KEY || '';
 
     if (!apiKey || apiKey.trim() === '') {
-      console.warn('⚠️  OpenAI API key not configured - AI features will be disabled');
+      logger.warn('OpenAI API key not configured - AI features will be disabled');
       return null;
     }
 
@@ -38,7 +41,7 @@ function getClient() {
       timeout: AI.TIMEOUT_MS,
     });
 
-    console.log('✅ OpenAI client initialized');
+    logger.info('OpenAI client initialized');
   }
 
   return openaiInstance;
@@ -59,7 +62,10 @@ function checkRateLimit() {
 
   // Check if under limit
   if (rateLimitState.requestCount >= rateLimitState.maxRequestsPerWindow) {
-    console.warn('⚠️  OpenAI rate limit reached, request rejected');
+    logger.warn('OpenAI rate limit reached, request rejected', {
+      requestCount: rateLimitState.requestCount,
+      maxRequests: rateLimitState.maxRequestsPerWindow,
+    });
     return false;
   }
 
@@ -102,13 +108,18 @@ const OpenAIClientImpl = {
       const response = await client.chat.completions.create(params);
       const duration = Date.now() - startTime;
 
-      console.log(
-        `✅ OpenAI request completed in ${duration}ms (model: ${params.model}, tokens: ${response.usage?.total_tokens || 'unknown'})`
-      );
+      logger.info('OpenAI request completed', {
+        duration,
+        model: params.model,
+        tokens: response.usage?.total_tokens || 'unknown',
+      });
 
       return response;
     } catch (error) {
-      console.error('❌ OpenAI API error:', error.message);
+      logger.error('OpenAI API error', error, {
+        status: error.status,
+        model: params.model,
+      });
 
       // Provide helpful error messages
       if (error.status === 429) {

@@ -121,11 +121,21 @@ class AIMediator {
 
     // Check if OpenAI is configured
     if (!openaiClient.isConfigured()) {
-      logger.warn('OpenAI not configured, allowing message through', {
+      logger.warn('⚠️ OpenAI not configured, allowing message through (NO MEDIATION)', {
         messageId: message?.id,
+        textPreview:
+          typeof message === 'string' ? message.substring(0, 50) : message?.text?.substring(0, 50),
+        openaiConfigured: openaiClient.isConfigured(),
+        hasOpenaiClient: !!openaiClient,
       });
       return null;
     }
+
+    logger.debug('✅ OpenAI is configured, proceeding with AI mediation', {
+      messageId: message?.id,
+      textPreview:
+        typeof message === 'string' ? message.substring(0, 50) : message?.text?.substring(0, 50),
+    });
 
     // === CACHE CHECK ===
     // Use email as identifier (username is deprecated, set to email for backward compatibility)
@@ -158,6 +168,7 @@ class AIMediator {
     }
 
     // === CODE LAYER ANALYSIS ===
+    // OPTIMIZED: Run with timeout to prevent blocking - if it takes too long, skip it
     let codeLayerResult = null;
     let parsedMessage = null;
     let codeLayerPromptSection = '';
@@ -165,39 +176,55 @@ class AIMediator {
     if (libs.codeLayerIntegration?.isAvailable()) {
       const childNames = existingContacts.filter(c => c.relationship === 'child').map(c => c.name);
 
-      codeLayerResult = await safeExecute(
-        () =>
-          libs.codeLayerIntegration.analyzeWithCodeLayer(message.text, {
-            senderId,
-            receiverId: roleContext?.receiverId,
-            childNames,
-          }),
-        'Code Layer analysis',
-        null
-      );
+      try {
+        // Run Code Layer with 500ms timeout - if it takes longer, skip it
+        const codeLayerPromise = safeExecute(
+          () =>
+            libs.codeLayerIntegration.analyzeWithCodeLayer(message.text, {
+              senderId,
+              receiverId: roleContext?.receiverId,
+              childNames,
+            }),
+          'Code Layer analysis',
+          null
+        );
 
-      if (codeLayerResult) {
-        parsedMessage = codeLayerResult.parsed;
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Code Layer timeout')), 500)
+        );
 
-        if (parsedMessage) {
-          libs.codeLayerIntegration.recordMetrics(parsedMessage, codeLayerResult.quickPass);
-          logger.debug('Code layer analysis complete', {
-            axiomsFired: parsedMessage.axiomsFired.map(a => a.id),
-            quickPass: codeLayerResult.quickPass.canPass,
-          });
+        codeLayerResult = await Promise.race([codeLayerPromise, timeoutPromise]);
 
-          // Quick-pass optimization (Early Exit #2)
-          if (codeLayerResult.quickPass.canPass) {
-            logger.debug('Code layer quick-pass, skipping AI', {
-              messageId: message?.id,
+        if (codeLayerResult) {
+          parsedMessage = codeLayerResult.parsed;
+
+          if (parsedMessage) {
+            libs.codeLayerIntegration.recordMetrics(parsedMessage, codeLayerResult.quickPass);
+            logger.debug('Code layer analysis complete', {
               axiomsFired: parsedMessage.axiomsFired.map(a => a.id),
+              quickPass: codeLayerResult.quickPass.canPass,
             });
-            return null; // Early exit - no context building needed
-          }
 
-          codeLayerPromptSection =
-            libs.codeLayerIntegration.buildCodeLayerPromptSection(parsedMessage);
+            // Quick-pass optimization (Early Exit #2)
+            if (codeLayerResult.quickPass.canPass) {
+              logger.debug('Code layer quick-pass, skipping AI', {
+                messageId: message?.id,
+                axiomsFired: parsedMessage.axiomsFired.map(a => a.id),
+              });
+              return null; // Early exit - no context building needed
+            }
+
+            codeLayerPromptSection =
+              libs.codeLayerIntegration.buildCodeLayerPromptSection(parsedMessage);
+          }
         }
+      } catch (error) {
+        // Code Layer timed out or failed - continue without it (non-blocking)
+        logger.debug('Code Layer skipped (timeout or error)', {
+          error: error.message,
+          messageId: message?.id,
+        });
+        // Continue without Code Layer - not critical for basic mediation
       }
     }
 
@@ -227,6 +254,8 @@ class AIMediator {
       stateManager.updateEscalationScore(this.conversationContext, roomId, patterns);
 
       // === BUILD ALL CONTEXTS ===
+      // OPTIMIZED: Build contexts in parallel where possible to reduce latency
+      const contextStartTime = Date.now();
       const contexts = await contextBuilder.buildAllContexts({
         message,
         recentMessages,
@@ -239,6 +268,27 @@ class AIMediator {
         roleContext,
         threadContext, // Pass thread context from analyzeMessage
       });
+      const contextLatency = Date.now() - contextStartTime;
+      if (contextLatency > 1000) {
+        logger.warn('Context building took longer than expected', {
+          latencyMs: contextLatency,
+          messageId: message?.id,
+        });
+      }
+
+      // === CONNECT BEHAVIORAL PATTERNS TO USER INTENT ===
+      let patternIntentConnection = null;
+      if (parsedMessage?.behavioralPatterns && contexts.userIntent?.primaryIntent) {
+        const patternIntentConnector = require('./patternIntentConnector');
+        patternIntentConnection = patternIntentConnector.connectPatternsToIntent(
+          parsedMessage.behavioralPatterns,
+          contexts.userIntent,
+          message.text
+        );
+        logger.debug('Pattern-intent connection complete', {
+          connectionGenerated: patternIntentConnection.primaryConnection !== null,
+        });
+      }
 
       // === GET RELATIONSHIP INSIGHTS ===
       // NOTE: Insights extraction is now user-triggered only (via API endpoint)
@@ -247,58 +297,112 @@ class AIMediator {
       const insightsString = null; // Disabled automatic extraction
 
       // === GENERATE HUMAN UNDERSTANDING ===
-      // Generate deep insights about human nature, psychology, and relationships
-      // This creates understanding FIRST, which informs impactful responses
-      // CRITICAL: This understanding is essential for contextual, situation-aware responses
-      // Increased timeout to 10 seconds to ensure completion
+      // OPTIMIZED: Run in parallel with prompt building to reduce latency
+      // Reduced timeout to 3 seconds for faster response - understanding is helpful but not critical
       let humanUnderstanding = null;
-      try {
-        // Build enriched relationship context that includes situation details
-        const enrichedRelationshipContext = [
-          contexts.contactContextForAI || '',
-          contexts.coparentingContextString || '',
-          contexts.taskContextForAI || '',
-          contexts.flaggedMessagesContext || '',
-        ]
-          .filter(Boolean)
-          .join('\n\n');
+      const understandingPromise = (async () => {
+        try {
+          // Build enriched relationship context that includes situation details
+          const enrichedRelationshipContext = [
+            contexts.contactContextForAI || '',
+            contexts.coparentingContextString || '',
+            contexts.taskContextForAI || '',
+            contexts.flaggedMessagesContext || '',
+          ]
+            .filter(Boolean)
+            .join('\n\n');
 
-        const understandingPromise = generateHumanUnderstanding({
-          messageText: message.text,
-          senderDisplayName: contexts.senderDisplayName,
-          receiverDisplayName: contexts.receiverDisplayName,
-          messageHistory: contexts.messageHistory,
-          relationshipContext: enrichedRelationshipContext,
-          senderProfile: contexts.profileContext?.sender || null,
-          receiverProfile: contexts.profileContext?.receiver || null,
-          roleContext,
-        });
+          const understandingCall = generateHumanUnderstanding({
+            messageText: message.text,
+            senderDisplayName: contexts.senderDisplayName,
+            receiverDisplayName: contexts.receiverDisplayName,
+            messageHistory: contexts.messageHistory,
+            relationshipContext: enrichedRelationshipContext,
+            senderProfile: contexts.profileContext?.sender || null,
+            receiverProfile: contexts.profileContext?.receiver || null,
+            roleContext,
+          });
 
-        // Increased timeout to 10 seconds - this understanding is critical for quality responses
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Human understanding timeout')), 10000)
-        );
+          // Reduced timeout to 3 seconds for faster response
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Human understanding timeout')), 3000)
+          );
 
-        humanUnderstanding = await Promise.race([understandingPromise, timeoutPromise]);
-        logger.debug('Human understanding generated successfully');
-      } catch (error) {
-        // Log warning but continue - system can still function, just with less context
-        logger.warn('Human understanding skipped due to error or timeout', {
-          error: error.message,
-          messageId: message?.id,
-        });
-        // Continue without understanding, but responses may be less contextual
-        humanUnderstanding = null;
-      }
+          return await Promise.race([understandingCall, timeoutPromise]);
+        } catch (error) {
+          // Log warning but continue - system can still function, just with less context
+          logger.debug('Human understanding skipped (non-blocking)', {
+            error: error.message,
+            messageId: message?.id,
+          });
+          return null;
+        }
+      })();
 
-      const humanUnderstandingString = humanUnderstanding
-        ? formatUnderstandingForPrompt(humanUnderstanding)
-        : '';
+      // Start building prompt immediately (don't wait for human understanding)
+      // We'll include it if it completes in time
 
       // === CHECK COMMENT FREQUENCY ===
       const lastCommentTime = roomId ? this.conversationContext.lastCommentTime.get(roomId) : null;
       const timeSinceLastComment = lastCommentTime ? Date.now() - lastCommentTime : Infinity;
       const shouldLimitComments = timeSinceLastComment < 60000;
+
+      // Extract recent intervention information to help AI vary responses
+      // Check both lastIntervention from context and any intervention messages in history
+      const recentInterventions = [];
+
+      // Add last intervention from conversation context if available
+      if (this.conversationContext.lastIntervention) {
+        const lastIntervention = this.conversationContext.lastIntervention;
+        // Only include if it has meaningful content
+        if (
+          lastIntervention.validation ||
+          (lastIntervention.refocusQuestions && lastIntervention.refocusQuestions.length > 0)
+        ) {
+          recentInterventions.push({
+            validation: lastIntervention.validation || '',
+            refocusQuestions: Array.isArray(lastIntervention.refocusQuestions)
+              ? lastIntervention.refocusQuestions
+              : [],
+          });
+          logger.info('📋 Including last intervention for variation', {
+            hasValidation: !!lastIntervention.validation,
+            questionCount: lastIntervention.refocusQuestions?.length || 0,
+            previousQuestions: lastIntervention.refocusQuestions || [],
+          });
+        }
+      }
+
+      // Also check recent messages for any saved intervention data (though they're usually not saved)
+      const interventionMessages = recentMessages
+        .filter(msg => (msg.type === 'ai_intervention' || msg.validation) && msg.text)
+        .slice(-2) // Get last 2 if any exist
+        .map(msg => ({
+          validation: msg.validation || msg.text?.substring(0, 200) || '',
+          refocusQuestions: msg.refocusQuestions || [],
+        }));
+
+      recentInterventions.push(...interventionMessages);
+
+      // Try to get human understanding, but don't wait more than 500ms
+      // This allows us to include it if it's fast, but proceed without it if slow
+      // Reduced from 1 second to 500ms for faster response
+      let humanUnderstandingString = '';
+      try {
+        const quickUnderstanding = await Promise.race([
+          understandingPromise,
+          new Promise(resolve => setTimeout(() => resolve(null), 500)), // Max 500ms wait
+        ]);
+        if (quickUnderstanding) {
+          humanUnderstandingString = formatUnderstandingForPrompt(quickUnderstanding);
+          logger.debug('Human understanding included (fast path)');
+        } else {
+          logger.debug('Human understanding not available in time, proceeding without it');
+        }
+      } catch (error) {
+        // Continue without understanding - non-blocking
+        logger.debug('Human understanding not available in time, proceeding without it');
+      }
 
       // === BUILD PROMPT ===
       const prompt = promptBuilder.buildMediationPrompt({
@@ -317,13 +421,16 @@ class AIMediator {
         voiceSignatureSection: contexts.voiceSignatureSection,
         conversationPatternsSection: contexts.conversationPatternsSection,
         interventionLearningSection: contexts.interventionLearningSection,
+        userIntent: contexts.userIntent,
+        patternIntentConnection: patternIntentConnection,
         threadContext, // Add thread context to prompt
         roleAwarePromptSection: contexts.roleAwarePromptSection,
         insightsString,
-        humanUnderstandingString,
+        humanUnderstandingString, // May be empty if understanding didn't complete in time
         taskContextForAI: contexts.taskContextForAI,
         flaggedMessagesContext: contexts.flaggedMessagesContext,
         dualBrainContextString: contexts.dualBrainContextString,
+        recentInterventions, // Include recent interventions to help AI vary responses
       });
 
       // === MAKE AI CALL ===
@@ -367,6 +474,36 @@ class AIMediator {
       // Track comment time
       if (result?.action === 'COMMENT' && roomId) {
         this.conversationContext.lastCommentTime.set(roomId, Date.now());
+      }
+
+      // === STORE LAST INTERVENTION FOR VARIATION ===
+      // Store intervention data so AI can vary responses in future interventions
+      if (result && result.type === 'ai_intervention' && result.validation) {
+        // Extract refocusQuestions from result (could be in result.refocusQuestions or result.intervention.refocusQuestions)
+        const refocusQuestions =
+          result.refocusQuestions || result.intervention?.refocusQuestions || [];
+        const questionsArray = Array.isArray(refocusQuestions) ? refocusQuestions : [];
+
+        this.conversationContext.lastIntervention = {
+          validation: result.validation || '',
+          refocusQuestions: questionsArray,
+          timestamp: Date.now(),
+        };
+
+        logger.info('✅ Stored last intervention for variation', {
+          messageId: message?.id,
+          hasValidation: !!result.validation,
+          validationPreview: (result.validation || '').substring(0, 100),
+          questionCount: questionsArray.length,
+          questions: questionsArray, // Log all questions for debugging
+          questionsPreview: questionsArray.map(q => q.substring(0, 50)).join(' | '),
+        });
+      } else if (result && result.type === 'ai_intervention') {
+        logger.warn('⚠️ Intervention result missing validation, not storing for variation', {
+          messageId: message?.id,
+          hasValidation: !!result.validation,
+          resultType: result.type,
+        });
       }
 
       // === CACHE RESULT ===

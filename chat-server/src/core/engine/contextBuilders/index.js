@@ -28,6 +28,8 @@ const {
   buildInterventionLearningSection,
 } = require('./intelligenceContext');
 const { buildDualBrainContext, updateDualBrainFromMessage } = require('./dualBrainContext');
+const intentExtractor = require('../intentExtractor');
+const patternIntentConnector = require('../patternIntentConnector');
 
 /**
  * Build all contexts for AI mediation
@@ -114,6 +116,16 @@ async function buildAllContexts({
     ? buildConversationPatternsSection(roleContext, recentMessages)
     : null;
 
+  // Extract user intent from message and conversation history
+  const userIntent = intentExtractor.extractUserIntent({
+    messageText: message.text,
+    recentMessages,
+    senderId: roleContext?.senderId || message.username,
+    context: messageGoal || {},
+  });
+
+  // Note: Pattern-intent connection will be done in mediator where parsed message is available
+
   // Get display names - prefer contact_name from contacts, then first_name from profile, fallback to username
   // Contacts may have relationship names like "Dad" or "Mom" which are preferred
   // Note: senderProfile and receiverProfileForIds already defined above for dual-brain context
@@ -187,10 +199,11 @@ async function buildAllContexts({
     profileContext,
     graphContextString,
     valuesContextString,
-    userIntelligenceContextString: userIntelligence.senderContext,
-    receiverIntelligenceContextString: userIntelligence.receiverContext,
+    userIntelligenceContextString: userIntelligence?.senderContext || '',
+    receiverIntelligenceContextString: userIntelligence?.receiverContext || '',
     coparentingContextString,
     messageGoal,
+    userIntent, // Enhanced intent extraction
     voiceSignatureSection,
     conversationPatternsSection,
     interventionLearningSection,

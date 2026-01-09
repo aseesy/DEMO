@@ -71,18 +71,19 @@ GENERATE INSIGHTS ABOUT:
 
 4. **Context Factors**: What circumstances, pressures, or experiences might be influencing both people? What else might be true beyond what's visible?
 
-5. **Communication Breakdown**: Why did this message form the way it did? What emotional or cognitive state led to this phrasing? What might they not be able to articulate directly?
+5. **Communication Breakdown**: Why did this message form the way it did? What communication patterns or language choices led to this phrasing? What underlying need might they be trying to express (even if poorly worded)?
 
-6. **Path Forward**: What kind of understanding would help the sender? What perspective shift could make a difference? How can they express their real need in a way that gets met?
+6. **Path Forward**: What kind of understanding would help the sender? What perspective shift could make a difference? How can they express their underlying need in a way that gets met?
 
 IMPORTANT PRINCIPLES:
-- Frame as understanding of human nature, not as diagnosis or labeling
+- Frame as understanding of human nature and communication patterns, not as emotional diagnosis or labeling
 - Be compassionate and non-judgmental
-- Focus on universal human experiences and needs
-- Think about what's beneath the surface
+- Focus on universal human experiences, needs, and communication mechanics
+- Think about what's beneath the surface in terms of needs and patterns, not emotional states
 - Consider both people's perspectives without taking sides
-- Ground insights in psychology, attachment, communication theory
-- Avoid clinical terminology or pathologizing
+- Ground insights in communication theory and language mechanics
+- Avoid clinical terminology, pathologizing, or emotional diagnosis
+- Describe communication patterns and needs, not feelings or mental states
 
 Respond with a JSON object:
 {
