@@ -65,32 +65,60 @@ export function setupMessageHandlers(socket, handlers) {
       return (msg.sender?.email || msg.user_email || msg.email || msg.username || '').toLowerCase();
     };
 
-    // Build set of optimistic message keys to avoid duplicates
-    const optimisticKeys = new Set();
-    offlineQueueRef.current.forEach(msg => {
-      if (msg.isOptimistic && msg.text && msg.timestamp) {
-        const msgEmail = getMessageEmail(msg);
-        if (!msgEmail) return; // Skip if no email/username
-        // Create a key based on text, email, and time window (within 5 seconds)
-        const msgTimeWindow = Math.floor(new Date(msg.timestamp).getTime() / 5000);
-        const key = `${msg.text}_${msgEmail}_${msgTimeWindow}`;
-        optimisticKeys.add(key);
-      }
-    });
-
     // Optimize message filtering and merging - use efficient Set operations
     setMessages(prev => {
       // Early return if no new messages
       if (messages.length === 0) return prev;
-      
+
+      // Build set of optimistic message keys to avoid duplicates
+      // CRITICAL: Check BOTH offlineQueue AND current messages array (prev)
+      // Blocked messages are in the messages array (prev), not offlineQueue
+      const optimisticKeys = new Set();
+
+      // First, check offlineQueue (for pending messages)
+      offlineQueueRef.current.forEach(msg => {
+        if (msg.isOptimistic && msg.text && msg.timestamp) {
+          const msgEmail = getMessageEmail(msg);
+          if (!msgEmail) return; // Skip if no email/username
+          // Create a key based on text, email, and time window (within 5 seconds)
+          const msgTimeWindow = Math.floor(new Date(msg.timestamp).getTime() / 5000);
+          const key = `${msg.text}_${msgEmail}_${msgTimeWindow}`;
+          optimisticKeys.add(key);
+        }
+      });
+
+      // CRITICAL: Also check current messages array (prev) for optimistic messages (including blocked ones)
+      // This prevents server messages from duplicating blocked optimistic messages
+      prev.forEach(msg => {
+        if (msg.isOptimistic && msg.text && msg.timestamp) {
+          const msgEmail = getMessageEmail(msg);
+          if (!msgEmail) return;
+          const msgTimeWindow = Math.floor(new Date(msg.timestamp).getTime() / 5000);
+          const key = `${msg.text}_${msgEmail}_${msgTimeWindow}`;
+          optimisticKeys.add(key);
+          if (import.meta.env.DEV && msg.isBlocked) {
+            console.log(
+              '[message_history] Protected blocked optimistic message from duplication:',
+              {
+                messageId: msg.id,
+                key: key,
+                text: msg.text?.substring(0, 30),
+              }
+            );
+          }
+        }
+      });
+
+      // Continue with existing merge logic...
+
       // Filter out messages that match optimistic messages - optimized
       const newMessages = [];
       const prevMessageIds = new Set(prev.map(m => m.id));
-      
+
       for (const msg of messages) {
         // Skip if already in prev (deduplication)
         if (prevMessageIds.has(msg.id)) continue;
-        
+
         // Skip if missing required fields
         if (!msg.text || !msg.timestamp) {
           newMessages.push(msg);
@@ -217,14 +245,16 @@ export function setupMessageHandlers(socket, handlers) {
     }
 
     // Use pure functions to determine and apply message action
-    // NOTE: We capture removedMsgId inside the callback but clean up AFTER
+    // NOTE: We capture removedMsgId and actionResult inside the callback but use them AFTER
     // to avoid calling state setters inside another state setter's callback
     let removedMsgId = null;
+    let actionResult = null;
 
     // Batch state updates to prevent multiple re-renders
     // Use functional update to ensure we're working with latest state
     setMessages(prev => {
       const action = determineMessageAction(prev, message, usernameRef.current);
+      actionResult = action; // Capture action for use outside callback
 
       // Only log in dev mode to avoid performance impact in production
       if (import.meta.env.DEV) {
@@ -234,6 +264,8 @@ export function setupMessageHandlers(socket, handlers) {
           messageId: message.id,
           optimisticId: message.optimisticId,
           text: message.text?.substring(0, 30),
+          prevMessagesCount: prev.length,
+          optimisticMessagesInPrev: prev.filter(m => m.isOptimistic).length,
         });
       }
 
@@ -245,7 +277,51 @@ export function setupMessageHandlers(socket, handlers) {
         }
       }
 
-      return applyMessageAction(prev, messageWithTimestamp, action);
+      // CRITICAL: Log blocked messages before applying action
+      const blockedMessagesBefore = prev.filter(
+        m => m.isBlocked || m.status === 'blocked' || m.needsMediation
+      );
+      if (import.meta.env.DEV && blockedMessagesBefore.length > 0) {
+        console.log('[new_message] Blocked messages before action:', {
+          count: blockedMessagesBefore.length,
+          blockedIds: blockedMessagesBefore.map(m => m.id),
+          blockedTexts: blockedMessagesBefore.map(m => m.text?.substring(0, 30)),
+          action: action.action,
+        });
+      }
+
+      const updated = applyMessageAction(prev, messageWithTimestamp, action);
+
+      // CRITICAL: Verify blocked messages are still present after action
+      const blockedMessagesAfter = updated.filter(
+        m => m.isBlocked || m.status === 'blocked' || m.needsMediation
+      );
+      if (import.meta.env.DEV) {
+        if (
+          blockedMessagesBefore.length > 0 &&
+          blockedMessagesAfter.length !== blockedMessagesBefore.length
+        ) {
+          console.error('[new_message] ⚠️ BLOCKED MESSAGE REMOVED!', {
+            beforeCount: blockedMessagesBefore.length,
+            afterCount: blockedMessagesAfter.length,
+            beforeIds: blockedMessagesBefore.map(m => m.id),
+            afterIds: blockedMessagesAfter.map(m => m.id),
+            action: action.action,
+            removedIds: blockedMessagesBefore
+              .filter(b => !blockedMessagesAfter.some(a => a.id === b.id))
+              .map(m => ({ id: m.id, text: m.text?.substring(0, 30) })),
+          });
+        }
+        console.log('[new_message] Messages updated:', {
+          action: action.action,
+          previousCount: prev.length,
+          updatedCount: updated.length,
+          newMessageId: message.id,
+          blockedMessagesCount: blockedMessagesAfter.length,
+        });
+      }
+
+      return updated;
     });
 
     // Clean up pending message tracking after capturing the ID
@@ -304,10 +380,24 @@ export function setupMessageHandlers(socket, handlers) {
 
     // Clear draftCoaching when own message is approved by backend
     // This indicates the message passed AI analysis and was sent successfully
-    // Clear both analyzing state AND blocked message (ObserverCard)
+    // BUT: Only clear if the message wasn't blocked (blocked messages keep their coaching)
     if (ownMessage && setDraftCoaching) {
-      // Clear draftCoaching completely - removes both analyzing state and blocked message
-      setDraftCoaching(null);
+      // Check if this message was blocked - if so, don't clear draftCoaching
+      // The draftCoaching should remain for blocked messages
+      // Use actionResult captured from inside the setMessages callback
+      const wasBlocked =
+        actionResult?.action === 'skip' &&
+        actionResult?.reason === 'blocked_message_must_stay_visible';
+      if (!wasBlocked) {
+        // Clear draftCoaching completely - removes both analyzing state and blocked message
+        // This clears any frontend pre-check analyzing state
+        setDraftCoaching(null);
+        if (import.meta.env.DEV) {
+          console.log('[new_message] Cleared draftCoaching - message approved');
+        }
+      } else if (import.meta.env.DEV) {
+        console.log('[new_message] Keeping draftCoaching for blocked message');
+      }
     }
   };
 

@@ -1,4 +1,7 @@
 import { socketService } from '../socket';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('[MessageService]');
 
 /**
  * MessageService - Domain service for message management
@@ -26,6 +29,64 @@ class MessageService {
     socketService.subscribe('message_error', this.handleMessageError.bind(this));
     socketService.subscribe('older_messages', this.handleOlderMessages.bind(this));
     socketService.subscribe('disconnect', this.handleDisconnect.bind(this));
+    // CRITICAL: Subscribe to draft_coaching to mark blocked messages
+    socketService.subscribe('draft_coaching', this.handleDraftCoaching.bind(this));
+  }
+
+  /**
+   * Handle draft_coaching event - mark optimistic messages as blocked when intervention fires
+   * This ensures blocked messages stay visible in the UI until user sends a new message
+   */
+  handleDraftCoaching(coaching) {
+    // Only process if message was blocked (shouldSend: false)
+    if (!coaching || coaching.shouldSend !== false) {
+      return;
+    }
+
+    const normalizedOriginalText = (coaching.originalText || '').trim().toLowerCase();
+    if (!normalizedOriginalText) {
+      logger.warn('draft_coaching received without originalText, cannot mark message as blocked');
+      return;
+    }
+
+    // Find and mark the matching optimistic message as blocked
+    let foundMatch = false;
+    this.messages = this.messages.map(msg => {
+      // Only match optimistic messages that haven't been blocked yet
+      if (msg.isOptimistic && !msg.isBlocked) {
+        const normalizedMsgText = (msg.text || '').trim().toLowerCase();
+
+        if (normalizedMsgText === normalizedOriginalText) {
+          foundMatch = true;
+          logger.debug('Marking optimistic message as blocked', {
+            messageId: msg.id,
+            text: msg.text?.substring(0, 30),
+          });
+
+          // Mark as blocked - keeps message visible in UI
+          return {
+            ...msg,
+            status: 'blocked',
+            isBlocked: true,
+            needsMediation: true,
+            // Keep optimistic flag so it's not filtered out
+            isOptimistic: true,
+          };
+        }
+      }
+      return msg;
+    });
+
+    if (!foundMatch) {
+      logger.warn('No matching optimistic message found to mark as blocked', {
+        originalText: normalizedOriginalText.substring(0, 30),
+        optimisticMessages: this.messages
+          .filter(m => m.isOptimistic)
+          .map(m => ({ id: m.id, text: m.text?.substring(0, 30) })),
+      });
+    } else {
+      this.notify();
+    }
   }
 
   /**
@@ -97,9 +158,10 @@ class MessageService {
 
   handleMessageHistory(data) {
     if (import.meta.env.DEV) {
-      console.log('[MessageService] ========== MESSAGE_HISTORY RECEIVED ==========');
-      console.log('[MessageService] Messages count:', data.messages?.length);
-      console.log('[MessageService] HasMore:', data.hasMore);
+      logger.debug('MESSAGE_HISTORY received', {
+        messageCount: data.messages?.length,
+        hasMore: data.hasMore,
+      });
     }
     if (data.messages) {
       // Root cause fix: Don't replace existing messages with empty array
@@ -107,9 +169,7 @@ class MessageService {
       // empty array (error, race condition, new room), we shouldn't clear existing messages
       if (data.messages.length === 0 && this.messages.length > 0) {
         if (import.meta.env.DEV) {
-          console.warn(
-            '[MessageService] Ignoring empty message_history - preserving existing messages'
-          );
+          logger.warn('Ignoring empty message_history - preserving existing messages');
         }
         return; // Don't replace existing messages with empty array
       }
@@ -282,18 +342,54 @@ class MessageService {
    */
   removeMessages(predicate) {
     const initialCount = this.messages.length;
-    
+
+    // CRITICAL: Check for blocked messages before removal
+    const blockedMessagesBefore = this.messages.filter(
+      m => m.isBlocked || m.status === 'blocked' || m.needsMediation
+    );
+
     // Remove from messages array
-    this.messages = this.messages.filter(msg => !predicate(msg));
-    
+    // CRITICAL: Add safeguard - never remove blocked messages even if predicate says to
+    this.messages = this.messages.filter(msg => {
+      // Never remove blocked messages
+      if (msg.isBlocked || msg.status === 'blocked' || msg.needsMediation) {
+        return true; // Keep blocked messages
+      }
+      // Apply predicate for non-blocked messages
+      return !predicate(msg);
+    });
+
     // Remove from pending messages map
     for (const [tempId, msg] of this.pendingMessages.entries()) {
+      // CRITICAL: Don't remove blocked messages from pending map either
+      if (msg.isBlocked || msg.status === 'blocked' || msg.needsMediation) {
+        continue;
+      }
       if (predicate(msg)) {
         this.pendingMessages.delete(tempId);
         this.messageStatuses.delete(tempId);
       }
     }
-    
+
+    // CRITICAL: Verify blocked messages are still present
+    const blockedMessagesAfter = this.messages.filter(
+      m => m.isBlocked || m.status === 'blocked' || m.needsMediation
+    );
+    if (
+      blockedMessagesBefore.length > 0 &&
+      blockedMessagesAfter.length !== blockedMessagesBefore.length
+    ) {
+      console.error('[MessageService.removeMessages] ⚠️ BLOCKED MESSAGE REMOVED!', {
+        beforeCount: blockedMessagesBefore.length,
+        afterCount: blockedMessagesAfter.length,
+        beforeIds: blockedMessagesBefore.map(m => m.id),
+        afterIds: blockedMessagesAfter.map(m => m.id),
+        removedIds: blockedMessagesBefore
+          .filter(b => !blockedMessagesAfter.some(a => a.id === b.id))
+          .map(m => ({ id: m.id, text: m.text?.substring(0, 30) })),
+      });
+    }
+
     // Only notify if messages were actually removed
     if (this.messages.length !== initialCount) {
       this.notify();
