@@ -18,12 +18,25 @@ function MessageItemComponent({
   sendInterventionFeedback,
   onFlag,
 }) {
+  // Check if message is blocked
+  const isBlocked = message.isBlocked || message.status === 'blocked' || message.needsMediation;
+
   return (
     <div
       id={`message-${message.id}`}
       className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 ${
         isHighlighted ? 'animate-pulse bg-yellow-100 rounded-lg p-2 -mx-2' : ''
-      }`}
+      } ${isBlocked ? 'opacity-75' : ''}`}
+      style={
+        isBlocked
+          ? {
+              borderLeft: isOwn ? 'none' : '3px solid #f59e0b',
+              borderRight: isOwn ? '3px solid #f59e0b' : 'none',
+              paddingLeft: isOwn ? '0' : '0.5rem',
+              paddingRight: isOwn ? '0.5rem' : '0',
+            }
+          : {}
+      }
     >
       <div
         className={`${isOwn ? 'order-2' : 'order-1'}`}
@@ -39,6 +52,21 @@ function MessageItemComponent({
             <span className="text-xs font-medium text-teal-700">LiaiZen</span>
           </div>
         )}
+        {/* Blocked message indicator */}
+        {isBlocked && (
+          <div
+            className={`${isOwn ? 'order-3 mb-1' : 'order-0 mb-1'} flex items-center gap-1 text-xs text-amber-600 font-medium`}
+          >
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>Needs review</span>
+          </div>
+        )}
         {/* Message bubble - only text inside */}
         <div
           className={`px-3 py-2 rounded-2xl ${
@@ -47,7 +75,9 @@ function MessageItemComponent({
               : isOwn
                 ? isSending
                   ? 'bg-teal-500 text-white' // Slightly lighter while sending
-                  : 'bg-teal-600 text-white'
+                  : isBlocked
+                    ? 'bg-amber-100 border-2 border-amber-300 text-amber-900' // Blocked message styling
+                    : 'bg-teal-600 text-white'
                 : 'bg-white border border-gray-200 text-gray-900'
           }`}
         >

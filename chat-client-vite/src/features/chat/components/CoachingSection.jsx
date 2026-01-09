@@ -63,15 +63,33 @@ export function CoachingSection({
           position: 'sticky',
           bottom: 0,
           zIndex: 50, // Higher than MessageInput (z-index: 40 on mobile)
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(4px)',
-          borderTop: '1px solid rgba(229, 231, 235, 0.8)',
+          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+          backdropFilter: 'blur(8px)',
+          borderTop: '1px solid rgba(229, 231, 235, 0.9)',
           paddingTop: '0.75rem',
+          boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.05)',
         }}
       >
-        <div className="flex items-center gap-3 text-sm text-gray-600 max-w-3xl mx-auto">
-          <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-teal-medium" />
-          <span>Analyzing message...</span>
+        <div className="flex items-center gap-3 text-sm text-gray-700 max-w-3xl mx-auto">
+          <div className="relative">
+            <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-teal-light border-t-teal-medium" />
+            <div className="absolute inset-0 inline-block animate-ping rounded-full h-5 w-5 border border-teal-medium opacity-20" />
+          </div>
+          <span className="font-medium">Analyzing message...</span>
+          <div className="flex gap-1 ml-1">
+            <span
+              className="inline-block w-1 h-1 bg-teal-medium rounded-full animate-pulse"
+              style={{ animationDelay: '0ms' }}
+            />
+            <span
+              className="inline-block w-1 h-1 bg-teal-medium rounded-full animate-pulse"
+              style={{ animationDelay: '150ms' }}
+            />
+            <span
+              className="inline-block w-1 h-1 bg-teal-medium rounded-full animate-pulse"
+              style={{ animationDelay: '300ms' }}
+            />
+          </div>
         </div>
       </div>
     );

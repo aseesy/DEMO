@@ -301,6 +301,45 @@ function ChatPageComponent({ username, userId, isAuthenticated, inviteState, inv
   // Threads are now automatically loaded by useChatSocket when roomId is available
   // No need to manually load threads here - useChatSocket handles it
 
+  // CRITICAL: Track blocked messages to verify they stay visible
+  // This helps diagnose if blocked messages are being removed unexpectedly
+  React.useEffect(() => {
+    if (!import.meta.env.DEV) return;
+
+    const blockedMessages = messages.filter(
+      m => m.isBlocked || m.status === 'blocked' || m.needsMediation
+    );
+
+    if (blockedMessages.length > 0) {
+      // Log blocked messages every 5 seconds to track persistence
+      const interval = setInterval(() => {
+        const currentBlocked = messages.filter(
+          m => m.isBlocked || m.status === 'blocked' || m.needsMediation
+        );
+
+        if (currentBlocked.length !== blockedMessages.length) {
+          console.warn('🔒 BLOCKED MESSAGE COUNT CHANGED!', {
+            previousCount: blockedMessages.length,
+            currentCount: currentBlocked.length,
+            previousIds: blockedMessages.map(m => m.id),
+            currentIds: currentBlocked.map(m => m.id),
+            removedIds: blockedMessages
+              .filter(b => !currentBlocked.some(c => c.id === b.id))
+              .map(m => ({ id: m.id, text: m.text?.substring(0, 30) })),
+          });
+        } else {
+          console.log('🔒 Blocked messages still present:', {
+            count: currentBlocked.length,
+            messageIds: currentBlocked.map(m => m.id),
+            texts: currentBlocked.map(m => m.text?.substring(0, 30)),
+          });
+        }
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }
+  }, [messages]);
+
   // Listen for rewrite-sent event to clean up pending messages
   // Only remove blocked messages when a NEW message is sent (not a rewrite)
   React.useEffect(() => {
