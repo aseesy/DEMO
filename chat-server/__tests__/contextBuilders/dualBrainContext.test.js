@@ -5,7 +5,20 @@
  * both PostgreSQL (narrative memory) and Neo4j (social map).
  */
 
-const dualBrainContext = require('../../src/core/engine/contextBuilders/dualBrainContext');
+// Mock the logger
+jest.mock('../../src/infrastructure/logging/logger', () => {
+  const mockLogger = {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+  };
+  return {
+    defaultLogger: mockLogger,
+    Logger: jest.fn(() => mockLogger),
+  };
+});
 
 // Mock dependencies
 jest.mock('../../src/core/memory/narrativeMemory', () => ({
@@ -25,7 +38,15 @@ jest.mock('../../src/core/intelligence/socialMapBuilder', () => ({
 
 jest.mock('../../src/infrastructure/database/neo4jClient', () => ({
   getRelationshipContext: jest.fn(),
+  isAvailable: jest.fn().mockReturnValue(true),
 }));
+
+// Mock preFilters to prevent early returns
+jest.mock('../../src/core/engine/preFilters', () => ({
+  runPreFilters: jest.fn().mockReturnValue({ shouldSkipAI: false }),
+}));
+
+const dualBrainContext = require('../../src/core/engine/contextBuilders/dualBrainContext');
 
 const narrativeMemory = require('../../src/core/memory/narrativeMemory');
 const entityExtractor = require('../../src/core/intelligence/entityExtractor');
@@ -44,7 +65,12 @@ describe('DualBrainContext', () => {
     });
 
     it('should return empty context for missing senderUserId', async () => {
-      const result = await dualBrainContext.buildDualBrainContext('test message', null, 2, 'room-123');
+      const result = await dualBrainContext.buildDualBrainContext(
+        'test message',
+        null,
+        2,
+        'room-123'
+      );
       expect(result.hasContext).toBe(false);
     });
 
@@ -147,10 +173,7 @@ describe('DualBrainContext', () => {
 
   describe('detectPatterns', () => {
     it('should detect absolute language patterns', () => {
-      const similarMessages = [
-        { text: 'You always do this' },
-        { text: 'You never listen' },
-      ];
+      const similarMessages = [{ text: 'You always do this' }, { text: 'You never listen' }];
       const currentMessage = 'You always forget';
 
       const patterns = dualBrainContext.detectPatterns(similarMessages, currentMessage);
@@ -265,9 +288,9 @@ describe('DualBrainContext', () => {
       const narrativeContext = {};
       const socialContext = {
         relationshipContext: {
-          senderSentiments: [{ type: 'DISLIKES', person: 'New Partner' }],
-          receiverSentiments: [],
-          contestedPeople: ['New Partner'],
+          // Implementation expects object format keyed by person name
+          senderSentiment: { 'New Partner': { type: 'DISLIKES' } },
+          receiverSentiment: { 'New Partner': { type: 'TRUSTS' } }, // Opposite sentiment creates contested person
         },
       };
 
@@ -279,7 +302,9 @@ describe('DualBrainContext', () => {
 
     it('should generate prompt section with high-priority warnings first', () => {
       const narrativeContext = {
-        detectedPatterns: [{ theme: 'absolutes', description: 'Uses absolutes', isRecurring: true }],
+        detectedPatterns: [
+          { theme: 'absolutes', description: 'Uses absolutes', isRecurring: true },
+        ],
       };
       const socialContext = {
         mentionedPeople: ['New Partner'],
@@ -338,7 +363,10 @@ describe('DualBrainContext', () => {
 
       // Give time for promises to execute
       return new Promise(resolve => setTimeout(resolve, 100)).then(() => {
-        expect(narrativeMemory.storeMessageEmbedding).toHaveBeenCalledWith('msg-123', 'Test message');
+        expect(narrativeMemory.storeMessageEmbedding).toHaveBeenCalledWith(
+          'msg-123',
+          'Test message'
+        );
         expect(socialMapBuilder.updateSocialMapFromMessage).toHaveBeenCalledWith(
           message,
           1,

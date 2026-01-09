@@ -7,6 +7,21 @@
  * Feature: 002-sender-profile-mediation
  */
 
+// Mock the logger before importing the module
+jest.mock('../../../../infrastructure/logging/logger', () => {
+  const mockLogger = {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+  };
+  return {
+    defaultLogger: mockLogger,
+    Logger: jest.fn(() => mockLogger),
+  };
+});
+
 // Mock the repository before requiring the module
 jest.mock('../../../../repositories/postgres', () => {
   const mockGetCommunicationProfile = jest.fn();
@@ -20,10 +35,14 @@ jest.mock('../../../../repositories/postgres', () => {
 
 const profileLoader = require('../profileLoader');
 const { __mockGetCommunicationProfile } = require('../../../../repositories/postgres');
+const { defaultLogger } = require('../../../../infrastructure/logging/logger');
 
 describe('Profile Loader', () => {
+  let mockLogger;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLogger = defaultLogger;
   });
 
   describe('getProfile (new naming)', () => {
@@ -83,7 +102,6 @@ describe('Profile Loader', () => {
     });
 
     it('should log message for new profiles', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       __mockGetCommunicationProfile.mockResolvedValue({
         user_id: 'newuser',
         is_new: true,
@@ -91,10 +109,9 @@ describe('Profile Loader', () => {
 
       await profileLoader.getProfile('newuser');
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('No profile for newuser')
-      );
-      consoleSpy.mockRestore();
+      expect(mockLogger.debug).toHaveBeenCalledWith('Log message', {
+        value: expect.stringContaining('No profile for newuser'),
+      });
     });
   });
 

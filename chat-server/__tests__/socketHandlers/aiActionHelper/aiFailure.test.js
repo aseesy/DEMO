@@ -3,11 +3,28 @@
  * Tests for aiFailure.js
  */
 
+// Mock the logger before importing the module
+jest.mock('../../../src/infrastructure/logging/logger', () => {
+  const mockLogger = {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+  };
+  return {
+    defaultLogger: mockLogger,
+    Logger: jest.fn(() => mockLogger),
+  };
+});
+
 const { handleAiFailure } = require('../../../socketHandlers/aiActionHelper/aiFailure');
+const { defaultLogger } = require('../../../src/infrastructure/logging/logger');
 
 describe('aiFailure', () => {
   let mockSocket;
   let mockIo;
+  let mockLogger;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -22,7 +39,7 @@ describe('aiFailure', () => {
       emit: jest.fn(),
     };
 
-    console.error = jest.fn();
+    mockLogger = defaultLogger;
   });
 
   const createContext = (overrides = {}) => ({
@@ -36,7 +53,9 @@ describe('aiFailure', () => {
   it('should log the error', async () => {
     await handleAiFailure(mockSocket, mockIo, createContext());
 
-    expect(console.error).toHaveBeenCalledWith('❌ AI Mediator failure:', 'AI processing failed');
+    expect(mockLogger.error).toHaveBeenCalledWith('❌ AI Mediator failure', {
+      message: 'AI processing failed',
+    });
   });
 
   it('should emit error notification to connected socket', async () => {
@@ -100,7 +119,9 @@ describe('aiFailure', () => {
 
     await handleAiFailure(mockSocket, mockIo, context);
 
-    expect(console.error).toHaveBeenCalledWith('❌ AI Mediator failure:', 'Type error occurred');
+    expect(mockLogger.error).toHaveBeenCalledWith('❌ AI Mediator failure', {
+      message: 'Type error occurred',
+    });
     // Should still deliver message
     expect(mockIo.emit).toHaveBeenCalledWith('new_message', expect.any(Object));
   });

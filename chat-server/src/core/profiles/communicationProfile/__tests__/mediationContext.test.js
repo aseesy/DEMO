@@ -343,7 +343,7 @@ describe('Mediation Context Builder', () => {
       expect(formatted).toContain('helping Alex send a better message to Jordan');
     });
 
-    it('should include the "IMPORTANT" coaching directive', () => {
+    it('should include the "CRITICAL PERSPECTIVE AWARENESS" coaching directive', () => {
       const context = mediationContext.buildContext({
         senderId: 'alex',
         receiverId: 'jordan',
@@ -354,8 +354,8 @@ describe('Mediation Context Builder', () => {
 
       const formatted = mediationContext.formatFullContext(context);
 
-      expect(formatted).toContain('IMPORTANT:');
-      expect(formatted).toContain('coaching is for the SENDER only');
+      expect(formatted).toContain('CRITICAL PERSPECTIVE AWARENESS:');
+      expect(formatted).toContain('You are coaching');
       expect(formatted).toContain('Never use "we/us/our/both"');
     });
 

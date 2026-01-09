@@ -7,6 +7,21 @@
  * Feature: 002-sender-profile-mediation
  */
 
+// Mock the logger before importing the module
+jest.mock('../../../../infrastructure/logging/logger', () => {
+  const mockLogger = {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+  };
+  return {
+    defaultLogger: mockLogger,
+    Logger: jest.fn(() => mockLogger),
+  };
+});
+
 // Mock the repository before requiring the module
 jest.mock('../../../../repositories/postgres', () => {
   const mockUpdateCommunicationPatterns = jest.fn().mockResolvedValue({});
@@ -54,10 +69,14 @@ const {
   __mockRecordAcceptedRewrite,
   __mockGetCommunicationProfile,
 } = require('../../../../repositories/postgres');
+const { defaultLogger } = require('../../../../infrastructure/logging/logger');
 
 describe('Profile Persister', () => {
+  let mockLogger;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLogger = defaultLogger;
   });
 
   describe('updateProfile', () => {
@@ -128,17 +147,15 @@ describe('Profile Persister', () => {
     });
 
     it('should log success message', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       __mockGetCommunicationProfile.mockResolvedValue({ user_id: 'alex' });
 
       await profilePersister.updateProfile('alex', {
         communication_patterns: { tone_tendencies: [] },
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Updated profile for alex')
-      );
-      consoleSpy.mockRestore();
+      expect(mockLogger.debug).toHaveBeenCalledWith('Log message', {
+        value: expect.stringContaining('Updated profile for alex'),
+      });
     });
 
     it('should handle repository errors', async () => {
@@ -205,7 +222,6 @@ describe('Profile Persister', () => {
     });
 
     it('should log success message', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       __mockRecordIntervention.mockResolvedValue({
         total_interventions: 3,
         accepted_count: 1,
@@ -214,10 +230,9 @@ describe('Profile Persister', () => {
 
       await profilePersister.recordIntervention('alex', {});
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Recorded intervention for alex (total: 3)')
-      );
-      consoleSpy.mockRestore();
+      expect(mockLogger.debug).toHaveBeenCalledWith('Log message', {
+        value: expect.stringContaining('Recorded intervention for alex (total: 3)'),
+      });
     });
   });
 
@@ -225,9 +240,7 @@ describe('Profile Persister', () => {
     it('should record accepted rewrite and return updated data', async () => {
       __mockRecordAcceptedRewrite.mockResolvedValue({ accepted_count: 3 });
       __mockGetCommunicationProfile.mockResolvedValue({
-        successful_rewrites: [
-          { original: 'test', rewrite: 'better', accepted_at: '2024-01-01' },
-        ],
+        successful_rewrites: [{ original: 'test', rewrite: 'better', accepted_at: '2024-01-01' }],
         intervention_history: {
           total_interventions: 5,
           accepted_count: 3,
@@ -257,7 +270,6 @@ describe('Profile Persister', () => {
     });
 
     it('should log success message', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       __mockRecordAcceptedRewrite.mockResolvedValue({ accepted_count: 5 });
       __mockGetCommunicationProfile.mockResolvedValue({
         successful_rewrites: [],
@@ -269,10 +281,9 @@ describe('Profile Persister', () => {
         rewrite: 'better',
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Recorded accepted rewrite for alex (total accepted: 5)')
-      );
-      consoleSpy.mockRestore();
+      expect(mockLogger.debug).toHaveBeenCalledWith('Log message', {
+        value: expect.stringContaining('Recorded accepted rewrite for alex (total accepted: 5)'),
+      });
     });
 
     it('should handle repository errors', async () => {

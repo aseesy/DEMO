@@ -3,13 +3,35 @@
  * User Lookup Tests
  */
 
+// Mock the logger before importing the module
+jest.mock('../../../src/infrastructure/logging/logger', () => {
+  const mockLogger = {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+  };
+  return {
+    defaultLogger: mockLogger,
+    Logger: jest.fn(() => mockLogger),
+  };
+});
+
 const {
   validateUserInput,
   getUserByEmail,
   getUserByUsername,
 } = require('../../../socketHandlers/connectionOperations/userLookup');
+const { defaultLogger } = require('../../../src/infrastructure/logging/logger');
 
 describe('User Lookup Module', () => {
+  let mockLogger;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockLogger = defaultLogger;
+  });
   describe('validateUserInput', () => {
     it('should return valid result for valid email', () => {
       const result = validateUserInput('test@example.com');
@@ -92,15 +114,10 @@ describe('User Lookup Module', () => {
         getUser: jest.fn(),
       };
 
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
       const result = await getUserByUsername('oldusername', mockAuth);
 
       expect(result).toBeNull();
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Deprecated')
-      );
-
-      consoleSpy.mockRestore();
+      expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Deprecated'));
     });
   });
 });

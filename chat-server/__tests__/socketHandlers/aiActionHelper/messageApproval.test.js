@@ -3,7 +3,20 @@
  * Tests for messageApproval.js
  */
 
-const { processApprovedMessage } = require('../../../socketHandlers/aiActionHelper/messageApproval');
+// Mock the logger before importing the module
+jest.mock('../../../src/infrastructure/logging/logger', () => {
+  const mockLogger = {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+  };
+  return {
+    defaultLogger: mockLogger,
+    Logger: jest.fn(() => mockLogger),
+  };
+});
 
 // Mock dependencies
 jest.mock('../../../socketHandlers/aiHelperUtils', () => ({
@@ -22,20 +35,26 @@ jest.mock('../../../src/core/intelligence/informationExtractionService', () => (
   processMessageExtraction: jest.fn().mockResolvedValue([]),
 }));
 
+const {
+  processApprovedMessage,
+} = require('../../../socketHandlers/aiActionHelper/messageApproval');
 const { updateUserStats } = require('../../../socketHandlers/aiHelperUtils');
+const { defaultLogger } = require('../../../src/infrastructure/logging/logger');
 
 describe('messageApproval', () => {
   let mockSocket;
   let mockIo;
   let mockServices;
   let originalSetImmediate;
+  let mockLogger;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLogger = defaultLogger;
 
     // Make setImmediate synchronous for testing
     originalSetImmediate = global.setImmediate;
-    global.setImmediate = (fn) => fn();
+    global.setImmediate = fn => fn();
 
     mockSocket = {
       connected: true,
@@ -112,9 +131,9 @@ describe('messageApproval', () => {
 
       await processApprovedMessage(mockSocket, mockIo, mockServices, context);
 
-      expect(console.error).toHaveBeenCalledWith(
-        '[processApprovedMessage] ERROR saving message:',
-        expect.any(Error)
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        '[processApprovedMessage] ERROR saving message',
+        expect.objectContaining({ saveError: expect.any(Error) })
       );
       expect(mockIo.emit).toHaveBeenCalledWith('new_message', expect.any(Object));
     });
@@ -126,18 +145,21 @@ describe('messageApproval', () => {
         contactSuggestion: {
           suggestionText: 'Add Dr. Smith?',
           detectedName: 'Dr. Smith',
-          detectedRelationship: 'My Child\'s Teacher',
+          detectedRelationship: "My Child's Teacher",
         },
       });
 
       await processApprovedMessage(mockSocket, mockIo, mockServices, context);
 
-      expect(mockSocket.emit).toHaveBeenCalledWith('new_message', expect.objectContaining({
-        type: 'contact_suggestion',
-        text: 'Add Dr. Smith?',
-        detectedName: 'Dr. Smith',
-        detectedRelationship: 'My Child\'s Teacher',
-      }));
+      expect(mockSocket.emit).toHaveBeenCalledWith(
+        'new_message',
+        expect.objectContaining({
+          type: 'contact_suggestion',
+          text: 'Add Dr. Smith?',
+          detectedName: 'Dr. Smith',
+          detectedRelationship: "My Child's Teacher",
+        })
+      );
     });
 
     it('should not emit contact suggestion when socket disconnected', async () => {
@@ -154,9 +176,7 @@ describe('messageApproval', () => {
 
       // Should not emit contact_suggestion type
       const emitCalls = mockSocket.emit.mock.calls;
-      const contactSuggestionCall = emitCalls.find(
-        call => call[1]?.type === 'contact_suggestion'
-      );
+      const contactSuggestionCall = emitCalls.find(call => call[1]?.type === 'contact_suggestion');
       expect(contactSuggestionCall).toBeUndefined();
     });
 
@@ -166,9 +186,7 @@ describe('messageApproval', () => {
       await processApprovedMessage(mockSocket, mockIo, mockServices, context);
 
       const emitCalls = mockSocket.emit.mock.calls;
-      const contactSuggestionCall = emitCalls.find(
-        call => call[1]?.type === 'contact_suggestion'
-      );
+      const contactSuggestionCall = emitCalls.find(call => call[1]?.type === 'contact_suggestion');
       expect(contactSuggestionCall).toBeUndefined();
     });
   });

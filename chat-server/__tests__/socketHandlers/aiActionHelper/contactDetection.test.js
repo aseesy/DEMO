@@ -3,18 +3,40 @@
  * Tests for contactDetection.js
  */
 
-const { detectContactSuggestion, detectAndStorePendingSuggestion, handleNameDetection } = require('../../../socketHandlers/aiActionHelper/contactDetection');
+// Mock the logger before importing the module
+jest.mock('../../../src/infrastructure/logging/logger', () => {
+  const mockLogger = {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+  };
+  return {
+    defaultLogger: mockLogger,
+    Logger: jest.fn(() => mockLogger),
+  };
+});
 
 // Mock the contactIntelligence module
 jest.mock('../../../src/core/intelligence/contactIntelligence', () => ({
   detectContactMentions: jest.fn(),
 }));
 
+const {
+  detectContactSuggestion,
+  detectAndStorePendingSuggestion,
+  handleNameDetection,
+} = require('../../../socketHandlers/aiActionHelper/contactDetection');
+const { defaultLogger } = require('../../../src/infrastructure/logging/logger');
 const contactIntelligence = require('../../../src/core/intelligence/contactIntelligence');
 
 describe('contactDetection', () => {
+  let mockLogger;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLogger = defaultLogger;
   });
 
   describe('detectContactSuggestion', () => {
@@ -52,9 +74,7 @@ describe('contactDetection', () => {
 
     it('should return contact suggestion when person detected', async () => {
       contactIntelligence.detectContactMentions.mockResolvedValue({
-        detectedPeople: [
-          { name: 'Dr. Smith', relationship: 'My Child\'s Teacher' },
-        ],
+        detectedPeople: [{ name: 'Dr. Smith', relationship: "My Child's Teacher" }],
       });
 
       mockAiMediator.generateContactSuggestion.mockResolvedValue({
@@ -72,7 +92,7 @@ describe('contactDetection', () => {
       expect(result).toEqual({
         detectedName: 'Dr. Smith',
         suggestionText: 'Would you like to add Dr. Smith as a contact?',
-        detectedRelationship: 'My Child\'s Teacher',
+        detectedRelationship: "My Child's Teacher",
       });
     });
 
@@ -95,7 +115,6 @@ describe('contactDetection', () => {
 
     it('should handle errors gracefully', async () => {
       contactIntelligence.detectContactMentions.mockRejectedValue(new Error('AI error'));
-      console.error = jest.fn();
 
       const result = await detectContactSuggestion(mockAiMediator, {
         text: 'test message',
@@ -105,7 +124,9 @@ describe('contactDetection', () => {
       });
 
       expect(result).toBeNull();
-      expect(console.error).toHaveBeenCalledWith('Error detecting contact mentions:', expect.any(Error));
+      expect(mockLogger.error).toHaveBeenCalledWith('Error detecting contact mentions', {
+        err: expect.any(Error),
+      });
     });
 
     it('should pass participantUsernames to exclude from detection', async () => {

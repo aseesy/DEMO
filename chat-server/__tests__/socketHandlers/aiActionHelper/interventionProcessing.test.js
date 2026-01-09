@@ -3,22 +3,41 @@
  * Tests for interventionProcessing.js
  */
 
-const { processIntervention } = require('../../../socketHandlers/aiActionHelper/interventionProcessing');
+// Mock the logger before importing the module
+jest.mock('../../../src/infrastructure/logging/logger', () => {
+  const mockLogger = {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+  };
+  return {
+    defaultLogger: mockLogger,
+    Logger: jest.fn(() => mockLogger),
+  };
+});
 
 // Mock the aiHelperUtils module
 jest.mock('../../../socketHandlers/aiHelperUtils', () => ({
   updateUserStats: jest.fn().mockResolvedValue(undefined),
 }));
 
+const {
+  processIntervention,
+} = require('../../../socketHandlers/aiActionHelper/interventionProcessing');
 const { updateUserStats } = require('../../../socketHandlers/aiHelperUtils');
+const { defaultLogger } = require('../../../src/infrastructure/logging/logger');
 
 describe('interventionProcessing', () => {
   let mockSocket;
   let mockIo;
   let mockServices;
+  let mockLogger;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLogger = defaultLogger;
 
     mockSocket = {
       connected: true,
@@ -94,24 +113,26 @@ describe('interventionProcessing', () => {
 
       await processIntervention(mockSocket, mockIo, mockServices, context);
 
-      expect(mockSocket.emit).toHaveBeenCalledWith('draft_coaching', expect.objectContaining({
-        riskLevel: 'medium',
-        observerData: expect.objectContaining({
-          axiomsFired: [],
-          explanation: '',
-          tip: '',
-        }),
-      }));
+      expect(mockSocket.emit).toHaveBeenCalledWith(
+        'draft_coaching',
+        expect.objectContaining({
+          riskLevel: 'medium',
+          observerData: expect.objectContaining({
+            axiomsFired: [],
+            explanation: '',
+            tip: '',
+          }),
+        })
+      );
     });
 
     it('should skip emit when socket is disconnected', async () => {
       mockSocket.connected = false;
-      console.warn = jest.fn();
 
       await processIntervention(mockSocket, mockIo, mockServices, createInterventionContext());
 
       expect(mockSocket.emit).not.toHaveBeenCalled();
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(mockLogger.warn).toHaveBeenCalledWith(
         '[processIntervention] Socket disconnected, skipping emit',
         expect.any(Object)
       );
@@ -119,14 +140,13 @@ describe('interventionProcessing', () => {
 
     it('should use username fallback for logging', async () => {
       mockSocket.connected = false;
-      console.warn = jest.fn();
 
       const context = createInterventionContext();
       context.user = { username: 'user@test.com', roomId: 'room-123' }; // No email, only username
 
       await processIntervention(mockSocket, mockIo, mockServices, context);
 
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(mockLogger.warn).toHaveBeenCalledWith(
         '[processIntervention] Socket disconnected, skipping emit',
         expect.objectContaining({ email: 'user@test.com' })
       );
@@ -151,10 +171,7 @@ describe('interventionProcessing', () => {
       await processIntervention(mockSocket, mockIo, mockServices, context);
 
       expect(context.addToHistory).toHaveBeenCalledTimes(2);
-      expect(context.addToHistory).toHaveBeenCalledWith(
-        { id: 'msg-1', text: 'Hello' },
-        'room-123'
-      );
+      expect(context.addToHistory).toHaveBeenCalledWith({ id: 'msg-1', text: 'Hello' }, 'room-123');
       expect(context.addToHistory).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'ai_comment',
@@ -173,10 +190,13 @@ describe('interventionProcessing', () => {
       expect(mockIo.to).toHaveBeenCalledWith('room-123');
       expect(mockIo.emit).toHaveBeenCalledTimes(2);
       expect(mockIo.emit).toHaveBeenCalledWith('new_message', { id: 'msg-1', text: 'Hello' });
-      expect(mockIo.emit).toHaveBeenCalledWith('new_message', expect.objectContaining({
-        type: 'ai_comment',
-        text: 'Great communication!',
-      }));
+      expect(mockIo.emit).toHaveBeenCalledWith(
+        'new_message',
+        expect.objectContaining({
+          type: 'ai_comment',
+          text: 'Great communication!',
+        })
+      );
     });
 
     it('should not update user stats for ai_comment', async () => {
